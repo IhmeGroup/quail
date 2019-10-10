@@ -12,7 +12,7 @@ class Scalar(object):
 	This is a class defined to encapsulate the temperature table with the 
 	relevant methods
 	'''
-	def __init__(self,Order,Basis,mesh,StateRank=1):
+	def __init__(self,Order,basis,mesh,StateRank=1):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -39,9 +39,10 @@ class Scalar(object):
 			# self.BCs[0].Set(Title=mesh.BFGTitles[ibfgrp])
 
 		# Basis, order data for each element group
-		if type(Basis) is str:
-			Basis = BasisType[Basis]
-		self.Bases = [Basis for egrp in range(mesh.nElemGroup)] 
+		# For now, ssume uniform basis and order for each element group 
+		if type(basis) is str:
+			basis = BasisType[basis]
+		self.Bases = [basis for egrp in range(mesh.nElemGroup)] 
 		if type(Order) is int:
 			self.Orders = [Order for egrp in range(mesh.nElemGroup)]
 		elif type(Order) is list:

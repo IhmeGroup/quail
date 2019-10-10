@@ -2,7 +2,7 @@ import numpy as np
 from General import *
 import Mesh
 import code
-import Basis as Bs
+import Basis
 
 
 ### QuadLine ###
@@ -62,7 +62,7 @@ for key in range(len(QuadLinePoints)):
 	QuadLineWeights[key].shape = -1,1
 
 
-def GetQuadOrderElem(egrp, Order, Basis, mesh, EqnSet=None, quadData=None):
+def GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
 	QOrder = mesh.ElemGroups[egrp].QOrder
 	# QuadOrder = 2*Order + 1
@@ -75,7 +75,7 @@ def GetQuadOrderElem(egrp, Order, Basis, mesh, EqnSet=None, quadData=None):
 		dim = mesh.Dim
 		QuadOrder += dim*(QOrder-1)
 
-	Shape = Bs.Basis2Shape[Basis]
+	Shape = Basis.Basis2Shape[basis]
 	QuadChanged = True
 	if quadData is not None:
 		if QuadOrder == quadData.Order and Shape == quadData.Shape:
@@ -84,7 +84,7 @@ def GetQuadOrderElem(egrp, Order, Basis, mesh, EqnSet=None, quadData=None):
 	return QuadOrder, QuadChanged
 
 
-def GetQuadOrderIFace(IFace, Order, Basis, mesh, EqnSet=None, quadData=None):
+def GetQuadOrderIFace(mesh, IFace, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
 	QOrderL = mesh.ElemGroups[IFace.ElemGroupL].QOrder
 	QOrderR = mesh.ElemGroups[IFace.ElemGroupR].QOrder
@@ -98,8 +98,8 @@ def GetQuadOrderIFace(IFace, Order, Basis, mesh, EqnSet=None, quadData=None):
 		dim = mesh.Dim - 1
 		QuadOrder += dim*(QOrder-1)
 
-	Shape = Bs.Basis2Shape[Basis]
-	FShape = Bs.FaceShape[Shape]
+	Shape = Basis.Basis2Shape[basis]
+	FShape = Basis.FaceShape[Shape]
 	QuadChanged = True
 	if quadData is not None:
 		if QuadOrder == quadData.Order and FShape == quadData.Shape:
@@ -108,7 +108,7 @@ def GetQuadOrderIFace(IFace, Order, Basis, mesh, EqnSet=None, quadData=None):
 	return QuadOrder, QuadChanged
 
 
-def GetQuadOrderBFace(BFace, Order, Basis, mesh, EqnSet=None, quadData=None):
+def GetQuadOrderBFace(mesh, BFace, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
 	QOrder = mesh.ElemGroups[BFace.ElemGroup].QOrder
 	# QuadOrder = 2*Order + 1
@@ -120,8 +120,8 @@ def GetQuadOrderBFace(BFace, Order, Basis, mesh, EqnSet=None, quadData=None):
 		dim = mesh.Dim - 1
 		QuadOrder += dim*(QOrder-1)
 
-	Shape = Bs.Basis2Shape[Basis]
-	FShape = Bs.FaceShape[Shape]
+	Shape = Basis.Basis2Shape[basis]
+	FShape = Basis.FaceShape[Shape]
 	QuadChanged = True
 	if quadData is not None:
 		if QuadOrder == quadData.Order and FShape == quadData.Shape:
@@ -137,7 +137,7 @@ class QuadData(object):
 	This is a class defined to encapsulate the temperature table with the 
 	relevant methods
 	'''
-	def __init__(self,Order,entity,egrp,mesh):
+	def __init__(self,mesh,egrp,entity,Order):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -148,8 +148,8 @@ class QuadData(object):
 		'''
 		### assumes 1D
 		# QOrder = mesh.ElemGroups[egrp].QOrder
-		dim = Mesh.GetEntityDim(entity, mesh)
-		self.Shape = Bs.Basis2Shape[mesh.ElemGroups[egrp].QBasis]
+		dim = Mesh.GetEntityDim(mesh, entity)
+		self.Shape = Basis.Basis2Shape[mesh.ElemGroups[egrp].QBasis]
 		self.Order = Order
 		self.xquad = QuadLinePoints[Order]
 		self.wquad = QuadLineWeights[Order]
@@ -157,7 +157,7 @@ class QuadData(object):
 		self.nvec = None
 
 		if entity > EntityType.Element: 
-			self.Shape = Bs.FaceShape[self.Shape]
+			self.Shape = Basis.FaceShape[self.Shape]
 			self.xquad = np.zeros([1,1])
 			self.wquad = np.ones([1,1])
 

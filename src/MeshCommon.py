@@ -3,6 +3,22 @@ from Mesh import *
 
 
 def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
+	'''
+	Function: Mesh1D
+	-------------------
+	This function creates a 1D mesh.
+
+	INPUTS:
+	    Coords: x-coordinates
+	    Uniform: True for a uniform mesh (will be set to False if Coords is not None)
+	    nElem: number of elements (only relevant for Uniform=True)
+	    xmin: minimum coordinate (only relevant for Uniform=True)
+	    xmax: maximum coordinate (only relevant for Uniform=True)
+	    Periodic: True for a periodic mesh
+
+	OUTPUTS:
+	    mesh: Mesh object that stores relevant mesh info
+	'''
 	if Coords is None and not Uniform:
 		raise Exception("Input error")
 
@@ -13,6 +29,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 		mesh.Coords = np.zeros([mesh.nNode,mesh.Dim])
 		mesh.Coords[:,0] = np.linspace(xmin,xmax,mesh.nNode)
 	else:
+		Uniform = False
 		Coords.shape = -1,1
 		nNode = Coords.shape[0]
 		nElem = nNode - 1
@@ -22,7 +39,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 	# IFaces
 	if Periodic:
 		mesh.nIFace = mesh.nNode - 1
-		mesh.CreateIFaces()
+		mesh.AllocIFaces()
 		# mesh.IFaces = [IFace() for i in range(mesh.nIFace)]
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
@@ -36,7 +53,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 	# mesh.IFaces[-1].ElemR = 0
 	else:
 		mesh.nIFace = nElem - 1
-		mesh.CreateIFaces()
+		mesh.AllocIFaces()
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
 			IFace_.ElemL = i
@@ -45,11 +62,11 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 			IFace_.faceR = 0
 		# Boundary groups
 		mesh.nBFaceGroup = 2
-		mesh.CreateBFaceGroups()
+		mesh.AllocBFaceGroups()
 		for i in range(mesh.nBFaceGroup):
 			BFG = mesh.BFaceGroups[i]
 			BFG.nBFace = 1
-			BFG.CreateBFaces()
+			BFG.AllocBFaces()
 			BF = BFG.BFaces[0]
 			BF.ElemGroup = 0
 			if i == 0:
@@ -67,15 +84,15 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 	# mesh.BFaceGroups = [BFaceGroups() for i in range(mesh.nBFaceGroup)]
 	# Left
 
-	# only one element group
+	# Only one element group
 	mesh.nElemGroup = 1
 	# mesh.ElemGroups = [ElemGroup() for i in range(mesh.nElemGroup)]
-	mesh.CreateElemGroups()
+	mesh.AllocElemGroups()
 	EGroup = mesh.ElemGroups[0]
 	EGroup.SetParams(QBasis=BasisType["SegLagrange"], QOrder=1, nElem=nElem)
 	# EGroup.nFaceMax = np.amax(EGroup.nFace)
 	# EGroup.Faces = [[Face()  for j in range(EGroup.nFacePerElem)] for i in range(EGroup.nElem)]
-	EGroup.CreateFaces()
+	EGroup.AllocFaces()
 	# interior elements
 	for elem in range(EGroup.nElem):
 		for i in range(EGroup.nFacePerElem):
@@ -85,7 +102,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 			Face_.Number = elem + i
 
 	# EGroup.Elem2Nodes = np.zeros([EGroup.nElem,EGroup.nNodePerElem], dtype=int)
-	EGroup.CreateElem2Nodes()
+	EGroup.AllocElem2Nodes()
 	for elem in range(EGroup.nElem):
 		for i in range(EGroup.nNodePerElem):
 			EGroup.Elem2Nodes[elem][i] = elem + i
@@ -96,6 +113,17 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 
 
 def RefineUniform1D(Coords_old):
+	'''
+	Function: RefineUniform1D
+	-------------------
+	This function uniformly refines a set of coordinates
+
+	INPUTS:
+	    Coords_old: coordinates to refine
+
+	OUTPUTS:
+	    Coords: refined coordinates
+	'''
 	nNode_old = len(Coords_old)
 	nElem_old = nNode_old-1
 

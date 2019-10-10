@@ -4,14 +4,15 @@ import code
 import Solver
 import Scalar
 import MeshCommon
-import SolverTools
+import Post
+import Plot
 import General
 
 
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(nElem=25, Uniform=True, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.Mesh1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
@@ -28,7 +29,7 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 								 InterpBasis="SegLagrange",TimeScheme="RK4")
 
 
-# Physics
+### Physics
 Velocity = 1.
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(Velocity=Velocity)
@@ -61,9 +62,10 @@ solver.ApplyTimeScheme()
 
 ### Postprocess
 # Error
-TotErr,_ = SolverTools.L2_error(mesh, EqnSet, solver.Time, "Scalar")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
-SolverTools.Plot1D(mesh, EqnSet, solver.Time, "Scalar", Label="v")
+Plot.PreparePlot()
+Plot.Plot1D(mesh, EqnSet, solver.Time, "Scalar", Label="Q")
 
 
 # code.interact(local=locals())

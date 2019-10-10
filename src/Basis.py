@@ -24,8 +24,8 @@ FaceShape = {
 }
 
 
-def Order2nNode(Basis, p):
-    Shape = Basis2Shape[Basis]
+def Order2nNode(basis, p):
+    Shape = Basis2Shape[basis]
     if Shape == ShapeType.Point:
     	nn = 1
     elif Shape == ShapeType.Segment:
@@ -56,7 +56,7 @@ def Order2nNode(Basis, p):
 #     return FShape
 
 
-def GetMassMatrix(mesh, egrp, elem, Basis, Order, StaticData=None):
+def GetMassMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -69,9 +69,9 @@ def GetMassMatrix(mesh, egrp, elem, Basis, Order, StaticData=None):
         PhiData = StaticData.PhiData
         JData = StaticData.JData
 
-    QuadOrder,QuadChanged = GetQuadOrderElem(egrp, Order*2, mesh.ElemGroups[egrp].QBasis, mesh, quadData=quadData)
+    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
     if QuadChanged:
-        quadData = QuadData(QuadOrder, EntityType.Element, egrp, mesh)
+        quadData = QuadData(mesh, egrp, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
     xq = quadData.xquad
@@ -79,7 +79,7 @@ def GetMassMatrix(mesh, egrp, elem, Basis, Order, StaticData=None):
 
     if QuadChanged:
         # PhiData = BasisData(egrp=0,Order,entity=EntityType.Element,nq,xq,mesh,GetPhi=True,GetGPhi=False)
-        PhiData = BasisData(Basis,Order,nq,mesh)
+        PhiData = BasisData(basis,Order,nq,mesh)
         PhiData.EvalBasis(xq, Get_Phi=True)
 
     JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
@@ -88,12 +88,12 @@ def GetMassMatrix(mesh, egrp, elem, Basis, Order, StaticData=None):
     phi = PhiData.Phi
     MM = np.zeros([nn,nn])
     for iq in range(nq):
-    	for i in range(nn):
-    		for j in range(nn):
-    			t = 0.
-    			for iq in range(nq):
-    				t += phi[iq,i]*phi[iq,j]*wq[iq]*JData.detJ[iq*(JData.nq != 1)]
-    			MM[i,j] = t
+        for i in range(nn):
+            for j in range(nn):
+                t = 0.
+                for iq in range(nq):
+                    t += phi[iq,i]*phi[iq,j]*wq[iq]*JData.detJ[iq*(JData.nq != 1)]
+                MM[i,j] = t
 
     StaticData.pnq = nq
     StaticData.quadData = quadData
@@ -103,12 +103,69 @@ def GetMassMatrix(mesh, egrp, elem, Basis, Order, StaticData=None):
     return MM, StaticData
 
 
-def GetInvMassMatrix(mesh, egrp, elem, Basis, Order, StaticData=None):
-	MM, StaticData = GetMassMatrix(mesh, egrp, elem, Basis, Order, StaticData)
+def GetInvMassMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
+    MM, StaticData = GetMassMatrix(mesh, egrp, elem, basis, Order, StaticData)
 
-	MMinv = np.linalg.inv(MM) 
+    MMinv = np.linalg.inv(MM) 
 
-	return MMinv, StaticData
+    return MMinv, StaticData
+
+
+def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
+    if StaticData is None:
+        pnq = -1
+        quadData = None
+        PhiData = None
+        JData = JacobianData(mesh)
+        StaticData = GenericData()
+    else:
+        nq = StaticData.pnq
+        quadData = StaticData.quadData
+        PhiData = StaticData.PhiData
+        JData = StaticData.JData
+
+    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
+    if QuadChanged:
+        quadData = QuadData(mesh, egrp, EntityType.Element, QuadOrder)
+
+    nq = quadData.nquad
+    xq = quadData.xquad
+    wq = quadData.wquad
+
+    if QuadChanged:
+        # PhiData = BasisData(egrp=0,Order,entity=EntityType.Element,nq,xq,mesh,GetPhi=True,GetGPhi=False)
+        PhiData = BasisData(basis,Order,nq,mesh)
+        PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+
+    JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_iJ=True)
+    PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
+    nn = PhiData.nn
+
+    phi = PhiData.Phi
+    gPhi = PhiData.gPhi
+    SM = np.zeros([nn,nn])
+    for iq in range(nq):
+        for i in range(nn):
+            for j in range(nn):
+                t = 0.
+                for iq in range(nq):
+                    t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.detJ[iq*(JData.nq != 1)]
+                SM[i,j] = t
+
+    StaticData.pnq = nq
+    StaticData.quadData = quadData
+    StaticData.PhiData = PhiData
+    StaticData.JData = JData
+
+    return SM, StaticData
+
+
+def GetInvStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
+    SM, StaticData = GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData)
+
+    MMinv = np.linalg.inv(SM) 
+
+    return SM, StaticData
 
 
 def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
@@ -117,9 +174,9 @@ def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
     # even if uniform mesh
     ArrayDims = [None]*mesh.nElemGroup
     for egrp in range(mesh.nElemGroup):
-        Basis = EqnSet.Bases[egrp]
+        basis = EqnSet.Bases[egrp]
         Order = EqnSet.Orders[egrp]
-        nn = Order2nNode(Basis, Order)
+        nn = Order2nNode(basis, Order)
         ArrayDims[egrp] = [mesh.nElems[egrp], nn, nn]
     MMinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 
@@ -127,10 +184,10 @@ def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
 
     for egrp in range(mesh.nElemGroup):
         EGroup = mesh.ElemGroups[egrp]
-        Basis = EqnSet.Bases[egrp]
+        basis = EqnSet.Bases[egrp]
         Order = EqnSet.Orders[egrp]
         for elem in range(EGroup.nElem):
-            MMinv,StaticData = GetInvMassMatrix(mesh, egrp, elem, Basis, Order, StaticData)
+            MMinv,StaticData = GetInvMassMatrix(mesh, egrp, elem, basis, Order, StaticData)
             MMinv_all.Arrays[egrp][elem] = MMinv
 
     if solver is not None:
@@ -139,15 +196,15 @@ def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
     return MMinv_all
 
 
-def GetShapes(Basis, Order, nq, xq, phi=None):
-    nn = Order2nNode(Basis, Order)
+def GetShapes(basis, Order, nq, xq, phi=None):
+    nn = Order2nNode(basis, Order)
 
     if phi is None or phi.shape != (nq,nn):
         phi = np.zeros([nq,nn])
     else:
         phi[:] = 0.
 
-    if Basis == BasisType.SegLagrange:
+    if basis == BasisType.SegLagrange:
     	for iq in range(nq): 
     		Shape_TensorLagrange(1, Order, xq[iq], phi[iq,:])
     else:
@@ -156,15 +213,15 @@ def GetShapes(Basis, Order, nq, xq, phi=None):
     return phi
 
 
-def GetGrads(Basis, Order, dim, nq, xq, GPhi=None):
-    nn = Order2nNode(Basis, Order)
+def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
+    nn = Order2nNode(basis, Order)
 
     if GPhi is None or GPhi.shape != (nq,nn,dim):
         GPhi = np.zeros([nq,nn,dim])
     else: 
         GPhi[:] = 0.
 
-    if Basis == BasisType.SegLagrange:
+    if basis == BasisType.SegLagrange:
     	for iq in range(nq): 
     		Grad_TensorLagrange(1, Order, xq[iq], GPhi[iq,:,:])
     else:
@@ -224,7 +281,7 @@ class BasisData(object):
     This is a class defined to encapsulate the temperature table with the 
     relevant methods
     '''
-    def __init__(self,Basis,Order,nq,mesh):
+    def __init__(self,basis,Order,nq,mesh):
         '''
         Method: __init__
         --------------------------------------------------------------------------
@@ -233,7 +290,7 @@ class BasisData(object):
         coefficients. The coefficients are selected to retain the exact 
         enthalpies at the table points.
         '''
-        self.Basis = Basis
+        self.Basis = basis
         self.Order = Order
         self.nn = Order2nNode(self.Basis, self.Order)
         self.nq = nq
@@ -284,10 +341,12 @@ class BasisData(object):
                 raise Exception("Need jacobian data")
             self.gPhi = self.PhysicalGrad(JData)
 
-    def EvalBasisOnFace(self, mesh, egrp, face, xq, xelem, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+    def EvalBasisOnFace(self, mesh, egrp, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
         self.face = face
-        Basis = mesh.ElemGroups[egrp].QBasis
-        xelem = Mesh.RefFace2Elem(Basis2Shape[Basis], face, self.nq, xq, xelem)
+        basis = mesh.ElemGroups[egrp].QBasis
+        if xelem is None:
+            xelem = np.zeros([self.nq, mesh.Dim])
+        xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, xq, xelem)
         self.EvalBasis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
         return xelem
@@ -322,13 +381,13 @@ class JacobianData(object):
 
     def ElemJacobian(self,egrp,elem,nq,xq,mesh,Get_detJ=False,Get_J=False,Get_iJ=False):
         EGroup = mesh.ElemGroups[egrp]
-        Basis = EGroup.QBasis
+        basis = EGroup.QBasis
         Order = EGroup.QOrder
         if Order == 1:
             nq = 1
 
-        nn = Order2nNode(Basis, Order)
-        dim = Shape2Dim[Basis2Shape[Basis]]
+        nn = Order2nNode(basis, Order)
+        dim = Shape2Dim[Basis2Shape[basis]]
 
         ## Check if we need to resize or recalculate 
         if self.dim != dim or self.nq != nq: Resize = True
@@ -336,7 +395,7 @@ class JacobianData(object):
 
         # if self.GPhi.shape != (nq,nn,dim):
         #     self.GPhi = GetGrads(Basis, Order, dim, nq, xq)
-        self.GPhi = GetGrads(Basis, Order, dim, nq, xq, self.GPhi)
+        self.GPhi = GetGrads(basis, Order, dim, nq, xq, self.GPhi)
         GPhi = self.GPhi
 
         self.dim = dim

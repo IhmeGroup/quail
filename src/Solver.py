@@ -63,15 +63,15 @@ class DG_Solver(object):
 		for egrp in range(mesh.nElemGroup):
 			U_ = U[egrp]
 
-			Basis = EqnSet.Bases[egrp]
+			basis = EqnSet.Bases[egrp]
 			Order = EqnSet.Orders[egrp]
-			rhs = np.zeros([Order2nNode(Basis,Order),sr])
+			rhs = np.zeros([Order2nNode(basis,Order),sr])
 			for elem in range(mesh.ElemGroups[egrp].nElem):
 
-				QuadOrder,QuadChanged = GetQuadOrderElem(egrp, 2*np.amax([Order,1]), \
-					EqnSet.Bases[egrp], mesh, EqnSet, quadData)
+				QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, EqnSet.Bases[egrp], \
+					2*np.amax([Order,1]), EqnSet, quadData)
 				if QuadChanged:
-					quadData = QuadData(QuadOrder, EntityType.Element, egrp, mesh)
+					quadData = QuadData(mesh, egrp, EntityType.Element, QuadOrder)
 
 				nq = quadData.nquad
 				xq = quadData.xquad
@@ -79,13 +79,13 @@ class DG_Solver(object):
 
 				if QuadChanged:
 					# PhiData = BasisData(egrp,Order,EntityType.Element,nq,xq,mesh,True,False)
-					PhiData = BasisData(Basis,Order,nq,mesh)
+					PhiData = BasisData(basis,Order,nq,mesh)
 					PhiData.EvalBasis(xq, Get_Phi=True)
 					xphys = np.zeros([nq, mesh.Dim])
 
 				JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
 
-				# MMinv = GetInvMassMatrix(mesh, egrp, 0, Basis, EqnSet.Orders[egrp])
+				# MMinv = GetInvMassMatrix(mesh, egrp, 0, basis, EqnSet.Orders[egrp])
 				MMinv = MMinv_all.Arrays[egrp][elem]
 
 				nn = PhiData.nn
@@ -111,7 +111,7 @@ class DG_Solver(object):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 
-		Basis = EqnSet.Bases[egrp]
+		basis = EqnSet.Bases[egrp]
 		Order = EqnSet.Orders[egrp]
 		entity = EntityType.Element
 		sr = EqnSet.StateRank
@@ -137,9 +137,9 @@ class DG_Solver(object):
 			F = StaticData.F
 
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(egrp, Order, EqnSet.Bases[egrp], mesh, EqnSet, quadData)
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, EqnSet.Bases[egrp], Order, EqnSet, quadData)
 		if QuadChanged:
-			quadData = QuadData(QuadOrder, entity, egrp, mesh)
+			quadData = QuadData(mesh, egrp, entity, QuadOrder)
 
 		nq = quadData.nquad
 		xq = quadData.xquad
@@ -156,7 +156,7 @@ class DG_Solver(object):
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,True,False,True)
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
 		PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
 
 		xglob = Ref2Phys(mesh, egrp, elem, PhiData, nq, xq, xglob)
@@ -242,10 +242,10 @@ class DG_Solver(object):
 			uR = StaticData.uR
 
 
-		QuadOrder, QuadChanged = GetQuadOrderIFace(IFace, np.amax([OrderL,OrderR]), EqnSet.Bases[egrpL], mesh, EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, EqnSet.Bases[egrpL], np.amax([OrderL,OrderR]), EqnSet, quadData)
 
 		if QuadChanged:
-			quadData = QuadData(QuadOrder, EntityType.IFace, egrpL, mesh)
+			quadData = QuadData(mesh, egrpL, EntityType.IFace, QuadOrder)
 
 		nq = quadData.nquad
 		xq = quadData.xquad
@@ -359,10 +359,10 @@ class DG_Solver(object):
 			uB = StaticData.uB
 
 
-		QuadOrder, QuadChanged = GetQuadOrderBFace(BFace, Order, EqnSet.Bases[egrp], mesh, EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, EqnSet.Bases[egrp], Order, EqnSet, quadData)
 
 		if QuadChanged:
-			quadData = QuadData(QuadOrder, EntityType.BFace, egrp, mesh)
+			quadData = QuadData(mesh, egrp, EntityType.BFace, QuadOrder)
 
 		nq = quadData.nquad
 		xq = quadData.xquad
@@ -398,8 +398,6 @@ class DG_Solver(object):
 		F = EqnSet.ConvFluxNumerical(uI, uB, NData, nq, StaticData) # [nq,sr]
 
 		R -= np.matmul(PhiData.Phi.transpose(), F) # [nn,sr]
-
-		# code.interact(local=locals())
 
 		# Store in StaticData
 		StaticData.pnq = nq

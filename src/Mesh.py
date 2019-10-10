@@ -4,7 +4,19 @@ from General import *
 import Basis
 
 
-def GetEntityDim(entity, mesh):
+def GetEntityDim(mesh, entity):
+    '''
+    Function: GetEntityDim
+    -------------------
+    This function returns the dimension of a given entity
+
+    INPUTS:
+        mesh: Mesh object
+        entity: Element, IFace, or BFace
+
+    OUTPUTS:
+        dim: entity dimension
+    '''
     if entity == EntityType.Element:
         dim = mesh.Dim 
     else:
@@ -14,6 +26,24 @@ def GetEntityDim(entity, mesh):
 
 
 def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None):
+    '''
+    Function: Ref2Phys
+    -------------------
+    This function converts reference space coordinates to physical
+        space coordinates
+
+    INPUTS:
+        mesh: Mesh object
+        egrp: element group
+        elem: element 
+        PhiData: basis data
+        npoint: number of coordinates to convert
+        xref: coordinates in reference space
+        xphys: pre-allocated storage for physical coordinates (optional) 
+
+    OUTPUTS:
+        xphys: coordinates in physical space
+    '''
     EGroup = mesh.ElemGroups[egrp]
     QBasis = EGroup.QBasis
     QOrder = EGroup.QOrder
@@ -46,7 +76,24 @@ def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None):
 
     return xphys
 
-def RefFace2Elem(Shape, face, nq, xface, xelem):
+
+def RefFace2Elem(Shape, face, nq, xface, xelem=None):
+    '''
+    Function: RefFace2Elem
+    -------------------
+    This function converts coordinates in face reference space to
+        element reference space
+
+    INPUTS:
+        Shape: element shape
+        face: local face number
+        nq: number of points to convert 
+        xface: coordinates in face reference space
+        xelem: pre-allocated storage for output coordinates (optional)
+
+    OUTPUTS:
+        xelem: coordinates in element reference space
+    '''
     if Shape == ShapeType.Segment:
         if xelem is None: xelem = np.zeros([1,1])
         if face == 0: xelem[0] = 0.
@@ -59,6 +106,21 @@ def RefFace2Elem(Shape, face, nq, xface, xelem):
 
 
 def IFaceNormal(mesh, IFace, nq, xq):
+    '''
+    Function: IFaceNormal
+    -------------------
+    This function obtains the outward-pointing normals from the 
+        perspective of element on the "left" of IFace
+
+    INPUTS:
+        mesh: Mesh object
+        IFace: interior face object
+        nq: number of points at which to calculate normals
+        xq: points in reference space at which to calculate normals
+
+    OUTPUTS:
+        NData: normal data object
+    '''
     egrpL = IFace.ElemGroupL
     egrpR = IFace.ElemGroupR
     elemL = IFace.ElemL
@@ -76,6 +138,21 @@ def IFaceNormal(mesh, IFace, nq, xq):
 
 
 def BFaceNormal(mesh, BFace, nq, xq):
+    '''
+    Function: BFaceNormal
+    -------------------
+    This function obtains the outward-pointing normals at a
+        boundary face
+
+    INPUTS:
+        mesh: Mesh object
+        BFace: boundary face object
+        nq: number of points at which to calculate normals
+        xq: points in reference space at which to calculate normals
+
+    OUTPUTS:
+        NData: normal data object
+    '''
     egrp = BFace.ElemGroup
     elem = BFace.Elem
     QOrder = mesh.ElemGroups[egrp].QOrder
@@ -86,7 +163,30 @@ def BFaceNormal(mesh, BFace, nq, xq):
 
 
 class NormalData(object):
+    '''
+    Class: NormalData
+    -------------------
+    This class contains information about normal vectors
+
+    ATTRIBUTES:
+        nq: number of points at which normals are calculated
+        dim: dimension of mesh
+        nvec: normals [nq, dim]
+    '''
     def __init__(self, mesh, egrp, elem, face, nq, xq):
+        '''
+        Method: __init__
+        -------------------
+        This method initializes the object
+
+        INPUTS:
+            mesh: Mesh object
+            egrp: element group
+            elem: element
+            face: local face number from elem's perspective
+            nq: number of points at which to calculate normals
+            xq: points in reference space at which to calculate normals
+        '''
         self.nq = nq
         self.dim = mesh.Dim
 
@@ -110,106 +210,152 @@ class NormalData(object):
 
 
 class FaceType(IntEnum):
-    INTERIOR = 0
-    BOUNDARY = 1
+    '''
+    Class: FaceType
+    -------------------
+    Enumeration of face types
+
+    ATTRIBUTES:
+        Interior: interior face
+        Boundary: boundary face
+    '''
+    Interior = 0
+    Boundary = 1
 
 
 class Face(object):
     '''
     Class: Face
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    -------------------
+    This class provides information about a given face.
+
+    NOTES:
+        Not used for now
+
+    ATTRIBUTES:
+        Type: face type (interior or boundary)
+        Number: Global number of face of given type
     '''
     def __init__(self):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
         '''
-        self.Type = INTERIORFACE
-        self.Number = 0 # Global number of face of given type
+        self.Type = FaceType.Interior
+        self.Number = 0 
 
 
 class IFace(object):
     '''
     Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    -------------------
+    This class provides information about a given interior face.
+
+    ATTRIBUTES:
+        ElemGroupL: element group of right element
+        ElemL: left element
+        faceL: local face number from ElemL's perspective
+        ElemGroupR: element group of right element
+        ElemR: right element
+        faceR: local face number from ElemR's perspective
     '''
     def __init__(self):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
         '''
         self.ElemGroupL = 0
-        self.ElemL = 0 # Global element number on left
-        self.faceL = 0 # Local face number from ElemL's perspective
+        self.ElemL = 0 
+        self.faceL = 0 
         self.ElemGroupR = 0
-        self.ElemR = 0 # Global element number on right
-        self.faceR = 0 # Local face number from ElemR's perspective
+        self.ElemR = 0 
+        self.faceR = 0 
 
 
 class BFace(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: BFace
+    -------------------
+    This class provides information about a given boundary face.
+
+    ATTRIBUTES:
+        ElemGroup: element group of adjacent element
+        Elem: adjacent element
+        face: local face number from Elem's perspective
     '''
     def __init__(self):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
         '''
         self.ElemGroup = 0
-        self.Elem = 0 # Global element number 
-        self.face = 0 # Local face number from Elem's perspective
+        self.Elem = 0 
+        self.face = 0 
 
 
 class BFaceGroup(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: BFaceGroup
+    -------------------
+    This class stores BFace objects for a given boundary face group
+
+    ATTRIBUTES:
+        Title: title of boundary face group
+        nBFace: number of boundary faces within this group
+        BFaces: list of BFace objects
     '''
     def __init__(self):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
         '''
         self.Title = "" 
         self.nBFace = 0 
         self.BFaces = None
 
-    def CreateBFaces(self):
+    def AllocBFaces(self):
+        '''
+        Method: AllocBFaces
+        -------------------
+        This method allocates the list of BFace objects
+
+        OUTPUTS:
+            self.BFaces
+        '''
         self.BFaces = [BFace() for i in range(self.nBFace)]
 
 
+
+'''
+Dictionary: Shape2nFace
+-------------------
+This dictionary stores the number of faces per element
+    for each shape type
+
+USAGE:
+    Shape2nFace[shape] = number of faces per element of shape
+'''
 Shape2nFace = {
-    ShapeType.Point : 0,
+    ShapeType.Point : 0, 
     ShapeType.Segment : 2,
     ShapeType.Triangle : 3,
     ShapeType.Quadrilateral : 4
 }
 
+
+'''
+Dictionary: Shape2nNode
+-------------------
+This dictionary stores the number of nodes per element
+    for each shape type
+
+USAGE:
+    Shape2nFace[shape] = number of nodes per element of shape
+'''
 Shape2nNode = {
     ShapeType.Point : 1,
     ShapeType.Segment : 2,
@@ -220,19 +366,22 @@ Shape2nNode = {
 
 class ElemGroup(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: ElemGroup
+    -------------------
+    This class stores information about a given element group
+
+    ATTRIBUTES:
+        QBasis: Basis used for geometry representation 
+        QOrder: Order used for geometry representation
+        nElem: number of elements
+        nFacePerElem: number of faces per element
+        Faces:
     '''
     def __init__(self,QBasis=BasisType.SegLagrange,QOrder=1,nElem=1):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
         '''
         self.QBasis = QBasis
         self.QOrder = QOrder
@@ -249,28 +398,47 @@ class ElemGroup(object):
         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[BasisType.SegLagrange]] 
         self.nNodePerElem = Shape2nNode[Basis.Basis2Shape[BasisType.SegLagrange]]
 
-    def CreateFaces(self):
+    def AllocFaces(self):
+        '''
+        Method: AllocFaces
+        -------------------
+        This method allocates the list of Face objects
+
+        OUTPUTS:
+            self.Faces
+        '''
         self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
 
-    def CreateElem2Nodes(self):
+    def AllocElem2Nodes(self):
+        '''
+        Method: AllocElem2Nodes
+        -------------------
+        This method allocates Elem2Nodes
+
+        OUTPUTS:
+            self.Elem2Nodes
+        '''
         self.Elem2Nodes = np.zeros([self.nElem,self.nNodePerElem], dtype=int)
 
 
 class PeriodicGroup(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: PeriodicGroup
+    -------------------
+    This class stores information about periodic groups
+
+    NOTES:
+        Not used for now
+
+    ATTRIBUTES:
+        nPeriodicNode: number of periodic nodes in group
+        PeriodicNodes: periodic nodes
     '''
     def __init__(self):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
         '''
         self.nPeriodicNode = 0
         self.PeriodicNodes = None
@@ -278,19 +446,36 @@ class PeriodicGroup(object):
 
 class Mesh(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: Mesh
+    -------------------
+    This class stores the important mesh information
+
+    ATTRIBUTES:
+        Dim: dimension of mesh
+        nNode: total number of nodes
+        Coords: coordinates of nodes
+        nIFace: number of interior faces
+        IFaces: list of interior face objects
+        nBFaceGroup: number of boundary face groups
+        BFaceGroups: list of boundary face groups
+        BFGTitles: list of BFaceGroup titles (for easy access)
+        nElemGroup: number of element groups
+        ElemGroups: list of element groups
+        nElems: list of number of elements in each element group (for easy access)
+        nElemTot: total number of elements in mesh
+        nPeriodicGroup: number of periodic groups
+        PeriodicGroups: list of periodic groups
     '''
     def __init__(self,dim=1,nNode=1,nElemGroup=1):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
+
+        INPUTS:
+            dim: dimension of mesh
+            nNode: total number of nodes
+            nElemGroup: number of element groups
         '''
         self.Dim = dim
         self.nNode = nNode
@@ -308,6 +493,16 @@ class Mesh(object):
         self.PeriodicGroups = None
 
     def Finalize(self):
+        '''
+        Method: Finalize
+        -------------------
+        This method creates some final mesh structures
+
+        OUTPUTS:
+            self.nElems
+            self.nElemTot
+            self.BFGTitles
+        '''
         self.nElems = [self.ElemGroups[i].nElem for i in range(self.nElemGroup)]
         self.nElemTot = sum(self.nElems)
 
@@ -315,13 +510,37 @@ class Mesh(object):
             self.BFGTitles.append(self.BFaceGroups[i].Title)
 
 
-    def CreateIFaces(self):
+    def AllocIFaces(self):
+        '''
+        Method: AllocIFaces
+        -------------------
+        This method allocates IFaces
+
+        OUTPUTS:
+            self.IFaces
+        '''
         self.IFaces = [IFace() for i in range(self.nIFace)]
 
-    def CreateBFaceGroups(self):
+    def AllocBFaceGroups(self):
+        '''
+        Method: AllocBFaceGroups
+        -------------------
+        This method allocates BFaceGroups
+
+        OUTPUTS:
+            self.BFaceGroups
+        '''
         self.BFaceGroups = [BFaceGroup() for i in range(self.nBFaceGroup)]
 
-    def CreateElemGroups(self):
+    def AllocElemGroups(self):
+        '''
+        Method: AllocElemGroups
+        -------------------
+        This method allocates the list of element groups
+
+        OUTPUTS:
+            self.ElemGroups
+        '''
         self.ElemGroups = [ElemGroup() for i in range(self.nElemGroup)]
 
 

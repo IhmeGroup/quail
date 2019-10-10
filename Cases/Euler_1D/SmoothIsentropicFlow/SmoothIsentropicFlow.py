@@ -4,13 +4,14 @@ import code
 import Solver
 import Euler
 import MeshCommon
-import SolverTools
+import Post
+import Plot
 import General
 
 
 ### Mesh
 Periodic = True
-mesh = MeshCommon.Mesh1D(nElem=25, Uniform=True, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.Mesh1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 
 
 ### Solver parameters
@@ -21,7 +22,7 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 								 InterpBasis="SegLagrange",TimeScheme="RK4")
 
 
-# Physics
+### Physics
 EqnSet = Euler.Euler(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="Roe")
 # Initial conditions
@@ -49,9 +50,10 @@ solver.ApplyTimeScheme()
 
 ### Postprocess
 # Error
-TotErr,_ = SolverTools.L2_error(mesh, EqnSet, EndTime, "Density")
+TotErr,_ = Post.L2_error(mesh, EqnSet, EndTime, "Density")
 # Plot
-SolverTools.Plot1D(mesh, EqnSet, EndTime, "XMomentum")
+Plot.PreparePlot()
+Plot.Plot1D(mesh, EqnSet, EndTime, "XMomentum")
 
 
 # code.interact(local=locals())

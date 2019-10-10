@@ -17,9 +17,9 @@ def ElementVolumes(mesh, solver=None):
     	EGroup = mesh.ElemGroups[egrp]
         Order = EGroup.QOrder
 
-        QuadOrder,QuadChanged = GetQuadOrderElem(egrp, Order, EGroup.QBasis, mesh, quadData=quadData)
+        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, EGroup.QBasis, Order, quadData=quadData)
         if QuadChanged:
-            quadData = QuadData(QuadOrder, EntityType.Element, egrp, mesh)
+            quadData = QuadData(mesh, egrp, EntityType.Element, QuadOrder)
 
         nq = quadData.nquad
         xq = quadData.xquad
