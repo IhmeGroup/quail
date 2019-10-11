@@ -247,6 +247,23 @@ class Euler(Scalar):
 		return F
 
 	def ConvFluxRoe(self, gam, UL, UR, n, FL, FR, du, lam, F):
+		'''
+		Function: ConvFluxRoe
+		-------------------
+		This function computes the numerical flux (dotted with the normal)
+		using the Roe flux function
+
+		NOTES:
+
+		INPUTS:
+		    gam: specific heat ratio
+		    UL: Left state
+		    UR: Right state
+		    n: Normal vector (assumed left to right)
+
+		OUTPUTS:
+		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+		'''
 		gmi = gam - 1.
 		gmi1 = 1./gmi
 
@@ -256,7 +273,7 @@ class Euler(Scalar):
 		NN1 = 1./NN
 		n1 = n/NN
 
-		if UL[0] <= 0. or UR[0] <= 0.:
+		if UL[ir] <= 0. or UR[ir] <= 0.:
 			raise Exception("Nonphysical density")
 
 		# Left state
@@ -320,19 +337,19 @@ class Euler(Scalar):
 		# 		lam[i] = 0.5*(eps+lam[i]*lam[i]*eps1)
 
 		# define el = sign(lam[i])
-		el = np.zeros(3)
-		for i in range(3):
-			if lam[i] < 0:
-				el[i] = -1.
-			else:
-				el[i] =  1.
+		# el = np.zeros(3)
+		# for i in range(3):
+		# 	if lam[i] < 0:
+		# 		el[i] = -1.
+		# 	else:
+		# 		el[i] =  1.
 
 		# average and half-difference of 1st and 2nd eigs
-		s1    = 0.5*(el[0]*lam[0]+el[1]*lam[1])
-		s2    = 0.5*(el[0]*lam[0]-el[1]*lam[1])
+		s1    = 0.5*(np.abs(lam[0])+np.abs(lam[1])) # 0.5*(el[0]*lam[0]+el[1]*lam[1])
+		s2    = 0.5*(np.abs(lam[0])-np.abs(lam[1]))
 
 		# third eigenvalue, absolute value
-		l3    = el[2]*lam[2]
+		l3    = np.abs(lam[2]) # el[2]*lam[2]
 
 		# left eigenvector product generators
 		G1    = gmi*(af*du[ir] - ui*du[iru] + du[irE])

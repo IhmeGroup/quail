@@ -10,7 +10,7 @@ import General
 
 
 ### Mesh
-Periodic = True
+Periodic = False
 mesh = MeshCommon.Mesh1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 
 

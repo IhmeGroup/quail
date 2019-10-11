@@ -30,7 +30,7 @@ def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None):
     Function: Ref2Phys
     -------------------
     This function converts reference space coordinates to physical
-        space coordinates
+    space coordinates
 
     INPUTS:
         mesh: Mesh object
@@ -82,7 +82,7 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
     Function: RefFace2Elem
     -------------------
     This function converts coordinates in face reference space to
-        element reference space
+    element reference space
 
     INPUTS:
         Shape: element shape
@@ -110,7 +110,7 @@ def IFaceNormal(mesh, IFace, nq, xq):
     Function: IFaceNormal
     -------------------
     This function obtains the outward-pointing normals from the 
-        perspective of element on the "left" of IFace
+    perspective of element on the "left" of IFace
 
     INPUTS:
         mesh: Mesh object
@@ -142,7 +142,7 @@ def BFaceNormal(mesh, BFace, nq, xq):
     Function: BFaceNormal
     -------------------
     This function obtains the outward-pointing normals at a
-        boundary face
+    boundary face
 
     INPUTS:
         mesh: Mesh object
@@ -334,7 +334,7 @@ class BFaceGroup(object):
 Dictionary: Shape2nFace
 -------------------
 This dictionary stores the number of faces per element
-    for each shape type
+for each shape type
 
 USAGE:
     Shape2nFace[shape] = number of faces per element of shape
@@ -351,7 +351,7 @@ Shape2nFace = {
 Dictionary: Shape2nNode
 -------------------
 This dictionary stores the number of nodes per element
-    for each shape type
+for each shape type
 
 USAGE:
     Shape2nFace[shape] = number of nodes per element of shape
