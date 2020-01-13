@@ -20,6 +20,9 @@ def GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet=None, quadData=None):
 		QuadOrder += dim*(QOrder-1)
 
 	Shape = Basis.Basis2Shape[basis]
+	if Shape is ShapeType.Quadrilateral:
+		QuadOrder += mesh.Dim
+
 	QuadChanged = True
 	if quadData is not None:
 		if QuadOrder == quadData.Order and Shape == quadData.Shape:
@@ -44,6 +47,9 @@ def GetQuadOrderIFace(mesh, IFace, basis, Order, EqnSet=None, quadData=None):
 
 	Shape = Basis.Basis2Shape[basis]
 	FShape = Basis.FaceShape[Shape]
+	if Shape is ShapeType.Quadrilateral:
+		QuadOrder += Basis.Shape2Dim[FShape]
+
 	QuadChanged = True
 	if quadData is not None:
 		if QuadOrder == quadData.Order and FShape == quadData.Shape:
@@ -66,6 +72,9 @@ def GetQuadOrderBFace(mesh, BFace, basis, Order, EqnSet=None, quadData=None):
 
 	Shape = Basis.Basis2Shape[basis]
 	FShape = Basis.FaceShape[Shape]
+	if Shape is ShapeType.Quadrilateral:
+		QuadOrder += Basis.Shape2Dim[FShape]
+
 	QuadChanged = True
 	if quadData is not None:
 		if QuadOrder == quadData.Order and FShape == quadData.Shape:
@@ -81,7 +90,7 @@ class QuadData(object):
 	This is a class defined to encapsulate the temperature table with the 
 	relevant methods
 	'''
-	def __init__(self,mesh,egrp,entity,Order):
+	def __init__(self,mesh,basis,entity,Order):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -93,17 +102,32 @@ class QuadData(object):
 		### assumes 1D
 		# QOrder = mesh.ElemGroups[egrp].QOrder
 		dim = Mesh.GetEntityDim(mesh, entity)
-		self.Shape = Basis.Basis2Shape[mesh.ElemGroups[egrp].QBasis]
 		self.Order = Order
-		self.xquad = QuadLinePoints[Order]
-		self.wquad = QuadLineWeights[Order]
 		self.qdim = mesh.Dim
 		self.nvec = None
 
-		if entity > EntityType.Element: 
-			self.Shape = Basis.FaceShape[self.Shape]
+		Shape = Basis.Basis2Shape[basis]
+
+		if entity == EntityType.Element:
+			self.Shape = Shape
+		else:
+			self.Shape = Basis.FaceShape[Shape]
+
+		if self.Shape == ShapeType.Point:
 			self.xquad = np.zeros([1,1])
 			self.wquad = np.ones([1,1])
+		elif self.Shape == ShapeType.Segment:
+			self.xquad = QuadLinePoints[Order]
+			self.wquad = QuadLineWeights[Order]
+		elif self.Shape == ShapeType.Quadrilateral:
+			self.xquad = QuadQuadrilateralPoints[Order]
+			self.wquad = QuadQuadrilateralWeights[Order]
+		elif self.Shape == ShapeType.Triangle:
+			self.xquad = QuadTrianglePoints[Order]
+			self.wquad = QuadTriangleWeights[Order]
+		else:
+			raise NotImplementedError
+
 
 		self.nquad = len(self.xquad)
 

@@ -29,6 +29,8 @@ class FE(object):
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
 		U.AddToSelf(dU)
 
+		solver.ApplyLimiter(U)
+
 		return R
 
 
@@ -80,15 +82,18 @@ class RK4(FE):
 		R = solver.CalculateResidual(U, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU1)
 		Utemp.SetToSum(U, dU1, c2=0.5)
+		solver.ApplyLimiter(Utemp)
 		# second stage
 		solver.Time += self.dt/2.
 		R = solver.CalculateResidual(Utemp, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU2)
 		Utemp.SetToSum(U, dU2, c2=0.5)
+		solver.ApplyLimiter(Utemp)
 		# third stage
 		R = solver.CalculateResidual(Utemp, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU3)
 		Utemp.SetToSum(U, dU3)
+		solver.ApplyLimiter(Utemp)
 		# fourth stage
 		solver.Time += self.dt/2.
 		R = solver.CalculateResidual(Utemp, R)
@@ -98,6 +103,7 @@ class RK4(FE):
 		dU.AddToSelf(dU4)
 		dU.ScaleByFactor(1./6.)
 		U.AddToSelf(dU)
+		solver.ApplyLimiter(U)
 		# for egrp in range(mesh.nElemGroup): 
 		# 	R[egrp][:] = 1./6.*(dU1[egrp][:]+2.*dU2[egrp][:]+2.*dU3[egrp][:]+dU4[egrp][:])
 		# 	U[egrp][:] += R[egrp][:]
@@ -158,6 +164,7 @@ class LSRK4(FE):
 			dU.ScaleByFactor(self.rk4a[INTRK])
 			dU.AddToSelf(dUtemp)
 			U.AddToSelf(dU, c=self.rk4b[INTRK])
+			solver.ApplyLimiter(U)
 
 		return R
 

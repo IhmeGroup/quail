@@ -1,15 +1,21 @@
 import numpy as np 
 import Data
-from Quadrature import *
+import Quadrature
 from Basis import *
 from Mesh import *
 import code
 
 
 def ElementVolumes(mesh, solver=None):
+    # Check if already calculated
+    if solver is not None:
+        if hasattr(solver.DataSet, "TotalVolume") \
+            and hasattr(solver.DataSet, "ElemVolumes"):
+                return solver.DataSet.TotalVolume, solver.DataSet.ElemVolumes
+
     # ElemVol = ArrayList(SimilarArray=EqnSet.U).Arrays
-    ElemVol = Data.ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
-    TotVol = 0.
+    ElemVolumes = Data.ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
+    TotalVolume = 0.
     quadData = None
     JData = JacobianData(mesh)
     for egrp in range(mesh.nElemGroup):
@@ -17,9 +23,10 @@ def ElementVolumes(mesh, solver=None):
     	EGroup = mesh.ElemGroups[egrp]
         Order = EGroup.QOrder
 
-        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, EGroup.QBasis, Order, quadData=quadData)
+        QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, egrp, EGroup.QBasis, Order, 
+            quadData=quadData)
         if QuadChanged:
-            quadData = QuadData(mesh, egrp, EntityType.Element, QuadOrder)
+            quadData = Quadrature.QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
 
         nq = quadData.nquad
         xq = quadData.xquad
@@ -33,12 +40,35 @@ def ElementVolumes(mesh, solver=None):
             JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
 
             for iq in range(nq):
-                ElemVol.Arrays[egrp][elem] += wq[iq] * JData.detJ[iq*(JData.nq != 1)]
+                ElemVolumes.Arrays[egrp][elem] += wq[iq] * JData.detJ[iq*(JData.nq != 1)]
 
-            TotVol += ElemVol.Arrays[egrp][elem]
+            TotalVolume += ElemVolumes.Arrays[egrp][elem]
 
     if solver is not None:
-        solver.DataSet.ElemVol = ElemVol
-        solver.DataSet.TotVol = TotVol
+        solver.DataSet.TotalVolume = TotalVolume
+        solver.DataSet.ElemVolumes = ElemVolumes
     
-    return TotVol, ElemVol
+    return TotalVolume, ElemVolumes
+
+
+def NeighborAcrossFace(mesh, egrp, elem, face):
+    Face = mesh.ElemGroups[egrp].Faces[elem][face]
+
+    if Face.Type == FaceType.Interior:
+        iiface = Face.Number
+        egN = mesh.IFaces[iiface].ElemGroupR
+        eN  = mesh.IFaces[iiface].ElemR
+        faceN = mesh.IFaces[iiface].faceR
+
+        if egN == egrp and eN == elem:
+            egN = mesh.IFaces[iiface].ElemGroupL
+            eN  = mesh.IFaces[iiface].ElemL
+            faceN = mesh.IFaces[iiface].faceL
+    else:
+        egN   = -1
+        eN    = -1
+        faceN = -1
+
+    return egN, eN, faceN
+
+

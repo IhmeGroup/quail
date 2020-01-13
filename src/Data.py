@@ -43,13 +43,13 @@ class ICData(object):
 
 class BCData(ICData):
     def __init__(self):
-        BCData.Title = ""
+        BCData.Name = ""
         BCData.BCType = 0
         ICData.__init__(self)
 
-    # def Set(self, Function=None, Title="", BCType=0, **kwargs):
+    # def Set(self, Function=None, Name="", BCType=0, **kwargs):
     #     self.Function = Function
-    #     self.Title = Title
+    #     self.Name = Name
     #     self.BCType = BCType
     #     for key in kwargs:
     #         self.Data.__dict__[key] = kwargs[key]
@@ -164,6 +164,37 @@ class ArrayList(object):
                 minvalue = value
 
         return minvalue
+
+    def VectorNorm(self, ord=2, sdim=-1, sidx=-1):
+        if sdim*sidx < 0:
+            raise IndexError
+        norm = 0.
+        for n in range(self.nArray):
+            if sdim < 0:
+                # Don't slice array
+                Array = self.Arrays[n]
+            else:
+                # Slice array based on sdim, sidx
+                indices = []
+                ArrayDim = ArrayDims[n]
+                broadcasted = False
+                for dim in range(len(ArrayDim)):
+                    if dim == sdim:
+                        indices.append(sidx)
+                    elif not broadcasted:
+                        indices.append(np.arange(ArrayDim[dim])[:,np.newaxis])
+                        broadcasted = True
+                    else:
+                        indices.append(np.arange(ArrayDim[dim]))
+                Array = self.Arrays[n][indices]
+
+            norm += np.sum(np.abs(Array)**ord)
+
+        norm = norm**(1./ord)
+
+        return norm
+
+
 
 
 

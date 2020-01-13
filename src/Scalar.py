@@ -28,15 +28,17 @@ class Scalar(object):
 		self.IC = ICData()
 		self.ExactSoln = ExactData()
 		self.ConvFluxFcn = None
+		self.BCTreatments = {}
 
 		# Boundary conditions
 		# self.BCs = []
 		# for ibfgrp in range(mesh.nBFaceGroup):
-		# 	self.BCs.append(BCData(Title=mesh.BFGTitles[ibfgrp]))
+		# 	self.BCs.append(BCData(Name=mesh.BFGNames[ibfgrp]))
+		self.nBC = mesh.nBFaceGroup
 		self.BCs = [BCData() for ibfgrp in range(mesh.nBFaceGroup)]
 		for ibfgrp in range(mesh.nBFaceGroup):
-			self.BCs[ibfgrp].Title = mesh.BFGTitles[ibfgrp]
-			# self.BCs[0].Set(Title=mesh.BFGTitles[ibfgrp])
+			self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
+			# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
 
 		# Basis, order data for each element group
 		# For now, ssume uniform basis and order for each element group 
@@ -56,6 +58,14 @@ class Scalar(object):
 		ArrayDims = [[mesh.nElems[egrp],Order2nNode(self.Bases[egrp], self.Orders[egrp]), self.StateRank] \
 					for egrp in range(mesh.nElemGroup)]
 		self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+
+		# BC treatments
+		self.SetBCTreatment()
+
+		# State indices
+		self.StateIndices = {}
+		for key in self.StateVariables.__members__.keys():
+			self.StateIndices[key] = self.StateVariables.__members__.keys().index(key)
 
 		# Uarray = np.zeros([mesh.nElemTot, nn, self.StateRank])
 		# self.Uarray = Uarray
@@ -80,18 +90,50 @@ class Scalar(object):
 			else:
 				Params[key] = kwargs[key]
 
-	class VariableType(IntEnum):
-	    Scalar = 0
-	    # Additional scalars go here
+	def SetBC(self, BCName, **kwargs):
+		found = False
+		for BC in self.BCs:
+			if BC.Name == BCName:
+				BC.Set(**kwargs)
+				found = True
+				break
 
-	class VarLabelType(Enum):
-		# LaTeX format
-	    Scalar = "u"
-	    # Additional scalars go here
+		if not found:
+			raise NameError
+
+	class StateVariables(Enum):
+		Scalar = "u"
+
+	class AdditionalVariables(Enum):
+	    pass
+
+	# class VariableType(IntEnum):
+	#     Scalar = 0
+	#     # Additional scalars go here
+
+	# class VarLabelType(Enum):
+	# 	# LaTeX format
+	#     Scalar = "u"
+	#     # Additional scalars go here
+
+	def GetStateIndex(self, VariableName):
+		# idx = self.VariableType[VariableName]
+		idx = self.StateIndices[VariableName]
+		# idx = self.StateVariables.__members__.keys().index(VariableName)
+		return idx
 
 	class BCType(IntEnum):
 	    FullState = 0
 	    Extrapolation = 1
+
+	class BCTreatment(IntEnum):
+		Riemann = 0
+		Prescribed = 1
+
+	def SetBCTreatment(self):
+		# default is Prescribed
+		self.BCTreatments = {n:self.BCTreatment.Prescribed for n in range(len(self.BCType))}
+		self.BCTreatments[self.BCType.FullState] = self.BCTreatment.Riemann
 
 	class ConvFluxType(IntEnum):
 	    Upwind = 0
@@ -154,16 +196,15 @@ class Scalar(object):
 
 		return F
 
-	def BoundaryState(self, BC, nq, xglob, Time, uI, uB=None):
-
+	def BoundaryState(self, BC, nq, xglob, Time, NData, uI, uB=None):
 		if uB is not None:
 			BC.U = uB
 
+		BC.x = xglob
+		BC.nq = nq
+		BC.Time = Time
 		bctype = BC.BCType
 		if bctype == self.BCType.FullState:
-			BC.x = xglob
-			BC.nq = nq
-			BC.Time = Time
 			uB = self.CallFunction(BC)
 		elif bctype == self.BCType.Extrapolation:
 			uB[:] = uI[:]
@@ -171,6 +212,56 @@ class Scalar(object):
 			raise Exception("BC type not supported")
 
 		return uB
+
+	def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
+		bctreatment = self.BCTreatments[BC.BCType]
+		if bctreatment == self.BCTreatment.Riemann:
+			F = self.ConvFluxNumerical(uI, uB, NData, nq, data)
+		else:
+			# Prescribe analytic flux
+			try:
+				Fa = data.Fa
+			except AttributeError:
+				data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
+			Fa = self.ConvFluxInterior(uB, Fa)
+			# Take dot product with n
+			try: 
+				F = data.F
+			except AttributeError:
+				data.F = F = np.zeros_like(uI)
+			for jr in range(self.StateRank):
+				F[:,jr] = np.sum(Fa[:,jr,:]*NData.nvec, axis=1)
+
+		return F
+
+	def ComputeScalars(self, ScalarNames, U, nq, scalar=None):
+		if type(ScalarNames) is list:
+			nscalar = len(ScalarNames)
+		elif type(ScalarNames) is str:
+			nscalar = 1
+			ScalarNames = [ScalarNames]
+		else:
+			raise TypeError
+
+		if scalar is None or scalar.shape != (nq, nscalar):
+			scalar = np.zeros([nq, nscalar])
+
+		for iscalar in range(nscalar):
+			sname = ScalarNames[iscalar]
+			try:
+				sidx = self.GetStateIndex(sname)
+				scalar[:,iscalar] = U[:,sidx]
+			# if sidx < self.StateRank:
+			# 	# State variable
+			# 	scalar[:,iscalar] = U[:,sidx]
+			# else:
+			except KeyError:
+				scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1])
+
+		return scalar
+
+	def AdditionalScalars(self, ScalarName, U, scalar):
+		raise NotImplementedError
 
 	def CallFunction(self, FcnData, **kwargs):
 		for key in kwargs:
@@ -185,7 +276,7 @@ class Scalar(object):
 		nq = FcnData.nq
 		sr = self.StateRank
 		if FcnData.U is None or FcnData.U.shape != (nq, sr):
-			FcnData.U = np.zeros([nq, sr])
+			FcnData.U = np.zeros([nq, sr],dtype=self.U.Arrays[0].dtype)
 
 		FcnData.U[:] = FcnData.Function(FcnData)
 
@@ -197,7 +288,7 @@ class Scalar(object):
 		sr = self.StateRank
 
 		for k in range(sr):
-			U[k] = Data.U[k]
+			U[:,k] = Data.State[k]
 
 		return U
 
@@ -215,6 +306,21 @@ class Scalar(object):
 		a = self.Params["Velocity"]
 
 		U[:] = np.sin(omega*(x-a*t))
+
+		return U
+
+	def FcnExponential(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		Data = FcnData.Data
+		U = FcnData.U
+
+		try:
+			theta = Data.theta
+		except AttributeError:
+			theta = 1.
+
+		U[:] = np.exp(theta*x)
 
 		return U
 

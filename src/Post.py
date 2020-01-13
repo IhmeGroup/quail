@@ -9,7 +9,7 @@ import MeshTools
 from Data import ArrayList
 
 
-def L2_error(mesh,EqnSet,EndTime,VariableName):
+def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=True):
 
 	U = EqnSet.U.Arrays
 
@@ -18,7 +18,10 @@ def L2_error(mesh,EqnSet,EndTime,VariableName):
 		raise Exception("No exact solution provided")
 
 	# Get elem volumes 
-	TotVol,_ = MeshTools.ElementVolumes(mesh)
+	if NormalizeByVolume:
+		TotVol,_ = MeshTools.ElementVolumes(mesh)
+	else:
+		TotVol = 1.
 
 	# Get error
 	# ElemErr = copy.deepcopy(U)
@@ -28,7 +31,8 @@ def L2_error(mesh,EqnSet,EndTime,VariableName):
 	sr = EqnSet.StateRank
 	quadData = None
 	JData = JacobianData(mesh)
-	ier = EqnSet.VariableType[VariableName]
+	# ier = EqnSet.VariableType[VariableName]
+	GeomPhiData = None
 	for egrp in range(mesh.nElemGroup):
 		ElemErr.Arrays[egrp][:] = 0.
 
@@ -40,7 +44,7 @@ def L2_error(mesh,EqnSet,EndTime,VariableName):
 
 			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis, 2*np.amax([Order,1]), EqnSet, quadData)
 			if QuadChanged:
-				quadData = QuadData(mesh, egrp, EntityType.Element, QuadOrder)
+				quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
 
 			nq = quadData.nquad
 			xq = quadData.xquad
@@ -54,17 +58,21 @@ def L2_error(mesh,EqnSet,EndTime,VariableName):
 
 			JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
 
-			xphys = Ref2Phys(mesh, egrp, elem, PhiData, nq, xq, xphys)
-			u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=EndTime)
+			xphys, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
+			u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
 
 			# interpolate state at quad points
 			u = np.zeros([nq, sr])
 			for ir in range(sr):
 				u[:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
 
+			# Computed requested quantity
+			s = EqnSet.ComputeScalars(VariableName, u, nq)
+			s_exact = EqnSet.ComputeScalars(VariableName, u_exact, nq)
+
 			err = 0.
 			for iq in range(nq):
-				err += (u[iq,ier] - u_exact[iq,ier])**2.*wq[iq] * JData.detJ[iq*(JData.nq != 1)]
+				err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.detJ[iq*(JData.nq != 1)]
 			ElemErr.Arrays[egrp][elem] = err
 			TotErr += ElemErr.Arrays[egrp][elem]
 
@@ -72,6 +80,7 @@ def L2_error(mesh,EqnSet,EndTime,VariableName):
 	TotErr = np.sqrt(TotErr/TotVol)
 
 	# print("Total volume = %g" % (TotVol))
-	print("Total error = %g" % (TotErr))
+	if PrintError:
+		print("Total error = %g" % (TotErr))
 
 	return TotErr, ElemErr

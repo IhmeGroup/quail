@@ -1,7 +1,7 @@
 import numpy as np
 import code
-from Basis import ComputeInvMassMatrices
-
+import Basis
+import Data
 
 def MultInvMassMatrix(mesh, solver, dt, R, U):
 	EqnSet = solver.EqnSet
@@ -28,4 +28,34 @@ def MultInvMassMatrix(mesh, solver, dt, R, U):
 			U_ = U.Arrays[egrp][elem]
 			U_[:,:] = c*np.matmul(MMinv_all.Arrays[egrp][elem], R.Arrays[egrp][elem])
 			# code.interact(local=locals())
+
+
+def ProjectStateToNewBasis(solver, EqnSet, mesh, basis_old, Order_old):
+	''' Old state '''
+	U = EqnSet.U
+
+	''' Allocate new state '''
+	# New basis, order information stored in EqnSet
+	ArrayDims = [[mesh.nElems[egrp],Basis. Order2nNode(EqnSet.Bases[egrp], EqnSet.Orders[egrp]), EqnSet.StateRank] \
+					for egrp in range(mesh.nElemGroup)]
+	U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
+
+	''' Loop through elements '''
+	for EG in mesh.ElemGroups:
+		basis = EqnSet.Bases[egrp]
+		Order = EqnSet.Orders[egrp]
+		## New mass matrix inverse (in reference space)
+		MMinv,_ = Basis.GetElemInvMassMatrix(mesh, basis, Order)
+		## Projection matrix
+		PM = Basis.GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv)
+		for elem in range(EG.nElem):
+			Uc = U.Arrays[egrp][elem]
+			Uc_new = U_new.Arrays[egrp][elem]
+
+			# New coefficients
+			Uc_new[:] = np.matmul(PM, Uc)
+
+	''' Store in EqnSet '''
+	delattr(EqnSet, "U")
+	EqnSet.U = U_new
 			

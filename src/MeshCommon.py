@@ -70,11 +70,11 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 			BF = BFG.BFaces[0]
 			BF.ElemGroup = 0
 			if i == 0:
-				BFG.Title = "Left"
+				BFG.Name = "Left"
 				BF.Elem = 0
 				BF.face = 0
 			else:
-				BFG.Title = "Right"
+				BFG.Name = "Right"
 				BF.Elem = nElem - 1
 				BF.face = 1
 		
@@ -100,6 +100,16 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 			Face_ = EGroup.Faces[elem][i]
 			Face_.Type = INTERIORFACE
 			Face_.Number = elem + i
+			if not Periodic:
+				if elem == 0 and i == 0:
+					Face_.Type = NULLFACE
+					Face_.Number = 0
+				elif elem == EGroup.nElem-1 and i == 1:
+					Face_.Type = NULLFACE
+					Face_.Number = 1
+				else:
+					Face_.Number = elem + i - 1
+
 
 	# EGroup.Elem2Nodes = np.zeros([EGroup.nElem,EGroup.nNodePerElem], dtype=int)
 	EGroup.AllocElem2Nodes()
@@ -107,7 +117,8 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 		for i in range(EGroup.nNodePerElem):
 			EGroup.Elem2Nodes[elem][i] = elem + i
 
-	mesh.Finalize()
+	mesh.AllocHelpers()
+	mesh.FillFaces()
 
 	return mesh
 

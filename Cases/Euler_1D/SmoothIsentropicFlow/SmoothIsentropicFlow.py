@@ -23,7 +23,7 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 
 ### Physics
-EqnSet = Euler.Euler(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
+EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="Roe")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
@@ -31,29 +31,22 @@ EqnSet.IC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
 EqnSet.ExactSoln.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
 # Boundary conditions
 if not Periodic:
-	for ibfgrp in range(mesh.nBFaceGroup):
-		BC = EqnSet.BCs[ibfgrp]
-		## Left
-		if BC.Title is "Left":
-			BC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
-		elif BC.Title is "Right":
-			BC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
-			# BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-		else:
-			raise Exception("BC error")
+	EqnSet.SetBC("Left",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
+	EqnSet.SetBC("Right",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
 
 
 ### Solve
 solver = Solver.DG_Solver(Params,EqnSet,mesh)
-solver.ApplyTimeScheme()
+solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, EndTime, "Density")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Density")
 # Plot
 Plot.PreparePlot()
-Plot.Plot1D(mesh, EqnSet, EndTime, "XMomentum")
+Plot.PlotSolution(mesh, EqnSet, solver.Time, "Energy", PlotExact=True, Equidistant=True)
+Plot.ShowPlot()
 
 
 # code.interact(local=locals())

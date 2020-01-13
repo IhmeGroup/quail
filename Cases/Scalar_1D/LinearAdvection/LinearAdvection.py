@@ -46,9 +46,9 @@ if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BC = EqnSet.BCs[ibfgrp]
 		## Left
-		if BC.Title is Inflow:
+		if BC.Name is Inflow:
 			BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
-		elif BC.Title is Outflow:
+		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
 			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
 		else:
@@ -57,7 +57,7 @@ if not Periodic:
 
 ### Solve
 solver = Solver.DG_Solver(Params,EqnSet,mesh)
-solver.ApplyTimeScheme()
+solver.solve()
 
 
 ### Postprocess
@@ -65,7 +65,8 @@ solver.ApplyTimeScheme()
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.Plot1D(mesh, EqnSet, solver.Time, "Scalar", Label="Q")
+Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, Label="Q_h")
+Plot.ShowPlot()
 
 
 # code.interact(local=locals())
