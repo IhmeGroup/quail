@@ -3,7 +3,7 @@
 ## 1D scalar advection
 python Cases/Scalar_1D/LinearAdvection/LinearAdvection.py
 
-## 1D nonlinear advection (Riemann problem)
+## 1D nonlinear advection (Inviscid Burger's)
 python Cases/Scalar_1D/BurgersEquation/1DRiemann.py
 
 ## 1D Euler
