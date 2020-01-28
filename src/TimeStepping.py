@@ -168,4 +168,53 @@ class LSRK4(FE):
 
 		return R
 
+class SSPRK3(FE):
+	# Low-storage SSPRK3 with 5 stages (as written in Spiteri. 2002)
+        def __init__(self, dt=0.):
+		FE.__init__(self, dt)
+		self.ssprk3a = np.array([	0.0, \
+ 			-2.60810978953486, \
+ 			-0.08977353434746, \
+			-0.60081019321053, \
+			-0.72939715170280])
+		self.ssprk3b = np.array([ 0.67892607116139, \
+			0.20654657933371, \
+			0.27959340290485, \
+			0.31738259840613, \
+			0.30319904778284])
+		self.nStage = 5
+
+	def TakeTimeStep(self, solver):
+		EqnSet = solver.EqnSet
+		DataSet = solver.DataSet
+		mesh = solver.mesh
+		U = EqnSet.U
+
+		# Residual, dU arrays
+		try:
+			R = DataSet.R
+		except AttributeError:
+			R = ArrayList(SimilarArray=U)
+			DataSet.R = R
+		try:
+			dU = DataSet.dU
+		except AttributeError:
+			dU = ArrayList(SimilarArray=U)
+			DataSet.dU = dU
+		try:	
+			dUtemp = DataSet.dUtemp
+		except AttributeError:
+			dUtemp = ArrayList(SimilarArray=U)
+			DataSet.dUtemp = dUtemp
+
+		Time = solver.Time
+		for INTRK in range(self.nStage):
+			solver.Time = Time + self.dt
+			R = solver.CalculateResidual(U, R)
+			MultInvMassMatrix(mesh, solver, self.dt, R, dUtemp)
+			dU.ScaleByFactor(self.ssprk3a[INTRK])
+			dU.AddToSelf(dUtemp)
+			U.AddToSelf(dU, c=self.ssprk3b[INTRK])
+			solver.ApplyLimiter(U)
+		return R	
 
