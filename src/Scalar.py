@@ -2,6 +2,7 @@ import numpy as np
 from Basis import *
 from General import *
 import code
+import Errors
 from Data import ArrayList, ICData, BCData, ExactData
 
 
@@ -76,17 +77,21 @@ class Scalar(object):
 		# for i in range(1,mesh.nElemGroup):
 		# 	self.U.append(Uarray[nElems[i-1]:nElems[i]])
 
+	#Brett: Added the advectionOperator to determin if using linear vs non-linear advection term.
 	def SetParams(self,**kwargs):
 		Params = self.Params
 		# Default values
 		if not Params:
-			Params["Velocity"] = 1.
+			Params["ConstVelocity"] = 1.
+			Params["AdvectionOperator"] = self.AdvectionOperatorType["ConstVel"]
 			Params["ConvFlux"] = self.ConvFluxType["Upwind"]
 		# Overwrite
 		for key in kwargs:
 			if key not in Params.keys(): raise Exception("Input error")
 			if key is "ConvFlux":
 				Params[key] = self.ConvFluxType[kwargs[key]]
+			elif key is "AdvectionOperator":
+				Params[key] = self.AdvectionOperatorType[kwargs[key]]
 			else:
 				Params[key] = kwargs[key]
 
@@ -137,25 +142,40 @@ class Scalar(object):
 
 	class ConvFluxType(IntEnum):
 	    Upwind = 0
+	    LaxFriedrichs = 1
+
+	class AdvectionOperatorType(IntEnum):
+		ConstVel=0
+		Burgers=1
 
 	def QuadOrder(self, Order):
 		return 2*Order+1
 
 	def getWaveSpeed(self):
-		return self.Params["Velocity"]
+		return self.Params["ConstVelocity"]
+
+	#Brett Addition: Calculate velocity based on the 
+	def getAdvOperator(self, u):
+		if self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
+			c = u/2
+			return c
+		elif self.Params["AdvectionOperator"] == self.AdvectionOperatorType.ConstVel:
+			c = self.Params["ConstVelocity"]
+			return c
 
 	def ConvFluxInterior(self, u, F):
-		a = self.Params["Velocity"]
+		c = self.getAdvOperator(u)
+		#a = self.Params["Velocity"]
 		if F is None:
 			F = np.zeros(u.shape + (self.Dim,))
 		for d in range(self.Dim):
-			F[:,:,d] = a*u
+			F[:,:,d] = c*u
 		# F = a*u
 		# F.shape = u.shape + (self.Dim,) 
 		return F
 
-	def ConvFluxUpwind(self, uL, uR, a, n):
-		Vn = a*n 
+	def ConvFluxUpwind(self, uL, uR, c, n):
+		Vn = c*n 
 
 		# upwind
 		if Vn >= 0.:
@@ -169,28 +189,65 @@ class Scalar(object):
 
 		return F
 
+	def ConvFluxLaxFriedrichs(self, uL, uR, c, n):
+
+		# Left state
+		ul1 = self.getAdvOperator(uL) 
+		fL      = (ul1*uL)
+
+		# Right state
+		ur1 = self.getAdvOperator(uR)
+		fR 		= (ur1*uR)
+
+		du = uR - uL
+		# Check flow direction
+		if np.sign(c)<0:
+			c = -c
+
+		# flux assembly 
+		F = (0.5*n*(fL+fR) - 0.5*c*du)
+		#code.interact(local=locals())
+
+		return F
+
 	def ConvFluxNumerical(self, uL, uR, NData, nq, data):
 		# nq = NData.nq
 		if nq != uL.shape[0] or nq != uR.shape[0]:
-			raise Exception("Wrong nq")
-
-		if self.Params["ConvFlux"] != self.ConvFluxType.Upwind:
-			raise Exception("Invalid inviscid flux function")
+			raise Exception("Wrong nq")	
 
 		try: 
 			F = data.F
 		except AttributeError: 
 			data.F = F = np.zeros_like(uL)
 
-		a = self.Params["Velocity"]
-		ConvFlux = self.Params["ConvFlux"]
+	    #Calculate the max speed and keep its sign.
+		u = max(abs(uL),abs(uR))
+ 		
+ 		if u == abs(uL):
+ 			usign = np.sign(uL)
+ 		elif u == abs(uR):
+ 			usign = np.sign(uR)
+ 		u = usign*u
+
+		c = self.getAdvOperator(u)
+		ConvFlux = self.Params["ConvFlux"] 
+
+
+
+
+
+		if ConvFlux == self.ConvFluxType.Upwind \
+			and self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
+			raise Errors.IncompatibleError
 
 		for iq in range(nq):
 			nvec = NData.nvec[iq,:]
 			n = nvec/np.linalg.norm(nvec)
 
 			if ConvFlux == self.ConvFluxType.Upwind:
-				F[iq,:] = self.ConvFluxUpwind(uL[iq,:], uR[iq,:], a, n)
+				F[iq,:] = self.ConvFluxUpwind(uL[iq,:], uR[iq,:], c, n)
+			elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
+				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c, n)
 			else:
 				raise Exception("Invalid flux function")
 
@@ -303,9 +360,23 @@ class Scalar(object):
 		except AttributeError:
 			omega = 2.*np.pi
 
-		a = self.Params["Velocity"]
+		c = self.getAdvOperator(U)
+		U[:] = np.sin(omega*(x-c*t))
 
-		U[:] = np.sin(omega*(x-a*t))
+		return U
+
+	def FcnShiftedCose(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		try:
+			omega = Data.omega
+		except AttributeError:
+			omega = 2.*np.pi
+
+		U[:] = 1-np.cos(omega*x)
 
 		return U
 
@@ -323,5 +394,37 @@ class Scalar(object):
 		U[:] = np.exp(theta*x)
 
 		return U
+
+	def FcnScalarShock(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		try:
+			minVal = Data.minVal
+		except AttributeError:
+			minVal = 1.
+		try:
+			maxVal = Data.maxVal
+		except AttributeError:
+			maxVal = 2.
+		try:
+			xshock = Data.xshock
+		except AttributeError:
+			xshock = -0.5
+		''' Fill state '''
+		us = 0.5*(minVal+maxVal)
+		xshock = xshock+us*t
+		ileft = (x <= xshock).reshape(-1)
+		iright = (x > xshock).reshape(-1)
+
+		U[ileft]=maxVal
+		U[iright]=minVal
+
+		return U
+
+
+
 
 	

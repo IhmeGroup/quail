@@ -39,6 +39,8 @@ class DG_Solver(object):
 			TimeStepper = RK4()
 		elif TimeScheme is "LSRK4":
 			TimeStepper = LSRK4()
+ 		elif TimeScheme is "SSPRK3":
+			TimeStepper = SSPRK3()
 		else:
 			raise NotImplementedError("Time scheme not supported")
 		# if Params["nTimeStep"] > 0:

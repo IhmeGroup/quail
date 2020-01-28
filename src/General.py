@@ -32,6 +32,7 @@ class BasisType(IntEnum):
 
 class LimiterType(IntEnum):
     PositivityPreserving = 0
+    ScalarPositivityPreserving = 1
 
 
 INTERIORFACE = -1

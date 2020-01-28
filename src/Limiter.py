@@ -14,6 +14,8 @@ def SetLimiter(limiterType):
 		return None
 	elif limiterType is General.LimiterType.PositivityPreserving.name:
 		return PPLimiter()
+	elif limiterType is General.LimiterType.ScalarPositivityPreserving.name:
+		return PPScalarLimiter()
 	else:
 		raise NotImplementedError
 
@@ -244,6 +246,189 @@ class PPLimiter(object):
 
 		return U
 
+class PPScalarLimiter(object):
+	def __init__(self):
+		# self.StaticData = Data.GenericData()
+		pass
+
+	def LimitSolution(self, solver, U):
+		EqnSet = solver.EqnSet
+		mesh = solver.mesh
+		# U = EqnSet.U.Arrays
+		StaticData = None
+
+		for egrp in range(mesh.nElemGroup):
+			for elem in range(mesh.nElems[egrp]):
+				U.Arrays[egrp][elem] = self.LimitElement(solver, egrp, elem, U.Arrays[egrp][elem], StaticData)
+
+	def LimitElement(self, solver, egrp, elem, U, StaticData):
+		EqnSet = solver.EqnSet
+		mesh = solver.mesh
+
+		basis = EqnSet.Bases[egrp]
+		Order = EqnSet.Orders[egrp]
+		entity = General.EntityType.Element
+		sr = EqnSet.StateRank
+		dim = EqnSet.Dim
+		Faces = mesh.ElemGroups[egrp].Faces[elem]
+		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+
+		scalar1 = "u"
+
+		if StaticData is None:
+			nq_prev = 0
+			quadElem = None
+			quadFace = None
+			PhiElem = None
+			xelem = None
+			JData = JData = Basis.JacobianData(mesh)
+			u = None
+			u_bar = None
+			u_D = None
+			theta = None
+			StaticData = Data.GenericData()
+		else:
+			nq_prev = StaticData.nq_prev
+			quadElem = StaticData.quadElem
+			quadFace = StaticData.quadFace
+			PhiElem = StaticData.PhiElem
+			xelem = StaticData.xelem
+			JData = StaticData.JData
+			u = StaticData.u
+			u_bar = StaticData.u_bar
+			u_D = StaticData.u_D
+			theta = StaticData.theta
+			Faces2PhiData = StaticData.Faces2PhiData
+
+		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet, quadElem)
+		if QuadChanged:
+			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
+
+		nq = quadElem.nquad
+		xq = quadElem.xquad
+		wq = quadElem.wquad
+
+		# PhiData = BasisData(egrp,Order,entity,nq,xq,mesh,True,True)
+		if QuadChanged:
+			PhiElem = Basis.BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
+			PhiElem.EvalBasis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
+
+			u = np.zeros([nq, sr])
+			u_bar = np.zeros([1, sr])
+			F = np.zeros([nq, sr, dim])
+
+
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
+
+		nn = PhiElem.nn
+
+		# interpolate state and gradient at quad points
+		# u = np.zeros([nq, sr])
+		u[:] = np.matmul(PhiElem.Phi, U)
+
+		# Multiply quadrature weights by Jacobian determinant
+		# wq *= JData.detJ
+
+		# Average value of state
+		vol = np.sum(wq*JData.detJ)
+		u_bar[:] = np.matmul(u.transpose(), wq*JData.detJ).T/vol
+
+		''' Get relevant quadrature points '''
+
+		nq_eval = nq
+		nq_elem = nq
+		# Loop through faces
+		for face in range(nFacePerElem):
+			Face = Faces[face]
+			egN, eN, faceN = MeshTools.NeighborAcrossFace(mesh, egrp, elem, face)
+			if Face.Type == Mesh.FaceType.Boundary:
+				# boundary face
+				egN = egrp; eN = elem; faceN = face
+				BFG = mesh.BFaceGroups[Face.Group]
+				BF = BFG.BFaces[Face.Number]
+				entity = General.EntityType.IFace
+				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadFace)
+			else:
+				IF = mesh.IFaces[Face.Number]
+				OrderN = EqnSet.Orders[egN]
+				entity = General.EntityType.BFace
+				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.ElemGroups[egrp].QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+
+			if QuadChanged:
+				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
+
+			nq = quadFace.nquad
+			xq = quadFace.xquad
+			wq = quadFace.wquad
+
+			if QuadChanged:
+				Faces2PhiData = [None for i in range(nFacePerElem)]
+				uf = np.zeros([nq, sr])
+
+			PhiData = Faces2PhiData[face]
+			if PhiData is None or QuadChanged:
+				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
+				xelem = PhiData.EvalBasisOnFace(mesh, egrp, face, xq, xelem, Get_Phi=True)
+
+			if face == 0:
+				# first face
+				if nq_prev == 0: 
+					# Best guess for size
+					nq_prev = nq_elem + nFacePerElem*nq
+					u_D = np.zeros([nq_prev, sr])
+
+				# Fill in element interior values
+				u_D[:nq_eval,:] = u
+
+			''' Interpolate state to face quadrature points '''
+			uf[:] = np.matmul(PhiData.Phi, U)
+			# Increment nq_eval
+			nq_eval += nq
+			if nq_eval > nq_prev:
+				# resize
+				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,sr])))
+				nq_prev = nq_eval
+			# Add to u_D
+			u_D[nq_eval-nq:nq_eval,:] = uf
+
+		# Final resize
+		if nq_prev != nq_eval:
+			nq_prev = nq_eval
+			u_D = u_D[:nq_eval,:]
+
+		if theta is None or theta.shape[0] != nq_eval:
+			theta = np.zeros([nq_eval,1])
+
+		np.seterr(divide='ignore')
+
+		''' Limit density '''
+		# Compute density
+		theta[:] = np.abs((u_bar - PosTol)/(u_bar - u_D))
+		theta1 = np.amin([1.,np.amin(theta)])
+
+		# Rescale
+		if theta1 < 1.:
+			#		iU = EqnSet.GetStateIndex(scalar1)
+			iU = 1
+			#code.interact(local=locals())
+			#U[:,iU] = theta1*U[:,iU] + (1. - theta1)*u_bar
+			U[:] = theta1*U[:] + (1. - theta1)*u_bar
+		np.seterr(divide='warn')
+
+		# Store in StaticData
+		StaticData.nq_prev = nq_prev
+		StaticData.quadElem = quadElem
+		StaticData.quadFace = quadFace
+		StaticData.PhiElem = PhiElem
+		StaticData.xelem = xelem
+		StaticData.JData = JData
+		StaticData.u = u
+		StaticData.u_bar = u_bar
+		StaticData.u_D = u_D
+		StaticData.theta = theta
+		StaticData.Faces2PhiData = Faces2PhiData
+
+		return U
 
 
 
