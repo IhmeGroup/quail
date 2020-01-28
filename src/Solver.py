@@ -61,6 +61,7 @@ class DG_Solver(object):
 	def CheckSolverParams(self):
 		Params = self.Params
 		mesh = self.mesh
+		EqnSet = self.EqnSet
 		### Check interp basis validity
 		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange:
 		    if mesh.Dim != 1:
@@ -89,7 +90,12 @@ class DG_Solver(object):
 		            raise Errors.IncompatibleError
 
 		### Check limiter ###
-
+		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
+			and EqnSet.StateRank > 1:
+				raise Errors.IncompatibleError
+		if Params["ApplyLimiter"] is 'PositivityPreserving' \
+			and EqnSet.StateRank == 1:
+				raise Errors.IncompatibleError
 
 
 	def InitState(self):

@@ -77,7 +77,6 @@ class Scalar(object):
 		# for i in range(1,mesh.nElemGroup):
 		# 	self.U.append(Uarray[nElems[i-1]:nElems[i]])
 
-	#Brett: Added the advectionOperator to determin if using linear vs non-linear advection term.
 	def SetParams(self,**kwargs):
 		Params = self.Params
 		# Default values
@@ -154,7 +153,7 @@ class Scalar(object):
 	def getWaveSpeed(self):
 		return self.Params["ConstVelocity"]
 
-	#Brett Addition: Calculate velocity based on the 
+	#Calculate velocity based on the advection operator
 	def getAdvOperator(self, u):
 		if self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
 			c = u/2
