@@ -89,7 +89,12 @@ class DG_Solver(object):
 		            raise Errors.IncompatibleError
 
 		### Check limiter ###
-
+		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
+			and EqnSet.StateRank > 1:
+				raise IncompatibleError
+		if Params["ApplyLimiter"] is 'PositivityPreserving' \
+			and EqnSet.StateRank == 1:
+				raise IncompatibleError
 
 
 	def InitState(self):
