@@ -3,7 +3,7 @@ from Basis import *
 from General import *
 import code
 import Errors
-from Data import ArrayList, ICData, BCData, ExactData
+from Data import ArrayList, ICData, BCData, ExactData, SourceData
 
 
 class Scalar(object):
@@ -30,7 +30,7 @@ class Scalar(object):
 		self.ExactSoln = ExactData()
 		self.ConvFluxFcn = None
 		self.BCTreatments = {}
-
+		self.Sources = []
 		# Boundary conditions
 		# self.BCs = []
 		# for ibfgrp in range(mesh.nBFaceGroup):
@@ -59,6 +59,8 @@ class Scalar(object):
 		ArrayDims = [[mesh.nElems[egrp],Order2nNode(self.Bases[egrp], self.Orders[egrp]), self.StateRank] \
 					for egrp in range(mesh.nElemGroup)]
 		self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+		self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+
 
 		# BC treatments
 		self.SetBCTreatment()
@@ -147,6 +149,12 @@ class Scalar(object):
 		ConstVel=0
 		Burgers=1
 
+	def SetSource(self, **kwargs):
+		#append src data to Sources list 
+		Source = SourceData()
+		self.Sources.append(Source)
+		Source.Set(**kwargs)
+
 	def QuadOrder(self, Order):
 		return 2*Order+1
 
@@ -205,6 +213,7 @@ class Scalar(object):
 
 		# flux assembly 
 		F = (0.5*n*(fL+fR) - 0.5*c*du)
+
 		#code.interact(local=locals())
 
 		return F
@@ -268,6 +277,19 @@ class Scalar(object):
 			raise Exception("BC type not supported")
 
 		return uB
+
+	#Source state takes multiple source terms (if needed) and sums them together. 
+	def SourceState(self, nq, xglob, Time, NData, u, s=None):
+		for Source in self.Sources:
+
+			#loop through available source terms
+			Source.x = xglob
+			Source.nq = nq
+			Source.Time = Time
+			Source.U = u
+			s += self.CallSourceFunction(Source)
+
+		return s
 
 	def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
 		bctreatment = self.BCTreatments[BC.BCType]
@@ -338,6 +360,25 @@ class Scalar(object):
 
 		return FcnData.U
 
+	def CallSourceFunction(self, FcnData, **kwargs):
+		for key in kwargs:
+			if key is "x":
+				FcnData.x = kwargs[key]
+				FcnData.nq = FcnData.x.shape[0]
+			elif key is "Time":
+				FcnData.Time = kwargs[key]
+			else:
+				raise Exception("Input error")
+
+		nq = FcnData.nq
+		sr = self.StateRank
+		if FcnData.S is None or FcnData.S.shape != (nq, sr):
+			FcnData.S = np.zeros([nq, sr],dtype=self.S.Arrays[0].dtype)
+
+		FcnData.S[:] = FcnData.Function(FcnData)
+
+		return FcnData.S
+
 	def FcnUniform(self, FcnData):
 		Data = FcnData.Data
 		U = FcnData.U
@@ -401,27 +442,61 @@ class Scalar(object):
 		Data = FcnData.Data
 
 		try:
-			minVal = Data.minVal
+			uR = Data.uR
 		except AttributeError:
-			minVal = 1.
+			uR = 0.
 		try:
-			maxVal = Data.maxVal
+			uL = Data.uL
 		except AttributeError:
-			maxVal = 2.
+			uL = 1.
 		try:
 			xshock = Data.xshock
 		except AttributeError:
 			xshock = -0.5
 		''' Fill state '''
-		us = 0.5*(minVal+maxVal)
+		us = 0.5*(uR+uL)
 		xshock = xshock+us*t
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
 
-		U[ileft]=maxVal
-		U[iright]=minVal
+		U[ileft]=uL
+		U[iright]=uR
 
 		return U
+
+		# Source Term Functions
+	def FcnStiffSource(self,FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		S = FcnData.S
+		Data = FcnData.Data
+
+		try:
+			beta = Data.beta
+		except AttributeError:
+			beta = 0.5
+		try: 
+			stiffness = Data.stiffness
+		except AttributeError:
+			stiffness = 1.
+
+		S[:] = (1./stiffness)*(1.-U[:])*(U[:]-beta)*U[:]
+
+
+		return S
+
+	def FcnDummySource(self,FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		S = FcnData.S
+		Data = FcnData.Data
+
+		print('dummy')
+
+
+		return S
 
 
 

@@ -54,6 +54,11 @@ class BCData(ICData):
     #     for key in kwargs:
     #         self.Data.__dict__[key] = kwargs[key]
 
+class SourceData(ICData):
+    def __init__(self):
+        SourceData.Name = ""
+        SourceData.S = None
+        ICData.__init__(self)
 
 class ExactData(ICData):
     def __init__(self):
