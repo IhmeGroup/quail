@@ -61,6 +61,7 @@ class DG_Solver(object):
 	def CheckSolverParams(self):
 		Params = self.Params
 		mesh = self.mesh
+		EqnSet = self.EqnSet
 		### Check interp basis validity
 		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange:
 		    if mesh.Dim != 1:
@@ -199,6 +200,8 @@ class DG_Solver(object):
 			xglob = None
 			u = None
 			F = None
+			s = None
+			NData = None
 			GeomPhiData = None
 			StaticData = GenericData()
 		else:
@@ -209,6 +212,8 @@ class DG_Solver(object):
 			xglob = StaticData.xglob
 			u = StaticData.u
 			F = StaticData.F
+			s = StaticData.s
+			NData = StaticData.NData
 			GeomPhiData = StaticData.GeomPhiData
 
 
@@ -229,6 +234,8 @@ class DG_Solver(object):
 			xglob = np.zeros([nq, dim])
 			u = np.zeros([nq, sr])
 			F = np.zeros([nq, sr, dim])
+			s = np.zeros([nq, sr])
+
 
 
 		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
@@ -257,6 +264,15 @@ class DG_Solver(object):
 					gPhi = PhiData.gPhi[iq,jn] # dim
 					ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
 
+
+		s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr,dim]
+		# Calculate source term integral
+		for ir in range(sr):
+			for jn in range(nn):
+				for iq in range(nq):
+					Phi = PhiData.Phi[iq,jn]
+					ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
+
 		if elem == echeck:
 			code.interact(local=locals())
 
@@ -268,6 +284,8 @@ class DG_Solver(object):
 		StaticData.xglob = xglob
 		StaticData.u = u
 		StaticData.F = F
+		StaticData.s = s
+		StaticData.NData = NData
 		StaticData.GeomPhiData = GeomPhiData
 
 		return ER, StaticData
