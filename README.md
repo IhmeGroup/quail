@@ -6,6 +6,9 @@ python Cases/Scalar_1D/LinearAdvection/LinearAdvection.py
 ## 1D nonlinear advection (Inviscid Burger's)
 python Cases/Scalar_1D/BurgersEquation/1DRiemann.py
 
+## 1D nonlinear advection with a stiff source term
+python Cases/Scalar_1D/BurgersEquation/invBurgersStiffSource.py
+
 ## 1D Euler
 python Cases/Euler_1D/SmoothIsentropicFlow/SmoothIsentropicFlow.py
 
