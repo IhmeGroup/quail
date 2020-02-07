@@ -31,9 +31,9 @@ FaceShape = {
 
 
 RefQ1Coords = {
-    BasisType.SegLagrange : np.array([[0.],[1.]]),
-    BasisType.QuadLagrange : np.array([[0.,0.],[1.,0.],
-                                [0.,1.],[1.,1.]]),
+    BasisType.SegLagrange : np.array([[-1.],[1.]]),
+    BasisType.QuadLagrange : np.array([[-1.,-1.],[1.,-1.],
+                                [-1.,1.],[1.,1.]]),
     BasisType.TriLagrange : np.array([[0.,0.],[1.,0.],
                                 [0.,1.]]),
 }
@@ -149,9 +149,9 @@ def EquidistantNodes(basis, p, xn=None):
         return xn, nn
 
     if basis == BasisType.SegLagrange:
-        xn[:,0] = np.linspace(0.,1.,p+1)
+        xn[:,0] = np.linspace(-1.,1.,p+1)
     elif basis == BasisType.QuadLagrange:
-        xseg = np.linspace(0.,1.,p+1)
+        xseg = np.linspace(-1.,1.,p+1)
         n = 0
         for i in range(p+1):
             xn[n:n+p+1,0] = xseg
@@ -470,7 +470,7 @@ def Shape_TensorLagrange(dim, p, x, phi):
 
     nnode = p + 1
     xnode = np.zeros(nnode)
-    dx = 1./float(p)
+    dx = 2./(float(p)-1.)
     for i in range(nnode): xnode[i] = float(i)*dx
     if dim == 1:
         BasisLagrange1D(x, xnode, nnode, phi, None)
@@ -568,7 +568,7 @@ def Grad_TensorLagrange(dim, p, x, gphi):
 
     nnode = p + 1
     xnode = np.zeros(nnode)
-    dx = 1./float(p)
+    dx = 2./(float(p)-1.)
     for i in range(nnode): xnode[i] = float(i)*dx
     if dim == 1:
         BasisLagrange1D(x, xnode, nnode, None, gphi)
