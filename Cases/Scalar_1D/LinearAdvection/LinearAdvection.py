@@ -32,7 +32,7 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 ### Physics
 Velocity = 1.
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-EqnSet.SetParams(Velocity=Velocity)
+EqnSet.SetParams(ConstVelocity=Velocity)
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Exact solution
