@@ -470,8 +470,8 @@ def Shape_TensorLagrange(dim, p, x, phi):
 
     nnode = p + 1
     xnode = np.zeros(nnode)
-    dx = 2./(float(p)-1.)
-    for i in range(nnode): xnode[i] = float(i)*dx
+    dx = 2./float(p)
+    for i in range(nnode): xnode[i] = -1. + float(i)*dx
     if dim == 1:
         BasisLagrange1D(x, xnode, nnode, phi, None)
     elif dim == 2:
@@ -568,8 +568,8 @@ def Grad_TensorLagrange(dim, p, x, gphi):
 
     nnode = p + 1
     xnode = np.zeros(nnode)
-    dx = 2./(float(p)-1.)
-    for i in range(nnode): xnode[i] = float(i)*dx
+    dx = 2./float(p)
+    for i in range(nnode): xnode[i] = -1. + float(i)*dx
     if dim == 1:
         BasisLagrange1D(x, xnode, nnode, None, gphi)
     if dim == 2:
@@ -717,6 +717,28 @@ def Grad_TriLagrange(p, xi, gphi):
         +9375.0/2.0*x*x*y*y+3125.0*x*y*y*y
         gphi[13,1] =  125.0/4.0*x-375.0/2.0*x*x-375.0*x*y+625.0/4.0*x*x*x+4375.0/2.0*x*x*y+1875.0/4.0*x*y*y-3125.0/2.0*x*x*x*y-9375.0/4.0*x*x*y*y
         gphi[16,1] =  125.0/3.0*x-125.0/3.0*x*x-2125.0/3.0*x*y+625.0*x*x*y+2500.0*x*y*y-3125.0/2.0*x*x*y*y-6250.0/3.0*x*y*y*y
+
+
+# def BasisLegendre1D(x, xnode, nnode, phi, gphi):
+    
+    # for j in range(nnode):
+        
+        
+
+    #     if phi is not None:
+    #         pj = 1.
+    #         for i in range(j): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
+    #         for i in range(j+1,nnode): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
+    #         phi[j] = pj
+    #     if gphi is not None:
+    #         gphi[j] = 0.0;
+    #         for i in range(nnode):
+    #             if i != j:
+    #                 g = 1./(xnode[j] - xnode[i])
+    #                 for k in range(nnode):
+    #                     if k != i and k != j:
+    #                         g *= (x - xnode[k])/(xnode[j] - xnode[k])
+    #                 gphi[j] += g
 
 
 class BasisData(object):

@@ -99,7 +99,7 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
     '''
     if Shape == ShapeType.Segment:
         if xelem is None: xelem = np.zeros([1,1])
-        if face == 0: xelem[0] = 0.
+        if face == 0: xelem[0] = -1.
         elif face == 1: xelem[0] = 1.
         else: raise ValueError
     elif Shape == ShapeType.Quadrilateral:
@@ -112,16 +112,31 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
         x0 = Basis.RefQ1Coords[BasisType.QuadLagrange][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.QuadLagrange][fnodes[1]]
         for i in range(nq):
-            xelem[i,:] = (1. - xface[i])*x0 + xface[i]*x1
+            if face == 0:
+                xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+                xelem[i,1] = -1.
+            elif face == 1:
+                xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+                xelem[i,0] = 1.
+            elif face == 2:
+                xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+                xelem[i,1] = 1.
+            else:
+                xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+                xelem[i,0] = -1.
+        #code.interact(local=locals())
     elif Shape == ShapeType.Triangle:
         if xelem is None: xelem = np.zeros([nq,2])
+        xf = np.zeros(nq)
+        xf = xf.reshape((nq,1))
         # local q = 1 nodes on face
         fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.TriLagrange, 1, face)
         # coordinates of local q = 1 nodes on face
         x0 = Basis.RefQ1Coords[BasisType.TriLagrange][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.TriLagrange][fnodes[1]]
         for i in range(nq):
-            xelem[i,:] = (1. - xface[i])*x0 + xface[i]*x1
+            xf[i] = (xface[i] + 1.)/2.
+            xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
     else:
         raise NotImplementedError
 
@@ -238,6 +253,7 @@ class NormalData(object):
         nvec = self.nvec
         self.nq = nq
 
+        #1D normals calculation
         if Shape == ShapeType.Segment:
             if face == 0:
                 nvec[0] = -1.
@@ -245,6 +261,7 @@ class NormalData(object):
                 nvec[0] = 1.
             else:
                 raise ValueError
+        #2D normals calculation
         elif Shape == ShapeType.Quadrilateral or Shape == ShapeType.Triangle:
             ElemNodes = EG.Elem2Nodes[elem]
             if QOrder == 1:
@@ -252,8 +269,9 @@ class NormalData(object):
                 x0 = mesh.Coords[ElemNodes[self.fnodes[0]]]
                 x1 = mesh.Coords[ElemNodes[self.fnodes[1]]]
 
-                nvec[0,0] =  (x1[1]-x0[1]);
-                nvec[0,1] = -(x1[0]-x0[0]);
+                nvec[0,0] =  (x1[1]-x0[1])/2.;
+                nvec[0,1] = -(x1[0]-x0[0])/2.;
+            # Calculate normals for curved meshes (quads)
             else:
                 if self.x_s is None or self.x_s.shape != self.nvec.shape:
                     self.x_s = np.zeros_like(self.nvec)

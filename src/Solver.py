@@ -171,7 +171,6 @@ class DG_Solver(object):
 				else:
 					U_[elem] = f
 
-
 	def ApplyLimiter(self, U):
 		if self.Limiter is not None:
 			self.Limiter.LimitSolution(self, U)
