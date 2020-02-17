@@ -41,6 +41,8 @@ class DG_Solver(object):
 			TimeStepper = LSRK4()
  		elif TimeScheme is "SSPRK3":
 			TimeStepper = SSPRK3()
+		elif TimeScheme is "ADER":
+			TimeStepper = ADER()
 		else:
 			raise NotImplementedError("Time scheme not supported")
 		# if Params["nTimeStep"] > 0:
@@ -589,7 +591,7 @@ class DG_Solver(object):
 
 		EqnSet = self.EqnSet
 		mesh = self.mesh
-
+		order = self.Params["InterpOrder"]
 		TimeStepper = self.TimeStepper
 		Time = self.Time
 
@@ -601,7 +603,7 @@ class DG_Solver(object):
 
 			# Integrate in time
 			# self.Time is used for local time
-			R = TimeStepper.TakeTimeStep(self)
+			R = TimeStepper.TakeTimeStep(self, order)
 
 			# Increment time
 			Time += TimeStepper.dt

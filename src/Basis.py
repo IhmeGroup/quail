@@ -307,6 +307,54 @@ def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
     return SM, StaticData
 
 
+def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=None):
+    if StaticData is None:
+        pnq = -1
+        quadData = None
+        PhiData = None
+        # JData = JacobianData(mesh)
+        StaticData = GenericData()
+    else:
+        nq = StaticData.pnq
+        quadData = StaticData.quadData
+        PhiData = StaticData.PhiData
+        # JData = StaticData.JData
+
+    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis, Order*2, quadData=quadData)
+    #Add one to QuadOrder to adjust the mesh.Dim addition in GetQuadOrderElem.
+    QuadOrder+=1
+    if QuadChanged:
+        quadData = QuadDataADER(mesh, basis, EntityType.Element, QuadOrder)
+    nq = quadData.nquad
+    xq = quadData.xquad
+    wq = quadData.wquad
+
+    if QuadChanged:
+        # PhiData = BasisData(egrp=0,Order,entity=EntityType.Element,nq,xq,mesh,GetPhi=True,GetGPhi=False)
+        PhiData = BasisData(basis,Order,nq,mesh)
+        PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+
+    # JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_iJ=True)
+    #PhiData.EvalBasis(xq, Get_gPhi=True, JData=None)
+    nn = PhiData.nn
+
+    phi = PhiData.Phi
+    GPhi = PhiData.GPhi
+    SM = np.zeros([nn,nn])
+    for i in range(nn):
+        for j in range(nn):
+            t = 0.
+            for iq in range(nq):
+                t += GPhi[iq,i,gradDir]*phi[iq,j]*wq[iq]
+            SM[i,j] = t
+
+    StaticData.pnq = nq
+    StaticData.quadData = quadData
+    StaticData.PhiData = PhiData
+    #StaticData.JData = JData
+    return SM, StaticData
+
+
 def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):
     QuadOrder = np.amax([Order_old+Order, 2*Order])
     quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
@@ -443,7 +491,6 @@ def BasisLagrange1D(x, xnode, nnode, phi, gphi):
                         if k != i and k != j:
                             g *= (x - xnode[k])/(xnode[j] - xnode[k])
                     gphi[j] += g
-
 
 def BasisLagrange2D(x, xnode, nnode, phi, gphi):
     if gphi is not None:
