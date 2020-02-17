@@ -1,13 +1,15 @@
 import numpy as np 
+import code
 from Data import ArrayList
 from SolverTools import MultInvMassMatrix
-
+from Basis import GetStiffnessMatrixADER
+import General
 
 class FE(object):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 
-	def TakeTimeStep(self, solver):
+	def TakeTimeStep(self, solver, order):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -35,7 +37,7 @@ class FE(object):
 
 
 class RK4(FE):
-	def TakeTimeStep(self, solver):
+	def TakeTimeStep(self, solver, order):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -133,7 +135,7 @@ class LSRK4(FE):
 		    2802321613138.0/2924317926251.0])
 		self.nStage = 5
 
-	def TakeTimeStep(self, solver):
+	def TakeTimeStep(self, solver, order):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -184,7 +186,7 @@ class SSPRK3(FE):
 			0.30319904778284])
 		self.nStage = 5
 
-	def TakeTimeStep(self, solver):
+	def TakeTimeStep(self, solver, order):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -217,4 +219,44 @@ class SSPRK3(FE):
 			U.AddToSelf(dU, c=self.ssprk3b[INTRK])
 			solver.ApplyLimiter(U)
 		return R	
+
+
+
+class ADER(object):
+	def __init__(self, dt=0.):
+		self.TimeStep = dt
+
+	def TakeTimeStep(self, solver, order):
+		EqnSet = solver.EqnSet
+		DataSet = solver.DataSet
+		mesh = solver.mesh
+		#Hard code basisType to Quads (currently only designed for 1D)
+		basis = General.BasisType["QuadLagrange"]
+		
+		# Prediction Step
+
+		#Set the initial guess 
+		W = EqnSet.U
+		#Solve system as Ax = b for now (scalar advection only)
+
+		#Construct A
+		#A construction requires the following:	
+
+		#Stiffness matrix in space
+		gradDir = 0
+		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis)
+		#Stiffness matrix in time
+		gradDir = 1
+		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis)
+		code.interact(local=locals())
+		#Stiffness matrix in space 
+		#Flux matrix at time tau=1
+		
+		#R = solver.CalculateResidual(U, R)
+		#MultInvMassMatrix(mesh, solver, self.dt, R, dU)
+		#U.AddToSelf(dU)
+
+		#solver.ApplyLimiter(U)
+
+		return R
 
