@@ -12,6 +12,8 @@ Basis2Shape = {
     BasisType.SegLagrange : ShapeType.Segment,
     BasisType.QuadLagrange : ShapeType.Quadrilateral,
     BasisType.TriLagrange : ShapeType.Triangle,
+    BasisType.SegLegendre : ShapeType.Segment,
+    BasisType.QuadLegendre : ShapeType.Quadrilateral,
 }
 
 
@@ -36,6 +38,9 @@ RefQ1Coords = {
                                 [-1.,1.],[1.,1.]]),
     BasisType.TriLagrange : np.array([[0.,0.],[1.,0.],
                                 [0.,1.]]),
+    BasisType.SegLegendre : np.array([[-1.],[1.]]),
+    BasisType.QuadLegendre : np.array([[-1.,-1.],[1.,-1.],
+                                [-1.,1.],[1.,1.]]),
 }
 
 
@@ -56,7 +61,7 @@ def Order2nNode(basis, p):
 
 
 def LocalQ1FaceNodes(basis, p, face, fnodes=None):
-    if basis == BasisType.SegLagrange:
+    if basis == BasisType.SegLagrange: 
         nfnode = 1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
@@ -148,9 +153,9 @@ def EquidistantNodes(basis, p, xn=None):
         xn[:] = 0.0 # 0.5
         return xn, nn
 
-    if basis == BasisType.SegLagrange:
+    if basis == BasisType.SegLagrange or basis == BasisType.SegLegendre:
         xn[:,0] = np.linspace(-1.,1.,p+1)
-    elif basis == BasisType.QuadLagrange:
+    elif basis == BasisType.QuadLagrange or basis == BasisType.QuadLegendre:
         xseg = np.linspace(-1.,1.,p+1)
         n = 0
         for i in range(p+1):
@@ -398,6 +403,12 @@ def GetShapes(basis, Order, nq, xq, phi=None):
     elif basis == BasisType.TriLagrange:
         for iq in range(nq): 
             Shape_TriLagrange(Order, xq[iq], phi[iq,:])
+    elif basis == BasisType.SegLegendre:
+        for iq in range(nq):
+            Shape_TensorLegendre(1, Order, xq[iq], phi[iq,:])
+    elif basis == BasisType.QuadLegendre:
+        for iq in range(nq):
+            Shape_TensorLegendre(2, Order, xq[iq], phi[iq,:])
     else:
         raise Exception("Basis not supported")
 
@@ -421,6 +432,12 @@ def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
     elif basis == BasisType.TriLagrange:
         for iq in range(nq): 
             Grad_TriLagrange(Order, xq[iq], GPhi[iq,:,:])
+    elif basis == BasisType.SegLegendre:
+        for iq in range(nq):
+            Grad_TensorLegendre(1, Order, xq[iq], GPhi[iq,:,:])
+    elif basis == BasisType.QuadLegendre:
+        for iq in range(nq):
+            Grad_TensorLegendre(2, Order, xq[iq], GPhi[iq,:,:])
     else:
         raise Exception("Basis not supported")
 
@@ -719,28 +736,85 @@ def Grad_TriLagrange(p, xi, gphi):
         gphi[16,1] =  125.0/3.0*x-125.0/3.0*x*x-2125.0/3.0*x*y+625.0*x*x*y+2500.0*x*y*y-3125.0/2.0*x*x*y*y-6250.0/3.0*x*y*y*y
 
 
-# def BasisLegendre1D(x, xnode, nnode, phi, gphi):
-    
-    # for j in range(nnode):
-        
-        
 
-    #     if phi is not None:
-    #         pj = 1.
-    #         for i in range(j): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
-    #         for i in range(j+1,nnode): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
-    #         phi[j] = pj
-    #     if gphi is not None:
-    #         gphi[j] = 0.0;
-    #         for i in range(nnode):
-    #             if i != j:
-    #                 g = 1./(xnode[j] - xnode[i])
-    #                 for k in range(nnode):
-    #                     if k != i and k != j:
-    #                         g *= (x - xnode[k])/(xnode[j] - xnode[k])
-    #                 gphi[j] += g
+def Shape_TensorLegendre(dim, p, x, phi):
+    if p == 0:
+        phi[:] = 1.
+        return
+
+    if dim == 1:
+        BasisLegendre1D(x, p, phi, None)
+    elif dim == 2:
+        BasisLegendre2D(x, p, phi, None)
+
+def Grad_TensorLegendre(dim, p, x, gphi):
+    if p == 0:
+        gphi[:,:] = 0.
+        return 
+    if dim == 1:
+        BasisLegendre1D(x, p, None, gphi)
+    if dim == 2:
+        BasisLegendre2D(x, p, None, gphi)
+
+def BasisLegendre2D(x, p, phi, gphi):
+    if gphi is not None:
+        gphix = np.zeros(p+1); gphiy = np.zeros(p+1)
+    else:
+        gphix = None; gphiy = None
+    # Always need phi
+    phix = np.zeros(p+1); phiy = np.zeros(p+1)
 
 
+    BasisLegendre1D(x[0], p, phix, gphix)
+    BasisLegendre1D(x[1], p, phiy, gphiy)
+
+    if phi is not None:
+        phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
+    if gphi is not None:
+        gphi[:,0] = np.reshape(np.outer(gphix, phiy), (-1,), 'F')
+        gphi[:,1] = np.reshape(np.outer(phix, gphiy), (-1,), 'F')
+
+def BasisLegendre1D(x, p, phi, gphi):
+    #code.interact(local=locals())
+    if phi is not None:
+        if p >= 0:
+            phi[0]  = 1.
+        if p>=1:
+            phi[1]  = x
+        if p>=2:
+            phi[2]  = 0.5*(3.*x*x - 1.)
+        if p>=3:
+            phi[3]  = 0.5*(5.*x*x*x - 3.*x)
+        if p>=4:
+            phi[4]  = 0.125*(35.*x*x*x*x - 30.*x*x + 3.)
+        if p>=5:
+            phi[5]  = 0.125*(63.*x*x*x*x*x - 70.*x*x*x + 15.*x)
+        if p>=6:
+            phi[6]  = 0.0625*(231.*x*x*x*x*x*x - 315.*x*x*x*x + 105.*x*x -5.)
+        if p==7:
+            phi[7]  = 0.0625*(429.*x*x*x*x*x*x*x - 693.*x*x*x*x*x + 315.*x*x*x - 35.*x)
+        if p>7:
+            raise NotImplementedError("Legendre Polynomial > 7 not supported")
+
+    if gphi is not None:
+        if p >= 0:
+            gphi[0] = 0.
+        if p>=1:
+            gphi[1] = 1.
+        if p>=2:
+            gphi[2] = 3.*x
+        if p>=3:
+            gphi[3] = 0.5*(15.*x*x - 3.)
+        if p>=4:
+            gphi[4] = 0.125*(35.*4.*x*x*x - 60.*x)
+        if p>=5:
+            gphi[5] = 0.125*(63.*5.*x*x*x*x - 210.*x*x + 15.)
+        if p>=6:
+            gphi[6] = 0.0625*(231.*6.*x*x*x*x*x - 315.*4.*x*x*x + 210.*x)
+        if p==7:
+            gphi[7] = 0.0625*(429.*7.*x*x*x*x*x*x - 693.*5.*x*x*x*x + 315.*3.*x*x - 35.)
+        if p>7:
+            raise NotImplementedError("Legendre Polynomial > 7 not supported")
 class BasisData(object):
     '''
     Class: IFace

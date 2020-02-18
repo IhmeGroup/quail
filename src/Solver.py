@@ -63,7 +63,7 @@ class DG_Solver(object):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange:
+		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange or BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
 		    if mesh.Dim != 1:
 		        raise Errors.IncompatibleError
 		else:
