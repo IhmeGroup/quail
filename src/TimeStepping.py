@@ -244,6 +244,8 @@ class ADER(object):
 		# Prediction Step
 		MultInvADER(mesh, solver, self.dt, W, Up)
 
+		#This is a test
+
 		# Correction Step
 #		R = solver.CalculateResidual(Up, R)
 #		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
