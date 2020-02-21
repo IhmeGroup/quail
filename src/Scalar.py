@@ -60,7 +60,11 @@ class Scalar(object):
 					for egrp in range(mesh.nElemGroup)]
 		self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-
+		basisADER = BasisType.QuadLegendre
+		self.BasesADER = [basisADER for egrp in range(mesh.nElemGroup)]
+		ADERArrayDims = [[mesh.nElems[egrp],Order2nNode(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
+					for egrp in range(mesh.nElemGroup)]
+		self.Up = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ADERArrayDims)
 
 		# BC treatments
 		self.SetBCTreatment()
@@ -213,8 +217,6 @@ class Scalar(object):
 
 		# flux assembly 
 		F = (0.5*n*(fL+fR) - 0.5*c*du)
-
-		#code.interact(local=locals())
 
 		return F
 

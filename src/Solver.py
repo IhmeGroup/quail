@@ -447,7 +447,6 @@ class DG_Solver(object):
 
 			RL, RR, StaticData = self.CalculateResidualIFace(iiface, UL, UR, RL, RR, StaticData)
 
-
 	def CalculateResidualBFace(self, ibfgrp, ibface, U, R, StaticData):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
@@ -603,7 +602,7 @@ class DG_Solver(object):
 
 			# Integrate in time
 			# self.Time is used for local time
-			R = TimeStepper.TakeTimeStep(self, order)
+			R = TimeStepper.TakeTimeStep(self)
 
 			# Increment time
 			Time += TimeStepper.dt

@@ -30,7 +30,6 @@ class BasisType(IntEnum):
     TriLagrange = 2
     SegLegendre = 3
     QuadLegendre = 4
-    TriLegendre = 5
 
 
 class LimiterType(IntEnum):
