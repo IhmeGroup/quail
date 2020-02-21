@@ -22,11 +22,11 @@ mesh = MeshCommon.Mesh1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Per
 
 
 ### Solver parameters
-EndTime = 0.5
-nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
-InterpOrder = 1
+EndTime = 0.008
+nTimeStep = 1#np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
+InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="SegLagrange",TimeScheme="ADER")
+								 InterpBasis="SegLegendre",TimeScheme="ADER")
 
 
 ### Physics
@@ -34,9 +34,10 @@ Velocity = 1.
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+Uinflow = [1.0]
+EqnSet.IC.Set(Function=EqnSet.FcnUniform,State=Uinflow)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+#EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
@@ -47,7 +48,7 @@ if not Periodic:
 		BC = EqnSet.BCs[ibfgrp]
 		## Left
 		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
+			BC.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["FullState"], State=Uinflow)
 		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
 			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
@@ -62,11 +63,8 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
+#TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, Label="Q_h")
+Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=False, Label="Q_h")
 Plot.ShowPlot()
-
-
-# code.interact(local=locals())
