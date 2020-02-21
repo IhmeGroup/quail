@@ -1,15 +1,15 @@
 import numpy as np 
 import code
 from Data import ArrayList
-from SolverTools import MultInvMassMatrix
-from Basis import GetStiffnessMatrixADER
-import General
+from SolverTools import MultInvMassMatrix, MultInvADER
+#from Basis import GetStiffnessMatrixADER, GetTemporalFluxADER
+#import General
 
 class FE(object):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 
-	def TakeTimeStep(self, solver, order):
+	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -37,7 +37,7 @@ class FE(object):
 
 
 class RK4(FE):
-	def TakeTimeStep(self, solver, order):
+	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -79,7 +79,6 @@ class RK4(FE):
 		except AttributeError: 
 			Utemp = ArrayList(SimilarArray=U)
 			DataSet.Utemp = Utemp
-
 		# first stage
 		R = solver.CalculateResidual(U, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU1)
@@ -135,7 +134,6 @@ class LSRK4(FE):
 		    2802321613138.0/2924317926251.0])
 		self.nStage = 5
 
-	def TakeTimeStep(self, solver, order):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -186,7 +184,7 @@ class SSPRK3(FE):
 			0.30319904778284])
 		self.nStage = 5
 
-	def TakeTimeStep(self, solver, order):
+	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -226,37 +224,31 @@ class ADER(object):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 
-	def TakeTimeStep(self, solver, order):
+	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
-		#Hard code basisType to Quads (currently only designed for 1D)
-		basis = General.BasisType["QuadLagrange"]
-		
-		# Prediction Step
-
-		#Set the initial guess 
 		W = EqnSet.U
-		#Solve system as Ax = b for now (scalar advection only)
+		Up = EqnSet.Up
+		try:
+			R = DataSet.Up
+		except AttributeError:
+			R = ArrayList(SimilarArray=Up)
+			DataSet.R = R
+		try: 
+			dU = DataSet.dU
+		except AttributeError:
+			dU = ArrayList(SimilarArray=Up)
+			DataSet.dU=dU
 
-		#Construct A
-		#A construction requires the following:	
+		# Prediction Step
+		MultInvADER(mesh, solver, self.dt, W, Up)
 
-		#Stiffness matrix in space
-		gradDir = 0
-		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis)
-		#Stiffness matrix in time
-		gradDir = 1
-		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis)
-		code.interact(local=locals())
-		#Stiffness matrix in space 
-		#Flux matrix at time tau=1
-		
-		#R = solver.CalculateResidual(U, R)
-		#MultInvMassMatrix(mesh, solver, self.dt, R, dU)
-		#U.AddToSelf(dU)
-
-		#solver.ApplyLimiter(U)
-
+		# Correction Step
+#		R = solver.CalculateResidual(Up, R)
+#		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
+#		U.AddToSelf(dU)
+#
+#		solver.ApplyLimiter(U)
 		return R
 
