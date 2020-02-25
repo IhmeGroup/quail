@@ -242,10 +242,6 @@ class Scalar(object):
 		c = self.getAdvOperator(u)
 		ConvFlux = self.Params["ConvFlux"] 
 
-
-
-
-
 		if ConvFlux == self.ConvFluxType.Upwind \
 			and self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
 			raise Errors.IncompatibleError

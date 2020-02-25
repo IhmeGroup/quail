@@ -39,7 +39,7 @@ class DG_Solver(object):
 			TimeStepper = RK4()
 		elif TimeScheme is "LSRK4":
 			TimeStepper = LSRK4()
- 		elif TimeScheme is "SSPRK3":
+		elif TimeScheme is "SSPRK3":
 			TimeStepper = SSPRK3()
 		elif TimeScheme is "ADER":
 			TimeStepper = ADER()
@@ -98,6 +98,11 @@ class DG_Solver(object):
 		if Params["ApplyLimiter"] is 'PositivityPreserving' \
 			and EqnSet.StateRank == 1:
 				raise IncompatibleError
+
+		### Check time integration scheme ###
+		TimeScheme = Params["TimeScheme"]		
+		if TimeScheme is "ADER":
+			raise Errors.IncompatibleError
 
 
 	def InitState(self):
@@ -528,7 +533,6 @@ class DG_Solver(object):
 		uB = EqnSet.BoundaryState(BC, nq, xglob, self.Time, NData, uI, uB)
 
 		# NData.nvec *= wq
-
 		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData, nq, StaticData) # [nq,sr]
 
 		R -= np.matmul(PhiData.Phi.transpose(), F*wq) # [nn,sr]
@@ -719,10 +723,177 @@ class DG_Solver(object):
 		if WriteTimeHistory:
 			fhistory.close()
 
+class ADERDG_Solver(DG_Solver):
+	'''
+	Class: ADERDG_Solver
+	--------------------------------------------------------------------------
+	Use the ADER DG method to solve a given set of PDEs
+	'''
+	
+	def CheckSolverParams(self):
+		Params = self.Params
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		### Check interp basis validity
+		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange or BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+		    if mesh.Dim != 1:
+		        raise Errors.IncompatibleError
+		else:
+		    if mesh.Dim != 2:
+		        raise Errors.IncompatibleError
+
+		### Check uniform mesh
+		if Params["UniformMesh"] is True:
+		    ''' 
+		    Check that element volumes are the same
+		    Note that this is a necessary but not sufficient requirement
+		    '''
+		    TotVol, ElemVols = MeshTools.ElementVolumes(mesh)
+		    if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
+		        raise ValueError
+
+		### Check linear geometric mapping
+		if Params["LinearGeomMapping"] is True:
+		    for EG in mesh.ElemGroups:
+		        if EG.QOrder != 1:
+		            raise Errors.IncompatibleError
+		        if EG.QBasis == BasisType.QuadLagrange \
+		            and Params["UniformMesh"] is False:
+		            raise Errors.IncompatibleError
+
+		### Check limiter ###
+		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
+			and EqnSet.StateRank > 1:
+				raise IncompatibleError
+		if Params["ApplyLimiter"] is 'PositivityPreserving' \
+			and EqnSet.StateRank == 1:
+				raise IncompatibleError
+
+		### Check time integration scheme ###
+		TimeScheme = Params["TimeScheme"]
+		if TimeScheme is not "ADER":
+			raise Errors.IncompatibleError
+
+	def CalculateResidualBFace(self, ibfgrp, ibface, U, R, StaticData):
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+		dim = mesh.Dim
+
+		BFG = mesh.BFaceGroups[ibfgrp]
+		BFace = BFG.BFaces[ibface]
+		egrp = BFace.ElemGroup
+		elem = BFace.Elem
+		face = BFace.face
+		Order = EqnSet.Orders[egrp]
+		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+
+		#code.interact(local=locals())
+
+		if StaticData is None:
+			pnq = -1
+			quadData = None
+			PhiData = None
+			PsiData = None
+			xglob = None
+			uI = None
+			uB = None
+			NData = None
+			GeomPhiData = None
+			Faces2xelem = None
+			Faces2PsiData = None
+			xelemPsi = None
+			xelemPhi = None
+			StaticData = GenericData()
+
+		else:
+			nq = StaticData.pnq
+			quadData = StaticData.quadData
+			PhiData = StaticData.PhiData
+			PsiData = StaticData.PsiData
+			xglob = StaticData.xglob
+			uI = StaticData.uI
+			uB = StaticData.uB
+			NData = StaticData.NData
+			GeomPhiData = StaticData.GeomPhiData
+			Faces2PsiData = StaticData.Faces2PsiData
+			Faces2xelem = StaticData.Faces2xelem
+			xelemPsi = StaticData.xelemPsi
+			xelemPhi = StaticData.xelemPhi
+		
+		#Hard code basisType to Quads (currently only designed for 1D)
+		basis1 = BasisType.QuadLegendre
+		basis2 = BasisType.SegLegendre
+
+		#QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, basis1, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
+
+		if QuadChanged:
+			quadData = QuadData(mesh, EqnSet.Bases[egrp], EntityType.BFace, QuadOrder)
+		#if QuadChanged:
+		#	quadData = QuadData(mesh,EqnSet.Bases[egrp],EntityType.BFace, QuadOrder)
+		
+		#nqST = quadDataST.nquad
+		#xqST = quadDataST.xquad
+		#wqST = quadDataST.wquad
+
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
+
+		if QuadChanged:
+			Faces2PsiData = [None for i in range(nFacePerElem)]
+			xglob = np.zeros([nq, dim])
+			Faces2xelem = np.zeros([nFacePerElem, nq, dim])
+			uI = np.zeros([nq, sr])
+			uB = np.zeros([nq, sr])
+			xelemPhi = np.zeros([nq, mesh.Dim+1])
+			xelemPsi = np.zeros([nq, mesh.Dim])
+			PhiData = BasisData(basis1,Order,nq,mesh)
+			xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, egrp, face, xq, xelemPhi, Get_Phi=True)
+			Faces2PsiData[face] = PsiData = BasisData(basis2,Order,nq,mesh)
+			Faces2xelem[face] = xelemPsi = PsiData.EvalBasisOnFace(mesh, egrp, face, xq, xelemPsi, Get_Phi=True)
+		# if face != PhiData.face:
+		# 	xelem = PhiData.EvalBasisOnFace(mesh, egrp, face, xq, xelem, Get_Phi=True)
+
+		# PhiData.EvalBasisOnFace(mesh, egrp, face, xq, True, False, False, None)
+
+		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
+
+		PointsChanged = QuadChanged or face != GeomPhiData.face
+		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xelemPsi, xglob, PointsChanged)
 
 
+		# interpolate state and gradient at quad points
+		for ir in range(sr):
+			uI[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
 
+		# Get boundary state
+		BC = EqnSet.BCs[ibfgrp]
+		uB = EqnSet.BoundaryState(BC, nq, xglob, self.Time, NData, uI, uB)
 
+		# NData.nvec *= wq
+		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData, nq, StaticData) # [nq,sr]
+		R -= np.matmul(PsiData.Phi.transpose(), F*wq) # [nn,sr]
 
+		if elem == echeck:
+			code.interact(local=locals())
 
+		# Store in StaticData
+		StaticData.pnq = nq
+		StaticData.quadData = quadData
+		StaticData.PhiData = PhiData
+		StaticData.PsiData = PsiData
+		StaticData.uI = uI
+		StaticData.uB = uB
+		StaticData.F = F
+		StaticData.xglob = xglob
+		StaticData.NData = NData
+		StaticData.xelemPsi = xelemPsi
+		StaticData.xelemPhi = xelemPhi
+		StaticData.GeomPhiData = GeomPhiData
+		StaticData.Faces2PsiData = Faces2PsiData
+		StaticData.Faces2xelem = Faces2xelem
+
+		return R, StaticData
 

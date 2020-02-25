@@ -231,9 +231,9 @@ class ADER(object):
 		W = EqnSet.U
 		Up = EqnSet.Up
 		try:
-			R = DataSet.Up
+			R = DataSet.W
 		except AttributeError:
-			R = ArrayList(SimilarArray=Up)
+			R = ArrayList(SimilarArray=W)
 			DataSet.R = R
 		try: 
 			dU = DataSet.dU
@@ -244,10 +244,8 @@ class ADER(object):
 		# Prediction Step
 		MultInvADER(mesh, solver, self.dt, W, Up)
 
-		#This is a test
-
 		# Correction Step
-#		R = solver.CalculateResidual(Up, R)
+		R = solver.CalculateResidual(Up, R)
 #		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
 #		U.AddToSelf(dU)
 #
