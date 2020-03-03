@@ -254,12 +254,19 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
 
     return MM, StaticData
 
-def GetElemADERMatrix(mesh, basis1, basis2, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+
+    c = EqnSet.Params["ConstVelocity"]
+
+    EGroup=mesh.ElemGroups[egrp]
+    Elem2Nodes = EGroup.Elem2Nodes[elem]
+    dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
 
     #Stiffness matrix in space
     gradDir = 0
     SMS,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis1)
     SMS = np.transpose(SMS)
+    SMS = c*(dt/dx)*SMS
     #Stiffness matrix in time
     gradDir = 1
     SMT,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis1)
@@ -267,7 +274,6 @@ def GetElemADERMatrix(mesh, basis1, basis2, order, PhysicalSpace=False, egrp=-1,
     #Calculate flux matrices in time at tau=1 (L) and tau=-1 (R)
     FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
     FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
-
 
     A1 = np.subtract(FTL,SMT)
     A = np.add(A1,SMS)
@@ -281,8 +287,8 @@ def GetElemInvMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=
 
     return MMinv, StaticData
 
-def GetElemInvADERMatrix(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
-    ADER, FTR, StaticData = GetElemADERMatrix(mesh, basis1, basis2, Order, PhysicalSpace, egrp, elem, StaticData)
+def GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+    ADER, FTR, StaticData = GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace, egrp, elem, StaticData)
 
     ADERinv = np.linalg.solve(ADER,FTR)
     
@@ -491,7 +497,7 @@ def GetInvStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
 
     return SM, StaticData
 
-def ComputeInvADERMatrices(mesh, EqnSet, solver=None):
+def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     ## Allocat ADERinv_all
     # Calculate inverse mass matrix for every single element,
     # even if uniform mesh
@@ -521,7 +527,7 @@ def ComputeInvADERMatrices(mesh, EqnSet, solver=None):
         for elem in range(EGroup.nElem):
             if elem == 0 or ReCalcMM:
                 # Only recalculate if not using uniform mesh
-                ADERinv,StaticData = GetElemInvADERMatrix(mesh, basis1, basis2, Order, False, egrp, elem, StaticData)
+                ADERinv,StaticData = GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, False, egrp, elem, StaticData)
             ADERinv_all.Arrays[egrp][elem] = ADERinv
 
     if solver is not None:

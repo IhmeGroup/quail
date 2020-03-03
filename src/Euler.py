@@ -1036,6 +1036,7 @@ class Euler2D(Euler1D):
 			UL = uL[iq,:]
 			UR = uR[iq,:]
 			n = NData.nvec[iq*(NData.nq != 1),:]
+
 			f = F[iq,:]
 
 			if ConvFlux == self.ConvFluxType.Roe:

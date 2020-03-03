@@ -224,20 +224,25 @@ class Scalar(object):
 		# nq = NData.nq
 		if nq != uL.shape[0] or nq != uR.shape[0]:
 			raise Exception("Wrong nq")	
-
+		try:
+			u = data.u
+		except:
+			data.u = u = np.zeros_like(uL)
 		try: 
 			F = data.F
 		except AttributeError: 
 			data.F = F = np.zeros_like(uL)
 
 	    #Calculate the max speed and keep its sign.
-		u = max(abs(uL),abs(uR))
+		for i in range(nq):
+
+			u[i] = max(abs(uL[i]),abs(uR[i]))
  		
- 		if u == abs(uL):
- 			usign = np.sign(uL)
- 		elif u == abs(uR):
- 			usign = np.sign(uR)
- 		u = usign*u
+	 		if u[i] == abs(uL[i]):
+	 			usign = np.sign(uL[i])
+	 		elif u[i] == abs(uR[i]):
+	 			usign = np.sign(uR[i])
+	 		u[i] = usign*u[i]
 
 		c = self.getAdvOperator(u)
 		ConvFlux = self.Params["ConvFlux"] 
@@ -247,7 +252,10 @@ class Scalar(object):
 			raise Errors.IncompatibleError
 
 		for iq in range(nq):
-			nvec = NData.nvec[iq,:]
+			if NData.nvec.size < nq:
+				nvec = NData.nvec[0,:]
+			else:
+				nvec = NData.nvec[iq,:]
 			n = nvec/np.linalg.norm(nvec)
 
 			if ConvFlux == self.ConvFluxType.Upwind:
@@ -256,7 +264,6 @@ class Scalar(object):
 				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c, n)
 			else:
 				raise Exception("Invalid flux function")
-
 		return F
 
 	def BoundaryState(self, BC, nq, xglob, Time, NData, uI, uB=None):

@@ -63,12 +63,11 @@ def MultInvADER(mesh, solver, dt, W, U):
 	DataSet = solver.DataSet
 	# if MMinv is None:
 	# 	MMinv = GetInvMassMatrix(mesh, 0, 0, EqnSet.Orders[0])
-
 	try:
 		ADERinv_all = DataSet.ADERinv_all
 	except AttributeError:
 		# not found; need to compute
-		ADERinv_all = Basis.ComputeInvADERMatrices(mesh, EqnSet, solver=solver)
+		ADERinv_all = Basis.ComputeInvADERMatrices(mesh, EqnSet, dt, solver=solver)
 
 	for egrp in range(mesh.nElemGroup):
 		for elem in range(mesh.nElems[egrp]):

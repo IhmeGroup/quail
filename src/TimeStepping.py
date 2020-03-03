@@ -31,6 +31,8 @@ class FE(object):
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
 		U.AddToSelf(dU)
 
+		code.interact(local=locals())
+
 		solver.ApplyLimiter(U)
 
 		return R
@@ -238,7 +240,7 @@ class ADER(object):
 		try: 
 			dU = DataSet.dU
 		except AttributeError:
-			dU = ArrayList(SimilarArray=Up)
+			dU = ArrayList(SimilarArray=W)
 			DataSet.dU=dU
 
 		# Prediction Step
@@ -246,9 +248,11 @@ class ADER(object):
 
 		# Correction Step
 		R = solver.CalculateResidual(Up, R)
-#		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
-#		U.AddToSelf(dU)
-#
-#		solver.ApplyLimiter(U)
+
+		MultInvMassMatrix(mesh, solver, self.dt/2., R, dU)
+
+		W.AddToSelf(dU)
+		#code.interact(local=locals())
+		#solver.ApplyLimiter(W)
 		return R
 
