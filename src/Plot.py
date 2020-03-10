@@ -60,7 +60,7 @@ def ShowPlot(Interactive=False):
 		plt.show()
 
 
-def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, **kwargs):
+def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 	### reshape
 	# uplot = u[:,:,iplot]
 	# uplot = np.reshape(uplot, (-1,))
@@ -83,6 +83,13 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, **kwargs):
 		u_exact.shape = nplot,-1
 		u_ex = EqnSet.ComputeScalars(VariableName, u_exact, nplot)
 		plt.plot(x,u_ex,'k-',label="Exact")
+
+	if u_IC is not None: 
+		# u_ex = u_exact[:,:,iplot]
+		# u_ex.shape = -1,
+		u_IC.shape = nplot,-1
+		u_i = EqnSet.ComputeScalars(VariableName, u_IC, nplot)
+		plt.plot(x,u_i,'k--',label="Initial")
 	plt.plot(x,uplot,'bo',label="DG") 
 	plt.ylabel(SolnLabel)
 
@@ -226,7 +233,7 @@ def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kw
 	# plt.axis("equal")
 
 
-def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, Label=None, Equidistant=True,
+def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
 	IncludeMesh2D=False, Regular2D=False, EqualAR=False, **kwargs):
 
 	# iplot_sr = EqnSet.VariableType[VariableName]
@@ -281,7 +288,12 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, Label=Non
 		u_exact.shape = u.shape
 	else:
 		u_exact = None
-
+	# IC ?
+	if PlotIC:
+		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,dim)),Time=0.)
+		u_IC.shape = u.shape
+	else:
+		u_IC = None
 	# Solution label
 	if Label is None:
 		try:
@@ -293,7 +305,7 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, Label=Non
 	# Plot solution
 	plt.figure()
 	if dim == 1:
-		Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, **kwargs)
+		Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs)
 	else:
 		if PlotExact: u = u_exact # plot either only numerical or only exact
 		Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)

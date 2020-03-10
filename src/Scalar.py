@@ -176,6 +176,7 @@ class Scalar(object):
 
 	def ConvFluxInterior(self, u, F):
 		c = self.getAdvOperator(u)
+
 		#a = self.Params["Velocity"]
 		if F is None:
 			F = np.zeros(u.shape + (self.Dim,))
@@ -410,6 +411,26 @@ class Scalar(object):
 
 		return U
 
+	def FcnDampingSine(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		Data = FcnData.Data
+		U = FcnData.U
+
+		try:
+			omega = Data.omega
+		except AttributeError:
+			omega = 2.*np.pi
+		try:
+			nu = Data.nu
+		except AttributeError:
+			nu = 1.0
+
+		c = self.getAdvOperator(U)
+		U[:] = np.sin(omega*(x-c*t))*np.exp(nu*t)
+
+		return U
+
 	def FcnShiftedCose(self, FcnData):
 		x = FcnData.x
 		t = FcnData.Time
@@ -459,7 +480,7 @@ class Scalar(object):
 		except AttributeError:
 			xshock = -0.5
 		''' Fill state '''
-		us = 0.5*(uR+uL)
+		us = (uR+uL)
 		xshock = xshock+us*t
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
@@ -488,6 +509,22 @@ class Scalar(object):
 
 		S[:] = (1./stiffness)*(1.-U[:])*(U[:]-beta)*U[:]
 
+
+		return S
+
+	def FcnSimpleSource(self,FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		S = FcnData.S
+		Data = FcnData.Data
+
+		try:
+			nu = Data.nu
+		except AttributeError:
+			nu = -1.0
+		#code.interact(local=locals())
+		S[:] = nu*U[:]
 
 		return S
 

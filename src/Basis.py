@@ -257,6 +257,7 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
 def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
 
     c = EqnSet.Params["ConstVelocity"]
+    nu = 0.
 
     EGroup=mesh.ElemGroups[egrp]
     Elem2Nodes = EGroup.Elem2Nodes[elem]
@@ -275,8 +276,13 @@ def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=Fal
     FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
     FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
 
+    MM,_= GetElemMassMatrixADER(mesh, basis1, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None)
+    MM = nu*(dt/2.)*MM
     A1 = np.subtract(FTL,SMT)
-    A = np.add(A1,SMS)
+    A2 = np.add(A1,SMS)
+    A = np.add(A2,MM)
+
+
 
     return A, FTR, StaticData
 
@@ -457,6 +463,64 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
  
+    return MM, StaticData
+
+
+def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+    if StaticData is None:
+        pnq = -1
+        quadData = None
+        PhiData = None
+        JData = JacobianData(mesh)
+        StaticData = GenericData()
+    else:
+        nq = StaticData.pnq
+        quadData = StaticData.quadData
+        PhiData = StaticData.PhiData
+        JData = StaticData.JData
+
+    if PhysicalSpace:
+        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
+    else:
+        QuadOrder = Order*2 + 1 #Add one for ADER method
+        QuadChanged = True
+
+    if QuadChanged:
+        quadData = QuadDataADER(mesh, basis, EntityType.Element, QuadOrder)
+
+    nq = quadData.nquad
+    xq = quadData.xquad
+    wq = quadData.wquad
+
+    if QuadChanged:
+
+        PhiData = BasisData(basis,Order,nq,mesh)
+        PhiData.EvalBasis(xq, Get_Phi=True)
+
+    if PhysicalSpace:
+        JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+        if JData.nq == 1:
+            detJ = np.full(nq, JData.detJ[0])
+        else:
+            detJ = JData.detJ
+    else:
+        detJ = np.full(nq, 1.)
+
+    nn = PhiData.nn
+
+    phi = PhiData.Phi
+    MM = np.zeros([nn,nn])
+    for i in range(nn):
+        for j in range(nn):
+            t = 0.
+            for iq in range(nq):
+                t += phi[iq,i]*phi[iq,j]*wq[iq]
+            MM[i,j] = t
+    StaticData.pnq = nq
+    StaticData.quadData = quadData
+    StaticData.PhiData = PhiData
+    StaticData.JData = JData
+
     return MM, StaticData
 
 def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):

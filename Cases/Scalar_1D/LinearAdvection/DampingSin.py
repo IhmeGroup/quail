@@ -12,7 +12,7 @@ import General
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=128, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.Mesh1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
@@ -22,21 +22,25 @@ mesh = MeshCommon.Mesh1D(Uniform=True, nElem=128, xmin=-1., xmax=1., Periodic=Pe
 
 
 ### Solver parameters
-EndTime = 0.5
+EndTime = 0.1
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="SegLegendre",TimeScheme="RK4")
-
+								 InterpBasis="SegLegendre",TimeScheme="ADER")
+nu = -100000.
 
 ### Physics
-Velocity = 1.
+Velocity = 1.0 
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
+#EqnSet.SetParams(ConvFlux="LaxFriedrichs")
+EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)
+
+Uinflow=[1.]
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.IC.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
@@ -47,16 +51,16 @@ if not Periodic:
 		BC = EqnSet.BCs[ibfgrp]
 		## Left
 		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
+			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2.*np.pi, nu=nu)
 		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
+			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi, nu=-2.0)
 		else:
 			raise Exception("BC error")
 
 
 ### Solve
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
 solver.solve()
 
 
@@ -65,7 +69,7 @@ solver.solve()
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, Label="Q_h")
+Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 Plot.ShowPlot()
 
 

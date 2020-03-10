@@ -31,8 +31,6 @@ class FE(object):
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
 		U.AddToSelf(dU)
 
-		code.interact(local=locals())
-
 		solver.ApplyLimiter(U)
 
 		return R
@@ -252,7 +250,6 @@ class ADER(object):
 		MultInvMassMatrix(mesh, solver, self.dt/2., R, dU)
 
 		W.AddToSelf(dU)
-		#code.interact(local=locals())
-		#solver.ApplyLimiter(W)
+		solver.ApplyLimiter(W)
 		return R
 

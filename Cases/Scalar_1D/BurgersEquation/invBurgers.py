@@ -11,7 +11,7 @@ import Limiter
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=50, xmin=0., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.Mesh1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))

@@ -252,16 +252,7 @@ class DG_Solver(object):
 		nn = PhiData.nn
 
 		# interpolate state and gradient at quad points
-		# u = np.zeros([nq, sr])
 		u[:] = np.matmul(PhiData.Phi, U)
-
-		# for ir in range(sr):
-		# 	u[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
-		# gu = np.zeros([nq,sr,dim])
-		# for iq in range(nq):
-		# 	gPhi = PhiData.gPhi[iq] # [nn,dim]
-		# 	for ir in range(sr):
-		# 		gu[iq,ir,:] = np.matmul(gPhi.transpose(), U[:,ir])[0]
 
 		F = EqnSet.ConvFluxInterior(u, F) # [nq,sr,dim]
 
@@ -271,6 +262,7 @@ class DG_Solver(object):
 					gPhi = PhiData.gPhi[iq,jn] # dim
 					ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
 
+		s = np.zeros([nq,sr])
 		s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr,dim]
 		# Calculate source term integral
 		for ir in range(sr):
@@ -408,7 +400,6 @@ class DG_Solver(object):
 
 		RL -= np.matmul(PhiDataL.Phi.transpose(), F*wq) # [nn,sr]
 		RR += np.matmul(PhiDataR.Phi.transpose(), F*wq) # [nn,sr]
-
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -1022,6 +1013,7 @@ class ADERDG_Solver(DG_Solver):
 
 		F = np.reshape(F,(nqST,sr,dim))
 
+		s = np.zeros([nqST,sr])
 		s = EqnSet.SourceState(nqST, xglob, tglob, NData, u, s) # [nq,sr,dim]
 
 		s = np.reshape(s,(nq,nq,sr))
@@ -1030,7 +1022,7 @@ class ADERDG_Solver(DG_Solver):
 			for k in range(nn):
 				for i in range(nq): # Loop over time
 					for j in range(nq): # Loop over space
-						Psi = PsiData.Phi[i,k]
+						Psi = PsiData.Phi[j,k]
 						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.detJ[iq*(JData.nq!=1)]*Psi
 
 		s = np.reshape(s,(nqST,sr))
