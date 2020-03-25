@@ -72,3 +72,42 @@ def NeighborAcrossFace(mesh, egrp, elem, face):
     return egN, eN, faceN
 
 
+def CheckFaceOrientations(mesh):
+
+    if mesh.Dim == 1:
+        # don't need to check for 1D
+        return
+
+    for IFace in mesh.IFaces:
+        egrpL = IFace.ElemGroupL
+        egrpR = IFace.ElemGroupR
+        elemL = IFace.ElemL
+        elemR = IFace.ElemR
+        faceL = IFace.faceL
+        faceR = IFace.faceR
+        EGL = mesh.ElemGroups[egrpL]
+        EGR = mesh.ElemGroups[egrpR]
+
+        # Get local q=1 nodes on face for left element
+        lfnodes, nfnode = LocalQ1FaceNodes(EGL.QBasis, EGL.QOrder, faceL)
+        # Convert to global node numbering
+        gfnodesL = EGL.Elem2Nodes[elemL][lfnodes]
+
+        # Get local q=1 nodes on face for right element
+        lfnodes, nfnode = LocalQ1FaceNodes(EGR.QBasis, EGR.QOrder, faceR)
+        # Convert to global node numbering
+        gfnodesR = EGR.Elem2Nodes[elemR][lfnodes]
+
+        # Node ordering should be reversed between the two elements
+        if not np.all(gfnodesL == gfnodesR[::-1]):
+            raise Exception("Face orientation for elemL = %d, elemR = %d \\ is incorrect"
+                % (elemL, elemR))
+
+
+
+
+
+
+
+
+

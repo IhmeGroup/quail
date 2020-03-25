@@ -46,4 +46,9 @@ Thumbs.db
 ###############
 Cases/Miscellaneous/ME336
 Cases/Miscellaneous/Research
+Cases/Miscellaneous/SaveMeshHDF5
 
+##################
+# Solution files #
+##################
+*.pdf

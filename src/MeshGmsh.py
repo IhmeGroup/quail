@@ -5,6 +5,7 @@ import General
 import Mesh
 import Basis
 import copy
+import MeshTools
 
 
 GMSHVERSION = "2.2"
@@ -612,7 +613,9 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
 
 	mesh.FillFaces()
-	# Set face orientation
+
+	# Check face orientations
+	MeshTools.CheckFaceOrientations(mesh)
 
 
 

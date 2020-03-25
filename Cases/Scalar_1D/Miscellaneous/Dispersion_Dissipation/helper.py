@@ -14,7 +14,7 @@ def CalculateBasisAndMatrices(mesh, basis, Order):
 	## Evaluate basis polynomials
 	# Quadrature
 	QuadOrder,_ = GetQuadOrderElem(mesh, egrp=0, basis=basis, Order=Order)
-	quadData = QuadData(mesh=mesh, mesh.ElemGroups[0].QBasis, entity=General.EntityType["IFace"], Order=QuadOrder)
+	quadData = QuadData(mesh=mesh, basis=mesh.ElemGroups[0].QBasis, entity=General.EntityType["IFace"], Order=QuadOrder)
 	xq = quadData.xquad; nq = quadData.nquad; 
 	# Basis on left face
 	PhiDataLeft = BasisData(basis,Order,nq,mesh)

@@ -41,7 +41,7 @@ def WriteMeshToHDF5(mesh, FileName):
 			n = 0
 			for BFace in BFG.BFaces:
 				BFaceData[n,0] = BFace.Elem
-				BFaceData[n,0] = BFace.face
+				BFaceData[n,1] = BFace.face
 				n += 1
 
 			s = "BFG_" + BFG.Name + "_BFaceData"
