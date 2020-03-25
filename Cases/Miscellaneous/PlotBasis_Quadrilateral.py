@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import axes3d
 
 ### Grid
 n = 101 # number of points in each direction
-x = y = np.linspace(0., 1., n)
+x = y = np.linspace(-1., 1., n)
 X,Y = np.meshgrid(x,y)
 xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
 ntot = n**2 # total number of points
