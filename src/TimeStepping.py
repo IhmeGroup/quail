@@ -241,8 +241,11 @@ class ADER(object):
 			dU = ArrayList(SimilarArray=W)
 			DataSet.dU=dU
 
-		# Prediction Step
-		MultInvADER(mesh, solver, self.dt, W, Up)
+		# Prediction Step (Non-linear Case)
+		Up = solver.CalculatePredictorStep(self.dt, W, Up)
+
+		# Prediction Step (Linear Case)
+		#MultInvADER(mesh, solver, self.dt, W, Up)
 
 		# Correction Step
 		R = solver.CalculateResidual(Up, R)
