@@ -263,7 +263,7 @@ class DG_Solver(object):
 					gPhi = PhiData.gPhi[iq,jn] # dim
 					ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
 
-
+		s = np.zeros([nq,sr])
 		s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr,dim]
 		# Calculate source term integral
 		for ir in range(sr):
