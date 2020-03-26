@@ -276,7 +276,7 @@ def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=Fal
     FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
     FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
 
-    MM,_= GetElemMassMatrixADER(mesh, basis1, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None)
+    MM,_=  GetElemMassMatrixADER(mesh, basis1, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None)
     MM = nu*(dt/2.)*MM
     A1 = np.subtract(FTL,SMT)
     A2 = np.add(A1,SMS)
@@ -290,6 +290,13 @@ def GetElemInvMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=
     MM, StaticData = GetElemMassMatrix(mesh, basis, Order, PhysicalSpace, egrp, elem, StaticData)
     
     MMinv = np.linalg.inv(MM) 
+
+    return MMinv, StaticData
+
+def GetElemInvMassMatrixADER(mesh, basis, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+    MM, StaticData = GetElemMassMatrixADER(mesh, basis, order, PhysicalSpace, egrp, elem, StaticData)
+
+    MMinv = np.linalg.inv(MM)
 
     return MMinv, StaticData
 
@@ -353,7 +360,6 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=No
         pnq = -1
         quadData = None
         PhiData = None
-        # JData = JacobianData(mesh)
         StaticData = GenericData()
     else:
         nq = StaticData.pnq
@@ -392,7 +398,7 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=No
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
-    #StaticData.JData = JData
+
     return SM, StaticData
 
 def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
@@ -410,7 +416,7 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-
         PsiData = StaticData.PsiData
 
     if basis1 == basis2:
-        face =2 
+        face = 2 
     else:
         face = 0
     #QuadOrderTest,QuadChangedTest = GetQuadOrderIFace(mesh, face, mesh.ElemGroups[egrp].QBasis, Order, EqnSet=None, quadData=quadData)
@@ -514,7 +520,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem
         for j in range(nn):
             t = 0.
             for iq in range(nq):
-                t += phi[iq,i]*phi[iq,j]*wq[iq]
+                t += phi[iq,i]*phi[iq,j]*wq[iq]*detJ[iq]
             MM[i,j] = t
     StaticData.pnq = nq
     StaticData.quadData = quadData
@@ -566,8 +572,8 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     # Calculate inverse mass matrix for every single element,
     # even if uniform mesh
     #Hard code basisType to Quads (currently only designed for 1D)
-    basis1 = BasisType.QuadLegendre
-    basis2 = BasisType.SegLegendre
+    basis1 = BasisType.QuadLagrange
+    basis2 = BasisType.SegLagrange
     
     ArrayDims = [None]*mesh.nElemGroup
     for egrp in range(mesh.nElemGroup):

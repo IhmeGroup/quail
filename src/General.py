@@ -50,6 +50,7 @@ SolverParams = {
     "InterpBasis" : BasisType.SegLagrange,
     "TimeScheme" : "RK4",
     "InterpolateIC" : False,
+    "InterpolateFlux": True,
     "LinearGeomMapping" : False,
     "UniformMesh" : False,
     "UseNumba" : False,

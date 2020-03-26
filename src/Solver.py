@@ -11,6 +11,8 @@ import time
 import MeshTools
 import Post
 import Errors
+from scipy.optimize import root
+
 import Limiter
 
 global echeck
@@ -766,6 +768,118 @@ class ADERDG_Solver(DG_Solver):
 		if TimeScheme is not "ADER":
 			raise Errors.IncompatibleError
 
+		### Check flux/source coefficient interpolation compatability with basis functions.
+		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+			raise Errors.IncompatibleError
+
+		### Current build only supports scalar equations
+		if EqnSet.StateRank > 1:
+			raise Errors.IncompatibleError
+	def CalculatePredictorStep(self, dt, W, Up):
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+
+		# Initialize predictor step to zero
+		Up.SetUniformValue(0.)
+
+		self.CalculatePredictorStepElems(dt, W.Arrays, Up.Arrays)
+
+		return Up
+	
+
+	def CalculatePredictorStepElems(self, dt, W, Up):
+
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		StaticData = None
+
+		for egrp in range(mesh.nElemGroup):
+			for elem in range(mesh.nElems[egrp]):
+				Up[egrp][elem], StaticData = self.CalculatePredictorElemADER(egrp, elem, dt, W[egrp][elem], Up[egrp][elem], StaticData)
+
+
+	def CalculatePredictorElemADER(self, egrp, elem, dt, W, Up, StaticData):
+
+	
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+		dim = mesh.Dim
+		basis2 = EqnSet.Bases[egrp]
+		basis1 = EqnSet.BasesADER[egrp]
+		Order = EqnSet.Orders[egrp]
+		entity = EntityType.Element
+
+		quadData = None
+		quadDataST = None
+		QuadChanged = True; QuadChangedST = True
+		EGroup=mesh.ElemGroups[egrp]
+		Elem2Nodes = EGroup.Elem2Nodes[elem]
+		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
+
+		#Flux matrices in time
+		FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
+		FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
+		
+		#Stiffness matrix in time
+		gradDir = 1
+		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, egrp=0, elem=0, basis=basis1)
+		gradDir = 0
+		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, egrp=0, elem=0, basis=basis1)
+		SMS = np.transpose(SMS)
+		#MMinv,_= GetElemInvMassMatrixADER(mesh, basis1, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
+
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis2, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST-=1
+
+		if QuadChanged:
+			quadData = QuadData(mesh, basis2, entity, QuadOrder)
+
+		if QuadChangedST:
+			quadDataST = QuadData(mesh, basis1, entity, QuadOrderST)
+
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
+
+		nqST = quadDataST.nquad
+		xqST = quadDataST.xquad
+		wqST = quadDataST.wquad
+
+		PhiData = BasisData(basis1,Order,nqST,mesh)
+		PsiData = BasisData(basis2,Order,nq,mesh)
+
+		nnST = PhiData.nn
+		nn   = PsiData.nn
+
+		#Make initial guess for the predictor step
+		Up = np.reshape(Up,(nn,nn,sr))
+
+		for ir in range(sr):
+			#for i in range(nn):
+			for j in range(nn):
+				Up[0,j,ir]=W[j,ir]
+		Up = np.reshape(Up,(nnST,sr))
+
+		def F(x):
+			x = np.reshape(x,(nnST,1))
+			fluxpoly = self.FluxState(egrp, elem, dt, Order, basis1, x)
+			f = np.matmul(FTL,x)-np.matmul(FTR,W)-np.matmul(SMT,x)+np.matmul(SMS,fluxpoly)
+			#code.interact(local=locals())
+			#print fluxpoly
+			f = np.reshape(f,(nnST))
+			return f
+
+		for ir in range(sr):
+			sol = root(F, Up[:,ir], method='krylov',tol=1.0e-6)
+			#print sol
+			#code.interact(local=locals())
+			Up[:,ir] = sol.x
+
+		return Up, StaticData
+
+
 	def CalculateResidualBFace(self, ibfgrp, ibface, U, R, StaticData):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
@@ -814,8 +928,8 @@ class ADERDG_Solver(DG_Solver):
 			xelemPhi = StaticData.xelemPhi
 		
 		#Hard code basisType to Quads (currently only designed for 1D)
-		basis1 = BasisType.QuadLegendre
-		basis2 = BasisType.SegLegendre
+		basis2 = EqnSet.Bases[egrp]
+		basis1 = EqnSet.BasesADER[egrp]
 
 		QuadOrderST, QuadChangedST = GetQuadOrderBFace(mesh, BFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
@@ -907,8 +1021,8 @@ class ADERDG_Solver(DG_Solver):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 
-		basis1 = BasisType.QuadLegendre
-		basis2 = BasisType.SegLegendre
+		basis2 = EqnSet.Bases[egrp]
+		basis1 = EqnSet.BasesADER[egrp]
 		Order = EqnSet.Orders[egrp]
 		entity = EntityType.Element
 		sr = EqnSet.StateRank
@@ -1109,8 +1223,8 @@ class ADERDG_Solver(DG_Solver):
 
 
 		#Hard code basisType to Quads (currently only designed for 1D)
-		basis1 = BasisType.QuadLegendre
-		basis2 = BasisType.SegLegendre
+		basis2 = EqnSet.Bases[egrpL]
+		basis1 = EqnSet.BasesADER[egrpL]
 
 		QuadOrderST, QuadChangedST = GetQuadOrderIFace(mesh, IFace, basis1, np.amax([OrderL,OrderR]), EqnSet, quadDataST)
 		QuadOrderST-=1
@@ -1216,3 +1330,103 @@ class ADERDG_Solver(DG_Solver):
 		StaticData.NData = NData
 
 		return RL, RR, StaticData
+
+
+	def FluxState(self, egrp, elem, dt, Order, basis, U):
+
+		mesh = self.mesh
+		dim = mesh.Dim
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+		Params = self.Params
+		entity = EntityType.Element
+		InterpolateFlux = Params["InterpolateFlux"]
+
+		quadData = None
+		quadDataST = None
+		JData = JacobianData(mesh)
+		GeomPhiData = None
+		xq = None; xphys = None; QuadChanged = True; QuadChangedST = True;
+
+		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
+
+		if not InterpolateFlux:
+
+
+			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, 4*Order, EqnSet, quadData)
+			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis, 4*Order, EqnSet, quadDataST)
+			QuadOrderST-=1
+
+			if QuadChanged:
+				quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, entity, QuadOrder)
+			if QuadChangedST:
+				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
+
+			nq = quadData.nquad
+			xq = quadData.xquad
+			wq = quadData.wquad
+
+			nqST = quadDataST.nquad
+			xqST = quadDataST.xquad
+			wqST = quadDataST.wquad
+
+			if QuadChanged:
+
+				PhiData = BasisData(basis,Order,nqST,mesh)
+				PhiData.EvalBasis(xqST, Get_Phi=True)
+				xphys = np.zeros([nqST, mesh.Dim])
+
+			JData.ElemJacobian(egrp,elem,nqST,xqST,mesh,Get_detJ=True)
+			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
+			nn = PhiData.nn
+		else:
+
+			xq, nq = EquidistantNodes(basis, Order, xq)
+			nn = nq
+			JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+
+		if not InterpolateFlux:
+
+			u = np.zeros([nqST, sr])
+			u[:] = np.matmul(PhiData.Phi, U)
+
+			#u = np.reshape(u,(nq,nn))
+			F = np.zeros([nqST,sr,dim])
+			f = EqnSet.ConvFluxInterior(u, F) # [nq,sr]
+
+			f = np.reshape(f,(nq,nq,sr,dim))
+			Phi = PhiData.Phi
+			Phi = np.reshape(Phi,(nq,nq,nn))
+		
+			rhs *=0.
+			for ir in range(sr):
+				for k in range(nn): # Loop over basis function in space
+					for i in range(nq): # Loop over time
+						for j in range(nq): # Loop over space
+							#Phi = PhiData.Phi[j,k]
+							rhs[k,ir] += wq[i]*wq[j]*JData.detJ[j*(JData.nq!=1)]*f[i,j]*Phi[i,j,k]
+
+			#F = np.reshape(F,(nqST,sr,dim))
+			F = np.dot(MMinv,rhs)*(1.0/JData.detJ)*dt/2.0
+
+		else:
+			F1 = np.zeros([nn,sr,dim])
+			f = EqnSet.ConvFluxInterior(U,F1)
+			F = f[:,:,0]*(1.0/JData.detJ)*dt/2.0
+		return F
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
