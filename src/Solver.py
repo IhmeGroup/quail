@@ -11,6 +11,8 @@ import time
 import MeshTools
 import Post
 import Errors
+from scipy.optimize import root
+
 import Limiter
 
 global echeck
@@ -39,8 +41,10 @@ class DG_Solver(object):
 			TimeStepper = RK4()
 		elif TimeScheme is "LSRK4":
 			TimeStepper = LSRK4()
- 		elif TimeScheme is "SSPRK3":
+		elif TimeScheme is "SSPRK3":
 			TimeStepper = SSPRK3()
+		elif TimeScheme is "ADER":
+			TimeStepper = ADER()
 		else:
 			raise NotImplementedError("Time scheme not supported")
 		# if Params["nTimeStep"] > 0:
@@ -96,6 +100,11 @@ class DG_Solver(object):
 		if Params["ApplyLimiter"] is 'PositivityPreserving' \
 			and EqnSet.StateRank == 1:
 				raise IncompatibleError
+
+		### Check time integration scheme ###
+		TimeScheme = Params["TimeScheme"]		
+		if TimeScheme is "ADER":
+			raise Errors.IncompatibleError
 
 
 	def InitState(self):
@@ -245,15 +254,7 @@ class DG_Solver(object):
 		nn = PhiData.nn
 
 		# interpolate state and gradient at quad points
-		# u = np.zeros([nq, sr])
 		u[:] = np.matmul(PhiData.Phi, U)
-		# for ir in range(sr):
-		# 	u[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
-		# gu = np.zeros([nq,sr,dim])
-		# for iq in range(nq):
-		# 	gPhi = PhiData.gPhi[iq] # [nn,dim]
-		# 	for ir in range(sr):
-		# 		gu[iq,ir,:] = np.matmul(gPhi.transpose(), U[:,ir])[0]
 
 		F = EqnSet.ConvFluxInterior(u, F) # [nq,sr,dim]
 
@@ -445,7 +446,6 @@ class DG_Solver(object):
 
 			RL, RR, StaticData = self.CalculateResidualIFace(iiface, UL, UR, RL, RR, StaticData)
 
-
 	def CalculateResidualBFace(self, ibfgrp, ibface, U, R, StaticData):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
@@ -527,7 +527,6 @@ class DG_Solver(object):
 		uB = EqnSet.BoundaryState(BC, nq, xglob, self.Time, NData, uI, uB)
 
 		# NData.nvec *= wq
-
 		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData, nq, StaticData) # [nq,sr]
 
 		R -= np.matmul(PhiData.Phi.transpose(), F*wq) # [nn,sr]
@@ -589,7 +588,7 @@ class DG_Solver(object):
 
 		EqnSet = self.EqnSet
 		mesh = self.mesh
-
+		order = self.Params["InterpOrder"]
 		TimeStepper = self.TimeStepper
 		Time = self.Time
 
@@ -717,6 +716,712 @@ class DG_Solver(object):
 
 		if WriteTimeHistory:
 			fhistory.close()
+
+class ADERDG_Solver(DG_Solver):
+	'''
+	Class: ADERDG_Solver
+	--------------------------------------------------------------------------
+	Use the ADER DG method to solve a given set of PDEs
+	'''
+	
+	def CheckSolverParams(self):
+		Params = self.Params
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		### Check interp basis validity
+		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange or BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+		    if mesh.Dim != 1:
+		        raise Errors.IncompatibleError
+		else:
+		    if mesh.Dim != 2:
+		        raise Errors.IncompatibleError
+
+		### Check uniform mesh
+		if Params["UniformMesh"] is True:
+		    ''' 
+		    Check that element volumes are the same
+		    Note that this is a necessary but not sufficient requirement
+		    '''
+		    TotVol, ElemVols = MeshTools.ElementVolumes(mesh)
+		    if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
+		        raise ValueError
+
+		### Check linear geometric mapping
+		if Params["LinearGeomMapping"] is True:
+		    for EG in mesh.ElemGroups:
+		        if EG.QOrder != 1:
+		            raise Errors.IncompatibleError
+		        if EG.QBasis == BasisType.QuadLagrange \
+		            and Params["UniformMesh"] is False:
+		            raise Errors.IncompatibleError
+
+		### Check limiter ###
+		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
+			and EqnSet.StateRank > 1:
+				raise IncompatibleError
+		if Params["ApplyLimiter"] is 'PositivityPreserving' \
+			and EqnSet.StateRank == 1:
+				raise IncompatibleError
+
+		### Check time integration scheme ###
+		TimeScheme = Params["TimeScheme"]
+		if TimeScheme is not "ADER":
+			raise Errors.IncompatibleError
+
+		### Check flux/source coefficient interpolation compatability with basis functions.
+		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+			raise Errors.IncompatibleError
+
+		### Current build only supports scalar equations
+		if EqnSet.StateRank > 1:
+			raise Errors.IncompatibleError
+	def CalculatePredictorStep(self, dt, W, Up):
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+
+		# Initialize predictor step to zero
+		Up.SetUniformValue(0.)
+
+		self.CalculatePredictorStepElems(dt, W.Arrays, Up.Arrays)
+
+		return Up
+	
+
+	def CalculatePredictorStepElems(self, dt, W, Up):
+
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		StaticData = None
+
+		for egrp in range(mesh.nElemGroup):
+			for elem in range(mesh.nElems[egrp]):
+				Up[egrp][elem], StaticData = self.CalculatePredictorElemADER(egrp, elem, dt, W[egrp][elem], Up[egrp][elem], StaticData)
+
+
+	def CalculatePredictorElemADER(self, egrp, elem, dt, W, Up, StaticData):
+
+	
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+		dim = mesh.Dim
+		basis2 = EqnSet.Bases[egrp]
+		basis1 = EqnSet.BasesADER[egrp]
+		Order = EqnSet.Orders[egrp]
+		entity = EntityType.Element
+
+		quadData = None
+		quadDataST = None
+		QuadChanged = True; QuadChangedST = True
+		EGroup=mesh.ElemGroups[egrp]
+		Elem2Nodes = EGroup.Elem2Nodes[elem]
+		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
+
+		#Flux matrices in time
+		FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
+		FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
+		
+		#Stiffness matrix in time
+		gradDir = 1
+		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, egrp=0, elem=0, basis=basis1)
+		gradDir = 0
+		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, egrp=0, elem=0, basis=basis1)
+		SMS = np.transpose(SMS)
+		#MMinv,_= GetElemInvMassMatrixADER(mesh, basis1, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
+
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis2, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST-=1
+
+		if QuadChanged:
+			quadData = QuadData(mesh, basis2, entity, QuadOrder)
+
+		if QuadChangedST:
+			quadDataST = QuadData(mesh, basis1, entity, QuadOrderST)
+
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
+
+		nqST = quadDataST.nquad
+		xqST = quadDataST.xquad
+		wqST = quadDataST.wquad
+
+		PhiData = BasisData(basis1,Order,nqST,mesh)
+		PsiData = BasisData(basis2,Order,nq,mesh)
+
+		nnST = PhiData.nn
+		nn   = PsiData.nn
+
+		#Make initial guess for the predictor step
+		Up = np.reshape(Up,(nn,nn,sr))
+
+		for ir in range(sr):
+			#for i in range(nn):
+			for j in range(nn):
+				Up[0,j,ir]=W[j,ir]
+		Up = np.reshape(Up,(nnST,sr))
+
+		def F(x):
+			x = np.reshape(x,(nnST,1))
+			fluxpoly = self.FluxState(egrp, elem, dt, Order, basis1, x)
+			f = np.matmul(FTL,x)-np.matmul(FTR,W)-np.matmul(SMT,x)+np.matmul(SMS,fluxpoly)
+			#code.interact(local=locals())
+			#print fluxpoly
+			f = np.reshape(f,(nnST))
+			return f
+
+		for ir in range(sr):
+			sol = root(F, Up[:,ir], method='krylov',tol=1.0e-6)
+			#print sol
+			#code.interact(local=locals())
+			Up[:,ir] = sol.x
+
+		return Up, StaticData
+
+
+	def CalculateResidualBFace(self, ibfgrp, ibface, U, R, StaticData):
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+		dim = mesh.Dim
+
+		BFG = mesh.BFaceGroups[ibfgrp]
+		BFace = BFG.BFaces[ibface]
+		egrp = BFace.ElemGroup
+		elem = BFace.Elem
+		face = BFace.face
+		Order = EqnSet.Orders[egrp]
+		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+
+		if StaticData is None:
+			pnq = -1
+			quadData = None
+			quadDataST = None
+			PhiData = None
+			PsiData = None
+			xglob = None
+			tglob = None
+			uI = None
+			uB = None
+			NData = None
+			GeomPhiData = None
+			TimePhiData = None
+			xelemPsi = None
+			xelemPhi = None
+			StaticData = GenericData()
+
+		else:
+			nq = StaticData.pnq
+			quadData = StaticData.quadData
+			quadDataST = StaticData.quadDataST
+			PhiData = StaticData.PhiData
+			PsiData = StaticData.PsiData
+			xglob = StaticData.xglob
+			tglob = StaticData.tglob
+			uI = StaticData.uI
+			uB = StaticData.uB
+			NData = StaticData.NData
+			GeomPhiData = StaticData.GeomPhiData
+			TimePhiData = StaticData.TimePhiData
+			xelemPsi = StaticData.xelemPsi
+			xelemPhi = StaticData.xelemPhi
+		
+		#Hard code basisType to Quads (currently only designed for 1D)
+		basis2 = EqnSet.Bases[egrp]
+		basis1 = EqnSet.BasesADER[egrp]
+
+		QuadOrderST, QuadChangedST = GetQuadOrderBFace(mesh, BFace, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST-=1
+		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
+
+		if QuadChanged:
+			quadData = QuadData(mesh, EqnSet.Bases[egrp], EntityType.BFace, QuadOrder)
+		if QuadChangedST:
+			quadDataST = QuadDataADER(mesh,basis1,EntityType.BFace, QuadOrderST)
+		
+		nqST = quadDataST.nquad
+		xqST = quadDataST.xquad
+		wqST = quadDataST.wquad
+
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
+
+		if face == 0:
+			faceST = 3
+		elif face == 1:
+			faceST = 1
+		else:
+			return IncompatibleError
+		if QuadChanged or QuadChangedST:
+			xglob = np.zeros([nq, dim])			
+			uI = np.zeros([nqST, sr])
+			uB = np.zeros([nqST, sr])
+			xelemPhi = np.zeros([nqST, mesh.Dim+1])
+			xelemPsi = np.zeros([nq, mesh.Dim])
+			PhiData = BasisData(basis1,Order,nqST,mesh)
+			xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, egrp, faceST, xqST, xelemPhi, Get_Phi=True)
+			PsiData = BasisData(basis2,Order,nq,mesh)
+			xelemPsi = PsiData.EvalBasisOnFace(mesh, egrp, face, xq, xelemPsi, Get_Phi=True)
+
+		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
+		PointsChanged = QuadChanged or face != GeomPhiData.face
+		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xelemPsi, xglob, PointsChanged)
+
+		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.TimeStepper.dt, TimePhiData, nqST, xelemPhi, tglob, PointsChanged)
+		nn = PsiData.nn
+
+		# interpolate state and gradient at quad points
+		for ir in range(sr):
+			uI[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
+
+		# Get boundary state
+		BC = EqnSet.BCs[ibfgrp]
+		uB = EqnSet.BoundaryState(BC, nqST, xglob, tglob, NData, uI, uB)
+
+		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData, nqST, StaticData) # [nq,sr]
+
+		F = np.reshape(F,(nq,nqST,sr))
+
+		for ir in range(sr):
+			#for k in range(nn): # Loop over basis function in space
+			for i in range(nqST): # Loop over time
+				for j in range(nq): # Loop over space
+					Psi = PsiData.Phi[j,:]
+					R[:,ir] -= wqST[i]*wq[j]*F[j,i]*Psi
+	
+		F = np.reshape(F,(nqST,sr))
+
+		if elem == echeck:
+			code.interact(local=locals())
+
+		# Store in StaticData
+		StaticData.pnq = nq
+		StaticData.quadData = quadData
+		StaticData.quadDataST = quadDataST
+		StaticData.PhiData = PhiData
+		StaticData.PsiData = PsiData
+		StaticData.uI = uI
+		StaticData.uB = uB
+		StaticData.F = F
+		StaticData.xglob = xglob
+		StaticData.tglob = tglob
+		StaticData.NData = NData
+		StaticData.xelemPsi = xelemPsi
+		StaticData.xelemPhi = xelemPhi
+		StaticData.GeomPhiData = GeomPhiData
+		StaticData.TimePhiData = TimePhiData
+
+
+		return R, StaticData
+
+	def CalculateResidualElem(self, egrp, elem, U, ER, StaticData):
+		# U = EqnSet.U[egrp][elem] # [nn,sr]
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+
+		basis2 = EqnSet.Bases[egrp]
+		basis1 = EqnSet.BasesADER[egrp]
+		Order = EqnSet.Orders[egrp]
+		entity = EntityType.Element
+		sr = EqnSet.StateRank
+		dim = EqnSet.Dim
+		# ER = R[egrp][elem] # [nn,sr]
+
+		if Order == 0:
+			return ER, StaticData
+
+		if StaticData is None:
+			pnq = -1
+			quadData = None
+			quadDataST = None
+			PhiData = None
+			PsiData = None
+			JData = JData = JacobianData(mesh)
+			xglob = None
+			tglob = None
+			u = None
+			F = None
+			s = None
+			NData = None
+			GeomPhiData = None
+			TimePhiData = None
+			StaticData = GenericData()
+		else:
+			nq = StaticData.pnq
+			quadData = StaticData.quadData
+			quadDataST = StaticData.quadDataST
+			PhiData = StaticData.PhiData
+			PsiData = StaticData.PsiData
+			JData = StaticData.JData
+			xglob = StaticData.xglob
+			tglob = StaticData.tglob
+			u = StaticData.u
+			F = StaticData.F
+			s = StaticData.s
+			NData = StaticData.NData
+			GeomPhiData = StaticData.GeomPhiData
+			TimePhiData = StaticData.TimePhiData
+
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST-=1
+
+		if QuadChanged:
+			quadData = QuadData(mesh, basis2, entity, QuadOrder)
+		if QuadChangedST:
+			quadDataST = QuadData(mesh, basis1, entity, QuadOrderST)
+
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
+
+		nqST = quadDataST.nquad
+		xqST = quadDataST.xquad
+		wqST = quadDataST.wquad
+
+		if QuadChanged:
+			PhiData = BasisData(basis1,Order,nqST,mesh)
+			PhiData.EvalBasis(xqST, Get_Phi=True, Get_GPhi=False)
+			#PhiData.EvalBasis(xqST, Get_Phi=True, Get_GPhi=False)
+			PsiData = BasisData(basis2,Order,nq,mesh)
+			PsiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+
+			xglob = np.zeros([nq, dim])
+			u = np.zeros([nqST, sr])
+			F = np.zeros([nqST, sr, dim])
+			s = np.zeros([nqST, sr])
+
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
+		PsiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
+
+		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
+		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.TimeStepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
+
+
+		nn = PsiData.nn
+
+		#Calculate dx and dt(this is for constant delta_x, but works on different mesh resolutions)
+		EGroup=mesh.ElemGroups[egrp]
+		Elem2Nodes = EGroup.Elem2Nodes[elem]
+		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
+		TimeStepper = self.TimeStepper
+		dt = TimeStepper.dt
+
+		# interpolate state and gradient at quad points
+		# u = np.zeros([nq, sr])
+		u[:] = np.matmul(PhiData.Phi, U)
+
+		#u = np.reshape(u,(nq,nn))
+		F = EqnSet.ConvFluxInterior(u, F) # [nq,sr,dim]
+
+		F = np.reshape(F,(nq,nq,sr,dim))
+
+		for ir in range(sr):
+			for k in range(nn): # Loop over basis function in space
+				for i in range(nq): # Loop over time
+					for j in range(nq): # Loop over space
+						gPsi = PsiData.gPhi[j,k]
+						ER[k,ir] += wq[i]*wq[j]*JData.detJ[j*(JData.nq!=1)]*F[i,j]*gPsi
+
+		F = np.reshape(F,(nqST,sr,dim))
+
+		s = np.zeros([nqST,sr])
+		s = EqnSet.SourceState(nqST, xglob, tglob, NData, u, s) # [nq,sr,dim]
+
+		s = np.reshape(s,(nq,nq,sr))
+		# Calculate source term integral
+		for ir in range(sr):
+			for k in range(nn):
+				for i in range(nq): # Loop over time
+					for j in range(nq): # Loop over space
+						Psi = PsiData.Phi[j,k]
+						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.detJ[iq*(JData.nq!=1)]*Psi
+
+		s = np.reshape(s,(nqST,sr))
+
+
+		# s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr,dim]
+		# # Calculate source term integral
+		# for ir in range(sr):
+		# 	for jn in range(nn):
+		# 		for iq in range(nq):
+		# 			Phi = PhiData.Phi[iq,jn]
+		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
+
+		if elem == echeck:
+			code.interact(local=locals())
+
+		# Store in StaticData
+		StaticData.pnq = nq
+		StaticData.quadData = quadData
+		StaticData.quadDataST = quadDataST
+		StaticData.PhiData = PhiData
+		StaticData.PsiData = PsiData
+		StaticData.JData = JData
+		StaticData.xglob = xglob
+		StaticData.tglob = tglob
+		StaticData.u = u
+		StaticData.F = F
+		StaticData.s = s
+		StaticData.NData = NData
+		StaticData.GeomPhiData = GeomPhiData
+		StaticData.TimePhiData = TimePhiData
+
+		return ER, StaticData
+
+	def CalculateResidualIFace(self, iiface, UL, UR, RL, RR, StaticData):
+		mesh = self.mesh
+		dim = mesh.Dim
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+
+		IFace = mesh.IFaces[iiface]
+		egrpL = IFace.ElemGroupL
+		egrpR = IFace.ElemGroupR
+		elemL = IFace.ElemL
+		elemR = IFace.ElemR
+		faceL = IFace.faceL
+		faceR = IFace.faceR
+		OrderL = EqnSet.Orders[egrpL]
+		OrderR = EqnSet.Orders[egrpR]
+		nFacePerElemL = mesh.ElemGroups[egrpL].nFacePerElem
+		nFacePerElemR = mesh.ElemGroups[egrpR].nFacePerElem
+
+		if StaticData is None:
+			pnq = -1
+			quadData = None
+			quadDataST = None
+			PhiDataL = None
+			PhiDataR = None
+			PsiDataL = None
+			PsiDataR = None
+			xelemLPhi = None
+			xelemRPhi = None
+			xelemLPsi = None
+			xelemRPsi = None
+			uL = None
+			uR = None
+			StaticData = GenericData()
+			NData = None
+		else:
+			nq = StaticData.pnq
+			quadDataST = StaticData.quadDataST
+			quadData = StaticData.quadData
+			PhiDataL = StaticData.PhiDataL
+			PhiDataR = StaticData.PhiDataR
+			PsiDataL = StaticData.PsiDataL
+			PsiDataR = StaticData.PsiDataR
+			xelemLPhi = StaticData.xelemLPhi
+			xelemRPhi = StaticData.xelemRPhi
+			xelemLPsi = StaticData.xelemLPsi
+			xelemRPsi = StaticData.xelemRPsi
+			uL = StaticData.uL
+			uR = StaticData.uR
+			NData = StaticData.NData
+
+
+		#Hard code basisType to Quads (currently only designed for 1D)
+		basis2 = EqnSet.Bases[egrpL]
+		basis1 = EqnSet.BasesADER[egrpL]
+
+		QuadOrderST, QuadChangedST = GetQuadOrderIFace(mesh, IFace, basis1, np.amax([OrderL,OrderR]), EqnSet, quadDataST)
+		QuadOrderST-=1
+		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.ElemGroups[egrpL].QBasis, np.amax([OrderL,OrderR]), EqnSet, quadData)
+
+		if QuadChanged:
+			quadData = QuadData(mesh, EqnSet.Bases[egrpL], EntityType.IFace, QuadOrder)
+		if QuadChangedST:
+			quadDataST = QuadDataADER(mesh,basis1,EntityType.IFace, QuadOrderST)
+		
+		nqST = quadDataST.nquad
+		xqST = quadDataST.xquad
+		wqST = quadDataST.wquad
+
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
+
+		if faceL == 0:
+			faceSTL = 3
+		elif faceL == 1:
+			faceSTL = 1
+		else:
+			return IncompatibleError
+		if faceR == 0:
+			faceSTR = 3
+		elif faceR == 1:
+			faceSTR = 1
+		else:
+			return IncompatibleError
+
+		if QuadChanged or QuadChangedST:
+
+			xelemLPhi = np.zeros([nqST, dim+1])
+			xelemRPhi = np.zeros([nqST, dim+1])
+			xelemLPsi = np.zeros([nq, dim])
+			xelemRPsi = np.zeros([nq, dim])
+			uL = np.zeros([nqST, sr])
+			uR = np.zeros([nqST, sr])
+
+			#Evaluate space-time basis functions
+			PhiDataL = BasisData(basis1,OrderL,nqST,mesh)
+			PhiDataR = BasisData(basis1,OrderR,nqST,mesh)
+			xelemLPhi = PhiDataL.EvalBasisOnFaceADER(mesh, basis1, egrpL, faceSTL, xqST, xelemLPhi, Get_Phi=True)
+			xelemRPhi = PhiDataR.EvalBasisOnFaceADER(mesh, basis1, egrpR, faceSTR, xqST[::-1], xelemRPhi, Get_Phi=True)
+
+			#Evaluate spacial basis functions
+			PsiDataL = BasisData(basis2,OrderL,nq,mesh)
+			PsiDataR = BasisData(basis2,OrderR,nq,mesh)
+			xelemLPsi = PsiDataL.EvalBasisOnFace(mesh, egrpL, faceL, xq, xelemLPsi, Get_Phi=True)
+			xelemRPsi = PsiDataR.EvalBasisOnFace(mesh, egrpR, faceR, xq[::-1], xelemRPsi, Get_Phi=True)
+
+
+
+		NData = IFaceNormal(mesh, IFace, nq, xq, NData)
+		# NData.nvec *= wq
+
+		nL = PsiDataL.nn
+		nR = PsiDataR.nn
+		nn = np.amax([nL,nR])
+
+		TimeStepper = self.TimeStepper
+		dt = TimeStepper.dt
+
+		for ir in range(sr):
+			uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
+			uR[:,ir] = np.matmul(PhiDataR.Phi, UR[:,ir])
+
+		F = EqnSet.ConvFluxNumerical(uL, uR, NData, nqST, StaticData) # [nq,sr]
+
+		F = np.reshape(F,(nq,nqST,sr))
+
+		for ir in range(sr):
+			#for k in range(nn): # Loop over basis function in space
+			for i in range(nqST): # Loop over time
+				for j in range(nq): # Loop over space
+					PsiL = PsiDataL.Phi[j,:]
+					PsiR = PsiDataR.Phi[j,:]
+					RL[:,ir] -= wqST[i]*wq[j]*F[j,i]*PsiL
+					RR[:,ir] += wqST[i]*wq[j]*F[j,i]*PsiR
+
+		F = np.reshape(F,(nqST,sr))
+
+		if elemL == echeck or elemR == echeck:
+			if elemL == echeck: print("Left!")
+			else: print("Right!")
+			code.interact(local=locals())
+
+		# Store in StaticData
+		StaticData.pnq = nq
+		StaticData.quadData = quadData
+		StaticData.quadDataST = quadDataST
+		StaticData.PhiDataL = PhiDataL
+		StaticData.PhiDataR = PhiDataR
+		StaticData.PsiDataL = PsiDataL
+		StaticData.PsiDataR = PsiDataR
+		StaticData.xelemLPhi = xelemLPhi
+		StaticData.xelemRPhi = xelemRPhi
+		StaticData.xelemLPsi = xelemLPsi
+		StaticData.xelemRPsi = xelemRPsi
+		StaticData.uL = uL
+		StaticData.uR = uR
+		StaticData.NData = NData
+
+		return RL, RR, StaticData
+
+
+	def FluxState(self, egrp, elem, dt, Order, basis, U):
+
+		mesh = self.mesh
+		dim = mesh.Dim
+		EqnSet = self.EqnSet
+		sr = EqnSet.StateRank
+		Params = self.Params
+		entity = EntityType.Element
+		InterpolateFlux = Params["InterpolateFlux"]
+
+		quadData = None
+		quadDataST = None
+		JData = JacobianData(mesh)
+		GeomPhiData = None
+		xq = None; xphys = None; QuadChanged = True; QuadChangedST = True;
+
+		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
+
+		if not InterpolateFlux:
+
+
+			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, 4*Order, EqnSet, quadData)
+			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis, 4*Order, EqnSet, quadDataST)
+			QuadOrderST-=1
+
+			if QuadChanged:
+				quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, entity, QuadOrder)
+			if QuadChangedST:
+				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
+
+			nq = quadData.nquad
+			xq = quadData.xquad
+			wq = quadData.wquad
+
+			nqST = quadDataST.nquad
+			xqST = quadDataST.xquad
+			wqST = quadDataST.wquad
+
+			if QuadChanged:
+
+				PhiData = BasisData(basis,Order,nqST,mesh)
+				PhiData.EvalBasis(xqST, Get_Phi=True)
+				xphys = np.zeros([nqST, mesh.Dim])
+
+			JData.ElemJacobian(egrp,elem,nqST,xqST,mesh,Get_detJ=True)
+			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
+			nn = PhiData.nn
+		else:
+
+			xq, nq = EquidistantNodes(basis, Order, xq)
+			nn = nq
+			JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+
+		if not InterpolateFlux:
+
+			u = np.zeros([nqST, sr])
+			u[:] = np.matmul(PhiData.Phi, U)
+
+			#u = np.reshape(u,(nq,nn))
+			F = np.zeros([nqST,sr,dim])
+			f = EqnSet.ConvFluxInterior(u, F) # [nq,sr]
+
+			f = np.reshape(f,(nq,nq,sr,dim))
+			Phi = PhiData.Phi
+			Phi = np.reshape(Phi,(nq,nq,nn))
+		
+			rhs *=0.
+			for ir in range(sr):
+				for k in range(nn): # Loop over basis function in space
+					for i in range(nq): # Loop over time
+						for j in range(nq): # Loop over space
+							#Phi = PhiData.Phi[j,k]
+							rhs[k,ir] += wq[i]*wq[j]*JData.detJ[j*(JData.nq!=1)]*f[i,j]*Phi[i,j,k]
+
+			#F = np.reshape(F,(nqST,sr,dim))
+			F = np.dot(MMinv,rhs)*(1.0/JData.detJ)*dt/2.0
+
+		else:
+			F1 = np.zeros([nn,sr,dim])
+			f = EqnSet.ConvFluxInterior(U,F1)
+			F = f[:,:,0]*(1.0/JData.detJ)*dt/2.0
+		return F
+
+
+
+
+
+
+
+
 
 
 

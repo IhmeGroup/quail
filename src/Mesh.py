@@ -79,6 +79,56 @@ def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None, PointsChanged=
 
     return xphys, PhiData
 
+def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, PointsChanged=False):
+    '''
+    Function: Ref2Phys
+    -------------------
+    This function converts reference space coordinates to physical
+    space coordinates
+
+    INPUTS:
+        mesh: Mesh object
+        egrp: element group
+        elem: element 
+        PhiData: basis data
+        npoint: number of coordinates to convert
+        xref: coordinates in reference space
+        tphys: pre-allocated storage for physical time coordinates (optional) 
+
+    OUTPUTS:
+        tphys: coordinates in temporal space
+    '''
+    EGroup = mesh.ElemGroups[egrp]
+    QBasis = BasisType.QuadLegendre
+    QOrder = EGroup.QOrder
+
+    if PhiData is None:
+        PhiData = Basis.BasisData(QBasis,QOrder,npoint,mesh)
+        PointsChanged = True
+    if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
+        PhiData.EvalBasis(xref, Get_Phi=True)
+        # PhiData = Basis.BasisData(egrp,QOrder,EntityType.Element,npoint,xref,mesh,True,False)
+
+    dim = mesh.Dim
+    
+    Phi = PhiData.Phi
+    nn = PhiData.nn
+    #if nn != EGroup.nNodePerElem:
+    #    raise Exception("Wrong number of nodes per element")
+
+    #ElemNodes = EGroup.Elem2Nodes[elem]
+    if tphys is None:
+        tphys = np.zeros([npoint,dim])
+    else:
+        tphys[:] = time
+    for ipoint in range(npoint):
+        #for n in range(nn):
+            #nodeNum = ElemNodes[n]
+            #val = Phi[ipoint][n]
+            #for d in range(dim):
+        tphys[ipoint] = (time/2.)*(1-xref[ipoint,dim])+((time+dt)/2.0)*(1+xref[ipoint,dim])
+
+    return tphys, PhiData
 
 def RefFace2Elem(Shape, face, nq, xface, xelem=None):
     '''

@@ -21,19 +21,21 @@ mesh = MeshCommon.Mesh1D(Uniform=True, nElem=50, xmin=0., xmax=1., Periodic=Peri
 
 
 ### Solver parameters
-dt = 0.001
+#dt = 0.001
 mu = 1.
 EndTime = 0.3
-#nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
-nTimeStep = int(EndTime/dt)
+nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
+#nTimeStep = int(EndTime/dt)
 InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="SegLagrange",TimeScheme="SSPRK3")
+								 InterpBasis="SegLegendre",TimeScheme="ADER")
+								 #ApplyLimiter="ScalarPositivityPreserving")
 
 ### Physics
-ConstVelocity = 0.5
+Velocity = 1.0
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-EqnSet.SetParams(AdvectionOperator="Burgers")
+EqnSet.SetParams(ConstVelocity=Velocity)
+#EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 
 
@@ -46,14 +48,14 @@ EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 # something lower, (i.e. 0.001) then you will observe a stable solution, but the location of the shock
 # will not be correct. It will have propogated at some other speed. (Note: RK4 cannot run stiff case)
 # -----------------------------------------------------------------------------------------------------
-EqnSet.SetSource(Function=EqnSet.FcnStiffSource,beta=0.5, stiffness = 0.001)
+EqnSet.SetSource(Function=EqnSet.FcnStiffSource,beta=0.5, stiffness = 1.)
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 
 # Exact solution
 EqnSet.ExactSoln.Set(Function=EqnSet.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 # Boundary conditions
-if ConstVelocity >= 0.:
+if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
@@ -63,6 +65,7 @@ if not Periodic:
 		## Left
 		if BC.Name is Inflow:
 			BC.Set(Function=EqnSet.FcnScalarShock, BCType=EqnSet.BCType["FullState"], uL = 1., uR = 0., xshock = 0.3)
+			#BC.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["FullState"], State = [1.])
 		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
 			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
@@ -71,7 +74,7 @@ if not Periodic:
 
 
 ### Solve
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
 solver.solve()
 
 
@@ -80,7 +83,7 @@ solver.solve()
 #TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact = True, Label="Q_h")
+Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact = True, PlotIC = True, Label="Q_h")
 Plot.ShowPlot()
 
 

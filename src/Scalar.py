@@ -61,6 +61,17 @@ class Scalar(object):
 		self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 
+		if dim == 1 and basis == BasisType.SegLegendre:
+			basisADER = BasisType.QuadLegendre
+		elif dim == 1 and basis == BasisType.SegLagrange:
+			basisADER = BasisType.QuadLagrange
+		else:
+			raise Errors.IncompatibleError
+
+		self.BasesADER = [basisADER for egrp in range(mesh.nElemGroup)]
+		ADERArrayDims = [[mesh.nElems[egrp],Order2nNode(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
+					for egrp in range(mesh.nElemGroup)]
+		self.Up = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ADERArrayDims)
 
 		# BC treatments
 		self.SetBCTreatment()
@@ -207,6 +218,7 @@ class Scalar(object):
 		fR 		= (ur1*uR)
 
 		du = uR - uL
+
 		# Check flow direction
 		if np.sign(c)<0:
 			c = -c
@@ -214,51 +226,57 @@ class Scalar(object):
 		# flux assembly 
 		F = (0.5*n*(fL+fR) - 0.5*c*du)
 
-		#code.interact(local=locals())
-
 		return F
 
 	def ConvFluxNumerical(self, uL, uR, NData, nq, data):
 		# nq = NData.nq
 		if nq != uL.shape[0] or nq != uR.shape[0]:
 			raise Exception("Wrong nq")	
-
+		try:
+			u = data.u
+		except:
+			data.u = u = np.zeros_like(uL)
 		try: 
 			F = data.F
 		except AttributeError: 
 			data.F = F = np.zeros_like(uL)
+		try:
+			c = data.c
+		except:
+			data.c = c = np.zeros_like(uL)
 
 	    #Calculate the max speed and keep its sign.
-		u = max(abs(uL),abs(uR))
+		for i in range(nq):
+
+			u[i] = max(abs(uL[i]),abs(uR[i]))
  		
- 		if u == abs(uL):
- 			usign = np.sign(uL)
- 		elif u == abs(uR):
- 			usign = np.sign(uR)
- 		u = usign*u
+	 		if u[i] == abs(uL[i]):
+	 			usign = np.sign(uL[i])
+	 		elif u[i] == abs(uR[i]):
+	 			usign = np.sign(uR[i])
+	 		u[i] = usign*u[i]
 
-		c = self.getAdvOperator(u)
+			c[i] = self.getAdvOperator(u[i])
+
 		ConvFlux = self.Params["ConvFlux"] 
-
-
-
-
 
 		if ConvFlux == self.ConvFluxType.Upwind \
 			and self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
 			raise Errors.IncompatibleError
 
 		for iq in range(nq):
-			nvec = NData.nvec[iq,:]
+			if NData.nvec.size < nq:
+				nvec = NData.nvec[0,:]
+			else:
+				nvec = NData.nvec[iq,:]
 			n = nvec/np.linalg.norm(nvec)
 
 			if ConvFlux == self.ConvFluxType.Upwind:
 				F[iq,:] = self.ConvFluxUpwind(uL[iq,:], uR[iq,:], c, n)
 			elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
-				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c, n)
+				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c[iq], n)
 			else:
 				raise Exception("Invalid flux function")
-
 		return F
 
 	def BoundaryState(self, BC, nq, xglob, Time, NData, uI, uB=None):
@@ -405,6 +423,76 @@ class Scalar(object):
 
 		return U
 
+	def FcnDampingSine(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		Data = FcnData.Data
+		U = FcnData.U
+
+		try:
+			omega = Data.omega
+		except AttributeError:
+			omega = 2.*np.pi
+		try:
+			nu = Data.nu
+		except AttributeError:
+			nu = 1.0
+
+		c = self.getAdvOperator(U)
+		U[:] = np.sin(omega*(x-c*t))*np.exp(nu*t)
+
+		return U
+
+	def FcnPiecewiseBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		k = 0
+		ir = len(x)
+		if isinstance(t,float):
+			it = 1
+			t=np.reshape(t,[it])
+		else:
+			it = len(t)
+		for j in range(it):
+			if t[j] == 0.0:
+				for i in range(ir):
+					if x[i]<-1.:
+						U[k] = 1.
+					elif -1.<=x[i] and 0.>x[i]:
+						U[k] = x[i]+2.
+					elif x[i]>=0. and x[i]<2.:
+						U[k] = 2.-1.5*x[i]+(3./8.)*x[i]*x[i]
+					elif x[i]>=2.:
+						U[k] = 0.5
+					k+=1
+			else:
+				for i in range(ir):
+					if x[i]-t[j]<-1.:
+						U[k] = 1.
+					elif -1.<=((x[i]-2.*t[j])/(t[j]+1.)) and 0.>((x[i]-2.*t[j])/(t[j]+1.)):
+						U[k] = (x[i]+2.)/(t[j]+1.)
+					elif (x[i]-2.*t[j])/(t[j]+1.)>=0. and x[i]-t[j]/2.<2.:
+						U[k] = (8.+6.*x[i]*t[j]-12.*t[j]-np.sqrt(96.*x[i]*t[j]-48.*t[j]*t[j]-192.*t[j]+64.))/(6.*t[j]*t[j])
+					elif x[i]-t[j]/2.>=2.:
+						U[k] = 0.5
+					k+=1
+		return U
+
+	def FcnLinearBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		a = -1.
+		b = 1.
+		U = (a*x+b)/(a*t+1.)
+
+		return U
+
 	def FcnShiftedCose(self, FcnData):
 		x = FcnData.x
 		t = FcnData.Time
@@ -454,7 +542,7 @@ class Scalar(object):
 		except AttributeError:
 			xshock = -0.5
 		''' Fill state '''
-		us = 0.5*(uR+uL)
+		us = (uR+uL)
 		xshock = xshock+us*t
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
@@ -486,6 +574,22 @@ class Scalar(object):
 
 		return S
 
+	def FcnSimpleSource(self,FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		S = FcnData.S
+		Data = FcnData.Data
+
+		try:
+			nu = Data.nu
+		except AttributeError:
+			nu = -1.0
+
+		S[:] = nu*U[:]
+
+		return S
+
 	def FcnDummySource(self,FcnData):
 		x = FcnData.x
 		t = FcnData.Time
@@ -497,8 +601,3 @@ class Scalar(object):
 
 
 		return S
-
-
-
-
-	

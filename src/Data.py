@@ -133,7 +133,7 @@ class ArrayList(object):
 
         for n in range(self.nArray):
             self.Arrays[n][:] += c*A.Arrays[n][:]
-
+    
     def CopyToSelf(self, ArrayListToCopy):
         A = ArrayListToCopy
         if self.nArray != A.nArray or self.ArrayDims != A.ArrayDims:

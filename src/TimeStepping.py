@@ -1,7 +1,9 @@
 import numpy as np 
+import code
 from Data import ArrayList
-from SolverTools import MultInvMassMatrix
-
+from SolverTools import MultInvMassMatrix, MultInvADER
+#from Basis import GetStiffnessMatrixADER, GetTemporalFluxADER
+#import General
 
 class FE(object):
 	def __init__(self, dt=0.):
@@ -77,7 +79,6 @@ class RK4(FE):
 		except AttributeError: 
 			Utemp = ArrayList(SimilarArray=U)
 			DataSet.Utemp = Utemp
-
 		# first stage
 		R = solver.CalculateResidual(U, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU1)
@@ -133,7 +134,6 @@ class LSRK4(FE):
 		    2802321613138.0/2924317926251.0])
 		self.nStage = 5
 
-	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
@@ -217,4 +217,42 @@ class SSPRK3(FE):
 			U.AddToSelf(dU, c=self.ssprk3b[INTRK])
 			solver.ApplyLimiter(U)
 		return R	
+
+
+
+class ADER(object):
+	def __init__(self, dt=0.):
+		self.TimeStep = dt
+
+	def TakeTimeStep(self, solver):
+		EqnSet = solver.EqnSet
+		DataSet = solver.DataSet
+		mesh = solver.mesh
+		W = EqnSet.U
+		Up = EqnSet.Up
+		try:
+			R = DataSet.W
+		except AttributeError:
+			R = ArrayList(SimilarArray=W)
+			DataSet.R = R
+		try: 
+			dU = DataSet.dU
+		except AttributeError:
+			dU = ArrayList(SimilarArray=W)
+			DataSet.dU=dU
+
+		# Prediction Step (Non-linear Case)
+		Up = solver.CalculatePredictorStep(self.dt, W, Up)
+
+		# Prediction Step (Linear Case)
+		#MultInvADER(mesh, solver, self.dt, W, Up)
+
+		# Correction Step
+		R = solver.CalculateResidual(Up, R)
+
+		MultInvMassMatrix(mesh, solver, self.dt/2., R, dU)
+
+		W.AddToSelf(dU)
+		solver.ApplyLimiter(W)
+		return R
 
