@@ -60,7 +60,14 @@ class Scalar(object):
 					for egrp in range(mesh.nElemGroup)]
 		self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-		basisADER = BasisType.QuadLegendre
+
+		if dim == 1 and basis == BasisType.SegLegendre:
+			basisADER = BasisType.QuadLegendre
+		elif dim == 1 and basis == BasisType.SegLagrange:
+			basisADER = BasisType.QuadLagrange
+		else:
+			raise Errors.IncompatibleError
+
 		self.BasesADER = [basisADER for egrp in range(mesh.nElemGroup)]
 		ADERArrayDims = [[mesh.nElems[egrp],Order2nNode(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
 					for egrp in range(mesh.nElemGroup)]
@@ -176,7 +183,6 @@ class Scalar(object):
 
 	def ConvFluxInterior(self, u, F):
 		c = self.getAdvOperator(u)
-
 		#a = self.Params["Velocity"]
 		if F is None:
 			F = np.zeros(u.shape + (self.Dim,))
@@ -212,6 +218,7 @@ class Scalar(object):
 		fR 		= (ur1*uR)
 
 		du = uR - uL
+
 		# Check flow direction
 		if np.sign(c)<0:
 			c = -c
@@ -233,6 +240,10 @@ class Scalar(object):
 			F = data.F
 		except AttributeError: 
 			data.F = F = np.zeros_like(uL)
+		try:
+			c = data.c
+		except:
+			data.c = c = np.zeros_like(uL)
 
 	    #Calculate the max speed and keep its sign.
 		for i in range(nq):
@@ -245,7 +256,8 @@ class Scalar(object):
 	 			usign = np.sign(uR[i])
 	 		u[i] = usign*u[i]
 
-		c = self.getAdvOperator(u)
+			c[i] = self.getAdvOperator(u[i])
+
 		ConvFlux = self.Params["ConvFlux"] 
 
 		if ConvFlux == self.ConvFluxType.Upwind \
@@ -262,7 +274,7 @@ class Scalar(object):
 			if ConvFlux == self.ConvFluxType.Upwind:
 				F[iq,:] = self.ConvFluxUpwind(uL[iq,:], uR[iq,:], c, n)
 			elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
-				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c, n)
+				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c[iq], n)
 			else:
 				raise Exception("Invalid flux function")
 		return F
@@ -431,6 +443,56 @@ class Scalar(object):
 
 		return U
 
+	def FcnPiecewiseBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		k = 0
+		ir = len(x)
+		if isinstance(t,float):
+			it = 1
+			t=np.reshape(t,[it])
+		else:
+			it = len(t)
+		for j in range(it):
+			if t[j] == 0.0:
+				for i in range(ir):
+					if x[i]<-1.:
+						U[k] = 1.
+					elif -1.<=x[i] and 0.>x[i]:
+						U[k] = x[i]+2.
+					elif x[i]>=0. and x[i]<2.:
+						U[k] = 2.-1.5*x[i]+(3./8.)*x[i]*x[i]
+					elif x[i]>=2.:
+						U[k] = 0.5
+					k+=1
+			else:
+				for i in range(ir):
+					if x[i]-t[j]<-1.:
+						U[k] = 1.
+					elif -1.<=((x[i]-2.*t[j])/(t[j]+1.)) and 0.>((x[i]-2.*t[j])/(t[j]+1.)):
+						U[k] = (x[i]+2.)/(t[j]+1.)
+					elif (x[i]-2.*t[j])/(t[j]+1.)>=0. and x[i]-t[j]/2.<2.:
+						U[k] = (8.+6.*x[i]*t[j]-12.*t[j]-np.sqrt(96.*x[i]*t[j]-48.*t[j]*t[j]-192.*t[j]+64.))/(6.*t[j]*t[j])
+					elif x[i]-t[j]/2.>=2.:
+						U[k] = 0.5
+					k+=1
+		return U
+
+	def FcnLinearBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		a = -1.
+		b = 1.
+		U = (a*x+b)/(a*t+1.)
+
+		return U
+
 	def FcnShiftedCose(self, FcnData):
 		x = FcnData.x
 		t = FcnData.Time
@@ -523,7 +585,7 @@ class Scalar(object):
 			nu = Data.nu
 		except AttributeError:
 			nu = -1.0
-		#code.interact(local=locals())
+
 		S[:] = nu*U[:]
 
 		return S
@@ -539,8 +601,3 @@ class Scalar(object):
 
 
 		return S
-
-
-
-
-	
