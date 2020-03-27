@@ -28,7 +28,7 @@ nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.01))
 #nTimeStep = int(EndTime/dt)
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="SegLagrange",TimeScheme="ADER")
+								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
 ### Physics
 ConstVelocity = 1.
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)

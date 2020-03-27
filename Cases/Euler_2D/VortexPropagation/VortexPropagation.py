@@ -13,7 +13,7 @@ import MeshGmsh
 ### Mesh
 folder = "meshes/"
 # Quadrilaterals
-subfolder = "Quadrilaterals/"; InterpBasis = "QuadLagrange"
+subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
 # # Structured
 subsubfolder = "Structured/"
 FileName = "box_5x5.msh"
@@ -28,7 +28,7 @@ FileName = "box_5x5.msh"
 # FileName = "box_400_elem.msh"
 # FileName = "box_1600_elem.msh"
 ## Triangles
-#subfolder = "Triangles/"; InterpBasis = "TriLagrange"
+#subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
 # Structured
 #subsubfolder = "Structured/"
 #FileName = "box_5x5.msh"

@@ -35,7 +35,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[1]
 	EntityInfo.nNode = 2
 	EntityInfo.QOrder = 1
-	EntityInfo.QBasis = General.BasisType.SegLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeSeg
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 1])
@@ -44,7 +44,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[2]
 	EntityInfo.nNode = 3
 	EntityInfo.QOrder = 1
-	EntityInfo.QBasis = General.BasisType.TriLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeTri
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 1, 2])
@@ -53,7 +53,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[3]
 	EntityInfo.nNode = 4
 	EntityInfo.QOrder = 1
-	EntityInfo.QBasis = General.BasisType.QuadLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeQuad
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 1, 3, 2])
@@ -62,7 +62,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[8]
 	EntityInfo.nNode = 3
 	EntityInfo.QOrder = 2
-	EntityInfo.QBasis = General.BasisType.SegLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeSeg
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 1])
@@ -71,7 +71,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[9]
 	EntityInfo.nNode = 6
 	EntityInfo.QOrder = 2
-	EntityInfo.QBasis = General.BasisType.TriLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeTri
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 3, 1, 5, 4, 2])
@@ -80,7 +80,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[10]
 	EntityInfo.nNode = 9
 	EntityInfo.QOrder = 2
-	EntityInfo.QBasis = General.BasisType.QuadLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeQuad
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 4, 1, 7, 8, 5, 3, 6, 2])
@@ -96,7 +96,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[21]
 	EntityInfo.nNode = 10
 	EntityInfo.QOrder = 3
-	EntityInfo.QBasis = General.BasisType.TriLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeTri
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 3, 4, 1, 8, 9, 5, 7, 6, 2])
@@ -105,7 +105,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[23]
 	EntityInfo.nNode = 15
 	EntityInfo.QOrder = 4
-	EntityInfo.QBasis = General.BasisType.TriLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeTri
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 3, 4, 5, 1, 11, 12, 13, 6, 
@@ -115,7 +115,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[26]
 	EntityInfo.nNode = 4
 	EntityInfo.QOrder = 3
-	EntityInfo.QBasis = General.BasisType.SegLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeSeg
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 3, 1])
@@ -124,7 +124,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[27]
 	EntityInfo.nNode = 5
 	EntityInfo.QOrder = 4
-	EntityInfo.QBasis = General.BasisType.SegLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeSeg
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 1])
@@ -133,7 +133,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[28]
 	EntityInfo.nNode = 6
 	EntityInfo.QOrder = 5
-	EntityInfo.QBasis = General.BasisType.SegLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeSeg
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 5, 1])
@@ -142,7 +142,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[36]
 	EntityInfo.nNode = 16
 	EntityInfo.QOrder = 3
-	EntityInfo.QBasis = General.BasisType.QuadLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeQuad
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 4, 5, 1, 11, 12, 13, 6, 10, 15, 14, 
@@ -152,7 +152,7 @@ def CreateGmshEntitiesInfo():
 	EntityInfo = EntitiesInfo[37]
 	EntityInfo.nNode = 25
 	EntityInfo.QOrder = 4
-	EntityInfo.QBasis = General.BasisType.QuadLagrange
+	EntityInfo.QBasis = General.BasisType.LagrangeQuad
 	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 4, 5, 6, 1, 15, 16, 20, 17, 7,

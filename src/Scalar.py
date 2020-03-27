@@ -63,10 +63,10 @@ class Scalar(object):
 		self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 
 		if dim == 1:
-			if basis == BasisType.SegLegendre:
-				basisADER = BasisType.QuadLegendre
-			elif basis == BasisType.SegLagrange:
-				basisADER = BasisType.QuadLagrange
+			if basis == BasisType.LegendreSeg:
+				basisADER = BasisType.LegendreQuad
+			elif basis == BasisType.LagrangeSeg:
+				basisADER = BasisType.LagrangeQuad
 			else:
 				raise Errors.IncompatibleError
 		else:

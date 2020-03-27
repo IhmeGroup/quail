@@ -13,7 +13,7 @@ import MeshGmsh
 ### Mesh
 folder = "meshes/"
 ## Quadrilaterals
-subfolder = "Quadrilaterals/"; InterpBasis = "QuadLagrange"
+subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
 # FileName = "bump0_q1.msh"; 
 FileName = "bump0.msh"; 
 InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.]
@@ -24,7 +24,7 @@ InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.
 # FileName = "bump2.msh"
 # InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [10., 12., 13.5]
 ## Triangles
-# subfolder = "Triangles/"; InterpBasis = "TriLagrange"
+# subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
 MeshFile = folder + subfolder + FileName
 mesh = MeshGmsh.ReadGmshFile(MeshFile)
 

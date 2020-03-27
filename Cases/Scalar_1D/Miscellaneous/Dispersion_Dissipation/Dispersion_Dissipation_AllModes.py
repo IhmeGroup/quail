@@ -13,7 +13,7 @@ import Solver
 
 ### Parameters
 InterpOrder = p = 5
-basis = General.BasisType["SegLagrange"]
+basis = General.BasisType["LagrangeSeg"]
 nL = 51 # number of wavenumbers
 alpha = 0. # 0 for upwind flux, 1 for central flux
 
@@ -25,7 +25,7 @@ h = mesh.Coords[1,0] - mesh.Coords[0,0]
 
 
 ### Solver and physics
-Params = General.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="SegLagrange")
+Params = General.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeSeg")
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(Velocity=1.)
 # Initial conditions

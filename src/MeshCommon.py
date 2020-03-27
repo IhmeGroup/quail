@@ -89,7 +89,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 	# mesh.ElemGroups = [ElemGroup() for i in range(mesh.nElemGroup)]
 	mesh.AllocElemGroups()
 	EGroup = mesh.ElemGroups[0]
-	EGroup.SetParams(QBasis=BasisType["SegLagrange"], QOrder=1, nElem=nElem)
+	EGroup.SetParams(QBasis=BasisType["LagrangeSeg"], QOrder=1, nElem=nElem)
 	# EGroup.nFaceMax = np.amax(EGroup.nFace)
 	# EGroup.Faces = [[Face()  for j in range(EGroup.nFacePerElem)] for i in range(EGroup.nElem)]
 	EGroup.AllocFaces()

@@ -10,8 +10,8 @@ from mpl_toolkits.mplot3d import axes3d
 
 ### Parameters
 # basis type
-# basis = General.BasisType.QuadLagrange 
-basis = General.BasisType.TriLagrange 
+# basis = General.BasisType.LagrangeQuad 
+basis = General.BasisType.LagrangeTri
 p = 1 # Order
 b = 3 # which basis fcn to plot
 

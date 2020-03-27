@@ -25,11 +25,11 @@ class ShapeType(IntEnum):
 
 
 class BasisType(IntEnum):
-    SegLagrange = 0
-    QuadLagrange = 1
-    TriLagrange = 2
-    SegLegendre = 3
-    QuadLegendre = 4
+    LagrangeSeg = 0
+    LagrangeQuad = 1
+    LagrangeTri = 2
+    LegendreSeg = 3
+    LegendreQuad = 4
 
 
 class LimiterType(IntEnum):
@@ -47,7 +47,7 @@ SolverParams = {
 	"EndTime" : 1.,
 	"nTimeStep" : 100.,
     "InterpOrder" : 1,
-    "InterpBasis" : BasisType.SegLagrange,
+    "InterpBasis" : BasisType.LagrangeSeg,
     "TimeScheme" : "RK4",
     "InterpolateIC" : False,
     "InterpolateFlux": True,

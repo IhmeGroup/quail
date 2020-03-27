@@ -9,11 +9,11 @@ from Data import ArrayList, GenericData
 
 
 Basis2Shape = {
-    BasisType.SegLagrange : ShapeType.Segment,
-    BasisType.QuadLagrange : ShapeType.Quadrilateral,
-    BasisType.TriLagrange : ShapeType.Triangle,
-    BasisType.SegLegendre : ShapeType.Segment,
-    BasisType.QuadLegendre : ShapeType.Quadrilateral,
+    BasisType.LagrangeSeg : ShapeType.Segment,
+    BasisType.LagrangeQuad : ShapeType.Quadrilateral,
+    BasisType.LagrangeTri : ShapeType.Triangle,
+    BasisType.LegendreSeg : ShapeType.Segment,
+    BasisType.LegendreQuad : ShapeType.Quadrilateral,
 }
 
 
@@ -33,13 +33,13 @@ FaceShape = {
 
 
 RefQ1Coords = {
-    BasisType.SegLagrange : np.array([[-1.],[1.]]),
-    BasisType.QuadLagrange : np.array([[-1.,-1.],[1.,-1.],
+    BasisType.LagrangeSeg : np.array([[-1.],[1.]]),
+    BasisType.LagrangeQuad : np.array([[-1.,-1.],[1.,-1.],
                                 [-1.,1.],[1.,1.]]),
-    BasisType.TriLagrange : np.array([[0.,0.],[1.,0.],
+    BasisType.LagrangeTri : np.array([[0.,0.],[1.,0.],
                                 [0.,1.]]),
-    BasisType.SegLegendre : np.array([[-1.],[1.]]),
-    BasisType.QuadLegendre : np.array([[-1.,-1.],[1.,-1.],
+    BasisType.LegendreSeg : np.array([[-1.],[1.]]),
+    BasisType.LegendreQuad : np.array([[-1.,-1.],[1.,-1.],
                                 [-1.,1.],[1.,1.]]),
 }
 
@@ -61,7 +61,7 @@ def Order2nNode(basis, p):
 
 
 def LocalQ1FaceNodes(basis, p, face, fnodes=None):
-    if basis == BasisType.SegLagrange: 
+    if basis == BasisType.LagrangeSeg: 
         nfnode = 1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
@@ -70,7 +70,7 @@ def LocalQ1FaceNodes(basis, p, face, fnodes=None):
             fnodes[0] = p
         else:
             raise IndexError
-    elif basis == BasisType.QuadLagrange:
+    elif basis == BasisType.LagrangeQuad:
         nfnode = 2
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
@@ -83,7 +83,7 @@ def LocalQ1FaceNodes(basis, p, face, fnodes=None):
             fnodes[0] = (p+1)*p; fnodes[1] = 0
         else:
              raise IndexError
-    elif basis == BasisType.TriLagrange:
+    elif basis == BasisType.LagrangeTri:
         nfnode = 2
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
@@ -101,7 +101,7 @@ def LocalQ1FaceNodes(basis, p, face, fnodes=None):
 
 
 def LocalFaceNodes(basis, p, face, fnodes=None):
-    if basis == BasisType.QuadLagrange:
+    if basis == BasisType.LagrangeQuad:
         nfnode = p+1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
@@ -117,7 +117,7 @@ def LocalFaceNodes(basis, p, face, fnodes=None):
 
         for i in range(p+1):
             fnodes[i] = i0+i*d
-    elif basis == BasisType.TriLagrange:
+    elif basis == BasisType.LagrangeTri:
         nfnode = p+1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
@@ -153,16 +153,16 @@ def EquidistantNodes(basis, p, xn=None):
         xn[:] = 0.0 # 0.5
         return xn, nn
 
-    if basis == BasisType.SegLagrange or basis == BasisType.SegLegendre:
+    if basis == BasisType.LagrangeSeg or basis == BasisType.LegendreSeg:
         xn[:,0] = np.linspace(-1.,1.,p+1)
-    elif basis == BasisType.QuadLagrange or basis == BasisType.QuadLegendre:
+    elif basis == BasisType.LagrangeQuad or basis == BasisType.LegendreQuad:
         xseg = np.linspace(-1.,1.,p+1)
         n = 0
         for i in range(p+1):
             xn[n:n+p+1,0] = xseg
             xn[n:n+p+1,1] = xseg[i]
             n += p+1
-    elif basis == BasisType.TriLagrange:
+    elif basis == BasisType.LagrangeTri:
         n = 0
         xseg = np.linspace(0.,1.,p+1)
         for j in range(p+1):
@@ -572,8 +572,8 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     # Calculate inverse mass matrix for every single element,
     # even if uniform mesh
     #Hard code basisType to Quads (currently only designed for 1D)
-    basis1 = BasisType.QuadLagrange
-    basis2 = BasisType.SegLagrange
+    basis1 = BasisType.LagrangeQuad
+    basis2 = BasisType.LagrangeSeg
     
     ArrayDims = [None]*mesh.nElemGroup
     for egrp in range(mesh.nElemGroup):
@@ -648,19 +648,19 @@ def GetShapes(basis, Order, nq, xq, phi=None):
     else:
         phi[:] = 0.
 
-    if basis == BasisType.SegLagrange:
+    if basis == BasisType.LagrangeSeg:
         for iq in range(nq): 
             Shape_TensorLagrange(1, Order, xq[iq], phi[iq,:])
-    elif basis == BasisType.QuadLagrange:
+    elif basis == BasisType.LagrangeQuad:
         for iq in range(nq): 
             Shape_TensorLagrange(2, Order, xq[iq], phi[iq,:])
-    elif basis == BasisType.TriLagrange:
+    elif basis == BasisType.LagrangeTri:
         for iq in range(nq): 
-            Shape_TriLagrange(Order, xq[iq], phi[iq,:])
-    elif basis == BasisType.SegLegendre:
+            Shape_LagrangeTri(Order, xq[iq], phi[iq,:])
+    elif basis == BasisType.LegendreSeg:
         for iq in range(nq):
             Shape_TensorLegendre(1, Order, xq[iq], phi[iq,:])
-    elif basis == BasisType.QuadLegendre:
+    elif basis == BasisType.LegendreQuad:
         for iq in range(nq):
             Shape_TensorLegendre(2, Order, xq[iq], phi[iq,:])
     else:
@@ -677,19 +677,19 @@ def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
     else: 
         GPhi[:] = 0.
 
-    if basis == BasisType.SegLagrange:
+    if basis == BasisType.LagrangeSeg:
         for iq in range(nq): 
             Grad_TensorLagrange(1, Order, xq[iq], GPhi[iq,:,:])
-    elif basis == BasisType.QuadLagrange:
+    elif basis == BasisType.LagrangeQuad:
         for iq in range(nq): 
             Grad_TensorLagrange(2, Order, xq[iq], GPhi[iq,:,:])
-    elif basis == BasisType.TriLagrange:
+    elif basis == BasisType.LagrangeTri:
         for iq in range(nq): 
-            Grad_TriLagrange(Order, xq[iq], GPhi[iq,:,:])
-    elif basis == BasisType.SegLegendre:
+            Grad_LagrangeTri(Order, xq[iq], GPhi[iq,:,:])
+    elif basis == BasisType.LegendreSeg:
         for iq in range(nq):
             Grad_TensorLegendre(1, Order, xq[iq], GPhi[iq,:,:])
-    elif basis == BasisType.QuadLegendre:
+    elif basis == BasisType.LegendreQuad:
         for iq in range(nq):
             Grad_TensorLegendre(2, Order, xq[iq], GPhi[iq,:,:])
     else:
@@ -698,7 +698,7 @@ def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
     return GPhi
 
 
-def BasisLagrange1D(x, xnode, nnode, phi, gphi):
+def LagrangeBasis1D(x, xnode, nnode, phi, gphi):
     for j in range(nnode):
         if phi is not None:
             pj = 1.
@@ -715,7 +715,7 @@ def BasisLagrange1D(x, xnode, nnode, phi, gphi):
                             g *= (x - xnode[k])/(xnode[j] - xnode[k])
                     gphi[j] += g
 
-def BasisLagrange2D(x, xnode, nnode, phi, gphi):
+def LagrangeBasis2D(x, xnode, nnode, phi, gphi):
     if gphi is not None:
         gphix = 0.*xnode; gphiy = 0.*xnode
     else:
@@ -723,8 +723,8 @@ def BasisLagrange2D(x, xnode, nnode, phi, gphi):
     # Always need phi
     phix = 0.*xnode; phiy = 0.*xnode
 
-    BasisLagrange1D(x[0], xnode, nnode, phix, gphix)
-    BasisLagrange1D(x[1], xnode, nnode, phiy, gphiy)
+    LagrangeBasis1D(x[0], xnode, nnode, phix, gphix)
+    LagrangeBasis1D(x[1], xnode, nnode, phiy, gphiy)
 
     if phi is not None:
         phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
@@ -743,12 +743,12 @@ def Shape_TensorLagrange(dim, p, x, phi):
     dx = 2./float(p)
     for i in range(nnode): xnode[i] = -1. + float(i)*dx
     if dim == 1:
-        BasisLagrange1D(x, xnode, nnode, phi, None)
+        LagrangeBasis1D(x, xnode, nnode, phi, None)
     elif dim == 2:
-        BasisLagrange2D(x, xnode, nnode, phi, None)
+        LagrangeBasis2D(x, xnode, nnode, phi, None)
 
 
-def Shape_TriLagrange(p, xi, phi):
+def Shape_LagrangeTri(p, xi, phi):
     x = xi[0]; y = xi[1]
 
     if p == 0:
@@ -841,12 +841,12 @@ def Grad_TensorLagrange(dim, p, x, gphi):
     dx = 2./float(p)
     for i in range(nnode): xnode[i] = -1. + float(i)*dx
     if dim == 1:
-        BasisLagrange1D(x, xnode, nnode, None, gphi)
+        LagrangeBasis1D(x, xnode, nnode, None, gphi)
     if dim == 2:
-        BasisLagrange2D(x, xnode, nnode, None, gphi)
+        LagrangeBasis2D(x, xnode, nnode, None, gphi)
 
 
-def Grad_TriLagrange(p, xi, gphi):
+def Grad_LagrangeTri(p, xi, gphi):
     x = xi[0]; y = xi[1]
 
     if p == 0:
@@ -996,20 +996,20 @@ def Shape_TensorLegendre(dim, p, x, phi):
         return
 
     if dim == 1:
-        BasisLegendre1D(x, p, phi, None)
+        LegendreBasis1D(x, p, phi, None)
     elif dim == 2:
-        BasisLegendre2D(x, p, phi, None)
+        LegendreBasis1D(x, p, phi, None)
 
 def Grad_TensorLegendre(dim, p, x, gphi):
     if p == 0:
         gphi[:,:] = 0.
         return 
     if dim == 1:
-        BasisLegendre1D(x, p, None, gphi)
+        LegendreBasis1D(x, p, None, gphi)
     if dim == 2:
-        BasisLegendre2D(x, p, None, gphi)
+        LegendreBasis1D(x, p, None, gphi)
 
-def BasisLegendre2D(x, p, phi, gphi):
+def LegendreBasis2D(x, p, phi, gphi):
     if gphi is not None:
         gphix = np.zeros(p+1); gphiy = np.zeros(p+1)
     else:
@@ -1018,8 +1018,8 @@ def BasisLegendre2D(x, p, phi, gphi):
     phix = np.zeros(p+1); phiy = np.zeros(p+1)
 
 
-    BasisLegendre1D(x[0], p, phix, gphix)
-    BasisLegendre1D(x[1], p, phiy, gphiy)
+    LegendreBasis1D(x[0], p, phix, gphix)
+    LegendreBasis1D(x[1], p, phiy, gphiy)
 
     if phi is not None:
         phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
@@ -1027,7 +1027,7 @@ def BasisLegendre2D(x, p, phi, gphi):
         gphi[:,0] = np.reshape(np.outer(gphix, phiy), (-1,), 'F')
         gphi[:,1] = np.reshape(np.outer(phix, gphiy), (-1,), 'F')
 
-def BasisLegendre1D(x, p, phi, gphi):
+def LegendreBasis1D(x, p, phi, gphi):
 
     if phi is not None:
         if p >= 0:

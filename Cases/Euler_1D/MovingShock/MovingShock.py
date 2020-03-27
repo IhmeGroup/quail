@@ -18,7 +18,7 @@ EndTime = 0.0002
 nTimeStep = 500
 InterpOrder = 1
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="SegLagrange",TimeScheme="RK4",InterpolateIC=False,
+								 InterpBasis="LagrangeSeg",TimeScheme="RK4",InterpolateIC=False,
 								 ApplyLimiter="PositivityPreserving")
 
 

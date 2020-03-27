@@ -67,7 +67,7 @@ class DG_Solver(object):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange or BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		    if mesh.Dim != 1:
 		        raise Errors.IncompatibleError
 		else:
@@ -89,7 +89,7 @@ class DG_Solver(object):
 		    for EG in mesh.ElemGroups:
 		        if EG.QOrder != 1:
 		            raise Errors.IncompatibleError
-		        if EG.QBasis == BasisType.QuadLagrange \
+		        if EG.QBasis == BasisType.LagrangeQuad \
 		            and Params["UniformMesh"] is False:
 		            raise Errors.IncompatibleError
 
@@ -729,7 +729,7 @@ class ADERDG_Solver(DG_Solver):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.SegLagrange or BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		    if mesh.Dim != 1:
 		        raise Errors.IncompatibleError
 		else:
@@ -751,7 +751,7 @@ class ADERDG_Solver(DG_Solver):
 		    for EG in mesh.ElemGroups:
 		        if EG.QOrder != 1:
 		            raise Errors.IncompatibleError
-		        if EG.QBasis == BasisType.QuadLagrange \
+		        if EG.QBasis == BasisType.LagrangeQuad \
 		            and Params["UniformMesh"] is False:
 		            raise Errors.IncompatibleError
 
@@ -769,7 +769,7 @@ class ADERDG_Solver(DG_Solver):
 			raise Errors.IncompatibleError
 
 		### Check flux/source coefficient interpolation compatability with basis functions.
-		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.SegLegendre:
+		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 			raise Errors.IncompatibleError
 
 		### Current build only supports scalar equations

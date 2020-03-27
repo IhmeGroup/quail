@@ -12,7 +12,7 @@ from helper import *
 ### Parameters
 # Orders = np.arange(1,6)
 # nOrders = len(Orders)
-basis = General.BasisType["SegLagrange"]
+basis = General.BasisType["LagrangeSeg"]
 nL = 51 # number of wavenumbers
 alpha = 0. # 0 for upwind flux, 1 for central flux
 

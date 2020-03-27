@@ -99,7 +99,7 @@ def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, 
         tphys: coordinates in temporal space
     '''
     EGroup = mesh.ElemGroups[egrp]
-    QBasis = BasisType.QuadLegendre
+    QBasis = BasisType.LegendreQuad
     QOrder = EGroup.QOrder
 
     if PhiData is None:
@@ -155,12 +155,12 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
     elif Shape == ShapeType.Quadrilateral:
         if xelem is None: xelem = np.zeros([nq,2])
         # local q = 1 nodes on face
-        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.QuadLagrange, 1, face)
+        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.LagrangeQuad, 1, face)
         # swap for reversed faces
         # if face >= 2: fnodes = fnodes[[1,0]]
         # coordinates of local q = 1 nodes on face
-        x0 = Basis.RefQ1Coords[BasisType.QuadLagrange][fnodes[0]]
-        x1 = Basis.RefQ1Coords[BasisType.QuadLagrange][fnodes[1]]
+        x0 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
+        x1 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
         for i in range(nq):
             if face == 0:
                 xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
@@ -180,10 +180,10 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
         xf = np.zeros(nq)
         xf = xf.reshape((nq,1))
         # local q = 1 nodes on face
-        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.TriLagrange, 1, face)
+        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.LagrangeTri, 1, face)
         # coordinates of local q = 1 nodes on face
-        x0 = Basis.RefQ1Coords[BasisType.TriLagrange][fnodes[0]]
-        x1 = Basis.RefQ1Coords[BasisType.TriLagrange][fnodes[1]]
+        x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
+        x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
         for i in range(nq):
             xf[i] = (xface[i] + 1.)/2.
             xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
@@ -327,7 +327,7 @@ class NormalData(object):
                     self.x_s = np.zeros_like(self.nvec)
                 x_s = self.x_s
                 self.fnodes, nfnode = Basis.LocalFaceNodes(QBasis, QOrder, face, self.fnodes)
-                self.GPhi = Basis.GetGrads(BasisType.SegLagrange, QOrder, 1, nq, xq, self.GPhi)
+                self.GPhi = Basis.GetGrads(BasisType.LagrangeSeg, QOrder, 1, nq, xq, self.GPhi)
                 Coords = mesh.Coords[ElemNodes[self.fnodes]]
 
                 # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
@@ -519,7 +519,7 @@ class ElemGroup(object):
         nNodePerElem: number of nodes per element
         Elem2Nodes: element-to-global-node mapping
     '''
-    def __init__(self,QBasis=BasisType.SegLagrange,QOrder=1,nElem=1):
+    def __init__(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
         '''
         Method: __init__
         -------------------
@@ -534,7 +534,7 @@ class ElemGroup(object):
         self.Elem2Nodes = None
             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
-    def SetParams(self,QBasis=BasisType.SegLagrange,QOrder=1,nElem=1):
+    def SetParams(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
         self.QBasis = QBasis
         self.QOrder = QOrder
         self.nElem = nElem
