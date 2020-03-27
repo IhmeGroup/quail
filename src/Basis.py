@@ -51,7 +51,7 @@ def Order2nNode(basis, p):
     elif Shape == ShapeType.Segment:
         nn = p + 1
     elif Shape == ShapeType.Triangle:
-        nn = (p + 1)*(p + 2)/2
+        nn = (p + 1)*(p + 2)//2
     elif Shape == ShapeType.Quadrilateral:
         nn = (p + 1)**2
     else:
@@ -87,9 +87,9 @@ def LocalQ1FaceNodes(basis, p, face, fnodes=None):
         nfnode = 2
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
         if face == 0:
-            fnodes[0] = p; fnodes[1] = (p+1)*(p+2)/2-1
+            fnodes[0] = p; fnodes[1] = (p+1)*(p+2)//2-1
         elif face == 1:
-            fnodes[0] = (p+1)*(p+2)/2-1; fnodes[1] = 0
+            fnodes[0] = (p+1)*(p+2)//2-1; fnodes[1] = 0
         elif face == 2:
             fnodes[0] = 0; fnodes[1] = p
         else:
@@ -123,7 +123,7 @@ def LocalFaceNodes(basis, p, face, fnodes=None):
         if face == 0:
             i0 = p; d0 = p; d1 = -1
         elif face == 1:
-            i0 = (p+1)*(p+2)/2-1; d0 = -2; d1 = -1
+            i0 = (p+1)*(p+2)//2-1; d0 = -2; d1 = -1
         elif face == 2:
             i0 = 0;  d0 = 1; d1 = 0
         else:

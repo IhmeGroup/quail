@@ -10,8 +10,9 @@ from matplotlib import pyplot as plt
 import matplotlib.tri as tri
 
 
-def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['computer modern roman']},
+def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['DejaVu Sans']},
 	linewidth=1.5, markersize=4.0, axis=None, cmap='viridis', EqualAR=False):
+	# font={'family':'serif', 'serif': ['computer modern roman']}
 	# Note: matplotlib.rcdefaults() returns to default settings
 
 	if reset or defaults:
@@ -312,7 +313,11 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 
 	### Finalize plot
 	plt.xlabel("$x$")
-	plt.legend(loc="best")
+	ax = plt.gca()
+	handles, labels = ax.get_legend_handles_labels()
+	if handles != []:
+		# only create legend if handles can be found
+		plt.legend(loc="best")
 
 	if dim == 2 and IncludeMesh2D:
 		PlotMesh2D(mesh, **kwargs)

@@ -4,6 +4,7 @@ from General import *
 import code
 import Errors
 from Data import ArrayList, ICData, BCData, ExactData, SourceData
+import sys
 
 
 class Scalar(object):
@@ -61,12 +62,15 @@ class Scalar(object):
 		self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 
-		if dim == 1 and basis == BasisType.SegLegendre:
-			basisADER = BasisType.QuadLegendre
-		elif dim == 1 and basis == BasisType.SegLagrange:
-			basisADER = BasisType.QuadLagrange
+		if dim == 1:
+			if basis == BasisType.SegLegendre:
+				basisADER = BasisType.QuadLegendre
+			elif basis == BasisType.SegLagrange:
+				basisADER = BasisType.QuadLagrange
+			else:
+				raise Errors.IncompatibleError
 		else:
-			raise Errors.IncompatibleError
+			basisADER = 0 # dummy	
 
 		self.BasesADER = [basisADER for egrp in range(mesh.nElemGroup)]
 		ADERArrayDims = [[mesh.nElems[egrp],Order2nNode(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
@@ -78,8 +82,14 @@ class Scalar(object):
 
 		# State indices
 		self.StateIndices = {}
-		for key in self.StateVariables.__members__.keys():
-			self.StateIndices[key] = self.StateVariables.__members__.keys().index(key)
+		if sys.version_info[0] < 3:
+			for key in self.StateVariables.__members__.keys():
+				self.StateIndices[key] = self.StateVariables.__members__.keys().index(key)
+		else:	
+			index = 0
+			for key in self.StateVariables:
+				self.StateIndices[key.name] = index
+				index += 1
 
 		# Uarray = np.zeros([mesh.nElemTot, nn, self.StateRank])
 		# self.Uarray = Uarray
@@ -249,12 +259,12 @@ class Scalar(object):
 		for i in range(nq):
 
 			u[i] = max(abs(uL[i]),abs(uR[i]))
- 		
-	 		if u[i] == abs(uL[i]):
-	 			usign = np.sign(uL[i])
-	 		elif u[i] == abs(uR[i]):
-	 			usign = np.sign(uR[i])
-	 		u[i] = usign*u[i]
+
+			if u[i] == abs(uL[i]):
+				usign = np.sign(uL[i])
+			elif u[i] == abs(uR[i]):
+				usign = np.sign(uR[i])
+			u[i] = usign*u[i]
 
 			c[i] = self.getAdvOperator(u[i])
 

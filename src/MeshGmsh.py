@@ -599,8 +599,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		for FInfo in FaceInfos:
 			snodes = FInfo.snodes
 			for k in range(FInfo.nfnode):
-				print int(snodes[k]+1),
-			print
+				print(int(snodes[k]+1))
 			nleft += 1
 
 	if nleft != 0:

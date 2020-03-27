@@ -64,9 +64,9 @@ SolverParams = {
 def SetSolverParams(Params=None, **kwargs):
     if Params is None:
         Params = SolverParams
-	for key in kwargs:
-		if key not in Params.keys(): raise KeyError
-		Params[key] = kwargs[key]
+    for key in kwargs:
+    	if key not in Params.keys(): raise KeyError
+    	Params[key] = kwargs[key]
     if Params["UseNumba"]:
         try:
             import numba

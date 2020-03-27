@@ -14,8 +14,8 @@ import MeshGmsh
 folder = "meshes/"
 ## Quadrilaterals
 subfolder = "Quadrilaterals/"; InterpBasis = "QuadLagrange"
-FileName = "bump0_q1.msh"; 
-# FileName = "bump0.msh"; 
+# FileName = "bump0_q1.msh"; 
+FileName = "bump0.msh"; 
 InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.]
 # FileName = "bump1_q1.msh"
 # FileName = "bump1.msh"

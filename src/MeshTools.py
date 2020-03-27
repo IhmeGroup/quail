@@ -20,7 +20,7 @@ def ElementVolumes(mesh, solver=None):
     JData = JacobianData(mesh)
     for egrp in range(mesh.nElemGroup):
 
-    	EGroup = mesh.ElemGroups[egrp]
+        EGroup = mesh.ElemGroups[egrp]
         Order = EGroup.QOrder
 
         QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, egrp, EGroup.QBasis, Order, 
@@ -47,7 +47,7 @@ def ElementVolumes(mesh, solver=None):
     if solver is not None:
         solver.DataSet.TotalVolume = TotalVolume
         solver.DataSet.ElemVolumes = ElemVolumes
-    
+
     return TotalVolume, ElemVolumes
 
 

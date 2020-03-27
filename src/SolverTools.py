@@ -34,6 +34,7 @@ def ProjectStateToNewBasis(solver, EqnSet, mesh, basis_old, Order_old):
 
 	''' Allocate new state '''
 	# New basis, order information stored in EqnSet
+	egrp = 0
 	ArrayDims = [[mesh.nElems[egrp],Basis. Order2nNode(EqnSet.Bases[egrp], EqnSet.Orders[egrp]), EqnSet.StateRank] \
 					for egrp in range(mesh.nElemGroup)]
 	U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)

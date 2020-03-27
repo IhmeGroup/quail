@@ -170,11 +170,11 @@ class LSRK4(FE):
 
 class SSPRK3(FE):
 	# Low-storage SSPRK3 with 5 stages (as written in Spiteri. 2002)
-        def __init__(self, dt=0.):
+	def __init__(self, dt=0.):
 		FE.__init__(self, dt)
 		self.ssprk3a = np.array([	0.0, \
- 			-2.60810978953486, \
- 			-0.08977353434746, \
+				-2.60810978953486, \
+				-0.08977353434746, \
 			-0.60081019321053, \
 			-0.72939715170280])
 		self.ssprk3b = np.array([ 0.67892607116139, \
