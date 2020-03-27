@@ -99,7 +99,7 @@ def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, 
         tphys: coordinates in temporal space
     '''
     EGroup = mesh.ElemGroups[egrp]
-    QBasis = BasisType.LegendreQuad
+    QBasis = BasisType.LagrangeQuad
     QOrder = EGroup.QOrder
 
     if PhiData is None:
