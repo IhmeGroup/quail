@@ -12,7 +12,7 @@ import General
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=128, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.Mesh1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
@@ -24,7 +24,7 @@ mesh = MeshCommon.Mesh1D(Uniform=True, nElem=128, xmin=-1., xmax=1., Periodic=Pe
 ### Solver parameters
 EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
-InterpOrder = 3
+InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="SegLegendre",TimeScheme="RK4")
 

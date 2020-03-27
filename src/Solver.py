@@ -6,7 +6,7 @@ import code
 import copy
 from Data import ArrayList, GenericData
 from SolverTools import *
-from TimeStepping import *
+from stepper import *
 import time
 import MeshTools
 import Post
@@ -36,20 +36,20 @@ class DG_Solver(object):
 
 		TimeScheme = Params["TimeScheme"]
 		if TimeScheme is "FE":
-			TimeStepper = FE()
+			Stepper = FE()
 		elif TimeScheme is "RK4":
-			TimeStepper = RK4()
+			Stepper = RK4()
 		elif TimeScheme is "LSRK4":
-			TimeStepper = LSRK4()
+			Stepper = LSRK4()
 		elif TimeScheme is "SSPRK3":
-			TimeStepper = SSPRK3()
+			Stepper = SSPRK3()
 		elif TimeScheme is "ADER":
-			TimeStepper = ADER()
+			Stepper = ADER()
 		else:
 			raise NotImplementedError("Time scheme not supported")
 		# if Params["nTimeStep"] > 0:
-		# 	TimeStepper.dt = Params["EndTime"]/Params["nTimeStep"]
-		self.TimeStepper = TimeStepper
+		# 	Stepper.dt = Params["EndTime"]/Params["nTimeStep"]
+		self.Stepper = Stepper
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
@@ -152,7 +152,7 @@ class DG_Solver(object):
 						PhiData.EvalBasis(xq, Get_Phi=True)
 						xphys = np.zeros([nq, mesh.Dim])
 
-					JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+					JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
 
 					# MMinv = GetInvMassMatrix(mesh, egrp, 0, basis, EqnSet.Orders[egrp])
 					MMinv = MMinv_all.Arrays[egrp][elem]
@@ -174,7 +174,7 @@ class DG_Solver(object):
 					rhs *= 0.
 					for n in range(nn):
 						for iq in range(nq):
-							rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*wq[iq]*JData.detJ[iq*(JData.nq != 1)]
+							rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
 
 					U_[elem,:,:] = np.dot(MMinv,rhs)
 				else:
@@ -246,7 +246,7 @@ class DG_Solver(object):
 
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 		PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
 
 		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
@@ -262,7 +262,7 @@ class DG_Solver(object):
 			for jn in range(nn):
 				for iq in range(nq):
 					gPhi = PhiData.gPhi[iq,jn] # dim
-					ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
+					ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 
 		s = np.zeros([nq,sr])
 		s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr,dim]
@@ -271,7 +271,7 @@ class DG_Solver(object):
 			for jn in range(nn):
 				for iq in range(nq):
 					Phi = PhiData.Phi[iq,jn]
-					ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
+					ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -589,7 +589,7 @@ class DG_Solver(object):
 		EqnSet = self.EqnSet
 		mesh = self.mesh
 		order = self.Params["InterpOrder"]
-		TimeStepper = self.TimeStepper
+		Stepper = self.Stepper
 		Time = self.Time
 
 		# Parameters
@@ -600,10 +600,10 @@ class DG_Solver(object):
 
 			# Integrate in time
 			# self.Time is used for local time
-			R = TimeStepper.TakeTimeStep(self)
+			R = Stepper.TakeTimeStep(self)
 
 			# Increment time
-			Time += TimeStepper.dt
+			Time += Stepper.dt
 			self.Time = Time
 
 			# Info to print
@@ -694,7 +694,7 @@ class DG_Solver(object):
 		for iOrder in range(nOrder):
 			Order = InterpOrders[iOrder]
 			''' Compute time step '''
-			self.TimeStepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
+			self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
 			self.nTimeStep = nTimeSteps[iOrder]
 
 			''' After first iteration, project solution to next order '''
@@ -969,7 +969,7 @@ class ADERDG_Solver(DG_Solver):
 		PointsChanged = QuadChanged or face != GeomPhiData.face
 		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xelemPsi, xglob, PointsChanged)
 
-		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.TimeStepper.dt, TimePhiData, nqST, xelemPhi, tglob, PointsChanged)
+		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xelemPhi, tglob, PointsChanged)
 		nn = PsiData.nn
 
 		# interpolate state and gradient at quad points
@@ -1093,11 +1093,11 @@ class ADERDG_Solver(DG_Solver):
 			F = np.zeros([nqST, sr, dim])
 			s = np.zeros([nqST, sr])
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 		PsiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
 
 		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
-		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.TimeStepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
+		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
 
 
 		nn = PsiData.nn
@@ -1106,8 +1106,8 @@ class ADERDG_Solver(DG_Solver):
 		EGroup=mesh.ElemGroups[egrp]
 		Elem2Nodes = EGroup.Elem2Nodes[elem]
 		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
-		TimeStepper = self.TimeStepper
-		dt = TimeStepper.dt
+		Stepper = self.Stepper
+		dt = Stepper.dt
 
 		# interpolate state and gradient at quad points
 		# u = np.zeros([nq, sr])
@@ -1123,7 +1123,7 @@ class ADERDG_Solver(DG_Solver):
 				for i in range(nq): # Loop over time
 					for j in range(nq): # Loop over space
 						gPsi = PsiData.gPhi[j,k]
-						ER[k,ir] += wq[i]*wq[j]*JData.detJ[j*(JData.nq!=1)]*F[i,j]*gPsi
+						ER[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*F[i,j]*gPsi
 
 		F = np.reshape(F,(nqST,sr,dim))
 
@@ -1137,7 +1137,7 @@ class ADERDG_Solver(DG_Solver):
 				for i in range(nq): # Loop over time
 					for j in range(nq): # Loop over space
 						Psi = PsiData.Phi[j,k]
-						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.detJ[iq*(JData.nq!=1)]*Psi
+						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[iq*(JData.nq!=1)]*Psi
 
 		s = np.reshape(s,(nqST,sr))
 
@@ -1148,7 +1148,7 @@ class ADERDG_Solver(DG_Solver):
 		# 	for jn in range(nn):
 		# 		for iq in range(nq):
 		# 			Phi = PhiData.Phi[iq,jn]
-		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.detJ[iq*(JData.nq!=1)]
+		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1286,8 +1286,8 @@ class ADERDG_Solver(DG_Solver):
 		nR = PsiDataR.nn
 		nn = np.amax([nL,nR])
 
-		TimeStepper = self.TimeStepper
-		dt = TimeStepper.dt
+		Stepper = self.Stepper
+		dt = Stepper.dt
 
 		for ir in range(sr):
 			uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
@@ -1376,14 +1376,14 @@ class ADERDG_Solver(DG_Solver):
 				PhiData.EvalBasis(xqST, Get_Phi=True)
 				xphys = np.zeros([nqST, mesh.Dim])
 
-			JData.ElemJacobian(egrp,elem,nqST,xqST,mesh,Get_detJ=True)
+			JData.ElemJacobian(egrp,elem,nqST,xqST,mesh,get_djac=True)
 			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
 			nn = PhiData.nn
 		else:
 
 			xq, nq = EquidistantNodes(basis, Order, xq)
 			nn = nq
-			JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+			JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
 
 		if not InterpolateFlux:
 
@@ -1404,15 +1404,15 @@ class ADERDG_Solver(DG_Solver):
 					for i in range(nq): # Loop over time
 						for j in range(nq): # Loop over space
 							#Phi = PhiData.Phi[j,k]
-							rhs[k,ir] += wq[i]*wq[j]*JData.detJ[j*(JData.nq!=1)]*f[i,j]*Phi[i,j,k]
+							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j]*Phi[i,j,k]
 
 			#F = np.reshape(F,(nqST,sr,dim))
-			F = np.dot(MMinv,rhs)*(1.0/JData.detJ)*dt/2.0
+			F = np.dot(MMinv,rhs)*(1.0/JData.djac)*dt/2.0
 
 		else:
 			F1 = np.zeros([nn,sr,dim])
 			f = EqnSet.ConvFluxInterior(U,F1)
-			F = f[:,:,0]*(1.0/JData.detJ)*dt/2.0
+			F = f[:,:,0]*(1.0/JData.djac)*dt/2.0
 		return F
 
 

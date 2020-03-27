@@ -229,13 +229,13 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
         PhiData.EvalBasis(xq, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+        JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
         if JData.nq == 1:
-            detJ = np.full(nq, JData.detJ[0])
+            djac = np.full(nq, JData.djac[0])
         else:
-            detJ = JData.detJ
+            djac = JData.djac
     else:
-        detJ = np.full(nq, 1.)
+        djac = np.full(nq, 1.)
 
     nn = PhiData.nn
 
@@ -245,7 +245,7 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
         for j in range(nn):
             t = 0.
             for iq in range(nq):
-                t += phi[iq,i]*phi[iq,j]*wq[iq]*detJ[iq] # JData.detJ[iq*(JData.nq != 1)]
+                t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq] # JData.djac[iq*(JData.nq != 1)]
             MM[i,j] = t
     StaticData.pnq = nq
     StaticData.quadData = quadData
@@ -333,7 +333,7 @@ def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
         PhiData = BasisData(basis,Order,nq,mesh)
         PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
 
-    JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_iJ=True)
+    JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_ijac=True)
     PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
     nn = PhiData.nn
 
@@ -344,7 +344,7 @@ def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
         for j in range(nn):
             t = 0.
             for iq in range(nq):
-                t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.detJ[iq*(JData.nq != 1)]
+                t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
             SM[i,j] = t
 
     StaticData.pnq = nq
@@ -381,7 +381,7 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=No
         PhiData = BasisData(basis,Order,nq,mesh)
         PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
 
-    # JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_iJ=True)
+    # JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_ijac=True)
     #PhiData.EvalBasis(xq, Get_gPhi=True, JData=None)
     nn = PhiData.nn
 
@@ -504,13 +504,13 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem
         PhiData.EvalBasis(xq, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+        JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
         if JData.nq == 1:
-            detJ = np.full(nq, JData.detJ[0])
+            djac = np.full(nq, JData.djac[0])
         else:
-            detJ = JData.detJ
+            djac = JData.djac
     else:
-        detJ = np.full(nq, 1.)
+        djac = np.full(nq, 1.)
 
     nn = PhiData.nn
 
@@ -520,7 +520,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem
         for j in range(nn):
             t = 0.
             for iq in range(nq):
-                t += phi[iq,i]*phi[iq,j]*wq[iq]*detJ[iq]
+                t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq]
             MM[i,j] = t
     StaticData.pnq = nq
     StaticData.quadData = quadData
@@ -552,7 +552,7 @@ def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):
         for j in range(nn_old):
             t = 0.
             for iq in range(nq):
-                t += phi[iq,i]*phi_old[iq,j]*wq[iq] # JData.detJ[iq*(JData.nq != 1)]
+                t += phi[iq,i]*phi_old[iq,j]*wq[iq] # JData.djac[iq*(JData.nq != 1)]
             A[i,j] = t
 
     PM = np.matmul(MMinv,A)
@@ -1121,8 +1121,8 @@ class BasisData(object):
         for iq in range(nq):
             G = GPhi[iq,:,:] # [nn,dim]
             g = gPhi[iq,:,:] # [nn,dim]
-            iJ = JData.iJ[iq*(JData.nq != 1),:,:] # [dim,dim]
-            g[:] = np.transpose(np.matmul(iJ.transpose(),G.transpose()))
+            ijac = JData.ijac[iq*(JData.nq != 1),:,:] # [dim,dim]
+            g[:] = np.transpose(np.matmul(ijac.transpose(),G.transpose()))
 
         return gPhi
 
@@ -1180,41 +1180,32 @@ class JacobianData(object):
         '''
         self.nq = 0
         self.dim = mesh.Dim
-        self.detJ = None
-        self.J = None
-        self.iJ = None
+        self.djac = None
+        self.jac = None
+        self.ijac = None
         self.A = None
-        self.GPhi = None
+        self.basis_grad = None
 
-        # self.ElemJacobian(self,egrp,elem,nq,xq,mesh,Get_detJ,Get_J,Get_iJ)
+        # self.ElemJacobian(self,egrp,elem,nq,xq,mesh,Get_djac,get_jac,get_ijac)
 
-    def ElemJacobian(self,egrp,elem,nq,xq,mesh,Get_detJ=False,Get_J=False,Get_iJ=False,
+    def ElemJacobian(self,egrp,elem,nq,xq,mesh,get_djac=False,get_jac=False,get_ijac=False,
             UniformJacobian=False):
         EGroup = mesh.ElemGroups[egrp]
         basis = EGroup.QBasis
-        Order = EGroup.QOrder
+        order = EGroup.QOrder
         Shape = Basis2Shape[basis]
-        if Order == 1 and Shape != ShapeType.Quadrilateral:
+        if order == 1 and Shape != ShapeType.Quadrilateral:
             nq = 1
-        # if UniformJacobian:
-        #     if nq == 1:
-        #         # Already calculated
-        #         return
-        #     else:
-        #         # Need to calculate
-        #         nq = 1
 
-        nn = Order2nNode(basis, Order)
+        nb = Order2nNode(basis, order)
         dim = Shape2Dim[Basis2Shape[basis]]
 
         ## Check if we need to resize or recalculate 
         if self.dim != dim or self.nq != nq: Resize = True
         else: Resize = False
 
-        # if self.GPhi.shape != (nq,nn,dim):
-        #     self.GPhi = GetGrads(Basis, Order, dim, nq, xq)
-        self.GPhi = GetGrads(basis, Order, dim, nq, xq, self.GPhi)
-        GPhi = self.GPhi
+        self.basis_grad = GetGrads(basis, order, dim, nq, xq, self.basis_grad)
+        basis_grad = self.basis_grad
 
         self.dim = dim
         if dim != mesh.Dim:
@@ -1222,12 +1213,12 @@ class JacobianData(object):
 
         self.nq = nq
 
-        if Get_J and (Resize or self.J is None): 
-            self.J = np.zeros([nq,dim,dim])
-        if Get_detJ and (Resize or self.detJ is None): 
-            self.detJ = np.zeros([nq,1])
-        if Get_iJ and (Resize or self.iJ is None): 
-            self.iJ = np.zeros([nq,dim,dim])
+        if get_jac and (Resize or self.jac is None): 
+            self.jac = np.zeros([nq,dim,dim])
+        if get_djac and (Resize or self.djac is None): 
+            self.djac = np.zeros([nq,1])
+        if get_ijac and (Resize or self.ijac is None): 
+            self.ijac = np.zeros([nq,dim,dim])
 
         if Resize or self.A is None:
             self.A = np.zeros([dim,dim])
@@ -1235,24 +1226,24 @@ class JacobianData(object):
         A = self.A
         Elem2Nodes = EGroup.Elem2Nodes[elem]
         for iq in range(nq):
-            G = GPhi[iq,:,:]
+            G = basis_grad[iq,:,:]
             A[:] = 0.
-            for i in range(nn):
+            for i in range(nb):
                 for j in range(dim):
                     for k in range(dim):
                         A[j,k] += mesh.Coords[Elem2Nodes[i],j]*G[i,k]
-            if Get_J:
-                self.J[iq,:] = A[:]
+            if get_jac:
+                self.jac[iq,:] = A[:]
                 # for i in range(dim):
                 #     for j in range(dim):
                 #         self.J[iq,i,j] = A[i,j]
-            if Get_detJ: detJ_ = self.detJ[iq]
-            else: detJ_ = None
-            if Get_iJ: iJ_ = self.iJ[iq,:,:]
-            else: iJ_ = None 
-            MatDetInv(A, dim, detJ_, iJ_)
+            if get_djac: djac_ = self.djac[iq]
+            else: djac_ = None
+            if get_ijac: ijac_ = self.ijac[iq,:,:]
+            else: ijac_ = None 
+            MatDetInv(A, dim, djac_, ijac_)
 
-            if detJ_ is not None and detJ_ <= 0.:
+            if djac_ is not None and djac_ <= 0.:
                 raise Exception("Nonpositive Jacobian (egrp = %d, elem = %d)" % (egrp, elem))
 
 

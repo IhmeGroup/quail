@@ -101,7 +101,7 @@ class PPLimiter(object):
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 
 		nn = PhiElem.nn
 
@@ -110,11 +110,11 @@ class PPLimiter(object):
 		u[:] = np.matmul(PhiElem.Phi, U)
 
 		# Multiply quadrature weights by Jacobian determinant
-		# wq *= JData.detJ
+		# wq *= JData.djac
 
 		# Average value of state
-		vol = np.sum(wq*JData.detJ)
-		u_bar[:] = np.matmul(u.transpose(), wq*JData.detJ).T/vol
+		vol = np.sum(wq*JData.djac)
+		u_bar[:] = np.matmul(u.transpose(), wq*JData.djac).T/vol
 		# u_bar.shape = 1, -1
 
 		# Density and pressure
@@ -318,7 +318,7 @@ class PPScalarLimiter(object):
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True,Get_J=False,Get_iJ=True)
+		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 
 		nn = PhiElem.nn
 
@@ -327,11 +327,11 @@ class PPScalarLimiter(object):
 		u[:] = np.matmul(PhiElem.Phi, U)
 
 		# Multiply quadrature weights by Jacobian determinant
-		# wq *= JData.detJ
+		# wq *= JData.djac
 
 		# Average value of state
-		vol = np.sum(wq*JData.detJ)
-		u_bar[:] = np.matmul(u.transpose(), wq*JData.detJ).T/vol
+		vol = np.sum(wq*JData.djac)
+		u_bar[:] = np.matmul(u.transpose(), wq*JData.djac).T/vol
 
 		''' Get relevant quadrature points '''
 

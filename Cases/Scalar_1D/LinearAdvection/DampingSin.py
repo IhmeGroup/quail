@@ -26,7 +26,7 @@ EndTime = 0.1
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="SegLegendre",TimeScheme="ADER")
+								 InterpBasis="SegLagrange",TimeScheme="ADER")
 nu = -100000.
 
 ### Physics

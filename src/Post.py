@@ -56,7 +56,7 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 				PhiData.EvalBasis(xq, True, False, False, None)
 				xphys = np.zeros([nq, mesh.Dim])
 
-			JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+			JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
 
 			xphys, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
 			u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
@@ -72,7 +72,7 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 
 			err = 0.
 			for iq in range(nq):
-				err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.detJ[iq*(JData.nq != 1)]
+				err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
 			ElemErr.Arrays[egrp][elem] = err
 			TotErr += ElemErr.Arrays[egrp][elem]
 

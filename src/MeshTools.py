@@ -37,10 +37,10 @@ def ElementVolumes(mesh, solver=None):
         # PhiData.EvalBasis(xq, True, False, False, None)
 
         for elem in range(mesh.nElems[egrp]):
-            JData.ElemJacobian(egrp,elem,nq,xq,mesh,Get_detJ=True)
+            JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
 
             for iq in range(nq):
-                ElemVolumes.Arrays[egrp][elem] += wq[iq] * JData.detJ[iq*(JData.nq != 1)]
+                ElemVolumes.Arrays[egrp][elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
 
             TotalVolume += ElemVolumes.Arrays[egrp][elem]
 

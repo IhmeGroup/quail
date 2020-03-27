@@ -271,7 +271,7 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 			U_ = U[egrp][elem]
 
 			JData = Basis.JacobianData(mesh)
-			JData.ElemJacobian(egrp,elem,npoint,xpoint,mesh,Get_detJ=True)
+			JData.ElemJacobian(egrp,elem,npoint,xpoint,mesh,get_djac=True)
 
 			xphys, GeomPhiData = Mesh.Ref2Phys(mesh, egrp, elem, GeomPhiData, npoint, xpoint)
 			x[el,:,:] = xphys
