@@ -86,12 +86,11 @@ class DG_Solver(object):
 
 		### Check linear geometric mapping
 		if Params["LinearGeomMapping"] is True:
-		    for EG in mesh.ElemGroups:
-		        if EG.QOrder != 1:
-		            raise Errors.IncompatibleError
-		        if EG.QBasis == BasisType.LagrangeQuad \
-		            and Params["UniformMesh"] is False:
-		            raise Errors.IncompatibleError
+			if mesh.QOrder != 1:
+			    raise Errors.IncompatibleError
+			if mesh.QBasis == BasisType.LagrangeQuad \
+			    and Params["UniformMesh"] is False:
+			    raise Errors.IncompatibleError
 
 		### Check limiter ###
 		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
@@ -110,7 +109,7 @@ class DG_Solver(object):
 	def InitState(self):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
-		U = EqnSet.U.Arrays
+		U = EqnSet.U
 		sr = EqnSet.StateRank
 		Params = self.Params
 		# f = np.zeros([nq,sr])
@@ -127,75 +126,69 @@ class DG_Solver(object):
 		JData = JacobianData(mesh)
 		GeomPhiData = None
 		xq = None; xphys = None; QuadChanged = True
-		for egrp in range(mesh.nElemGroup):
-			U_ = U[egrp]
 
-			basis = EqnSet.Bases[egrp]
-			Order = EqnSet.Orders[egrp]
-			rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U_.dtype)
-			for elem in range(mesh.ElemGroups[egrp].nElem):
+		basis = EqnSet.Basis
+		Order = EqnSet.Order
+		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
+		for elem in range(mesh.nElem):
 
-				if not InterpolateIC:
-					QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, EqnSet.Bases[egrp],
-						# 1, EqnSet, quadData)
-						2*np.amax([Order,1]), EqnSet, quadData)
-					if QuadChanged:
-						quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
+			if not InterpolateIC:
+				QuadOrder,QuadChanged = GetQuadOrderElem(mesh, EqnSet.Basis,
+					# 1, EqnSet, quadData)
+					2*np.amax([Order,1]), EqnSet, quadData)
+				if QuadChanged:
+					quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-					nq = quadData.nquad
-					xq = quadData.xquad
-					wq = quadData.wquad
+				nq = quadData.nquad
+				xq = quadData.xquad
+				wq = quadData.wquad
 
-					if QuadChanged:
-						# PhiData = BasisData(egrp,Order,EntityType.Element,nq,xq,mesh,True,False)
-						PhiData = BasisData(basis,Order,nq,mesh)
-						PhiData.EvalBasis(xq, Get_Phi=True)
-						xphys = np.zeros([nq, mesh.Dim])
+				if QuadChanged:
+					PhiData = BasisData(basis,Order,nq,mesh)
+					PhiData.EvalBasis(xq, Get_Phi=True)
+					xphys = np.zeros([nq, mesh.Dim])
 
-					JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
+				JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 
-					# MMinv = GetInvMassMatrix(mesh, egrp, 0, basis, EqnSet.Orders[egrp])
-					MMinv = MMinv_all.Arrays[egrp][elem]
+				MMinv = MMinv_all[elem]
 
-					nn = PhiData.nn
-				else:
-					xq, nq = EquidistantNodes(basis, Order, xq)
-					nn = nq
+				nn = PhiData.nn
+			else:
+				xq, nq = EquidistantNodes(basis, Order, xq)
+				nn = nq
 
-				xphys, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
-				# if sr == 1: f = f_ic(xphys)
-				# else : 
-				# 	# f = SmoothIsentropic1D(x=xphys,t=0.,gam=EqnSet.Params["SpecificHeatRatio"])
-				# 	f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=0.)
-				f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=self.Time)
-				f.shape = nq,sr
+			xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
+			# if sr == 1: f = f_ic(xphys)
+			# else : 
+			# 	# f = SmoothIsentropic1D(x=xphys,t=0.,gam=EqnSet.Params["SpecificHeatRatio"])
+			# 	f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=0.)
+			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=self.Time)
+			f.shape = nq,sr
 
-				if not InterpolateIC:
-					rhs *= 0.
-					for n in range(nn):
-						for iq in range(nq):
-							rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
+			if not InterpolateIC:
+				rhs *= 0.
+				for n in range(nn):
+					for iq in range(nq):
+						rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
 
-					U_[elem,:,:] = np.dot(MMinv,rhs)
-				else:
-					U_[elem] = f
+				U[elem,:,:] = np.dot(MMinv,rhs)
+			else:
+				U[elem] = f
 
 	def ApplyLimiter(self, U):
 		if self.Limiter is not None:
 			self.Limiter.LimitSolution(self, U)
 
 
-	def CalculateResidualElem(self, egrp, elem, U, ER, StaticData):
-		# U = EqnSet.U[egrp][elem] # [nn,sr]
+	def CalculateResidualElem(self, elem, U, ER, StaticData):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 
-		basis = EqnSet.Bases[egrp]
-		Order = EqnSet.Orders[egrp]
+		basis = EqnSet.Basis
+		Order = EqnSet.Order
 		entity = EntityType.Element
 		sr = EqnSet.StateRank
 		dim = EqnSet.Dim
-		# ER = R[egrp][elem] # [nn,sr]
 
 		if Order == 0:
 			return ER, StaticData
@@ -225,7 +218,7 @@ class DG_Solver(object):
 			GeomPhiData = StaticData.GeomPhiData
 
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order, EqnSet, quadData)
 		if QuadChanged:
 			quadData = QuadData(mesh, basis, entity, QuadOrder)
 
@@ -233,9 +226,8 @@ class DG_Solver(object):
 		xq = quadData.xquad
 		wq = quadData.wquad
 
-		# PhiData = BasisData(egrp,Order,entity,nq,xq,mesh,True,True)
 		if QuadChanged:
-			PhiData = BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
+			PhiData = BasisData(EqnSet.Basis,Order,nq,mesh)
 			PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
 			# PhiData.PhysicalGrad(JData)
 
@@ -246,10 +238,10 @@ class DG_Solver(object):
 
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
+		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 		PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
 
-		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
+		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
 
 		nn = PhiData.nn
 
@@ -297,9 +289,8 @@ class DG_Solver(object):
 		EqnSet = self.EqnSet
 		StaticData = None
 
-		for egrp in range(mesh.nElemGroup):
-			for elem in range(mesh.nElems[egrp]):
-				R[egrp][elem], StaticData = self.CalculateResidualElem(egrp, elem, U[egrp][elem], R[egrp][elem], StaticData)
+		for elem in range(mesh.nElem):
+			R[elem], StaticData = self.CalculateResidualElem(elem, U[elem], R[elem], StaticData)
 
 
 	def CalculateResidualIFace(self, iiface, UL, UR, RL, RR, StaticData):
@@ -309,16 +300,12 @@ class DG_Solver(object):
 		sr = EqnSet.StateRank
 
 		IFace = mesh.IFaces[iiface]
-		egrpL = IFace.ElemGroupL
-		egrpR = IFace.ElemGroupR
 		elemL = IFace.ElemL
 		elemR = IFace.ElemR
 		faceL = IFace.faceL
 		faceR = IFace.faceR
-		OrderL = EqnSet.Orders[egrpL]
-		OrderR = EqnSet.Orders[egrpR]
-		nFacePerElemL = mesh.ElemGroups[egrpL].nFacePerElem
-		nFacePerElemR = mesh.ElemGroups[egrpR].nFacePerElem
+		Order = EqnSet.Order
+		nFacePerElem = mesh.nFacePerElem
 
 		if StaticData is None:
 			pnq = -1
@@ -344,20 +331,18 @@ class DG_Solver(object):
 			Faces2PhiDataL = StaticData.Faces2PhiDataL
 			Faces2PhiDataR = StaticData.Faces2PhiDataR
 
-		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.ElemGroups[egrpL].QBasis, np.amax([OrderL,OrderR]), EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
-			quadData = QuadData(mesh, EqnSet.Bases[egrpL], EntityType.IFace, QuadOrder)
+			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
 
 		nq = quadData.nquad
 		xq = quadData.xquad
 		wq = quadData.wquad
 
 		if QuadChanged:
-			Faces2PhiDataL = [None for i in range(nFacePerElemL)]
-			Faces2PhiDataR = [None for i in range(nFacePerElemR)]
-			# PhiDataL = BasisData(EqnSet.Bases[egrpL],OrderL,nq,mesh)
-			# PhiDataR = BasisData(EqnSet.Bases[egrpR],OrderR,nq,mesh)
+			Faces2PhiDataL = [None for i in range(nFacePerElem)]
+			Faces2PhiDataR = [None for i in range(nFacePerElem)]
 
 			xelemL = np.zeros([nq, dim])
 			xelemR = np.zeros([nq, dim])
@@ -368,21 +353,11 @@ class DG_Solver(object):
 		PhiDataR = Faces2PhiDataR[faceR]
 
 		if PhiDataL is None or QuadChanged:
-			Faces2PhiDataL[faceL] = PhiDataL = BasisData(EqnSet.Bases[egrpL],OrderL,nq,mesh)
-			xelemL = PhiDataL.EvalBasisOnFace(mesh, egrpL, faceL, xq, xelemL, Get_Phi=True)
+			Faces2PhiDataL[faceL] = PhiDataL = BasisData(EqnSet.Basis,Order,nq,mesh)
+			xelemL = PhiDataL.EvalBasisOnFace(mesh, faceL, xq, xelemL, Get_Phi=True)
 		if PhiDataR is None or QuadChanged:
-			Faces2PhiDataR[faceR] = PhiDataR = BasisData(EqnSet.Bases[egrpR],OrderR,nq,mesh)
-			xelemR = PhiDataR.EvalBasisOnFace(mesh, egrpR, faceR, xq[::-1], xelemR, Get_Phi=True)
-
-		# if faceL != PhiDataL.face:
-		# 	xelemL = PhiDataL.EvalBasisOnFace(mesh, egrpL, faceL, xq, xelemL, Get_Phi=True)
-		# if faceR != PhiDataR.face:
-		# 	xelemR = PhiDataR.EvalBasisOnFace(mesh, egrpR, faceR, xq[::-1], xelemR, Get_Phi=True)
-
-		# PhiDataL = BasisData(ShapeType.Segment,OrderL,nq,mesh)
-		# PhiDataL.EvalBasisOnFace(mesh, egrpL, faceL, xq, True, False, False, None)
-		# PhiDataR = BasisData(ShapeType.Segment,OrderR,nq,mesh)
-		# PhiDataR.EvalBasisOnFace(mesh, egrpR, faceR, xq, True, False, False, None)
+			Faces2PhiDataR[faceR] = PhiDataR = BasisData(EqnSet.Basis,Order,nq,mesh)
+			xelemR = PhiDataR.EvalBasisOnFace(mesh, faceR, xq[::-1], xelemR, Get_Phi=True)
 
 		NData = IFaceNormal(mesh, IFace, nq, xq, NData)
 		# NData.nvec *= wq
@@ -392,8 +367,6 @@ class DG_Solver(object):
 		nn = np.amax([nL,nR])
 
 		# interpolate state and gradient at quad points
-		# uL = np.zeros([nq, sr])
-		# uR = np.zeros([nq, sr])
 		for ir in range(sr):
 			uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
 			uR[:,ir] = np.matmul(PhiDataR.Phi, UR[:,ir])
@@ -432,17 +405,15 @@ class DG_Solver(object):
 
 		for iiface in range(mesh.nIFace):
 			IFace = mesh.IFaces[iiface]
-			egrpL = IFace.ElemGroupL
-			egrpR = IFace.ElemGroupR
 			elemL = IFace.ElemL
 			elemR = IFace.ElemR
 			faceL = IFace.faceL
 			faceR = IFace.faceR
 
-			UL = U[egrpL][elemL]
-			UR = U[egrpR][elemR]
-			RL = R[egrpL][elemL]
-			RR = R[egrpR][elemR]
+			UL = U[elemL]
+			UR = U[elemR]
+			RL = R[elemL]
+			RR = R[elemR]
 
 			RL, RR, StaticData = self.CalculateResidualIFace(iiface, UL, UR, RL, RR, StaticData)
 
@@ -454,11 +425,10 @@ class DG_Solver(object):
 
 		BFG = mesh.BFaceGroups[ibfgrp]
 		BFace = BFG.BFaces[ibface]
-		egrp = BFace.ElemGroup
 		elem = BFace.Elem
 		face = BFace.face
-		Order = EqnSet.Orders[egrp]
-		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+		Order = EqnSet.Order
+		nFacePerElem = mesh.nFacePerElem
 
 		if StaticData is None:
 			pnq = -1
@@ -483,10 +453,10 @@ class DG_Solver(object):
 			Faces2PhiData = StaticData.Faces2PhiData
 			Faces2xelem = StaticData.Faces2xelem
 
-		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
-			quadData = QuadData(mesh, EqnSet.Bases[egrp], EntityType.BFace, QuadOrder)
+			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
 
 		nq = quadData.nquad
 		xq = quadData.xquad
@@ -494,7 +464,7 @@ class DG_Solver(object):
 
 		if QuadChanged:
 			Faces2PhiData = [None for i in range(nFacePerElem)]
-			# PhiData = BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
+			# PhiData = BasisData(EqnSet.Basis,Order,nq,mesh)
 			xglob = np.zeros([nq, dim])
 			uI = np.zeros([nq, sr])
 			uB = np.zeros([nq, sr])
@@ -503,18 +473,13 @@ class DG_Solver(object):
 		PhiData = Faces2PhiData[face]
 		xelem = Faces2xelem[face]
 		if PhiData is None or QuadChanged:
-			Faces2PhiData[face] = PhiData = BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
-			Faces2xelem[face] = xelem = PhiData.EvalBasisOnFace(mesh, egrp, face, xq, xelem, Get_Phi=True)
-
-		# if face != PhiData.face:
-		# 	xelem = PhiData.EvalBasisOnFace(mesh, egrp, face, xq, xelem, Get_Phi=True)
-
-		# PhiData.EvalBasisOnFace(mesh, egrp, face, xq, True, False, False, None)
+			Faces2PhiData[face] = PhiData = BasisData(EqnSet.Basis,Order,nq,mesh)
+			Faces2xelem[face] = xelem = PhiData.EvalBasisOnFace(mesh, face, xq, xelem, Get_Phi=True)
 
 		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
 
 		PointsChanged = QuadChanged or face != GeomPhiData.face
-		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xelem, xglob, PointsChanged)
+		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xelem, xglob, PointsChanged)
 
 		nn = PhiData.nn
 
@@ -560,11 +525,10 @@ class DG_Solver(object):
 
 			for ibface in range(BFG.nBFace):
 				BFace = BFG.BFaces[ibface]
-				egrp = BFace.ElemGroup
 				elem = BFace.Elem
 				face = BFace.face
 
-				R[egrp][elem], StaticData = self.CalculateResidualBFace(ibfgrp, ibface, U[egrp][elem], R[egrp][elem], StaticData)
+				R[elem], StaticData = self.CalculateResidualBFace(ibfgrp, ibface, U[elem], R[elem], StaticData)
 
 
 	def CalculateResidual(self, U, R):
@@ -572,14 +536,15 @@ class DG_Solver(object):
 		EqnSet = self.EqnSet
 
 		if R is None:
-			R = ArrayList(SimilarArray=U)
+			# R = ArrayList(SimilarArray=U)
+			R = np.copy(U)
 		# Initialize residual to zero
-		# for egrp in range(mesh.nElemGroup): R[egrp][:] = 0.
-		R.SetUniformValue(0.)
+		# R.SetUniformValue(0.)
+		R[:] = 0.
 
-		self.CalculateResidualBFaces(U.Arrays, R.Arrays)
-		self.CalculateResidualElems(U.Arrays, R.Arrays)
-		self.CalculateResidualIFaces(U.Arrays, R.Arrays)
+		self.CalculateResidualBFaces(U, R)
+		self.CalculateResidualElems(U, R)
+		self.CalculateResidualIFaces(U, R)
 
 		return R
 
@@ -607,7 +572,8 @@ class DG_Solver(object):
 			self.Time = Time
 
 			# Info to print
-			PrintInfo = (iStep+1, self.Time, R.VectorNorm(ord=1))
+			# PrintInfo = (iStep+1, self.Time, R.VectorNorm(ord=1))
+			PrintInfo = (iStep+1, self.Time, np.linalg.norm(np.reshape(R,-1), ord=1))
 			PrintString = "%d: Time = %g, Residual norm = %g" % (PrintInfo)
 
 			# Output
@@ -748,12 +714,11 @@ class ADERDG_Solver(DG_Solver):
 
 		### Check linear geometric mapping
 		if Params["LinearGeomMapping"] is True:
-		    for EG in mesh.ElemGroups:
-		        if EG.QOrder != 1:
-		            raise Errors.IncompatibleError
-		        if EG.QBasis == BasisType.LagrangeQuad \
-		            and Params["UniformMesh"] is False:
-		            raise Errors.IncompatibleError
+			if mesh.QOrder != 1:
+			    raise Errors.IncompatibleError
+			if mesh.QBasis == BasisType.LagrangeQuad \
+			    and Params["UniformMesh"] is False:
+			    raise Errors.IncompatibleError
 
 		### Check limiter ###
 		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
@@ -793,44 +758,42 @@ class ADERDG_Solver(DG_Solver):
 		EqnSet = self.EqnSet
 		StaticData = None
 
-		for egrp in range(mesh.nElemGroup):
-			for elem in range(mesh.nElems[egrp]):
-				Up[egrp][elem], StaticData = self.CalculatePredictorElemADER(egrp, elem, dt, W[egrp][elem], Up[egrp][elem], StaticData)
+		for elem in range(mesh.nElem):
+			Up[elem], StaticData = self.CalculatePredictorElemADER(elem, dt, W[elem], Up[elem], StaticData)
 
 
-	def CalculatePredictorElemADER(self, egrp, elem, dt, W, Up, StaticData):
+	def CalculatePredictorElemADER(self, elem, dt, W, Up, StaticData):
 
 	
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		sr = EqnSet.StateRank
 		dim = mesh.Dim
-		basis2 = EqnSet.Bases[egrp]
-		basis1 = EqnSet.BasesADER[egrp]
-		Order = EqnSet.Orders[egrp]
+		basis2 = EqnSet.Basis
+		basis1 = EqnSet.BasisADER
+		Order = EqnSet.Order
 		entity = EntityType.Element
 
 		quadData = None
 		quadDataST = None
 		QuadChanged = True; QuadChangedST = True
-		EGroup=mesh.ElemGroups[egrp]
-		Elem2Nodes = EGroup.Elem2Nodes[elem]
+		Elem2Nodes = mesh.Elem2Nodes[elem]
 		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
 
 		#Flux matrices in time
-		FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
-		FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
+		FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, elem=0, StaticData=None)
+		FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=0, StaticData=None)
 		
 		#Stiffness matrix in time
 		gradDir = 1
-		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, egrp=0, elem=0, basis=basis1)
+		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
 		gradDir = 0
-		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, egrp=0, elem=0, basis=basis1)
+		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
 		SMS = np.transpose(SMS)
-		#MMinv,_= GetElemInvMassMatrixADER(mesh, basis1, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
+		#MMinv,_= GetElemInvMassMatrixADER(mesh, basis1, Order, PhysicalSpace=True, elem=-1, StaticData=None)
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis2, Order, EqnSet, quadData)
-		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis1, Order, EqnSet, quadDataST)
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, basis2, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
 
 		if QuadChanged:
@@ -864,7 +827,7 @@ class ADERDG_Solver(DG_Solver):
 
 		def F(x):
 			x = np.reshape(x,(nnST,1))
-			fluxpoly = self.FluxState(egrp, elem, dt, Order, basis1, x)
+			fluxpoly = self.FluxState(elem, dt, Order, basis1, x)
 			f = np.matmul(FTL,x)-np.matmul(FTR,W)-np.matmul(SMT,x)+np.matmul(SMS,fluxpoly)
 			#code.interact(local=locals())
 			#print fluxpoly
@@ -888,11 +851,10 @@ class ADERDG_Solver(DG_Solver):
 
 		BFG = mesh.BFaceGroups[ibfgrp]
 		BFace = BFG.BFaces[ibface]
-		egrp = BFace.ElemGroup
 		elem = BFace.Elem
 		face = BFace.face
-		Order = EqnSet.Orders[egrp]
-		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+		Order = EqnSet.Order
+		nFacePerElem = mesh.nFacePerElem
 
 		if StaticData is None:
 			pnq = -1
@@ -928,15 +890,15 @@ class ADERDG_Solver(DG_Solver):
 			xelemPhi = StaticData.xelemPhi
 		
 		#Hard code basisType to Quads (currently only designed for 1D)
-		basis2 = EqnSet.Bases[egrp]
-		basis1 = EqnSet.BasesADER[egrp]
+		basis2 = EqnSet.Basis
+		basis1 = EqnSet.BasisADER
 
 		QuadOrderST, QuadChangedST = GetQuadOrderBFace(mesh, BFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
-		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
-			quadData = QuadData(mesh, EqnSet.Bases[egrp], EntityType.BFace, QuadOrder)
+			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
 		if QuadChangedST:
 			quadDataST = QuadDataADER(mesh,basis1,EntityType.BFace, QuadOrderST)
 		
@@ -961,15 +923,15 @@ class ADERDG_Solver(DG_Solver):
 			xelemPhi = np.zeros([nqST, mesh.Dim+1])
 			xelemPsi = np.zeros([nq, mesh.Dim])
 			PhiData = BasisData(basis1,Order,nqST,mesh)
-			xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, egrp, faceST, xqST, xelemPhi, Get_Phi=True)
+			xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, faceST, xqST, xelemPhi, Get_Phi=True)
 			PsiData = BasisData(basis2,Order,nq,mesh)
-			xelemPsi = PsiData.EvalBasisOnFace(mesh, egrp, face, xq, xelemPsi, Get_Phi=True)
+			xelemPsi = PsiData.EvalBasisOnFace(mesh, face, xq, xelemPsi, Get_Phi=True)
 
 		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
 		PointsChanged = QuadChanged or face != GeomPhiData.face
-		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xelemPsi, xglob, PointsChanged)
+		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xelemPsi, xglob, PointsChanged)
 
-		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xelemPhi, tglob, PointsChanged)
+		tglob, TimePhiData = Ref2PhysTime(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xelemPhi, tglob, PointsChanged)
 		nn = PsiData.nn
 
 		# interpolate state and gradient at quad points
@@ -1016,18 +978,16 @@ class ADERDG_Solver(DG_Solver):
 
 		return R, StaticData
 
-	def CalculateResidualElem(self, egrp, elem, U, ER, StaticData):
-		# U = EqnSet.U[egrp][elem] # [nn,sr]
+	def CalculateResidualElem(self, elem, U, ER, StaticData):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 
-		basis2 = EqnSet.Bases[egrp]
-		basis1 = EqnSet.BasesADER[egrp]
-		Order = EqnSet.Orders[egrp]
+		basis2 = EqnSet.Basis
+		basis1 = EqnSet.BasisADER
+		Order = EqnSet.Order
 		entity = EntityType.Element
 		sr = EqnSet.StateRank
 		dim = EqnSet.Dim
-		# ER = R[egrp][elem] # [nn,sr]
 
 		if Order == 0:
 			return ER, StaticData
@@ -1064,8 +1024,8 @@ class ADERDG_Solver(DG_Solver):
 			GeomPhiData = StaticData.GeomPhiData
 			TimePhiData = StaticData.TimePhiData
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadData)
-		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis1, Order, EqnSet, quadDataST)
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
 
 		if QuadChanged:
@@ -1093,18 +1053,17 @@ class ADERDG_Solver(DG_Solver):
 			F = np.zeros([nqST, sr, dim])
 			s = np.zeros([nqST, sr])
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
+		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 		PsiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
 
-		xglob, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
-		tglob, TimePhiData = Ref2PhysTime(mesh, egrp, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
+		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
+		tglob, TimePhiData = Ref2PhysTime(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
 
 
 		nn = PsiData.nn
 
 		#Calculate dx and dt(this is for constant delta_x, but works on different mesh resolutions)
-		EGroup=mesh.ElemGroups[egrp]
-		Elem2Nodes = EGroup.Elem2Nodes[elem]
+		Elem2Nodes = mesh.Elem2Nodes[elem]
 		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
 		Stepper = self.Stepper
 		dt = Stepper.dt
@@ -1178,16 +1137,12 @@ class ADERDG_Solver(DG_Solver):
 		sr = EqnSet.StateRank
 
 		IFace = mesh.IFaces[iiface]
-		egrpL = IFace.ElemGroupL
-		egrpR = IFace.ElemGroupR
 		elemL = IFace.ElemL
 		elemR = IFace.ElemR
 		faceL = IFace.faceL
 		faceR = IFace.faceR
-		OrderL = EqnSet.Orders[egrpL]
-		OrderR = EqnSet.Orders[egrpR]
-		nFacePerElemL = mesh.ElemGroups[egrpL].nFacePerElem
-		nFacePerElemR = mesh.ElemGroups[egrpR].nFacePerElem
+		Order = EqnSet.Order
+		nFacePerElem = mesh.nFacePerElem
 
 		if StaticData is None:
 			pnq = -1
@@ -1223,15 +1178,15 @@ class ADERDG_Solver(DG_Solver):
 
 
 		#Hard code basisType to Quads (currently only designed for 1D)
-		basis2 = EqnSet.Bases[egrpL]
-		basis1 = EqnSet.BasesADER[egrpL]
+		basis2 = EqnSet.Basis
+		basis1 = EqnSet.BasisADER
 
-		QuadOrderST, QuadChangedST = GetQuadOrderIFace(mesh, IFace, basis1, np.amax([OrderL,OrderR]), EqnSet, quadDataST)
+		QuadOrderST, QuadChangedST = GetQuadOrderIFace(mesh, IFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
-		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.ElemGroups[egrpL].QBasis, np.amax([OrderL,OrderR]), EqnSet, quadData)
+		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
-			quadData = QuadData(mesh, EqnSet.Bases[egrpL], EntityType.IFace, QuadOrder)
+			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
 		if QuadChangedST:
 			quadDataST = QuadDataADER(mesh,basis1,EntityType.IFace, QuadOrderST)
 		
@@ -1266,16 +1221,16 @@ class ADERDG_Solver(DG_Solver):
 			uR = np.zeros([nqST, sr])
 
 			#Evaluate space-time basis functions
-			PhiDataL = BasisData(basis1,OrderL,nqST,mesh)
-			PhiDataR = BasisData(basis1,OrderR,nqST,mesh)
-			xelemLPhi = PhiDataL.EvalBasisOnFaceADER(mesh, basis1, egrpL, faceSTL, xqST, xelemLPhi, Get_Phi=True)
-			xelemRPhi = PhiDataR.EvalBasisOnFaceADER(mesh, basis1, egrpR, faceSTR, xqST[::-1], xelemRPhi, Get_Phi=True)
+			PhiDataL = BasisData(basis1,Order,nqST,mesh)
+			PhiDataR = BasisData(basis1,Order,nqST,mesh)
+			xelemLPhi = PhiDataL.EvalBasisOnFaceADER(mesh, basis1, faceSTL, xqST, xelemLPhi, Get_Phi=True)
+			xelemRPhi = PhiDataR.EvalBasisOnFaceADER(mesh, basis1, faceSTR, xqST[::-1], xelemRPhi, Get_Phi=True)
 
 			#Evaluate spacial basis functions
-			PsiDataL = BasisData(basis2,OrderL,nq,mesh)
-			PsiDataR = BasisData(basis2,OrderR,nq,mesh)
-			xelemLPsi = PsiDataL.EvalBasisOnFace(mesh, egrpL, faceL, xq, xelemLPsi, Get_Phi=True)
-			xelemRPsi = PsiDataR.EvalBasisOnFace(mesh, egrpR, faceR, xq[::-1], xelemRPsi, Get_Phi=True)
+			PsiDataL = BasisData(basis2,Order,nq,mesh)
+			PsiDataR = BasisData(basis2,Order,nq,mesh)
+			xelemLPsi = PsiDataL.EvalBasisOnFace(mesh, faceL, xq, xelemLPsi, Get_Phi=True)
+			xelemRPsi = PsiDataR.EvalBasisOnFace(mesh, faceR, xq[::-1], xelemRPsi, Get_Phi=True)
 
 
 
@@ -1332,7 +1287,7 @@ class ADERDG_Solver(DG_Solver):
 		return RL, RR, StaticData
 
 
-	def FluxState(self, egrp, elem, dt, Order, basis, U):
+	def FluxState(self, elem, dt, Order, basis, U):
 
 		mesh = self.mesh
 		dim = mesh.Dim
@@ -1353,12 +1308,12 @@ class ADERDG_Solver(DG_Solver):
 		if not InterpolateFlux:
 
 
-			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, 4*Order, EqnSet, quadData)
-			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, egrp, basis, 4*Order, EqnSet, quadDataST)
+			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, 4*Order, EqnSet, quadData)
+			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis, 4*Order, EqnSet, quadDataST)
 			QuadOrderST-=1
 
 			if QuadChanged:
-				quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, entity, QuadOrder)
+				quadData = QuadData(mesh, mesh.QBasis, entity, QuadOrder)
 			if QuadChangedST:
 				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
 
@@ -1376,14 +1331,14 @@ class ADERDG_Solver(DG_Solver):
 				PhiData.EvalBasis(xqST, Get_Phi=True)
 				xphys = np.zeros([nqST, mesh.Dim])
 
-			JData.ElemJacobian(egrp,elem,nqST,xqST,mesh,get_djac=True)
-			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, egrp=-1, elem=-1, StaticData=None)
+			JData.ElemJacobian(elem,nqST,xqST,mesh,get_djac=True)
+			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, elem=-1, StaticData=None)
 			nn = PhiData.nn
 		else:
 
 			xq, nq = EquidistantNodes(basis, Order, xq)
 			nn = nq
-			JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
+			JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 
 		if not InterpolateFlux:
 

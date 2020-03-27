@@ -245,43 +245,41 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 
 	## Extract data
 	dim = mesh.Dim
-	U = EqnSet.U.Arrays
-	Order = np.amax(EqnSet.Orders)
-	egrp = np.where(Order == EqnSet.Orders)[0][0]
+	U = EqnSet.U
+	Order = EqnSet.Order
 	sr = EqnSet.StateRank
 	# Get points to plot at
 	# Note: assumes uniform element type
 	if Equidistant:
-		xpoint, npoint = Basis.EquidistantNodes(EqnSet.Bases[egrp], max([1,3*Order]))
+		xpoint, npoint = Basis.EquidistantNodes(EqnSet.Basis, max([1,3*Order]))
 	else:
-		QuadOrder,_ = Quadrature.GetQuadOrderElem(mesh, egrp, EqnSet.Bases[egrp], max([2,2*Order]), EqnSet)
-		quadData = Quadrature.QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
+		QuadOrder,_ = Quadrature.GetQuadOrderElem(mesh, EqnSet.Basis, max([2,2*Order]), EqnSet)
+		quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 		npoint = quadData.nquad
 		xpoint = quadData.xquad
 	
-	u = np.zeros([mesh.nElemTot,npoint,sr])
+	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
-	x = np.zeros([mesh.nElemTot,npoint,dim])
-	PhiData = Basis.BasisData(EqnSet.Bases[egrp],Order,npoint,mesh)
+	x = np.zeros([mesh.nElem,npoint,dim])
+	PhiData = Basis.BasisData(EqnSet.Basis,Order,npoint,mesh)
 	PhiData.EvalBasis(xpoint, True, False, False, None)
 	GeomPhiData = None
 	el = 0
-	for egrp in range(mesh.nElemGroup):
-		for elem in range(mesh.nElems[egrp]):
-			U_ = U[egrp][elem]
+	for elem in range(mesh.nElem):
+		U_ = U[elem]
 
-			JData = Basis.JacobianData(mesh)
-			JData.ElemJacobian(egrp,elem,npoint,xpoint,mesh,get_djac=True)
+		JData = Basis.JacobianData(mesh)
+		JData.ElemJacobian(elem,npoint,xpoint,mesh,get_djac=True)
 
-			xphys, GeomPhiData = Mesh.Ref2Phys(mesh, egrp, elem, GeomPhiData, npoint, xpoint)
-			x[el,:,:] = xphys
-			# u_exact[el,:,:] = f_exact(xphys, EndTime)
+		xphys, GeomPhiData = Mesh.Ref2Phys(mesh, elem, GeomPhiData, npoint, xpoint)
+		x[el,:,:] = xphys
+		# u_exact[el,:,:] = f_exact(xphys, EndTime)
 
-			# interpolate state at quad points
-			for ir in range(sr):
-				u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		# interpolate state at quad points
+		for ir in range(sr):
+			u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
 
-			el += 1
+		el += 1
 
 	# Exact solution?
 	if PlotExact:
@@ -332,22 +330,15 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 	Loop through IFaces and plot interior faces
 	'''
 	for IFace in mesh.IFaces:
-		# Choose adjacent element with higher QOrder
-		QOrderL = mesh.ElemGroups[IFace.ElemGroupL].QOrder
-		QOrderR = mesh.ElemGroups[IFace.ElemGroupR].QOrder
-		if QOrderL >= QOrderR:
-			egrp = IFace.ElemGroupL; elem = IFace.ElemL; face = IFace.faceL
-		else:
-			egrp = IFace.ElemGroupR; elem = IFace.ElemR; face = IFace.faceR
-
-		EG = mesh.ElemGroups[egrp]
+		# Choose left element
+		elem = IFace.ElemL; face = IFace.faceL
 
 		# Get local nodes on face
-		fnodes, nfnode = Basis.LocalFaceNodes(EG.QBasis, 
-			EG.QOrder, face)
+		fnodes, nfnode = Basis.LocalFaceNodes(mesh.QBasis, 
+			mesh.QOrder, face)
 
 		# Convert to global node numbering
-		fnodes[:] = EG.Elem2Nodes[elem][fnodes[:]]
+		fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
 		# Physical coordinates of global nodes
 		coords = mesh.Coords[fnodes]
@@ -362,16 +353,14 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 	for BFG in mesh.BFaceGroups:
 		for BFace in BFG.BFaces:
 			# Get adjacent element info
-			egrp = BFace.ElemGroup; elem = BFace.Elem; face = BFace.face
-
-			EG = mesh.ElemGroups[egrp]
+			elem = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
-			fnodes, nfnode = Basis.LocalFaceNodes(EG.QBasis, 
-				EG.QOrder, face)
+			fnodes, nfnode = Basis.LocalFaceNodes(mesh.QBasis, 
+				mesh.QOrder, face)
 
 			# Convert to global node numbering
-			fnodes[:] = EG.Elem2Nodes[elem][fnodes[:]]
+			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
 			# Physical coordinates of global nodes
 			coords = mesh.Coords[fnodes]

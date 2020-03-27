@@ -19,17 +19,17 @@ class FE(object):
 		try: 
 			R = DataSet.R
 		except AttributeError: 
-			R = ArrayList(SimilarArray=U)
+			R = np.copy(U)
 			DataSet.R = R
 		try: 
 			dU = DataSet.dU
 		except AttributeError: 
-			dU = ArrayList(SimilarArray=U)
+			dU = np.copy(U)
 			DataSet.dU = dU
 
 		R = solver.CalculateResidual(U, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
-		U.AddToSelf(dU)
+		U += dU
 
 		solver.ApplyLimiter(U)
 
@@ -47,63 +47,61 @@ class RK4(FE):
 		try: 
 			R = DataSet.R
 		except AttributeError: 
-			R = ArrayList(SimilarArray=U)
+			R = np.copy(U)
 			DataSet.R = R
 		try: 
 			dU = DataSet.dU
 		except AttributeError: 
-			dU = ArrayList(SimilarArray=U)
+			dU = np.copy(U)
 			DataSet.dU = dU
 		try: 
 			dU1 = DataSet.dU1
 		except AttributeError: 
-			dU1 = ArrayList(SimilarArray=U)
+			dU1 = np.copy(U)
 			DataSet.dU1 = dU1
 		try: 
 			dU2 = DataSet.dU2
 		except AttributeError: 
-			dU2 = ArrayList(SimilarArray=U)
+			dU2 = np.copy(U)
 			DataSet.dU2 = dU2
 		try: 
 			dU3 = DataSet.dU3
 		except AttributeError: 
-			dU3 = ArrayList(SimilarArray=U)
+			dU3 = np.copy(U)
 			DataSet.dU3 = dU3
 		try: 
 			dU4 = DataSet.dU4
 		except AttributeError: 
-			dU4 = ArrayList(SimilarArray=U)
+			dU4 = np.copy(U)
 			DataSet.dU4 = dU4
 		try: 
 			Utemp = DataSet.Utemp
 		except AttributeError: 
-			Utemp = ArrayList(SimilarArray=U)
+			Utemp = np.copy(U)
 			DataSet.Utemp = Utemp
 		# first stage
 		R = solver.CalculateResidual(U, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU1)
-		Utemp.SetToSum(U, dU1, c2=0.5)
+		# Utemp.SetToSum(U, dU1, c2=0.5)
+		Utemp = U + 0.5*dU1
 		solver.ApplyLimiter(Utemp)
 		# second stage
 		solver.Time += self.dt/2.
 		R = solver.CalculateResidual(Utemp, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU2)
-		Utemp.SetToSum(U, dU2, c2=0.5)
+		Utemp = U + 0.5*dU2
 		solver.ApplyLimiter(Utemp)
 		# third stage
 		R = solver.CalculateResidual(Utemp, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU3)
-		Utemp.SetToSum(U, dU3)
+		Utemp = U + dU3
 		solver.ApplyLimiter(Utemp)
 		# fourth stage
 		solver.Time += self.dt/2.
 		R = solver.CalculateResidual(Utemp, R)
 		MultInvMassMatrix(mesh, solver, self.dt, R, dU4)
-		dU.SetToSum(dU1, dU2, c2=2.)
-		dU.AddToSelf(dU3, c=2.)
-		dU.AddToSelf(dU4)
-		dU.ScaleByFactor(1./6.)
-		U.AddToSelf(dU)
+		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
+		U += dU
 		solver.ApplyLimiter(U)
 		# for egrp in range(mesh.nElemGroup): 
 		# 	R[egrp][:] = 1./6.*(dU1[egrp][:]+2.*dU2[egrp][:]+2.*dU3[egrp][:]+dU4[egrp][:])
@@ -143,17 +141,17 @@ class LSRK4(FE):
 		try: 
 			R = DataSet.R
 		except AttributeError: 
-			R = ArrayList(SimilarArray=U)
+			R = np.copy(U)
 			DataSet.R = R
 		try: 
 			dU = DataSet.dU
 		except AttributeError: 
-			dU = ArrayList(SimilarArray=U)
+			dU = np.copy(U)
 			DataSet.dU = dU
 		try: 
 			dUtemp = DataSet.dUtemp
 		except AttributeError: 
-			dUtemp = ArrayList(SimilarArray=U)
+			dUtemp = np.copy(U)
 			DataSet.dUtemp = dUtemp
 
 		Time = solver.Time
@@ -161,9 +159,9 @@ class LSRK4(FE):
 			solver.Time = Time + self.rk4c[INTRK]*self.dt
 			R = solver.CalculateResidual(U, R)
 			MultInvMassMatrix(mesh, solver, self.dt, R, dUtemp)
-			dU.ScaleByFactor(self.rk4a[INTRK])
-			dU.AddToSelf(dUtemp)
-			U.AddToSelf(dU, c=self.rk4b[INTRK])
+			dU *= self.rk4a[INTRK]
+			dU += dUtemp
+			U += self.rk4b[INTRK]*dU
 			solver.ApplyLimiter(U)
 
 		return R
@@ -194,17 +192,17 @@ class SSPRK3(FE):
 		try:
 			R = DataSet.R
 		except AttributeError:
-			R = ArrayList(SimilarArray=U)
+			R = np.copy(U)
 			DataSet.R = R
 		try:
 			dU = DataSet.dU
 		except AttributeError:
-			dU = ArrayList(SimilarArray=U)
+			dU = np.copy(U)
 			DataSet.dU = dU
 		try:	
 			dUtemp = DataSet.dUtemp
 		except AttributeError:
-			dUtemp = ArrayList(SimilarArray=U)
+			dUtemp = np.copy(U)
 			DataSet.dUtemp = dUtemp
 
 		Time = solver.Time
@@ -212,9 +210,9 @@ class SSPRK3(FE):
 			solver.Time = Time + self.dt
 			R = solver.CalculateResidual(U, R)
 			MultInvMassMatrix(mesh, solver, self.dt, R, dUtemp)
-			dU.ScaleByFactor(self.ssprk3a[INTRK])
-			dU.AddToSelf(dUtemp)
-			U.AddToSelf(dU, c=self.ssprk3b[INTRK])
+			dU *= self.ssprk3a[INTRK]
+			dU += dUtemp
+			U += self.ssprk3b[INTRK]*dU
 			solver.ApplyLimiter(U)
 		return R	
 
@@ -231,14 +229,14 @@ class ADER(object):
 		W = EqnSet.U
 		Up = EqnSet.Up
 		try:
-			R = DataSet.W
+			R = DataSet.R
 		except AttributeError:
-			R = ArrayList(SimilarArray=W)
+			R = np.copy(W)
 			DataSet.R = R
 		try: 
 			dU = DataSet.dU
 		except AttributeError:
-			dU = ArrayList(SimilarArray=W)
+			dU = np.copy(W)
 			DataSet.dU=dU
 
 		# Prediction Step (Non-linear Case)
@@ -252,7 +250,7 @@ class ADER(object):
 
 		MultInvMassMatrix(mesh, solver, self.dt/2., R, dU)
 
-		W.AddToSelf(dU)
+		W += dU
 		solver.ApplyLimiter(W)
 		return R
 

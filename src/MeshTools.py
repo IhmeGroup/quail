@@ -14,35 +14,30 @@ def ElementVolumes(mesh, solver=None):
                 return solver.DataSet.TotalVolume, solver.DataSet.ElemVolumes
 
     # ElemVol = ArrayList(SimilarArray=EqnSet.U).Arrays
-    ElemVolumes = Data.ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
+    # ElemVolumes = Data.ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
+    ElemVolumes = np.zeros(mesh.nElem)
     TotalVolume = 0.
     quadData = None
     JData = JacobianData(mesh)
-    for egrp in range(mesh.nElemGroup):
 
-        EGroup = mesh.ElemGroups[egrp]
-        Order = EGroup.QOrder
+    Order = mesh.QOrder
 
-        QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, egrp, EGroup.QBasis, Order, 
-            quadData=quadData)
-        if QuadChanged:
-            quadData = Quadrature.QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
+    QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, mesh.QBasis, Order, 
+        quadData=quadData)
+    if QuadChanged:
+        quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-        nq = quadData.nquad
-        xq = quadData.xquad
-        wq = quadData.wquad
+    nq = quadData.nquad
+    xq = quadData.xquad
+    wq = quadData.wquad
 
-        # PhiData = BasisData(egrp,Order,entity,nq,xq,mesh,True,True)
-        # PhiData = BasisData(ShapeType.Segment,Order,nq,mesh)
-        # PhiData.EvalBasis(xq, True, False, False, None)
+    for elem in range(mesh.nElem):
+        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 
-        for elem in range(mesh.nElems[egrp]):
-            JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
+        for iq in range(nq):
+            ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
 
-            for iq in range(nq):
-                ElemVolumes.Arrays[egrp][elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
-
-            TotalVolume += ElemVolumes.Arrays[egrp][elem]
+        TotalVolume += ElemVolumes[elem]
 
     if solver is not None:
         solver.DataSet.TotalVolume = TotalVolume
@@ -51,25 +46,22 @@ def ElementVolumes(mesh, solver=None):
     return TotalVolume, ElemVolumes
 
 
-def NeighborAcrossFace(mesh, egrp, elem, face):
-    Face = mesh.ElemGroups[egrp].Faces[elem][face]
+def NeighborAcrossFace(mesh, elem, face):
+    Face = mesh.Faces[elem][face]
 
     if Face.Type == FaceType.Interior:
         iiface = Face.Number
-        egN = mesh.IFaces[iiface].ElemGroupR
         eN  = mesh.IFaces[iiface].ElemR
         faceN = mesh.IFaces[iiface].faceR
 
-        if egN == egrp and eN == elem:
-            egN = mesh.IFaces[iiface].ElemGroupL
+        if eN == elem:
             eN  = mesh.IFaces[iiface].ElemL
             faceN = mesh.IFaces[iiface].faceL
     else:
-        egN   = -1
         eN    = -1
         faceN = -1
 
-    return egN, eN, faceN
+    return eN, faceN
 
 
 def CheckFaceOrientations(mesh):
@@ -79,24 +71,20 @@ def CheckFaceOrientations(mesh):
         return
 
     for IFace in mesh.IFaces:
-        egrpL = IFace.ElemGroupL
-        egrpR = IFace.ElemGroupR
         elemL = IFace.ElemL
         elemR = IFace.ElemR
         faceL = IFace.faceL
         faceR = IFace.faceR
-        EGL = mesh.ElemGroups[egrpL]
-        EGR = mesh.ElemGroups[egrpR]
 
         # Get local q=1 nodes on face for left element
-        lfnodes, nfnode = LocalQ1FaceNodes(EGL.QBasis, EGL.QOrder, faceL)
+        lfnodes, nfnode = LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, faceL)
         # Convert to global node numbering
-        gfnodesL = EGL.Elem2Nodes[elemL][lfnodes]
+        gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
 
         # Get local q=1 nodes on face for right element
-        lfnodes, nfnode = LocalQ1FaceNodes(EGR.QBasis, EGR.QOrder, faceR)
+        lfnodes, nfnode = LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, faceR)
         # Convert to global node numbering
-        gfnodesR = EGR.Elem2Nodes[elemR][lfnodes]
+        gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
 
         # Node ordering should be reversed between the two elements
         if not np.all(gfnodesL == gfnodesR[::-1]):

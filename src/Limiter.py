@@ -31,21 +31,20 @@ class PPLimiter(object):
 		# U = EqnSet.U.Arrays
 		StaticData = None
 
-		for egrp in range(mesh.nElemGroup):
-			for elem in range(mesh.nElems[egrp]):
-				U.Arrays[egrp][elem] = self.LimitElement(solver, egrp, elem, U.Arrays[egrp][elem], StaticData)
+		for elem in range(mesh.nElem):
+			U[elem] = self.LimitElement(solver, elem, U[elem], StaticData)
 
-	def LimitElement(self, solver, egrp, elem, U, StaticData):
+	def LimitElement(self, solver, elem, U, StaticData):
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
 
-		basis = EqnSet.Bases[egrp]
-		Order = EqnSet.Orders[egrp]
+		basis = EqnSet.Basis
+		Order = EqnSet.Order
 		entity = General.EntityType.Element
 		sr = EqnSet.StateRank
 		dim = EqnSet.Dim
-		Faces = mesh.ElemGroups[egrp].Faces[elem]
-		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+		Faces = mesh.Faces[elem]
+		nFacePerElem = mesh.nFacePerElem
 
 		scalar1 = "Density"
 		scalar2 = "Pressure"
@@ -83,7 +82,7 @@ class PPLimiter(object):
 			theta = StaticData.theta
 			Faces2PhiData = StaticData.Faces2PhiData
 
-		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet, quadElem)
+		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, basis, Order, EqnSet, quadElem)
 		if QuadChanged:
 			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
@@ -91,9 +90,8 @@ class PPLimiter(object):
 		xq = quadElem.xquad
 		wq = quadElem.wquad
 
-		# PhiData = BasisData(egrp,Order,entity,nq,xq,mesh,True,True)
 		if QuadChanged:
-			PhiElem = Basis.BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
+			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
 			PhiElem.EvalBasis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
 			u = np.zeros([nq, sr])
@@ -101,7 +99,7 @@ class PPLimiter(object):
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
+		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 
 		nn = PhiElem.nn
 
@@ -131,19 +129,19 @@ class PPLimiter(object):
 		# Loop through faces
 		for face in range(nFacePerElem):
 			Face = Faces[face]
-			egN, eN, faceN = MeshTools.NeighborAcrossFace(mesh, egrp, elem, face)
+			eN, faceN = MeshTools.NeighborAcrossFace(mesh, elem, face)
 			if Face.Type == Mesh.FaceType.Boundary:
 				# boundary face
-				egN = egrp; eN = elem; faceN = face
+				eN = elem; faceN = face
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
-				OrderN = EqnSet.Orders[egN]
+				OrderN = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.ElemGroups[egrp].QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
@@ -158,8 +156,8 @@ class PPLimiter(object):
 
 			PhiData = Faces2PhiData[face]
 			if PhiData is None or QuadChanged:
-				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
-				xelem = PhiData.EvalBasisOnFace(mesh, egrp, face, xq, xelem, Get_Phi=True)
+				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
+				xelem = PhiData.EvalBasisOnFace(mesh, face, xq, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face
@@ -257,21 +255,20 @@ class PPScalarLimiter(object):
 		# U = EqnSet.U.Arrays
 		StaticData = None
 
-		for egrp in range(mesh.nElemGroup):
-			for elem in range(mesh.nElems[egrp]):
-				U.Arrays[egrp][elem] = self.LimitElement(solver, egrp, elem, U.Arrays[egrp][elem], StaticData)
+		for elem in range(mesh.nElem):
+			U[elem] = self.LimitElement(solver, elem, U[elem], StaticData)
 
-	def LimitElement(self, solver, egrp, elem, U, StaticData):
+	def LimitElement(self, solver, elem, U, StaticData):
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
 
-		basis = EqnSet.Bases[egrp]
-		Order = EqnSet.Orders[egrp]
+		basis = EqnSet.Basis
+		Order = EqnSet.Order
 		entity = General.EntityType.Element
 		sr = EqnSet.StateRank
 		dim = EqnSet.Dim
-		Faces = mesh.ElemGroups[egrp].Faces[elem]
-		nFacePerElem = mesh.ElemGroups[egrp].nFacePerElem
+		Faces = mesh.Faces[elem]
+		nFacePerElem = mesh.nFacePerElem
 
 		scalar1 = "u"
 
@@ -300,7 +297,7 @@ class PPScalarLimiter(object):
 			theta = StaticData.theta
 			Faces2PhiData = StaticData.Faces2PhiData
 
-		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet, quadElem)
+		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, basis, Order, EqnSet, quadElem)
 		if QuadChanged:
 			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
@@ -308,9 +305,8 @@ class PPScalarLimiter(object):
 		xq = quadElem.xquad
 		wq = quadElem.wquad
 
-		# PhiData = BasisData(egrp,Order,entity,nq,xq,mesh,True,True)
 		if QuadChanged:
-			PhiElem = Basis.BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
+			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
 			PhiElem.EvalBasis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
 			u = np.zeros([nq, sr])
@@ -318,7 +314,7 @@ class PPScalarLimiter(object):
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
+		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
 
 		nn = PhiElem.nn
 
@@ -340,19 +336,19 @@ class PPScalarLimiter(object):
 		# Loop through faces
 		for face in range(nFacePerElem):
 			Face = Faces[face]
-			egN, eN, faceN = MeshTools.NeighborAcrossFace(mesh, egrp, elem, face)
+			eN, faceN = MeshTools.NeighborAcrossFace(mesh, elem, face)
 			if Face.Type == Mesh.FaceType.Boundary:
 				# boundary face
-				egN = egrp; eN = elem; faceN = face
+				eN = elem; faceN = face
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.ElemGroups[egrp].QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
-				OrderN = EqnSet.Orders[egN]
+				OrderN = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.ElemGroups[egrp].QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
@@ -367,8 +363,8 @@ class PPScalarLimiter(object):
 
 			PhiData = Faces2PhiData[face]
 			if PhiData is None or QuadChanged:
-				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Bases[egrp],Order,nq,mesh)
-				xelem = PhiData.EvalBasisOnFace(mesh, egrp, face, xq, xelem, Get_Phi=True)
+				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
+				xelem = PhiData.EvalBasisOnFace(mesh, face, xq, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face

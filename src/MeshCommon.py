@@ -68,7 +68,6 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 			BFG.nBFace = 1
 			BFG.AllocBFaces()
 			BF = BFG.BFaces[0]
-			BF.ElemGroup = 0
 			if i == 0:
 				BFG.Name = "Left"
 				BF.Elem = 0
@@ -77,45 +76,30 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 				BFG.Name = "Right"
 				BF.Elem = nElem - 1
 				BF.face = 1
-		
 
-
-	# mesh.nBFaceGroup = 2
-	# mesh.BFaceGroups = [BFaceGroups() for i in range(mesh.nBFaceGroup)]
-	# Left
-
-	# Only one element group
-	mesh.nElemGroup = 1
-	# mesh.ElemGroups = [ElemGroup() for i in range(mesh.nElemGroup)]
-	mesh.AllocElemGroups()
-	EGroup = mesh.ElemGroups[0]
-	EGroup.SetParams(QBasis=BasisType["LagrangeSeg"], QOrder=1, nElem=nElem)
-	# EGroup.nFaceMax = np.amax(EGroup.nFace)
-	# EGroup.Faces = [[Face()  for j in range(EGroup.nFacePerElem)] for i in range(EGroup.nElem)]
-	EGroup.AllocFaces()
+	mesh.SetParams(QBasis=BasisType["LagrangeSeg"], QOrder=1, nElem=nElem)
+	mesh.AllocFaces()
 	# interior elements
-	for elem in range(EGroup.nElem):
-		for i in range(EGroup.nFacePerElem):
-		# for i in range(EGroup.nFace[elem]):
-			Face_ = EGroup.Faces[elem][i]
+	for elem in range(mesh.nElem):
+		for i in range(mesh.nFacePerElem):
+			Face_ = mesh.Faces[elem][i]
 			Face_.Type = INTERIORFACE
 			Face_.Number = elem + i
 			if not Periodic:
 				if elem == 0 and i == 0:
 					Face_.Type = NULLFACE
 					Face_.Number = 0
-				elif elem == EGroup.nElem-1 and i == 1:
+				elif elem == mesh.nElem-1 and i == 1:
 					Face_.Type = NULLFACE
 					Face_.Number = 1
 				else:
 					Face_.Number = elem + i - 1
 
 
-	# EGroup.Elem2Nodes = np.zeros([EGroup.nElem,EGroup.nNodePerElem], dtype=int)
-	EGroup.AllocElem2Nodes()
-	for elem in range(EGroup.nElem):
-		for i in range(EGroup.nNodePerElem):
-			EGroup.Elem2Nodes[elem][i] = elem + i
+	mesh.AllocElem2Nodes()
+	for elem in range(mesh.nElem):
+		for i in range(mesh.nNodePerElem):
+			mesh.Elem2Nodes[elem][i] = elem + i
 
 	mesh.AllocHelpers()
 	mesh.FillFaces()

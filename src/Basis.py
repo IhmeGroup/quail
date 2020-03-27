@@ -197,7 +197,7 @@ def EquidistantNodes(basis, p, xn=None):
 #     return FShape
 
 
-def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -211,7 +211,7 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
         JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
+        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     else:
         QuadOrder = Order*2
         QuadChanged = True
@@ -224,12 +224,11 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
     wq = quadData.wquad
 
     if QuadChanged:
-        # PhiData = BasisData(egrp=0,Order,entity=EntityType.Element,nq,xq,mesh,GetPhi=True,GetGPhi=False)
         PhiData = BasisData(basis,Order,nq,mesh)
         PhiData.EvalBasis(xq, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
+        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -254,29 +253,28 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1,
 
     return MM, StaticData
 
-def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=False, elem=-1, StaticData=None):
 
     c = EqnSet.Params["ConstVelocity"]
     nu = 0.
 
-    EGroup=mesh.ElemGroups[egrp]
-    Elem2Nodes = EGroup.Elem2Nodes[elem]
+    Elem2Nodes = mesh.Elem2Nodes[elem]
     dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
 
     #Stiffness matrix in space
     gradDir = 0
-    SMS,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis1)
+    SMS,_= GetStiffnessMatrixADER(gradDir,mesh, order, elem=0, basis=basis1)
     SMS = np.transpose(SMS)
     SMS = c*(dt/dx)*SMS
     #Stiffness matrix in time
     gradDir = 1
-    SMT,_= GetStiffnessMatrixADER(gradDir,mesh, order, egrp=0, elem=0, basis=basis1)
+    SMT,_= GetStiffnessMatrixADER(gradDir,mesh, order, elem=0, basis=basis1)
 
     #Calculate flux matrices in time at tau=1 (L) and tau=-1 (R)
-    FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
-    FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, order, PhysicalSpace=False, egrp=0, elem=0, StaticData=None)
+    FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, order, PhysicalSpace=False, elem=0, StaticData=None)
+    FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, order, PhysicalSpace=False, elem=0, StaticData=None)
 
-    MM,_=  GetElemMassMatrixADER(mesh, basis1, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None)
+    MM,_=  GetElemMassMatrixADER(mesh, basis1, order, PhysicalSpace=False, elem=-1, StaticData=None)
     MM = nu*(dt/2.)*MM
     A1 = np.subtract(FTL,SMT)
     A2 = np.add(A1,SMS)
@@ -286,28 +284,28 @@ def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=Fal
 
     return A, FTR, StaticData
 
-def GetElemInvMassMatrix(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
-    MM, StaticData = GetElemMassMatrix(mesh, basis, Order, PhysicalSpace, egrp, elem, StaticData)
+def GetElemInvMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
+    MM, StaticData = GetElemMassMatrix(mesh, basis, Order, PhysicalSpace, elem, StaticData)
     
     MMinv = np.linalg.inv(MM) 
 
     return MMinv, StaticData
 
-def GetElemInvMassMatrixADER(mesh, basis, order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
-    MM, StaticData = GetElemMassMatrixADER(mesh, basis, order, PhysicalSpace, egrp, elem, StaticData)
+def GetElemInvMassMatrixADER(mesh, basis, order, PhysicalSpace=False, elem=-1, StaticData=None):
+    MM, StaticData = GetElemMassMatrixADER(mesh, basis, order, PhysicalSpace, elem, StaticData)
 
     MMinv = np.linalg.inv(MM)
 
     return MMinv, StaticData
 
-def GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
-    ADER, FTR, StaticData = GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace, egrp, elem, StaticData)
+def GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=False, elem=-1, StaticData=None):
+    ADER, FTR, StaticData = GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace, elem, StaticData)
 
     ADERinv = np.linalg.solve(ADER,FTR)
     
     return ADERinv, StaticData
 
-def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
+def GetStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -320,20 +318,19 @@ def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
         PhiData = StaticData.PhiData
         JData = StaticData.JData
 
-    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
+    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     if QuadChanged:
-        quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
+        quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
     xq = quadData.xquad
     wq = quadData.wquad
 
     if QuadChanged:
-        # PhiData = BasisData(egrp=0,Order,entity=EntityType.Element,nq,xq,mesh,GetPhi=True,GetGPhi=False)
         PhiData = BasisData(basis,Order,nq,mesh)
         PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
 
-    JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_ijac=True)
+    JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_ijac=True)
     PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
     nn = PhiData.nn
 
@@ -355,7 +352,7 @@ def GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
     return SM, StaticData
 
 
-def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=None):
+def GetStiffnessMatrixADER(gradDir,mesh, Order, elem, basis, StaticData=None):
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -367,7 +364,7 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=No
         PhiData = StaticData.PhiData
         # JData = StaticData.JData
 
-    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis, Order*2., quadData=quadData)
+    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, basis, Order*2., quadData=quadData)
     #Add one to QuadOrder to adjust the mesh.Dim addition in GetQuadOrderElem.
     QuadOrder+=1
     if QuadChanged:
@@ -377,12 +374,9 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=No
     wq = quadData.wquad
 
     if QuadChanged:
-        # PhiData = BasisData(egrp=0,Order,entity=EntityType.Element,nq,xq,mesh,GetPhi=True,GetGPhi=False)
         PhiData = BasisData(basis,Order,nq,mesh)
         PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
 
-    # JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True,get_ijac=True)
-    #PhiData.EvalBasis(xq, Get_gPhi=True, JData=None)
     nn = PhiData.nn
 
     phi = PhiData.Phi
@@ -401,7 +395,7 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, egrp, elem, basis, StaticData=No
 
     return SM, StaticData
 
-def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=-1, StaticData=None):
 
     if StaticData is None:
         pnq = -1
@@ -419,14 +413,12 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-
         face = 2 
     else:
         face = 0
-    #QuadOrderTest,QuadChangedTest = GetQuadOrderIFace(mesh, face, mesh.ElemGroups[egrp].QBasis, Order, EqnSet=None, quadData=quadData)
-    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
+    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     #Add one to QuadOrder to adjust the mesh.Dim addition in GetQuadOrderElem.
     #QuadOrder+=1
 
     if QuadChanged:
-        quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
-        #quadDataTest = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrderTest)
+        quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
     xq = quadData.xquad
@@ -439,16 +431,16 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-
             PhiData = BasisData(basis,Order,nq,mesh)
             PsiData = PhiData
             xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.EvalBasisOnFaceADER(mesh, basis, egrp, face, xq, xelem, Get_Phi=True)
-            PsiData.EvalBasisOnFaceADER(mesh, basis, egrp, face, xq, xelem, Get_Phi=True)
+            PhiData.EvalBasisOnFaceADER(mesh, basis, face, xq, xelem, Get_Phi=True)
+            PsiData.EvalBasisOnFaceADER(mesh, basis, face, xq, xelem, Get_Phi=True)
         else:
             face = 0
             PhiData = BasisData(basis1,Order,nq,mesh)
             PsiData = BasisData(basis2,Order,nq,mesh)
             xelemPhi = np.zeros([nq,mesh.Dim+1])
             xelemPsi = np.zeros([nq,mesh.Dim])
-            PhiData.EvalBasisOnFaceADER(mesh, basis1, egrp, face, xq, xelemPhi, Get_Phi=True)
-            #PsiData.EvalBasisOnFaceADER(mesh, basis2, egrp, face, xq, xelemPsi, Get_Phi=True)
+            PhiData.EvalBasisOnFaceADER(mesh, basis1, face, xq, xelemPhi, Get_Phi=True)
+            #PsiData.EvalBasisOnFaceADER(mesh, basis2, face, xq, xelemPsi, Get_Phi=True)
             PsiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=False)
 
 
@@ -472,7 +464,7 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, egrp=-
     return MM, StaticData
 
 
-def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem=-1, StaticData=None):
+def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -486,7 +478,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem
         JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, mesh.ElemGroups[egrp].QBasis, Order*2, quadData=quadData)
+        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     else:
         QuadOrder = Order*2 + 1 #Add one for ADER method
         QuadChanged = True
@@ -504,7 +496,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, egrp=-1, elem
         PhiData.EvalBasis(xq, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
+        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -560,8 +552,8 @@ def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):
     return PM
 
 
-def GetInvStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData=None):
-    SM, StaticData = GetStiffnessMatrix(mesh, egrp, elem, basis, Order, StaticData)
+def GetInvStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
+    SM, StaticData = GetStiffnessMatrix(mesh, elem, basis, Order, StaticData)
 
     MMinv = np.linalg.inv(SM) 
 
@@ -575,13 +567,14 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     basis1 = BasisType.LagrangeQuad
     basis2 = BasisType.LagrangeSeg
     
-    ArrayDims = [None]*mesh.nElemGroup
-    for egrp in range(mesh.nElemGroup):
-        Order = EqnSet.Orders[egrp]
-        nn1 = Order2nNode(basis1, Order)
-        nn2 = Order2nNode(basis2, Order)
-        ArrayDims[egrp] = [mesh.nElems[egrp], nn1, nn2]
-    ADERinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+    # ArrayDims = [None]*mesh.nElemGroup
+    # for egrp in range(mesh.nElemGroup):
+    #     Order = EqnSet.Orders[egrp]
+    #     nn1 = Order2nNode(basis1, Order)
+    #     nn2 = Order2nNode(basis2, Order)
+    #     ArrayDims[egrp] = [mesh.nElems[egrp], nn1, nn2]
+    # ADERinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+    ADERinv_all = np.zeros([mesh.nElem, nn1, nn2])
 
     StaticData = None
 
@@ -590,15 +583,12 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     if solver is not None:
         ReCalcMM = not solver.Params["UniformMesh"]
 
-    for egrp in range(mesh.nElemGroup):
-        EGroup = mesh.ElemGroups[egrp]
-        #basis = EqnSet.Bases[egrp]
-        Order = EqnSet.Orders[egrp]
-        for elem in range(EGroup.nElem):
-            if elem == 0 or ReCalcMM:
-                # Only recalculate if not using uniform mesh
-                ADERinv,StaticData = GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, False, egrp, elem, StaticData)
-            ADERinv_all.Arrays[egrp][elem] = ADERinv
+    Order = EqnSet.Order
+    for elem in range(mesh.nElem):
+        if elem == 0 or ReCalcMM:
+            # Only recalculate if not using uniform mesh
+            ADERinv,StaticData = GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, False, elem, StaticData)
+        ADERinv_all[elem] = ADERinv
 
     if solver is not None:
         solver.DataSet.ADERinv_all = ADERinv_all
@@ -609,13 +599,17 @@ def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
     ## Allocate MMinv_all
     # Currently calculating inverse mass matrix for every single element,
     # even if uniform mesh
-    ArrayDims = [None]*mesh.nElemGroup
-    for egrp in range(mesh.nElemGroup):
-        basis = EqnSet.Bases[egrp]
-        Order = EqnSet.Orders[egrp]
-        nn = Order2nNode(basis, Order)
-        ArrayDims[egrp] = [mesh.nElems[egrp], nn, nn]
-    MMinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+    # ArrayDims = [None]*mesh.nElemGroup
+    # for egrp in range(mesh.nElemGroup):
+    #     basis = EqnSet.Bases[egrp]
+    #     Order = EqnSet.Orders[egrp]
+    #     nn = Order2nNode(basis, Order)
+    #     ArrayDims[egrp] = [mesh.nElems[egrp], nn, nn]
+    # MMinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+    basis = EqnSet.Basis
+    Order = EqnSet.Order
+    nn = Order2nNode(basis, Order)
+    MMinv_all = np.zeros([mesh.nElem, nn, nn])
 
     StaticData = None
 
@@ -623,16 +617,11 @@ def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
     ReCalcMM = True
     if solver is not None:
         ReCalcMM = not solver.Params["UniformMesh"]
-
-    for egrp in range(mesh.nElemGroup):
-        EGroup = mesh.ElemGroups[egrp]
-        basis = EqnSet.Bases[egrp]
-        Order = EqnSet.Orders[egrp]
-        for elem in range(EGroup.nElem):
-            if elem == 0 or ReCalcMM:
-                # Only recalculate if not using uniform mesh
-                MMinv,StaticData = GetElemInvMassMatrix(mesh, basis, Order, True, egrp, elem, StaticData)
-            MMinv_all.Arrays[egrp][elem] = MMinv
+    for elem in range(mesh.nElem):
+        if elem == 0 or ReCalcMM:
+            # Only recalculate if not using uniform mesh
+            MMinv,StaticData = GetElemInvMassMatrix(mesh, basis, Order, True, elem, StaticData)
+        MMinv_all[elem] = MMinv
 
     if solver is not None:
         solver.DataSet.MMinv_all = MMinv_all
@@ -1136,9 +1125,9 @@ class BasisData(object):
                 raise Exception("Need jacobian data")
             self.gPhi = self.PhysicalGrad(JData)
 
-    def EvalBasisOnFace(self, mesh, egrp, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+    def EvalBasisOnFace(self, mesh, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
         self.face = face
-        basis = mesh.ElemGroups[egrp].QBasis
+        basis = mesh.QBasis
         if xelem is None or xelem.shape != (self.nq, mesh.Dim):
             xelem = np.zeros([self.nq, mesh.Dim])
         xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, xq, xelem)
@@ -1146,9 +1135,8 @@ class BasisData(object):
 
         return xelem
 
-    def EvalBasisOnFaceADER(self, mesh, basis, egrp, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+    def EvalBasisOnFaceADER(self, mesh, basis, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
         self.face = face
-        #basis = mesh.ElemGroups[egrp].QBasis
         if Shape2Dim[Basis2Shape[basis]] == ShapeType.Quadrilateral:
             if xelem is None or xelem.shape != (self.nq, mesh.Dim+1):
                 xelem = np.zeros([self.nq, mesh.Dim+1])
@@ -1186,13 +1174,10 @@ class JacobianData(object):
         self.A = None
         self.basis_grad = None
 
-        # self.ElemJacobian(self,egrp,elem,nq,xq,mesh,Get_djac,get_jac,get_ijac)
-
-    def ElemJacobian(self,egrp,elem,nq,xq,mesh,get_djac=False,get_jac=False,get_ijac=False,
+    def ElemJacobian(self,elem,nq,xq,mesh,get_djac=False,get_jac=False,get_ijac=False,
             UniformJacobian=False):
-        EGroup = mesh.ElemGroups[egrp]
-        basis = EGroup.QBasis
-        order = EGroup.QOrder
+        basis = mesh.QBasis
+        order = mesh.QOrder
         Shape = Basis2Shape[basis]
         if order == 1 and Shape != ShapeType.Quadrilateral:
             nq = 1
@@ -1224,7 +1209,7 @@ class JacobianData(object):
             self.A = np.zeros([dim,dim])
 
         A = self.A
-        Elem2Nodes = EGroup.Elem2Nodes[elem]
+        Elem2Nodes = mesh.Elem2Nodes[elem]
         for iq in range(nq):
             G = basis_grad[iq,:,:]
             A[:] = 0.
@@ -1244,7 +1229,7 @@ class JacobianData(object):
             MatDetInv(A, dim, djac_, ijac_)
 
             if djac_ is not None and djac_ <= 0.:
-                raise Exception("Nonpositive Jacobian (egrp = %d, elem = %d)" % (egrp, elem))
+                raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
 
 
 

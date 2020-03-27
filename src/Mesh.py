@@ -26,7 +26,7 @@ def GetEntityDim(mesh, entity):
     return dim
 
 
-def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False):
+def Ref2Phys(mesh, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False):
     '''
     Function: Ref2Phys
     -------------------
@@ -35,7 +35,6 @@ def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None, PointsChanged=
 
     INPUTS:
         mesh: Mesh object
-        egrp: element group
         elem: element 
         PhiData: basis data
         npoint: number of coordinates to convert
@@ -45,25 +44,23 @@ def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None, PointsChanged=
     OUTPUTS:
         xphys: coordinates in physical space
     '''
-    EGroup = mesh.ElemGroups[egrp]
-    QBasis = EGroup.QBasis
-    QOrder = EGroup.QOrder
+    QBasis = mesh.QBasis
+    QOrder = mesh.QOrder
     if PhiData is None:
         PhiData = Basis.BasisData(QBasis,QOrder,npoint,mesh)
         PointsChanged = True
     if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
         PhiData.EvalBasis(xref, Get_Phi=True)
-        # PhiData = Basis.BasisData(egrp,QOrder,EntityType.Element,npoint,xref,mesh,True,False)
 
     dim = mesh.Dim
     Coords = mesh.Coords
     Phi = PhiData.Phi
     nn = PhiData.nn
 
-    if nn != EGroup.nNodePerElem:
+    if nn != mesh.nNodePerElem:
         raise Exception("Wrong number of nodes per element")
 
-    ElemNodes = EGroup.Elem2Nodes[elem]
+    ElemNodes = mesh.Elem2Nodes[elem]
 
     if xphys is None:
         xphys = np.zeros([npoint,dim])
@@ -79,7 +76,7 @@ def Ref2Phys(mesh, egrp, elem, PhiData, npoint, xref, xphys=None, PointsChanged=
 
     return xphys, PhiData
 
-def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, PointsChanged=False):
+def Ref2PhysTime(mesh, elem, time, dt, PhiData, npoint, xref, tphys=None, PointsChanged=False):
     '''
     Function: Ref2Phys
     -------------------
@@ -88,7 +85,6 @@ def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, 
 
     INPUTS:
         mesh: Mesh object
-        egrp: element group
         elem: element 
         PhiData: basis data
         npoint: number of coordinates to convert
@@ -98,7 +94,6 @@ def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, 
     OUTPUTS:
         tphys: coordinates in temporal space
     '''
-    EGroup = mesh.ElemGroups[egrp]
     QBasis = BasisType.LagrangeQuad
     QOrder = EGroup.QOrder
 
@@ -107,16 +102,12 @@ def Ref2PhysTime(mesh, egrp, elem, time, dt, PhiData, npoint, xref, tphys=None, 
         PointsChanged = True
     if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
         PhiData.EvalBasis(xref, Get_Phi=True)
-        # PhiData = Basis.BasisData(egrp,QOrder,EntityType.Element,npoint,xref,mesh,True,False)
 
     dim = mesh.Dim
     
     Phi = PhiData.Phi
     nn = PhiData.nn
-    #if nn != EGroup.nNodePerElem:
-    #    raise Exception("Wrong number of nodes per element")
 
-    #ElemNodes = EGroup.Elem2Nodes[elem]
     if tphys is None:
         tphys = np.zeros([npoint,dim])
     else:
@@ -209,20 +200,18 @@ def IFaceNormal(mesh, IFace, nq, xq, NData=None):
     OUTPUTS:
         NData: normal data object
     '''
-    egrpL = IFace.ElemGroupL
-    egrpR = IFace.ElemGroupR
     elemL = IFace.ElemL
     elemR = IFace.ElemR
-    QOrderL = mesh.ElemGroups[egrpL].QOrder
-    QOrderR = mesh.ElemGroups[egrpR].QOrder
+    QOrderL = mesh.QOrder
+    QOrderR = mesh.QOrder
 
     if NData is None: 
         NData = NormalData()
 
     if QOrderL <= QOrderR:
-        NData.CalculateNormals(mesh, egrpL, elemL, IFace.faceL, nq, xq)
+        NData.CalculateNormals(mesh, elemL, IFace.faceL, nq, xq)
     else:
-        NData.CalculateNormals(mesh, egrpR, elemR, IFace.faceR, nq, xq)
+        NData.CalculateNormals(mesh, elemR, IFace.faceR, nq, xq)
         NData.nvec *= -1.
 
     return NData
@@ -244,14 +233,13 @@ def BFaceNormal(mesh, BFace, nq, xq, NData=None):
     OUTPUTS:
         NData: normal data object
     '''
-    egrp = BFace.ElemGroup
     elem = BFace.Elem
-    QOrder = mesh.ElemGroups[egrp].QOrder
+    QOrder = mesh.QOrder
 
     if NData is None:
         NData = NormalData()
 
-    NData.CalculateNormals(mesh, egrp, elem, BFace.face, nq, xq)
+    NData.CalculateNormals(mesh, elem, BFace.face, nq, xq)
 
     return NData
 
@@ -275,7 +263,6 @@ class NormalData(object):
 
         INPUTS:
             mesh: Mesh object
-            egrp: element group
             elem: element
             face: local face number from elem's perspective
             nq: number of points at which to calculate normals
@@ -287,12 +274,11 @@ class NormalData(object):
         self.GPhi = None
         self.x_s = None
 
-    def CalculateNormals(self, mesh, egrp, elem, face, nq, xq):
+    def CalculateNormals(self, mesh, elem, face, nq, xq):
 
-        EG = mesh.ElemGroups[egrp]
-        QBasis = EG.QBasis
+        QBasis = mesh.QBasis
         Shape = Basis.Basis2Shape[QBasis]
-        QOrder = EG.QOrder
+        QOrder = mesh.QOrder
 
         if QOrder == 1:
             nq = 1
@@ -313,7 +299,7 @@ class NormalData(object):
                 raise ValueError
         #2D normals calculation
         elif Shape == ShapeType.Quadrilateral or Shape == ShapeType.Triangle:
-            ElemNodes = EG.Elem2Nodes[elem]
+            ElemNodes = mesh.Elem2Nodes[elem]
             if QOrder == 1:
                 self.fnodes, nfnode = Basis.LocalQ1FaceNodes(QBasis, QOrder, face, self.fnodes)
                 x0 = mesh.Coords[ElemNodes[self.fnodes[0]]]
@@ -394,10 +380,8 @@ class IFace(object):
     This class provides information about a given interior face.
 
     ATTRIBUTES:
-        ElemGroupL: element group of right element
         ElemL: left element
         faceL: local face number from ElemL's perspective
-        ElemGroupR: element group of right element
         ElemR: right element
         faceR: local face number from ElemR's perspective
     '''
@@ -407,10 +391,8 @@ class IFace(object):
         -------------------
         This method initializes the object
         '''
-        self.ElemGroupL = 0
         self.ElemL = 0 
         self.faceL = 0 
-        self.ElemGroupR = 0
         self.ElemR = 0 
         self.faceR = 0 
 
@@ -422,7 +404,6 @@ class BFace(object):
     This class provides information about a given boundary face.
 
     ATTRIBUTES:
-        ElemGroup: element group of adjacent element
         Elem: adjacent element
         face: local face number from Elem's perspective
     '''
@@ -432,7 +413,6 @@ class BFace(object):
         -------------------
         This method initializes the object
         '''
-        self.ElemGroup = 0
         self.Elem = 0 
         self.face = 0 
 
@@ -504,64 +484,64 @@ Shape2nNodeQ1 = {
 }
 
 
-class ElemGroup(object):
-    '''
-    Class: ElemGroup
-    -------------------
-    This class stores information about a given element group
+# class ElemGroup(object):
+#     '''
+#     Class: ElemGroup
+#     -------------------
+#     This class stores information about a given element group
 
-    ATTRIBUTES:
-        QBasis: Basis used for geometry representation 
-        QOrder: Order used for geometry representation
-        nElem: number of elements
-        nFacePerElem: number of faces per element
-        Faces: list of Face objects
-        nNodePerElem: number of nodes per element
-        Elem2Nodes: element-to-global-node mapping
-    '''
-    def __init__(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
-        '''
-        Method: __init__
-        -------------------
-        This method initializes the object
-        '''
-        self.QBasis = QBasis
-        self.QOrder = QOrder
-        self.nElem = nElem
-        self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-        self.Faces = None
-        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
-        self.Elem2Nodes = None
-            # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
+#     ATTRIBUTES:
+#         QBasis: Basis used for geometry representation 
+#         QOrder: Order used for geometry representation
+#         nElem: number of elements
+#         nFacePerElem: number of faces per element
+#         Faces: list of Face objects
+#         nNodePerElem: number of nodes per element
+#         Elem2Nodes: element-to-global-node mapping
+#     '''
+#     def __init__(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
+#         '''
+#         Method: __init__
+#         -------------------
+#         This method initializes the object
+#         '''
+#         self.QBasis = QBasis
+#         self.QOrder = QOrder
+#         self.nElem = nElem
+#         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
+#         self.Faces = None
+#         self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+#         self.Elem2Nodes = None
+#             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
-    def SetParams(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
-        self.QBasis = QBasis
-        self.QOrder = QOrder
-        self.nElem = nElem
-        self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+#     def SetParams(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
+#         self.QBasis = QBasis
+#         self.QOrder = QOrder
+#         self.nElem = nElem
+#         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
+#         self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
 
-    def AllocFaces(self):
-        '''
-        Method: AllocFaces
-        -------------------
-        This method allocates the list of Face objects
+#     def AllocFaces(self):
+#         '''
+#         Method: AllocFaces
+#         -------------------
+#         This method allocates the list of Face objects
 
-        OUTPUTS:
-            self.Faces
-        '''
-        self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
+#         OUTPUTS:
+#             self.Faces
+#         '''
+#         self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
 
-    def AllocElem2Nodes(self):
-        '''
-        Method: AllocElem2Nodes
-        -------------------
-        This method allocates Elem2Nodes
+#     def AllocElem2Nodes(self):
+#         '''
+#         Method: AllocElem2Nodes
+#         -------------------
+#         This method allocates Elem2Nodes
 
-        OUTPUTS:
-            self.Elem2Nodes
-        '''
-        self.Elem2Nodes = np.zeros([self.nElem,self.nNodePerElem], dtype=int)
+#         OUTPUTS:
+#             self.Elem2Nodes
+#         '''
+#         self.Elem2Nodes = np.zeros([self.nElem,self.nNodePerElem], dtype=int)
 
 
 class PeriodicGroup(object):
@@ -602,14 +582,12 @@ class Mesh(object):
         nBFaceGroup: number of boundary face groups
         BFaceGroups: list of boundary face groups
         BFGNames: list of BFaceGroup names (for easy access)
-        nElemGroup: number of element groups
-        ElemGroups: list of element groups
         nElems: list of number of elements in each element group (for easy access)
         nElemTot: total number of elements in mesh
         nPeriodicGroup: number of periodic groups
         PeriodicGroups: list of periodic groups
     '''
-    def __init__(self,dim=1,nNode=1,nElemGroup=1):
+    def __init__(self,dim=1,nNode=1,nElem=1,QBasis=BasisType.LagrangeSeg,QOrder=1):
         '''
         Method: __init__
         -------------------
@@ -618,7 +596,6 @@ class Mesh(object):
         INPUTS:
             dim: dimension of mesh
             nNode: total number of nodes
-            nElemGroup: number of element groups
         '''
         self.Dim = dim
         self.nNode = nNode
@@ -628,12 +605,43 @@ class Mesh(object):
         self.nBFaceGroup = 0
         self.BFaceGroups = []
         self.BFGNames = []
-        self.nElemGroup = nElemGroup
-        self.ElemGroups = []
-        self.nElems = None
-        self.nElemTot = 0
-        self.nPeriodicGroup = 0
-        self.PeriodicGroups = []
+        self.QBasis = QBasis
+        self.QOrder = QOrder
+        self.nElem = nElem
+        self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
+        self.Faces = None
+        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+        self.Elem2Nodes = None
+            # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
+
+    def SetParams(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
+        self.QBasis = QBasis
+        self.QOrder = QOrder
+        self.nElem = nElem
+        self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
+        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+
+    def AllocFaces(self):
+        '''
+        Method: AllocFaces
+        -------------------
+        This method allocates the list of Face objects
+
+        OUTPUTS:
+            self.Faces
+        '''
+        self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
+
+    def AllocElem2Nodes(self):
+        '''
+        Method: AllocElem2Nodes
+        -------------------
+        This method allocates Elem2Nodes
+
+        OUTPUTS:
+            self.Elem2Nodes
+        '''
+        self.Elem2Nodes = np.zeros([self.nElem,self.nNodePerElem], dtype=int)
 
     def AllocHelpers(self):
         '''
@@ -646,8 +654,6 @@ class Mesh(object):
             self.nElemTot
             self.BFGNames
         '''
-        self.nElems = [self.ElemGroups[i].nElem for i in range(self.nElemGroup)]
-        self.nElemTot = sum(self.nElems)
 
         for i in range(self.nBFaceGroup):
             self.BFGNames.append(self.BFaceGroups[i].Name)
@@ -675,29 +681,16 @@ class Mesh(object):
         '''
         self.BFaceGroups = [BFaceGroup() for i in range(self.nBFaceGroup)]
 
-    def AllocElemGroups(self):
-        '''
-        Method: AllocElemGroups
-        -------------------
-        This method allocates the list of element groups
-
-        OUTPUTS:
-            self.ElemGroups
-        '''
-        self.ElemGroups = [ElemGroup() for i in range(self.nElemGroup)]
-
     def FillFaces(self):
         for iiface in range(self.nIFace):
             IFace = self.IFaces[iiface]
-            egrpL = IFace.ElemGroupL
-            egrpR = IFace.ElemGroupR
             elemL = IFace.ElemL
             elemR = IFace.ElemR
             faceL = IFace.faceL
             faceR = IFace.faceR
 
-            FaceL = self.ElemGroups[egrpL].Faces[elemL][faceL]
-            FaceR = self.ElemGroups[egrpR].Faces[elemR][faceR]
+            FaceL = self.Faces[elemL][faceL]
+            FaceR = self.Faces[elemR][faceR]
 
             FaceL.Type = FaceType.Interior
             FaceR.Type = FaceType.Interior
@@ -710,11 +703,10 @@ class Mesh(object):
             
             for ibface in range(BFG.nBFace):
                 BFace = BFG.BFaces[ibface]
-                egrp = BFace.ElemGroup
                 elem = BFace.Elem
                 face = BFace.face
 
-                Face = self.ElemGroups[egrp].Faces[elem][face]
+                Face = self.Faces[elem][face]
 
                 Face.Type = FaceType.Boundary
                 Face.Number = ibface

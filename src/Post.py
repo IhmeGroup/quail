@@ -11,7 +11,7 @@ from Data import ArrayList
 
 def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=True):
 
-	U = EqnSet.U.Arrays
+	U = EqnSet.U
 
 	# Check for exact solution
 	if not EqnSet.ExactSoln.Function:
@@ -26,55 +26,55 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 	# Get error
 	# ElemErr = copy.deepcopy(U)
 	# ElemErr = ArrayList(SimilarArray=EqnSet.U).Arrays
-	ElemErr = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
+	# ElemErr = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
+	ElemErr = np.zeros([mesh.nElem])
 	TotErr = 0.
 	sr = EqnSet.StateRank
 	quadData = None
 	JData = JacobianData(mesh)
 	# ier = EqnSet.VariableType[VariableName]
 	GeomPhiData = None
-	for egrp in range(mesh.nElemGroup):
-		ElemErr.Arrays[egrp][:] = 0.
 
-		Order = EqnSet.Orders[egrp]
-		basis = EqnSet.Bases[egrp]
+	# ElemErr.Arrays[egrp][:] = 0.
 
-		for elem in range(mesh.nElems[egrp]):
-			U_ = U[egrp][elem]
+	Order = EqnSet.Order
+	basis = EqnSet.Basis
 
-			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, egrp, basis, 2*np.amax([Order,1]), EqnSet, quadData)
-			if QuadChanged:
-				quadData = QuadData(mesh, mesh.ElemGroups[egrp].QBasis, EntityType.Element, QuadOrder)
+	for elem in range(mesh.nElem):
+		U_ = U[elem]
 
-			nq = quadData.nquad
-			xq = quadData.xquad
-			wq = quadData.wquad
+		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
+		if QuadChanged:
+			quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-			if QuadChanged:
-				# PhiData = BasisData(egrp,Order,entity,nq,xq,mesh,True,True)
-				PhiData = BasisData(basis,Order,nq,mesh)
-				PhiData.EvalBasis(xq, True, False, False, None)
-				xphys = np.zeros([nq, mesh.Dim])
+		nq = quadData.nquad
+		xq = quadData.xquad
+		wq = quadData.wquad
 
-			JData.ElemJacobian(egrp,elem,nq,xq,mesh,get_djac=True)
+		if QuadChanged:
+			PhiData = BasisData(basis,Order,nq,mesh)
+			PhiData.EvalBasis(xq, True, False, False, None)
+			xphys = np.zeros([nq, mesh.Dim])
 
-			xphys, GeomPhiData = Ref2Phys(mesh, egrp, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
-			u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
+		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 
-			# interpolate state at quad points
-			u = np.zeros([nq, sr])
-			for ir in range(sr):
-				u[:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
+		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
 
-			# Computed requested quantity
-			s = EqnSet.ComputeScalars(VariableName, u, nq)
-			s_exact = EqnSet.ComputeScalars(VariableName, u_exact, nq)
+		# interpolate state at quad points
+		u = np.zeros([nq, sr])
+		for ir in range(sr):
+			u[:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
 
-			err = 0.
-			for iq in range(nq):
-				err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
-			ElemErr.Arrays[egrp][elem] = err
-			TotErr += ElemErr.Arrays[egrp][elem]
+		# Computed requested quantity
+		s = EqnSet.ComputeScalars(VariableName, u, nq)
+		s_exact = EqnSet.ComputeScalars(VariableName, u_exact, nq)
+
+		err = 0.
+		for iq in range(nq):
+			err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
+		ElemErr[elem] = err
+		TotErr += ElemErr[elem]
 
 	# TotErr /= TotVol
 	TotErr = np.sqrt(TotErr/TotVol)

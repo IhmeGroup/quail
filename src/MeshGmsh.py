@@ -312,22 +312,26 @@ def ReadMeshEntities(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			raise Exception("Physical group not found!")
 
 		if PGroup.Dim == mesh.Dim:
+			# Assume only one element type - need to check for this later
 			### Entity is an element
 			QOrder = EntitiesInfo[etype].QOrder
 			QBasis = EntitiesInfo[etype].QBasis
-			# Check for existing element group
-			found = False
-			for egrp in range(mesh.nElemGroup):
-				EG = mesh.ElemGroups[egrp]
-				if QOrder == EG.QOrder and QBasis == EG.QBasis:
-					found = True
-					break
-			if found:
-				EG.nElem += 1
-			else:
-				# Need new element group
-				mesh.nElemGroup += 1
-				mesh.ElemGroups.append(Mesh.ElemGroup(QBasis=QBasis,QOrder=QOrder))
+			if mesh.nElem == 0:
+				mesh.SetParams(QBasis=QBasis, QOrder=QOrder)
+			mesh.nElem += 1
+			# # Check for existing element group
+			# found = False
+			# for egrp in range(mesh.nElemGroup):
+			# 	EG = mesh.ElemGroups[egrp]
+			# 	if QOrder == EG.QOrder and QBasis == EG.QBasis:
+			# 		found = True
+			# 		break
+			# if found:
+			# 	EG.nElem += 1
+			# else:
+			# 	# Need new element group
+			# 	mesh.nElemGroup += 1
+			# 	mesh.ElemGroups.append(Mesh.ElemGroup(QBasis=QBasis,QOrder=QOrder))
 		elif PGroup.Dim < mesh.Dim:
 			### Boundary entity
 			# Check for existing boundary face group
@@ -425,16 +429,19 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BFG = mesh.BFaceGroups[ibfgrp]
 		BFG.AllocBFaces()
-	nFaceMax = 0
-	for EG in mesh.ElemGroups:
-		# also find maximum # faces per elem
-		EG.AllocFaces()
-		EG.AllocElem2Nodes()
-		if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
+	# nFaceMax = 0
+	# for EG in mesh.ElemGroups:
+	# 	# also find maximum # faces per elem
+	# 	EG.AllocFaces()
+	# 	EG.AllocElem2Nodes()
+	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
+	mesh.AllocFaces()
+	mesh.AllocElem2Nodes()
 	mesh.AllocHelpers() 
+	nFaceMax = mesh.nFacePerElem
 
 	# Over-allocate IFaces
-	mesh.nIFace = mesh.nElemTot*nFaceMax
+	mesh.nIFace = mesh.nElem*nFaceMax
 	mesh.AllocIFaces()
 
 	# reset nIFace - use as a counter
@@ -506,14 +513,14 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			QOrder = EntitiesInfo[etype].QOrder
 			QBasis = EntitiesInfo[etype].QBasis
 			# Check for existing element group
-			found = False
-			for EG in mesh.ElemGroups:
-				if QOrder == EG.QOrder and QBasis == EG.QBasis:
-					found = True
-					break
-			# Sanity check
-			if not found:
-				raise Exception("Can't find element group")
+			# found = False
+			# for EG in mesh.ElemGroups:
+			# 	if QOrder == EG.QOrder and QBasis == EG.QBasis:
+			# 		found = True
+			# 		break
+			# # Sanity check
+			# if not found:
+			# 	raise Exception("Can't find element group")
 			# Number of element nodes
 			nnode = Basis.Order2nNode(QBasis, QOrder)
 			# Sanity check
@@ -522,7 +529,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			# Convert node ordering
 			newnodes = nodes[EntitiesInfo[etype].NodeOrder]
 			# Store in Elem2Nodes
-			EG.Elem2Nodes[elem] = newnodes
+			mesh.Elem2Nodes[elem] = newnodes
 			# Increment elem counter
 			elem += 1
 		else:
@@ -534,63 +541,61 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		raise Errors.FileReadError
 
 	# Fill boundary and interior face info
-	for egrp in range(mesh.nElemGroup):
-		EG = mesh.ElemGroups[egrp]
-		for elem in range(EG.nElem):
-			for face in range(EG.nFacePerElem):
-				# Local q = 1 nodes on face
-				fnodes, nfnode = Basis.LocalQ1FaceNodes(EG.QBasis, EG.QOrder, face)
+	# for egrp in range(mesh.nElemGroup):
+	# 	EG = mesh.ElemGroups[egrp]
+	for elem in range(mesh.nElem):
+		for face in range(mesh.nFacePerElem):
+			# Local q = 1 nodes on face
+			fnodes, nfnode = Basis.LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, face)
 
-				# Convert to global nodes
-				fnodes[:] = EG.Elem2Nodes[elem][fnodes[:]]
+			# Convert to global nodes
+			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
-				# Add to hash table
-				FInfo, Exists = AddFaceToHash(Node2FaceHash, nfnode, fnodes, False, 
-					egrp, elem, face)
+			# Add to hash table
+			FInfo, Exists = AddFaceToHash(Node2FaceHash, nfnode, fnodes, False, 
+				-1, elem, face)
 
-				if Exists:
-					# Face already exists in hash table
-					if FInfo.nVisit != 2:
-						raise Errors.FileReadError("More than two elements share a face " + 
-							"or a boundary face is referenced by more than one element")
+			if Exists:
+				# Face already exists in hash table
+				if FInfo.nVisit != 2:
+					raise Errors.FileReadError("More than two elements share a face " + 
+						"or a boundary face is referenced by more than one element")
 
-					# Link elem to BFace or IFace
-					if FInfo.BFlag:
-						# boundary face
-						# Store in BFG
-						BFG = mesh.BFaceGroups[FInfo.Group]
-						# try:
-						# 	BFace = BFG.BFaces[FInfo.Face]
-						# except:
-						# 	code.interact(local=locals())
-						BFace = BFG.BFaces[FInfo.Face]
-						BFace.ElemGroup = egrp; BFace.Elem = elem; BFace.face = face
-						# Store in Face
-						Face = EG.Faces[elem][face]
-						Face.Group = FInfo.Group
-						Face.Number = FInfo.Face
-					else:
-						# interior face
-						# Store in IFace
-						IFace = mesh.IFaces[mesh.nIFace]
-						IFace.ElemGroupL = FInfo.Group
-						IFace.ElemL = FInfo.Elem
-						IFace.faceL = FInfo.Face
-						IFace.ElemGroupR = egrp
-						IFace.ElemR = elem
-						IFace.faceR = face
-						# Store in left Face
-						Face = EG.Faces[FInfo.Elem][FInfo.Face]
-						Face.Group = General.INTERIORFACE
-						Face.Number = mesh.nIFace
-						# Store in right face
-						Face = EG.Faces[elem][face]
-						Face.Group = General.INTERIORFACE
-						Face.Number = mesh.nIFace
-						# Increment IFace counter
-						mesh.nIFace += 1
+				# Link elem to BFace or IFace
+				if FInfo.BFlag:
+					# boundary face
+					# Store in BFG
+					BFG = mesh.BFaceGroups[FInfo.Group]
+					# try:
+					# 	BFace = BFG.BFaces[FInfo.Face]
+					# except:
+					# 	code.interact(local=locals())
+					BFace = BFG.BFaces[FInfo.Face]
+					BFace.Elem = elem; BFace.face = face
+					# Store in Face
+					Face = mesh.Faces[elem][face]
+					Face.Group = FInfo.Group
+					Face.Number = FInfo.Face
+				else:
+					# interior face
+					# Store in IFace
+					IFace = mesh.IFaces[mesh.nIFace]
+					IFace.ElemL = FInfo.Elem
+					IFace.faceL = FInfo.Face
+					IFace.ElemR = elem
+					IFace.faceR = face
+					# Store in left Face
+					Face = mesh.Faces[FInfo.Elem][FInfo.Face]
+					Face.Group = General.INTERIORFACE
+					Face.Number = mesh.nIFace
+					# Store in right face
+					Face = mesh.Faces[elem][face]
+					Face.Group = General.INTERIORFACE
+					Face.Number = mesh.nIFace
+					# Increment IFace counter
+					mesh.nIFace += 1
 
-					DeleteFaceFromHash(Node2FaceHash, nfnode, fnodes)
+				DeleteFaceFromHash(Node2FaceHash, nfnode, fnodes)
 
 	# Make sure no faces left in hash
 	nleft = 0
@@ -607,7 +612,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			"face(s) remain(s) in the hash")
 
 	# Resize IFace
-	if mesh.nIFace > mesh.nElemTot*nFaceMax:
+	if mesh.nIFace > mesh.nElem*nFaceMax:
 		raise ValueError
 	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
 
@@ -627,7 +632,7 @@ def ReadGmshFile(FileName):
 	fo = open(FileName, "r")
 
 	# Mesh object
-	mesh = Mesh.Mesh(nElemGroup=0)
+	mesh = Mesh.Mesh(nElem=0)
 
 	# Object that stores Gmsh entity info
 	EntitiesInfo = CreateGmshEntitiesInfo()
@@ -642,7 +647,7 @@ def ReadGmshFile(FileName):
 	FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo)
 
 	# Print some stats
-	print("%d elements in the mesh" % (mesh.nElemTot))
+	print("%d elements in the mesh" % (mesh.nElem))
 	
 	# Done with file
 	fo.close()

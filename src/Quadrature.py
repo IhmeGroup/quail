@@ -6,12 +6,12 @@ import Basis
 from QuadratureRules import *
 
 
-def GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet=None, quadData=None):
+def GetQuadOrderElem(mesh, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
 
 	#Add logic to add 1 to the dimension of an ADER case?
 	
-	QOrder = mesh.ElemGroups[egrp].QOrder
+	QOrder = mesh.QOrder
 
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
@@ -35,9 +35,7 @@ def GetQuadOrderElem(mesh, egrp, basis, Order, EqnSet=None, quadData=None):
 
 def GetQuadOrderIFace(mesh, IFace, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
-	QOrderL = mesh.ElemGroups[IFace.ElemGroupL].QOrder
-	QOrderR = mesh.ElemGroups[IFace.ElemGroupR].QOrder
-	QOrder = np.amax([QOrderL, QOrderR])
+	QOrder = mesh.QOrder
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
 		QuadOrder = EqnSet.QuadOrder(Order)
@@ -62,7 +60,7 @@ def GetQuadOrderIFace(mesh, IFace, basis, Order, EqnSet=None, quadData=None):
 
 def GetQuadOrderBFace(mesh, BFace, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
-	QOrder = mesh.ElemGroups[BFace.ElemGroup].QOrder
+	QOrder = mesh.QOrder
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
 		QuadOrder = EqnSet.QuadOrder(Order)
@@ -103,7 +101,6 @@ class QuadData(object):
 			wquad: Weight of the points in reference space.
 			nquad: Number of points to be evaluated.
 		'''
-		# QOrder = mesh.ElemGroups[egrp].QOrder
 		dim = Mesh.GetEntityDim(mesh, entity)
 		self.Order = Order
 		self.qdim = mesh.Dim
@@ -153,7 +150,6 @@ class QuadDataADER(object):
 			wquad: Weight of the points in reference space.
 			nquad: Number of points to be evaluated.
 			'''
-		# QOrder = mesh.ElemGroups[egrp].QOrder
 		dim = Mesh.GetEntityDim(mesh, entity) + 1
 		self.Order = Order
 		self.qdim = mesh.Dim + 1
