@@ -50,7 +50,7 @@ class Scalar(object):
 		if type(Order) is int:
 			self.Order = Order
 		elif type(Order) is list:
-			self.Order = Order
+			self.Order = Order[0]
 		else:
 			raise Exception("Input error")
 

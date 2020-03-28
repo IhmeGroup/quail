@@ -646,13 +646,18 @@ class DG_Solver(object):
 		if np.any(np.diff(EndTimes) < 0.):
 			raise ValueError
 
-		if OrderSequencing:
-			if mesh.nElemGroup != 1:
-				# only compatible with 
-				raise Errors.IncompatibleError
-		else:
+		# if OrderSequencing:
+		# 	if mesh.nElemGroup != 1:
+		# 		# only compatible with 
+		# 		raise Errors.IncompatibleError
+		# else:
+		# 	if len(InterpOrders) != 1:
+		# 		raise ValueError
+
+		if not OrderSequencing:
 			if len(InterpOrders) != 1:
 				raise ValueError
+
 
 
 		''' Loop through orders '''
@@ -669,10 +674,10 @@ class DG_Solver(object):
 				delattr(self, "DataSet")
 				self.DataSet = GenericData()
 				# Increment order
-				Order_old = EqnSet.Orders[0]
-				EqnSet.Orders[0] = Order
+				Order_old = EqnSet.Order
+				EqnSet.Order = Order
 				# Project
-				ProjectStateToNewBasis(self, EqnSet, mesh, EqnSet.Bases[0], Order_old)
+				ProjectStateToNewBasis(self, EqnSet, mesh, EqnSet.Basis, Order_old)
 
 			''' Apply time scheme '''
 			self.ApplyTimeScheme(fhistory)
