@@ -317,7 +317,7 @@ def ReadMeshEntities(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			QOrder = EntitiesInfo[etype].QOrder
 			QBasis = EntitiesInfo[etype].QBasis
 			if mesh.nElem == 0:
-				mesh.SetParams(QBasis=QBasis, QOrder=QOrder)
+				mesh.SetParams(QBasis=QBasis, QOrder=QOrder, nElem=0)
 			mesh.nElem += 1
 			# # Check for existing element group
 			# found = False
