@@ -712,6 +712,8 @@ def LagrangeBasis2D(x, xnode, nnode, phi, gphi):
     # Always need phi
     phix = 0.*xnode; phiy = 0.*xnode
 
+    code.interact(local=locals())
+
     LagrangeBasis1D(x[0], xnode, nnode, phix, gphix)
     LagrangeBasis1D(x[1], xnode, nnode, phiy, gphiy)
 
@@ -987,7 +989,7 @@ def Shape_TensorLegendre(dim, p, x, phi):
     if dim == 1:
         LegendreBasis1D(x, p, phi, None)
     elif dim == 2:
-        LegendreBasis1D(x, p, phi, None)
+        LegendreBasis2D(x, p, phi, None)
 
 def Grad_TensorLegendre(dim, p, x, gphi):
     if p == 0:
@@ -1006,10 +1008,9 @@ def LegendreBasis2D(x, p, phi, gphi):
     # Always need phi
     phix = np.zeros(p+1); phiy = np.zeros(p+1)
 
-
     LegendreBasis1D(x[0], p, phix, gphix)
     LegendreBasis1D(x[1], p, phiy, gphiy)
-
+   
     if phi is not None:
         phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
     if gphi is not None:

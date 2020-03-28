@@ -750,9 +750,8 @@ class ADERDG_Solver(DG_Solver):
 		EqnSet = self.EqnSet
 
 		# Initialize predictor step to zero
-		Up.SetUniformValue(0.)
 
-		self.CalculatePredictorStepElems(dt, W.Arrays, Up.Arrays)
+		self.CalculatePredictorStepElems(dt, W, Up)
 
 		return Up
 	
