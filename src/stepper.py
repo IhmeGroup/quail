@@ -132,6 +132,8 @@ class LSRK4(FE):
 		    2802321613138.0/2924317926251.0])
 		self.nStage = 5
 
+	def TakeTimeStep(self, solver):
+
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh = solver.mesh
