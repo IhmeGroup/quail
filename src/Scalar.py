@@ -5,6 +5,8 @@ import code
 import Errors
 from Data import ArrayList, ICData, BCData, ExactData, SourceData
 import sys
+from scipy.optimize import root
+
 
 
 class Scalar(object):
@@ -503,6 +505,29 @@ class Scalar(object):
 		a = -1.
 		b = 1.
 		U = (a*x+b)/(a*t+1.)
+
+		return U
+
+	def FcnSineWaveBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		try:
+			omega = Data.omega
+		except AttributeError:
+			omega = 2.*np.pi
+
+		def F(u):
+			x1 = np.reshape(x,(len(x)))
+			F = u - np.sin(omega*(x1-u*t)) 
+			return F
+		u = np.sin(omega*(x))
+		u1 = np.reshape(u,(len(u)))
+		sol = root(F, u1, tol=1e-12)
+		
+		U[:,0] = sol.x
 
 		return U
 
