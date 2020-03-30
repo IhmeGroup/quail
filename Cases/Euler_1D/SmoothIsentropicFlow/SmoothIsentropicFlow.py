@@ -19,12 +19,12 @@ EndTime = 0.1
 nTimeStep = 100
 InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="RK4")
+								 InterpBasis="LagrangeSeg",TimeScheme="RK4",InterpolateIC=True)
 
 
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
-EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="Roe")
+EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
 # Exact solution

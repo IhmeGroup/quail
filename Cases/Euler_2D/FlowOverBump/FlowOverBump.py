@@ -8,7 +8,10 @@ import Post
 import Plot
 import General
 import MeshGmsh
+import os
 
+
+CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 ### Mesh
 folder = "meshes/"
@@ -25,7 +28,7 @@ InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.
 # InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [10., 12., 13.5]
 ## Triangles
 # subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
-MeshFile = folder + subfolder + FileName
+MeshFile = CurrentDir + folder + subfolder + FileName
 mesh = MeshGmsh.ReadGmshFile(MeshFile)
 
 # Plot.PreparePlot(axis=None, linewidth=0.5)
@@ -78,7 +81,7 @@ Plot.PlotSolution(mesh, EqnSet, solver.Time, "Pressure", Equidistant=True, PlotE
 Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
 Plot.PlotSolution(mesh, EqnSet, solver.Time, "Entropy", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	ShowTriangulation=False, EqualAR=EqualAR)
-Plot.SaveFigure(FileName='Entropy', FileType='pdf', CropLevel=2)
+Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()
 
 # U = EqnSet.U.Arrays[0]

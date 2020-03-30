@@ -10,7 +10,7 @@ import General
 
 
 ### Mesh
-Periodic = False
+Periodic = True
 # Uniform mesh
 mesh = MeshCommon.Mesh1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
@@ -26,13 +26,13 @@ EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LegendreSeg",TimeScheme="RK4")
+								 InterpBasis="LegendreSeg",TimeScheme="LSRK4")
 
 
 ### Physics
 Velocity = 1.
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-EqnSet.SetParams(ConstVelocity=Velocity)
+EqnSet.SetParams(ConstVelocity=Velocity,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Exact solution
@@ -66,7 +66,7 @@ TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
 Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, Label="Q_h")
-Plot.ShowPlot()
+Plot.ShowPlot(Interactive=True)
 
 
 # code.interact(local=locals())
