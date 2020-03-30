@@ -7,6 +7,10 @@ import MeshCommon
 import Post
 import Plot
 import General
+import os
+
+
+CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 ### Mesh
@@ -18,13 +22,13 @@ EndTime = 0.0002
 nTimeStep = 500
 InterpOrder = 1
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="RK4",InterpolateIC=False,
+								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",InterpolateIC=False,
 								 ApplyLimiter="PositivityPreserving")
 
 
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
-EqnSet.SetParams(GasConstant=287.,SpecificHeatRatio=1.4,ConvFlux="Roe")
+EqnSet.SetParams(GasConstant=287.,SpecificHeatRatio=1.4,ConvFlux="LaxFriedrichs")
 # Parameters
 M = 5.
 xshock = 0.2
@@ -44,11 +48,11 @@ solver.solve()
 
 ### Postprocess
 # Error
-# TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Density")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Density")
 # Plot
 Plot.PreparePlot()
 Plot.PlotSolution(mesh, EqnSet, solver.Time, "Pressure", PlotExact=True, Equidistant=True)
-Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
+Plot.SaveFigure(FileName=CurrentDir+'Pressure', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()
 
 

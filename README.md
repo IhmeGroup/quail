@@ -1,5 +1,8 @@
 # Examples #
 
+## Test all cases
+python TestAllCases.py
+
 ## 1D scalar advection
 python Cases/Scalar_1D/LinearAdvection/LinearAdvection.py
 

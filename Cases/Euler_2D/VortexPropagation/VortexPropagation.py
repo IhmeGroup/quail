@@ -8,15 +8,19 @@ import Post
 import Plot
 import General
 import MeshGmsh
+import os
+
+
+CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 ### Mesh
 folder = "meshes/"
 # Quadrilaterals
-subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
-# # Structured
-subsubfolder = "Structured/"
-FileName = "box_5x5.msh"
+# subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
+# # # Structured
+# subsubfolder = "Structured/"
+# FileName = "box_5x5.msh"
 # FileName = "box_10x10.msh"
 # FileName = "box_20x20.msh"
 # FileName = "box_40x40.msh"
@@ -28,14 +32,14 @@ FileName = "box_5x5.msh"
 # FileName = "box_400_elem.msh"
 # FileName = "box_1600_elem.msh"
 ## Triangles
-#subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
+subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
 # Structured
-#subsubfolder = "Structured/"
-#FileName = "box_5x5.msh"
+subsubfolder = "Structured/"
+FileName = "box_5x5.msh"
 # FileName = "box_10x10.msh"
 # FileName = "box_20x20.msh"
 # FileName = "box_40x40.msh"
-MeshFile = folder + subfolder + subsubfolder + FileName
+MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + FileName
 mesh = MeshGmsh.ReadGmshFile(MeshFile)
 
 ### Solver parameters
@@ -49,7 +53,7 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=4)
-EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="Roe")
+EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnIsentropicVortexPropagation)
 # Exact solution
@@ -73,7 +77,7 @@ axis = None
 Plot.PreparePlot(axis=axis, linewidth=0.5)
 Plot.PlotSolution(mesh, EqnSet, solver.Time, "Density", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	Regular2D=True, ShowTriangulation=False)
-Plot.SaveFigure(FileName='vortex', FileType='pdf', CropLevel=2)
+Plot.SaveFigure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()
 
 # U = EqnSet.U.Arrays[0]
