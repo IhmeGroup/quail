@@ -406,7 +406,7 @@ class Scalar(object):
 		nq = FcnData.nq
 		sr = self.StateRank
 		if FcnData.S is None or FcnData.S.shape != (nq, sr):
-			FcnData.S = np.zeros([nq, sr],dtype=self.S.Arrays[0].dtype)
+			FcnData.S = np.zeros([nq, sr],dtype=self.S.dtype)
 
 		FcnData.S[:] = FcnData.Function(FcnData)
 
