@@ -1,7 +1,7 @@
 from Scalar import Scalar
 import numpy as np
 import code
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, root
 from enum import IntEnum, Enum
 import Errors
 
@@ -94,16 +94,17 @@ class Euler1D(Scalar):
 		ru = u[:,1]
 		rE = u[:,2]
 
+		eps = 1e-15
 		gam = self.Params["SpecificHeatRatio"]
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru)/r)
-		h = (rE + p)/r
+		p = (gam - 1.)*(rE - 0.5*(ru*ru)/(r+eps))
+		h = (rE + p)/(r+eps)
 
 		if F is None:
 			F = np.empty(u.shape+(self.Dim,))
 
 		F[:,0,0] = ru
-		F[:,1,0] = ru*ru/r + p
+		F[:,1,0] = ru*ru/(r+eps) + p
 		F[:,2,0] = ru*h
 
 		return F
@@ -236,6 +237,7 @@ class Euler1D(Scalar):
 		NN1 = 1./NN
 		n1 = n/NN
 
+		#code.interact(local=locals())
 		if UL[0] <= 0. or UR[0] <= 0.:
 			raise Exception("Nonphysical density")
 
@@ -437,9 +439,13 @@ class Euler1D(Scalar):
 		gam = self.Params["SpecificHeatRatio"]
 
 		for iq in range(nq):
+			if NData.nvec.size < nq:
+				n = NData.nvec[0,:]
+			else:
+				n = NData.nvec[iq,:]
 			UL = uL[iq,:]
 			UR = uR[iq,:]
-			n = NData.nvec[iq,:]
+			#n = NData.nvec[iq,:]
 			f = F[iq,:]
 
 			if ConvFlux == self.ConvFluxType.HLLC:
@@ -617,15 +623,24 @@ class Euler1D(Scalar):
 		f2 = lambda x2,x,t,a: x - np.sqrt(3)*rho0(x2,a)*t - x2
 
 		x_ = x.reshape(-1)
-		x1 = fsolve(f1, 0.*x_, (x_,t,a))
-		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
-		x2 = fsolve(f2, 0.*x_, (x_,t,a))
-		if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
-
+		if isinstance(t,float):
+			x1 = fsolve(f1, 0.*x_, (x_,t,a))
+			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
+			x2 = fsolve(f2, 0.*x_, (x_,t,a))
+			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
+		else:
+			y = np.zeros(len(t))
+			for i in range(len(t)):
+				y[i] = x
+			t = t.reshape(-1)
+			x1 = root(f1, 0.*y, (y,t,a)).x
+			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
+			x2 = root(f2, 0.*y, (y,t,a)).x
+			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
+			
 		r = rho(x1,x2,a)
 		u = vel(x1,x2,a)
 		p = pressure(r,gam)
-
 		rE = p/(gam-1.) + 0.5*r*u*u
 
 		# U = np.array([r, r*u, rE]).transpose() # [nq,sr]

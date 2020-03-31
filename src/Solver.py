@@ -743,8 +743,8 @@ class ADERDG_Solver(DG_Solver):
 			raise Errors.IncompatibleError
 
 		### Current build only supports scalar equations
-		if EqnSet.StateRank > 1:
-			raise Errors.IncompatibleError
+		#if EqnSet.StateRank > 1:
+		#	raise Errors.IncompatibleError
 	def CalculatePredictorStep(self, dt, W, Up):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
@@ -954,7 +954,7 @@ class ADERDG_Solver(DG_Solver):
 			for i in range(nqST): # Loop over time
 				for j in range(nq): # Loop over space
 					Psi = PsiData.Phi[j,:]
-					R[:,ir] -= wqST[i]*wq[j]*F[j,i]*Psi
+					R[:,ir] -= wqST[i]*wq[j]*F[j,i,ir]*Psi
 	
 		F = np.reshape(F,(nqST,sr))
 
@@ -1082,7 +1082,7 @@ class ADERDG_Solver(DG_Solver):
 				for i in range(nq): # Loop over time
 					for j in range(nq): # Loop over space
 						gPsi = PsiData.gPhi[j,k]
-						ER[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*F[i,j]*gPsi
+						ER[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*F[i,j,ir]*gPsi
 
 		F = np.reshape(F,(nqST,sr,dim))
 
@@ -1247,8 +1247,8 @@ class ADERDG_Solver(DG_Solver):
 				for j in range(nq): # Loop over space
 					PsiL = PsiDataL.Phi[j,:]
 					PsiR = PsiDataR.Phi[j,:]
-					RL[:,ir] -= wqST[i]*wq[j]*F[j,i]*PsiL
-					RR[:,ir] += wqST[i]*wq[j]*F[j,i]*PsiR
+					RL[:,ir] -= wqST[i]*wq[j]*F[j,i,ir]*PsiL
+					RR[:,ir] += wqST[i]*wq[j]*F[j,i,ir]*PsiR
 
 		F = np.reshape(F,(nqST,sr))
 
@@ -1348,15 +1348,17 @@ class ADERDG_Solver(DG_Solver):
 					for i in range(nq): # Loop over time
 						for j in range(nq): # Loop over space
 							#Phi = PhiData.Phi[j,k]
-							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j]*Phi[i,j,k]
+							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j,ir]*Phi[i,j,k]
 
 			#F = np.reshape(F,(nqST,sr,dim))
 			F = np.dot(MMinv,rhs)*(1.0/JData.djac)*dt/2.0
 
 		else:
 			F1 = np.zeros([nn,sr,dim])
+			#code.interact(local=locals())
 			f = EqnSet.ConvFluxInterior(U,F1)
 			F = f[:,:,0]*(1.0/JData.djac)*dt/2.0
+			#code.interact(local=locals())
 		return F
 
 	def SourceCoefficients(self, elem, dt, Order, basis, U):
@@ -1448,7 +1450,7 @@ class ADERDG_Solver(DG_Solver):
 					for i in range(nq): # Loop over time
 						for j in range(nq): # Loop over space
 							#Phi = PhiData.Phi[j,k]
-							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*s[i,j]*Phi[i,j,k]
+							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*s[i,j,ir]*Phi[i,j,k]
 
 			S = np.dot(MMinv,rhs)*dt/2.0
 
