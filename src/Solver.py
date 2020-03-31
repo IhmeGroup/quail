@@ -266,7 +266,6 @@ class DG_Solver(object):
 		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 		# NOT TESTED
 		ER[:] += np.matmul(PhiData.Phi.transpose(), s*wq*JData.djac) # [nn, sr]
-		code.interact(local=locals())
 		if elem == echeck:
 			code.interact(local=locals())
 
