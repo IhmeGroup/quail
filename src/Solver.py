@@ -125,52 +125,53 @@ class DG_Solver(object):
 		quadData = None
 		JData = JacobianData(mesh)
 		GeomPhiData = None
-		quad_pts = None; xphys = None
+		quad_pts = None; xphys = None; QuadChanged = True
 
 		basis = EqnSet.Basis
 		Order = EqnSet.Order
 		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
-
-		# Precompute basis and quadrature
-		if not InterpolateIC:
-			QuadOrder,_ = get_gaussian_quadrature_elem(mesh, EqnSet.Basis,
-				2*np.amax([Order,1]), EqnSet, quadData)
-
-			quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
-
-			nq = quadData.nquad
-			quad_pts = quadData.quad_pts
-			quad_wts = quadData.quad_wts
-
-			PhiData = BasisData(basis,Order,nq,mesh)
-			PhiData.EvalBasis(quad_pts, Get_Phi=True)
-			xphys = np.zeros([nq, mesh.Dim])
-		else:
-			quad_pts, nq = EquidistantNodes(basis, Order, quad_pts)
-			nn = nq
-
 		for elem in range(mesh.nElem):
 
-			xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, quad_pts, xphys)
-
-			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=self.Time)
-			f.shape = nq,sr
-
 			if not InterpolateIC:
+				QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, EqnSet.Basis,
+					# 1, EqnSet, quadData)
+					2*np.amax([Order,1]), EqnSet, quadData)
+				if QuadChanged:
+					quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
+
+				nq = quadData.nquad
+				quad_pts = quadData.quad_pts
+				quad_wts = quadData.quad_wts
+
+				if QuadChanged:
+					PhiData = BasisData(basis,Order,nq,mesh)
+					PhiData.EvalBasis(quad_pts, Get_Phi=True)
+					xphys = np.zeros([nq, mesh.Dim])
 
 				JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
 
 				MMinv = MMinv_all[elem]
 
 				nn = PhiData.nn
+			else:
+				quad_pts, nq = EquidistantNodes(basis, Order, quad_pts)
+				nn = nq
 
-				# rhs *= 0.
-				# for n in range(nn):
-				# 	for iq in range(nq):
-				# 		rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
-				rhs[:] = np.matmul(PhiData.Phi.transpose(), f*quad_wts*JData.djac)
+			xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, quad_pts, xphys, QuadChanged)
+			# if sr == 1: f = f_ic(xphys)
+			# else : 
+			# 	# f = SmoothIsentropic1D(x=xphys,t=0.,gam=EqnSet.Params["SpecificHeatRatio"])
+			# 	f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=0.)
+			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=self.Time)
+			f.shape = nq,sr
 
-				U[elem,:,:] = np.matmul(MMinv,rhs)
+			if not InterpolateIC:
+				rhs *= 0.
+				for n in range(nn):
+					for iq in range(nq):
+						rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
+
+				U[elem,:,:] = np.dot(MMinv,rhs)
 			else:
 				U[elem] = f
 
@@ -238,7 +239,7 @@ class DG_Solver(object):
 
 
 		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
-		PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData) # gPhi is [nq,nn,dim]
+		PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
 
 		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
 
@@ -249,23 +250,20 @@ class DG_Solver(object):
 
 		F = EqnSet.ConvFluxInterior(u, F) # [nq,sr,dim]
 
-		# for ir in range(sr):
-		# 	for jn in range(nn):
-		# 		for iq in range(nq):
-		# 			gPhi = PhiData.gPhi[iq,jn] # dim
-		# 			ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
-		ER[:] += np.tensordot(PhiData.gPhi, F*(wq*JData.djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nn, sr]
+		for ir in range(sr):
+			for jn in range(nn):
+				for iq in range(nq):
+					gPhi = PhiData.gPhi[iq,jn] # dim
+					ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 
 		s = np.zeros([nq,sr])
-		s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr]
+		s = EqnSet.SourceState(nq, xglob, self.Time, NData, u, s) # [nq,sr,dim]
 		# Calculate source term integral
-		# for ir in range(sr):
-		# 	for jn in range(nn):
-		# 		for iq in range(nq):
-		# 			Phi = PhiData.Phi[iq,jn]
-		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
-		# NOT TESTED
-		ER[:] += np.matmul(PhiData.Phi.transpose(), s*wq*JData.djac) # [nn, sr]
+		for ir in range(sr):
+			for jn in range(nn):
+				for iq in range(nq):
+					Phi = PhiData.Phi[iq,jn]
+					ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -369,11 +367,9 @@ class DG_Solver(object):
 		nn = np.amax([nL,nR])
 
 		# interpolate state and gradient at quad points
-		# for ir in range(sr):
-		# 	uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
-		# 	uR[:,ir] = np.matmul(PhiDataR.Phi, UR[:,ir])
-		uL[:] = np.matmul(PhiDataL.Phi, UL)
-		uR[:] = np.matmul(PhiDataR.Phi, UR)
+		for ir in range(sr):
+			uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
+			uR[:,ir] = np.matmul(PhiDataR.Phi, UR[:,ir])
 
 		F = EqnSet.ConvFluxNumerical(uL, uR, NData, nq, StaticData) # [nq,sr]
 
@@ -488,9 +484,8 @@ class DG_Solver(object):
 		nn = PhiData.nn
 
 		# interpolate state and gradient at quad points
-		# for ir in range(sr):
-		# 	uI[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
-		uI[:] = np.matmul(PhiData.Phi, U)
+		for ir in range(sr):
+			uI[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]

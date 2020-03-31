@@ -240,14 +240,12 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
 
     phi = PhiData.Phi
     MM = np.zeros([nn,nn])
-    # for i in range(nn):
-    #     for j in range(nn):
-    #         t = 0.
-    #         for iq in range(nq):
-    #             t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq] # JData.djac[iq*(JData.nq != 1)]
-    #         MM[i,j] = t
-
-    MM[:] = np.matmul(phi.transpose(), phi*wq*djac)
+    for i in range(nn):
+        for j in range(nn):
+            t = 0.
+            for iq in range(nq):
+                t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq] # JData.djac[iq*(JData.nq != 1)]
+            MM[i,j] = t
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
@@ -1180,8 +1178,8 @@ class JacobianData(object):
         basis = mesh.QBasis
         Order = mesh.QOrder
         Shape = Basis2Shape[basis]
-        # if Order == 1 and Shape != ShapeType.Quadrilateral:
-        #     nq = 1
+        if Order == 1 and Shape != ShapeType.Quadrilateral:
+            nq = 1
 
         nb = Order2nNode(basis, Order)
         dim = Shape2Dim[Basis2Shape[basis]]
