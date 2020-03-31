@@ -22,9 +22,9 @@ mesh = MeshCommon.Mesh1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Per
 
 
 ### Solver parameters
-EndTime = 0.1
+EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
-InterpOrder = 2
+InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateFlux=True)
 nu = -3.
