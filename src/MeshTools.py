@@ -22,14 +22,14 @@ def ElementVolumes(mesh, solver=None):
 
     Order = mesh.QOrder
 
-    QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, mesh.QBasis, Order, 
+    QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, 
         quadData=quadData)
     if QuadChanged:
         quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     for elem in range(mesh.nElem):
         JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
@@ -86,7 +86,7 @@ def CheckFaceOrientations(mesh):
         # Convert to global node numbering
         gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
 
-        # Node ordering should be reversed between the two elements
+        # Node Ordering should be reversed between the two elements
         if not np.all(gfnodesL == gfnodesR[::-1]):
             raise Exception("Face orientation for elemL = %d, elemR = %d \\ is incorrect"
                 % (elemL, elemR))

@@ -1,7 +1,7 @@
 import numpy as np
 import General
 from Basis import GetInvMassMatrix, GetStiffnessMatrix, BasisData
-from Quadrature import GetQuadOrderElem, QuadData
+from Quadrature import get_gaussian_quadrature_elem, QuadData
 import code
 
 
@@ -13,9 +13,9 @@ def CalculateBasisAndMatrices(mesh, basis, Order):
 
 	## Evaluate basis polynomials
 	# Quadrature
-	QuadOrder,_ = GetQuadOrderElem(mesh, egrp=0, basis=basis, Order=Order)
+	QuadOrder,_ = get_gaussian_quadrature_elem(mesh, egrp=0, basis=basis, Order=Order)
 	quadData = QuadData(mesh=mesh, basis=mesh.ElemGroups[0].QBasis, entity=General.EntityType["IFace"], Order=QuadOrder)
-	xq = quadData.xquad; nq = quadData.nquad; 
+	xq = quadData.quad_pts; nq = quadData.nquad; 
 	# Basis on left face
 	PhiDataLeft = BasisData(basis,Order,nq,mesh)
 	PhiDataLeft.EvalBasisOnFace(mesh, egrp=0, face=0, xq=xq, xelem=None, Get_Phi=True)

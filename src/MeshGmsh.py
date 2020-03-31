@@ -526,7 +526,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			# Sanity check
 			if nnode != EntitiesInfo[etype].nNode:
 				raise Exception("Check Gmsh entities")
-			# Convert node ordering
+			# Convert node Ordering
 			newnodes = nodes[EntitiesInfo[etype].NodeOrder]
 			# Store in Elem2Nodes
 			mesh.Elem2Nodes[elem] = newnodes

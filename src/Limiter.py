@@ -82,13 +82,13 @@ class PPLimiter(object):
 			theta = StaticData.theta
 			Faces2PhiData = StaticData.Faces2PhiData
 
-		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, basis, Order, EqnSet, quadElem)
+		QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadElem)
 		if QuadChanged:
 			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
 		nq = quadElem.nquad
-		xq = quadElem.xquad
-		wq = quadElem.wquad
+		xq = quadElem.quad_pts
+		wq = quadElem.quad_wts
 
 		if QuadChanged:
 			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
@@ -136,19 +136,19 @@ class PPLimiter(object):
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_bface(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
 				OrderN = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_iface(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
 			nq = quadFace.nquad
-			xq = quadFace.xquad
-			wq = quadFace.wquad
+			xq = quadFace.quad_pts
+			wq = quadFace.quad_wts
 
 			if QuadChanged:
 				Faces2PhiData = [None for i in range(nFacePerElem)]
@@ -297,13 +297,13 @@ class PPScalarLimiter(object):
 			theta = StaticData.theta
 			Faces2PhiData = StaticData.Faces2PhiData
 
-		QuadOrder,QuadChanged = Quadrature.GetQuadOrderElem(mesh, basis, Order, EqnSet, quadElem)
+		QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadElem)
 		if QuadChanged:
 			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
 		nq = quadElem.nquad
-		xq = quadElem.xquad
-		wq = quadElem.wquad
+		xq = quadElem.quad_pts
+		wq = quadElem.quad_wts
 
 		if QuadChanged:
 			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
@@ -343,19 +343,19 @@ class PPScalarLimiter(object):
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderBFace(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_bface(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
 				OrderN = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.GetQuadOrderIFace(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_iface(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
 			nq = quadFace.nquad
-			xq = quadFace.xquad
-			wq = quadFace.wquad
+			xq = quadFace.quad_pts
+			wq = quadFace.quad_wts
 
 			if QuadChanged:
 				Faces2PhiData = [None for i in range(nFacePerElem)]

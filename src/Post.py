@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 import code
-from Quadrature import GetQuadOrderElem, QuadData
+from Quadrature import get_gaussian_quadrature_elem, QuadData
 from Basis import BasisData, JacobianData
 from Mesh import Mesh, Ref2Phys
 from General import *
@@ -43,13 +43,13 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
+		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
 		if QuadChanged:
 			quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		if QuadChanged:
 			PhiData = BasisData(basis,Order,nq,mesh)
@@ -81,6 +81,6 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 
 	# print("Total volume = %g" % (TotVol))
 	if PrintError:
-		print("Total error = %g" % (TotErr))
+		print("Total error = %.15f" % (TotErr))
 
 	return TotErr, ElemErr

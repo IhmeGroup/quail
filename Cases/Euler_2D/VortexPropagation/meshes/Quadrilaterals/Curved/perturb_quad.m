@@ -29,7 +29,7 @@ for i = 1:nn
     coord(i,:) = str2num(datacell{i+1});
 end
 
-% randomize node ordering
+% randomize node Ordering
 idxnew = randperm(nn);
 
 % extract element info

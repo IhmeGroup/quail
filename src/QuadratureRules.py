@@ -7,8 +7,8 @@ Dictionaries: QuadLinePoints, QuadLineWeights
 These dictionaries store the Gauss-Legendre quadrature points and weights for the reference line segment
 
 USAGE:
-    QuadLinePoints[Order] = quadrature points for Gauss-Legendre quadrature of order Order
-    QuadLineWeights[Order] = quadrature weights for Gauss-Legendre quadrature of order Order
+    QuadLinePoints[Order] = quadrature points for Gauss-Legendre quadrature of Order Order
+    QuadLineWeights[Order] = quadrature weights for Gauss-Legendre quadrature of Order Order
 '''
 QuadLinePoints = {}
 QuadLineWeights = {}
@@ -116,8 +116,8 @@ Dictionaries: QuadLinePoints, QuadLineWeights
 These dictionaries store the Gauss-Legendre quadrature points and weights for the reference quadrilateral
 
 USAGE:
-    QuadQuadrilateralPoints[Order] = quadrature points for Gauss-Legendre quadrature of order Order in each direction
-    QuadQuadrilateralWeights[Order] = quadrature weights for Gauss-Legendre quadrature of order Order in each direction
+    QuadQuadrilateralPoints[Order] = quadrature points for Gauss-Legendre quadrature of Order Order in each direction
+    QuadQuadrilateralWeights[Order] = quadrature weights for Gauss-Legendre quadrature of Order Order in each direction
 '''
 QuadQuadrilateralPoints = {}
 QuadQuadrilateralWeights = {}
@@ -128,8 +128,8 @@ for Order in QuadLinePoints.keys():
 	wqline = QuadLineWeights[Order]
 	nqline = len(xqline)
 	nquad = nqline**2
-	wquad = np.zeros([nquad,1])
-	xquad = np.zeros([nquad,2])
+	quad_wts = np.zeros([nquad,1])
+	quad_pts = np.zeros([nquad,2])
 	iq = 0
 	for j in range(nqline):
 		xqj = xqline[j]
@@ -138,17 +138,17 @@ for Order in QuadLinePoints.keys():
 			xqi = xqline[i]
 			wqi = wqline[i]
 
-			wquad[iq] = wqi*wqj
-			xquad[iq,0] = xqi
-			xquad[iq,1] = xqj
+			quad_wts[iq] = wqi*wqj
+			quad_pts[iq,0] = xqi
+			quad_pts[iq,1] = xqj
 			iq += 1
 
 	if iq != nquad:
 		raise ValueError
 
 	# Store in dictionaries
-	QuadQuadrilateralPoints[Order] = xquad
-	QuadQuadrilateralWeights[Order] = wquad
+	QuadQuadrilateralPoints[Order] = quad_pts
+	QuadQuadrilateralWeights[Order] = quad_wts
 
 
 '''
@@ -157,8 +157,8 @@ Dictionaries: QuadTrianglePoints, QuadTriangleWeights
 These dictionaries store the Gauss-Legendre quadrature points and weights for the reference triangle
 
 USAGE:
-    QuadTrianglePoints[Order] = quadrature points for Gauss-Legendre quadrature of order Order in each direction
-    QuadTriangleWeights[Order] = quadrature weights for Gauss-Legendre quadrature of order Order in each direction
+    QuadTrianglePoints[Order] = quadrature points for Gauss-Legendre quadrature of Order Order in each direction
+    QuadTriangleWeights[Order] = quadrature weights for Gauss-Legendre quadrature of Order Order in each direction
 '''
 QuadTrianglePoints = {}
 QuadTriangleWeights = {}

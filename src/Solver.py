@@ -125,7 +125,7 @@ class DG_Solver(object):
 		quadData = None
 		JData = JacobianData(mesh)
 		GeomPhiData = None
-		xq = None; xphys = None; QuadChanged = True
+		quad_pts = None; xphys = None; QuadChanged = True
 
 		basis = EqnSet.Basis
 		Order = EqnSet.Order
@@ -133,31 +133,31 @@ class DG_Solver(object):
 		for elem in range(mesh.nElem):
 
 			if not InterpolateIC:
-				QuadOrder,QuadChanged = GetQuadOrderElem(mesh, EqnSet.Basis,
+				QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, EqnSet.Basis,
 					# 1, EqnSet, quadData)
 					2*np.amax([Order,1]), EqnSet, quadData)
 				if QuadChanged:
 					quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
 				nq = quadData.nquad
-				xq = quadData.xquad
-				wq = quadData.wquad
+				quad_pts = quadData.quad_pts
+				quad_wts = quadData.quad_wts
 
 				if QuadChanged:
 					PhiData = BasisData(basis,Order,nq,mesh)
-					PhiData.EvalBasis(xq, Get_Phi=True)
+					PhiData.EvalBasis(quad_pts, Get_Phi=True)
 					xphys = np.zeros([nq, mesh.Dim])
 
-				JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+				JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
 
 				MMinv = MMinv_all[elem]
 
 				nn = PhiData.nn
 			else:
-				xq, nq = EquidistantNodes(basis, Order, xq)
+				quad_pts, nq = EquidistantNodes(basis, Order, quad_pts)
 				nn = nq
 
-			xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
+			xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, quad_pts, xphys, QuadChanged)
 			# if sr == 1: f = f_ic(xphys)
 			# else : 
 			# 	# f = SmoothIsentropic1D(x=xphys,t=0.,gam=EqnSet.Params["SpecificHeatRatio"])
@@ -169,7 +169,7 @@ class DG_Solver(object):
 				rhs *= 0.
 				for n in range(nn):
 					for iq in range(nq):
-						rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
+						rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
 
 				U[elem,:,:] = np.dot(MMinv,rhs)
 			else:
@@ -218,13 +218,13 @@ class DG_Solver(object):
 			GeomPhiData = StaticData.GeomPhiData
 
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, EqnSet, quadData)
 		if QuadChanged:
 			quadData = QuadData(mesh, basis, entity, QuadOrder)
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		if QuadChanged:
 			PhiData = BasisData(EqnSet.Basis,Order,nq,mesh)
@@ -331,14 +331,14 @@ class DG_Solver(object):
 			Faces2PhiDataL = StaticData.Faces2PhiDataL
 			Faces2PhiDataR = StaticData.Faces2PhiDataR
 
-		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_iface(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		if QuadChanged:
 			Faces2PhiDataL = [None for i in range(nFacePerElem)]
@@ -453,14 +453,14 @@ class DG_Solver(object):
 			Faces2PhiData = StaticData.Faces2PhiData
 			Faces2xelem = StaticData.Faces2xelem
 
-		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_bface(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		if QuadChanged:
 			Faces2PhiData = [None for i in range(nFacePerElem)]
@@ -553,7 +553,7 @@ class DG_Solver(object):
 
 		EqnSet = self.EqnSet
 		mesh = self.mesh
-		order = self.Params["InterpOrder"]
+		Order = self.Params["InterpOrder"]
 		Stepper = self.Stepper
 		Time = self.Time
 
@@ -660,7 +660,7 @@ class DG_Solver(object):
 
 
 
-		''' Loop through orders '''
+		''' Loop through Orders '''
 		Time = 0.
 		for iOrder in range(nOrder):
 			Order = InterpOrders[iOrder]
@@ -668,12 +668,12 @@ class DG_Solver(object):
 			self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
 			self.nTimeStep = nTimeSteps[iOrder]
 
-			''' After first iteration, project solution to next order '''
+			''' After first iteration, project solution to next Order '''
 			if iOrder > 0:
 				# Clear DataSet
 				delattr(self, "DataSet")
 				self.DataSet = GenericData()
-				# Increment order
+				# Increment Order
 				Order_old = EqnSet.Order
 				EqnSet.Order = Order
 				# Project
@@ -798,8 +798,8 @@ class ADERDG_Solver(DG_Solver):
 
 		#MMinv,_= GetElemInvMassMatrixADER(mesh, basis1, Order, PhysicalSpace=True, elem=-1, StaticData=None)
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, basis2, Order, EqnSet, quadData)
-		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis1, Order, EqnSet, quadDataST)
+		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis2, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
 
 		if QuadChanged:
@@ -809,12 +809,12 @@ class ADERDG_Solver(DG_Solver):
 			quadDataST = QuadData(mesh, basis1, entity, QuadOrderST)
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		nqST = quadDataST.nquad
-		xqST = quadDataST.xquad
-		wqST = quadDataST.wquad
+		xqST = quadDataST.quad_pts
+		wqST = quadDataST.quad_wts
 
 		PhiData = BasisData(basis1,Order,nqST,mesh)
 		PsiData = BasisData(basis2,Order,nq,mesh)
@@ -897,9 +897,9 @@ class ADERDG_Solver(DG_Solver):
 		basis2 = EqnSet.Basis
 		basis1 = EqnSet.BasisADER
 
-		QuadOrderST, QuadChangedST = GetQuadOrderBFace(mesh, BFace, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST, QuadChangedST = get_gaussian_quadrature_bface(mesh, BFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
-		QuadOrder, QuadChanged = GetQuadOrderBFace(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_bface(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
@@ -907,12 +907,12 @@ class ADERDG_Solver(DG_Solver):
 			quadDataST = QuadDataADER(mesh,basis1,EntityType.BFace, QuadOrderST)
 		
 		nqST = quadDataST.nquad
-		xqST = quadDataST.xquad
-		wqST = quadDataST.wquad
+		xqST = quadDataST.quad_pts
+		wqST = quadDataST.quad_wts
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		if face == 0:
 			faceST = 3
@@ -1027,8 +1027,8 @@ class ADERDG_Solver(DG_Solver):
 			GeomPhiData = StaticData.GeomPhiData
 			TimePhiData = StaticData.TimePhiData
 
-		QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order, EqnSet, quadData)
-		QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis1, Order, EqnSet, quadDataST)
+		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
 
 		if QuadChanged:
@@ -1037,12 +1037,12 @@ class ADERDG_Solver(DG_Solver):
 			quadDataST = QuadData(mesh, basis1, entity, QuadOrderST)
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		nqST = quadDataST.nquad
-		xqST = quadDataST.xquad
-		wqST = quadDataST.wquad
+		xqST = quadDataST.quad_pts
+		wqST = quadDataST.quad_wts
 
 		if QuadChanged:
 			PhiData = BasisData(basis1,Order,nqST,mesh)
@@ -1172,9 +1172,9 @@ class ADERDG_Solver(DG_Solver):
 		basis2 = EqnSet.Basis
 		basis1 = EqnSet.BasisADER
 
-		QuadOrderST, QuadChangedST = GetQuadOrderIFace(mesh, IFace, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST, QuadChangedST = get_gaussian_quadrature_iface(mesh, IFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
-		QuadOrder, QuadChanged = GetQuadOrderIFace(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_iface(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
@@ -1182,12 +1182,12 @@ class ADERDG_Solver(DG_Solver):
 			quadDataST = QuadDataADER(mesh,basis1,EntityType.IFace, QuadOrderST)
 		
 		nqST = quadDataST.nquad
-		xqST = quadDataST.xquad
-		wqST = quadDataST.wquad
+		xqST = quadDataST.quad_pts
+		wqST = quadDataST.quad_wts
 
 		nq = quadData.nquad
-		xq = quadData.xquad
-		wq = quadData.wquad
+		xq = quadData.quad_pts
+		wq = quadData.quad_wts
 
 		if faceL == 0:
 			faceSTL = 3
@@ -1297,8 +1297,8 @@ class ADERDG_Solver(DG_Solver):
 		if not InterpolateFlux:
 
 
-			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, 4*Order, EqnSet, quadData)
-			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis, 4*Order, EqnSet, quadDataST)
+			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, 4*Order, EqnSet, quadData)
+			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, 4*Order, EqnSet, quadDataST)
 			QuadOrderST-=1
 
 			if QuadChanged:
@@ -1307,12 +1307,12 @@ class ADERDG_Solver(DG_Solver):
 				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
 
 			nq = quadData.nquad
-			xq = quadData.xquad
-			wq = quadData.wquad
+			xq = quadData.quad_pts
+			wq = quadData.quad_wts
 
 			nqST = quadDataST.nquad
-			xqST = quadDataST.xquad
-			wqST = quadDataST.wquad
+			xqST = quadDataST.quad_pts
+			wqST = quadDataST.quad_wts
 
 			if QuadChanged:
 
@@ -1383,8 +1383,8 @@ class ADERDG_Solver(DG_Solver):
 
 		if not InterpolateFlux:
 
-			QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order, EqnSet, quadData)
-			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis, Order, EqnSet, quadDataST)
+			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, EqnSet, quadData)
+			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
 			QuadOrderST-=1
 
 			if QuadChanged:
@@ -1393,12 +1393,12 @@ class ADERDG_Solver(DG_Solver):
 				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
 
 			nq = quadData.nquad
-			xq = quadData.xquad
-			wq = quadData.wquad
+			xq = quadData.quad_pts
+			wq = quadData.quad_wts
 
 			nqST = quadDataST.nquad
-			xqST = quadDataST.xquad
-			wqST = quadDataST.wquad
+			xqST = quadDataST.quad_pts
+			wqST = quadDataST.quad_wts
 
 			xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
 			tglob, TimePhiData = Ref2PhysTime(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
@@ -1418,14 +1418,14 @@ class ADERDG_Solver(DG_Solver):
 			nn = nq
 			JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 			
-			QuadOrderST, QuadChangedST = GetQuadOrderElem(mesh, basis, Order, EqnSet, quadDataST)
+			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
 			QuadOrderST-=1
 
 			if QuadChangedST:
 				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
 
 			nqST = quadDataST.nquad
-			xqST = quadDataST.xquad
+			xqST = quadDataST.quad_pts
 
 			xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
 			tglob, TimePhiData = Ref2PhysTime(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)

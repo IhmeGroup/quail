@@ -253,10 +253,10 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 	if Equidistant:
 		xpoint, npoint = Basis.EquidistantNodes(EqnSet.Basis, max([1,3*Order]))
 	else:
-		QuadOrder,_ = Quadrature.GetQuadOrderElem(mesh, EqnSet.Basis, max([2,2*Order]), EqnSet)
+		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, EqnSet.Basis, max([2,2*Order]), EqnSet)
 		quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 		npoint = quadData.nquad
-		xpoint = quadData.xquad
+		xpoint = quadData.quad_pts
 	
 	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)

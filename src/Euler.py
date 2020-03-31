@@ -27,7 +27,7 @@ class Euler1D(Scalar):
 				Params[key] = kwargs[key]
 
 	class StateVariables(Enum):
-		__order__ = 'Density XMomentum Energy' # only needed in 2.x
+		__Order__ = 'Density XMomentum Energy' # only needed in 2.x
 		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"
@@ -708,7 +708,7 @@ class Euler2D(Euler1D):
 		Euler1D.__init__(self,Order,Shape,mesh,StateRank) 
 
 	class StateVariables(Enum):
-		__order__ = 'Density XMomentum YMomentum Energy' # only needed in 2.x
+		__Order__ = 'Density XMomentum YMomentum Energy' # only needed in 2.x
 		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"

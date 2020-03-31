@@ -63,7 +63,7 @@ else:
 nOrders = len(Orders)
  
 
-### Loop through each order
+### Loop through each Order
 for p in Orders:
 	MMinv, SM, PhiLeft, PhiRight, nn = CalculateBasisAndMatrices(mesh, basis, p)
 

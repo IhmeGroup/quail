@@ -211,7 +211,7 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
         JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     else:
         QuadOrder = Order*2
         QuadChanged = True
@@ -220,8 +220,8 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
         quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     if QuadChanged:
         PhiData = BasisData(basis,Order,nq,mesh)
@@ -253,7 +253,7 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
 
     return MM, StaticData
 
-def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=False, elem=-1, StaticData=None):
+def GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=False, elem=-1, StaticData=None):
 
     c = EqnSet.Params["ConstVelocity"]
     nu = 0.
@@ -263,18 +263,18 @@ def GetElemADERMatrix(mesh, basis1, basis2, order, dt, EqnSet, PhysicalSpace=Fal
 
     #Stiffness matrix in space
     gradDir = 0
-    SMS,_= GetStiffnessMatrixADER(gradDir,mesh, order, elem=0, basis=basis1)
+    SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
     SMS = np.transpose(SMS)
     SMS = c*(dt/dx)*SMS
     #Stiffness matrix in time
     gradDir = 1
-    SMT,_= GetStiffnessMatrixADER(gradDir,mesh, order, elem=0, basis=basis1)
+    SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
 
     #Calculate flux matrices in time at tau=1 (L) and tau=-1 (R)
-    FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, order, PhysicalSpace=False, elem=0, StaticData=None)
-    FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, order, PhysicalSpace=False, elem=0, StaticData=None)
+    FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, elem=0, StaticData=None)
+    FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=0, StaticData=None)
 
-    MM,_=  GetElemMassMatrixADER(mesh, basis1, order, PhysicalSpace=False, elem=-1, StaticData=None)
+    MM,_=  GetElemMassMatrixADER(mesh, basis1, Order, PhysicalSpace=False, elem=-1, StaticData=None)
     MM = nu*(dt/2.)*MM
     A1 = np.subtract(FTL,SMT)
     A2 = np.add(A1,SMS)
@@ -291,8 +291,8 @@ def GetElemInvMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stati
 
     return MMinv, StaticData
 
-def GetElemInvMassMatrixADER(mesh, basis, order, PhysicalSpace=False, elem=-1, StaticData=None):
-    MM, StaticData = GetElemMassMatrixADER(mesh, basis, order, PhysicalSpace, elem, StaticData)
+def GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
+    MM, StaticData = GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace, elem, StaticData)
 
     MMinv = np.linalg.inv(MM)
 
@@ -318,13 +318,13 @@ def GetStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
         PhiData = StaticData.PhiData
         JData = StaticData.JData
 
-    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     if QuadChanged:
         quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     if QuadChanged:
         PhiData = BasisData(basis,Order,nq,mesh)
@@ -364,14 +364,14 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, elem, basis, StaticData=None):
         PhiData = StaticData.PhiData
         # JData = StaticData.JData
 
-    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, basis, Order*2., quadData=quadData)
-    #Add one to QuadOrder to adjust the mesh.Dim addition in GetQuadOrderElem.
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, Order*2., quadData=quadData)
+    #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
     QuadOrder+=1
     if QuadChanged:
         quadData = QuadDataADER(mesh, basis, EntityType.Element, QuadOrder)
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     if QuadChanged:
         PhiData = BasisData(basis,Order,nq,mesh)
@@ -413,16 +413,16 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=-
         face = 2 
     else:
         face = 0
-    QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
-    #Add one to QuadOrder to adjust the mesh.Dim addition in GetQuadOrderElem.
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+    #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
     #QuadOrder+=1
 
     if QuadChanged:
         quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     if QuadChanged:
         if basis1 == basis2:
@@ -478,7 +478,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
         JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = GetQuadOrderElem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
     else:
         QuadOrder = Order*2 + 1 #Add one for ADER method
         QuadChanged = True
@@ -487,8 +487,8 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
         quadData = QuadDataADER(mesh, basis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     if QuadChanged:
 
@@ -526,8 +526,8 @@ def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):
     quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
 
     nq = quadData.nquad
-    xq = quadData.xquad
-    wq = quadData.wquad
+    xq = quadData.quad_pts
+    wq = quadData.quad_wts
 
     PhiData_old = BasisData(basis_old, Order_old, nq, mesh)
     PhiData_old.EvalBasis(xq, Get_Phi=True)
@@ -1176,19 +1176,19 @@ class JacobianData(object):
     def ElemJacobian(self,elem,nq,xq,mesh,get_djac=False,get_jac=False,get_ijac=False,
             UniformJacobian=False):
         basis = mesh.QBasis
-        order = mesh.QOrder
+        Order = mesh.QOrder
         Shape = Basis2Shape[basis]
-        if order == 1 and Shape != ShapeType.Quadrilateral:
+        if Order == 1 and Shape != ShapeType.Quadrilateral:
             nq = 1
 
-        nb = Order2nNode(basis, order)
+        nb = Order2nNode(basis, Order)
         dim = Shape2Dim[Basis2Shape[basis]]
 
         ## Check if we need to resize or recalculate 
         if self.dim != dim or self.nq != nq: Resize = True
         else: Resize = False
 
-        self.basis_grad = GetGrads(basis, order, dim, nq, xq, self.basis_grad)
+        self.basis_grad = GetGrads(basis, Order, dim, nq, xq, self.basis_grad)
         basis_grad = self.basis_grad
 
         self.dim = dim

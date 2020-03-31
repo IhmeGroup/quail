@@ -44,8 +44,8 @@ class Scalar(object):
 			self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
 			# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
 
-		# Basis, order data for each element group
-		# For now, ssume uniform basis and order for each element group 
+		# Basis, Order data for each element group
+		# For now, ssume uniform basis and Order for each element group 
 		if type(basis) is str:
 			basis = BasisType[basis]
 		self.Basis = basis
