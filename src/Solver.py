@@ -266,7 +266,7 @@ class DG_Solver(object):
 		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 		# NOT TESTED
 		ER[:] += np.matmul(PhiData.Phi.transpose(), s*wq*JData.djac) # [nn, sr]
-
+		code.interact(local=locals())
 		if elem == echeck:
 			code.interact(local=locals())
 
@@ -1101,7 +1101,7 @@ class ADERDG_Solver(DG_Solver):
 				for i in range(nq): # Loop over time
 					for j in range(nq): # Loop over space
 						Psi = PsiData.Phi[j,k]
-						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[iq*(JData.nq!=1)]*Psi
+						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
 
 		s = np.reshape(s,(nqST,sr))
 
