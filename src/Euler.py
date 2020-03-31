@@ -666,22 +666,10 @@ class Euler1D(Scalar):
 		try: xshock = Data.xshock
 		except AttributeError: xshock = 0.2
 
-		if not isinstance(t,float):
-			t = t.reshape(-1)
-			y = np.zeros(len(t))
-			for i in range(len(t)):
-				y[i]=x
-			x = y
-
-			rho1 = np.full(len(t),1.)
-			p1 = np.full(len(t),1.e5)
-			u1 = np.full(len(t),0.)
-		else:
-
-			''' Pre-shock state '''
-			rho1 = 1.
-			p1 = 1.e5
-			u1 = 0.
+		''' Pre-shock state '''
+		rho1 = 1.
+		p1 = 1.e5
+		u1 = 0.
 
 		''' Update xshock based on shock speed '''
 		a1 = np.sqrt(gam*p1/rho1)
@@ -701,30 +689,16 @@ class Euler1D(Scalar):
 		''' Fill state '''
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
-		if not isinstance(t,float):
-			for i in range(len(t)):
-				# Density
-				U[iright[i], i, irho] = rho1[i]
-				U[ileft[i], i, irho] = rho2[i]
-				# Momentum
-				U[iright[i], i, irhou] = rho1[i]*u1[i]
-				U[ileft[i], i, irhou] = rho2[i]*u2[i]
-				if self.Dim == 2: U[:, irhov] = 0.
-				# Energy
-				U[iright[i], i, irhoE] = p1[i]/(gam-1.) + 0.5*rho1[i]*u1[i]*u1[i]
-				U[ileft[i], i, irhoE] = p2[i]/(gam-1.) + 0.5*rho2[i]*u2[i]*u2[i]
-
-		else:
-			# Density
-			U[iright, irho] = rho1
-			U[ileft, irho] = rho2
-			# Momentum
-			U[iright, irhou] = rho1*u1
-			U[ileft, irhou] = rho2*u2
-			if self.Dim == 2: U[:, irhov] = 0.
-			# Energy
-			U[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
-			U[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
+		# Density
+		U[iright, irho] = rho1
+		U[ileft, irho] = rho2
+		# Momentum
+		U[iright, irhou] = rho1*u1
+		U[ileft, irhou] = rho2*u2
+		if self.Dim == 2: U[:, irhov] = 0.
+		# Energy
+		U[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
+		U[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
 
 		return U
 

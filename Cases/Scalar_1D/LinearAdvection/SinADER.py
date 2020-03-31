@@ -10,9 +10,9 @@ import General
 
 
 ### Mesh
-Periodic = False
+Periodic = False 
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.Mesh1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
@@ -26,22 +26,19 @@ EndTime = 0.1
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateFlux=True)
-nu = -3.
+								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
+
 
 ### Physics
-Velocity = 1.0 
+Velocity = 1.0
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
+#EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
-EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)
-
-
-Uinflow=[1.]
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
+EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
+EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
@@ -52,10 +49,10 @@ if not Periodic:
 		BC = EqnSet.BCs[ibfgrp]
 		## Left
 		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2.*np.pi, nu=nu)
+			BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
 		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi, nu=-2.0)
+			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
 		else:
 			raise Exception("BC error")
 
