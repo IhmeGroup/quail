@@ -384,13 +384,14 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, elem, basis, StaticData=None):
     phi = PhiData.Phi
     GPhi = PhiData.GPhi
     SM = np.zeros([nn,nn])
-    for i in range(nn):
-        for j in range(nn):
-            t = 0.
-            for iq in range(nq):
-                t += GPhi[iq,i,gradDir]*phi[iq,j]*wq[iq]
-            SM[i,j] = t
-
+    # for i in range(nn):
+    #     for j in range(nn):
+    #         t = 0.
+    #         for iq in range(nq):
+    #             t += GPhi[iq,i,gradDir]*phi[iq,j]*wq[iq]
+    #         SM[i,j] = t
+    #code.interact(local=locals())
+    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*wq)
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
