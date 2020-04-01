@@ -449,16 +449,15 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=-
     nn1 = PhiData.nn
     nn2 = PsiData.nn
 
-    phi = PhiData.Phi
-    psi = PsiData.Phi
-
     MM = np.zeros([nn1,nn2])
-    for i in range(nn1):
-        for j in range(nn2):
-            t = 0.
-            for iq in range(nq):
-                t += phi[iq,i]*psi[iq,j]*wq[iq]
-            MM[i,j] = t
+    # for i in range(nn1):
+    #     for j in range(nn2):
+    #         t = 0.
+    #         for iq in range(nq):
+    #             t += phi[iq,i]*psi[iq,j]*wq[iq]
+    #         MM[i,j] = t
+
+    MM[:] = np.matmul(PhiData.Phi.transpose(),PsiData.Phi*wq)
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
@@ -508,7 +507,6 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
 
     nn = PhiData.nn
 
-    phi = PhiData.Phi
     MM = np.zeros([nn,nn])
     # for i in range(nn):
     #     for j in range(nn):
@@ -517,7 +515,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
     #             t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq]
     #         MM[i,j] = t
 
-    MM[:] = np.matmul(phi.transpose(), phi*wq*djac)
+    MM[:] = np.matmul(PhiData.Phi.transpose(), PhiData.Phi*wq*djac)
 
     StaticData.pnq = nq
     StaticData.quadData = quadData
