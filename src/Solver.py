@@ -943,8 +943,7 @@ class ADERDG_Solver(DG_Solver):
 		nn = PsiData.nn
 
 		# interpolate state and gradient at quad points
-		for ir in range(sr):
-			uI[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
+		uI[:] = np.matmul(PhiData.Phi, U)
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
@@ -952,15 +951,18 @@ class ADERDG_Solver(DG_Solver):
 
 		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData, nqST, StaticData) # [nq,sr]
 
-		F = np.reshape(F,(nq,nqST,sr))
+		# F = np.reshape(F,(nq,nqST,sr))
 
-		for ir in range(sr):
-			for i in range(nqST): # Loop over time
-				for j in range(nq): # Loop over space
-					Psi = PsiData.Phi[j,:]
-					R[:,ir] -= wqST[i]*wq[j]*F[j,i,ir]*Psi
+		# for ir in range(sr):
+		# 	for i in range(nqST): # Loop over time
+		# 		for j in range(nq): # Loop over space
+		# 			Psi = PsiData.Phi[j,:]
+		# 			R[:,ir] -= wqST[i]*wq[j]*F[j,i,ir]*Psi
 	
-		F = np.reshape(F,(nqST,sr))
+		# F = np.reshape(F,(nqST,sr))
+
+		Psi = np.tile(PsiData.Phi,(nn,1))
+		R[:] -= np.matmul(Psi.transpose(),F*wqST*wq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1068,41 +1070,41 @@ class ADERDG_Solver(DG_Solver):
 
 		nn = PsiData.nn
 
-		#Calculate dx and dt(this is for constant delta_x, but works on different mesh resolutions)
-		Elem2Nodes = mesh.Elem2Nodes[elem]
-		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
-		Stepper = self.Stepper
-		dt = Stepper.dt
-
 		# interpolate state and gradient at quad points
 		u[:] = np.matmul(PhiData.Phi, U)
 
 		F = EqnSet.ConvFluxInterior(u, F) # [nq,sr,dim]
 
-		F = np.reshape(F,(nq,nq,sr,dim))
+		# F = np.reshape(F,(nq,nq,sr,dim))
 
-		for ir in range(sr):
-			for k in range(nn): # Loop over basis function in space
-				for i in range(nq): # Loop over time
-					for j in range(nq): # Loop over space
-						gPsi = PsiData.gPhi[j,k]
-						ER[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*F[i,j,ir]*gPsi
+		# for ir in range(sr):
+		# 	for k in range(nn): # Loop over basis function in space
+		# 		for i in range(nq): # Loop over time
+		# 			for j in range(nq): # Loop over space
+		# 				gPsi = PsiData.gPhi[j,k]
+		# 				ER[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*F[i,j,ir]*gPsi
 
-		F = np.reshape(F,(nqST,sr,dim))
+		# F = np.reshape(F,(nqST,sr,dim))
+		
+		gPsi = np.tile(PsiData.gPhi,(nn,1,1))
+		ER[:] += np.tensordot(gPsi, F*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1,1), axes=([0,2],[0,2])) # [nn, sr]
+
 
 		s = np.zeros([nqST,sr])
 		s = EqnSet.SourceState(nqST, xglob, tglob, NData, u, s) # [nq,sr,dim]
 
-		s = np.reshape(s,(nq,nq,sr))
-		# Calculate source term integral
-		for ir in range(sr):
-			for k in range(nn):
-				for i in range(nq): # Loop over time
-					for j in range(nq): # Loop over space
-						Psi = PsiData.Phi[j,k]
-						ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
+		# s = np.reshape(s,(nq,nq,sr))
+		# #Calculate source term integral
+		# for ir in range(sr):
+		# 	for k in range(nn):
+		# 		for i in range(nq): # Loop over time
+		# 			for j in range(nq): # Loop over space
+		# 				Psi = PsiData.Phi[j,k]
+		# 				ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
+		# s = np.reshape(s,(nqST,sr))
 
-		s = np.reshape(s,(nqST,sr))
+		Psi = np.tile(PsiData.Phi,(nn,1))
+		ER[:] += np.matmul(Psi.transpose(),s*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1))
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1172,7 +1174,6 @@ class ADERDG_Solver(DG_Solver):
 			NData = StaticData.NData
 
 
-		#Hard code basisType to Quads (currently only designed for 1D)
 		basis2 = EqnSet.Basis
 		basis1 = EqnSet.BasisADER
 
@@ -1237,24 +1238,28 @@ class ADERDG_Solver(DG_Solver):
 		Stepper = self.Stepper
 		dt = Stepper.dt
 
-		for ir in range(sr):
-			uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
-			uR[:,ir] = np.matmul(PhiDataR.Phi, UR[:,ir])
+		uL[:] = np.matmul(PhiDataL.Phi, UL)
+		uR[:] = np.matmul(PhiDataR.Phi, UR)
 
 		F = EqnSet.ConvFluxNumerical(uL, uR, NData, nqST, StaticData) # [nq,sr]
 
-		F = np.reshape(F,(nq,nqST,sr))
+		# F = np.reshape(F,(nq,nqST,sr))
+		
+		# for ir in range(sr):
+		# 	#for k in range(nn): # Loop over basis function in space
+		# 	for i in range(nqST): # Loop over time
+		# 		for j in range(nq): # Loop over space
+		# 			PsiL = PsiDataL.Phi[j,:]
+		# 			PsiR = PsiDataR.Phi[j,:]
+		# 			RL[:,ir] -= wqST[i]*wq[j]*F[j,i,ir]*PsiL
+		# 			RR[:,ir] += wqST[i]*wq[j]*F[j,i,ir]*PsiR
 
-		for ir in range(sr):
-			#for k in range(nn): # Loop over basis function in space
-			for i in range(nqST): # Loop over time
-				for j in range(nq): # Loop over space
-					PsiL = PsiDataL.Phi[j,:]
-					PsiR = PsiDataR.Phi[j,:]
-					RL[:,ir] -= wqST[i]*wq[j]*F[j,i,ir]*PsiL
-					RR[:,ir] += wqST[i]*wq[j]*F[j,i,ir]*PsiR
+		# F = np.reshape(F,(nqST,sr))
 
-		F = np.reshape(F,(nqST,sr))
+		PsiL = np.tile(PsiDataL.Phi,(nn,1))
+		PsiR = np.tile(PsiDataR.Phi,(nn,1))
+		RL -= np.matmul(PsiL.transpose(), F*wqST*wq)
+		RR += np.matmul(PsiR.transpose(), F*wqST*wq)
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -1301,8 +1306,8 @@ class ADERDG_Solver(DG_Solver):
 		if not InterpolateFlux:
 
 
-			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, 4*Order, EqnSet, quadData)
-			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, 4*Order, EqnSet, quadDataST)
+			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, EqnSet, quadData)
+			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
 			QuadOrderST-=1
 
 			if QuadChanged:
@@ -1341,18 +1346,21 @@ class ADERDG_Solver(DG_Solver):
 			#u = np.reshape(u,(nq,nn))
 			F = np.zeros([nqST,sr,dim])
 			f = EqnSet.ConvFluxInterior(u, F) # [nq,sr]
-
-			f = np.reshape(f,(nq,nq,sr,dim))
-			Phi = PhiData.Phi
-			Phi = np.reshape(Phi,(nq,nq,nn))
+			f = f.reshape(nqST,sr)
+			#f = np.reshape(f,(nq,nq,sr,dim))
+			#Phi = PhiData.Phi
+			#Phi = np.reshape(Phi,(nq,nq,nn))
 		
 			rhs *=0.
-			for ir in range(sr):
-				for k in range(nn): # Loop over basis function in space
-					for i in range(nq): # Loop over time
-						for j in range(nq): # Loop over space
-							#Phi = PhiData.Phi[j,k]
-							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j,ir]*Phi[i,j,k]
+			# for ir in range(sr):
+			# 	for k in range(nn): # Loop over basis function in space
+			# 		for i in range(nq): # Loop over time
+			# 			for j in range(nq): # Loop over space
+			# 				#Phi = PhiData.Phi[j,k]
+			# 				rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j,ir]*Phi[i,j,k]
+
+			rhs[:] = np.matmul(PhiData.Phi.transpose(), f*(wqST*JData.djac))
+
 
 			#F = np.reshape(F,(nqST,sr,dim))
 			F = np.dot(MMinv,rhs)*(1.0/JData.djac)*dt/2.0
@@ -1443,19 +1451,19 @@ class ADERDG_Solver(DG_Solver):
 			#S = np.zeros([nqST,sr,dim])
 			s = np.zeros([nqST,sr])
 			s = EqnSet.SourceState(nqST, xglob, tglob, NData, u, s) # [nq,sr]
-
-			s = np.reshape(s,(nq,nq,sr,dim))
-			Phi = PhiData.Phi
-			Phi = np.reshape(Phi,(nq,nq,nn))
+			
+			#s = np.reshape(s,(nq,nq,sr,dim))
+			#Phi = PhiData.Phi
+			#Phi = np.reshape(Phi,(nq,nq,nn))
 		
 			rhs *=0.
-			for ir in range(sr):
-				for k in range(nn): # Loop over basis function in space
-					for i in range(nq): # Loop over time
-						for j in range(nq): # Loop over space
-							#Phi = PhiData.Phi[j,k]
-							rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*s[i,j,ir]*Phi[i,j,k]
-
+			# for ir in range(sr):
+			# 	for k in range(nn): # Loop over basis function in space
+			# 		for i in range(nq): # Loop over time
+			# 			for j in range(nq): # Loop over space
+			# 				#Phi = PhiData.Phi[j,k]
+			# 				rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*s[i,j,ir]*Phi[i,j,k]
+			rhs[:] = np.matmul(PhiData.Phi.transpose(),s*wqST*JData.djac)
 			S = np.dot(MMinv,rhs)*dt/2.0
 
 		else:
