@@ -827,26 +827,27 @@ class ADERDG_Solver(DG_Solver):
 		nn   = PsiData.nn
 
 		#Make initial guess for the predictor step
-		Up = np.reshape(Up,(nn,nn,sr))
+		#Up = Up.reshape(nn,nn,sr)
 
-		for ir in range(sr):
+		#for ir in range(sr):
 			#for i in range(nn):
-			for j in range(nn):
-				Up[0,j,ir]=W[j,ir]
-		Up = np.reshape(Up,(nnST,sr))
+		#	for j in range(nn):
+		#		Up[0,j,ir]=W[j,ir]
+		Up = np.pad(W,pad_width=((0,nnST-nn),(0,0)))
+		#Up = Up.reshape(nnST,sr)
 
 		def F(u):
-			u = np.reshape(u,(nnST,sr))
+			u = u.reshape(nnST,sr)
 			fluxpoly = self.FluxCoefficients(elem, dt, Order, basis1, u)
 			srcpoly = self.SourceCoefficients(elem, dt, Order, basis1, u)
 			f = np.matmul(FTL,u)-np.matmul(FTR,W)-np.matmul(SMT,u)+np.matmul(SMS,fluxpoly)-np.matmul(MM,srcpoly)
-			f = np.reshape(f,(nnST*sr))
+			f = f.reshape(nnST*sr)
 			return f
 
-		Up = np.reshape(Up,(nnST*sr))
+		Up = Up.reshape(nnST*sr)
 		sol = root(F, Up, method='krylov',tol=1.0e-6)
 		Up = sol.x
-		Up = np.reshape(Up,(nnST,sr))
+		Up = Up.reshape(nnST,sr)
 
 		return Up, StaticData
 
