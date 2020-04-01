@@ -67,12 +67,14 @@ def Ref2Phys(mesh, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False)
     else:
         xphys[:] = 0.
 
-    for ipoint in range(npoint):
-        for n in range(nn):
-            nodeNum = ElemNodes[n]
-            val = Phi[ipoint][n]
-            for d in range(dim):
-                xphys[ipoint][d] += val*Coords[nodeNum][d]
+    # for ipoint in range(npoint):
+    #     for n in range(nn):
+    #         nodeNum = ElemNodes[n]
+    #         val = Phi[ipoint][n]
+    #         for d in range(dim):
+    #             xphys[ipoint][d] += val*Coords[nodeNum][d]
+
+    xphys[:] = np.matmul(Phi, Coords[ElemNodes])
 
     return xphys, PhiData
 
@@ -119,6 +121,8 @@ def Ref2PhysTime(mesh, elem, time, dt, PhiData, npoint, xref, tphys=None, Points
             #for d in range(dim):
         tphys[ipoint] = (time/2.)*(1-xref[ipoint,dim])+((time+dt)/2.0)*(1+xref[ipoint,dim])
 
+    # tphys = (time/2.)*(1-xref)+((time+dt)/2.0)*(1+xref)
+
     return tphys, PhiData
 
 def RefFace2Elem(Shape, face, nq, xface, xelem=None):
@@ -152,19 +156,31 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
         # coordinates of local q = 1 nodes on face
         x0 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
-        for i in range(nq):
-            if face == 0:
-                xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
-                xelem[i,1] = -1.
-            elif face == 1:
-                xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
-                xelem[i,0] = 1.
-            elif face == 2:
-                xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
-                xelem[i,1] = 1.
-            else:
-                xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
-                xelem[i,0] = -1.
+        # for i in range(nq):
+        #     if face == 0:
+        #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+        #         xelem[i,1] = -1.
+        #     elif face == 1:
+        #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+        #         xelem[i,0] = 1.
+        #     elif face == 2:
+        #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+        #         xelem[i,1] = 1.
+        #     else:
+        #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+        #         xelem[i,0] = -1.
+        if face == 0:
+            xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
+            xelem[:,1] = -1.
+        elif face == 1:
+            xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
+            xelem[:,0] = 1.
+        elif face == 2:
+            xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
+            xelem[:,1] = 1.
+        else:
+            xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
+            xelem[:,0] = -1.
         #code.interact(local=locals())
     elif Shape == ShapeType.Triangle:
         if xelem is None: xelem = np.zeros([nq,2])
@@ -175,9 +191,11 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
         # coordinates of local q = 1 nodes on face
         x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
-        for i in range(nq):
-            xf[i] = (xface[i] + 1.)/2.
-            xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
+        # for i in range(nq):
+        #     xf[i] = (xface[i] + 1.)/2.
+        #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
+        xf = (xface + 1.)/2.
+        xelem[:] = (1. - xf)*x0 + xf*x1
     else:
         raise NotImplementedError
 

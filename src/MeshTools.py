@@ -34,8 +34,9 @@ def ElementVolumes(mesh, solver=None):
     for elem in range(mesh.nElem):
         JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 
-        for iq in range(nq):
-            ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
+        # for iq in range(nq):
+        #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
+        ElemVolumes[elem] = np.sum(wq*JData.djac)
 
         TotalVolume += ElemVolumes[elem]
 

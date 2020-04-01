@@ -168,7 +168,7 @@ class DG_Solver(object):
 				# for n in range(nn):
 				# 	for iq in range(nq):
 				# 		rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
-				rhs[:] = np.matmul(PhiData.Phi.transpose(), f*quad_wts*JData.djac)
+				rhs[:] = np.matmul(PhiData.Phi.transpose(), f*quad_wts*JData.djac) # [nn, sr]
 
 				U[elem,:,:] = np.matmul(MMinv,rhs)
 			else:
@@ -264,7 +264,6 @@ class DG_Solver(object):
 		# 		for iq in range(nq):
 		# 			Phi = PhiData.Phi[iq,jn]
 		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
-		# NOT TESTED
 		ER[:] += np.matmul(PhiData.Phi.transpose(), s*wq*JData.djac) # [nn, sr]
 		if elem == echeck:
 			code.interact(local=locals())
@@ -332,7 +331,7 @@ class DG_Solver(object):
 			Faces2PhiDataL = StaticData.Faces2PhiDataL
 			Faces2PhiDataR = StaticData.Faces2PhiDataR
 
-		QuadOrder, QuadChanged = get_gaussian_quadrature_iface(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
@@ -456,7 +455,7 @@ class DG_Solver(object):
 			Faces2PhiData = StaticData.Faces2PhiData
 			Faces2xelem = StaticData.Faces2xelem
 
-		QuadOrder, QuadChanged = get_gaussian_quadrature_bface(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
@@ -902,9 +901,9 @@ class ADERDG_Solver(DG_Solver):
 		basis2 = EqnSet.Basis
 		basis1 = EqnSet.BasisADER
 
-		QuadOrderST, QuadChangedST = get_gaussian_quadrature_bface(mesh, BFace, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST, QuadChangedST = get_gaussian_quadrature_face(mesh, BFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
-		QuadOrder, QuadChanged = get_gaussian_quadrature_bface(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, BFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
@@ -1175,9 +1174,9 @@ class ADERDG_Solver(DG_Solver):
 		basis2 = EqnSet.Basis
 		basis1 = EqnSet.BasisADER
 
-		QuadOrderST, QuadChangedST = get_gaussian_quadrature_iface(mesh, IFace, basis1, Order, EqnSet, quadDataST)
+		QuadOrderST, QuadChangedST = get_gaussian_quadrature_face(mesh, IFace, basis1, Order, EqnSet, quadDataST)
 		QuadOrderST-=1
-		QuadOrder, QuadChanged = get_gaussian_quadrature_iface(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
+		QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, IFace, mesh.QBasis, Order, EqnSet, quadData)
 
 		if QuadChanged:
 			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)

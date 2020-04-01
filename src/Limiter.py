@@ -45,6 +45,7 @@ class PPLimiter(object):
 		dim = EqnSet.Dim
 		Faces = mesh.Faces[elem]
 		nFacePerElem = mesh.nFacePerElem
+		_, ElemVols = MeshTools.ElementVolumes(mesh, solver)
 
 		scalar1 = "Density"
 		scalar2 = "Pressure"
@@ -111,7 +112,8 @@ class PPLimiter(object):
 		# wq *= JData.djac
 
 		# Average value of state
-		vol = np.sum(wq*JData.djac)
+		# vol = np.sum(wq*JData.djac)
+		vol = ElemVols[elem]
 		u_bar[:] = np.matmul(u.transpose(), wq*JData.djac).T/vol
 		# u_bar.shape = 1, -1
 
@@ -136,12 +138,12 @@ class PPLimiter(object):
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_bface(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
 				OrderN = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_iface(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
@@ -174,6 +176,7 @@ class PPLimiter(object):
 			# Increment nq_eval
 			nq_eval += nq
 			if nq_eval > nq_prev:
+				raise ValueError
 				# resize
 				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,sr])))
 				nq_prev = nq_eval
@@ -269,6 +272,7 @@ class PPScalarLimiter(object):
 		dim = EqnSet.Dim
 		Faces = mesh.Faces[elem]
 		nFacePerElem = mesh.nFacePerElem
+		_, ElemVols = MeshTools.ElementVolumes(mesh, solver)
 
 		scalar1 = "u"
 
@@ -326,7 +330,8 @@ class PPScalarLimiter(object):
 		# wq *= JData.djac
 
 		# Average value of state
-		vol = np.sum(wq*JData.djac)
+		# vol = np.sum(wq*JData.djac)
+		vol = ElemVols[elem]
 		u_bar[:] = np.matmul(u.transpose(), wq*JData.djac).T/vol
 
 		''' Get relevant quadrature points '''
@@ -343,12 +348,12 @@ class PPScalarLimiter(object):
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_bface(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
 				OrderN = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_iface(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
@@ -381,6 +386,7 @@ class PPScalarLimiter(object):
 			# Increment nq_eval
 			nq_eval += nq
 			if nq_eval > nq_prev:
+				raise ValueError
 				# resize
 				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,sr])))
 				nq_prev = nq_eval

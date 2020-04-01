@@ -276,8 +276,9 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 		# u_exact[el,:,:] = f_exact(xphys, EndTime)
 
 		# interpolate state at quad points
-		for ir in range(sr):
-			u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		# for ir in range(sr):
+		# 	u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		u[el,:,:] = np.matmul(PhiData.Phi, U_)
 
 		el += 1
 

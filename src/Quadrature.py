@@ -33,7 +33,7 @@ def get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet=None, quadData=None)
 	return QuadOrder, QuadChanged
 
 
-def get_gaussian_quadrature_iface(mesh, IFace, basis, Order, EqnSet=None, quadData=None):
+def get_gaussian_quadrature_face(mesh, IFace, basis, Order, EqnSet=None, quadData=None):
 	# assumes uniform QOrder and QBasis
 	QOrder = mesh.QOrder
 	# QuadOrder = 2*Order + 1
@@ -58,29 +58,29 @@ def get_gaussian_quadrature_iface(mesh, IFace, basis, Order, EqnSet=None, quadDa
 	return QuadOrder, QuadChanged
 
 
-def get_gaussian_quadrature_bface(mesh, BFace, basis, Order, EqnSet=None, quadData=None):
-	# assumes uniform QOrder and QBasis
-	QOrder = mesh.QOrder
-	# QuadOrder = 2*Order + 1
-	if EqnSet is not None:
-		QuadOrder = EqnSet.QuadOrder(Order)
-	else:
-		QuadOrder = Order
-	if QOrder > 1:
-		dim = mesh.Dim - 1
-		QuadOrder += dim*(QOrder-1)
+# def get_gaussian_quadrature_bface(mesh, BFace, basis, Order, EqnSet=None, quadData=None):
+# 	# assumes uniform QOrder and QBasis
+# 	QOrder = mesh.QOrder
+# 	# QuadOrder = 2*Order + 1
+# 	if EqnSet is not None:
+# 		QuadOrder = EqnSet.QuadOrder(Order)
+# 	else:
+# 		QuadOrder = Order
+# 	if QOrder > 1:
+# 		dim = mesh.Dim - 1
+# 		QuadOrder += dim*(QOrder-1)
 
-	Shape = Basis.Basis2Shape[basis]
-	FShape = Basis.FaceShape[Shape]
-	if Shape is ShapeType.Quadrilateral:
-		QuadOrder += Basis.Shape2Dim[FShape]
+# 	Shape = Basis.Basis2Shape[basis]
+# 	FShape = Basis.FaceShape[Shape]
+# 	if Shape is ShapeType.Quadrilateral:
+# 		QuadOrder += Basis.Shape2Dim[FShape]
 
-	QuadChanged = True
-	if quadData is not None:
-		if QuadOrder == quadData.Order and FShape == quadData.Shape:
-			QuadChanged = False
+# 	QuadChanged = True
+# 	if quadData is not None:
+# 		if QuadOrder == quadData.Order and FShape == quadData.Shape:
+# 			QuadChanged = False
 
-	return QuadOrder, QuadChanged
+# 	return QuadOrder, QuadChanged
 
 
 class QuadData(object):

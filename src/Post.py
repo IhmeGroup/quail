@@ -65,14 +65,16 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 		u = np.zeros([nq, sr])
 		for ir in range(sr):
 			u[:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		u[:] = np.matmul(PhiData.Phi, U_)
 
 		# Computed requested quantity
 		s = EqnSet.ComputeScalars(VariableName, u, nq)
 		s_exact = EqnSet.ComputeScalars(VariableName, u_exact, nq)
 
-		err = 0.
-		for iq in range(nq):
-			err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
+		# err = 0.
+		# for iq in range(nq):
+		# 	err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
+		err = np.sum((s - s_exact)**2.*wq*JData.djac)
 		ElemErr[elem] = err
 		TotErr += ElemErr[elem]
 
