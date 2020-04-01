@@ -826,14 +826,14 @@ class ADERDG_Solver(DG_Solver):
 		nn   = PsiData.nn
 
 		#Make initial guess for the predictor step
-		#Up = Up.reshape(nn,nn,sr)
+		Up = Up.reshape(nn,nn,sr)
 
-		#for ir in range(sr):
+		for ir in range(sr):
 			#for i in range(nn):
-		#	for j in range(nn):
-		#		Up[0,j,ir]=W[j,ir]
-		Up = np.pad(W,pad_width=((0,nnST-nn),(0,0)))
-		#Up = Up.reshape(nnST,sr)
+			for j in range(nn):
+				Up[0,j,ir]=W[j,ir]
+		#Up = np.pad(W,pad_width=((0,nnST-nn),(0,0)))
+		Up = Up.reshape(nnST,sr)
 
 		def F(u):
 			u = u.reshape(nnST,sr)
