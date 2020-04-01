@@ -961,8 +961,7 @@ class ADERDG_Solver(DG_Solver):
 	
 		# F = np.reshape(F,(nqST,sr))
 
-		Psi = np.tile(PsiData.Phi,(nn,1))
-		R[:] -= np.matmul(Psi.transpose(),F*wqST*wq)
+		R[:] -= np.matmul(np.tile(PsiData.Phi,(nn,1)).transpose(),F*wqST*wq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1086,8 +1085,7 @@ class ADERDG_Solver(DG_Solver):
 
 		# F = np.reshape(F,(nqST,sr,dim))
 		
-		gPsi = np.tile(PsiData.gPhi,(nn,1,1))
-		ER[:] += np.tensordot(gPsi, F*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1,1), axes=([0,2],[0,2])) # [nn, sr]
+		ER[:] += np.tensordot(np.tile(PsiData.gPhi,(nn,1,1)), F*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1,1), axes=([0,2],[0,2])) # [nn, sr]
 
 
 		s = np.zeros([nqST,sr])
@@ -1103,8 +1101,7 @@ class ADERDG_Solver(DG_Solver):
 		# 				ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
 		# s = np.reshape(s,(nqST,sr))
 
-		Psi = np.tile(PsiData.Phi,(nn,1))
-		ER[:] += np.matmul(Psi.transpose(),s*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1))
+		ER[:] += np.matmul(np.tile(PsiData.Phi,(nn,1)).transpose(),s*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1))
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1256,10 +1253,9 @@ class ADERDG_Solver(DG_Solver):
 
 		# F = np.reshape(F,(nqST,sr))
 
-		PsiL = np.tile(PsiDataL.Phi,(nn,1))
-		PsiR = np.tile(PsiDataR.Phi,(nn,1))
-		RL -= np.matmul(PsiL.transpose(), F*wqST*wq)
-		RR += np.matmul(PsiR.transpose(), F*wqST*wq)
+
+		RL -= np.matmul(np.tile(PsiDataL.Phi,(nn,1)).transpose(), F*wqST*wq)
+		RR += np.matmul(np.tile(PsiDataR.Phi,(nn,1)).transpose(), F*wqST*wq)
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
