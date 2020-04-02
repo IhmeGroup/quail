@@ -78,12 +78,12 @@ def CheckFaceOrientations(mesh):
         faceR = IFace.faceR
 
         # Get local q=1 nodes on face for left element
-        lfnodes, nfnode = LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, faceL)
+        lfnodes, nfnode = local_q1_face_nodes(mesh.QBasis, mesh.QOrder, faceL)
         # Convert to global node numbering
         gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
 
         # Get local q=1 nodes on face for right element
-        lfnodes, nfnode = LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, faceR)
+        lfnodes, nfnode = local_q1_face_nodes(mesh.QBasis, mesh.QOrder, faceR)
         # Convert to global node numbering
         gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
 

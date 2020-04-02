@@ -630,8 +630,11 @@ class Euler1D(Scalar):
 			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 		else:
 			y = np.zeros(len(t))
-			for i in range(len(t)):
-				y[i] = x
+			#for i in range(len(t)):
+			#	code.interact(local=locals())
+			#	y[i] = x
+			y = x.transpose()
+			y = y.reshape(-1)
 			t = t.reshape(-1)
 			x1 = root(f1, 0.*y, (y,t,a)).x
 			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))

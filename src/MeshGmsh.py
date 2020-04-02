@@ -502,7 +502,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			ibfgrp = PGroup.Group
 			BFG = mesh.BFaceGroups[ibfgrp]
 			# Number of q = 1 face nodes
-			nfnode = Basis.Order2nNode(QBasis, 1) 
+			nfnode = Basis.order_to_num_basis_coeff(QBasis, 1) 
 			# Add q = 1 nodes to hash table
 			FInfo, Exists = AddFaceToHash(Node2FaceHash, nfnode, nodes, True, 
 				ibfgrp, -1, bf[ibfgrp])
@@ -522,7 +522,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			# if not found:
 			# 	raise Exception("Can't find element group")
 			# Number of element nodes
-			nnode = Basis.Order2nNode(QBasis, QOrder)
+			nnode = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 			# Sanity check
 			if nnode != EntitiesInfo[etype].nNode:
 				raise Exception("Check Gmsh entities")
@@ -546,7 +546,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	for elem in range(mesh.nElem):
 		for face in range(mesh.nFacePerElem):
 			# Local q = 1 nodes on face
-			fnodes, nfnode = Basis.LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, face)
+			fnodes, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, mesh.QOrder, face)
 
 			# Convert to global nodes
 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]

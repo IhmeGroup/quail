@@ -1,6 +1,6 @@
 import numpy as np
 import General
-from Basis import GetInvMassMatrix, GetStiffnessMatrix, BasisData
+from Basis import GetInvMassMatrix, get_stiffness_matrix, BasisData
 from Quadrature import get_gaussian_quadrature_elem, QuadData
 import code
 
@@ -8,8 +8,8 @@ import code
 ### Function to calculate mass matrix, stiffness matrix, basis polynomials
 def CalculateBasisAndMatrices(mesh, basis, Order):
 	## Mass, stiffness matrix
-	MMinv,_ = GetElemInvMassMatrix(mesh, basis=basis, Order=Order, PhysicalSpace=True, egrp=0, elem=0)
-	SM,_ = GetStiffnessMatrix(mesh, egrp=0, elem=0, basis=basis, Order=Order)
+	MMinv,_ = get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, PhysicalSpace=True)
+	SM,_ = get_stiffness_matrix(mesh, basis=basis, Order=Order, elem=0)
 
 	## Evaluate basis polynomials
 	# Quadrature

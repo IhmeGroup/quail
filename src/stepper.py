@@ -2,7 +2,7 @@ import numpy as np
 import code
 from Data import ArrayList
 from SolverTools import MultInvMassMatrix, MultInvADER
-#from Basis import GetStiffnessMatrixADER, GetTemporalFluxADER
+#from Basis import get_stiffness_matrix_ader, get_temporal_flux_ader
 #import General
 
 class FE(object):

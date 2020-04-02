@@ -59,12 +59,12 @@ class Scalar(object):
 		# State 
 		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.nElemTot,nn,self.StateRank])
 		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[[mesh.nElemTot,nn,self.StateRank]])
-		# ArrayDims = [[mesh.nElems[egrp],Order2nNode(self.Bases[egrp], self.Orders[egrp]), self.StateRank] \
+		# ArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.StateRank] \
 		# 			for egrp in range(mesh.nElemGroup)]
 		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		# self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-		self.U = np.zeros([mesh.nElem, Order2nNode(self.Basis, self.Order), self.StateRank])
-		self.S = np.zeros([mesh.nElem, Order2nNode(self.Basis, self.Order), self.StateRank])
+		self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.Order), self.StateRank])
+		self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.Order), self.StateRank])
 
 		if dim == 1:
 			if basis == BasisType.LegendreSeg:
@@ -77,10 +77,10 @@ class Scalar(object):
 			basisADER = 0 # dummy	
 
 		self.BasisADER = basisADER # [basisADER for egrp in range(mesh.nElemGroup)]
-		# ADERArrayDims = [[mesh.nElems[egrp],Order2nNode(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
+		# ADERArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
 		# 			for egrp in range(mesh.nElemGroup)]
 		# self.Up = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ADERArrayDims)
-		self.Up = np.zeros([mesh.nElem, Order2nNode(self.BasisADER, self.Order), self.StateRank])
+		self.Up = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.BasisADER, self.Order), self.StateRank])
 
 		# BC treatments
 		self.SetBCTreatment()

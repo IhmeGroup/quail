@@ -43,24 +43,49 @@ RefQ1Coords = {
                                 [-1.,1.],[1.,1.]]),
 }
 
+def order_to_num_basis_coeff(basis,p):
+    '''
+    Method: order_to_num_basis_coeff
+    -------------------
+    This method specifies the number of basis coefficients
 
-def Order2nNode(basis, p):
+    INPUTS:
+        basis: type of basis function
+        p: order of polynomial space
+
+    OUTPUTS: 
+        nb: number of basis coefficients
+    '''
     Shape = Basis2Shape[basis]
     if Shape == ShapeType.Point:
-    	nn = 1
+    	nb = 1
     elif Shape == ShapeType.Segment:
-        nn = p + 1
+        nb = p + 1
     elif Shape == ShapeType.Triangle:
-        nn = (p + 1)*(p + 2)//2
+        nb = (p + 1)*(p + 2)//2
     elif Shape == ShapeType.Quadrilateral:
-        nn = (p + 1)**2
+        nb = (p + 1)**2
     else:
     	raise Exception("Shape not supported")
 
-    return nn
+    return nb
 
 
-def LocalQ1FaceNodes(basis, p, face, fnodes=None):
+def local_q1_face_nodes(basis, p, face, fnodes=None):
+    '''
+    Method: local_q1_face_nodes
+    -------------------
+    ???
+
+    INPUTS:
+        basis: type of basis function
+        p: order of polynomial space
+        face: face value in ref space
+
+    OUTPUTS: 
+        fnodes: 
+        nfnode:    
+    '''
     if basis == BasisType.LagrangeSeg: 
         nfnode = 1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
@@ -118,8 +143,6 @@ def LocalFaceNodes(basis, p, face, fnodes=None):
         else:
              raise IndexError
 
-        # for i in range(p+1):
-        #     fnodes[i] = i0+i*d
         fnodes[:] = i0 + np.arange(p+1, dtype=int)*d
     elif basis == BasisType.LagrangeTri:
         nfnode = p+1
@@ -144,7 +167,20 @@ def LocalFaceNodes(basis, p, face, fnodes=None):
     return fnodes, nfnode
 
 
-def EquidistantNodes1DRange(start, stop, nnode):
+def equidistant_nodes_1D_range(start, stop, nnode):
+    '''
+    Method: equidistant_nodes_1D_range
+    -----------------------------------
+    Calculate the 1D coordinates in ref space
+
+    INPUTS:
+        start: start of ref space (default: -1)
+        stop:  end of ref space (default: 1)
+        nnode: num of nodes in 1D ref space
+
+    OUTPUS: 
+        xnode: coordinates of nodes in 1D ref space
+    '''
     if nnode <= 1:
         raise ValueError
     if stop <= start:
@@ -156,24 +192,36 @@ def EquidistantNodes1DRange(start, stop, nnode):
 
     return xnode
 
-def EquidistantNodes(basis, p, xn=None):
-    nn = Order2nNode(basis, p)
+def equidistant_nodes(basis, p, xn=None):
+    '''
+    Method: equidistant_nodes
+    --------------------------
+    Calculate the coordinates in ref space
+
+    INPUTS:
+        basis: type of basis function
+        p: order of polynomial space
+        
+    OUTPUTS: 
+        xn: coordinates of nodes in ref space
+    '''
+    nb = order_to_num_basis_coeff(basis, p)
 
     shape = Basis2Shape[basis]
     dim = Shape2Dim[shape]
 
-    adim = nn,dim
+    adim = nb,dim
     if xn is None or xn.shape != adim:
         xn = np.zeros(adim)
 
     if p == 0:
         xn[:] = 0.0 # 0.5
-        return xn, nn
+        return xn, nb
 
     if shape == ShapeType.Segment:
-        xn[:,0] = EquidistantNodes1DRange(-1., 1., nn)
+        xn[:,0] = equidistant_nodes_1D_range(-1., 1., nb)
     elif shape == ShapeType.Quadrilateral:
-        xseg = EquidistantNodes1DRange(-1., 1., p+1)
+        xseg = equidistant_nodes_1D_range(-1., 1., p+1)
         # n = 0
         # for i in range(p+1):
         #     xn[n:n+p+1,0] = xseg
@@ -183,7 +231,7 @@ def EquidistantNodes(basis, p, xn=None):
         xn[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
     elif shape == ShapeType.Triangle:
         n = 0
-        xseg = EquidistantNodes1DRange(0., 1., p+1)
+        xseg = equidistant_nodes_1D_range(0., 1., p+1)
         for j in range(p+1):
             xn[n:n+p+1-j,0] = xseg[:p+1-j]
             xn[n:n+p+1-j,1] = xseg[j]
@@ -193,7 +241,7 @@ def EquidistantNodes(basis, p, xn=None):
         #         xn[k][0] = float(i)/float(p)
         #         xn[k][1] = float(j)/float(p)
 
-    return xn, nn
+    return xn, nb
   
 
 # def Shape2Dim(Shape):
@@ -216,7 +264,22 @@ def EquidistantNodes(basis, p, xn=None):
 #     return FShape
 
 
-def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
+def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+    '''
+    Method: get_elem_mass_matrix
+    --------------------------
+    Calculate the mass matrix
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
+        elem: element index
+
+    OUTPUTS: 
+        MM: mass matrix  
+    '''
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -230,24 +293,24 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
         JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
     else:
-        QuadOrder = Order*2
+        QuadOrder = order*2
         QuadChanged = True
 
     if QuadChanged:
         quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
+    quad_pts = quadData.quad_pts
+    quad_wts = quadData.quad_wts
+    nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,Order,nq,mesh)
-        PhiData.EvalBasis(xq, Get_Phi=True)
+        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData.EvalBasis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+        JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -255,10 +318,10 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
     else:
         djac = np.full(nq, 1.)
 
-    nn = PhiData.nn
-
+    nb = PhiData.Phi.shape[1]
+    #nb = PhiData.nn
     phi = PhiData.Phi
-    MM = np.zeros([nn,nn])
+    MM = np.zeros([nb,nb])
     # for i in range(nn):
     #     for j in range(nn):
     #         t = 0.
@@ -266,7 +329,7 @@ def GetElemMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticDa
     #             t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq] # JData.djac[iq*(JData.nq != 1)]
     #         MM[i,j] = t
 
-    MM[:] = np.matmul(phi.transpose(), phi*wq*djac)
+    MM[:] = np.matmul(phi.transpose(), phi*quad_wts*djac)
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
@@ -284,18 +347,18 @@ def GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=Fal
 
     #Stiffness matrix in space
     gradDir = 0
-    SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
+    SMS,_= get_stiffness_matrix_ader(mesh, basis1, Order, 0, gradDir)
     SMS = np.transpose(SMS)
     SMS = c*(dt/dx)*SMS
     #Stiffness matrix in time
     gradDir = 1
-    SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
+    SMT,_= get_stiffness_matrix_ader(mesh, basis1, Order, 0, gradDir)
 
     #Calculate flux matrices in time at tau=1 (L) and tau=-1 (R)
-    FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, elem=0, StaticData=None)
-    FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=0, StaticData=None)
+    FTL,_= get_temporal_flux_ader(mesh, basis1, basis1, Order, elem=0, PhysicalSpace=False, StaticData=None)
+    FTR,_= get_temporal_flux_ader(mesh, basis1, basis2, Order, elem=0, PhysicalSpace=False, StaticData=None)
 
-    MM,_=  GetElemMassMatrixADER(mesh, basis1, Order, PhysicalSpace=False, elem=-1, StaticData=None)
+    MM,_=  get_elem_mass_matrix_ader(mesh, basis1, Order, elem=-1, PhysicalSpace=False, StaticData=None)
     MM = nu*(dt/2.)*MM
     A1 = np.subtract(FTL,SMT)
     A2 = np.add(A1,SMS)
@@ -305,19 +368,49 @@ def GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=Fal
 
     return A, FTR, StaticData
 
-def GetElemInvMassMatrix(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
-    MM, StaticData = GetElemMassMatrix(mesh, basis, Order, PhysicalSpace, elem, StaticData)
+def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+    '''
+    Method: get_elem_inv_mass_matrix
+    ---------------------------------
+    Calculate the inverse mass matrix
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        elem: element index
+        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
+
+    OUTPUTS: 
+        iMM: inverse mass matrix  
+    '''
+    MM, StaticData = get_elem_mass_matrix(mesh, basis, order, elem, PhysicalSpace, StaticData)
     
-    MMinv = np.linalg.inv(MM) 
+    iMM = np.linalg.inv(MM) 
 
-    return MMinv, StaticData
+    return iMM, StaticData
 
-def GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
-    MM, StaticData = GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace, elem, StaticData)
+def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+    '''
+    Method: get_elem_inv_mass_matrix_ader
+    --------------------------------------
+    Calculate the inverse mass matrix for ADER-DG prediction step
 
-    MMinv = np.linalg.inv(MM)
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
+        elem: element index
 
-    return MMinv, StaticData
+    OUTPUTS: 
+        iMM: inverse mass matrix for ADER-DG predictor step
+    '''
+    MM, StaticData = get_elem_mass_matrix_ader(mesh, basis, order, elem, PhysicalSpace, StaticData)
+
+    iMM = np.linalg.inv(MM)
+
+    return iMM, StaticData
 
 def GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=False, elem=-1, StaticData=None):
     ADER, FTR, StaticData = GetElemADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace, elem, StaticData)
@@ -326,7 +419,21 @@ def GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, PhysicalSpace=
     
     return ADERinv, StaticData
 
-def GetStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
+def get_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
+    '''
+    Method: get_stiffness_matrix
+    --------------------------------------
+    Calculate the stiffness_matrix
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        elem: element index
+
+    OUTPUTS: 
+        SM: stiffness matrix
+    '''
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -339,27 +446,28 @@ def GetStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
         PhiData = StaticData.PhiData
         JData = StaticData.JData
 
-    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
     if QuadChanged:
         quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
+    quad_pts = quadData.quad_pts
+    quad_wts = quadData.quad_wts
+    nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,Order,nq,mesh)
-        PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData.EvalBasis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
-    JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_ijac=True)
+    JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True,get_ijac=True)
     PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
-    nn = PhiData.nn
+
+    nb = PhiData.Phi.shape[1]
 
     phi = PhiData.Phi
     gPhi = PhiData.gPhi
-    SM = np.zeros([nn,nn])
-    for i in range(nn):
-        for j in range(nn):
+    SM = np.zeros([nb,nb])
+    for i in range(nb):
+        for j in range(nb):
             t = 0.
             for iq in range(nq):
                 t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
@@ -373,7 +481,22 @@ def GetStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
     return SM, StaticData
 
 
-def GetStiffnessMatrixADER(gradDir,mesh, Order, elem, basis, StaticData=None):
+def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None):
+    '''
+    Method: get_stiffness_matrix_ader
+    --------------------------------------
+    Calculate the stiffness matrix for ADER-DG prediction step
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        elem: element index
+        gradDir: direction of gradient calc
+
+    OUTPUTS: 
+        SM: stiffness matrix for ADER-DG
+    '''
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -385,24 +508,25 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, elem, basis, StaticData=None):
         PhiData = StaticData.PhiData
         # JData = StaticData.JData
 
-    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, Order*2., quadData=quadData)
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, order*2., quadData=quadData)
     #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
     QuadOrder+=1
     if QuadChanged:
         quadData = QuadDataADER(mesh, basis, EntityType.Element, QuadOrder)
-    nq = quadData.nquad
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
+
+    quad_pts = quadData.quad_pts
+    quad_wts = quadData.quad_wts
+    nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,Order,nq,mesh)
-        PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData.EvalBasis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
-    nn = PhiData.nn
+    nb = PhiData.Phi.shape[1]
 
     phi = PhiData.Phi
     GPhi = PhiData.GPhi
-    SM = np.zeros([nn,nn])
+    SM = np.zeros([nb,nb])
     # for i in range(nn):
     #     for j in range(nn):
     #         t = 0.
@@ -410,14 +534,33 @@ def GetStiffnessMatrixADER(gradDir,mesh, Order, elem, basis, StaticData=None):
     #             t += GPhi[iq,i,gradDir]*phi[iq,j]*wq[iq]
     #         SM[i,j] = t
     #code.interact(local=locals())
-    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*wq)
+    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*quad_wts)
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
 
     return SM, StaticData
 
-def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=-1, StaticData=None):
+def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=False, StaticData=None):
+    '''
+    Method: get_temporal_flux_ader
+    --------------------------------------
+    Calculate the temporal flux matrix for ADER-DG prediction step
+
+    INPUTS:
+        mesh: mesh object
+        basis1: type of basis function
+        basis2: type of basis function
+        order: solution order
+        elem: element index
+        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
+
+    OUTPUTS: 
+        FT: flux matrix for ADER-DG
+
+    NOTES:
+        Can work at tau_n and tau_n+1 depending on basis combinations
+    '''
 
     if StaticData is None:
         pnq = -1
@@ -435,41 +578,38 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=-
         face = 2 
     else:
         face = 0
-    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
-    #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
-    #QuadOrder+=1
-
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
+  
     if QuadChanged:
         quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
-
+    quad_pts = quadData.quad_pts
+    quad_wts = quadData.quad_wts
+    nq = quad_pts.shape[0]
     if QuadChanged:
         if basis1 == basis2:
             face = 2
             basis = basis1
-            PhiData = BasisData(basis,Order,nq,mesh)
+            PhiData = BasisData(basis,order,nq,mesh)
             PsiData = PhiData
             xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.EvalBasisOnFaceADER(mesh, basis, face, xq, xelem, Get_Phi=True)
-            PsiData.EvalBasisOnFaceADER(mesh, basis, face, xq, xelem, Get_Phi=True)
+            PhiData.EvalBasisOnFaceADER(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
+            PsiData.EvalBasisOnFaceADER(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
         else:
             face = 0
-            PhiData = BasisData(basis1,Order,nq,mesh)
-            PsiData = BasisData(basis2,Order,nq,mesh)
+            PhiData = BasisData(basis1,order,nq,mesh)
+            PsiData = BasisData(basis2,order,nq,mesh)
             xelemPhi = np.zeros([nq,mesh.Dim+1])
             xelemPsi = np.zeros([nq,mesh.Dim])
-            PhiData.EvalBasisOnFaceADER(mesh, basis1, face, xq, xelemPhi, Get_Phi=True)
+            PhiData.EvalBasisOnFaceADER(mesh, basis1, face, quad_pts, xelemPhi, Get_Phi=True)
             #PsiData.EvalBasisOnFaceADER(mesh, basis2, face, xq, xelemPsi, Get_Phi=True)
-            PsiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=False)
+            PsiData.EvalBasis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
 
-    nn1 = PhiData.nn
-    nn2 = PsiData.nn
+    nb_st = PhiData.Phi.shape[1] #PhiData.nn
+    nb = PsiData.Phi.shape[1] #PsiData.nn
 
-    MM = np.zeros([nn1,nn2])
+    FT = np.zeros([nb_st,nb])
     # for i in range(nn1):
     #     for j in range(nn2):
     #         t = 0.
@@ -477,15 +617,30 @@ def GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=-
     #             t += phi[iq,i]*psi[iq,j]*wq[iq]
     #         MM[i,j] = t
 
-    MM[:] = np.matmul(PhiData.Phi.transpose(),PsiData.Phi*wq)
+    FT[:] = np.matmul(PhiData.Phi.transpose(),PsiData.Phi*quad_wts)
     StaticData.pnq = nq
     StaticData.quadData = quadData
     StaticData.PhiData = PhiData
  
-    return MM, StaticData
+    return FT, StaticData
 
 
-def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, StaticData=None):
+def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+    '''
+    Method: get_elem_mass_matrix_ader
+    --------------------------------------
+    Calculate the mass matrix for ADER-DG prediction step
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        elem: element index
+        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
+
+    OUTPUTS: 
+        MM: mass matrix for ADER-DG
+    '''
     if StaticData is None:
         pnq = -1
         quadData = None
@@ -499,25 +654,25 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
         JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order*2, quadData=quadData)
+        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
     else:
-        QuadOrder = Order*2 + 1 #Add one for ADER method
+        QuadOrder = order*2 + 1 #Add one for ADER method
         QuadChanged = True
 
     if QuadChanged:
         quadData = QuadDataADER(mesh, basis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
 
+    quad_pts = quadData.quad_pts
+    quad_wts = quadData.quad_wts
+    nq = quad_pts.shape[0]
     if QuadChanged:
 
-        PhiData = BasisData(basis,Order,nq,mesh)
-        PhiData.EvalBasis(xq, Get_Phi=True)
+        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData.EvalBasis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+        JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -525,9 +680,8 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
     else:
         djac = np.full(nq, 1.)
 
-    nn = PhiData.nn
-
-    MM = np.zeros([nn,nn])
+    nb_st = PhiData.Phi.shape[1]
+    MM = np.zeros([nb_st,nb_st])
     # for i in range(nn):
     #     for j in range(nn):
     #         t = 0.
@@ -535,7 +689,7 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
     #             t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq]
     #         MM[i,j] = t
 
-    MM[:] = np.matmul(PhiData.Phi.transpose(), PhiData.Phi*wq*djac)
+    MM[:] = np.matmul(PhiData.Phi.transpose(), PhiData.Phi*quad_wts*djac)
 
     StaticData.pnq = nq
     StaticData.quadData = quadData
@@ -544,44 +698,75 @@ def GetElemMassMatrixADER(mesh, basis, Order, PhysicalSpace=False, elem=-1, Stat
 
     return MM, StaticData
 
-def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):
-    QuadOrder = np.amax([Order_old+Order, 2*Order])
+def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
+    '''
+    Method: get_projection_matrix
+    --------------------------------------
+    Calculate the projection matrix to increase order
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        basis_old: type of basis function from previous order
+        order: solution order
+        order_old: previous solution order
+        iMM: inverse mass matrix
+
+    OUTPUTS: 
+        PM: projection matrix
+    '''
+    QuadOrder = np.amax([order_old+order, 2*order])
     quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
+    quad_pts = quadData.quad_pts
+    quad_wts = quadData.quad_wts
+    nq = quad_pts.shape[0]
 
-    PhiData_old = BasisData(basis_old, Order_old, nq, mesh)
-    PhiData_old.EvalBasis(xq, Get_Phi=True)
-    nn_old = PhiData_old.nn
+    PhiData_old = BasisData(basis_old, order_old, nq, mesh)
+    PhiData_old.EvalBasis(quad_pts, Get_Phi=True)
+
     phi_old = PhiData_old.Phi
+    nb_old = phi_old.shape[1]
 
-    PhiData = BasisData(basis, Order, nq, mesh)
-    PhiData.EvalBasis(xq, Get_Phi=True)
-    nn = PhiData.nn
+    PhiData = BasisData(basis, order, nq, mesh)
+    PhiData.EvalBasis(quad_pts, Get_Phi=True)
     phi = PhiData.Phi
+    nb = phi.shape[1]
 
-    A = np.zeros([nn,nn_old])
+    A = np.zeros([nb,nb_old])
     # for i in range(nn):
     #     for j in range(nn_old):
     #         t = 0.
     #         for iq in range(nq):
     #             t += phi[iq,i]*phi_old[iq,j]*wq[iq] # JData.djac[iq*(JData.nq != 1)]
     #         A[i,j] = t
-    A = np.matmul(phi.transpose(), phi_old*wq)
+    A = np.matmul(phi.transpose(), phi_old*quad_wts)
 
-    PM = np.matmul(MMinv,A)
+    PM = np.matmul(iMM,A)
 
     return PM
 
 
-def GetInvStiffnessMatrix(mesh, elem, basis, Order, StaticData=None):
-    SM, StaticData = GetStiffnessMatrix(mesh, elem, basis, Order, StaticData)
+def get_inv_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
+    '''
+    Method: get_inv_stiffness_matrix
+    --------------------------------------
+    Calculate the inverse stiffness matrix (Currently not used)
 
-    MMinv = np.linalg.inv(SM) 
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        elem: element index
 
-    return SM, StaticData
+    OUTPUTS: 
+        iSM: inverse stiffness matrix
+    '''
+    SM, StaticData = get_stiffness_matrix(mesh, basis, order, elem, StaticData)
+
+    iSM = np.linalg.inv(SM) 
+
+    return iSM, StaticData
 
 def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     ## Allocat ADERinv_all
@@ -594,8 +779,8 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     # ArrayDims = [None]*mesh.nElemGroup
     # for egrp in range(mesh.nElemGroup):
     Order = EqnSet.Order
-    nn1 = Order2nNode(basis1, Order)
-    nn2 = Order2nNode(basis2, Order)
+    nn1 = order_to_num_basis_coeff(basis1, Order)
+    nn2 = order_to_num_basis_coeff(basis2, Order)
     #     ArrayDims[egrp] = [mesh.nElems[egrp], nn1, nn2]
     # ADERinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
     ADERinv_all = np.zeros([mesh.nElem, nn1, nn2])
@@ -619,21 +804,24 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
 
     return ADERinv_all
 
-def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
-    ## Allocate MMinv_all
-    # Currently calculating inverse mass matrix for every single element,
-    # even if uniform mesh
-    # ArrayDims = [None]*mesh.nElemGroup
-    # for egrp in range(mesh.nElemGroup):
-    #     basis = EqnSet.Bases[egrp]
-    #     Order = EqnSet.Orders[egrp]
-    #     nn = Order2nNode(basis, Order)
-    #     ArrayDims[egrp] = [mesh.nElems[egrp], nn, nn]
-    # MMinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
+def get_inv_mass_matrices(mesh, EqnSet, solver=None):
+    '''
+    Method: compute_inv_mass_matrices
+    --------------------------------------
+    Calculate the inverse mass matrices
+
+    INPUTS:
+        mesh: mesh object
+        EqnSet: type of equation set (i.e. scalar, euler, etc...)
+        solver: type of solver (i.e. DG, ADER-DG, etc...)
+
+    OUTPUTS: 
+        iMM_all: all inverse mass matrices
+    '''
     basis = EqnSet.Basis
-    Order = EqnSet.Order
-    nn = Order2nNode(basis, Order)
-    MMinv_all = np.zeros([mesh.nElem, nn, nn])
+    order = EqnSet.Order
+    nb = order_to_num_basis_coeff(basis, order)
+    iMM_all = np.zeros([mesh.nElem, nb, nb])
 
     StaticData = None
 
@@ -644,20 +832,34 @@ def ComputeInvMassMatrices(mesh, EqnSet, solver=None):
     for elem in range(mesh.nElem):
         if elem == 0 or ReCalcMM:
             # Only recalculate if not using uniform mesh
-            MMinv,StaticData = GetElemInvMassMatrix(mesh, basis, Order, True, elem, StaticData)
-        MMinv_all[elem] = MMinv
+            iMM,StaticData = get_elem_inv_mass_matrix(mesh, basis, order, elem, True, StaticData)
+        iMM_all[elem] = iMM
 
     if solver is not None:
-        solver.DataSet.MMinv_all = MMinv_all
+        solver.DataSet.MMinv_all = iMM_all
 
-    return MMinv_all
+    return iMM_all
 
 
-def GetShapes(basis, Order, nq, xq, phi=None):
-    nn = Order2nNode(basis, Order)
+def get_shapes(basis, order, quad_pts, phi=None):
+    '''
+    Method: get_shapes
+    --------------------
+    Choose basis evaluation based on order and basis
 
-    if phi is None or phi.shape != (nq,nn):
-        phi = np.zeros([nq,nn])
+    INPUTS:
+        basis: type of basis function
+        order: solution order
+        quad_pts: coordinates of nodes in ref space
+
+    OUTPUTS: 
+        phi: evaluated basis, phi
+    '''
+    nq = quad_pts.shape[0]
+    nb = order_to_num_basis_coeff(basis, order)
+
+    if phi is None or phi.shape != (nq,nb):
+        phi = np.zeros([nq,nb])
     else:
         phi[:] = 0.
 
@@ -665,53 +867,68 @@ def GetShapes(basis, Order, nq, xq, phi=None):
         # for iq in range(nq): 
         #     Shape_TensorLagrange(1, Order, xq[iq], phi[iq,:])
         # code.interact(local=locals())
-        Shape_TensorLagrange(1, Order, xq, phi)
+        Shape_TensorLagrange(1, order, quad_pts, phi)
     elif basis == BasisType.LagrangeQuad:
         # for iq in range(nq): 
         #     Shape_TensorLagrange(2, Order, xq[iq], phi[iq,:])
-        Shape_TensorLagrange(2, Order, xq, phi)
+        Shape_TensorLagrange(2, order, quad_pts, phi)
     elif basis == BasisType.LagrangeTri:
-        Shape_LagrangeTri(Order, xq, phi)
+        Shape_LagrangeTri(order, quad_pts, phi)
     elif basis == BasisType.LegendreSeg:
         # for iq in range(nq):
         #     Shape_TensorLegendre(1, Order, xq[iq], phi[iq,:])
-        Shape_TensorLegendre(1, Order, xq, phi)
+        Shape_TensorLegendre(1, order, quad_pts, phi)
     elif basis == BasisType.LegendreQuad:
         # for iq in range(nq):
         #     Shape_TensorLegendre(2, Order, xq[iq], phi[iq,:])
-        Shape_TensorLegendre(2, Order, xq, phi)
+        Shape_TensorLegendre(2, order, quad_pts, phi)
     else:
         raise Exception("Basis not supported")
 
     return phi
 
 
-def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
-    nn = Order2nNode(basis, Order)
+def get_grads(basis, order, dim, quad_pts, GPhi=None):
+    '''
+    Method: get_grads
+    --------------------
+    Choose basis gradient evaluation based on order and basis
 
-    if GPhi is None or GPhi.shape != (nq,nn,dim):
-        GPhi = np.zeros([nq,nn,dim])
+    INPUTS:
+        basis: type of basis function
+        order: solution order
+        dim: dimension of mesh
+        quad_pts: coordinates of nodes in ref space
+
+    OUTPUTS: 
+        Gphi: evaluated gradient of basis
+    '''
+    nq = quad_pts.shape[0]
+    nb = order_to_num_basis_coeff(basis, order)
+
+    if GPhi is None or GPhi.shape != (nq,nb,dim):
+        GPhi = np.zeros([nq,nb,dim])
     else: 
         GPhi[:] = 0.
 
     if basis == BasisType.LagrangeSeg:
         # for iq in range(nq): 
         #     Grad_TensorLagrange(1, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLagrange(1, Order, xq, GPhi)
+        Grad_TensorLagrange(1, order, quad_pts, GPhi)
     elif basis == BasisType.LagrangeQuad:
         # for iq in range(nq): 
             # Grad_TensorLagrange(2, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLagrange(2, Order, xq, GPhi)
+        Grad_TensorLagrange(2, order, quad_pts, GPhi)
     elif basis == BasisType.LagrangeTri:
-        Grad_LagrangeTri(Order, xq, GPhi)
+        Grad_LagrangeTri(order, quad_pts, GPhi)
     elif basis == BasisType.LegendreSeg:
         # for iq in range(nq):
         #     Grad_TensorLegendre(1, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLegendre(1, Order, xq, GPhi)
+        Grad_TensorLegendre(1, order, quad_pts, GPhi)
     elif basis == BasisType.LegendreQuad:
         # for iq in range(nq):
         #     Grad_TensorLegendre(2, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLegendre(2, Order, xq, GPhi)
+        Grad_TensorLegendre(2, order, quad_pts, GPhi)
     else:
         raise Exception("Basis not supported")
 
@@ -797,11 +1014,11 @@ def Shape_TensorLagrange(dim, p, x, phi):
     # xnode = np.zeros(nnode)
     # dx = 2./float(p)
     # for i in range(nnode): xnode[i] = -1. + float(i)*dx
-    # xnode, nnode = EquidistantNodes(BasisType.LagrangeSeg, p)
+    # xnode, nnode = equidistant_nodes(BasisType.LagrangeSeg, p)
     # xnode.shape = nnode
 
     nnode = p+1
-    xnode = EquidistantNodes1DRange(-1., 1., nnode)
+    xnode = equidistant_nodes_1D_range(-1., 1., nnode)
 
     if dim == 1:
         LagrangeBasis1D(x, xnode, nnode, phi, None)
@@ -898,7 +1115,7 @@ def Grad_TensorLagrange(dim, p, x, gphi):
     	return 
 
     nnode = p+1
-    xnode = EquidistantNodes1DRange(-1., 1., nnode)
+    xnode = equidistant_nodes_1D_range(-1., 1., nnode)
 
     if dim == 1:
         LagrangeBasis1D(x, xnode, nnode, None, gphi)
@@ -1170,7 +1387,7 @@ class BasisData(object):
         '''
         self.Basis = basis
         self.Order = Order
-        self.nn = Order2nNode(self.Basis, self.Order)
+        self.nn = order_to_num_basis_coeff(self.Basis, self.Order)
         self.nq = nq
         self.nnqmax = self.nn * self.nq
         self.dim = Shape2Dim[Basis2Shape[self.Basis]]
@@ -1213,9 +1430,9 @@ class BasisData(object):
 
     def EvalBasis(self, xq, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=None):
         if Get_Phi:
-            self.Phi = GetShapes(self.Basis, self.Order, self.nq, xq, self.Phi)
+            self.Phi = get_shapes(self.Basis, self.Order, xq, self.Phi)
         if Get_GPhi:
-            self.GPhi = GetGrads(self.Basis, self.Order, self.dim, self.nq, xq, self.GPhi)
+            self.GPhi = get_grads(self.Basis, self.Order, self.dim, xq, self.GPhi)
         if Get_gPhi:
             if not JData:
                 raise Exception("Need jacobian data")
@@ -1278,14 +1495,14 @@ class JacobianData(object):
         # if Order == 1 and Shape != ShapeType.Quadrilateral:
         #     nq = 1
 
-        nb = Order2nNode(basis, Order)
+        nb = order_to_num_basis_coeff(basis, Order)
         dim = Shape2Dim[Basis2Shape[basis]]
 
         ## Check if we need to resize or recalculate 
         if self.dim != dim or self.nq != nq: Resize = True
         else: Resize = False
 
-        self.basis_grad = GetGrads(basis, Order, dim, nq, xq, self.basis_grad) # [nq, nb, dim]
+        self.basis_grad = get_grads(basis, Order, dim, xq, self.basis_grad) # [nq, nb, dim]
         basis_grad = self.basis_grad
 
         self.dim = dim

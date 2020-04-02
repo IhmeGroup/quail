@@ -13,7 +13,7 @@ def MultInvMassMatrix(mesh, solver, dt, R, U):
 		MMinv_all = DataSet.MMinv_all
 	except AttributeError:
 		# not found; need to compute
-		MMinv_all = Basis.ComputeInvMassMatrices(mesh, EqnSet, solver=solver)
+		MMinv_all = Basis.get_inv_mass_matrices(mesh, EqnSet, solver=solver)
 
 
 	if dt is None:
@@ -27,24 +27,24 @@ def MultInvMassMatrix(mesh, solver, dt, R, U):
 		U_ = U[elem]
 		U_[:,:] = c*np.matmul(MMinv_all[elem], R[elem])
 
-def ProjectStateToNewBasis(solver, EqnSet, mesh, basis_old, Order_old):
+def ProjectStateToNewBasis(solver, EqnSet, mesh, basis_old, order_old):
 	''' Old state '''
 	U = EqnSet.U
 
 	''' Allocate new state '''
 	# New basis, Order information stored in EqnSet
-	# ArrayDims = [[mesh.nElems[egrp],Basis.Order2nNode(EqnSet.Bases[egrp], EqnSet.Orders[egrp]), EqnSet.StateRank] \
+	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.Orders[egrp]), EqnSet.StateRank] \
 	# 				for egrp in range(mesh.nElemGroup)]
 	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
-	U_new = np.zeros([mesh.nElem, Basis.Order2nNode(EqnSet.Basis, EqnSet.Order), EqnSet.StateRank])
+	U_new = np.zeros([mesh.nElem, Basis.order_to_num_basis_coeff(EqnSet.Basis, EqnSet.Order), EqnSet.StateRank])
 
 	''' Loop through elements '''
 	basis = EqnSet.Basis
-	Order = EqnSet.Order
+	order = EqnSet.Order
 	## New mass matrix inverse (in reference space)
-	MMinv,_ = Basis.GetElemInvMassMatrix(mesh, basis, Order)
+	iMM,_ = Basis.get_elem_inv_mass_matrix(mesh, basis, order)
 	## Projection matrix
-	PM = Basis.GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv)
+	PM = Basis.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
 	for elem in range(mesh.nElem):
 		Uc = U[elem]
 		Uc_new = U_new[elem]

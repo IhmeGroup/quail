@@ -119,7 +119,7 @@ class DG_Solver(object):
 			MMinv_all = self.DataSet.MMinv_all
 		except AttributeError:
 			# not found; need to compute
-			MMinv_all = ComputeInvMassMatrices(mesh, EqnSet, solver=self)
+			MMinv_all = get_inv_mass_matrices(mesh, EqnSet, solver=self)
 
 		InterpolateIC = Params["InterpolateIC"]
 		quadData = None
@@ -129,7 +129,7 @@ class DG_Solver(object):
 
 		basis = EqnSet.Basis
 		Order = EqnSet.Order
-		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
+		rhs = np.zeros([order_to_num_basis_coeff(basis,Order),sr],dtype=U.dtype)
 
 		# Precompute basis and quadrature
 		if not InterpolateIC:
@@ -146,7 +146,7 @@ class DG_Solver(object):
 			PhiData.EvalBasis(quad_pts, Get_Phi=True)
 			xphys = np.zeros([nq, mesh.Dim])
 		else:
-			quad_pts, nq = EquidistantNodes(basis, Order, quad_pts)
+			quad_pts, nq = equidistant_nodes(basis, Order, quad_pts)
 			nn = nq
 
 		for elem in range(mesh.nElem):
@@ -788,18 +788,18 @@ class ADERDG_Solver(DG_Solver):
 		dx = np.abs(mesh.Coords[Elem2Nodes[1],0]-mesh.Coords[Elem2Nodes[0],0])
 
 		#Flux matrices in time
-		FTL,_= GetTemporalFluxADER(mesh, basis1, basis1, Order, PhysicalSpace=False, elem=0, StaticData=None)
-		FTR,_= GetTemporalFluxADER(mesh, basis1, basis2, Order, PhysicalSpace=False, elem=0, StaticData=None)
+		FTL,_= get_temporal_flux_ader(mesh, basis1, basis1, Order, elem=0, PhysicalSpace=False, StaticData=None)
+		FTR,_= get_temporal_flux_ader(mesh, basis1, basis2, Order, elem=0, PhysicalSpace=False, StaticData=None)
 		
 		#Stiffness matrix in time
 		gradDir = 1
-		SMT,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
+		SMT,_= get_stiffness_matrix_ader(mesh, basis1, Order, elem=0, gradDir=gradDir)
 		gradDir = 0
-		SMS,_= GetStiffnessMatrixADER(gradDir,mesh, Order, elem=0, basis=basis1)
+		SMS,_= get_stiffness_matrix_ader(mesh, basis1, Order, elem=0, gradDir=gradDir)
 		SMS = np.transpose(SMS)
-		MM,_=  GetElemMassMatrixADER(mesh, basis1, Order, PhysicalSpace=False, elem=-1, StaticData=None)
+		MM,_=  get_elem_mass_matrix_ader(mesh, basis1, Order, elem=-1, PhysicalSpace=False, StaticData=None)
 
-		#MMinv,_= GetElemInvMassMatrixADER(mesh, basis1, Order, PhysicalSpace=True, elem=-1, StaticData=None)
+		#MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis1, Order, PhysicalSpace=True, elem=-1, StaticData=None)
 
 		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis2, Order, EqnSet, quadData)
 		QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis1, Order, EqnSet, quadDataST)
@@ -1330,7 +1330,7 @@ class ADERDG_Solver(DG_Solver):
 		GeomPhiData = None
 		xq = None; xphys = None; QuadChanged = True; QuadChangedST = True;
 
-		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
+		rhs = np.zeros([order_to_num_basis_coeff(basis,Order),sr],dtype=U.dtype)
 
 		if not InterpolateFlux:
 
@@ -1359,11 +1359,11 @@ class ADERDG_Solver(DG_Solver):
 				xphys = np.zeros([nqST, mesh.Dim])
 
 			JData.ElemJacobian(elem,nqST,xqST,mesh,get_djac=True)
-			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, elem=-1, StaticData=None)
+			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
 			nn = PhiData.nn
 		else:
 
-			xq, nq = EquidistantNodes(basis, Order, xq)
+			xq, nq = equidistant_nodes(basis, Order, xq)
 			nn = nq
 			JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 
@@ -1420,7 +1420,7 @@ class ADERDG_Solver(DG_Solver):
 		xq = None; xphys = None; QuadChanged = True; QuadChangedST = True;
 		xglob = None; tglob = None; NData = None;
 
-		rhs = np.zeros([Order2nNode(basis,Order),sr],dtype=U.dtype)
+		rhs = np.zeros([order_to_num_basis_coeff(basis,Order),sr],dtype=U.dtype)
 
 		if not InterpolateFlux:
 
@@ -1451,11 +1451,11 @@ class ADERDG_Solver(DG_Solver):
 				xphys = np.zeros([nqST, mesh.Dim])
 
 			JData.ElemJacobian(elem,nqST,xqST,mesh,get_djac=True)
-			MMinv,_= GetElemInvMassMatrixADER(mesh, basis, Order, PhysicalSpace=True, elem=-1, StaticData=None)
+			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
 			nn = PhiData.nn
 		else:
 
-			xq, nq = EquidistantNodes(mesh.QBasis, Order, xq)
+			xq, nq = equidistant_nodes(mesh.QBasis, Order, xq)
 			nn = nq
 			JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
 			

@@ -150,7 +150,7 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
     elif Shape == ShapeType.Quadrilateral:
         if xelem is None: xelem = np.zeros([nq,2])
         # local q = 1 nodes on face
-        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.LagrangeQuad, 1, face)
+        fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeQuad, 1, face)
         # swap for reversed faces
         # if face >= 2: fnodes = fnodes[[1,0]]
         # coordinates of local q = 1 nodes on face
@@ -187,7 +187,7 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
         xf = np.zeros(nq)
         xf = xf.reshape((nq,1))
         # local q = 1 nodes on face
-        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.LagrangeTri, 1, face)
+        fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeTri, 1, face)
         # coordinates of local q = 1 nodes on face
         x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
@@ -319,7 +319,7 @@ class NormalData(object):
         elif Shape == ShapeType.Quadrilateral or Shape == ShapeType.Triangle:
             ElemNodes = mesh.Elem2Nodes[elem]
             if QOrder == 1:
-                self.fnodes, nfnode = Basis.LocalQ1FaceNodes(QBasis, QOrder, face, self.fnodes)
+                self.fnodes, nfnode = Basis.local_q1_face_nodes(QBasis, QOrder, face, self.fnodes)
                 x0 = mesh.Coords[ElemNodes[self.fnodes[0]]]
                 x1 = mesh.Coords[ElemNodes[self.fnodes[1]]]
 
@@ -331,7 +331,7 @@ class NormalData(object):
                     self.x_s = np.zeros_like(self.nvec)
                 x_s = self.x_s
                 self.fnodes, nfnode = Basis.LocalFaceNodes(QBasis, QOrder, face, self.fnodes)
-                self.GPhi = Basis.GetGrads(BasisType.LagrangeSeg, QOrder, 1, nq, xq, self.GPhi)
+                self.GPhi = Basis.get_grads(BasisType.LagrangeSeg, QOrder, 1, xq, self.GPhi)
                 Coords = mesh.Coords[ElemNodes[self.fnodes]]
 
                 # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
@@ -528,7 +528,7 @@ Shape2nNodeQ1 = {
 #         self.nElem = nElem
 #         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
 #         self.Faces = None
-#         self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+#         self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 #         self.Elem2Nodes = None
 #             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
@@ -537,7 +537,7 @@ Shape2nNodeQ1 = {
 #         self.QOrder = QOrder
 #         self.nElem = nElem
 #         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-#         self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+#         self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 
 #     def AllocFaces(self):
 #         '''
@@ -628,7 +628,7 @@ class Mesh(object):
         self.nElem = nElem
         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
         self.Faces = None
-        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+        self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
         self.Elem2Nodes = None
             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
@@ -637,7 +637,7 @@ class Mesh(object):
         self.QOrder = QOrder
         self.nElem = nElem
         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+        self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 
     def AllocFaces(self):
         '''
