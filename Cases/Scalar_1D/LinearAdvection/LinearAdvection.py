@@ -66,7 +66,7 @@ TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
 Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, Label="Q_h")
-Plot.ShowPlot(Interactive=True)
+Plot.ShowPlot()
 
 
 # code.interact(local=locals())
