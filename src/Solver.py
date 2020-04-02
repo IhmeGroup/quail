@@ -863,6 +863,7 @@ class ADERDG_Solver(DG_Solver):
 		face = BFace.face
 		Order = EqnSet.Order
 		nFacePerElem = mesh.nFacePerElem
+		nFacePerElemADER = nFacePerElem + 2 # Hard-coded for 1D ADER method
 
 		if StaticData is None:
 			pnq = -1
@@ -894,10 +895,13 @@ class ADERDG_Solver(DG_Solver):
 			NData = StaticData.NData
 			GeomPhiData = StaticData.GeomPhiData
 			TimePhiData = StaticData.TimePhiData
-			xelemPsi = StaticData.xelemPsi
-			xelemPhi = StaticData.xelemPhi
+			#xelemPsi = StaticData.xelemPsi
+			#xelemPhi = StaticData.xelemPhi
+			Faces2PhiData = StaticData.Faces2PhiData
+			Faces2PsiData = StaticData.Faces2PsiData
+			Faces2xelemADER = StaticData.Faces2xelemADER
+			Faces2xelem = StaticData.Faces2xelem
 		
-		#Hard code basisType to Quads (currently only designed for 1D)
 		basis2 = EqnSet.Basis
 		basis1 = EqnSet.BasisADER
 
@@ -924,16 +928,30 @@ class ADERDG_Solver(DG_Solver):
 			faceST = 1
 		else:
 			return IncompatibleError
+
 		if QuadChanged or QuadChangedST:
-			xglob = np.zeros([nq, dim])			
+			Faces2PsiData = [None for i in range(nFacePerElem)]
+			Faces2PhiData = [None for i in range(nFacePerElemADER)]
+			PsiData = BasisData(basis2, Order, nq, mesh)
+			PhiData = BasisData(basis1, Order, nqST, mesh)
+			xglob = np.zeros([nq, sr])
 			uI = np.zeros([nqST, sr])
 			uB = np.zeros([nqST, sr])
-			xelemPhi = np.zeros([nqST, mesh.Dim+1])
-			xelemPsi = np.zeros([nq, mesh.Dim])
-			PhiData = BasisData(basis1,Order,nqST,mesh)
-			xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, faceST, xqST, xelemPhi, Get_Phi=True)
-			PsiData = BasisData(basis2,Order,nq,mesh)
-			xelemPsi = PsiData.EvalBasisOnFace(mesh, face, xq, xelemPsi, Get_Phi=True)
+			Faces2xelem = np.zeros([nFacePerElem, nq, dim])
+			Faces2xelemADER = np.zeros([nFacePerElem, nqST, dim+1])
+
+		PsiData = Faces2PhiData[face]
+		PhiData = Faces2PsiData[face]
+		xelemPsi = Faces2xelem[face]
+		xelemPhi = Faces2xelemADER[face]
+
+		if PsiData is None or QuadChanged:
+			Faces2PsiData[face] = PsiData = BasisData(basis2,Order,nq,mesh)
+			Faces2xelem[face] = xelemPsi = PsiData.EvalBasisOnFace(mesh, face, xq, xelemPsi, Get_Phi=True)
+		if PhiData is None or QuadChangedST:
+			Faces2PhiData[face] = PhiData = BasisData(basis1,Order,nqST,mesh)
+			Faces2xelemADER[face] = xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, faceST, xqST, xelemPhi, Get_Phi=True)
+
 
 		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
 		PointsChanged = QuadChanged or face != GeomPhiData.face
@@ -982,7 +1000,10 @@ class ADERDG_Solver(DG_Solver):
 		StaticData.xelemPhi = xelemPhi
 		StaticData.GeomPhiData = GeomPhiData
 		StaticData.TimePhiData = TimePhiData
-
+		StaticData.Faces2PhiData = Faces2PhiData
+		StaticData.Faces2PsiData = Faces2PsiData
+		StaticData.Faces2xelemADER = Faces2xelemADER
+		StaticData.Faces2xelem = Faces2xelem
 
 		return R, StaticData
 
@@ -1137,6 +1158,7 @@ class ADERDG_Solver(DG_Solver):
 		faceR = IFace.faceR
 		Order = EqnSet.Order
 		nFacePerElem = mesh.nFacePerElem
+		nFacePerElemADER = nFacePerElem + 2 # Hard-coded for the 1D ADER method
 
 		if StaticData is None:
 			pnq = -1
@@ -1158,14 +1180,10 @@ class ADERDG_Solver(DG_Solver):
 			nq = StaticData.pnq
 			quadDataST = StaticData.quadDataST
 			quadData = StaticData.quadData
-			PhiDataL = StaticData.PhiDataL
-			PhiDataR = StaticData.PhiDataR
-			PsiDataL = StaticData.PsiDataL
-			PsiDataR = StaticData.PsiDataR
-			xelemLPhi = StaticData.xelemLPhi
-			xelemRPhi = StaticData.xelemRPhi
-			xelemLPsi = StaticData.xelemLPsi
-			xelemRPsi = StaticData.xelemRPsi
+			Faces2PhiDataL = StaticData.Faces2PhiDataL
+			Faces2PhiDataR = StaticData.Faces2PhiDataR
+			Faces2PsiDataL = StaticData.Faces2PsiDataL
+			Faces2PsiDataR = StaticData.Faces2PsiDataR
 			uL = StaticData.uL
 			uR = StaticData.uR
 			NData = StaticData.NData
@@ -1206,25 +1224,44 @@ class ADERDG_Solver(DG_Solver):
 
 		if QuadChanged or QuadChangedST:
 
+			Faces2PsiDataL = [None for i in range(nFacePerElem)]
+			Faces2PsiDataR = [None for i in range(nFacePerElem)]
+			Faces2PhiDataL = [None for i in range(nFacePerElemADER)]
+			Faces2PhiDataR = [None for i in range(nFacePerElemADER)]
+			PsiDataL = BasisData(basis2, Order, nq, mesh)
+			PsiDataR = BasisData(basis2, Order, nq, mesh)
+			PhiDataL = BasisData(basis1, Order, nqST, mesh)
+			PhiDataR = BasisData(basis1, Order, nqST, mesh)
+
+			xglob = np.zeros([nq, sr])
+			uL = np.zeros([nqST, sr])
+			uR = np.zeros([nqST, sr])
+
 			xelemLPhi = np.zeros([nqST, dim+1])
 			xelemRPhi = np.zeros([nqST, dim+1])
 			xelemLPsi = np.zeros([nq, dim])
 			xelemRPsi = np.zeros([nq, dim])
-			uL = np.zeros([nqST, sr])
-			uR = np.zeros([nqST, sr])
+			
+		PsiDataL = Faces2PhiDataL[faceL]
+		PsiDataR = Faces2PsiDataR[faceR]
+		PhiDataL = Faces2PsiDataL[faceL]
+		PhiDataR = Faces2PhiDataR[faceR]
 
-			#Evaluate space-time basis functions
-			PhiDataL = BasisData(basis1,Order,nqST,mesh)
-			PhiDataR = BasisData(basis1,Order,nqST,mesh)
+		#Evaluate space-time basis functions
+		if PhiDataL is None or QuadChangedST:
+			Faces2PhiDataL[faceL] = PhiDataL = BasisData(basis1,Order,nqST,mesh)
 			xelemLPhi = PhiDataL.EvalBasisOnFaceADER(mesh, basis1, faceSTL, xqST, xelemLPhi, Get_Phi=True)
+		if PhiDataR is None or QuadChangedST:
+			Faces2PhiDataR[faceR] = PhiDataR = BasisData(basis1,Order,nqST,mesh)
 			xelemRPhi = PhiDataR.EvalBasisOnFaceADER(mesh, basis1, faceSTR, xqST[::-1], xelemRPhi, Get_Phi=True)
 
-			#Evaluate spacial basis functions
-			PsiDataL = BasisData(basis2,Order,nq,mesh)
-			PsiDataR = BasisData(basis2,Order,nq,mesh)
+		#Evaluate spacial basis functions
+		if PsiDataL is None or QuadChanged:
+			Faces2PsiDataL[faceL] = PsiDataL = BasisData(basis2,Order,nq,mesh)
 			xelemLPsi = PsiDataL.EvalBasisOnFace(mesh, faceL, xq, xelemLPsi, Get_Phi=True)
+		if PsiDataR is None or QuadChanged:
+			Faces2PsiDataR[faceR] = PsiDataR = BasisData(basis2,Order,nq,mesh)
 			xelemRPsi = PsiDataR.EvalBasisOnFace(mesh, faceR, xq[::-1], xelemRPsi, Get_Phi=True)
-
 
 		NData = IFaceNormal(mesh, IFace, nq, xq, NData)
 
@@ -1266,14 +1303,10 @@ class ADERDG_Solver(DG_Solver):
 		StaticData.pnq = nq
 		StaticData.quadData = quadData
 		StaticData.quadDataST = quadDataST
-		StaticData.PhiDataL = PhiDataL
-		StaticData.PhiDataR = PhiDataR
-		StaticData.PsiDataL = PsiDataL
-		StaticData.PsiDataR = PsiDataR
-		StaticData.xelemLPhi = xelemLPhi
-		StaticData.xelemRPhi = xelemRPhi
-		StaticData.xelemLPsi = xelemLPsi
-		StaticData.xelemRPsi = xelemRPsi
+		StaticData.Faces2PhiDataL = Faces2PhiDataL
+		StaticData.Faces2PhiDataR = Faces2PhiDataR
+		StaticData.Faces2PsiDataL = Faces2PsiDataL
+		StaticData.Faces2PsiDataR = Faces2PsiDataR
 		StaticData.uL = uL
 		StaticData.uR = uR
 		StaticData.NData = NData
