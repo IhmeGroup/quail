@@ -593,9 +593,9 @@ def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
     
     # ArrayDims = [None]*mesh.nElemGroup
     # for egrp in range(mesh.nElemGroup):
-    #     Order = EqnSet.Orders[egrp]
-    #     nn1 = Order2nNode(basis1, Order)
-    #     nn2 = Order2nNode(basis2, Order)
+    Order = EqnSet.Order
+    nn1 = Order2nNode(basis1, Order)
+    nn2 = Order2nNode(basis2, Order)
     #     ArrayDims[egrp] = [mesh.nElems[egrp], nn1, nn2]
     # ADERinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
     ADERinv_all = np.zeros([mesh.nElem, nn1, nn2])
