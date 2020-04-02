@@ -1006,7 +1006,7 @@ class ADERDG_Solver(DG_Solver):
 			quadDataST = None
 			PhiData = None
 			PsiData = None
-			JData = JData = JacobianData(mesh)
+			JData = JacobianData(mesh)
 			xglob = None
 			tglob = None
 			u = None

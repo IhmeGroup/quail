@@ -101,6 +101,9 @@ def LocalQ1FaceNodes(basis, p, face, fnodes=None):
 
 
 def LocalFaceNodes(basis, p, face, fnodes=None):
+    if p < 1:
+        raise ValueError
+
     if basis == BasisType.LagrangeQuad:
         nfnode = p+1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
@@ -115,8 +118,9 @@ def LocalFaceNodes(basis, p, face, fnodes=None):
         else:
              raise IndexError
 
-        for i in range(p+1):
-            fnodes[i] = i0+i*d
+        # for i in range(p+1):
+        #     fnodes[i] = i0+i*d
+        fnodes[:] = i0 + np.arange(p+1, dtype=int)*d
     elif basis == BasisType.LagrangeTri:
         nfnode = p+1
         if fnodes is None: fnodes = np.zeros(nfnode, dtype=int)
@@ -140,10 +144,23 @@ def LocalFaceNodes(basis, p, face, fnodes=None):
     return fnodes, nfnode
 
 
+def EquidistantNodes1DRange(start, stop, nnode):
+    if nnode <= 1:
+        raise ValueError
+    if stop <= start:
+        raise ValueError
+    # Note: this is faster than linspace unless p is large
+    xnode = np.zeros(nnode)
+    dx = (stop-start)/float(nnode-1)
+    for i in range(nnode): xnode[i] = start + float(i)*dx
+
+    return xnode
+
 def EquidistantNodes(basis, p, xn=None):
     nn = Order2nNode(basis, p)
 
-    dim = Shape2Dim[Basis2Shape[basis]]
+    shape = Basis2Shape[basis]
+    dim = Shape2Dim[shape]
 
     adim = nn,dim
     if xn is None or xn.shape != adim:
@@ -153,18 +170,20 @@ def EquidistantNodes(basis, p, xn=None):
         xn[:] = 0.0 # 0.5
         return xn, nn
 
-    if basis == BasisType.LagrangeSeg or basis == BasisType.LegendreSeg:
-        xn[:,0] = np.linspace(-1.,1.,p+1)
-    elif basis == BasisType.LagrangeQuad or basis == BasisType.LegendreQuad:
-        xseg = np.linspace(-1.,1.,p+1)
+    if shape == ShapeType.Segment:
+        xn[:,0] = EquidistantNodes1DRange(-1., 1., nn)
+    elif shape == ShapeType.Quadrilateral:
+        xseg = EquidistantNodes1DRange(-1., 1., p+1)
+        # n = 0
+        # for i in range(p+1):
+        #     xn[n:n+p+1,0] = xseg
+        #     xn[n:n+p+1,1] = xseg[i]
+        #     n += p+1
+        xn[:,0] = np.tile(xseg, (p+1,1)).reshape(-1)
+        xn[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
+    elif shape == ShapeType.Triangle:
         n = 0
-        for i in range(p+1):
-            xn[n:n+p+1,0] = xseg
-            xn[n:n+p+1,1] = xseg[i]
-            n += p+1
-    elif basis == BasisType.LagrangeTri:
-        n = 0
-        xseg = np.linspace(0.,1.,p+1)
+        xseg = EquidistantNodes1DRange(0., 1., p+1)
         for j in range(p+1):
             xn[n:n+p+1-j,0] = xseg[:p+1-j]
             xn[n:n+p+1-j,1] = xseg[j]
@@ -544,12 +563,13 @@ def GetProjectionMatrix(mesh, basis_old, Order_old, basis, Order, MMinv):
     phi = PhiData.Phi
 
     A = np.zeros([nn,nn_old])
-    for i in range(nn):
-        for j in range(nn_old):
-            t = 0.
-            for iq in range(nq):
-                t += phi[iq,i]*phi_old[iq,j]*wq[iq] # JData.djac[iq*(JData.nq != 1)]
-            A[i,j] = t
+    # for i in range(nn):
+    #     for j in range(nn_old):
+    #         t = 0.
+    #         for iq in range(nq):
+    #             t += phi[iq,i]*phi_old[iq,j]*wq[iq] # JData.djac[iq*(JData.nq != 1)]
+    #         A[i,j] = t
+    A = np.matmul(phi.transpose(), phi_old*wq)
 
     PM = np.matmul(MMinv,A)
 
@@ -642,20 +662,24 @@ def GetShapes(basis, Order, nq, xq, phi=None):
         phi[:] = 0.
 
     if basis == BasisType.LagrangeSeg:
-        for iq in range(nq): 
-            Shape_TensorLagrange(1, Order, xq[iq], phi[iq,:])
+        # for iq in range(nq): 
+        #     Shape_TensorLagrange(1, Order, xq[iq], phi[iq,:])
+        # code.interact(local=locals())
+        Shape_TensorLagrange(1, Order, xq, phi)
     elif basis == BasisType.LagrangeQuad:
-        for iq in range(nq): 
-            Shape_TensorLagrange(2, Order, xq[iq], phi[iq,:])
+        # for iq in range(nq): 
+        #     Shape_TensorLagrange(2, Order, xq[iq], phi[iq,:])
+        Shape_TensorLagrange(2, Order, xq, phi)
     elif basis == BasisType.LagrangeTri:
-        for iq in range(nq): 
-            Shape_LagrangeTri(Order, xq[iq], phi[iq,:])
+        Shape_LagrangeTri(Order, xq, phi)
     elif basis == BasisType.LegendreSeg:
-        for iq in range(nq):
-            Shape_TensorLegendre(1, Order, xq[iq], phi[iq,:])
+        # for iq in range(nq):
+        #     Shape_TensorLegendre(1, Order, xq[iq], phi[iq,:])
+        Shape_TensorLegendre(1, Order, xq, phi)
     elif basis == BasisType.LegendreQuad:
-        for iq in range(nq):
-            Shape_TensorLegendre(2, Order, xq[iq], phi[iq,:])
+        # for iq in range(nq):
+        #     Shape_TensorLegendre(2, Order, xq[iq], phi[iq,:])
+        Shape_TensorLegendre(2, Order, xq, phi)
     else:
         raise Exception("Basis not supported")
 
@@ -671,20 +695,23 @@ def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
         GPhi[:] = 0.
 
     if basis == BasisType.LagrangeSeg:
-        for iq in range(nq): 
-            Grad_TensorLagrange(1, Order, xq[iq], GPhi[iq,:,:])
+        # for iq in range(nq): 
+        #     Grad_TensorLagrange(1, Order, xq[iq], GPhi[iq,:,:])
+        Grad_TensorLagrange(1, Order, xq, GPhi)
     elif basis == BasisType.LagrangeQuad:
-        for iq in range(nq): 
-            Grad_TensorLagrange(2, Order, xq[iq], GPhi[iq,:,:])
+        # for iq in range(nq): 
+            # Grad_TensorLagrange(2, Order, xq[iq], GPhi[iq,:,:])
+        Grad_TensorLagrange(2, Order, xq, GPhi)
     elif basis == BasisType.LagrangeTri:
-        for iq in range(nq): 
-            Grad_LagrangeTri(Order, xq[iq], GPhi[iq,:,:])
+        Grad_LagrangeTri(Order, xq, GPhi)
     elif basis == BasisType.LegendreSeg:
-        for iq in range(nq):
-            Grad_TensorLegendre(1, Order, xq[iq], GPhi[iq,:,:])
+        # for iq in range(nq):
+        #     Grad_TensorLegendre(1, Order, xq[iq], GPhi[iq,:,:])
+        Grad_TensorLegendre(1, Order, xq, GPhi)
     elif basis == BasisType.LegendreQuad:
-        for iq in range(nq):
-            Grad_TensorLegendre(2, Order, xq[iq], GPhi[iq,:,:])
+        # for iq in range(nq):
+        #     Grad_TensorLegendre(2, Order, xq[iq], GPhi[iq,:,:])
+        Grad_TensorLegendre(2, Order, xq, GPhi)
     else:
         raise Exception("Basis not supported")
 
@@ -692,38 +719,73 @@ def GetGrads(basis, Order, dim, nq, xq, GPhi=None):
 
 
 def LagrangeBasis1D(x, xnode, nnode, phi, gphi):
-    for j in range(nnode):
-        if phi is not None:
-            pj = 1.
-            for i in range(j): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
-            for i in range(j+1,nnode): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
-            phi[j] = pj
-        if gphi is not None:
-            gphi[j] = 0.0;
+    # for j in range(nnode):
+    #     if phi is not None:
+    #         pj = 1.
+    #         for i in range(j): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
+    #         for i in range(j+1,nnode): pj *= (x-xnode[i])/(xnode[j]-xnode[i])
+    #         phi[j] = pj
+        # if gphi is not None:
+        #     gphi[j] = 0.0;
+        #     for i in range(nnode):
+        #         if i != j:
+        #             g = 1./(xnode[j] - xnode[i])
+        #             for k in range(nnode):
+        #                 if k != i and k != j:
+        #                     g *= (x - xnode[k])/(xnode[j] - xnode[k])
+        #             gphi[j] += g
+
+    nnode = xnode.shape[0]
+    mask = np.ones(nnode, bool)
+
+    if phi is not None:
+        phi[:] = 1.
+        for j in range(nnode):
+            mask[j] = False
+            phi[:,j] = np.prod((x - xnode[mask])/(xnode[j] - xnode[mask]),axis=1)
+            mask[j] = True
+
+    if gphi is not None:
+        gphi[:] = 0.
+
+        for j in range(nnode):
+            mask[j] = False
             for i in range(nnode):
-                if i != j:
-                    g = 1./(xnode[j] - xnode[i])
-                    for k in range(nnode):
-                        if k != i and k != j:
-                            g *= (x - xnode[k])/(xnode[j] - xnode[k])
-                    gphi[j] += g
+                if i == j:
+                    continue
+
+                mask[i] = False
+                if nnode > 2: 
+                    gphi[:,j,:] += np.prod((x - xnode[mask])/(xnode[j] - xnode[mask]),
+                        axis=1).reshape(-1,1)/(xnode[j] - xnode[i])
+                else:
+                    gphi[:,j,:] += 1./(xnode[j] - xnode[i])
+
+                mask[i] = True
+            mask[j] = True
+
+        # code.interact(local=locals())
+
+    # code.interact(local=locals())
 
 def LagrangeBasis2D(x, xnode, nnode, phi, gphi):
     if gphi is not None:
-        gphix = 0.*xnode; gphiy = 0.*xnode
+        gphix = np.zeros((x.shape[0],xnode.shape[0],1)); gphiy = np.zeros_like(gphix)
     else:
         gphix = None; gphiy = None
     # Always need phi
-    phix = 0.*xnode; phiy = 0.*xnode
+    phix = np.zeros((x.shape[0],xnode.shape[0])); phiy = np.zeros_like(phix)
 
-    LagrangeBasis1D(x[0], xnode, nnode, phix, gphix)
-    LagrangeBasis1D(x[1], xnode, nnode, phiy, gphiy)
+    LagrangeBasis1D(x[:,0].reshape(-1,1), xnode, nnode, phix, gphix)
+    LagrangeBasis1D(x[:,1].reshape(-1,1), xnode, nnode, phiy, gphiy)
 
     if phi is not None:
-        phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
+        for i in range(x.shape[0]):
+            phi[i,:] = np.reshape(np.outer(phix[i,:], phiy[i,:]), (-1,), 'F')
     if gphi is not None:
-        gphi[:,0] = np.reshape(np.outer(gphix, phiy), (-1,), 'F')
-        gphi[:,1] = np.reshape(np.outer(phix, gphiy), (-1,), 'F')
+        for i in range(x.shape[0]):
+            gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
+            gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
 
 
 def Shape_TensorLagrange(dim, p, x, phi):
@@ -731,10 +793,16 @@ def Shape_TensorLagrange(dim, p, x, phi):
     	phi[:] = 1.
     	return
 
-    nnode = p + 1
-    xnode = np.zeros(nnode)
-    dx = 2./float(p)
-    for i in range(nnode): xnode[i] = -1. + float(i)*dx
+    # nnode = p + 1
+    # xnode = np.zeros(nnode)
+    # dx = 2./float(p)
+    # for i in range(nnode): xnode[i] = -1. + float(i)*dx
+    # xnode, nnode = EquidistantNodes(BasisType.LagrangeSeg, p)
+    # xnode.shape = nnode
+
+    nnode = p+1
+    xnode = EquidistantNodes1DRange(-1., 1., nnode)
+
     if dim == 1:
         LagrangeBasis1D(x, xnode, nnode, phi, None)
     elif dim == 2:
@@ -742,86 +810,86 @@ def Shape_TensorLagrange(dim, p, x, phi):
 
 
 def Shape_LagrangeTri(p, xi, phi):
-    x = xi[0]; y = xi[1]
+    x = xi[:,0]; y = xi[:,1]
 
     if p == 0:
         phi[:] = 1.
     elif p == 1:
-        phi[0] = 1-x-y
-        phi[1] = x  
-        phi[2] = y
+        phi[:,0] = 1-x-y
+        phi[:,1] = x  
+        phi[:,2] = y
     elif p == 2:
-        phi[0] = 1.0-3.0*x-3.0*y+2.0*x*x+4.0*x*y+2.0*y*y
-        phi[2] = -x+2.0*x*x
-        phi[5] = -y+2.0*y*y
-        phi[4] = 4.0*x*y
-        phi[3] = 4.0*y-4.0*x*y-4.0*y*y
-        phi[1] = 4.0*x-4.0*x*x-4.0*x*y
+        phi[:,0] = 1.0-3.0*x-3.0*y+2.0*x*x+4.0*x*y+2.0*y*y
+        phi[:,2] = -x+2.0*x*x
+        phi[:,5] = -y+2.0*y*y
+        phi[:,4] = 4.0*x*y
+        phi[:,3] = 4.0*y-4.0*x*y-4.0*y*y
+        phi[:,1] = 4.0*x-4.0*x*x-4.0*x*y
     elif p == 3:
-        phi[0] = 1.0-11.0/2.0*x-11.0/2.0*y+9.0*x*x+18.0*x*y+9.0*y*y-9.0/2.0*x*x*x-27.0/2.0*x*x*y-27.0/2.0*x*y*y-9.0/2.0*y*y*y
-        phi[3] = x-9.0/2.0*x*x+9.0/2.0*x*x*x
-        phi[9] = y-9.0/2.0*y*y+9.0/2.0*y*y*y
-        phi[6] = -9.0/2.0*x*y+27.0/2.0*x*x*y
-        phi[8] = -9.0/2.0*x*y+27.0/2.0*x*y*y
-        phi[7] = -9.0/2.0*y+9.0/2.0*x*y+18.0*y*y-27.0/2.0*x*y*y-27.0/2.0*y*y*y
-        phi[4] = 9.0*y-45.0/2.0*x*y-45.0/2.0*y*y+27.0/2.0*x*x*y+27.0*x*y*y+27.0/2.0*y*y*y
-        phi[1] = 9.0*x-45.0/2.0*x*x-45.0/2.0*x*y+27.0/2.0*x*x*x+27.0*x*x*y+27.0/2.0*x*y*y
-        phi[2] = -9.0/2.0*x+18.0*x*x+9.0/2.0*x*y-27.0/2.0*x*x*x-27.0/2.0*x*x*y
-        phi[5] = 27.0*x*y-27.0*x*x*y-27.0*x*y*y
+        phi[:,0] = 1.0-11.0/2.0*x-11.0/2.0*y+9.0*x*x+18.0*x*y+9.0*y*y-9.0/2.0*x*x*x-27.0/2.0*x*x*y-27.0/2.0*x*y*y-9.0/2.0*y*y*y
+        phi[:,3] = x-9.0/2.0*x*x+9.0/2.0*x*x*x
+        phi[:,9] = y-9.0/2.0*y*y+9.0/2.0*y*y*y
+        phi[:,6] = -9.0/2.0*x*y+27.0/2.0*x*x*y
+        phi[:,8] = -9.0/2.0*x*y+27.0/2.0*x*y*y
+        phi[:,7] = -9.0/2.0*y+9.0/2.0*x*y+18.0*y*y-27.0/2.0*x*y*y-27.0/2.0*y*y*y
+        phi[:,4] = 9.0*y-45.0/2.0*x*y-45.0/2.0*y*y+27.0/2.0*x*x*y+27.0*x*y*y+27.0/2.0*y*y*y
+        phi[:,1] = 9.0*x-45.0/2.0*x*x-45.0/2.0*x*y+27.0/2.0*x*x*x+27.0*x*x*y+27.0/2.0*x*y*y
+        phi[:,2] = -9.0/2.0*x+18.0*x*x+9.0/2.0*x*y-27.0/2.0*x*x*x-27.0/2.0*x*x*y
+        phi[:,5] = 27.0*x*y-27.0*x*x*y-27.0*x*y*y
     elif p == 4:
-        phi[ 0] = 1.0-25.0/3.0*x-25.0/3.0*y+70.0/3.0*x*x+140.0/3.0*x*y+70.0/3.0*y*y-80/3.0*x*x*x-80.0*x*x*y-80.0*x*y*y-80.0/3.0*y*y*y \
+        phi[:, 0] = 1.0-25.0/3.0*x-25.0/3.0*y+70.0/3.0*x*x+140.0/3.0*x*y+70.0/3.0*y*y-80/3.0*x*x*x-80.0*x*x*y-80.0*x*y*y-80.0/3.0*y*y*y \
         +32.0/3.0*x*x*x*x+128/3.0*x*x*x*y+64.0*x*x*y*y+128.0/3.0*x*y*y*y+32.0/3.0*y*y*y*y 
-        phi[ 4] = -x+22.0/3.0*x*x-16.0*x*x*x+32.0/3.0*x*x*x*x 
-        phi[14] = -y+22.0/3.0*y*y-16.0*y*y*y+32.0/3.0*y*y*y*y 
-        phi[ 8] = 16.0/3.0*x*y-32.0*x*x*y+128.0/3.0*x*x*x*y 
-        phi[11] = 4.0*x*y-16.0*x*x*y-16.0*x*y*y+64.0*x*x*y*y 
-        phi[13] = 16.0/3.0*x*y-32.0*x*y*y+128.0/3.0*x*y*y*y 
-        phi[12] = 16.0/3.0*y-16.0/3.0*x*y-112.0/3.0*y*y+32.0*x*y*y+224.0/3.0*y*y*y-128.0/3.0*x*y*y*y-128.0/3.0*y*y*y*y 
-        phi[ 9] = -12.0*y+28.0*x*y+76.0*y*y-16.0*x*x*y-144.0*x*y*y-128.0*y*y*y+64.0*x*x*y*y+128.0*x*y*y*y+64.0*y*y*y*y 
-        phi[ 5] = 16.0*y-208.0/3.0*x*y-208.0/3.0*y*y+96.0*x*x*y+192.0*x*y*y+96.0*y*y*y-128.0/3.0*x*x*x*y- 128*x*x*y*y-128.0*x*y*y*y-128.0/3.0*y*y*y*y 
-        phi[ 1] = 16.0*x-208.0/3.0*x*x-208.0/3.0*x*y+96.0*x*x*x+192.0*x*x*y+96.0*x*y*y-128.0/3.0*x*x*x*x- 128*x*x*x*y-128.0*x*x*y*y-128.0/3.0*x*y*y*y 
-        phi[ 2] = -12.0*x+76.0*x*x+28.0*x*y-128.0*x*x*x-144.0*x*x*y-16.0*x*y*y+64.0*x*x*x*x+128.0*x*x*x*y+64.0*x*x*y*y 
-        phi[ 3] = 16.0/3.0*x-112.0/3.0*x*x-16.0/3.0*x*y+224.0/3.0*x*x*x+32.0*x*x*y-128.0/3.0*x*x*x*x-128.0/3.0*x*x*x*y 
-        phi[ 6] = 96.0*x*y-224.0*x*x*y-224.0*x*y*y+128.0*x*x*x*y+256.0*x*x*y*y+128.0*x*y*y*y 
-        phi[ 7] = -32.0*x*y+160.0*x*x*y+32.0*x*y*y-128.0*x*x*x*y-128.0*x*x*y*y 
-        phi[10] = -32.0*x*y+32.0*x*x*y+160.0*x*y*y-128.0*x*x*y*y-128.0*x*y*y*y
+        phi[:, 4] = -x+22.0/3.0*x*x-16.0*x*x*x+32.0/3.0*x*x*x*x 
+        phi[:,14] = -y+22.0/3.0*y*y-16.0*y*y*y+32.0/3.0*y*y*y*y 
+        phi[:, 8] = 16.0/3.0*x*y-32.0*x*x*y+128.0/3.0*x*x*x*y 
+        phi[:,11] = 4.0*x*y-16.0*x*x*y-16.0*x*y*y+64.0*x*x*y*y 
+        phi[:,13] = 16.0/3.0*x*y-32.0*x*y*y+128.0/3.0*x*y*y*y 
+        phi[:,12] = 16.0/3.0*y-16.0/3.0*x*y-112.0/3.0*y*y+32.0*x*y*y+224.0/3.0*y*y*y-128.0/3.0*x*y*y*y-128.0/3.0*y*y*y*y 
+        phi[:, 9] = -12.0*y+28.0*x*y+76.0*y*y-16.0*x*x*y-144.0*x*y*y-128.0*y*y*y+64.0*x*x*y*y+128.0*x*y*y*y+64.0*y*y*y*y 
+        phi[:, 5] = 16.0*y-208.0/3.0*x*y-208.0/3.0*y*y+96.0*x*x*y+192.0*x*y*y+96.0*y*y*y-128.0/3.0*x*x*x*y- 128*x*x*y*y-128.0*x*y*y*y-128.0/3.0*y*y*y*y 
+        phi[:, 1] = 16.0*x-208.0/3.0*x*x-208.0/3.0*x*y+96.0*x*x*x+192.0*x*x*y+96.0*x*y*y-128.0/3.0*x*x*x*x- 128*x*x*x*y-128.0*x*x*y*y-128.0/3.0*x*y*y*y 
+        phi[:, 2] = -12.0*x+76.0*x*x+28.0*x*y-128.0*x*x*x-144.0*x*x*y-16.0*x*y*y+64.0*x*x*x*x+128.0*x*x*x*y+64.0*x*x*y*y 
+        phi[:, 3] = 16.0/3.0*x-112.0/3.0*x*x-16.0/3.0*x*y+224.0/3.0*x*x*x+32.0*x*x*y-128.0/3.0*x*x*x*x-128.0/3.0*x*x*x*y 
+        phi[:, 6] = 96.0*x*y-224.0*x*x*y-224.0*x*y*y+128.0*x*x*x*y+256.0*x*x*y*y+128.0*x*y*y*y 
+        phi[:, 7] = -32.0*x*y+160.0*x*x*y+32.0*x*y*y-128.0*x*x*x*y-128.0*x*x*y*y 
+        phi[:,10] = -32.0*x*y+32.0*x*x*y+160.0*x*y*y-128.0*x*x*y*y-128.0*x*y*y*y
     elif p == 5:
-        phi[ 0]  = 1.0-137.0/12.0*x-137.0/12.0*y+375.0/8.0*x*x+375.0/4.0*x*y+375.0/8.0*y*y-2125.0/24.0*x*x*x-2125.0/8.0*x*x*y-2125.0/8.0*x*y*y \
+        phi[:, 0]  = 1.0-137.0/12.0*x-137.0/12.0*y+375.0/8.0*x*x+375.0/4.0*x*y+375.0/8.0*y*y-2125.0/24.0*x*x*x-2125.0/8.0*x*x*y-2125.0/8.0*x*y*y \
         -2125.0/24.0*y*y*y+ 625.0/8.0*x*x*x*x+625.0/2.0*x*x*x*y+1875.0/4.0*x*x*y*y+625.0/2.0*x*y*y*y+625.0/8.0*y*y*y*y-625.0/24.0*x*x*x*x*x \
         -3125.0/24.0*x*x*x*x*y-3125.0/12.0*x*x*x*y*y-3125.0/12.0*x*x*y*y*y-3125.0/24.0*x*y*y*y*y-625.0/24.0*y*y*y*y*y
-        phi[ 5]  = x-125.0/12.0*x*x+875.0/24.0*x*x*x-625.0/12.0*x*x*x*x+625.0/24.0*x*x*x*x*x
-        phi[20]  = y-125.0/12.0*y*y+875.0/24.0*y*y*y-625.0/12.0*y*y*y*y+625.0/24.0*y*y*y*y*y
-        phi[10]  = -25.0/4.0*x*y+1375.0/24.0*x*x*y-625.0/4.0*x*x*x*y+3125.0/24.0*x*x*x*x*y
-        phi[14]  = -25.0/6.0*x*y+125.0/4.0*x*x*y+125.0/6.0*x*y*y-625.0/12.0*x*x*x*y-625.0/4.0*x*x*y*y+3125.0/12.0*x*x*x*y*y
-        phi[17]  = -25.0/6.0*x*y+125.0/6.0*x*x*y+125.0/4.0*x*y*y-625.0/4.0*x*x*y*y-625.0/12.0*x*y*y*y+3125.0/12.0*x*x*y*y*y
-        phi[19]  = -25.0/4.0*x*y+1375.0/24.0*x*y*y-625.0/4.0*x*y*y*y+3125.0/24.0*x*y*y*y*y
-        phi[18]  = -25.0/4.0*y+25.0/4.0*x*y+1525.0/24.0*y*y-1375.0/24.0*x*y*y-5125.0/24.0*y*y*y+625.0/4.0*x*y*y*y+6875.0/24.0*y*y*y*y \
+        phi[:, 5]  = x-125.0/12.0*x*x+875.0/24.0*x*x*x-625.0/12.0*x*x*x*x+625.0/24.0*x*x*x*x*x
+        phi[:,20]  = y-125.0/12.0*y*y+875.0/24.0*y*y*y-625.0/12.0*y*y*y*y+625.0/24.0*y*y*y*y*y
+        phi[:,10]  = -25.0/4.0*x*y+1375.0/24.0*x*x*y-625.0/4.0*x*x*x*y+3125.0/24.0*x*x*x*x*y
+        phi[:,14]  = -25.0/6.0*x*y+125.0/4.0*x*x*y+125.0/6.0*x*y*y-625.0/12.0*x*x*x*y-625.0/4.0*x*x*y*y+3125.0/12.0*x*x*x*y*y
+        phi[:,17]  = -25.0/6.0*x*y+125.0/6.0*x*x*y+125.0/4.0*x*y*y-625.0/4.0*x*x*y*y-625.0/12.0*x*y*y*y+3125.0/12.0*x*x*y*y*y
+        phi[:,19]  = -25.0/4.0*x*y+1375.0/24.0*x*y*y-625.0/4.0*x*y*y*y+3125.0/24.0*x*y*y*y*y
+        phi[:,18]  = -25.0/4.0*y+25.0/4.0*x*y+1525.0/24.0*y*y-1375.0/24.0*x*y*y-5125.0/24.0*y*y*y+625.0/4.0*x*y*y*y+6875.0/24.0*y*y*y*y \
         -3125.0/24.0*x*y*y*y*y-3125.0/24.0*y*y*y*y*y
-        phi[15]  = 50.0/3.0*y-75.0/2.0*x*y-325.0/2.0*y*y+125.0/6.0*x*x*y+3875.0/12.0*x*y*y+6125.0/12.0*y*y*y-625.0/4.0*x*x*y*y-3125.0/4.0*x*y*y*y \
+        phi[:,15]  = 50.0/3.0*y-75.0/2.0*x*y-325.0/2.0*y*y+125.0/6.0*x*x*y+3875.0/12.0*x*y*y+6125.0/12.0*y*y*y-625.0/4.0*x*x*y*y-3125.0/4.0*x*y*y*y \
         -625.0*y*y*y*y+3125.0/12.0*x*x*y*y*y+3125.0/6.0*x*y*y*y*y+3125.0/12.0*y*y*y*y*y
-        phi[11]  = -25.0*y+1175.0/12.0*x*y+2675.0/12.0*y*y-125.0*x*x*y-8875.0/12.0*x*y*y-7375.0/12.0*y*y*y+625.0/12.0*x*x*x*y+3125.0/4.0*x*x*y*y \
+        phi[:,11]  = -25.0*y+1175.0/12.0*x*y+2675.0/12.0*y*y-125.0*x*x*y-8875.0/12.0*x*y*y-7375.0/12.0*y*y*y+625.0/12.0*x*x*x*y+3125.0/4.0*x*x*y*y \
         +5625.0/4.0*x*y*y*y+8125.0/12.0*y*y*y*y-3125.0/12.0*x*x*x*y*y-3125.0/4.0*x*x*y*y*y-3125.0/4.0*x*y*y*y*y-3125.0/12.0*y*y*y*y*y 
-        phi[ 6] = 25.0*y-1925.0/12.0*x*y-1925.0/12.0*y*y+8875.0/24.0*x*x*y+8875.0/12.0*x*y*y+8875.0/24.0*y*y*y-4375.0/12.0*x*x*x*y \
+        phi[:, 6] = 25.0*y-1925.0/12.0*x*y-1925.0/12.0*y*y+8875.0/24.0*x*x*y+8875.0/12.0*x*y*y+8875.0/24.0*y*y*y-4375.0/12.0*x*x*x*y \
         -4375.0/4.0*x*x*y*y-4375.0/4.0*x*y*y*y-4375.0/12.0*y*y*y*y+3125.0/24.0*x*x*x*x*y+ 3125.0/6.0*x*x*x*y*y+3125.0/4.0*x*x*y*y*y \
         +3125.0/6.0*x*y*y*y*y+3125.0/24.0*y*y*y*y*y
-        phi[ 1] = 25.0*x-1925.0/12.0*x*x-1925.0/12.0*x*y+8875.0/24.0*x*x*x+8875.0/12.0*x*x*y+8875.0/24.0*x*y*y-4375.0/12.0*x*x*x*x-4375.0/4.0*x*x*x*y \
+        phi[:, 1] = 25.0*x-1925.0/12.0*x*x-1925.0/12.0*x*y+8875.0/24.0*x*x*x+8875.0/12.0*x*x*y+8875.0/24.0*x*y*y-4375.0/12.0*x*x*x*x-4375.0/4.0*x*x*x*y \
         -4375.0/4.0*x*x*y*y-4375.0/12.0*x*y*y*y+3125.0/24.0*x*x*x*x*x+3125.0/6.0*x*x*x*x*y+3125.0/4.0*x*x*x*y*y+3125.0/6.0*x*x*y*y*y+3125.0/24.0*x*y*y*y*y
-        phi[ 2] = -25.0*x+2675.0/12.0*x*x+1175.0/12.0*x*y-7375.0/12.0*x*x*x-8875.0/12.0*x*x*y-125.0*x*y*y+8125.0/12.0*x*x*x*x \
+        phi[:, 2] = -25.0*x+2675.0/12.0*x*x+1175.0/12.0*x*y-7375.0/12.0*x*x*x-8875.0/12.0*x*x*y-125.0*x*y*y+8125.0/12.0*x*x*x*x \
         +5625.0/4.0*x*x*x*y+3125.0/4.0*x*x*y*y+625.0/12.0*x*y*y*y-3125.0/12.0*x*x*x*x*x- 3125.0/4.0*x*x*x*x*y-3125.0/4.0*x*x*x*y*y-3125.0/12.0*x*x*y*y*y
-        phi[ 3] = 50.0/3.0*x-325.0/2.0*x*x-75.0/2.0*x*y+6125.0/12.0*x*x*x+3875.0/12.0*x*x*y+125.0/6.0*x*y*y-625.0*x*x*x*x \
+        phi[:, 3] = 50.0/3.0*x-325.0/2.0*x*x-75.0/2.0*x*y+6125.0/12.0*x*x*x+3875.0/12.0*x*x*y+125.0/6.0*x*y*y-625.0*x*x*x*x \
         -3125.0/4.0*x*x*x*y-625.0/4.0*x*x*y*y+3125.0/12.0*x*x*x*x*x+3125.0/6.0*x*x*x*x*y+3125.0/12.0*x*x*x*y*y
-        phi[ 4] = -25.0/4.0*x+1525.0/24.0*x*x+25.0/4.0*x*y-5125.0/24.0*x*x*x-1375.0/24.0*x*x*y+6875.0/24.0*x*x*x*x+625.0/4.0*x*x*x*y \
+        phi[:, 4] = -25.0/4.0*x+1525.0/24.0*x*x+25.0/4.0*x*y-5125.0/24.0*x*x*x-1375.0/24.0*x*x*y+6875.0/24.0*x*x*x*x+625.0/4.0*x*x*x*y \
         -3125.0/24.0*x*x*x*x*x-3125.0/24.0*x*x*x*x*y
-        phi[ 7] = 250.0*x*y-5875.0/6.0*x*x*y-5875.0/6.0*x*y*y+1250.0*x*x*x*y+2500.0*x*x*y*y+1250.0*x*y*y*y-3125.0/6.0*x*x*x*x*y \
+        phi[:, 7] = 250.0*x*y-5875.0/6.0*x*x*y-5875.0/6.0*x*y*y+1250.0*x*x*x*y+2500.0*x*x*y*y+1250.0*x*y*y*y-3125.0/6.0*x*x*x*x*y \
         -3125.0/2.0*x*x*x*y*y-3125.0/2.0*x*x*y*y*y-3125.0/6.0*x*y*y*y*y
-        phi[ 8] = -125.0*x*y+3625.0/4.0*x*x*y+1125.0/4.0*x*y*y-3125.0/2.0*x*x*x*y-6875.0/4.0*x*x*y*y-625.0/4.0*x*y*y*y+3125.0/4.0*x*x*x*x*y \
+        phi[:, 8] = -125.0*x*y+3625.0/4.0*x*x*y+1125.0/4.0*x*y*y-3125.0/2.0*x*x*x*y-6875.0/4.0*x*x*y*y-625.0/4.0*x*y*y*y+3125.0/4.0*x*x*x*x*y \
         +3125.0/2.0*x*x*x*y*y+3125.0/4.0*x*x*y*y*y
-        phi[ 9] = 125.0/3.0*x*y-2125.0/6.0*x*x*y-125.0/3.0*x*y*y+2500.0/3.0*x*x*x*y+625.0/2.0*x*x*y*y-3125.0/6.0*x*x*x*x*y-3125.0/6.0*x*x*x*y*y
-        phi[12] = -125.0*x*y+1125.0/4.0*x*x*y+3625.0/4.0*x*y*y-625.0/4.0*x*x*x*y-6875.0/4.0*x*x*y*y-3125.0/2.0*x*y*y*y+3125.0/4.0*x*x*x*y*y \
+        phi[:, 9] = 125.0/3.0*x*y-2125.0/6.0*x*x*y-125.0/3.0*x*y*y+2500.0/3.0*x*x*x*y+625.0/2.0*x*x*y*y-3125.0/6.0*x*x*x*x*y-3125.0/6.0*x*x*x*y*y
+        phi[:,12] = -125.0*x*y+1125.0/4.0*x*x*y+3625.0/4.0*x*y*y-625.0/4.0*x*x*x*y-6875.0/4.0*x*x*y*y-3125.0/2.0*x*y*y*y+3125.0/4.0*x*x*x*y*y \
         +3125.0/2.0*x*x*y*y*y+3125.0/4.0*x*y*y*y*y
-        phi[13] = 125.0/4.0*x*y-375.0/2.0*x*x*y-375.0/2.0*x*y*y+625.0/4.0*x*x*x*y+4375.0/4.0*x*x*y*y+625.0/4.0*x*y*y*y-3125.0/4.0*x*x*x*y*y \
+        phi[:,13] = 125.0/4.0*x*y-375.0/2.0*x*x*y-375.0/2.0*x*y*y+625.0/4.0*x*x*x*y+4375.0/4.0*x*x*y*y+625.0/4.0*x*y*y*y-3125.0/4.0*x*x*x*y*y \
         -3125.0/4.0*x*x*y*y*y
-        phi[16] = 125.0/3.0*x*y-125.0/3.0*x*x*y-2125.0/6.0*x*y*y+625.0/2.0*x*x*y*y+2500.0/3.0*x*y*y*y-3125.0/6.0*x*x*y*y*y-3125.0/6.0*x*y*y*y*y
+        phi[:,16] = 125.0/3.0*x*y-125.0/3.0*x*x*y-2125.0/6.0*x*y*y+625.0/2.0*x*x*y*y+2500.0/3.0*x*y*y*y-3125.0/6.0*x*x*y*y*y-3125.0/6.0*x*y*y*y*y
 
 
 def Grad_TensorLagrange(dim, p, x, gphi):
@@ -829,10 +897,9 @@ def Grad_TensorLagrange(dim, p, x, gphi):
     	gphi[:,:] = 0.
     	return 
 
-    nnode = p + 1
-    xnode = np.zeros(nnode)
-    dx = 2./float(p)
-    for i in range(nnode): xnode[i] = -1. + float(i)*dx
+    nnode = p+1
+    xnode = EquidistantNodes1DRange(-1., 1., nnode)
+
     if dim == 1:
         LagrangeBasis1D(x, xnode, nnode, None, gphi)
     if dim == 2:
@@ -840,146 +907,146 @@ def Grad_TensorLagrange(dim, p, x, gphi):
 
 
 def Grad_LagrangeTri(p, xi, gphi):
-    x = xi[0]; y = xi[1]
+    x = xi[:,0]; y = xi[:,1]
 
     if p == 0:
         gphi[:] = 0.
     elif p == 1:
-        gphi[0,0] =  -1.0
-        gphi[1,0] =  1.0
-        gphi[2,0] =  0.0
-        gphi[0,1] =  -1.0
-        gphi[1,1] =  0.0
-        gphi[2,1] =  1.0
+        gphi[:,0,0] =  -1.0
+        gphi[:,1,0] =  1.0
+        gphi[:,2,0] =  0.0
+        gphi[:,0,1] =  -1.0
+        gphi[:,1,1] =  0.0
+        gphi[:,2,1] =  1.0
     elif p == 2:
-        gphi[0,0] =  -3.0+4.0*x+4.0*y
-        gphi[2,0] =  -1.0+4.0*x
-        gphi[5,0] =  0.0
-        gphi[4,0] =  4.0*y
-        gphi[3,0] =  -4.0*y
-        gphi[1,0] =  4.0-8.0*x-4.0*y
-        gphi[0,1] =  -3.0+4.0*x+4.0*y
-        gphi[2,1] =  0.0
-        gphi[5,1] =  -1.0+4.0*y
-        gphi[4,1] =  4.0*x
-        gphi[3,1] =  4.0-4.0*x-8.0*y
-        gphi[1,1] =  -4.0*x
+        gphi[:,0,0] =  -3.0+4.0*x+4.0*y
+        gphi[:,2,0] =  -1.0+4.0*x
+        gphi[:,5,0] =  0.0
+        gphi[:,4,0] =  4.0*y
+        gphi[:,3,0] =  -4.0*y
+        gphi[:,1,0] =  4.0-8.0*x-4.0*y
+        gphi[:,0,1] =  -3.0+4.0*x+4.0*y
+        gphi[:,2,1] =  0.0
+        gphi[:,5,1] =  -1.0+4.0*y
+        gphi[:,4,1] =  4.0*x
+        gphi[:,3,1] =  4.0-4.0*x-8.0*y
+        gphi[:,1,1] =  -4.0*x
     elif p == 3:
-        gphi[0,0] =  -11.0/2.0+18.0*x+18.0*y-27.0/2.0*x*x-27.0*x*y-27.0/2.0*y*y
-        gphi[3,0] =  1.0-9.0*x+27.0/2.0*x*x
-        gphi[9,0] =  0.0
-        gphi[6,0] =  -9.0/2.0*y+27.0*x*y
-        gphi[8,0] =  -9.0/2.0*y+27.0/2.0*y*y
-        gphi[7,0] =  9.0/2.0*y-27.0/2.0*y*y
-        gphi[4,0] =  -45.0/2.0*y+27.0*x*y+27.0*y*y
-        gphi[1,0] =  9.0-45.0*x-45.0/2.0*y+81.0/2.0*x*x+54.0*x*y+27.0/2.0*y*y
-        gphi[2,0] =  -9.0/2.0+36.0*x+9.0/2.0*y-81.0/2.0*x*x-27.0*x*y
-        gphi[5,0] =  27.0*y-54.0*x*y-27.0*y*y
-        gphi[0,1] =  -11.0/2.0+18.0*x+18.0*y-27.0/2.0*x*x-27.0*x*y-27.0/2.0*y*y
-        gphi[3,1] =  0.0
-        gphi[9,1] =  1.0-9.0*y+27.0/2.0*y*y
-        gphi[6,1] =  -9.0/2.0*x+27.0/2.0*x*x
-        gphi[8,1] =  -9.0/2.0*x+27.0*x*y
-        gphi[7,1] =  -9.0/2.0+9.0/2.0*x+36.0*y-27.0*x*y-81.0/2.0*y*y
-        gphi[4,1] =  9.0-45.0/2.0*x-45.0*y+27.0/2.0*x*x+54.0*x*y+81.0/2.0*y*y
-        gphi[1,1] =  -45.0/2.0*x+27.0*x*x+27.0*x*y
-        gphi[2,1] =  9.0/2.0*x-27.0/2.0*x*x
-        gphi[5,1] =  27.0*x-27.0*x*x-54.0*x*y
+        gphi[:,0,0] =  -11.0/2.0+18.0*x+18.0*y-27.0/2.0*x*x-27.0*x*y-27.0/2.0*y*y
+        gphi[:,3,0] =  1.0-9.0*x+27.0/2.0*x*x
+        gphi[:,9,0] =  0.0
+        gphi[:,6,0] =  -9.0/2.0*y+27.0*x*y
+        gphi[:,8,0] =  -9.0/2.0*y+27.0/2.0*y*y
+        gphi[:,7,0] =  9.0/2.0*y-27.0/2.0*y*y
+        gphi[:,4,0] =  -45.0/2.0*y+27.0*x*y+27.0*y*y
+        gphi[:,1,0] =  9.0-45.0*x-45.0/2.0*y+81.0/2.0*x*x+54.0*x*y+27.0/2.0*y*y
+        gphi[:,2,0] =  -9.0/2.0+36.0*x+9.0/2.0*y-81.0/2.0*x*x-27.0*x*y
+        gphi[:,5,0] =  27.0*y-54.0*x*y-27.0*y*y
+        gphi[:,0,1] =  -11.0/2.0+18.0*x+18.0*y-27.0/2.0*x*x-27.0*x*y-27.0/2.0*y*y
+        gphi[:,3,1] =  0.0
+        gphi[:,9,1] =  1.0-9.0*y+27.0/2.0*y*y
+        gphi[:,6,1] =  -9.0/2.0*x+27.0/2.0*x*x
+        gphi[:,8,1] =  -9.0/2.0*x+27.0*x*y
+        gphi[:,7,1] =  -9.0/2.0+9.0/2.0*x+36.0*y-27.0*x*y-81.0/2.0*y*y
+        gphi[:,4,1] =  9.0-45.0/2.0*x-45.0*y+27.0/2.0*x*x+54.0*x*y+81.0/2.0*y*y
+        gphi[:,1,1] =  -45.0/2.0*x+27.0*x*x+27.0*x*y
+        gphi[:,2,1] =  9.0/2.0*x-27.0/2.0*x*x
+        gphi[:,5,1] =  27.0*x-27.0*x*x-54.0*x*y
     elif p == 4:
-        gphi[ 0,0] =  -25.0/3.0+140.0/3.0*x+140.0/3.0*y-80.0*x*x-160.0*x*y-80.0*y*y+128.0/3.0*x*x*x+128.0*x*x*y+128.0*x*y*y+128.0/3.0*y*y*y
-        gphi[ 4,0] =  -1.0+44.0/3.0*x-48.0*x*x+128.0/3.0*x*x*x
-        gphi[14,0] =  0.0
-        gphi[ 8,0] =  16.0/3.0*y-64.0*x*y+128.0*x*x*y
-        gphi[11,0] =  4.0*y-32.0*x*y-16.0*y*y+128.0*x*y*y
-        gphi[13,0] =  16.0/3.0*y-32.0*y*y+128.0/3.0*y*y*y
-        gphi[12,0] =  -16.0/3.0*y+32.0*y*y-128.0/3.0*y*y*y
-        gphi[ 9,0] =  28.0*y-32.0*x*y-144.0*y*y+128.0*x*y*y+128.0*y*y*y
-        gphi[ 5,0] =  -208.0/3.0*y+192.0*x*y+192.0*y*y-128.0*x*x*y-256.0*x*y*y-128.0*y*y*y
-        gphi[ 1,0] =  16.0-416.0/3.0*x-208.0/3.0*y+288.0*x*x+384.0*x*y+96.0*y*y-512.0/3.0*x*x*x-384.0*x*x*y-256.0*x*y*y-128.0/3.0*y*y*y
-        gphi[ 2,0] =  -12.0+152.0*x+28.0*y-384.0*x*x-288.0*x*y-16.0*y*y+256.0*x*x*x+384.0*x*x*y+128.0*x*y*y
-        gphi[ 3,0] =  16.0/3.0-224.0/3.0*x-16.0/3.0*y+224.0*x*x+64.0*x*y-512.0/3.0*x*x*x-128.0*x*x*y
-        gphi[ 6,0] =  96.0*y-448.0*x*y-224.0*y*y+384.0*x*x*y+512.0*x*y*y+128.0*y*y*y
-        gphi[ 7,0] =  -32.0*y+320.0*x*y+32.0*y*y-384.0*x*x*y-256.0*x*y*y
-        gphi[10,0] =  -32.0*y+64.0*x*y+160.0*y*y-256.0*x*y*y-128.0*y*y*y
-        gphi[ 0,1] =  -25.0/3.0+140.0/3.0*x+140.0/3.0*y-80.0*x*x-160.0*x*y-80.0*y*y+128.0/3.0*x*x*x+128.0*x*x*y+128.0*x*y*y+128.0/3.0*y*y*y
-        gphi[ 4,1] =  0.0
-        gphi[14,1] =  -1.0+44.0/3.0*y-48.0*y*y+128.0/3.0*y*y*y
-        gphi[ 8,1] =  16.0/3.0*x-32.0*x*x+128.0/3.0*x*x*x
-        gphi[11,1] =  4.0*x-16.0*x*x-32.0*x*y+128.0*x*x*y
-        gphi[13,1] =  16.0/3.0*x-64.0*x*y+128.0*x*y*y
-        gphi[12,1] =  16.0/3.0-16.0/3.0*x-224.0/3.0*y+64.0*x*y+224.0*y*y-128.0*x*y*y-512.0/3.0*y*y*y
-        gphi[ 9,1] =  -12.0+28.0*x+152.0*y-16.0*x*x-288.0*x*y-384.0*y*y+128.0*x*x*y+384.0*x*y*y+256.0*y*y*y
-        gphi[ 5,1] =  16.0-208.0/3.0*x-416.0/3.0*y+96.0*x*x+384.0*x*y+288.0*y*y-128.0/3.0*x*x*x-256.0*x*x*y-384.0*x*y*y-512.0/3.0*y*y*y
-        gphi[ 1,1] =  -208.0/3.0*x+192.0*x*x+192.0*x*y-128.0*x*x*x-256.0*x*x*y-128.0*x*y*y
-        gphi[ 2,1] =  28.0*x-144.0*x*x-32.0*x*y+128.0*x*x*x+128.0*x*x*y
-        gphi[ 3,1] =  -16.0/3.0*x+32.0*x*x-128.0/3.0*x*x*x
-        gphi[ 6,1] =  96.0*x-224.0*x*x-448.0*x*y+128.0*x*x*x+512.0*x*x*y+384.0*x*y*y
-        gphi[ 7,1] =  -32.0*x+160.0*x*x+64.0*x*y-128.0*x*x*x-256.0*x*x*y
-        gphi[10,1] =  -32.0*x+32.0*x*x+320.0*x*y-256.0*x*x*y-384.0*x*y*y
+        gphi[:, 0,0] =  -25.0/3.0+140.0/3.0*x+140.0/3.0*y-80.0*x*x-160.0*x*y-80.0*y*y+128.0/3.0*x*x*x+128.0*x*x*y+128.0*x*y*y+128.0/3.0*y*y*y
+        gphi[:, 4,0] =  -1.0+44.0/3.0*x-48.0*x*x+128.0/3.0*x*x*x
+        gphi[:,14,0] =  0.0
+        gphi[:, 8,0] =  16.0/3.0*y-64.0*x*y+128.0*x*x*y
+        gphi[:,11,0] =  4.0*y-32.0*x*y-16.0*y*y+128.0*x*y*y
+        gphi[:,13,0] =  16.0/3.0*y-32.0*y*y+128.0/3.0*y*y*y
+        gphi[:,12,0] =  -16.0/3.0*y+32.0*y*y-128.0/3.0*y*y*y
+        gphi[:, 9,0] =  28.0*y-32.0*x*y-144.0*y*y+128.0*x*y*y+128.0*y*y*y
+        gphi[:, 5,0] =  -208.0/3.0*y+192.0*x*y+192.0*y*y-128.0*x*x*y-256.0*x*y*y-128.0*y*y*y
+        gphi[:, 1,0] =  16.0-416.0/3.0*x-208.0/3.0*y+288.0*x*x+384.0*x*y+96.0*y*y-512.0/3.0*x*x*x-384.0*x*x*y-256.0*x*y*y-128.0/3.0*y*y*y
+        gphi[:, 2,0] =  -12.0+152.0*x+28.0*y-384.0*x*x-288.0*x*y-16.0*y*y+256.0*x*x*x+384.0*x*x*y+128.0*x*y*y
+        gphi[:, 3,0] =  16.0/3.0-224.0/3.0*x-16.0/3.0*y+224.0*x*x+64.0*x*y-512.0/3.0*x*x*x-128.0*x*x*y
+        gphi[:, 6,0] =  96.0*y-448.0*x*y-224.0*y*y+384.0*x*x*y+512.0*x*y*y+128.0*y*y*y
+        gphi[:, 7,0] =  -32.0*y+320.0*x*y+32.0*y*y-384.0*x*x*y-256.0*x*y*y
+        gphi[:,10,0] =  -32.0*y+64.0*x*y+160.0*y*y-256.0*x*y*y-128.0*y*y*y
+        gphi[:, 0,1] =  -25.0/3.0+140.0/3.0*x+140.0/3.0*y-80.0*x*x-160.0*x*y-80.0*y*y+128.0/3.0*x*x*x+128.0*x*x*y+128.0*x*y*y+128.0/3.0*y*y*y
+        gphi[:, 4,1] =  0.0
+        gphi[:,14,1] =  -1.0+44.0/3.0*y-48.0*y*y+128.0/3.0*y*y*y
+        gphi[:, 8,1] =  16.0/3.0*x-32.0*x*x+128.0/3.0*x*x*x
+        gphi[:,11,1] =  4.0*x-16.0*x*x-32.0*x*y+128.0*x*x*y
+        gphi[:,13,1] =  16.0/3.0*x-64.0*x*y+128.0*x*y*y
+        gphi[:,12,1] =  16.0/3.0-16.0/3.0*x-224.0/3.0*y+64.0*x*y+224.0*y*y-128.0*x*y*y-512.0/3.0*y*y*y
+        gphi[:, 9,1] =  -12.0+28.0*x+152.0*y-16.0*x*x-288.0*x*y-384.0*y*y+128.0*x*x*y+384.0*x*y*y+256.0*y*y*y
+        gphi[:, 5,1] =  16.0-208.0/3.0*x-416.0/3.0*y+96.0*x*x+384.0*x*y+288.0*y*y-128.0/3.0*x*x*x-256.0*x*x*y-384.0*x*y*y-512.0/3.0*y*y*y
+        gphi[:, 1,1] =  -208.0/3.0*x+192.0*x*x+192.0*x*y-128.0*x*x*x-256.0*x*x*y-128.0*x*y*y
+        gphi[:, 2,1] =  28.0*x-144.0*x*x-32.0*x*y+128.0*x*x*x+128.0*x*x*y
+        gphi[:, 3,1] =  -16.0/3.0*x+32.0*x*x-128.0/3.0*x*x*x
+        gphi[:, 6,1] =  96.0*x-224.0*x*x-448.0*x*y+128.0*x*x*x+512.0*x*x*y+384.0*x*y*y
+        gphi[:, 7,1] =  -32.0*x+160.0*x*x+64.0*x*y-128.0*x*x*x-256.0*x*x*y
+        gphi[:,10,1] =  -32.0*x+32.0*x*x+320.0*x*y-256.0*x*x*y-384.0*x*y*y
     elif p == 5:
-        gphi[ 0,0] =  -137.0/12.0+375.0/4.0*x+375.0/4.0*y-2125.0/8.0*x*x-2125.0/4.0*x*y-2125.0/8.0*y*y+625.0/2.0*x*x*x+1875.0/2.0*x*x*y \
+        gphi[:, 0,0] =  -137.0/12.0+375.0/4.0*x+375.0/4.0*y-2125.0/8.0*x*x-2125.0/4.0*x*y-2125.0/8.0*y*y+625.0/2.0*x*x*x+1875.0/2.0*x*x*y \
         +1875.0/2.0*x*y*y+625.0/2.0*y*y*y-3125.0/24.0*x*x*x*x-3125.0/6.0*x*x*x*y-3125.0/4.0*x*x*y*y-3125.0/6.0*x*y*y*y-3125.0/24.0*y*y*y*y
-        gphi[ 5,0] =  1.0-125.0/6.0*x+875.0/8.0*x*x-625.0/3.0*x*x*x+3125.0/24.0*x*x*x*x
-        gphi[20,0] =  0.0
-        gphi[10,0] =  -25.0/4.0*y+1375.0/12.0*x*y-1875.0/4.0*x*x*y+3125.0/6.0*x*x*x*y
-        gphi[14,0] =  -25.0/6.0*y+125.0/2.0*x*y+125.0/6.0*y*y-625.0/4.0*x*x*y-625.0/2.0*x*y*y+3125.0/4.0*x*x*y*y
-        gphi[17,0] =  -25.0/6.0*y+125.0/3.0*x*y+125.0/4.0*y*y-625.0/2.0*x*y*y-625.0/12.0*y*y*y+3125.0/6.0*x*y*y*y
-        gphi[19,0] =  -25.0/4.0*y+1375.0/24.0*y*y-625.0/4.0*y*y*y+3125.0/24.0*y*y*y*y
-        gphi[18,0] =  25.0/4.0*y-1375.0/24.0*y*y+625.0/4.0*y*y*y-3125.0/24.0*y*y*y*y
-        gphi[15,0] =  -75.0/2.0*y+125.0/3.0*x*y+3875.0/12.0*y*y-625.0/2.0*x*y*y-3125.0/4.0*y*y*y+3125.0/6.0*x*y*y*y+3125.0/6.0*y*y*y*y
-        gphi[11,0] =  1175.0/12.0*y-250.0*x*y-8875.0/12.0*y*y+625.0/4.0*x*x*y+3125.0/2.0*x*y*y+5625.0/4.0*y*y*y-3125.0/4.0*x*x*y*y \
+        gphi[:, 5,0] =  1.0-125.0/6.0*x+875.0/8.0*x*x-625.0/3.0*x*x*x+3125.0/24.0*x*x*x*x
+        gphi[:,20,0] =  0.0
+        gphi[:,10,0] =  -25.0/4.0*y+1375.0/12.0*x*y-1875.0/4.0*x*x*y+3125.0/6.0*x*x*x*y
+        gphi[:,14,0] =  -25.0/6.0*y+125.0/2.0*x*y+125.0/6.0*y*y-625.0/4.0*x*x*y-625.0/2.0*x*y*y+3125.0/4.0*x*x*y*y
+        gphi[:,17,0] =  -25.0/6.0*y+125.0/3.0*x*y+125.0/4.0*y*y-625.0/2.0*x*y*y-625.0/12.0*y*y*y+3125.0/6.0*x*y*y*y
+        gphi[:,19,0] =  -25.0/4.0*y+1375.0/24.0*y*y-625.0/4.0*y*y*y+3125.0/24.0*y*y*y*y
+        gphi[:,18,0] =  25.0/4.0*y-1375.0/24.0*y*y+625.0/4.0*y*y*y-3125.0/24.0*y*y*y*y
+        gphi[:,15,0] =  -75.0/2.0*y+125.0/3.0*x*y+3875.0/12.0*y*y-625.0/2.0*x*y*y-3125.0/4.0*y*y*y+3125.0/6.0*x*y*y*y+3125.0/6.0*y*y*y*y
+        gphi[:,11,0] =  1175.0/12.0*y-250.0*x*y-8875.0/12.0*y*y+625.0/4.0*x*x*y+3125.0/2.0*x*y*y+5625.0/4.0*y*y*y-3125.0/4.0*x*x*y*y \
         -3125.0/2.0*x*y*y*y-3125.0/4.0*y*y*y*y
-        gphi[ 6,0] =  -1925.0/12.0*y+8875.0/12.0*x*y+8875.0/12.0*y*y-4375.0/4.0*x*x*y-4375.0/2.0*x*y*y-4375.0/4.0*y*y*y+3125.0/6.0*x*x*x*y \
+        gphi[:, 6,0] =  -1925.0/12.0*y+8875.0/12.0*x*y+8875.0/12.0*y*y-4375.0/4.0*x*x*y-4375.0/2.0*x*y*y-4375.0/4.0*y*y*y+3125.0/6.0*x*x*x*y \
         +3125.0/2.0*x*x*y*y+3125.0/2.0*x*y*y*y+3125.0/6.0*y*y*y*y
-        gphi[ 1,0] =  25.0-1925.0/6.0*x-1925.0/12.0*y+8875.0/8.0*x*x+8875.0/6.0*x*y+8875.0/24.0*y*y-4375.0/3.0*x*x*x-13125.0/4.0*x*x*y \
+        gphi[:, 1,0] =  25.0-1925.0/6.0*x-1925.0/12.0*y+8875.0/8.0*x*x+8875.0/6.0*x*y+8875.0/24.0*y*y-4375.0/3.0*x*x*x-13125.0/4.0*x*x*y \
         -4375.0/2.0*x*y*y-4375.0/12.0*y*y*y+15625.0/24.0*x*x*x*x+6250.0/3.0*x*x*x*y+9375.0/4.0*x*x*y*y+3125.0/3.0*x*y*y*y+3125.0/24.0*y*y*y*y
-        gphi[ 2,0] =  -25.0+2675.0/6.0*x+1175.0/12.0*y-7375.0/4.0*x*x-8875.0/6.0*x*y-125.0*y*y+8125.0/3.0*x*x*x+16875.0/4.0*x*x*y \
+        gphi[:, 2,0] =  -25.0+2675.0/6.0*x+1175.0/12.0*y-7375.0/4.0*x*x-8875.0/6.0*x*y-125.0*y*y+8125.0/3.0*x*x*x+16875.0/4.0*x*x*y \
         +3125.0/2.0*x*y*y+625.0/12.0*y*y*y-15625.0/12.0*x*x*x*x-3125.0*x*x*x*y-9375.0/4.0*x*x*y*y-3125.0/6.0*x*y*y*y
-        gphi[ 3,0] =  50.0/3.0-325.0*x-75.0/2.0*y+6125.0/4.0*x*x+3875.0/6.0*x*y+125.0/6.0*y*y-2500.0*x*x*x-9375.0/4.0*x*x*y \
+        gphi[:, 3,0] =  50.0/3.0-325.0*x-75.0/2.0*y+6125.0/4.0*x*x+3875.0/6.0*x*y+125.0/6.0*y*y-2500.0*x*x*x-9375.0/4.0*x*x*y \
         -625.0/2.0*x*y*y+15625.0/12.0*x*x*x*x+6250.0/3.0*x*x*x*y+3125.0/4.0*x*x*y*y
-        gphi[ 4,0] =  -25.0/4.0+1525.0/12.0*x+25.0/4.0*y-5125.0/8.0*x*x-1375.0/12.0*x*y+6875.0/6.0*x*x*x+1875.0/4.0*x*x*y \
+        gphi[:, 4,0] =  -25.0/4.0+1525.0/12.0*x+25.0/4.0*y-5125.0/8.0*x*x-1375.0/12.0*x*y+6875.0/6.0*x*x*x+1875.0/4.0*x*x*y \
         -15625.0/24.0*x*x*x*x-3125.0/6.0*x*x*x*y
-        gphi[ 7,0] =  250.0*y-5875.0/3.0*x*y-5875.0/6.0*y*y+3750.0*x*x*y+5000.0*x*y*y+1250.0*y*y*y-6250.0/3.0*x*x*x*y \
+        gphi[:, 7,0] =  250.0*y-5875.0/3.0*x*y-5875.0/6.0*y*y+3750.0*x*x*y+5000.0*x*y*y+1250.0*y*y*y-6250.0/3.0*x*x*x*y \
         -9375.0/2.0*x*x*y*y-3125.0*x*y*y*y-3125.0/6.0*y*y*y*y
-        gphi[ 8,0] =  -125.0*y+3625.0/2.0*x*y+1125.0/4.0*y*y-9375.0/2.0*x*x*y-6875.0/2.0*x*y*y-625.0/4.0*y*y*y+3125.0*x*x*x*y \
+        gphi[:, 8,0] =  -125.0*y+3625.0/2.0*x*y+1125.0/4.0*y*y-9375.0/2.0*x*x*y-6875.0/2.0*x*y*y-625.0/4.0*y*y*y+3125.0*x*x*x*y \
         +9375.0/2.0*x*x*y*y+3125.0/2.0*x*y*y*y
-        gphi[ 9,0] =  125.0/3.0*y-2125.0/3.0*x*y-125.0/3.0*y*y+2500.0*x*x*y+625.0*x*y*y-6250.0/3.0*x*x*x*y-3125.0/2.0*x*x*y*y
-        gphi[12,0] =  -125.0*y+1125.0/2.0*x*y+3625.0/4.0*y*y-1875.0/4.0*x*x*y-6875.0/2.0*x*y*y-3125.0/2.0*y*y*y+9375.0/4.0*x*x*y*y \
+        gphi[:, 9,0] =  125.0/3.0*y-2125.0/3.0*x*y-125.0/3.0*y*y+2500.0*x*x*y+625.0*x*y*y-6250.0/3.0*x*x*x*y-3125.0/2.0*x*x*y*y
+        gphi[:,12,0] =  -125.0*y+1125.0/2.0*x*y+3625.0/4.0*y*y-1875.0/4.0*x*x*y-6875.0/2.0*x*y*y-3125.0/2.0*y*y*y+9375.0/4.0*x*x*y*y \
         +3125.0*x*y*y*y+3125.0/4.0*y*y*y*y
-        gphi[13,0] =  125.0/4.0*y-375.0*x*y-375.0/2.0*y*y+1875.0/4.0*x*x*y+4375.0/2.0*x*y*y+625.0/4.0*y*y*y-9375.0/4.0*x*x*y*y \
+        gphi[:,13,0] =  125.0/4.0*y-375.0*x*y-375.0/2.0*y*y+1875.0/4.0*x*x*y+4375.0/2.0*x*y*y+625.0/4.0*y*y*y-9375.0/4.0*x*x*y*y \
         -3125.0/2.0*x*y*y*y
-        gphi[16,0] =  125.0/3.0*y-250.0/3.0*x*y-2125.0/6.0*y*y+625.0*x*y*y+2500.0/3.0*y*y*y-3125.0/3.0*x*y*y*y-3125.0/6.0*y*y*y*y
-        gphi[ 0,1] =  -137.0/12.0+375.0/4.0*x+375.0/4.0*y-2125.0/8.0*x*x-2125.0/4.0*x*y-2125.0/8.0*y*y+625.0/2.0*x*x*x \
+        gphi[:,16,0] =  125.0/3.0*y-250.0/3.0*x*y-2125.0/6.0*y*y+625.0*x*y*y+2500.0/3.0*y*y*y-3125.0/3.0*x*y*y*y-3125.0/6.0*y*y*y*y
+        gphi[:, 0,1] =  -137.0/12.0+375.0/4.0*x+375.0/4.0*y-2125.0/8.0*x*x-2125.0/4.0*x*y-2125.0/8.0*y*y+625.0/2.0*x*x*x \
         +1875.0/2.0*x*x*y+1875.0/2.0*x*y*y+625.0/2.0*y*y*y-3125.0/24.0*x*x*x*x-3125.0/6.0*x*x*x*y-3125.0/4.0*x*x*y*y-3125.0/6.0*x*y*y*y-3125.0/24.0*y*y*y*y 
-        gphi[ 5,1] =  0.0
-        gphi[20,1] =  1.0-125.0/6.0*y+875.0/8.0*y*y-625.0/3.0*y*y*y+3125.0/24.0*y*y*y*y
-        gphi[10,1] =  -25.0/4.0*x+1375.0/24.0*x*x-625.0/4.0*x*x*x+3125.0/24.0*x*x*x*x
-        gphi[14,1] =  -25.0/6.0*x+125.0/4.0*x*x+125.0/3.0*x*y-625.0/12.0*x*x*x-625.0/2.0*x*x*y+3125.0/6.0*x*x*x*y
-        gphi[17,1] =  -25.0/6.0*x+125.0/6.0*x*x+125.0/2.0*x*y-625.0/2.0*x*x*y-625.0/4.0*x*y*y+3125.0/4.0*x*x*y*y
-        gphi[19,1] =  -25.0/4.0*x+1375.0/12.0*x*y-1875.0/4.0*x*y*y+3125.0/6.0*x*y*y*y
-        gphi[18,1] =  -25.0/4.0+25.0/4.0*x+1525.0/12.0*y-1375.0/12.0*x*y-5125.0/8.0*y*y+1875.0/4.0*x*y*y+6875.0/6.0*y*y*y \
+        gphi[:, 5,1] =  0.0
+        gphi[:,20,1] =  1.0-125.0/6.0*y+875.0/8.0*y*y-625.0/3.0*y*y*y+3125.0/24.0*y*y*y*y
+        gphi[:,10,1] =  -25.0/4.0*x+1375.0/24.0*x*x-625.0/4.0*x*x*x+3125.0/24.0*x*x*x*x
+        gphi[:,14,1] =  -25.0/6.0*x+125.0/4.0*x*x+125.0/3.0*x*y-625.0/12.0*x*x*x-625.0/2.0*x*x*y+3125.0/6.0*x*x*x*y
+        gphi[:,17,1] =  -25.0/6.0*x+125.0/6.0*x*x+125.0/2.0*x*y-625.0/2.0*x*x*y-625.0/4.0*x*y*y+3125.0/4.0*x*x*y*y
+        gphi[:,19,1] =  -25.0/4.0*x+1375.0/12.0*x*y-1875.0/4.0*x*y*y+3125.0/6.0*x*y*y*y
+        gphi[:,18,1] =  -25.0/4.0+25.0/4.0*x+1525.0/12.0*y-1375.0/12.0*x*y-5125.0/8.0*y*y+1875.0/4.0*x*y*y+6875.0/6.0*y*y*y \
         -3125.0/6.0*x*y*y*y-15625.0/24.0*y*y*y*y
-        gphi[15,1] =  50.0/3.0-75.0/2.0*x-325.0*y+125.0/6.0*x*x+3875.0/6.0*x*y+6125.0/4.0*y*y-625.0/2.0*x*x*y-9375.0/4.0*x*y*y \
+        gphi[:,15,1] =  50.0/3.0-75.0/2.0*x-325.0*y+125.0/6.0*x*x+3875.0/6.0*x*y+6125.0/4.0*y*y-625.0/2.0*x*x*y-9375.0/4.0*x*y*y \
         -2500.0*y*y*y+3125.0/4.0*x*x*y*y+6250.0/3.0*x*y*y*y+15625.0/12.0*y*y*y*y
-        gphi[11,1] =  -25.0+1175.0/12.0*x+2675.0/6.0*y-125.0*x*x-8875.0/6.0*x*y-7375.0/4.0*y*y+625.0/12.0*x*x*x+3125.0/2.0*x*x*y \
+        gphi[:,11,1] =  -25.0+1175.0/12.0*x+2675.0/6.0*y-125.0*x*x-8875.0/6.0*x*y-7375.0/4.0*y*y+625.0/12.0*x*x*x+3125.0/2.0*x*x*y \
         +16875.0/4.0*x*y*y+8125.0/3.0*y*y*y-3125.0/6.0*x*x*x*y-9375.0/4.0*x*x*y*y-3125.0*x*y*y*y-15625.0/12.0*y*y*y*y
-        gphi[ 6,1] =  25.0-1925.0/12.0*x-1925.0/6.0*y+8875.0/24.0*x*x+8875.0/6.0*x*y+8875.0/8.0*y*y-4375.0/12.0*x*x*x-4375.0/2.0*x*x*y \
+        gphi[:, 6,1] =  25.0-1925.0/12.0*x-1925.0/6.0*y+8875.0/24.0*x*x+8875.0/6.0*x*y+8875.0/8.0*y*y-4375.0/12.0*x*x*x-4375.0/2.0*x*x*y \
         -13125.0/4.0*x*y*y-4375.0/3.0*y*y*y+3125.0/24.0*x*x*x*x+3125.0/3.0*x*x*x*y+9375.0/4.0*x*x*y*y+6250.0/3.0*x*y*y*y+15625.0/24.0*y*y*y*y
-        gphi[ 1,1] =  -1925.0/12.0*x+8875.0/12.0*x*x+8875.0/12.0*x*y-4375.0/4.0*x*x*x-4375.0/2.0*x*x*y-4375.0/4.0*x*y*y \
+        gphi[:, 1,1] =  -1925.0/12.0*x+8875.0/12.0*x*x+8875.0/12.0*x*y-4375.0/4.0*x*x*x-4375.0/2.0*x*x*y-4375.0/4.0*x*y*y \
         +3125.0/6.0*x*x*x*x+3125.0/2.0*x*x*x*y+3125.0/2.0*x*x*y*y+3125.0/6.0*x*y*y*y
-        gphi[ 2,1] =  1175.0/12.0*x-8875.0/12.0*x*x-250.0*x*y+5625.0/4.0*x*x*x+3125.0/2.0*x*x*y+625.0/4.0*x*y*y-3125.0/4.0*x*x*x*x \
+        gphi[:, 2,1] =  1175.0/12.0*x-8875.0/12.0*x*x-250.0*x*y+5625.0/4.0*x*x*x+3125.0/2.0*x*x*y+625.0/4.0*x*y*y-3125.0/4.0*x*x*x*x \
         -3125.0/2.0*x*x*x*y-3125.0/4.0*x*x*y*y
-        gphi[ 3,1] =  -75.0/2.0*x+3875.0/12.0*x*x+125.0/3.0*x*y-3125.0/4.0*x*x*x-625.0/2.0*x*x*y+3125.0/6.0*x*x*x*x+3125.0/6.0*x*x*x*y
-        gphi[ 4,1] =  25.0/4.0*x-1375.0/24.0*x*x+625.0/4.0*x*x*x-3125.0/24.0*x*x*x*x
-        gphi[ 7,1] =  250.0*x-5875.0/6.0*x*x-5875.0/3.0*x*y+1250.0*x*x*x+5000.0*x*x*y+3750.0*x*y*y-3125.0/6.0*x*x*x*x \
+        gphi[:, 3,1] =  -75.0/2.0*x+3875.0/12.0*x*x+125.0/3.0*x*y-3125.0/4.0*x*x*x-625.0/2.0*x*x*y+3125.0/6.0*x*x*x*x+3125.0/6.0*x*x*x*y
+        gphi[:, 4,1] =  25.0/4.0*x-1375.0/24.0*x*x+625.0/4.0*x*x*x-3125.0/24.0*x*x*x*x
+        gphi[:, 7,1] =  250.0*x-5875.0/6.0*x*x-5875.0/3.0*x*y+1250.0*x*x*x+5000.0*x*x*y+3750.0*x*y*y-3125.0/6.0*x*x*x*x \
         -3125.0*x*x*x*y-9375.0/2.0*x*x*y*y-6250.0/3.0*x*y*y*y
-        gphi[ 8,1] =  -125.0*x+3625.0/4.0*x*x+1125.0/2.0*x*y-3125.0/2.0*x*x*x-6875.0/2.0*x*x*y-1875.0/4.0*x*y*y+3125.0/4.0*x*x*x*x \
+        gphi[:, 8,1] =  -125.0*x+3625.0/4.0*x*x+1125.0/2.0*x*y-3125.0/2.0*x*x*x-6875.0/2.0*x*x*y-1875.0/4.0*x*y*y+3125.0/4.0*x*x*x*x \
         +3125.0*x*x*x*y+9375.0/4.0*x*x*y*y
-        gphi[ 9,1] =  125.0/3.0*x-2125.0/6.0*x*x-250.0/3.0*x*y+2500.0/3.0*x*x*x+625.0*x*x*y-3125.0/6.0*x*x*x*x-3125.0/3.0*x*x*x*y
-        gphi[12,1] =  -125.0*x+1125.0/4.0*x*x+3625.0/2.0*x*y-625.0/4.0*x*x*x-6875.0/2.0*x*x*y-9375.0/2.0*x*y*y+3125.0/2.0*x*x*x*y \
+        gphi[:, 9,1] =  125.0/3.0*x-2125.0/6.0*x*x-250.0/3.0*x*y+2500.0/3.0*x*x*x+625.0*x*x*y-3125.0/6.0*x*x*x*x-3125.0/3.0*x*x*x*y
+        gphi[:,12,1] =  -125.0*x+1125.0/4.0*x*x+3625.0/2.0*x*y-625.0/4.0*x*x*x-6875.0/2.0*x*x*y-9375.0/2.0*x*y*y+3125.0/2.0*x*x*x*y \
         +9375.0/2.0*x*x*y*y+3125.0*x*y*y*y
-        gphi[13,1] =  125.0/4.0*x-375.0/2.0*x*x-375.0*x*y+625.0/4.0*x*x*x+4375.0/2.0*x*x*y+1875.0/4.0*x*y*y-3125.0/2.0*x*x*x*y-9375.0/4.0*x*x*y*y
-        gphi[16,1] =  125.0/3.0*x-125.0/3.0*x*x-2125.0/3.0*x*y+625.0*x*x*y+2500.0*x*y*y-3125.0/2.0*x*x*y*y-6250.0/3.0*x*y*y*y
+        gphi[:,13,1] =  125.0/4.0*x-375.0/2.0*x*x-375.0*x*y+625.0/4.0*x*x*x+4375.0/2.0*x*x*y+1875.0/4.0*x*y*y-3125.0/2.0*x*x*x*y-9375.0/4.0*x*x*y*y
+        gphi[:,16,1] =  125.0/3.0*x-125.0/3.0*x*x-2125.0/3.0*x*y+625.0*x*x*y+2500.0*x*y*y-3125.0/2.0*x*x*y*y-6250.0/3.0*x*y*y*y
 
 
 
@@ -1002,64 +1069,88 @@ def Grad_TensorLegendre(dim, p, x, gphi):
     if dim == 2:
         LegendreBasis2D(x, p, None, gphi)
 
-def LegendreBasis2D(x, p, phi, gphi):
-    if gphi is not None:
-        gphix = np.zeros(p+1); gphiy = np.zeros(p+1)
-    else:
-        gphix = None; gphiy = None
-    # Always need phi
-    phix = np.zeros(p+1); phiy = np.zeros(p+1)
-
-    LegendreBasis1D(x[0], p, phix, gphix)
-    LegendreBasis1D(x[1], p, phiy, gphiy)
-   
-    if phi is not None:
-        phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
-    if gphi is not None:
-        gphi[:,0] = np.reshape(np.outer(gphix, phiy), (-1,), 'F')
-        gphi[:,1] = np.reshape(np.outer(phix, gphiy), (-1,), 'F')
 
 def LegendreBasis1D(x, p, phi, gphi):
 
     if phi is not None:
+        x.shape = -1
         if p >= 0:
-            phi[0]  = 1.
+            phi[:,0]  = 1.
         if p>=1:
-            phi[1]  = x
+            phi[:,1]  = x
         if p>=2:
-            phi[2]  = 0.5*(3.*x*x - 1.)
+            phi[:,2]  = 0.5*(3.*x*x - 1.)
         if p>=3:
-            phi[3]  = 0.5*(5.*x*x*x - 3.*x)
+            phi[:,3]  = 0.5*(5.*x*x*x - 3.*x)
         if p>=4:
-            phi[4]  = 0.125*(35.*x*x*x*x - 30.*x*x + 3.)
+            phi[:,4]  = 0.125*(35.*x*x*x*x - 30.*x*x + 3.)
         if p>=5:
-            phi[5]  = 0.125*(63.*x*x*x*x*x - 70.*x*x*x + 15.*x)
+            phi[:,5]  = 0.125*(63.*x*x*x*x*x - 70.*x*x*x + 15.*x)
         if p>=6:
-            phi[6]  = 0.0625*(231.*x*x*x*x*x*x - 315.*x*x*x*x + 105.*x*x -5.)
+            phi[:,6]  = 0.0625*(231.*x*x*x*x*x*x - 315.*x*x*x*x + 105.*x*x -5.)
         if p==7:
-            phi[7]  = 0.0625*(429.*x*x*x*x*x*x*x - 693.*x*x*x*x*x + 315.*x*x*x - 35.*x)
+            phi[:,7]  = 0.0625*(429.*x*x*x*x*x*x*x - 693.*x*x*x*x*x + 315.*x*x*x - 35.*x)
         if p>7:
             raise NotImplementedError("Legendre Polynomial > 7 not supported")
 
+        x.shape = -1,1
+
     if gphi is not None:
         if p >= 0:
-            gphi[0] = 0.
+            gphi[:,0] = 0.
         if p>=1:
-            gphi[1] = 1.
+            gphi[:,1] = 1.
         if p>=2:
-            gphi[2] = 3.*x
+            gphi[:,2] = 3.*x
         if p>=3:
-            gphi[3] = 0.5*(15.*x*x - 3.)
+            gphi[:,3] = 0.5*(15.*x*x - 3.)
         if p>=4:
-            gphi[4] = 0.125*(35.*4.*x*x*x - 60.*x)
+            gphi[:,4] = 0.125*(35.*4.*x*x*x - 60.*x)
         if p>=5:
-            gphi[5] = 0.125*(63.*5.*x*x*x*x - 210.*x*x + 15.)
+            gphi[:,5] = 0.125*(63.*5.*x*x*x*x - 210.*x*x + 15.)
         if p>=6:
-            gphi[6] = 0.0625*(231.*6.*x*x*x*x*x - 315.*4.*x*x*x + 210.*x)
+            gphi[:,6] = 0.0625*(231.*6.*x*x*x*x*x - 315.*4.*x*x*x + 210.*x)
         if p==7:
-            gphi[7] = 0.0625*(429.*7.*x*x*x*x*x*x - 693.*5.*x*x*x*x + 315.*3.*x*x - 35.)
+            gphi[:,7] = 0.0625*(429.*7.*x*x*x*x*x*x - 693.*5.*x*x*x*x + 315.*3.*x*x - 35.)
         if p>7:
             raise NotImplementedError("Legendre Polynomial > 7 not supported")
+
+
+def LegendreBasis2D(x, p, phi, gphi):
+    # if gphi is not None:
+    #     gphix = np.zeros(p+1); gphiy = np.zeros(p+1)
+    # else:
+    #     gphix = None; gphiy = None
+    # # Always need phi
+    # phix = np.zeros(p+1); phiy = np.zeros(p+1)
+
+    # LegendreBasis1D(x[0], p, phix, gphix)
+    # LegendreBasis1D(x[1], p, phiy, gphiy)
+   
+    # if phi is not None:
+    #     phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
+    # if gphi is not None:
+    #     gphi[:,0] = np.reshape(np.outer(gphix, phiy), (-1,), 'F')
+    #     gphi[:,1] = np.reshape(np.outer(phix, gphiy), (-1,), 'F')
+
+    if gphi is not None:
+        gphix = np.zeros((x.shape[0],p+1,1)); gphiy = np.zeros_like(gphix)
+    else:
+        gphix = None; gphiy = None
+    # Always need phi
+    phix = np.zeros((x.shape[0],p+1)); phiy = np.zeros_like(phix)
+
+    LegendreBasis1D(x[:,0], p, phix, gphix)
+    LegendreBasis1D(x[:,1], p, phiy, gphiy)
+
+    if phi is not None:
+        for i in range(x.shape[0]):
+            phi[i,:] = np.reshape(np.outer(phix[i,:], phiy[i,:]), (-1,), 'F')
+    if gphi is not None:
+        for i in range(x.shape[0]):
+            gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
+            gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
+
 
 class BasisData(object):
     '''
@@ -1110,11 +1201,13 @@ class BasisData(object):
         if gPhi.shape != GPhi.shape:
             raise Exception("gPhi and GPhi are different sizes")
 
-        for iq in range(nq):
-            G = GPhi[iq,:,:] # [nn,dim]
-            g = gPhi[iq,:,:] # [nn,dim]
-            ijac = JData.ijac[iq*(JData.nq != 1),:,:] # [dim,dim]
-            g[:] = np.transpose(np.matmul(ijac.transpose(),G.transpose()))
+        # for iq in range(nq):
+        #     G = GPhi[iq,:,:] # [nn,dim]
+        #     g = gPhi[iq,:,:] # [nn,dim]
+        #     ijac = JData.ijac[iq*(JData.nq != 1),:,:] # [dim,dim]
+        #     g[:] = np.transpose(np.matmul(ijac.transpose(),G.transpose()))
+
+        gPhi[:] = np.transpose(np.matmul(JData.ijac.transpose(0,2,1), GPhi.transpose(0,2,1)), (0,2,1))
 
         return gPhi
 
@@ -1192,7 +1285,7 @@ class JacobianData(object):
         if self.dim != dim or self.nq != nq: Resize = True
         else: Resize = False
 
-        self.basis_grad = GetGrads(basis, Order, dim, nq, xq, self.basis_grad)
+        self.basis_grad = GetGrads(basis, Order, dim, nq, xq, self.basis_grad) # [nq, nb, dim]
         basis_grad = self.basis_grad
 
         self.dim = dim
@@ -1201,7 +1294,11 @@ class JacobianData(object):
 
         self.nq = nq
 
-        if get_jac and (Resize or self.jac is None): 
+        # if get_jac and (Resize or self.jac is None): 
+        #     self.jac = np.zeros([nq,dim,dim])
+
+        if self.jac is None or self.jac.shape != (nq,dim,dim): 
+            # always have jac allocated (at least for temporary storage)
             self.jac = np.zeros([nq,dim,dim])
         if get_djac and (Resize or self.djac is None): 
             self.djac = np.zeros([nq,1])
@@ -1211,28 +1308,44 @@ class JacobianData(object):
         if Resize or self.A is None:
             self.A = np.zeros([dim,dim])
 
-        A = self.A
+        # A = self.A
         Elem2Nodes = mesh.Elem2Nodes[elem]
-        for iq in range(nq):
-            G = basis_grad[iq,:,:]
-            A[:] = 0.
-            for i in range(nb):
-                for j in range(dim):
-                    for k in range(dim):
-                        A[j,k] += mesh.Coords[Elem2Nodes[i],j]*G[i,k]
-            if get_jac:
-                self.jac[iq,:] = A[:]
-                # for i in range(dim):
-                #     for j in range(dim):
-                #         self.J[iq,i,j] = A[i,j]
-            if get_djac: djac_ = self.djac[iq]
-            else: djac_ = None
-            if get_ijac: ijac_ = self.ijac[iq,:,:]
-            else: ijac_ = None 
-            MatDetInv(A, dim, djac_, ijac_)
+        # for iq in range(nq):
+        #     G = basis_grad[iq,:,:]
+        #     A[:] = 0.
+        #     for i in range(nb):
+        #         for j in range(dim):
+        #             for k in range(dim):
+        #                 A[j,k] += mesh.Coords[Elem2Nodes[i],j]*G[i,k]
+        #     if get_jac:
+        #         self.jac[iq,:] = A[:]
+        #         # for i in range(dim):
+        #         #     for j in range(dim):
+        #         #         self.J[iq,i,j] = A[i,j]
+        #     if get_djac: djac_ = self.djac[iq]
+        #     else: djac_ = None
+        #     if get_ijac: ijac_ = self.ijac[iq,:,:]
+        #     else: ijac_ = None 
+        #     MatDetInv(A, dim, djac_, ijac_)
 
-            if djac_ is not None and djac_ <= 0.:
-                raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
+        #     if djac_ is not None and djac_ <= 0.:
+        #         raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
+
+        self.jac = np.tensordot(basis_grad, mesh.Coords[Elem2Nodes].transpose(), \
+            axes=[[1],[1]]).transpose((0,2,1))
+        ijac = None; djac = None
+        for i in range(nq):
+            if get_ijac:
+                # self.ijac[i] = np.linalg.inv(self.jac[i])
+                ijac = self.ijac[i]
+            if get_djac:
+                # self.djac[i] = np.linalg.det(self.jac[i])
+                djac = self.djac[i]
+
+            MatDetInv(self.jac[i], dim, djac, ijac)
+
+        if get_djac and np.any(self.djac[i] <= 0.):
+            raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
 
 
 
