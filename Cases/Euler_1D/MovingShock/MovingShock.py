@@ -18,8 +18,8 @@ mesh = MeshCommon.Mesh1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=Fal
 
 
 ### Solver parameters
-EndTime = 0.0002
-nTimeStep = 500
+EndTime = 1.e-5
+nTimeStep = 25
 InterpOrder = 1
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",InterpolateIC=False,
