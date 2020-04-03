@@ -72,7 +72,7 @@ if args.test_1D is True:
 	if args.ader is True:
 		# Linear advection ADER
 		import ADER_LinearAdvection
-		assert_almost_equal(ADER_LinearAdvection.TotErr,0.000163923117231, decimal=decimal)
+		assert_almost_equal(ADER_LinearAdvection.TotErr,0.000163923152029, decimal=decimal)
 		print('Pass 1D ADER Linear Advection')
 
 	'''
