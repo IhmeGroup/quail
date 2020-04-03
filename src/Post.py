@@ -53,10 +53,10 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 
 		if QuadChanged:
 			PhiData = BasisData(basis,Order,nq,mesh)
-			PhiData.EvalBasis(xq, True, False, False, None)
+			PhiData.eval_basis(xq, True, False, False, None)
 			xphys = np.zeros([nq, mesh.Dim])
 
-		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True)
 
 		xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)

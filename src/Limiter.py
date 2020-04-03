@@ -93,16 +93,16 @@ class PPLimiter(object):
 
 		if QuadChanged:
 			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-			PhiElem.EvalBasis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
+			PhiElem.eval_basis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
 			u = np.zeros([nq, sr])
 			u_bar = np.zeros([1, sr])
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
+		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True,get_jac=False,get_ijac=True)
 
-		nn = PhiElem.nn
+		#nn = PhiElem.nn
 
 		# interpolate state and gradient at quad points
 		# u = np.zeros([nq, sr])
@@ -159,7 +159,7 @@ class PPLimiter(object):
 			PhiData = Faces2PhiData[face]
 			if PhiData is None or QuadChanged:
 				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-				xelem = PhiData.EvalBasisOnFace(mesh, face, xq, xelem, Get_Phi=True)
+				xelem = PhiData.eval_basis_on_face(mesh, face, xq, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face
@@ -311,16 +311,16 @@ class PPScalarLimiter(object):
 
 		if QuadChanged:
 			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-			PhiElem.EvalBasis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
+			PhiElem.eval_basis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
 			u = np.zeros([nq, sr])
 			u_bar = np.zeros([1, sr])
 			F = np.zeros([nq, sr, dim])
 
 
-		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
+		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True,get_jac=False,get_ijac=True)
 
-		nn = PhiElem.nn
+		#nn = PhiElem.nn
 
 		# interpolate state and gradient at quad points
 		# u = np.zeros([nq, sr])
@@ -369,7 +369,7 @@ class PPScalarLimiter(object):
 			PhiData = Faces2PhiData[face]
 			if PhiData is None or QuadChanged:
 				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-				xelem = PhiData.EvalBasisOnFace(mesh, face, xq, xelem, Get_Phi=True)
+				xelem = PhiData.eval_basis_on_face(mesh, face, xq, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face

@@ -49,15 +49,14 @@ def Ref2Phys(mesh, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False)
     if PhiData is None:
         PhiData = Basis.BasisData(QBasis,QOrder,npoint,mesh)
         PointsChanged = True
-    if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
-        PhiData.EvalBasis(xref, Get_Phi=True)
+    if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
+        PhiData.eval_basis(xref, Get_Phi=True)
 
     dim = mesh.Dim
     Coords = mesh.Coords
     Phi = PhiData.Phi
-    nn = PhiData.nn
-
-    if nn != mesh.nNodePerElem:
+    nb = PhiData.Phi.shape[1]
+    if nb != mesh.nNodePerElem:
         raise Exception("Wrong number of nodes per element")
 
     ElemNodes = mesh.Elem2Nodes[elem]
@@ -103,12 +102,12 @@ def Ref2PhysTime(mesh, elem, time, dt, PhiData, npoint, xref, tphys=None, Points
         PhiData = Basis.BasisData(QBasis,QOrder,npoint,mesh)
         PointsChanged = True
     if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
-        PhiData.EvalBasis(xref, Get_Phi=True)
+        PhiData.eval_basis(xref, Get_Phi=True)
 
     dim = mesh.Dim
     
     Phi = PhiData.Phi
-    nn = PhiData.nn
+    #nn = PhiData.nn
 
     if tphys is None:
         tphys = np.zeros([npoint,dim])

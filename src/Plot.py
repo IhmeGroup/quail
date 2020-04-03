@@ -262,14 +262,14 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
 	PhiData = Basis.BasisData(EqnSet.Basis,Order,npoint,mesh)
-	PhiData.EvalBasis(xpoint, True, False, False, None)
+	PhiData.eval_basis(xpoint, True, False, False, None)
 	GeomPhiData = None
 	el = 0
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
 		JData = Basis.JacobianData(mesh)
-		JData.ElemJacobian(elem,npoint,xpoint,mesh,get_djac=True)
+		JData.element_jacobian(mesh,elem,npoint,xpoint,get_djac=True)
 
 		xphys, GeomPhiData = Mesh.Ref2Phys(mesh, elem, GeomPhiData, npoint, xpoint)
 		x[el,:,:] = xphys

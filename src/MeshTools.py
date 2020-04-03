@@ -32,7 +32,7 @@ def ElementVolumes(mesh, solver=None):
     wq = quadData.quad_wts
 
     for elem in range(mesh.nElem):
-        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+        JData.element_jacobian(mesh,elem,nq,xq,get_djac=True)
 
         # for iq in range(nq):
         #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]

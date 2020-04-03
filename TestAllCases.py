@@ -94,7 +94,7 @@ if args.test_1D is True:
 	if args.ader is True:
 		# Smooth isentropic flow ADER
 		import ADER_SmoothIsentropicFlow
-		assert_almost_equal(ADER_SmoothIsentropicFlow.TotErr, 0.000658149093854, decimal=decimal)
+		assert_almost_equal(ADER_SmoothIsentropicFlow.TotErr, 0.000658156554625, decimal=decimal)
 		print('Pass 1D ADER Smooth Isentropic Flow [Euler 1D]')
 
 if args.test_2D is True:

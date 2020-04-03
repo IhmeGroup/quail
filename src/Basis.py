@@ -307,10 +307,10 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, Stati
 
     if QuadChanged:
         PhiData = BasisData(basis,order,nq,mesh)
-        PhiData.EvalBasis(quad_pts, Get_Phi=True)
+        PhiData.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
+        JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -456,10 +456,10 @@ def get_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
 
     if QuadChanged:
         PhiData = BasisData(basis,order,nq,mesh)
-        PhiData.EvalBasis(quad_pts, Get_Phi=True, Get_GPhi=True)
+        PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
-    JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True,get_ijac=True)
-    PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
+    JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True,get_ijac=True)
+    PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
 
     nb = PhiData.Phi.shape[1]
 
@@ -520,7 +520,7 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
 
     if QuadChanged:
         PhiData = BasisData(basis,order,nq,mesh)
-        PhiData.EvalBasis(quad_pts, Get_Phi=True, Get_GPhi=True)
+        PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
     nb = PhiData.Phi.shape[1]
 
@@ -593,17 +593,17 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
             PhiData = BasisData(basis,order,nq,mesh)
             PsiData = PhiData
             xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.EvalBasisOnFaceADER(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
-            PsiData.EvalBasisOnFaceADER(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
+            PhiData.eval_basis_on_face_ader(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
+            PsiData.eval_basis_on_face_ader(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
         else:
             face = 0
             PhiData = BasisData(basis1,order,nq,mesh)
             PsiData = BasisData(basis2,order,nq,mesh)
             xelemPhi = np.zeros([nq,mesh.Dim+1])
             xelemPsi = np.zeros([nq,mesh.Dim])
-            PhiData.EvalBasisOnFaceADER(mesh, basis1, face, quad_pts, xelemPhi, Get_Phi=True)
-            #PsiData.EvalBasisOnFaceADER(mesh, basis2, face, xq, xelemPsi, Get_Phi=True)
-            PsiData.EvalBasis(quad_pts, Get_Phi=True, Get_GPhi=False)
+            PhiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelemPhi, Get_Phi=True)
+            #PsiData.eval_basis_on_face_ader(mesh, basis2, face, xq, xelemPsi, Get_Phi=True)
+            PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
 
     nb_st = PhiData.Phi.shape[1] #PhiData.nn
@@ -669,10 +669,10 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
     if QuadChanged:
 
         PhiData = BasisData(basis,order,nq,mesh)
-        PhiData.EvalBasis(quad_pts, Get_Phi=True)
+        PhiData.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
+        JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -723,13 +723,13 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     nq = quad_pts.shape[0]
 
     PhiData_old = BasisData(basis_old, order_old, nq, mesh)
-    PhiData_old.EvalBasis(quad_pts, Get_Phi=True)
+    PhiData_old.eval_basis(quad_pts, Get_Phi=True)
 
     phi_old = PhiData_old.Phi
     nb_old = phi_old.shape[1]
 
     PhiData = BasisData(basis, order, nq, mesh)
-    PhiData.EvalBasis(quad_pts, Get_Phi=True)
+    PhiData.eval_basis(quad_pts, Get_Phi=True)
     phi = PhiData.Phi
     nb = phi.shape[1]
 
@@ -853,7 +853,7 @@ def get_shapes(basis, order, quad_pts, phi=None):
         quad_pts: coordinates of nodes in ref space
 
     OUTPUTS: 
-        phi: evaluated basis, phi
+        phi: evaluated basis
     '''
     nq = quad_pts.shape[0]
     nb = order_to_num_basis_coeff(basis, order)
@@ -865,23 +865,23 @@ def get_shapes(basis, order, quad_pts, phi=None):
 
     if basis == BasisType.LagrangeSeg:
         # for iq in range(nq): 
-        #     Shape_TensorLagrange(1, Order, xq[iq], phi[iq,:])
+        #     shape_tensor_lagrange(1, Order, xq[iq], phi[iq,:])
         # code.interact(local=locals())
-        Shape_TensorLagrange(1, order, quad_pts, phi)
+        shape_tensor_lagrange(1, order, quad_pts, phi)
     elif basis == BasisType.LagrangeQuad:
         # for iq in range(nq): 
-        #     Shape_TensorLagrange(2, Order, xq[iq], phi[iq,:])
-        Shape_TensorLagrange(2, order, quad_pts, phi)
+        #     shape_tensor_lagrange(2, Order, xq[iq], phi[iq,:])
+        shape_tensor_lagrange(2, order, quad_pts, phi)
     elif basis == BasisType.LagrangeTri:
-        Shape_LagrangeTri(order, quad_pts, phi)
+        shape_lagrange_tri(order, quad_pts, phi)
     elif basis == BasisType.LegendreSeg:
         # for iq in range(nq):
-        #     Shape_TensorLegendre(1, Order, xq[iq], phi[iq,:])
-        Shape_TensorLegendre(1, order, quad_pts, phi)
+        #     shape_tensor_legendre(1, Order, xq[iq], phi[iq,:])
+        shape_tensor_legendre(1, order, quad_pts, phi)
     elif basis == BasisType.LegendreQuad:
         # for iq in range(nq):
-        #     Shape_TensorLegendre(2, Order, xq[iq], phi[iq,:])
-        Shape_TensorLegendre(2, order, quad_pts, phi)
+        #     shape_tensor_legendre(2, Order, xq[iq], phi[iq,:])
+        shape_tensor_legendre(2, order, quad_pts, phi)
     else:
         raise Exception("Basis not supported")
 
@@ -913,29 +913,43 @@ def get_grads(basis, order, dim, quad_pts, GPhi=None):
 
     if basis == BasisType.LagrangeSeg:
         # for iq in range(nq): 
-        #     Grad_TensorLagrange(1, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLagrange(1, order, quad_pts, GPhi)
+        #     grad_tensor_lagrange(1, Order, xq[iq], GPhi[iq,:,:])
+        grad_tensor_lagrange(1, order, quad_pts, GPhi)
     elif basis == BasisType.LagrangeQuad:
         # for iq in range(nq): 
-            # Grad_TensorLagrange(2, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLagrange(2, order, quad_pts, GPhi)
+            # grad_tensor_lagrange(2, Order, xq[iq], GPhi[iq,:,:])
+        grad_tensor_lagrange(2, order, quad_pts, GPhi)
     elif basis == BasisType.LagrangeTri:
-        Grad_LagrangeTri(order, quad_pts, GPhi)
+        grad_lagrange_tri(order, quad_pts, GPhi)
     elif basis == BasisType.LegendreSeg:
         # for iq in range(nq):
-        #     Grad_TensorLegendre(1, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLegendre(1, order, quad_pts, GPhi)
+        #     grad_tensor_legendre(1, Order, xq[iq], GPhi[iq,:,:])
+        grad_tensor_legendre(1, order, quad_pts, GPhi)
     elif basis == BasisType.LegendreQuad:
         # for iq in range(nq):
-        #     Grad_TensorLegendre(2, Order, xq[iq], GPhi[iq,:,:])
-        Grad_TensorLegendre(2, order, quad_pts, GPhi)
+        #     grad_tensor_legendre(2, Order, xq[iq], GPhi[iq,:,:])
+        grad_tensor_legendre(2, order, quad_pts, GPhi)
     else:
         raise Exception("Basis not supported")
 
     return GPhi
 
 
-def LagrangeBasis1D(x, xnode, nnode, phi, gphi):
+def get_lagrange_basis_1D(x, xnode, nnode, phi, gphi):
+    '''
+    Method: get_lagrange_basis_1D
+    ------------------------------
+    Calculates the 1D Lagrange basis functions
+
+    INPUTS:
+        x: coordinate of current node
+        xnode: coordinates of nodes in 1D ref space
+        nnode: number of nodes in 1D ref space
+        
+    OUTPUTS: 
+        phi: evaluated basis 
+        gphi: evaluated physical gradient of basis
+    '''
     # for j in range(nnode):
     #     if phi is not None:
     #         pj = 1.
@@ -981,11 +995,21 @@ def LagrangeBasis1D(x, xnode, nnode, phi, gphi):
                 mask[i] = True
             mask[j] = True
 
-        # code.interact(local=locals())
+def get_lagrange_basis_2D(x, xnode, nnode, phi, gphi):
+    '''
+    Method: get_lagrange_basis_2D
+    ------------------------------
+    Calculates the 2D Lagrange basis functions
 
-    # code.interact(local=locals())
-
-def LagrangeBasis2D(x, xnode, nnode, phi, gphi):
+    INPUTS:
+        x: coordinate of current node
+        xnode: coordinates of nodes in 1D ref space
+        nnode: number of nodes in 1D ref space
+        
+    OUTPUTS: 
+        phi: evaluated basis 
+        gphi: evaluated gradient of basis
+    '''
     if gphi is not None:
         gphix = np.zeros((x.shape[0],xnode.shape[0],1)); gphiy = np.zeros_like(gphix)
     else:
@@ -993,8 +1017,8 @@ def LagrangeBasis2D(x, xnode, nnode, phi, gphi):
     # Always need phi
     phix = np.zeros((x.shape[0],xnode.shape[0])); phiy = np.zeros_like(phix)
 
-    LagrangeBasis1D(x[:,0].reshape(-1,1), xnode, nnode, phix, gphix)
-    LagrangeBasis1D(x[:,1].reshape(-1,1), xnode, nnode, phiy, gphiy)
+    get_lagrange_basis_1D(x[:,0].reshape(-1,1), xnode, nnode, phix, gphix)
+    get_lagrange_basis_1D(x[:,1].reshape(-1,1), xnode, nnode, phiy, gphiy)
 
     if phi is not None:
         for i in range(x.shape[0]):
@@ -1005,7 +1029,20 @@ def LagrangeBasis2D(x, xnode, nnode, phi, gphi):
             gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
 
 
-def Shape_TensorLagrange(dim, p, x, phi):
+def shape_tensor_lagrange(dim, p, x, phi):
+    '''
+    Method: shape_tensor_lagrange
+    ------------------------------
+    Calculates lagrange bais for 1D or 2D quads
+
+    INPUTS:
+        dim: dimension of mesh
+        p: order of polynomial space
+        x: coordinate of current node
+
+    OUTPUTS: 
+        phi: evaluated basis 
+    '''
     if p == 0:
     	phi[:] = 1.
     	return
@@ -1021,12 +1058,24 @@ def Shape_TensorLagrange(dim, p, x, phi):
     xnode = equidistant_nodes_1D_range(-1., 1., nnode)
 
     if dim == 1:
-        LagrangeBasis1D(x, xnode, nnode, phi, None)
+        get_lagrange_basis_1D(x, xnode, nnode, phi, None)
     elif dim == 2:
-        LagrangeBasis2D(x, xnode, nnode, phi, None)
+        get_lagrange_basis_2D(x, xnode, nnode, phi, None)
 
 
-def Shape_LagrangeTri(p, xi, phi):
+def shape_lagrange_tri(p, xi, phi):
+    '''
+    Method: shape_lagrange_tri
+    ------------------------------
+    Calculates lagrange bais for triangles
+
+    INPUTS:
+        p: order of polynomial space
+        xi: coordinates of current node
+
+    OUTPUTS: 
+        phi: evaluated basis 
+    '''
     x = xi[:,0]; y = xi[:,1]
 
     if p == 0:
@@ -1109,7 +1158,20 @@ def Shape_LagrangeTri(p, xi, phi):
         phi[:,16] = 125.0/3.0*x*y-125.0/3.0*x*x*y-2125.0/6.0*x*y*y+625.0/2.0*x*x*y*y+2500.0/3.0*x*y*y*y-3125.0/6.0*x*x*y*y*y-3125.0/6.0*x*y*y*y*y
 
 
-def Grad_TensorLagrange(dim, p, x, gphi):
+def grad_tensor_lagrange(dim, p, x, gphi):
+    '''
+    Method: grad_tensor_lagrange
+    ------------------------------
+    Calculates the lagrange basis gradients
+
+    INPUTS:
+        dim: dimension of mesh
+        p: order of polynomial space
+        x: coordinate of current node
+        
+    OUTPUTS: 
+        gphi: evaluated gradient of basis
+    '''
     if p == 0:
     	gphi[:,:] = 0.
     	return 
@@ -1118,12 +1180,24 @@ def Grad_TensorLagrange(dim, p, x, gphi):
     xnode = equidistant_nodes_1D_range(-1., 1., nnode)
 
     if dim == 1:
-        LagrangeBasis1D(x, xnode, nnode, None, gphi)
+        get_lagrange_basis_1D(x, xnode, nnode, None, gphi)
     if dim == 2:
-        LagrangeBasis2D(x, xnode, nnode, None, gphi)
+        get_lagrange_basis_2D(x, xnode, nnode, None, gphi)
 
 
-def Grad_LagrangeTri(p, xi, gphi):
+def grad_lagrange_tri(p, xi, gphi):
+    '''
+    Method: grad_lagrange_tri
+    ------------------------------
+    Calculates lagrange basis gradient for triangles
+
+    INPUTS:
+        p: order of polynomial space
+        xi: coordinates of current node
+
+    OUTPUTS: 
+        gphi: evaluated gradient of basis 
+    '''
     x = xi[:,0]; y = xi[:,1]
 
     if p == 0:
@@ -1267,27 +1341,66 @@ def Grad_LagrangeTri(p, xi, gphi):
 
 
 
-def Shape_TensorLegendre(dim, p, x, phi):
+def shape_tensor_legendre(dim, p, x, phi):
+    '''
+    Method: shape_tensor_legendre
+    ------------------------------
+    Calculates legendre bais for 1D or 2D quads
+
+    INPUTS:
+        dim: dimension of mesh
+        p: order of polynomial space
+        x: coordinate of current node
+
+    OUTPUTS: 
+        phi: evaluated basis 
+    '''
     if p == 0:
         phi[:] = 1.
         return
 
     if dim == 1:
-        LegendreBasis1D(x, p, phi, None)
+        get_legendre_basis_1D(x, p, phi, None)
     elif dim == 2:
-        LegendreBasis2D(x, p, phi, None)
+        get_legendre_basis_2D(x, p, phi, None)
 
-def Grad_TensorLegendre(dim, p, x, gphi):
+def grad_tensor_legendre(dim, p, x, gphi):
+    '''
+    Method: grad_tensor_legendre
+    ------------------------------
+    Calculates the legendre basis gradients
+
+    INPUTS:
+        dim: dimension of mesh
+        p: order of polynomial space
+        x: coordinate of current node
+        
+    OUTPUTS: 
+        gphi: evaluated gradient of basis
+    '''
     if p == 0:
         gphi[:,:] = 0.
         return 
     if dim == 1:
-        LegendreBasis1D(x, p, None, gphi)
+        get_legendre_basis_1D(x, p, None, gphi)
     if dim == 2:
-        LegendreBasis2D(x, p, None, gphi)
+        get_legendre_basis_2D(x, p, None, gphi)
 
 
-def LegendreBasis1D(x, p, phi, gphi):
+def get_legendre_basis_1D(x, p, phi, gphi):
+    '''
+    Method: get_legendre_basis_1D
+    ------------------------------
+    Calculates the 1D Legendre basis functions
+
+    INPUTS:
+        x: coordinate of current node
+        p: order of polynomial space
+        
+    OUTPUTS: 
+        phi: evaluated basis 
+        gphi: evaluated physical gradient of basis
+    '''
 
     if phi is not None:
         x.shape = -1
@@ -1333,7 +1446,21 @@ def LegendreBasis1D(x, p, phi, gphi):
             raise NotImplementedError("Legendre Polynomial > 7 not supported")
 
 
-def LegendreBasis2D(x, p, phi, gphi):
+def get_legendre_basis_2D(x, p, phi, gphi):
+    '''
+    Method: get_legendre_basis_2D
+    ------------------------------
+    Calculates the 2D Legendre basis functions
+
+    INPUTS:
+        x: coordinate of current node
+        p: order of polynomial space
+        
+    OUTPUTS: 
+        phi: evaluated basis 
+        gphi: evaluated physical gradient of basis
+    '''
+
     # if gphi is not None:
     #     gphix = np.zeros(p+1); gphiy = np.zeros(p+1)
     # else:
@@ -1341,8 +1468,8 @@ def LegendreBasis2D(x, p, phi, gphi):
     # # Always need phi
     # phix = np.zeros(p+1); phiy = np.zeros(p+1)
 
-    # LegendreBasis1D(x[0], p, phix, gphix)
-    # LegendreBasis1D(x[1], p, phiy, gphiy)
+    # get_legendre_basis_1D(x[0], p, phix, gphix)
+    # get_legendre_basis_1D(x[1], p, phiy, gphiy)
    
     # if phi is not None:
     #     phi[:] = np.reshape(np.outer(phix, phiy), (-1,), 'F')
@@ -1357,8 +1484,8 @@ def LegendreBasis2D(x, p, phi, gphi):
     # Always need phi
     phix = np.zeros((x.shape[0],p+1)); phiy = np.zeros_like(phix)
 
-    LegendreBasis1D(x[:,0], p, phix, gphix)
-    LegendreBasis1D(x[:,1], p, phiy, gphiy)
+    get_legendre_basis_1D(x[:,0], p, phix, gphix)
+    get_legendre_basis_1D(x[:,1], p, phiy, gphiy)
 
     if phi is not None:
         for i in range(x.shape[0]):
@@ -1371,45 +1498,57 @@ def LegendreBasis2D(x, p, phi, gphi):
 
 class BasisData(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: BasisData
+    -------------------
+    This class contains information about the basis functions
+
+    ATTRIBUTES:
+        basis: type of basis function
+        order: solution order
+        nq: number of quadrature points
+        dim: dimension of mesh
+        Phi: evaluated basis
+        GPhi: gradient of basis in reference space
+        gPhi: gradient of basis in physical space
+        face: index of face in reference space
     '''
-    def __init__(self,basis,Order,nq=0,mesh=None):
+    def __init__(self,basis,order,nq=0,mesh=None):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
+
+        INPUTS:
+            basis: type of basis function
+            order: solution order
+            nq: number of quadrature points
+            mesh: mesh object
         '''
-        self.Basis = basis
-        self.Order = Order
-        self.nn = order_to_num_basis_coeff(self.Basis, self.Order)
+        self.basis = basis
+        self.order = order
+        #self.nb = order_to_num_basis_coeff(self.basis, self.order)
         self.nq = nq
-        self.nnqmax = self.nn * self.nq
-        self.dim = Shape2Dim[Basis2Shape[self.Basis]]
+        #self.nbnqmax = self.nb * self.nq
+        self.dim = Shape2Dim[Basis2Shape[self.basis]]
         self.Phi = None
         self.GPhi = None
         self.gPhi = None
         self.face = -1
 
-    def PhysicalGrad(self, JData):
+    def get_physical_grad(self, JData):
         nq = self.nq
         if nq != JData.nq and JData.nq != 1:
             raise Exception("Quadrature doesn't match")
         dim = JData.dim
         if dim != self.dim:
             raise Exception("Dimensions don't match")
-        nn = self.nn
+        nb = order_to_num_basis_coeff(self.basis,self.order)
         GPhi = self.GPhi 
         if GPhi is None:
             raise Exception("GPhi is an empty list")
 
-        if self.gPhi is None or self.gPhi.shape != (nq,nn,dim):
-            self.gPhi = np.zeros([nq,nn,dim])
+        if self.gPhi is None or self.gPhi.shape != (nq,nb,dim):
+            self.gPhi = np.zeros([nq,nb,dim])
         else:
             self.gPhi *= 0.
 
@@ -1419,8 +1558,8 @@ class BasisData(object):
             raise Exception("gPhi and GPhi are different sizes")
 
         # for iq in range(nq):
-        #     G = GPhi[iq,:,:] # [nn,dim]
-        #     g = gPhi[iq,:,:] # [nn,dim]
+        #     G = GPhi[iq,:,:] # [nb,dim]
+        #     g = gPhi[iq,:,:] # [nb,dim]
         #     ijac = JData.ijac[iq*(JData.nq != 1),:,:] # [dim,dim]
         #     g[:] = np.transpose(np.matmul(ijac.transpose(),G.transpose()))
 
@@ -1428,56 +1567,112 @@ class BasisData(object):
 
         return gPhi
 
-    def EvalBasis(self, xq, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=None):
+    def eval_basis(self, quad_pts, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=None):
+        '''
+        Method: eval_basis
+        --------------------
+        Evaluate the basis functions
+
+        INPUTS:
+            quad_pts: coordinates of quadrature points
+            Get_Phi: flag to calculate basis functions (Default: True)
+            Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
+            Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
+            JData: jacobian data (needed if calculating physical gradients)
+        '''
+
         if Get_Phi:
-            self.Phi = get_shapes(self.Basis, self.Order, xq, self.Phi)
+            self.Phi = get_shapes(self.basis, self.order, quad_pts, self.Phi)
         if Get_GPhi:
-            self.GPhi = get_grads(self.Basis, self.Order, self.dim, xq, self.GPhi)
+            self.GPhi = get_grads(self.basis, self.order, self.dim, quad_pts, self.GPhi)
         if Get_gPhi:
             if not JData:
                 raise Exception("Need jacobian data")
-            self.gPhi = self.PhysicalGrad(JData)
+            self.gPhi = self.get_physical_grad(JData)
 
-    def EvalBasisOnFace(self, mesh, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+    def eval_basis_on_face(self, mesh, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+        '''
+        Method: eval_basis_on_face
+        ----------------------------
+        Evaluate the basis functions on faces
+
+        INPUTS:
+            mesh: mesh object
+            face: index of face in reference space
+            quad_pts: coordinates of quadrature points
+            Get_Phi: flag to calculate basis functions (Default: True)
+            Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
+            Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
+            JData: jacobian data (needed if calculating physical gradients)
+
+        OUTPUTS:
+            xelem: coordinate of face
+        '''
         self.face = face
         basis = mesh.QBasis
         if xelem is None or xelem.shape != (self.nq, mesh.Dim):
             xelem = np.zeros([self.nq, mesh.Dim])
-        xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, xq, xelem)
-        self.EvalBasis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
+        xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, quad_pts, xelem)
+        self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
         return xelem
 
-    def EvalBasisOnFaceADER(self, mesh, basis, face, xq, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+    def eval_basis_on_face_ader(self, mesh, basis, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+        '''
+        Method: eval_basis_on_face_ader
+        ----------------------------
+        Evaluate the basis functions on faces for ADER-DG
+
+        INPUTS:
+            mesh: mesh object
+            basis: type of basis function
+            face: index of face in reference space
+            quad_pts: coordinates of quadrature points
+            Get_Phi: flag to calculate basis functions (Default: True)
+            Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
+            Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
+            JData: jacobian data (needed if calculating physical gradients)
+
+        OUTPUTS:
+            xelem: coordinate of face
+        '''
         self.face = face
         if Shape2Dim[Basis2Shape[basis]] == ShapeType.Quadrilateral:
             if xelem is None or xelem.shape != (self.nq, mesh.Dim+1):
                 xelem = np.zeros([self.nq, mesh.Dim+1])
-            xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, xq, xelem)
+            xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, quad_pts, xelem)
         elif Shape2Dim[Basis2Shape[basis]] == ShapeType.Segment:
             if xelem is None or xelem.shape != (self.nq, mesh.Dim):
                 xelem = np.zeros([self.nq, mesh.Dim])
-            xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, xq, xelem)
-        self.EvalBasis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
+            xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, quad_pts, xelem)
+        self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
         return xelem
     	
 
 class JacobianData(object):
     '''
-    Class: IFace
-    --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    Class: JacobianData
+    -------------------
+    This class contains information about the jacobian
+
+    ATTRIBUTES:
+        nq: number of quadrature points
+        dim: dimension of mesh
+        djac: determinant of the jacobian
+        jac: jacobian
+        ijac: inverse of the jacobian
+        A: placeholder for matrix sizing
+        gPhi: gradient of basis in physical space
     '''
     def __init__(self,mesh):
         '''
         Method: __init__
-        --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        -------------------
+        This method initializes the object
+
+        INPUTS:
+            mesh: mesh object
         '''
         self.nq = 0
         self.dim = mesh.Dim
@@ -1485,10 +1680,23 @@ class JacobianData(object):
         self.jac = None
         self.ijac = None
         self.A = None
-        self.basis_grad = None
+        self.gPhi = None
 
-    def ElemJacobian(self,elem,nq,xq,mesh,get_djac=False,get_jac=False,get_ijac=False,
-            UniformJacobian=False):
+    def element_jacobian(self, mesh, elem, nq, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
+        '''
+        Method: element_jacobian
+        ----------------------------
+        Evaluate the geometric jacobian for specified element
+
+        INPUTS:
+            mesh: mesh object
+            basis: type of basis function
+            face: index of face in reference space
+            quad_pts: coordinates of quadrature points
+            get_djac: flag to calculate jacobian determinant (Default: False)
+            get_jac: flag to calculate jacobian (Default: False)
+            get_ijac: flag to calculate inverse of the jacobian (Default: False)
+        '''
         basis = mesh.QBasis
         Order = mesh.QOrder
         Shape = Basis2Shape[basis]
@@ -1502,8 +1710,8 @@ class JacobianData(object):
         if self.dim != dim or self.nq != nq: Resize = True
         else: Resize = False
 
-        self.basis_grad = get_grads(basis, Order, dim, xq, self.basis_grad) # [nq, nb, dim]
-        basis_grad = self.basis_grad
+        self.gPhi = get_grads(basis, Order, dim, quad_pts, self.gPhi) # [nq, nb, dim]
+        gPhi = self.gPhi
 
         self.dim = dim
         if dim != mesh.Dim:
@@ -1548,7 +1756,7 @@ class JacobianData(object):
         #     if djac_ is not None and djac_ <= 0.:
         #         raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
 
-        self.jac = np.tensordot(basis_grad, mesh.Coords[Elem2Nodes].transpose(), \
+        self.jac = np.tensordot(gPhi, mesh.Coords[Elem2Nodes].transpose(), \
             axes=[[1],[1]]).transpose((0,2,1))
         ijac = None; djac = None
         for i in range(nq):

@@ -143,7 +143,7 @@ class DG_Solver(object):
 			quad_wts = quadData.quad_wts
 
 			PhiData = BasisData(basis,Order,nq,mesh)
-			PhiData.EvalBasis(quad_pts, Get_Phi=True)
+			PhiData.eval_basis(quad_pts, Get_Phi=True)
 			xphys = np.zeros([nq, mesh.Dim])
 		else:
 			quad_pts, nq = equidistant_nodes(basis, Order, quad_pts)
@@ -158,11 +158,11 @@ class DG_Solver(object):
 
 			if not InterpolateIC:
 
-				JData.ElemJacobian(elem,nq,quad_pts,mesh,get_djac=True)
+				JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True)
 
 				MMinv = MMinv_all[elem]
 
-				nn = PhiData.nn
+				#nn = PhiData.nn
 
 				# rhs *= 0.
 				# for n in range(nn):
@@ -227,7 +227,7 @@ class DG_Solver(object):
 
 		if QuadChanged:
 			PhiData = BasisData(EqnSet.Basis,Order,nq,mesh)
-			PhiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+			PhiData.eval_basis(xq, Get_Phi=True, Get_GPhi=True)
 			# PhiData.PhysicalGrad(JData)
 
 			xglob = np.zeros([nq, dim])
@@ -237,12 +237,12 @@ class DG_Solver(object):
 
 
 
-		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
-		PhiData.EvalBasis(xq, Get_gPhi=True, JData=JData) # gPhi is [nq,nn,dim]
+		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True,get_jac=False,get_ijac=True)
+		PhiData.eval_basis(xq, Get_gPhi=True, JData=JData) # gPhi is [nq,nn,dim]
 
 		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
 
-		nn = PhiData.nn
+		#nn = PhiData.nn
 
 		# interpolate state and gradient at quad points
 		u[:] = np.matmul(PhiData.Phi, U)
@@ -354,17 +354,17 @@ class DG_Solver(object):
 
 		if PhiDataL is None or QuadChanged:
 			Faces2PhiDataL[faceL] = PhiDataL = BasisData(EqnSet.Basis,Order,nq,mesh)
-			xelemL = PhiDataL.EvalBasisOnFace(mesh, faceL, xq, xelemL, Get_Phi=True)
+			xelemL = PhiDataL.eval_basis_on_face(mesh, faceL, xq, xelemL, Get_Phi=True)
 		if PhiDataR is None or QuadChanged:
 			Faces2PhiDataR[faceR] = PhiDataR = BasisData(EqnSet.Basis,Order,nq,mesh)
-			xelemR = PhiDataR.EvalBasisOnFace(mesh, faceR, xq[::-1], xelemR, Get_Phi=True)
+			xelemR = PhiDataR.eval_basis_on_face(mesh, faceR, xq[::-1], xelemR, Get_Phi=True)
 
 		NData = IFaceNormal(mesh, IFace, nq, xq, NData)
 		# NData.nvec *= wq
 
-		nL = PhiDataL.nn
-		nR = PhiDataR.nn
-		nn = np.amax([nL,nR])
+		#nL = PhiDataL.nn
+		#nR = PhiDataR.nn
+		#nn = np.amax([nL,nR])
 
 		# interpolate state and gradient at quad points
 		# for ir in range(sr):
@@ -476,14 +476,14 @@ class DG_Solver(object):
 		xelem = Faces2xelem[face]
 		if PhiData is None or QuadChanged:
 			Faces2PhiData[face] = PhiData = BasisData(EqnSet.Basis,Order,nq,mesh)
-			Faces2xelem[face] = xelem = PhiData.EvalBasisOnFace(mesh, face, xq, xelem, Get_Phi=True)
+			Faces2xelem[face] = xelem = PhiData.eval_basis_on_face(mesh, face, xq, xelem, Get_Phi=True)
 
 		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
 
 		PointsChanged = QuadChanged or face != GeomPhiData.face
 		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xelem, xglob, PointsChanged)
 
-		nn = PhiData.nn
+		#nn = PhiData.nn
 
 		# interpolate state and gradient at quad points
 		# for ir in range(sr):
@@ -822,31 +822,54 @@ class ADERDG_Solver(DG_Solver):
 		PhiData = BasisData(basis1,Order,nqST,mesh)
 		PsiData = BasisData(basis2,Order,nq,mesh)
 
-		nnST = PhiData.nn
-		nn   = PsiData.nn
+		nb_st = order_to_num_basis_coeff(basis1, Order)
+		nb   = order_to_num_basis_coeff(basis2, Order)
+		'''
+		BEGIN HACKY TEST (BRETT)
+		# Hacky implementation of ADER-DG for linear solve only. Will delete long term.
+
+		# MM = 0.*(dt/2.)*MM
+		# SMS = 1.0*(dt/dx)*SMS
+		# A1 = np.subtract(FTL,SMT)
+		# A2 = np.add(A1,SMS)
+		# ADER = np.add(A2,MM)
+
+		# ADERinv = np.linalg.solve(ADER,FTR)
+
+
+		# Up = np.matmul(ADERinv, W)
+
+		# fluxpoly = self.FluxCoefficients(elem, dt, Order, basis1, Up)
+		# srcpoly = self.SourceCoefficients(elem, dt, Order, basis1, Up)
+
+		END HACKY TEST (BRETT)
+		'''
 
 		#Make initial guess for the predictor step
-		Up = Up.reshape(nn,nn,sr)
+		Up = Up.reshape(nb,nb,sr)
 
 		for ir in range(sr):
 			#for i in range(nn):
-			for j in range(nn):
+			for j in range(nb):
 				Up[0,j,ir]=W[j,ir]
 		#Up = np.pad(W,pad_width=((0,nnST-nn),(0,0)))
-		Up = Up.reshape(nnST,sr)
+		Up = Up.reshape(nb_st,sr)
 
 		def F(u):
-			u = u.reshape(nnST,sr)
+			u = u.reshape(nb_st,sr)
 			fluxpoly = self.FluxCoefficients(elem, dt, Order, basis1, u)
 			srcpoly = self.SourceCoefficients(elem, dt, Order, basis1, u)
 			f = np.matmul(FTL,u)-np.matmul(FTR,W)-np.matmul(SMT,u)+np.matmul(SMS,fluxpoly)-np.matmul(MM,srcpoly)
-			f = f.reshape(nnST*sr)
+			f = f.reshape(nb_st*sr)
 			return f
-
-		Up = Up.reshape(nnST*sr)
-		sol = root(F, Up, method='krylov',tol=1.0e-6)
+		# def jac(u):
+		# 	jac = np.zeros([nnST*sr,nnST*sr])
+		# 	np.fill_diagonal(jac,1.)
+		# 	return jac
+		Up = Up.reshape(nb_st*sr)
+		sol = root(F, Up, method='krylov')
 		Up = sol.x
-		Up = Up.reshape(nnST,sr)
+		Up = Up.reshape(nb_st,sr)
 
 		return Up, StaticData
 
@@ -947,10 +970,10 @@ class ADERDG_Solver(DG_Solver):
 
 		if PsiData is None or QuadChanged:
 			Faces2PsiData[face] = PsiData = BasisData(basis2,Order,nq,mesh)
-			Faces2xelem[face] = xelemPsi = PsiData.EvalBasisOnFace(mesh, face, xq, xelemPsi, Get_Phi=True)
+			Faces2xelem[face] = xelemPsi = PsiData.eval_basis_on_face(mesh, face, xq, xelemPsi, Get_Phi=True)
 		if PhiData is None or QuadChangedST:
 			Faces2PhiData[face] = PhiData = BasisData(basis1,Order,nqST,mesh)
-			Faces2xelemADER[face] = xelemPhi = PhiData.EvalBasisOnFaceADER(mesh, basis1, faceST, xqST, xelemPhi, Get_Phi=True)
+			Faces2xelemADER[face] = xelemPhi = PhiData.eval_basis_on_face_ader(mesh, basis1, faceST, xqST, xelemPhi, Get_Phi=True)
 
 
 		NData = BFaceNormal(mesh, BFace, nq, xq, NData)
@@ -958,7 +981,8 @@ class ADERDG_Solver(DG_Solver):
 		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xelemPsi, xglob, PointsChanged)
 
 		tglob, TimePhiData = Ref2PhysTime(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xelemPhi, tglob, PointsChanged)
-		nn = PsiData.nn
+		#nn = PsiData.nn
+		nb = PsiData.Phi.shape[1]
 
 		# interpolate state and gradient at quad points
 		uI[:] = np.matmul(PhiData.Phi, U)
@@ -979,7 +1003,7 @@ class ADERDG_Solver(DG_Solver):
 	
 		# F = np.reshape(F,(nqST,sr))
 
-		R[:] -= np.matmul(np.tile(PsiData.Phi,(nn,1)).transpose(),F*wqST*wq)
+		R[:] -= np.matmul(np.tile(PsiData.Phi,(nb,1)).transpose(),F*wqST*wq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1072,24 +1096,24 @@ class ADERDG_Solver(DG_Solver):
 
 		if QuadChanged:
 			PhiData = BasisData(basis1,Order,nqST,mesh)
-			PhiData.EvalBasis(xqST, Get_Phi=True, Get_GPhi=False)
+			PhiData.eval_basis(xqST, Get_Phi=True, Get_GPhi=False)
 			PsiData = BasisData(basis2,Order,nq,mesh)
-			PsiData.EvalBasis(xq, Get_Phi=True, Get_GPhi=True)
+			PsiData.eval_basis(xq, Get_Phi=True, Get_GPhi=True)
 
 			xglob = np.zeros([nq, dim])
 			u = np.zeros([nqST, sr])
 			F = np.zeros([nqST, sr, dim])
 			s = np.zeros([nqST, sr])
 
-		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True,get_jac=False,get_ijac=True)
-		PsiData.EvalBasis(xq, Get_gPhi=True, JData=JData)
+		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True,get_jac=False,get_ijac=True)
+		PsiData.eval_basis(xq, Get_gPhi=True, JData=JData)
 
 		xglob, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xglob, QuadChanged)
 		tglob, TimePhiData = Ref2PhysTime(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, nqST, xqST, tglob, QuadChangedST)
 
 
-		nn = PsiData.nn
-
+		#nn = PsiData.nn
+		nb = PsiData.Phi.shape[1]
 		# interpolate state and gradient at quad points
 		u[:] = np.matmul(PhiData.Phi, U)
 
@@ -1106,7 +1130,7 @@ class ADERDG_Solver(DG_Solver):
 
 		# F = np.reshape(F,(nqST,sr,dim))
 		
-		ER[:] += np.tensordot(np.tile(PsiData.gPhi,(nn,1,1)), F*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1,1), axes=([0,2],[0,2])) # [nn, sr]
+		ER[:] += np.tensordot(np.tile(PsiData.gPhi,(nb,1,1)), F*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1,1), axes=([0,2],[0,2])) # [nn, sr]
 
 
 		s = np.zeros([nqST,sr])
@@ -1122,7 +1146,7 @@ class ADERDG_Solver(DG_Solver):
 		# 				ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
 		# s = np.reshape(s,(nqST,sr))
 
-		ER[:] += np.matmul(np.tile(PsiData.Phi,(nn,1)).transpose(),s*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1))
+		ER[:] += np.matmul(np.tile(PsiData.Phi,(nb,1)).transpose(),s*(wqST.reshape(nq,nq)*JData.djac).reshape(nqST,1))
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -1250,24 +1274,24 @@ class ADERDG_Solver(DG_Solver):
 		#Evaluate space-time basis functions
 		if PhiDataL is None or QuadChangedST:
 			Faces2PhiDataL[faceL] = PhiDataL = BasisData(basis1,Order,nqST,mesh)
-			xelemLPhi = PhiDataL.EvalBasisOnFaceADER(mesh, basis1, faceSTL, xqST, xelemLPhi, Get_Phi=True)
+			xelemLPhi = PhiDataL.eval_basis_on_face_ader(mesh, basis1, faceSTL, xqST, xelemLPhi, Get_Phi=True)
 		if PhiDataR is None or QuadChangedST:
 			Faces2PhiDataR[faceR] = PhiDataR = BasisData(basis1,Order,nqST,mesh)
-			xelemRPhi = PhiDataR.EvalBasisOnFaceADER(mesh, basis1, faceSTR, xqST[::-1], xelemRPhi, Get_Phi=True)
+			xelemRPhi = PhiDataR.eval_basis_on_face_ader(mesh, basis1, faceSTR, xqST[::-1], xelemRPhi, Get_Phi=True)
 
 		#Evaluate spacial basis functions
 		if PsiDataL is None or QuadChanged:
 			Faces2PsiDataL[faceL] = PsiDataL = BasisData(basis2,Order,nq,mesh)
-			xelemLPsi = PsiDataL.EvalBasisOnFace(mesh, faceL, xq, xelemLPsi, Get_Phi=True)
+			xelemLPsi = PsiDataL.eval_basis_on_face(mesh, faceL, xq, xelemLPsi, Get_Phi=True)
 		if PsiDataR is None or QuadChanged:
 			Faces2PsiDataR[faceR] = PsiDataR = BasisData(basis2,Order,nq,mesh)
-			xelemRPsi = PsiDataR.EvalBasisOnFace(mesh, faceR, xq[::-1], xelemRPsi, Get_Phi=True)
+			xelemRPsi = PsiDataR.eval_basis_on_face(mesh, faceR, xq[::-1], xelemRPsi, Get_Phi=True)
 
 		NData = IFaceNormal(mesh, IFace, nq, xq, NData)
 
-		nL = PsiDataL.nn
-		nR = PsiDataR.nn
-		nn = np.amax([nL,nR])
+		nbL = PsiDataL.Phi.shape[1]
+		nbR = PsiDataR.Phi.shape[1]
+		nb = np.amax([nbL,nbR])
 
 		Stepper = self.Stepper
 		dt = Stepper.dt
@@ -1291,8 +1315,8 @@ class ADERDG_Solver(DG_Solver):
 		# F = np.reshape(F,(nqST,sr))
 
 
-		RL -= np.matmul(np.tile(PsiDataL.Phi,(nn,1)).transpose(), F*wqST*wq)
-		RR += np.matmul(np.tile(PsiDataR.Phi,(nn,1)).transpose(), F*wqST*wq)
+		RL -= np.matmul(np.tile(PsiDataL.Phi,(nb,1)).transpose(), F*wqST*wq)
+		RR += np.matmul(np.tile(PsiDataR.Phi,(nb,1)).transpose(), F*wqST*wq)
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -1355,17 +1379,17 @@ class ADERDG_Solver(DG_Solver):
 			if QuadChanged:
 
 				PhiData = BasisData(basis,Order,nqST,mesh)
-				PhiData.EvalBasis(xqST, Get_Phi=True)
+				PhiData.eval_basis(xqST, Get_Phi=True)
 				xphys = np.zeros([nqST, mesh.Dim])
 
-			JData.ElemJacobian(elem,nqST,xqST,mesh,get_djac=True)
+			JData.element_jacobian(mesh,elem,nqST,xqST,get_djac=True)
 			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
 			nn = PhiData.nn
 		else:
 
 			xq, nq = equidistant_nodes(basis, Order, xq)
 			nn = nq
-			JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+			JData.element_jacobian(mesh,elem,nq,xq,get_djac=True)
 
 		if not InterpolateFlux:
 
@@ -1447,17 +1471,17 @@ class ADERDG_Solver(DG_Solver):
 			if QuadChanged:
 
 				PhiData = BasisData(basis,Order,nqST,mesh)
-				PhiData.EvalBasis(xqST, Get_Phi=True)
+				PhiData.eval_basis(xqST, Get_Phi=True)
 				xphys = np.zeros([nqST, mesh.Dim])
 
-			JData.ElemJacobian(elem,nqST,xqST,mesh,get_djac=True)
+			JData.element_jacobian(mesh,elem,nqST,xqST,get_djac=True)
 			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
 			nn = PhiData.nn
 		else:
 
 			xq, nq = equidistant_nodes(mesh.QBasis, Order, xq)
 			nn = nq
-			JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+			JData.element_jacobian(mesh,elem,nq,xq,get_djac=True)
 			
 			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
 			QuadOrderST-=1
