@@ -47,7 +47,7 @@ plt.ion()
 
 # Desired precision
 decimal = 14
-
+decimal_ader = 8
 
 '''
 1D Test Cases
@@ -72,7 +72,7 @@ if args.test_1D is True:
 	if args.ader is True:
 		# Linear advection ADER
 		import ADER_LinearAdvection
-		assert_almost_equal(ADER_LinearAdvection.TotErr,0.000163923152029, decimal=decimal)
+		assert_almost_equal(ADER_LinearAdvection.TotErr,0.000163923152029, decimal=decimal_ader)
 		print('Pass 1D ADER Linear Advection')
 
 	'''
@@ -94,7 +94,7 @@ if args.test_1D is True:
 	if args.ader is True:
 		# Smooth isentropic flow ADER
 		import ADER_SmoothIsentropicFlow
-		assert_almost_equal(ADER_SmoothIsentropicFlow.TotErr, 0.000658156554625, decimal=decimal)
+		assert_almost_equal(ADER_SmoothIsentropicFlow.TotErr, 0.000658156554625, decimal=decimal_ader)
 		print('Pass 1D ADER Smooth Isentropic Flow [Euler 1D]')
 
 if args.test_2D is True:

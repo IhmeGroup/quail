@@ -1589,7 +1589,7 @@ class ADERDG_Solver(DG_Solver):
 
 			JData.element_jacobian(mesh,elem,xqST,get_djac=True)
 			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
-			nn = PhiData.nn
+			nb = PhiData.Phi.shape[1]
 		else:
 
 			xq, nq = equidistant_nodes(basis, Order, xq)
@@ -1681,7 +1681,7 @@ class ADERDG_Solver(DG_Solver):
 
 			JData.element_jacobian(mesh,elem,xqST,get_djac=True)
 			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
-			nn = PhiData.nn
+			nb = PhiData.Phi.shape[1]
 		else:
 
 			xq, nq = equidistant_nodes(mesh.QBasis, Order, xq)
