@@ -68,8 +68,8 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 		u[:] = np.matmul(PhiData.Phi, U_)
 
 		# Computed requested quantity
-		s = EqnSet.ComputeScalars(VariableName, u, nq)
-		s_exact = EqnSet.ComputeScalars(VariableName, u_exact, nq)
+		s = EqnSet.ComputeScalars(VariableName, u)
+		s_exact = EqnSet.ComputeScalars(VariableName, u_exact)
 
 		# err = 0.
 		# for iq in range(nq):

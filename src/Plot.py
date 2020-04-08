@@ -69,7 +69,7 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 	x = np.reshape(x, (-1,))
 	nplot = x.shape[0]
 	u.shape = nplot,-1
-	uplot = EqnSet.ComputeScalars(VariableName, u, nplot)
+	uplot = EqnSet.ComputeScalars(VariableName, u)
 
 	### sort
 	idx = np.argsort(x)
@@ -82,14 +82,14 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 		# u_ex = u_exact[:,:,iplot]
 		# u_ex.shape = -1,
 		u_exact.shape = nplot,-1
-		u_ex = EqnSet.ComputeScalars(VariableName, u_exact, nplot)
+		u_ex = EqnSet.ComputeScalars(VariableName, u_exact)
 		plt.plot(x,u_ex,'k-',label="Exact")
 
 	if u_IC is not None: 
 		# u_ex = u_exact[:,:,iplot]
 		# u_ex.shape = -1,
 		u_IC.shape = nplot,-1
-		u_i = EqnSet.ComputeScalars(VariableName, u_IC, nplot)
+		u_i = EqnSet.ComputeScalars(VariableName, u_IC)
 		plt.plot(x,u_i,'k--',label="Initial")
 	plt.plot(x,uplot,'bo',label="DG") 
 	plt.ylabel(SolnLabel)
@@ -124,7 +124,7 @@ def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	X = x[:,0].flatten()
 	Y = x[:,1].flatten()
 	u.shape = nold,-1
-	U = EqnSet.ComputeScalars(VariableName, u, nold).flatten()
+	U = EqnSet.ComputeScalars(VariableName, u).flatten()
 	# U = u[:,:,iplot].flatten()
 	U = U[idx]
 
@@ -202,7 +202,7 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 		X = x[elem,:,0].flatten()
 		Y = x[elem,:,1].flatten()
 		# Compute requested scalar
-		U = EqnSet.ComputeScalars(VariableName, u[elem,:,:], nPoint).flatten()
+		U = EqnSet.ComputeScalars(VariableName, u[elem,:,:]).flatten()
 		# Triangulation
 		triang = tri.Triangulation(X, Y)
 		tris = triang; utri = U

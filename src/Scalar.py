@@ -3,13 +3,75 @@ from Basis import *
 from General import *
 import code
 import Errors
-from Data import ArrayList, ICData, BCData, ExactData, SourceData
+from Data import ArrayList, ICData, BCData, ExactData, SourceData, GenericData
 import sys
 from scipy.optimize import root
 
 
+class LaxFriedrichsFlux(object):
+	def __init__(self, u=None):
+		if u is not None:
+			n = u.shape[0]
+		else:
+			n = 0
+		self.FL = np.zeros_like(u)
+		self.FR = np.zeros_like(u)
+		self.du = np.zeros_like(u)
+		self.a = np.zeros([n,1])
+		self.aR = np.zeros([n,1])
+		self.idx = np.empty([n,1], dtype=bool) 
 
-class Scalar(object):
+	def AllocHelperArrays(self, u):
+		self.__init__(u)
+
+	def ComputeFlux(self, EqnSet, UL, UR, n):
+		'''
+		Function: ConvFluxLaxFriedrichs
+		-------------------
+		This function computes the numerical flux (dotted with the normal)
+		using the Lax-Friedrichs flux function
+
+		INPUTS:
+		    gam: specific heat ratio
+		    UL: Left state
+		    UR: Right state
+		    n: Normal vector (assumed left to right)
+
+		OUTPUTS:
+		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+		'''
+
+		# Extract helper arrays
+		FL = self.FL
+		FR = self.FR 
+		du = self.du 
+		a = self.a 
+		aR = self.aR 
+		idx = self.idx 
+
+		NN = np.linalg.norm(n, axis=1, keepdims=True)
+		n1 = n/NN
+
+		# Left State
+		FL[:] = EqnSet.ConvFluxProjected(UL, n1)
+
+		# Right State
+		FR[:] = EqnSet.ConvFluxProjected(UR, n1)
+
+		du[:] = UR-UL
+
+		# max characteristic speed
+		# code.interact(local=locals())
+		a[:] = EqnSet.ComputeScalars("MaxWaveSpeed", UL, None, FlagNonPhysical=True)
+		aR[:] = EqnSet.ComputeScalars("MaxWaveSpeed", UR, None, FlagNonPhysical=True)
+		idx[:] = aR > a
+		a[idx] = aR[idx]
+
+		# flux assembly 
+		return NN*(0.5*(FL+FR) - 0.5*a*du)
+
+
+class ConstAdvScalar(object):
 	'''
 	Class: IFace
 	--------------------------------------------------------------------------
@@ -111,7 +173,7 @@ class Scalar(object):
 		if not Params:
 			Params["ConstVelocity"] = 1.
 			Params["AdvectionOperator"] = self.AdvectionOperatorType["ConstVel"]
-			Params["ConvFlux"] = self.ConvFluxType["Upwind"]
+			Params["ConvFlux"] = self.ConvFluxType["LaxFriedrichs"]
 		# Overwrite
 		for key in kwargs:
 			if key not in Params.keys(): raise Exception("Input error")
@@ -121,6 +183,9 @@ class Scalar(object):
 				Params[key] = self.AdvectionOperatorType[kwargs[key]]
 			else:
 				Params[key] = kwargs[key]
+
+		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
+			self.ConvFluxFcn = LaxFriedrichsFlux()
 
 	def SetBC(self, BCName, **kwargs):
 		found = False
@@ -137,7 +202,8 @@ class Scalar(object):
 		Scalar = "u"
 
 	class AdditionalVariables(Enum):
-	    pass
+	    AdvectionVelocity = "c"
+	    MaxWaveSpeed = "\\lambda"
 
 	# class VariableType(IntEnum):
 	#     Scalar = 0
@@ -196,13 +262,15 @@ class Scalar(object):
 			c = self.Params["ConstVelocity"]
 			return c
 
-	def ConvFluxInterior(self, u, F):
-		c = self.getAdvOperator(u)
+	def ConvFluxInterior(self, u, F=None):
+		# c = self.getAdvOperator(u)
+		c = self.ComputeScalars("AdvectionVelocity", u, None)
 		#a = self.Params["Velocity"]
 		if F is None:
 			F = np.zeros(u.shape + (self.Dim,))
-		for d in range(self.Dim):
-			F[:,:,d] = c*u
+		# for d in range(self.Dim):
+		# 	F[:,:,d] = c*u
+		F[:] = np.expand_dims(c*u, axis=2)
 		# F = a*u
 		# F.shape = u.shape + (self.Dim,) 
 		return F
@@ -222,26 +290,86 @@ class Scalar(object):
 
 		return F
 
-	def ConvFluxLaxFriedrichs(self, uL, uR, c, n):
+	# def ConvFluxLaxFriedrichs(self, uL, uR, c, n):
 
-		# Left state
-		ul1 = self.getAdvOperator(uL) 
-		fL      = (ul1*uL)
+	# 	# Left state
+	# 	ul1 = self.getAdvOperator(uL) 
+	# 	fL      = (ul1*uL)
 
-		# Right state
-		ur1 = self.getAdvOperator(uR)
-		fR 		= (ur1*uR)
+	# 	# Right state
+	# 	ur1 = self.getAdvOperator(uR)
+	# 	fR 		= (ur1*uR)
 
-		du = uR - uL
+	# 	du = uR - uL
 
-		# Check flow direction
-		if np.sign(c)<0:
-			c = -c
+	# 	# Check flow direction
+	# 	if np.sign(c)<0:
+	# 		c = -c
 
-		# flux assembly 
-		F = (0.5*n*(fL+fR) - 0.5*c*du)
+	# 	# flux assembly 
+	# 	F = (0.5*n*(fL+fR) - 0.5*c*du)
 
-		return F
+	# 	return F
+
+	# def ConvFluxLaxFriedrichs(self, UL, UR, n, F):
+	# 	'''
+	# 	Function: ConvFluxLaxFriedrichs
+	# 	-------------------
+	# 	This function computes the numerical flux (dotted with the normal)
+	# 	using the Lax-Friedrichs flux function
+
+	# 	INPUTS:
+	# 	    gam: specific heat ratio
+	# 	    UL: Left state
+	# 	    UR: Right state
+	# 	    n: Normal vector (assumed left to right)
+
+	# 	OUTPUTS:
+	# 	    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+	# 	'''
+
+	# 	nq = F.shape[0]
+
+	# 	# Extract intermediate arrays
+	# 	# data = self.DataStorage
+	# 	# try: 
+	# 	# 	NN = data.NN
+	# 	# except AttributeError: 
+	# 	# 	data.NN = NN = np.zeros([nq,1])
+	# 	# try: 
+	# 	# 	n1 = data.n1
+	# 	# except AttributeError: 
+	# 	# 	data.n1 = n1 = np.zeros_like(n)
+	# 	# try: 
+	# 	# 	FL = data.FL
+	# 	# except AttributeError: 
+	# 	# 	data.FL = FL = np.zeros_like(F)
+	# 	# try: 
+	# 	# 	FL = data.FL
+	# 	# except AttributeError: 
+	# 	# 	data.FL = FL = np.zeros_like(F)
+
+	# 	NN = np.linalg.norm(n, axis=1, keepdims=True)
+	# 	n1 = n/NN
+
+	# 	# Left State
+	# 	FL = self.ConvFluxProjected(UL, n1)
+
+	# 	# Right State
+	# 	FR = self.ConvFluxProjected(UR, n1)
+
+	# 	du = UR-UL
+
+	# 	# max characteristic speed
+	# 	lam = self.ComputeScalars("MaxWaveSpeed", UL, None, FlagNonPhysical=True).reshape(-1)
+	# 	lamr = self.ComputeScalars("MaxWaveSpeed", UR, None, FlagNonPhysical=True).reshape(-1)
+	# 	idx = lamr > lam
+	# 	lam[idx] = lamr[idx]
+
+	# 	# flux assembly 
+	# 	F = NN*(0.5*(FL+FR) - 0.5*lam.reshape(-1,1)*du)
+
+	# 	return F
 
 	def ConvFluxNumerical(self, uL, uR, NData, nq, data):
 		# nq = NData.nq
@@ -261,37 +389,25 @@ class Scalar(object):
 			data.c = c = np.zeros_like(uL)
 
 	    #Calculate the max speed and keep its sign.
-		for i in range(nq):
+		# for i in range(nq):
 
-			u[i] = max(abs(uL[i]),abs(uR[i]))
+		# 	u[i] = max(abs(uL[i]),abs(uR[i]))
 
-			if u[i] == abs(uL[i]):
-				usign = np.sign(uL[i])
-			elif u[i] == abs(uR[i]):
-				usign = np.sign(uR[i])
-			u[i] = usign*u[i]
+		# 	if u[i] == abs(uL[i]):
+		# 		usign = np.sign(uL[i])
+		# 	elif u[i] == abs(uR[i]):
+		# 		usign = np.sign(uR[i])
+		# 	u[i] = usign*u[i]
 
-			c[i] = self.getAdvOperator(u[i])
+		# 	c[i] = self.getAdvOperator(u[i])
 
-		ConvFlux = self.Params["ConvFlux"] 
-
-		if ConvFlux == self.ConvFluxType.Upwind \
-			and self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
-			raise Errors.IncompatibleError
-
-		for iq in range(nq):
-			if NData.nvec.size < nq:
-				nvec = NData.nvec[0,:]
-			else:
-				nvec = NData.nvec[iq,:]
-			n = nvec/np.linalg.norm(nvec)
-
-			if ConvFlux == self.ConvFluxType.Upwind:
-				F[iq,:] = self.ConvFluxUpwind(uL[iq,:], uR[iq,:], c, n)
-			elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
-				F[iq,:] = self.ConvFluxLaxFriedrichs(uL[iq,:],uR[iq,:], c[iq], n)
-			else:
-				raise Exception("Invalid flux function")
+		self.ConvFluxFcn.AllocHelperArrays(uL)
+		F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, NData.nvec)
+		
+		# ConvFlux = self.Params["ConvFlux"] 
+		# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
+		# 	F = self.ConvFluxLaxFriedrichs(uL, uR, NData.nvec, F)
+		
 		return F
 
 	def BoundaryState(self, BC, nq, xglob, Time, NData, uI, uB=None):
@@ -324,6 +440,11 @@ class Scalar(object):
 
 		return s
 
+	def ConvFluxProjected(self, u, nvec):
+
+		F = self.ConvFluxInterior(u, None)
+		return np.sum(F.transpose(1,0,2)*nvec, axis=2).transpose()
+
 	def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
 		bctreatment = self.BCTreatments[BC.BCType]
 		if bctreatment == self.BCTreatment.Riemann:
@@ -334,18 +455,17 @@ class Scalar(object):
 				Fa = data.Fa
 			except AttributeError:
 				data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
-			Fa = self.ConvFluxInterior(uB, Fa)
-			# Take dot product with n
+			# Fa = self.ConvFluxInterior(uB, Fa)
+			# # Take dot product with n
 			try: 
 				F = data.F
 			except AttributeError:
 				data.F = F = np.zeros_like(uI)
-			for jr in range(self.StateRank):
-				F[:,jr] = np.sum(Fa[:,jr,:]*NData.nvec, axis=1)
+			F[:] = self.ConvFluxProjected(uB, NData.nvec)
 
 		return F
 
-	def ComputeScalars(self, ScalarNames, U, nq, scalar=None):
+	def ComputeScalars(self, ScalarNames, U, scalar=None, FlagNonPhysical=False):
 		if type(ScalarNames) is list:
 			nscalar = len(ScalarNames)
 		elif type(ScalarNames) is str:
@@ -354,6 +474,7 @@ class Scalar(object):
 		else:
 			raise TypeError
 
+		nq = U.shape[0]
 		if scalar is None or scalar.shape != (nq, nscalar):
 			scalar = np.zeros([nq, nscalar])
 
@@ -367,12 +488,21 @@ class Scalar(object):
 			# 	scalar[:,iscalar] = U[:,sidx]
 			# else:
 			except KeyError:
-				scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1])
+				scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
+					FlagNonPhysical)
 
 		return scalar
 
-	def AdditionalScalars(self, ScalarName, U, scalar):
-		raise NotImplementedError
+	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
+		sname = self.AdditionalVariables[ScalarName].name
+		if sname is self.AdditionalVariables["AdvectionVelocity"].name:
+			scalar[:] = self.Params["ConstVelocity"]
+		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			scalar[:] = np.abs(self.Params["ConstVelocity"])
+		else:
+			raise NotImplementedError
+
+		return scalar
 
 	def CallFunction(self, FcnData, **kwargs):
 		for key in kwargs:
@@ -433,7 +563,8 @@ class Scalar(object):
 		except AttributeError:
 			omega = 2.*np.pi
 
-		c = self.getAdvOperator(U)
+		# c = self.getAdvOperator(U)
+		c = self.ComputeScalars("AdvectionVelocity", U, None)
 		U[:] = np.sin(omega*(x-c*t))
 
 		return U
@@ -453,7 +584,8 @@ class Scalar(object):
 		except AttributeError:
 			nu = 1.0
 
-		c = self.getAdvOperator(U)
+		# c = self.getAdvOperator(U)
+		c = self.ComputeScalars("AdvectionVelocity", U, None)
 		U[:] = np.sin(omega*(x-c*t))*np.exp(nu*t)
 
 		return U
@@ -639,3 +771,20 @@ class Scalar(object):
 
 
 		return S
+
+class Burgers(ConstAdvScalar):
+
+	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
+		sname = self.AdditionalVariables[ScalarName].name
+		if sname is self.AdditionalVariables["AdvectionVelocity"].name:
+			# Pressure
+			# P = GetPressure()
+			scalar[:] = U/2.
+		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Pressure
+			# P = GetPressure()
+			scalar[:] = np.abs(U/2.)
+		else:
+			raise NotImplementedError
+
+		return scalar

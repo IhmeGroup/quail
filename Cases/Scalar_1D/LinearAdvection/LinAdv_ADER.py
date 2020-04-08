@@ -31,8 +31,8 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 Velocity = 1.
-EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-EqnSet.SetParams(ConstVelocity=Velocity)
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet.SetParams(ConstVelocity=Velocity,ConvFlux="LaxFriedrichs")
 # Initial conditions
 Uinflow = [1.0]
 EqnSet.IC.Set(Function=EqnSet.FcnUniform,State=Uinflow)

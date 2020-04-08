@@ -157,8 +157,8 @@ class PPLimiter(object):
 		# u_bar.shape = 1, -1
 
 		# Density and pressure
-		rho_bar = EqnSet.ComputeScalars(scalar1, u_bar, 1, rho_bar)
-		p_bar = EqnSet.ComputeScalars(scalar2, u_bar, 1, p_bar)
+		rho_bar = EqnSet.ComputeScalars(scalar1, u_bar, rho_bar)
+		p_bar = EqnSet.ComputeScalars(scalar2, u_bar, p_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise Errors.NotPhysicalError
@@ -234,7 +234,7 @@ class PPLimiter(object):
 
 		''' Limit density '''
 		# Compute density
-		rho_D = EqnSet.ComputeScalars(scalar1, u_D, nq_eval, rho_D)
+		rho_D = EqnSet.ComputeScalars(scalar1, u_D, rho_D)
 		theta[:] = np.abs((rho_bar - PosTol)/(rho_bar - rho_D))
 		theta1 = np.amin([1.,np.amin(theta)])
 
@@ -257,7 +257,7 @@ class PPLimiter(object):
 				raise ValueError
 
 		''' Limit pressure '''
-		p_D = EqnSet.ComputeScalars(scalar2, u_D, nq_eval, p_D)
+		p_D = EqnSet.ComputeScalars(scalar2, u_D, p_D)
 		# theta = np.abs((p_bar - PosTol)/(p_bar - p_D))
 		theta[:] = 1.
 		iposP = (p_D < 0.).reshape(-1) # indices where pressure is negative

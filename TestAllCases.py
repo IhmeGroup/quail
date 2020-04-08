@@ -88,7 +88,7 @@ if args.test_1D is True:
 	# Moving shock
 	sys.path.append('Cases/Euler_1D/MovingShock')
 	import MovingShock
-	assert_almost_equal(MovingShock.TotErr, 0.189162974501726, decimal=decimal)
+	assert_almost_equal(MovingShock.TotErr, 0.189450187141190, decimal=decimal)
 	print('Pass 1D Moving Shock [Euler 1D]')
 
 	if args.ader is True:
