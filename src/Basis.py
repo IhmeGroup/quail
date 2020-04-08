@@ -83,8 +83,8 @@ def local_q1_face_nodes(basis, p, face, fnodes=None):
         face: face value in ref space
 
     OUTPUTS: 
-        fnodes: 
-        nfnode:    
+        fnodes: index of face nodes
+        nfnode: number of face nodes
     '''
     if basis == BasisType.LagrangeSeg: 
         nfnode = 1
@@ -125,7 +125,21 @@ def local_q1_face_nodes(basis, p, face, fnodes=None):
     return fnodes, nfnode
 
 
-def LocalFaceNodes(basis, p, face, fnodes=None):
+def local_face_nodes(basis, p, face, fnodes=None):
+    '''
+    Method: local_q1_face_nodes
+    -------------------
+    ???
+
+    INPUTS:
+        basis: type of basis function
+        p: order of polynomial space
+        face: face value in ref space
+
+    OUTPUTS: 
+        fnodes: index of face nodes
+        nfnode: number of face nodes
+    '''
     if p < 1:
         raise ValueError
 
@@ -306,11 +320,11 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, Stati
     nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData = BasisData(basis,order,mesh)
         PhiData.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True)
+        JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -455,10 +469,10 @@ def get_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
     nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData = BasisData(basis,order,mesh)
         PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
-    JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True,get_ijac=True)
+    JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_ijac=True)
     PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
 
     nb = PhiData.Phi.shape[1]
@@ -519,7 +533,7 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
     nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData = BasisData(basis,order,mesh)
         PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
     nb = PhiData.Phi.shape[1]
@@ -590,15 +604,15 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
         if basis1 == basis2:
             face = 2
             basis = basis1
-            PhiData = BasisData(basis,order,nq,mesh)
+            PhiData = BasisData(basis,order,mesh)
             PsiData = PhiData
             xelem = np.zeros([nq,mesh.Dim+1])
             PhiData.eval_basis_on_face_ader(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
             PsiData.eval_basis_on_face_ader(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
         else:
             face = 0
-            PhiData = BasisData(basis1,order,nq,mesh)
-            PsiData = BasisData(basis2,order,nq,mesh)
+            PhiData = BasisData(basis1,order,mesh)
+            PsiData = BasisData(basis2,order,mesh)
             xelemPhi = np.zeros([nq,mesh.Dim+1])
             xelemPsi = np.zeros([nq,mesh.Dim])
             PhiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelemPhi, Get_Phi=True)
@@ -668,11 +682,11 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
     nq = quad_pts.shape[0]
     if QuadChanged:
 
-        PhiData = BasisData(basis,order,nq,mesh)
+        PhiData = BasisData(basis,order,mesh)
         PhiData.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.element_jacobian(mesh,elem,nq,quad_pts,get_djac=True)
+        JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
         if JData.nq == 1:
             djac = np.full(nq, JData.djac[0])
         else:
@@ -722,13 +736,13 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     quad_wts = quadData.quad_wts
     nq = quad_pts.shape[0]
 
-    PhiData_old = BasisData(basis_old, order_old, nq, mesh)
+    PhiData_old = BasisData(basis_old, order_old, mesh)
     PhiData_old.eval_basis(quad_pts, Get_Phi=True)
 
     phi_old = PhiData_old.Phi
     nb_old = phi_old.shape[1]
 
-    PhiData = BasisData(basis, order, nq, mesh)
+    PhiData = BasisData(basis, order, mesh)
     PhiData.eval_basis(quad_pts, Get_Phi=True)
     phi = PhiData.Phi
     nb = phi.shape[1]
@@ -767,42 +781,6 @@ def get_inv_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
     iSM = np.linalg.inv(SM) 
 
     return iSM, StaticData
-
-def ComputeInvADERMatrices(mesh, EqnSet, dt, solver=None):
-    ## Allocat ADERinv_all
-    # Calculate inverse mass matrix for every single element,
-    # even if uniform mesh
-    #Hard code basisType to Quads (currently only designed for 1D)
-    basis1 = BasisType.LagrangeQuad
-    basis2 = BasisType.LagrangeSeg
-    
-    # ArrayDims = [None]*mesh.nElemGroup
-    # for egrp in range(mesh.nElemGroup):
-    Order = EqnSet.Order
-    nn1 = order_to_num_basis_coeff(basis1, Order)
-    nn2 = order_to_num_basis_coeff(basis2, Order)
-    #     ArrayDims[egrp] = [mesh.nElems[egrp], nn1, nn2]
-    # ADERinv_all = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-    ADERinv_all = np.zeros([mesh.nElem, nn1, nn2])
-
-    StaticData = None
-
-    # Uniform mesh?
-    ReCalcMM = True
-    if solver is not None:
-        ReCalcMM = not solver.Params["UniformMesh"]
-
-    Order = EqnSet.Order
-    for elem in range(mesh.nElem):
-        if elem == 0 or ReCalcMM:
-            # Only recalculate if not using uniform mesh
-            ADERinv,StaticData = GetElemInvADERMatrix(mesh, basis1, basis2, Order, dt, EqnSet, False, elem, StaticData)
-        ADERinv_all[elem] = ADERinv
-
-    if solver is not None:
-        solver.DataSet.ADERinv_all = ADERinv_all
-
-    return ADERinv_all
 
 def get_inv_mass_matrices(mesh, EqnSet, solver=None):
     '''
@@ -1512,7 +1490,7 @@ class BasisData(object):
         gPhi: gradient of basis in physical space
         face: index of face in reference space
     '''
-    def __init__(self,basis,order,nq=0,mesh=None):
+    def __init__(self,basis,order,mesh=None):
         '''
         Method: __init__
         -------------------
@@ -1521,13 +1499,12 @@ class BasisData(object):
         INPUTS:
             basis: type of basis function
             order: solution order
-            nq: number of quadrature points
             mesh: mesh object
         '''
         self.basis = basis
         self.order = order
         #self.nb = order_to_num_basis_coeff(self.basis, self.order)
-        self.nq = nq
+        #self.nq = nq
         #self.nbnqmax = self.nb * self.nq
         self.dim = Shape2Dim[Basis2Shape[self.basis]]
         self.Phi = None
@@ -1536,7 +1513,20 @@ class BasisData(object):
         self.face = -1
 
     def get_physical_grad(self, JData):
-        nq = self.nq
+        '''
+        Method: get_physical_grad
+        --------------------------
+        Calculate the physical gradient
+
+        INPUTS:
+            JData: jacobian data
+
+        OUTPUTS:
+            gPhi: gradient of basis in physical space
+        '''
+        
+        nq = JData.ijac.shape[0]
+
         if nq != JData.nq and JData.nq != 1:
             raise Exception("Quadrature doesn't match")
         dim = JData.dim
@@ -1609,10 +1599,11 @@ class BasisData(object):
             xelem: coordinate of face
         '''
         self.face = face
+        nq = quad_pts.shape[0]
         basis = mesh.QBasis
-        if xelem is None or xelem.shape != (self.nq, mesh.Dim):
-            xelem = np.zeros([self.nq, mesh.Dim])
-        xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, quad_pts, xelem)
+        if xelem is None or xelem.shape != (nq, mesh.Dim):
+            xelem = np.zeros([nq, mesh.Dim])
+        xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
         self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
         return xelem
@@ -1637,14 +1628,15 @@ class BasisData(object):
             xelem: coordinate of face
         '''
         self.face = face
+        nq = quad_pts.shape[0]
         if Shape2Dim[Basis2Shape[basis]] == ShapeType.Quadrilateral:
-            if xelem is None or xelem.shape != (self.nq, mesh.Dim+1):
-                xelem = np.zeros([self.nq, mesh.Dim+1])
-            xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, quad_pts, xelem)
+            if xelem is None or xelem.shape != (nq, mesh.Dim+1):
+                xelem = np.zeros([nq, mesh.Dim+1])
+            xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
         elif Shape2Dim[Basis2Shape[basis]] == ShapeType.Segment:
-            if xelem is None or xelem.shape != (self.nq, mesh.Dim):
-                xelem = np.zeros([self.nq, mesh.Dim])
-            xelem = Mesh.RefFace2Elem(Basis2Shape[basis], face, self.nq, quad_pts, xelem)
+            if xelem is None or xelem.shape != (nq, mesh.Dim):
+                xelem = np.zeros([nq, mesh.Dim])
+            xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
         self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
         return xelem
@@ -1657,7 +1649,6 @@ class JacobianData(object):
     This class contains information about the jacobian
 
     ATTRIBUTES:
-        nq: number of quadrature points
         dim: dimension of mesh
         djac: determinant of the jacobian
         jac: jacobian
@@ -1674,7 +1665,6 @@ class JacobianData(object):
         INPUTS:
             mesh: mesh object
         '''
-        self.nq = 0
         self.dim = mesh.Dim
         self.djac = None
         self.jac = None
@@ -1682,7 +1672,7 @@ class JacobianData(object):
         self.A = None
         self.gPhi = None
 
-    def element_jacobian(self, mesh, elem, nq, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
+    def element_jacobian(self, mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
         '''
         Method: element_jacobian
         ----------------------------
@@ -1690,8 +1680,7 @@ class JacobianData(object):
 
         INPUTS:
             mesh: mesh object
-            basis: type of basis function
-            face: index of face in reference space
+            elem: element index
             quad_pts: coordinates of quadrature points
             get_djac: flag to calculate jacobian determinant (Default: False)
             get_jac: flag to calculate jacobian (Default: False)
@@ -1700,14 +1689,15 @@ class JacobianData(object):
         basis = mesh.QBasis
         Order = mesh.QOrder
         Shape = Basis2Shape[basis]
-        # if Order == 1 and Shape != ShapeType.Quadrilateral:
-        #     nq = 1
 
+        nq = quad_pts.shape[0]
         nb = order_to_num_basis_coeff(basis, Order)
         dim = Shape2Dim[Basis2Shape[basis]]
 
         ## Check if we need to resize or recalculate 
-        if self.dim != dim or self.nq != nq: Resize = True
+        #if self.dim != dim or self.nq != nq: Resize = True
+        #else: Resize = False
+        if self.dim != dim: Resize = True
         else: Resize = False
 
         self.gPhi = get_grads(basis, Order, dim, quad_pts, self.gPhi) # [nq, nb, dim]

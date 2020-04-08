@@ -3,7 +3,21 @@ import code
 import Basis
 import Data
 
-def MultInvMassMatrix(mesh, solver, dt, R, U):
+def mult_inv_mass_matrix(mesh, solver, dt, R, U):
+	'''
+	Method: mult_inv_mass_matrix
+	-------------------------------
+	Multiplies the residual array with the inverse mass matrix
+
+	INPUTS:
+		mesh: mesh object
+		solver: type of solver (i.e. DG, ADER-DG, etc...)
+		dt: time step
+		R: residual array
+
+	OUTPUTS:
+		U: solution array
+	'''
 	EqnSet = solver.EqnSet
 	DataSet = solver.DataSet
 	# if MMinv is None:
@@ -27,7 +41,7 @@ def MultInvMassMatrix(mesh, solver, dt, R, U):
 		U_ = U[elem]
 		U_[:,:] = c*np.matmul(MMinv_all[elem], R[elem])
 
-def ProjectStateToNewBasis(solver, EqnSet, mesh, basis_old, order_old):
+def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 	''' Old state '''
 	U = EqnSet.U
 
@@ -55,19 +69,3 @@ def ProjectStateToNewBasis(solver, EqnSet, mesh, basis_old, order_old):
 	''' Store in EqnSet '''
 	delattr(EqnSet, "U")
 	EqnSet.U = U_new
-			
-
-def MultInvADER(mesh, solver, dt, W, U):
-	EqnSet = solver.EqnSet
-	DataSet = solver.DataSet
-	# if MMinv is None:
-	# 	MMinv = GetInvMassMatrix(mesh, 0, 0, EqnSet.Orders[0])
-	try:
-		ADERinv_all = DataSet.ADERinv_all
-	except AttributeError:
-		# not found; need to compute
-		ADERinv_all = Basis.ComputeInvADERMatrices(mesh, EqnSet, dt, solver=solver)
-
-	for elem in range(mesh.nElem):
-		U_ = U[elem]
-		U_[:,:] = np.matmul(ADERinv_all[elem], W[elem])

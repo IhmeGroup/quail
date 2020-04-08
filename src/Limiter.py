@@ -9,7 +9,15 @@ import code
 
 PosTol = 1.e-10
 
-def SetLimiter(limiterType):
+def set_limiter(limiterType):
+	'''
+    Method: set_limiter
+    ----------------------------
+	selects limiter bases on input deck
+
+    INPUTS:
+		limiterType: type of limiter selected (Default: None)
+	'''
 	if limiterType is None:
 		return None
 	elif limiterType is General.LimiterType.PositivityPreserving.name:
@@ -21,31 +29,62 @@ def SetLimiter(limiterType):
 
 
 class PPLimiter(object):
+	'''
+    Class: PPLimiter
+    ------------------
+    This class contains information about the positivity preserving limiter
+    '''
 	def __init__(self):
-		# self.StaticData = Data.GenericData()
+		'''
+		Method: __init__
+		-------------------
+		Initializes PPLimiter object
+		'''
 		pass
 
-	def LimitSolution(self, solver, U):
+	def limit_solution(self, solver, U):
+		'''
+		Method: limit_solution
+		------------------------
+		Calls the limiter function for each element
+		INPUTS:
+			solver: type of solver (i.e. DG, ADER-DG, etc...)
+
+		OUTPUTS:
+			U: solution array
+		'''
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
 		# U = EqnSet.U.Arrays
 		StaticData = None
 
 		for elem in range(mesh.nElem):
-			U[elem] = self.LimitElement(solver, elem, U[elem], StaticData)
+			U[elem] = self.limit_element(solver, elem, U[elem], StaticData)
 
-	def LimitElement(self, solver, elem, U, StaticData):
+	def limit_element(self, solver, elem, U, StaticData):
+		'''
+		Method: limit_element
+		------------------------
+		Limits the solution on each element
+
+		INPUTS:
+			solver: type of solver (i.e. DG, ADER-DG, etc...)
+			elem: element index
+
+		OUTPUTS:
+			U: solution array
+		'''
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
 
 		basis = EqnSet.Basis
-		Order = EqnSet.Order
+		order = EqnSet.Order
 		entity = General.EntityType.Element
-		sr = EqnSet.StateRank
+		ns = EqnSet.StateRank
 		dim = EqnSet.Dim
 		Faces = mesh.Faces[elem]
 		nFacePerElem = mesh.nFacePerElem
-		_, ElemVols = MeshTools.ElementVolumes(mesh, solver)
+		_, ElemVols = MeshTools.element_volumes(mesh, solver)
 
 		scalar1 = "Density"
 		scalar2 = "Pressure"
@@ -83,29 +122,29 @@ class PPLimiter(object):
 			theta = StaticData.theta
 			Faces2PhiData = StaticData.Faces2PhiData
 
-		QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadElem)
+		QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadElem)
 		if QuadChanged:
 			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
-		nq = quadElem.nquad
-		xq = quadElem.quad_pts
-		wq = quadElem.quad_wts
+		quad_pts = quadElem.quad_pts
+		quad_wts = quadElem.quad_wts
+		nq = quad_pts.shape[0]
 
 		if QuadChanged:
-			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-			PhiElem.eval_basis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
+			PhiElem = Basis.BasisData(EqnSet.Basis,order,mesh)
+			PhiElem.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
-			u = np.zeros([nq, sr])
-			u_bar = np.zeros([1, sr])
-			F = np.zeros([nq, sr, dim])
+			u = np.zeros([nq, ns])
+			u_bar = np.zeros([1, ns])
+			F = np.zeros([nq, ns, dim])
 
 
-		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True,get_jac=False,get_ijac=True)
+		JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_jac=False,get_ijac=True)
 
 		#nn = PhiElem.nn
 
 		# interpolate state and gradient at quad points
-		# u = np.zeros([nq, sr])
+		# u = np.zeros([nq, ns])
 		u[:] = np.matmul(PhiElem.Phi, U)
 
 		# Multiply quadrature weights by Jacobian determinant
@@ -114,7 +153,7 @@ class PPLimiter(object):
 		# Average value of state
 		# vol = np.sum(wq*JData.djac)
 		vol = ElemVols[elem]
-		u_bar[:] = np.matmul(u.transpose(), wq*JData.djac).T/vol
+		u_bar[:] = np.matmul(u.transpose(), quad_wts*JData.djac).T/vol
 		# u_bar.shape = 1, -1
 
 		# Density and pressure
@@ -131,42 +170,42 @@ class PPLimiter(object):
 		# Loop through faces
 		for face in range(nFacePerElem):
 			Face = Faces[face]
-			eN, faceN = MeshTools.NeighborAcrossFace(mesh, elem, face)
+			eN, faceN = MeshTools.neighbor_across_face(mesh, elem, face)
 			if Face.Type == Mesh.FaceType.Boundary:
 				# boundary face
 				eN = elem; faceN = face
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
-				OrderN = EqnSet.Order
+				order_n = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([order,order_n]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
-			nq = quadFace.nquad
-			xq = quadFace.quad_pts
-			wq = quadFace.quad_wts
+			quad_pts = quadFace.quad_pts
+			quad_wts = quadFace.quad_wts
+			nq = quad_pts.shape[0]
 
 			if QuadChanged:
 				Faces2PhiData = [None for i in range(nFacePerElem)]
-				uf = np.zeros([nq, sr])
+				uf = np.zeros([nq,ns])
 
 			PhiData = Faces2PhiData[face]
 			if PhiData is None or QuadChanged:
-				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-				xelem = PhiData.eval_basis_on_face(mesh, face, xq, xelem, Get_Phi=True)
+				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,order,mesh)
+				xelem = PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face
 				if nq_prev == 0: 
 					# Best guess for size
 					nq_prev = nq_elem + nFacePerElem*nq
-					u_D = np.zeros([nq_prev, sr])
+					u_D = np.zeros([nq_prev, ns])
 
 				# Fill in element interior values
 				u_D[:nq_eval,:] = u
@@ -178,7 +217,7 @@ class PPLimiter(object):
 			if nq_eval > nq_prev:
 				raise ValueError
 				# resize
-				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,sr])))
+				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,ns])))
 				nq_prev = nq_eval
 			# Add to u_D
 			u_D[nq_eval-nq:nq_eval,:] = uf
@@ -209,7 +248,8 @@ class PPLimiter(object):
 			qcount = nq_elem
 			for face in range(nFacePerElem):
 				PhiData = Faces2PhiData[face]
-				nq = PhiData.nq
+				nq = PhiData.Phi.shape[0]
+				#nq = PhiData.nq
 				u_D[qcount:qcount+nq] = np.matmul(PhiData.Phi, U)
 				qcount += nq
 
@@ -248,31 +288,62 @@ class PPLimiter(object):
 		return U
 
 class PPScalarLimiter(object):
+	'''
+	Class: PPScalarLimiter
+	-------------------
+	This class contains information about the scalar positivity preserving limiter
+	'''
 	def __init__(self):
-		# self.StaticData = Data.GenericData()
+		'''
+		Method: __init__
+		-------------------
+		Initializes PPLimiter object
+		'''
 		pass
 
-	def LimitSolution(self, solver, U):
+	def limit_solution(self, solver, U):
+		'''
+		Method: limit_solution
+		------------------------
+		Calls the limiter function for each element
+		INPUTS:
+			solver: type of solver (i.e. DG, ADER-DG, etc...)
+
+		OUTPUTS:
+			U: solution array
+		'''
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
 		# U = EqnSet.U.Arrays
 		StaticData = None
 
 		for elem in range(mesh.nElem):
-			U[elem] = self.LimitElement(solver, elem, U[elem], StaticData)
+			U[elem] = self.limit_element(solver, elem, U[elem], StaticData)
 
-	def LimitElement(self, solver, elem, U, StaticData):
+	def limit_element(self, solver, elem, U, StaticData):
+		'''
+		Method: limit_element
+		------------------------
+		Limits the solution on each element
+
+		INPUTS:
+			solver: type of solver (i.e. DG, ADER-DG, etc...)
+			elem: element index
+
+		OUTPUTS:
+			U: solution array
+		'''
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
 
 		basis = EqnSet.Basis
-		Order = EqnSet.Order
+		order = EqnSet.Order
 		entity = General.EntityType.Element
-		sr = EqnSet.StateRank
+		ns = EqnSet.StateRank
 		dim = EqnSet.Dim
 		Faces = mesh.Faces[elem]
 		nFacePerElem = mesh.nFacePerElem
-		_, ElemVols = MeshTools.ElementVolumes(mesh, solver)
+		_, ElemVols = MeshTools.element_volumes(mesh, solver)
 
 		scalar1 = "u"
 
@@ -301,29 +372,29 @@ class PPScalarLimiter(object):
 			theta = StaticData.theta
 			Faces2PhiData = StaticData.Faces2PhiData
 
-		QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadElem)
+		QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadElem)
 		if QuadChanged:
 			quadElem = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
-		nq = quadElem.nquad
-		xq = quadElem.quad_pts
-		wq = quadElem.quad_wts
+		quad_pts = quadElem.quad_pts
+		quad_wts = quadElem.quad_wts
+		nq = quad_pts.shape[0]
 
 		if QuadChanged:
-			PhiElem = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-			PhiElem.eval_basis(xq, Get_Phi=True, Get_GPhi=True) # [nq, nn]
+			PhiElem = Basis.BasisData(EqnSet.Basis,Order,mesh)
+			PhiElem.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
-			u = np.zeros([nq, sr])
-			u_bar = np.zeros([1, sr])
-			F = np.zeros([nq, sr, dim])
+			u = np.zeros([nq, ns])
+			u_bar = np.zeros([1, ns])
+			F = np.zeros([nq, ns, dim])
 
 
-		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True,get_jac=False,get_ijac=True)
+		JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_jac=False,get_ijac=True)
 
 		#nn = PhiElem.nn
 
 		# interpolate state and gradient at quad points
-		# u = np.zeros([nq, sr])
+		# u = np.zeros([nq, ns])
 		u[:] = np.matmul(PhiElem.Phi, U)
 
 		# Multiply quadrature weights by Jacobian determinant
@@ -332,7 +403,7 @@ class PPScalarLimiter(object):
 		# Average value of state
 		# vol = np.sum(wq*JData.djac)
 		vol = ElemVols[elem]
-		u_bar[:] = np.matmul(u.transpose(), wq*JData.djac).T/vol
+		u_bar[:] = np.matmul(u.transpose(), quad_wts*JData.djac).T/vol
 
 		''' Get relevant quadrature points '''
 
@@ -341,42 +412,42 @@ class PPScalarLimiter(object):
 		# Loop through faces
 		for face in range(nFacePerElem):
 			Face = Faces[face]
-			eN, faceN = MeshTools.NeighborAcrossFace(mesh, elem, face)
+			eN, faceN = MeshTools.neighbor_across_face(mesh, elem, face)
 			if Face.Type == Mesh.FaceType.Boundary:
 				# boundary face
 				eN = elem; faceN = face
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, Order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
-				OrderN = EqnSet.Order
+				order_n = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([Order,OrderN]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([order,order_n]), EqnSet, quadFace)
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
 
-			nq = quadFace.nquad
-			xq = quadFace.quad_pts
-			wq = quadFace.quad_wts
+			quad_pts = quadFace.quad_pts
+			quad_wts = quadFace.quad_wts
+			nq = quad_pts.shape[0]
 
 			if QuadChanged:
 				Faces2PhiData = [None for i in range(nFacePerElem)]
-				uf = np.zeros([nq, sr])
+				uf = np.zeros([nq, ns])
 
 			PhiData = Faces2PhiData[face]
 			if PhiData is None or QuadChanged:
-				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,Order,nq,mesh)
-				xelem = PhiData.eval_basis_on_face(mesh, face, xq, xelem, Get_Phi=True)
+				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,order,mesh)
+				xelem = PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face
 				if nq_prev == 0: 
 					# Best guess for size
 					nq_prev = nq_elem + nFacePerElem*nq
-					u_D = np.zeros([nq_prev, sr])
+					u_D = np.zeros([nq_prev, ns])
 
 				# Fill in element interior values
 				u_D[:nq_eval,:] = u
@@ -388,7 +459,7 @@ class PPScalarLimiter(object):
 			if nq_eval > nq_prev:
 				raise ValueError
 				# resize
-				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,sr])))
+				u_D = np.concatenate((u_D, np.zeros([nq_eval-nq_prev,ns])))
 				nq_prev = nq_eval
 			# Add to u_D
 			u_D[nq_eval-nq:nq_eval,:] = uf

@@ -101,7 +101,7 @@ class QuadData(object):
 			quad_wts: Weight of the points in reference space.
 			nquad: Number of points to be evaluated.
 		'''
-		dim = Mesh.GetEntityDim(mesh, entity)
+		dim = Mesh.get_entity_dim(mesh, entity)
 		self.Order = Order
 		
 		self.qdim = mesh.Dim
@@ -151,7 +151,7 @@ class QuadDataADER(object):
 			quad_wts: Weight of the points in reference space.
 			nquad: Number of points to be evaluated.
 			'''
-		dim = Mesh.GetEntityDim(mesh, entity) + 1
+		dim = Mesh.get_entity_dim(mesh, entity) + 1
 		self.Order = Order
 		self.qdim = mesh.Dim + 1
 		self.nvec = None

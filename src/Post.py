@@ -3,7 +3,7 @@ import copy
 import code
 from Quadrature import get_gaussian_quadrature_elem, QuadData
 from Basis import BasisData, JacobianData
-from Mesh import Mesh, Ref2Phys
+from Mesh import Mesh, ref_to_phys
 from General import *
 import MeshTools
 from Data import ArrayList
@@ -19,7 +19,7 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 
 	# Get elem volumes 
 	if NormalizeByVolume:
-		TotVol,_ = MeshTools.ElementVolumes(mesh)
+		TotVol,_ = MeshTools.element_volumes(mesh)
 	else:
 		TotVol = 1.
 
@@ -52,13 +52,13 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 		wq = quadData.quad_wts
 
 		if QuadChanged:
-			PhiData = BasisData(basis,Order,nq,mesh)
+			PhiData = BasisData(basis,Order,mesh)
 			PhiData.eval_basis(xq, True, False, False, None)
 			xphys = np.zeros([nq, mesh.Dim])
 
-		JData.element_jacobian(mesh,elem,nq,xq,get_djac=True)
+		JData.element_jacobian(mesh,elem,xq,get_djac=True)
 
-		xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
+		xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
 
 		# interpolate state at quad points

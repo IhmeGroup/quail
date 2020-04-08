@@ -12,13 +12,13 @@ import General
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
-# Coords = MeshCommon.RefineUniform1D(Coords)
-# # Coords = MeshCommon.RefineUniform1D(Coords)
-# mesh = MeshCommon.Mesh1D(Coords=Coords, Periodic=Periodic)
+# Coords = MeshCommon.refine_uniform_1D(Coords)
+# # Coords = MeshCommon.refine_uniform_1D(Coords)
+# mesh = MeshCommon.mesh_1D(Coords=Coords, Periodic=Periodic)
 
 
 ### Solver parameters

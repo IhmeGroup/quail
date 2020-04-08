@@ -22,7 +22,7 @@ xp, np = equidistant_nodes(basis, p_plot)
 
 
 ### Evaluate basis functions
-PhiData = BasisData(basis, p, nq = np)
+PhiData = BasisData(basis, p)
 PhiData.eval_basis(xp, Get_Phi=True)
 # Reshape
 phi = PhiData.Phi[:,b-1]

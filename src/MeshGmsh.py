@@ -428,21 +428,21 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	# Allocate additional mesh structures
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BFG = mesh.BFaceGroups[ibfgrp]
-		BFG.AllocBFaces()
+		BFG.allocate_bfaces()
 	# nFaceMax = 0
 	# for EG in mesh.ElemGroups:
 	# 	# also find maximum # faces per elem
-	# 	EG.AllocFaces()
-	# 	EG.AllocElem2Nodes()
+	# 	EG.allocate_faces()
+	# 	EG.allocate_elem_to_nodes()
 	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
-	mesh.AllocFaces()
-	mesh.AllocElem2Nodes()
-	mesh.AllocHelpers() 
+	mesh.allocate_faces()
+	mesh.allocate_elem_to_nodes()
+	mesh.allocate_helpers() 
 	nFaceMax = mesh.nFacePerElem
 
 	# Over-allocate IFaces
 	mesh.nIFace = mesh.nElem*nFaceMax
-	mesh.AllocIFaces()
+	mesh.allocate_ifaces()
 
 	# reset nIFace - use as a counter
 	mesh.nIFace = 0
@@ -616,10 +616,10 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		raise ValueError
 	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
 
-	mesh.FillFaces()
+	mesh.fill_faces()
 
 	# Check face orientations
-	MeshTools.CheckFaceOrientations(mesh)
+	MeshTools.check_face_orientations(mesh)
 
 
 

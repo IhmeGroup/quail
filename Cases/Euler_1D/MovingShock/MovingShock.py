@@ -14,7 +14,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 ### Mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=False)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=False)
 
 
 ### Solver parameters

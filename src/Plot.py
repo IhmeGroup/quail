@@ -261,7 +261,7 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
-	PhiData = Basis.BasisData(EqnSet.Basis,Order,npoint,mesh)
+	PhiData = Basis.BasisData(EqnSet.Basis,Order,mesh)
 	PhiData.eval_basis(xpoint, True, False, False, None)
 	GeomPhiData = None
 	el = 0
@@ -269,9 +269,9 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 		U_ = U[elem]
 
 		JData = Basis.JacobianData(mesh)
-		JData.element_jacobian(mesh,elem,npoint,xpoint,get_djac=True)
+		JData.element_jacobian(mesh,elem,xpoint,get_djac=True)
 
-		xphys, GeomPhiData = Mesh.Ref2Phys(mesh, elem, GeomPhiData, npoint, xpoint)
+		xphys, GeomPhiData = Mesh.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
 		# u_exact[el,:,:] = f_exact(xphys, EndTime)
 
@@ -335,7 +335,7 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 		elem = IFace.ElemL; face = IFace.faceL
 
 		# Get local nodes on face
-		fnodes, nfnode = Basis.LocalFaceNodes(mesh.QBasis, 
+		fnodes, nfnode = Basis.local_face_nodes(mesh.QBasis, 
 			mesh.QOrder, face)
 
 		# Convert to global node numbering
@@ -357,7 +357,7 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 			elem = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
-			fnodes, nfnode = Basis.LocalFaceNodes(mesh.QBasis, 
+			fnodes, nfnode = Basis.local_face_nodes(mesh.QBasis, 
 				mesh.QOrder, face)
 
 			# Convert to global node numbering

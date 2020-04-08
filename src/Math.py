@@ -1,6 +1,3 @@
-
-
-
 def MatDetInv(A, d, detA, iA):
 	if d == 1:
 		det = A[0]
