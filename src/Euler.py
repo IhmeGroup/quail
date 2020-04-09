@@ -4,6 +4,7 @@ import code
 from scipy.optimize import fsolve, root
 from enum import IntEnum, Enum
 import Errors
+import General
 
 
 class Roe1DFlux(Scalar.LaxFriedrichsFlux):
@@ -473,22 +474,33 @@ class Euler1D(Scalar.ConstAdvScalar):
 		return irV
 
 	def ConvFluxInterior(self, u, F=None):
-		r = u[:,0]
-		ru = u[:,1]
-		rE = u[:,2]
+		dim = self.Dim
+		irho = 0; irhoE = dim + 1
+		imom = self.GetMomentumIndices()
 
-		eps = 1e-15
-		gam = self.Params["SpecificHeatRatio"]
+		eps = General.eps
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru)/(r+eps))
-		h = (rE + p)/(r+eps)
+		rho = u[:,irho:irho+1]
+		rho += eps
+		rhoE = u[:,irhoE:irhoE+1]
+		mom = u[:,imom]
+
+		p = self.ComputeScalars("Pressure", u)
+		h = self.ComputeScalars("TotalEnthalpy", u)
+
+		pmat = np.zeros([u.shape[0], dim, dim])
+		idx = np.full([dim,dim],False)
+		np.fill_diagonal(idx,True)
+		pmat[:,idx] = p
 
 		if F is None:
-			F = np.empty(u.shape+(self.Dim,))
+			F = np.empty(u.shape+(dim,))
 
-		F[:,0,0] = ru
-		F[:,1,0] = ru*ru/(r+eps) + p
-		F[:,2,0] = ru*h
+		F[:,irho,:] = mom
+		F[:,imom,:] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
+		F[:,irhoE,:] = mom*h
+
+		rho -= eps
 
 		return F
 
@@ -897,7 +909,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 		# T = P/(rho*R)
 
 		if FlagNonPhysical:
-			if np.any(rho <= 0.):
+			if np.any(rho < 0.):
 				raise Errors.NotPhysicalError
 
 		# if np.any(P < 0.) or np.any(rho < 0.):
@@ -905,7 +917,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 		def getP():
 			scalar[:] = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
 			if FlagNonPhysical:
-				if np.any(scalar <= 0.):
+				if np.any(scalar < 0.):
 					raise Errors.NotPhysicalError
 			return scalar
 		def getT():
@@ -1098,37 +1110,37 @@ class Euler2D(Euler1D):
 
 		return irho, irhou, irhov, irhoE
 
-	def ConvFluxInterior(self, u, F=None):
-		ir, iru, irv, irE = self.GetStateIndices()
+	# def ConvFluxInterior(self, u, F=None):
+	# 	ir, iru, irv, irE = self.GetStateIndices()
 
-		r = u[:,ir]
-		ru = u[:,iru]
-		rv = u[:,irv]
-		rE = u[:,irE]
+	# 	r = u[:,ir]
+	# 	ru = u[:,iru]
+	# 	rv = u[:,irv]
+	# 	rE = u[:,irE]
 
-		gam = self.Params["SpecificHeatRatio"]
+	# 	gam = self.Params["SpecificHeatRatio"]
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru + rv*rv)/r)
-		h = (rE + p)/r
+	# 	p = (gam - 1.)*(rE - 0.5*(ru*ru + rv*rv)/r)
+	# 	h = (rE + p)/r
 
-		if F is None:
-			F = np.empty(u.shape+(self.Dim,))
+	# 	if F is None:
+	# 		F = np.empty(u.shape+(self.Dim,))
 
-		# x
-		d = 0
-		F[:,ir,d] = ru
-		F[:,iru,d] = ru*ru/r + p
-		F[:,irv,d] = ru*rv/r 
-		F[:,irE,d] = ru*h
+	# 	# x
+	# 	d = 0
+	# 	F[:,ir,d] = ru
+	# 	F[:,iru,d] = ru*ru/r + p
+	# 	F[:,irv,d] = ru*rv/r 
+	# 	F[:,irE,d] = ru*h
 
-		# y
-		d = 1
-		F[:,ir,d] = rv
-		F[:,iru,d] = rv*ru/r 
-		F[:,irv,d] = rv*rv/r + p
-		F[:,irE,d] = rv*h
+	# 	# y
+	# 	d = 1
+	# 	F[:,ir,d] = rv
+	# 	F[:,iru,d] = rv*ru/r 
+	# 	F[:,irv,d] = rv*rv/r + p
+	# 	F[:,irE,d] = rv*h
 
-		return F
+	# 	return F
 
 	# def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
 	# 	bctreatment = self.BCTreatments[BC.BCType]
