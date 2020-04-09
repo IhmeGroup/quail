@@ -147,7 +147,7 @@ class Roe1DFlux(Scalar.LaxFriedrichsFlux):
 
 		# Indices
 		irho = 0
-		imom = EqnSet.GetMomentumIndices()
+		imom = EqnSet.GetMomentumSlice()
 
 		gamma = EqnSet.Params["SpecificHeatRatio"]
 
@@ -312,7 +312,7 @@ class Roe2DFlux(Roe1DFlux):
 
 	# 	# Indices
 	# 	irho = 0
-	# 	imom = EqnSet.GetMomentumIndices()
+	# 	imom = EqnSet.GetMomentumSlice()
 
 	# 	gamma = EqnSet.Params["SpecificHeatRatio"]
 
@@ -465,18 +465,38 @@ class Euler1D(Scalar.ConstAdvScalar):
 
 		return irho, irhou, irhoE
 
-	def GetMomentumIndices(self):
-		irV = np.zeros(self.Dim, dtype=int)
-		irV[0] = self.GetStateIndex("XMomentum")
-		if self.Dim == 2:
-			irV[1] = self.GetStateIndex("YMomentum")
+	# def GetMomentumSlice(self):
+	# 	irV = np.zeros(self.Dim, dtype=int)
+	# 	irV[0] = self.GetStateIndex("XMomentum")
+	# 	if self.Dim == 2:
+	# 		irV[1] = self.GetStateIndex("YMomentum")
 
-		return irV
+	# 	return irV
+
+	# def GetMomentumSlice(self):
+	# 	imom = np.zeros(2, dtype=int)
+	# 	imom[0] = self.GetStateIndex("XMomentum")
+	# 	if self.Dim == 1:
+	# 		imom[1] = self.GetStateIndex("XMomentum") + 1
+	# 	else:
+	# 		imom[1] = self.GetStateIndex("YMomentum") + 1
+
+	# 	return imom
+
+	def GetMomentumSlice(self):
+		irhou = self.GetStateIndex("XMomentum")
+		if self.Dim == 1:
+			imom = slice(irhou, irhou+1)
+		else:
+			irhov = self.GetStateIndex("YMomentum")
+			imom = slice(irhou, irhov+1)
+
+		return imom
 
 	def ConvFluxInterior(self, u, F=None):
 		dim = self.Dim
 		irho = 0; irhoE = dim + 1
-		imom = self.GetMomentumIndices()
+		imom = self.GetMomentumSlice()
 
 		eps = General.eps
 
@@ -791,7 +811,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 	# 	return F
 
 	def BCSlipWall(self, BC, nq, NData, uI, uB):
-		irV = self.GetMomentumIndices()
+		imom = self.GetMomentumSlice()
 
 		try:
 			n_hat = BC.Data.n_hat
@@ -802,16 +822,16 @@ class Euler1D(Scalar.ConstAdvScalar):
 			
 		n_hat[:] = NData.nvec/np.linalg.norm(NData.nvec, axis=1, keepdims=True)
 
-		rVn = np.sum(uI[:, irV] * n_hat, axis=1, keepdims=True)
+		rVn = np.sum(uI[:, imom] * n_hat, axis=1, keepdims=True)
 		uB[:] = uI[:]
-		uB[:, irV] -= rVn * n_hat
+		uB[:, imom] -= rVn * n_hat
 
 		return uB
 
 	def BCPressureOutflow(self, BC, nq, NData, UI, UB):
-		ir = self.GetStateIndex("Density")
-		irE = self.GetStateIndex("Energy")
-		irV = self.GetMomentumIndices()
+		irho = self.GetStateIndex("Density")
+		irhoE = self.GetStateIndex("Energy")
+		imom = self.GetMomentumSlice()
 
 		if UB is None:
 			UB = np.zeros_like(UI)
@@ -834,15 +854,15 @@ class Euler1D(Scalar.ConstAdvScalar):
 		UB[:] = UI[:]
 
 		# Interior velocity in normal direction
-		rhoI = UI[:,ir:ir+1]
-		VnI = np.sum(UI[:,irV]*n_hat, axis=1, keepdims=True)/rhoI
+		rhoI = UI[:,irho:irho+1]
+		VnI = np.sum(UI[:,imom]*n_hat, axis=1, keepdims=True)/rhoI
 
 		if np.any(VnI < 0.):
 			print("Reversed flow on outflow boundary")
 
 		# Compute interior pressure
-		rVI2 = np.sum(UI[:,irV]**2., axis=1, keepdims=True)/rhoI
-		pI = gmi*(UI[:,irE:irE+1] - 0.5*rVI2)
+		rVI2 = np.sum(UI[:,imom]**2., axis=1, keepdims=True)/rhoI
+		pI = gmi*(UI[:,irhoE:irhoE+1] - 0.5*rVI2)
 
 		if np.any(pI < 0.):
 			raise Errors.NotPhysicalError
@@ -857,16 +877,16 @@ class Euler1D(Scalar.ConstAdvScalar):
 
 		# Boundary density from interior entropy
 		rhoB = rhoI*np.power(pB/pI, igam)
-		UB[:,ir] = rhoB.reshape(-1)
+		UB[:,irho] = rhoB.reshape(-1)
 
 		# Exterior speed of sound
 		cB = np.sqrt(gam*pB/rhoB)
 		dVn = 2.*igmi*(cI-cB)
-		UB[:,irV] = rhoB*dVn*n_hat + rhoB*UI[:,irV]/rhoI
+		UB[:,imom] = rhoB*dVn*n_hat + rhoB*UI[:,imom]/rhoI
 
 		# Exterior energy
-		rVB2 = np.sum(UB[:,irV]**2., axis=1, keepdims=True)/rhoB
-		UB[:,irE] = (pB*igmi + 0.5*rVB2).reshape(-1)
+		rVB2 = np.sum(UB[:,imom]**2., axis=1, keepdims=True)/rhoB
+		UB[:,irhoE] = (pB*igmi + 0.5*rVB2).reshape(-1)
 
 		return UB
 
@@ -895,7 +915,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 		''' Extract state variables '''
 		irho = self.GetStateIndex("Density")
 		irhoE = self.GetStateIndex("Energy")
-		imom = self.GetMomentumIndices()
+		imom = self.GetMomentumSlice()
 		rho = U[:,irho:irho+1]
 		rhoE = U[:,irhoE:irhoE+1]
 		mom = U[:,imom]
@@ -1188,130 +1208,130 @@ class Euler2D(Euler1D):
 
 	# 	return F
 
-	def ConvFluxRoe(self, gam, UL, UR, n, FL, FR, du, lam, F):
-		'''
-		Function: ConvFluxRoe
-		-------------------
-		This function computes the numerical flux (dotted with the normal)
-		using the Roe flux function
+	# def ConvFluxRoe(self, gam, UL, UR, n, FL, FR, du, lam, F):
+	# 	'''
+	# 	Function: ConvFluxRoe
+	# 	-------------------
+	# 	This function computes the numerical flux (dotted with the normal)
+	# 	using the Roe flux function
 
-		INPUTS:
-		    gam: specific heat ratio
-		    UL: Left state
-		    UR: Right state
-		    n: Normal vector (assumed left to right)
+	# 	INPUTS:
+	# 	    gam: specific heat ratio
+	# 	    UL: Left state
+	# 	    UR: Right state
+	# 	    n: Normal vector (assumed left to right)
 
-		OUTPUTS:
-		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
-		'''
-		gmi = gam - 1.
-		gmi1 = 1./gmi
+	# 	OUTPUTS:
+	# 	    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+	# 	'''
+	# 	gmi = gam - 1.
+	# 	gmi1 = 1./gmi
 
-		ir, iru, irv, irE = self.GetStateIndices()
+	# 	ir, iru, irv, irE = self.GetStateIndices()
 
-		NN = np.linalg.norm(n)
-		NN1 = 1./NN
-		n1 = n/NN
+	# 	NN = np.linalg.norm(n)
+	# 	NN1 = 1./NN
+	# 	n1 = n/NN
 
-		if UL[ir] <= 0. or UR[ir] <= 0.:
-			raise Exception("Nonphysical density")
+	# 	if UL[ir] <= 0. or UR[ir] <= 0.:
+	# 		raise Exception("Nonphysical density")
 
-		# Left State
-		rhol1 = 1./UL[ir]
+	# 	# Left State
+	# 	rhol1 = 1./UL[ir]
 
-		ul    = UL[iru]*rhol1
-		vl    = UL[irv]*rhol1
-		u2l   = (ul*ul + vl*vl)*UL[ir]
-		unl   = (ul*n1[0] + vl*n1[1])
-		pl    = (UL[irE] - 0.5*u2l  )*gmi
-		hl    = (UL[irE] + pl  )*rhol1
+	# 	ul    = UL[iru]*rhol1
+	# 	vl    = UL[irv]*rhol1
+	# 	u2l   = (ul*ul + vl*vl)*UL[ir]
+	# 	unl   = (ul*n1[0] + vl*n1[1])
+	# 	pl    = (UL[irE] - 0.5*u2l  )*gmi
+	# 	hl    = (UL[irE] + pl  )*rhol1
 
-		FL[ir]     = UL[ir]*unl
-		FL[iru]    = n1[0]*pl   + UL[iru]*unl
-		FL[irv]    = n1[1]*pl   + UL[irv]*unl
-		FL[irE]    = (pl   + UL[irE])*unl
+	# 	FL[ir]     = UL[ir]*unl
+	# 	FL[iru]    = n1[0]*pl   + UL[iru]*unl
+	# 	FL[irv]    = n1[1]*pl   + UL[irv]*unl
+	# 	FL[irE]    = (pl   + UL[irE])*unl
 
-		# Right State
-		rhor1 = 1./UR[ir]
+	# 	# Right State
+	# 	rhor1 = 1./UR[ir]
 
-		ur    = UR[iru]*rhor1
-		vr    = UR[irv]*rhor1
-		u2r   = (ur*ur + vr*vr)*UR[ir]
-		unr   = (ur*n1[0] + vr*n1[1])
-		pr    = (UR[irE] - 0.5*u2r  )*gmi
-		hr    = (UR[irE] + pr  )*rhor1
+	# 	ur    = UR[iru]*rhor1
+	# 	vr    = UR[irv]*rhor1
+	# 	u2r   = (ur*ur + vr*vr)*UR[ir]
+	# 	unr   = (ur*n1[0] + vr*n1[1])
+	# 	pr    = (UR[irE] - 0.5*u2r  )*gmi
+	# 	hr    = (UR[irE] + pr  )*rhor1
 
-		FR[ir ]    = UR[ir]*unr
-		FR[iru]    = n1[0]*pr   + UR[iru]*unr
-		FR[irv]    = n1[1]*pr   + UR[irv]*unr
-		FR[irE]    = (pr   + UR[irE])*unr
+	# 	FR[ir ]    = UR[ir]*unr
+	# 	FR[iru]    = n1[0]*pr   + UR[iru]*unr
+	# 	FR[irv]    = n1[1]*pr   + UR[irv]*unr
+	# 	FR[irE]    = (pr   + UR[irE])*unr
 
-		# Average state
-		di     = np.sqrt(UR[ir]*rhol1)
-		d1     = 1.0/(1.0+di)
+	# 	# Average state
+	# 	di     = np.sqrt(UR[ir]*rhol1)
+	# 	d1     = 1.0/(1.0+di)
 
-		ui     = (di*ur + ul)*d1
-		vi     = (di*vr + vl)*d1
-		hi     = (di*hr+hl)*d1
+	# 	ui     = (di*ur + ul)*d1
+	# 	vi     = (di*vr + vl)*d1
+	# 	hi     = (di*hr+hl)*d1
 
-		af     = 0.5*(ui*ui   +vi*vi )
-		ucp    = ui*n1[0] + vi*n1[1]
-		c2     = gmi*(hi   -af   )
+	# 	af     = 0.5*(ui*ui   +vi*vi )
+	# 	ucp    = ui*n1[0] + vi*n1[1]
+	# 	c2     = gmi*(hi   -af   )
 
-		if c2 <= 0:
-			raise Errors.NotPhysicalError
+	# 	if c2 <= 0:
+	# 		raise Errors.NotPhysicalError
 
-		ci    = np.sqrt(c2)
-		ci1   = 1./ci
+	# 	ci    = np.sqrt(c2)
+	# 	ci1   = 1./ci
 
-		# du = UR-UL
-		du[ir ] = UR[ir ] - UL[ir ]
-		du[iru] = UR[iru] - UL[iru]
-		du[irv] = UR[irv] - UL[irv]
-		du[irE] = UR[irE] - UL[irE]
+	# 	# du = UR-UL
+	# 	du[ir ] = UR[ir ] - UL[ir ]
+	# 	du[iru] = UR[iru] - UL[iru]
+	# 	du[irv] = UR[irv] - UL[irv]
+	# 	du[irE] = UR[irE] - UL[irE]
 
-		# eigenvalues
-		lam[0] = ucp + ci
-		lam[1] = ucp - ci
-		lam[2] = ucp
+	# 	# eigenvalues
+	# 	lam[0] = ucp + ci
+	# 	lam[1] = ucp - ci
+	# 	lam[2] = ucp
 
-		# Entropy fix
-		ep     = 0.
-		eps    = ep*ci
-		for i in range(3):
-			if lam[i] < eps and lam[i] > -eps:
-				eps1 = 1./eps
-				lam[i] = 0.5*(eps+lam[i]*lam[i]*eps1)
+	# 	# Entropy fix
+	# 	ep     = 0.
+	# 	eps    = ep*ci
+	# 	for i in range(3):
+	# 		if lam[i] < eps and lam[i] > -eps:
+	# 			eps1 = 1./eps
+	# 			lam[i] = 0.5*(eps+lam[i]*lam[i]*eps1)
 
-		# average and half-difference of 1st and 2nd eigs
-		s1    = 0.5*(np.abs(lam[0])+np.abs(lam[1]))
-		s2    = 0.5*(np.abs(lam[0])-np.abs(lam[1]))
+	# 	# average and half-difference of 1st and 2nd eigs
+	# 	s1    = 0.5*(np.abs(lam[0])+np.abs(lam[1]))
+	# 	s2    = 0.5*(np.abs(lam[0])-np.abs(lam[1]))
 
-		# third eigenvalue, absolute value
-		l3    = np.abs(lam[2])
+	# 	# third eigenvalue, absolute value
+	# 	l3    = np.abs(lam[2])
 
-		# left eigenvector product generators
-		G1    = gmi*(af*du[ir] - ui*du[iru] - vi*du[irv] + du[irE])
-		G2    = -ucp*du[ir]+du[iru]*n1[0]+du[irv]*n1[1]
+	# 	# left eigenvector product generators
+	# 	G1    = gmi*(af*du[ir] - ui*du[iru] - vi*du[irv] + du[irE])
+	# 	G2    = -ucp*du[ir]+du[iru]*n1[0]+du[irv]*n1[1]
 
-		# required functions of G1 and G2 
-		C1    = G1*(s1-l3)*ci1*ci1 + G2*s2*ci1
-		C2    = G1*s2*ci1          + G2*(s1-l3)
+	# 	# required functions of G1 and G2 
+	# 	C1    = G1*(s1-l3)*ci1*ci1 + G2*s2*ci1
+	# 	C2    = G1*s2*ci1          + G2*(s1-l3)
 
-		# flux assembly
-		F[ir ]    = NN*(0.5*(FL[ir ]+FR[ir ])-0.5*(l3*du[ir ] + C1   ))
-		F[iru]    = NN*(0.5*(FL[iru]+FR[iru])-0.5*(l3*du[iru] + C1*ui + C2*n1[0]))
-		F[irv]    = NN*(0.5*(FL[irv]+FR[irv])-0.5*(l3*du[irv] + C1*vi + C2*n1[1]))
-		F[irE]    = NN*(0.5*(FL[irE]+FR[irE])-0.5*(l3*du[irE] + C1*hi + C2*ucp  ))
+	# 	# flux assembly
+	# 	F[ir ]    = NN*(0.5*(FL[ir ]+FR[ir ])-0.5*(l3*du[ir ] + C1   ))
+	# 	F[iru]    = NN*(0.5*(FL[iru]+FR[iru])-0.5*(l3*du[iru] + C1*ui + C2*n1[0]))
+	# 	F[irv]    = NN*(0.5*(FL[irv]+FR[irv])-0.5*(l3*du[irv] + C1*vi + C2*n1[1]))
+	# 	F[irE]    = NN*(0.5*(FL[irE]+FR[irE])-0.5*(l3*du[irE] + C1*hi + C2*ucp  ))
 
-		FRoe = np.zeros([1,4])
-		FRoe[0,0] = (l3*du[ir ] + C1   )
-		FRoe[0,1] = (l3*du[iru] + C1*ui + C2*n1[0])
-		FRoe[0,2] = (l3*du[irv] + C1*vi + C2*n1[1])
-		FRoe[0,3] = (l3*du[irE] + C1*hi + C2*ucp  )
-		code.interact(local=locals())
+	# 	FRoe = np.zeros([1,4])
+	# 	FRoe[0,0] = (l3*du[ir ] + C1   )
+	# 	FRoe[0,1] = (l3*du[iru] + C1*ui + C2*n1[0])
+	# 	FRoe[0,2] = (l3*du[irv] + C1*vi + C2*n1[1])
+	# 	FRoe[0,3] = (l3*du[irE] + C1*hi + C2*ucp  )
+	# 	code.interact(local=locals())
 
-		return F
+	# 	return F
 
 	# def ConvFluxNumerical(self, uL, uR, NData, nq, data):
 	# 	sr = self.StateRank
