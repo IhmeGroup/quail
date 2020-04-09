@@ -30,10 +30,16 @@ parser.add_argument('-test_1D',type=str2bool, nargs='?',const=True, default=True
 parser.add_argument('-test_2D',type=str2bool, nargs='?',const=True, default=True,
 					help='test 2D cases, {Default: On}')
 
+<<<<<<< Updated upstream
 parser.add_argument('-all',type=str2bool, nargs='?',const=True, default=False,
 					help='test ALL cases, {Default: Off}')
 
 args = parser.parse_args()
+=======
+# Linear advection (ADER)
+import ADER_LinearAdvection
+assert_almost_equal(ADER_LinearAdvection.TotErr, 0.000193606415626, decimal=decimal)
+>>>>>>> Stashed changes
 
 if args.all is True:
 	args.ader = True
