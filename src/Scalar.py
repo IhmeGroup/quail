@@ -371,7 +371,7 @@ class ConstAdvScalar(object):
 
 	# 	return F
 
-	def ConvFluxNumerical(self, uL, uR, NData, nq, data):
+	def ConvFluxNumerical(self, uL, uR, normals, nq, data):
 		# nq = NData.nq
 		if nq != uL.shape[0] or nq != uR.shape[0]:
 			raise Exception("Wrong nq")	
@@ -402,7 +402,7 @@ class ConstAdvScalar(object):
 		# 	c[i] = self.getAdvOperator(u[i])
 
 		self.ConvFluxFcn.AllocHelperArrays(uL)
-		F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, NData.nvec)
+		F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, normals)
 		
 		# ConvFlux = self.Params["ConvFlux"] 
 		# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
@@ -410,7 +410,7 @@ class ConstAdvScalar(object):
 		
 		return F
 
-	def BoundaryState(self, BC, nq, xglob, Time, NData, uI, uB=None):
+	def BoundaryState(self, BC, nq, xglob, Time, normals, uI, uB=None):
 		if uB is not None:
 			BC.U = uB
 
@@ -428,7 +428,7 @@ class ConstAdvScalar(object):
 		return uB
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
-	def SourceState(self, nq, xglob, Time, NData, u, s=None):
+	def SourceState(self, nq, xglob, Time, u, s=None):
 		for Source in self.Sources:
 
 			#loop through available source terms
@@ -445,10 +445,10 @@ class ConstAdvScalar(object):
 		F = self.ConvFluxInterior(u, None)
 		return np.sum(F.transpose(1,0,2)*nvec, axis=2).transpose()
 
-	def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
+	def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
 		bctreatment = self.BCTreatments[BC.BCType]
 		if bctreatment == self.BCTreatment.Riemann:
-			F = self.ConvFluxNumerical(uI, uB, NData, nq, data)
+			F = self.ConvFluxNumerical(uI, uB, normals, nq, data)
 		else:
 			# Prescribe analytic flux
 			try:
@@ -461,7 +461,7 @@ class ConstAdvScalar(object):
 				F = data.F
 			except AttributeError:
 				data.F = F = np.zeros_like(uI)
-			F[:] = self.ConvFluxProjected(uB, NData.nvec)
+			F[:] = self.ConvFluxProjected(uB, normals)
 
 		return F
 

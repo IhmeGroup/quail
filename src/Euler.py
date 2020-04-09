@@ -708,7 +708,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 
 		return F
 
-	def ConvFluxNumerical(self, uL, uR, NData, nq, data):
+	def ConvFluxNumerical(self, uL, uR, normals, nq, data):
 		sr = self.StateRank
 
 		try: 
@@ -744,20 +744,20 @@ class Euler1D(Scalar.ConstAdvScalar):
 		# NData.nvec[:,1] = 0.1
 
 		# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
-		if ConvFlux == self.ConvFluxType.LaxFriedrichs or ConvFlux == self.ConvFluxType.Roe:
+		# if ConvFlux == self.ConvFluxType.LaxFriedrichs or ConvFlux == self.ConvFluxType.Roe:
 			# F = self.ConvFluxLaxFriedrichs(gam, uL, uR, NData.nvec, F)
-			self.ConvFluxFcn.AllocHelperArrays(uL)
-			F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, NData.nvec)
-		else:
-			for iq in range(nq):
-				UL = uL[iq,:]
-				UR = uR[iq,:]
-				n = NData.nvec[iq*(NData.nq != 1),:]
+		self.ConvFluxFcn.AllocHelperArrays(uL)
+		F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, normals)
+		# else:
+		# 	for iq in range(nq):
+		# 		UL = uL[iq,:]
+		# 		UR = uR[iq,:]
+		# 		n = NData.nvec[iq*(NData.nq != 1),:]
 
-				f = F[iq,:]
+		# 		f = F[iq,:]
 
-				if ConvFlux == self.ConvFluxType.Roe:
-					f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
+		# 		if ConvFlux == self.ConvFluxType.Roe:
+		# 			f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
 
 		return F
 
@@ -810,17 +810,17 @@ class Euler1D(Scalar.ConstAdvScalar):
 
 	# 	return F
 
-	def BCSlipWall(self, BC, nq, NData, uI, uB):
+	def BCSlipWall(self, BC, nq, normals, uI, uB):
 		imom = self.GetMomentumSlice()
 
 		try:
 			n_hat = BC.Data.n_hat
 		except AttributeError:
-			BC.Data.n_hat = n_hat = np.zeros_like(NData.nvec)
-		if n_hat.shape != NData.nvec.shape:
-			n_hat = np.zeros_like(NData.nvec)
+			BC.Data.n_hat = n_hat = np.zeros_like(normals)
+		if n_hat.shape != normals.shape:
+			n_hat = np.zeros_like(normals)
 			
-		n_hat[:] = NData.nvec/np.linalg.norm(NData.nvec, axis=1, keepdims=True)
+		n_hat[:] = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
 		rVn = np.sum(uI[:, imom] * n_hat, axis=1, keepdims=True)
 		uB[:] = uI[:]
@@ -828,7 +828,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 
 		return uB
 
-	def BCPressureOutflow(self, BC, nq, NData, UI, UB):
+	def BCPressureOutflow(self, BC, nq, normals, UI, UB):
 		irho = self.GetStateIndex("Density")
 		irhoE = self.GetStateIndex("Energy")
 		imom = self.GetMomentumSlice()
@@ -839,8 +839,8 @@ class Euler1D(Scalar.ConstAdvScalar):
 		try:
 			n_hat = BC.Data.n_hat
 		except AttributeError:
-			BC.Data.n_hat = n_hat = np.zeros_like(NData.nvec)
-		n_hat = NData.nvec/np.linalg.norm(NData.nvec, axis=1, keepdims=True)
+			BC.Data.n_hat = n_hat = np.zeros_like(normals)
+		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
 		# Pressure
 		pB = BC.Data.p
@@ -890,7 +890,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 
 		return UB
 
-	def BoundaryState(self, BC, nq, xglob, Time, NData, uI, uB=None):
+	def BoundaryState(self, BC, nq, xglob, Time, normals, uI, uB=None):
 		if uB is not None:
 			BC.U = uB
 
@@ -903,9 +903,9 @@ class Euler1D(Scalar.ConstAdvScalar):
 		elif bctype == self.BCType.Extrapolation:
 			uB[:] = uI[:]
 		elif bctype == self.BCType.SlipWall:
-			uB = self.BCSlipWall(BC, nq, NData, uI, uB)
+			uB = self.BCSlipWall(BC, nq, normals, uI, uB)
 		elif bctype == self.BCType.PressureOutflow:
-			uB = self.BCPressureOutflow(BC, nq, NData, uI, uB)
+			uB = self.BCPressureOutflow(BC, nq, normals, uI, uB)
 		else:
 			raise Exception("BC type not supported")
 

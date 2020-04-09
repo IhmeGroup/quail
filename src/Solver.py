@@ -583,7 +583,7 @@ class DG_Solver(object):
 
 		# s = np.zeros([nq,ns]) # source is cumulative so it needs to be initialized to zero for each time step
 		Sq[:] = 0.
-		Sq = EqnSet.SourceState(nq, x, self.Time, None, Uq, Sq) # [nq,ns]
+		Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq,ns]
 		# Calculate source term integral
 		# for ir in range(sr):
 		# 	for jn in range(nn):
@@ -746,13 +746,12 @@ class DG_Solver(object):
 		UqL = np.matmul(basis_valL, UpL)
 		UqR = np.matmul(basis_valR, UpR)
 
-		NData = GenericData()
-		NData.nvec = normals_ifaces[iiface]
+		normals = normals_ifaces[iiface]
 
 		if StaticData is None:
 			StaticData = GenericData()
 
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, NData, nq, StaticData) # [nq,ns]
+		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq, StaticData) # [nq,ns]
 
 		RL -= np.matmul(basis_valL.transpose(), Fq*quad_wts) # [nb,sr]
 		RR += np.matmul(basis_valR.transpose(), Fq*quad_wts) # [nb,sr]
@@ -911,20 +910,19 @@ class DG_Solver(object):
 		# interpolate state and gradient at quad points
 		UqI = np.matmul(basis_val, U)
 
-		NData = GenericData()
-		NData.nvec = normals_bfgroups[ibfgrp][ibface]
+		normals = normals_bfgroups[ibfgrp][ibface]
 		x = x_bfgroups[ibfgrp][ibface]
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		UqB = EqnSet.BoundaryState(BC, nq, x, self.Time, NData, UqI, UqB)
+		UqB = EqnSet.BoundaryState(BC, nq, x, self.Time, normals, UqI, UqB)
 
 		# NData.nvec *= wq
 
 		if StaticData is None:
 			StaticData = GenericData()
 
-		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, NData, nq, StaticData) # [nq,sr]
+		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq, StaticData) # [nq,sr]
 
 		R -= np.matmul(basis_val.transpose(), Fq*quad_wts) # [nn,sr]
 
@@ -1471,7 +1469,7 @@ class ADERDG_Solver(DG_Solver):
 
 
 		s = np.zeros([nq_st,ns])
-		s = EqnSet.SourceState(nq_st, xglob, tglob, NData, u, s) # [nq,sr,dim]
+		s = EqnSet.SourceState(nq_st, xglob, tglob, u, s) # [nq,sr,dim]
 
 		# s = np.reshape(s,(nq,nq,sr))
 		# #Calculate source term integral
@@ -1650,7 +1648,7 @@ class ADERDG_Solver(DG_Solver):
 		uL[:] = np.matmul(PhiDataL.Phi, UL)
 		uR[:] = np.matmul(PhiDataR.Phi, UR)
 
-		F = EqnSet.ConvFluxNumerical(uL, uR, NData, nq_st, StaticData) # [nq,sr]
+		F = EqnSet.ConvFluxNumerical(uL, uR, NData.nvec, nq_st, StaticData) # [nq,sr]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 		
@@ -1814,9 +1812,9 @@ class ADERDG_Solver(DG_Solver):
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		uB = EqnSet.BoundaryState(BC, nq_st, xglob, tglob, NData, uI, uB)
+		uB = EqnSet.BoundaryState(BC, nq_st, xglob, tglob, NData.nvec, uI, uB)
 
-		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData, nq_st, StaticData) # [nq,sr]
+		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData.nvec, nq_st, StaticData) # [nq,sr]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 
@@ -2042,7 +2040,7 @@ class ADERDG_Solver(DG_Solver):
 			u[:] = np.matmul(PhiData.Phi, U)
 
 			s = np.zeros([nq_st,ns])
-			s = EqnSet.SourceState(nq_st, xglob, tglob, NData, u, s) # [nq,ns]
+			s = EqnSet.SourceState(nq_st, xglob, tglob, u, s) # [nq,ns]
 		
 			rhs *=0.
 			# for ir in range(sr):
@@ -2056,6 +2054,6 @@ class ADERDG_Solver(DG_Solver):
 
 		else:
 			S = np.zeros([nq_st,ns])
-			s = EqnSet.SourceState(nq_st, xglob, tglob, NData, U, S)
+			s = EqnSet.SourceState(nq_st, xglob, tglob, U, S)
 			S = s*dt/2.0
 		return S
