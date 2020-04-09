@@ -4,6 +4,7 @@ import code
 from scipy.optimize import fsolve, root
 from enum import IntEnum, Enum
 import Errors
+import General
 
 
 class Roe1DFlux(Scalar.LaxFriedrichsFlux):
@@ -477,12 +478,15 @@ class Euler1D(Scalar.ConstAdvScalar):
 		irho = 0; irhoE = dim + 1
 		imom = self.GetMomentumIndices()
 
-		rho = u[:,[irho]]
-		rhoE = u[:,[irhoE]]
+		eps = General.eps
+
+		rho = u[:,irho:irho+1]
+		rho += eps
+		rhoE = u[:,irhoE:irhoE+1]
 		mom = u[:,imom]
 
-		p = self.ComputeScalars("Pressure", u, FlagNonPhysical=True)
-		h = self.ComputeScalars("TotalEnthalpy", u, FlagNonPhysical=True)
+		p = self.ComputeScalars("Pressure", u)
+		h = self.ComputeScalars("TotalEnthalpy", u)
 
 		pmat = np.zeros([u.shape[0], dim, dim])
 		idx = np.full([dim,dim],False)
@@ -493,11 +497,10 @@ class Euler1D(Scalar.ConstAdvScalar):
 			F = np.empty(u.shape+(dim,))
 
 		F[:,irho,:] = mom
-		try:
-			F[:,imom,:] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
-		except ValueError:
-			code.interact(local=locals())
+		F[:,imom,:] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
 		F[:,irhoE,:] = mom*h
+
+		rho -= eps
 
 		return F
 
@@ -906,7 +909,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 		# T = P/(rho*R)
 
 		if FlagNonPhysical:
-			if np.any(rho <= 0.):
+			if np.any(rho < 0.):
 				raise Errors.NotPhysicalError
 
 		# if np.any(P < 0.) or np.any(rho < 0.):
@@ -914,7 +917,7 @@ class Euler1D(Scalar.ConstAdvScalar):
 		def getP():
 			scalar[:] = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
 			if FlagNonPhysical:
-				if np.any(scalar <= 0.):
+				if np.any(scalar < 0.):
 					raise Errors.NotPhysicalError
 			return scalar
 		def getT():
