@@ -994,7 +994,7 @@ class ADERDG_Solver(DG_Solver):
 		# Up = np.matmul(ADERinv, W)
 
 		# fluxpoly = self.flux_coefficients(elem, dt, Order, basis1, Up)
-		# srcpoly = self.SourceCoefficients(elem, dt, Order, basis1, Up)
+		# srcpoly = self.source_coefficients(elem, dt, Order, basis1, Up)
 
 		END HACKY TEST (BRETT)
 		'''
@@ -1012,7 +1012,7 @@ class ADERDG_Solver(DG_Solver):
 		def F(u):
 			u = u.reshape(nb_st,ns)
 			fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, u)
-			srcpoly = self.SourceCoefficients(elem, dt, order, basis_st, u)
+			srcpoly = self.source_coefficients(elem, dt, order, basis_st, u)
 			f = np.matmul(FTL,u)-np.matmul(FTR,W)-np.matmul(SMT,u)+np.matmul(SMS,fluxpoly)-np.matmul(MM,srcpoly)
 			f = f.reshape(nb_st*ns)
 			return f
@@ -1530,7 +1530,7 @@ class ADERDG_Solver(DG_Solver):
 		return R, StaticData
 
 
-	def flux_coefficients(self, elem, dt, Order, basis, U):
+	def flux_coefficients(self, elem, dt, order, basis, U):
 		'''
 		Method: flux_coefficients
 		-------------------------------------------
@@ -1539,7 +1539,7 @@ class ADERDG_Solver(DG_Solver):
 		INPUTS:
 			elem: element index
 			dt: time step size
-			order: 
+			order: solution order
 			U: solution array
 			
 		OUTPUTS:
@@ -1548,66 +1548,62 @@ class ADERDG_Solver(DG_Solver):
 		mesh = self.mesh
 		dim = mesh.Dim
 		EqnSet = self.EqnSet
-		sr = EqnSet.StateRank
+		ns = EqnSet.StateRank
 		Params = self.Params
 		entity = EntityType.Element
 		InterpolateFlux = Params["InterpolateFlux"]
 
 		quadData = None
-		quadDataST = None
+		quadData_st = None
 		JData = JacobianData(mesh)
 		GeomPhiData = None
-		xq = None; xphys = None; QuadChanged = True; QuadChangedST = True;
+		quad_pts = None; xphys = None; QuadChanged = True; QuadChanged_st = True;
 
-		rhs = np.zeros([order_to_num_basis_coeff(basis,Order),sr],dtype=U.dtype)
+		rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=U.dtype)
 
 		if not InterpolateFlux:
 
 
-			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, EqnSet, quadData)
-			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
-			QuadOrderST-=1
+			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order, EqnSet, quadData)
+			QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadData_st)
+			QuadOrder_st-=1
 
 			if QuadChanged:
 				quadData = QuadData(mesh, mesh.QBasis, entity, QuadOrder)
-			if QuadChangedST:
-				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
+			if QuadChanged_st:
+				quadData_st = QuadData(mesh, basis, entity, QuadOrder_st)
 
-			nq = quadData.nquad
-			xq = quadData.quad_pts
-			wq = quadData.quad_wts
+			quad_pts = quadData.quad_pts
+			quad_wts = quadData.quad_wts
+			nq = quad_pts.shape[0]
 
-			nqST = quadDataST.nquad
-			xqST = quadDataST.quad_pts
-			wqST = quadDataST.quad_wts
+			quad_pts_st = quadData_st.quad_pts
+			quad_wts_st = quadData_st.quad_wts
+			nq_st = quad_pts_st.shape[0]
 
 			if QuadChanged:
 
-				PhiData = BasisData(basis,Order,mesh)
-				PhiData.eval_basis(xqST, Get_Phi=True)
-				xphys = np.zeros([nqST, mesh.Dim])
+				PhiData = BasisData(basis,order,mesh)
+				PhiData.eval_basis(quad_pts_st, Get_Phi=True)
+				xphys = np.zeros([nq_st, mesh.Dim])
 
-			JData.element_jacobian(mesh,elem,xqST,get_djac=True)
-			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
-			nb = PhiData.Phi.shape[1]
+			JData.element_jacobian(mesh,elem,quad_pts_st,get_djac=True)
+			iMM,_= get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=True, StaticData=None)
+
 		else:
 
-			xq, nq = equidistant_nodes(basis, Order, xq)
-			nn = nq
-			JData.element_jacobian(mesh,elem,xq,get_djac=True)
+			quad_pts, nq = equidistant_nodes(basis, order, quad_pts)
+			nb = nq
+			JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
 
 		if not InterpolateFlux:
 
-			u = np.zeros([nqST, sr])
+			u = np.zeros([nq_st, ns])
 			u[:] = np.matmul(PhiData.Phi, U)
 
-			#u = np.reshape(u,(nq,nn))
-			F = np.zeros([nqST,sr,dim])
-			f = EqnSet.ConvFluxInterior(u, F) # [nq,sr]
-			f = f.reshape(nqST,sr)
-			#f = np.reshape(f,(nq,nq,sr,dim))
-			#Phi = PhiData.Phi
-			#Phi = np.reshape(Phi,(nq,nq,nn))
+			F = np.zeros([nq_st,ns,dim])
+			f = EqnSet.ConvFluxInterior(u, F) # [nq,ns]
+			f = f.reshape(nq_st,ns)
 		
 			rhs *=0.
 			# for ir in range(sr):
@@ -1617,102 +1613,109 @@ class ADERDG_Solver(DG_Solver):
 			# 				#Phi = PhiData.Phi[j,k]
 			# 				rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j,ir]*Phi[i,j,k]
 
-			rhs[:] = np.matmul(PhiData.Phi.transpose(), f*(wqST*JData.djac))
+			rhs[:] = np.matmul(PhiData.Phi.transpose(), f*(quad_wts_st*JData.djac))
 
 
 			#F = np.reshape(F,(nqST,sr,dim))
-			F = np.dot(MMinv,rhs)*(1.0/JData.djac)*dt/2.0
+			F = np.dot(iMM,rhs)*(1.0/JData.djac)*dt/2.0
 
 		else:
-			F1 = np.zeros([nn,sr,dim])
-			#code.interact(local=locals())
-			f = EqnSet.ConvFluxInterior(U,F1)
+			F = np.zeros([nb,ns,dim])
+			f = EqnSet.ConvFluxInterior(U,F)
 			F = f[:,:,0]*(1.0/JData.djac)*dt/2.0
-			#code.interact(local=locals())
+
 		return F
 
-	def SourceCoefficients(self, elem, dt, Order, basis, U):
+	def source_coefficients(self, elem, dt, order, basis, U):
+		'''
+		Method: source_coefficients
+		-------------------------------------------
+		Calculates the polynomial coefficients for the source functions in ADER-DG
+
+		INPUTS:
+			elem: element index
+			dt: time step size
+			order: solution order
+			U: solution array
+			
+		OUTPUTS:
+			S: polynomical coefficients of the flux function
+		'''
 
 		mesh = self.mesh
 		dim = mesh.Dim
 		EqnSet = self.EqnSet
-		sr = EqnSet.StateRank
+		ns = EqnSet.StateRank
 		Params = self.Params
 		entity = EntityType.Element
 		InterpolateFlux = Params["InterpolateFlux"]
 
 		quadData = None
-		quadDataST = None
+		quadData_st = None
 		JData = JacobianData(mesh)
 		GeomPhiData = None
 		TimePhiData = None
-		xq = None; xphys = None; QuadChanged = True; QuadChangedST = True;
+		quad_pts = None; xphys = None; QuadChanged = True; QuadChanged_st = True;
 		xglob = None; tglob = None; NData = None;
 
-		rhs = np.zeros([order_to_num_basis_coeff(basis,Order),sr],dtype=U.dtype)
+		rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=U.dtype)
 
 		if not InterpolateFlux:
 
-			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, EqnSet, quadData)
-			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
-			QuadOrderST-=1
+			QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order, EqnSet, quadData)
+			QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadData_st)
+			QuadOrder_st-=1
 
 			if QuadChanged:
 				quadData = QuadData(mesh, mesh.QBasis, entity, QuadOrder)
-			if QuadChangedST:
-				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
+			if QuadChanged_st:
+				quadData_st = QuadData(mesh, basis, entity, QuadOrder_st)
 
-			nq = quadData.nquad
-			xq = quadData.quad_pts
-			wq = quadData.quad_wts
+			quad_pts = quadData.quad_pts
+			quad_wts = quadData.quad_wts
+			nq = quad_pts.shape[0]
 
-			nqST = quadDataST.nquad
-			xqST = quadDataST.quad_pts
-			wqST = quadDataST.quad_wts
+			quad_pts_st = quadData_st.quad_pts
+			quad_wts_st = quadData_st.quad_wts
+			nq_st = quad_pts_st.shape[0]
 
-			xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xglob, QuadChanged)
-			tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xqST, tglob, QuadChangedST)
+			xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xglob, QuadChanged)
+			tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, tglob, QuadChanged_st)
 			
 			if QuadChanged:
 
-				PhiData = BasisData(basis,Order,mesh)
-				PhiData.eval_basis(xqST, Get_Phi=True)
-				xphys = np.zeros([nqST, mesh.Dim])
+				PhiData = BasisData(basis,order,mesh)
+				PhiData.eval_basis(quad_pts_st, Get_Phi=True)
+				xphys = np.zeros([nq_st, mesh.Dim])
 
-			JData.element_jacobian(mesh,elem,xqST,get_djac=True)
-			MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis, Order, elem=-1, PhysicalSpace=True, StaticData=None)
-			nb = PhiData.Phi.shape[1]
+			JData.element_jacobian(mesh,elem,quad_pts_st,get_djac=True)
+			iMM,_= get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=True, StaticData=None)
+
 		else:
 
-			xq, nq = equidistant_nodes(mesh.QBasis, Order, xq)
-			nn = nq
-			JData.element_jacobian(mesh,elem,xq,get_djac=True)
+			quad_pts, nq = equidistant_nodes(mesh.QBasis, order, quad_pts)
+			nb = nq
+			JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
 			
-			QuadOrderST, QuadChangedST = get_gaussian_quadrature_elem(mesh, basis, Order, EqnSet, quadDataST)
-			QuadOrderST-=1
+			QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadData_st)
+			QuadOrder_st-=1
 
-			if QuadChangedST:
-				quadDataST = QuadData(mesh, basis, entity, QuadOrderST)
+			if QuadChanged_st:
+				quadData_st = QuadData(mesh, basis, entity, QuadOrder_st)
 
-			nqST = quadDataST.nquad
-			xqST = quadDataST.quad_pts
+			quad_pts_st = quadData_st.quad_pts
+			nq_st = quad_pts_st.shape[0]
 
-			xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xglob, QuadChanged)
-			tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xqST, tglob, QuadChangedST)
+			xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xglob, QuadChanged)
+			tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, tglob, QuadChanged_st)
 
 		if not InterpolateFlux:
 
-			u = np.zeros([nqST, sr])
+			u = np.zeros([nq_st, ns])
 			u[:] = np.matmul(PhiData.Phi, U)
 
-			#u = np.reshape(u,(nq,nn))
-			#S = np.zeros([nqST,sr,dim])
-			s = np.zeros([nqST,sr])
-			s = EqnSet.SourceState(nqST, xglob, tglob, NData, u, s) # [nq,sr]
-			
-			#s = np.reshape(s,(nq,nq,sr,dim))
-			#Phi = PhiData.Phi
-			#Phi = np.reshape(Phi,(nq,nq,nn))
+			s = np.zeros([nq_st,ns])
+			s = EqnSet.SourceState(nq_st, xglob, tglob, NData, u, s) # [nq,ns]
 		
 			rhs *=0.
 			# for ir in range(sr):
@@ -1721,11 +1724,11 @@ class ADERDG_Solver(DG_Solver):
 			# 			for j in range(nq): # Loop over space
 			# 				#Phi = PhiData.Phi[j,k]
 			# 				rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*s[i,j,ir]*Phi[i,j,k]
-			rhs[:] = np.matmul(PhiData.Phi.transpose(),s*wqST*JData.djac)
-			S = np.dot(MMinv,rhs)*dt/2.0
+			rhs[:] = np.matmul(PhiData.Phi.transpose(),s*quad_wts_st*JData.djac)
+			S = np.dot(iMM,rhs)*dt/2.0
 
 		else:
-			S1 = np.zeros([nqST,sr])
-			s = EqnSet.SourceState(nqST, xglob, tglob, NData, U, S1)
+			S = np.zeros([nq_st,ns])
+			s = EqnSet.SourceState(nq_st, xglob, tglob, NData, U, S)
 			S = s*dt/2.0
 		return S

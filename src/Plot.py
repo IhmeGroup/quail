@@ -255,8 +255,8 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 	else:
 		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, EqnSet.Basis, max([2,2*Order]), EqnSet)
 		quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
-		npoint = quadData.nquad
 		xpoint = quadData.quad_pts
+		npoint = xpoint.shape[0]
 	
 	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)

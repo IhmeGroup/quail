@@ -123,10 +123,10 @@ USAGE:
 QuadQuadrilateralPoints = {}
 QuadQuadrilateralWeights = {}
 # Obtain from line segment quadrature
-for Order in QuadLinePoints.keys():
+for order in QuadLinePoints.keys():
     # Extract quadrature info for reference line segment
-    xqline = QuadLinePoints[Order]
-    wqline = QuadLineWeights[Order]
+    xqline = QuadLinePoints[order]
+    wqline = QuadLineWeights[order]
     nqline = len(xqline)
     nquad = nqline**2
     quad_wts = np.zeros([nquad,1])
@@ -151,8 +151,8 @@ for Order in QuadLinePoints.keys():
     quad_pts[:,1] = np.repeat(xqline, nqline, axis=0).reshape(-1)
 
     # Store in dictionaries
-    QuadQuadrilateralPoints[Order] = quad_pts
-    QuadQuadrilateralWeights[Order] = quad_wts
+    QuadQuadrilateralPoints[order] = quad_pts
+    QuadQuadrilateralWeights[order] = quad_wts
 
 
 '''
@@ -473,7 +473,7 @@ for key in [18,19]:
     0.001899964427651, 0.001899964427651, 0.001899964427651, 0.001899964427651,
     0.001899964427651])
 # reshape
-for Order in QuadTrianglePoints.keys():
-	QuadTrianglePoints[Order].shape = -1,2
-	QuadTriangleWeights[Order].shape = -1,1
+for order in QuadTrianglePoints.keys():
+	QuadTrianglePoints[order].shape = -1,2
+	QuadTriangleWeights[order].shape = -1,1
 

@@ -40,9 +40,9 @@ def element_volumes(mesh, solver=None):
     if QuadChanged:
         quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
     xq = quadData.quad_pts
     wq = quadData.quad_wts
+    nq = xq.shape[0]
 
     for elem in range(mesh.nElem):
         JData.element_jacobian(mesh,elem,xq,get_djac=True)

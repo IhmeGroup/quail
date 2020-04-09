@@ -47,10 +47,10 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 		if QuadChanged:
 			quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-		nq = quadData.nquad
 		xq = quadData.quad_pts
 		wq = quadData.quad_wts
-
+		nq = xq.shape[0]
+		
 		if QuadChanged:
 			PhiData = BasisData(basis,Order,mesh)
 			PhiData.eval_basis(xq, True, False, False, None)

@@ -112,7 +112,6 @@ def ref_to_phys_time(mesh, elem, time, dt, PhiData, xref, tphys=None, PointsChan
     dim = mesh.Dim
     
     Phi = PhiData.Phi
-    #nn = PhiData.nn
 
     if tphys is None:
         tphys = np.zeros([npoint,dim])
