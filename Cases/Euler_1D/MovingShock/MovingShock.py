@@ -14,12 +14,12 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 ### Mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=False)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=False)
 
 
 ### Solver parameters
-EndTime = 0.0002
-nTimeStep = 500
+EndTime = 4.e-5
+nTimeStep = 100
 InterpOrder = 1
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",InterpolateIC=False,
@@ -28,7 +28,7 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
-EqnSet.SetParams(GasConstant=287.,SpecificHeatRatio=1.4,ConvFlux="LaxFriedrichs")
+EqnSet.SetParams(GasConstant=287.,SpecificHeatRatio=1.4,ConvFlux="Roe")
 # Parameters
 M = 5.
 xshock = 0.2

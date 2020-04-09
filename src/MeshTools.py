@@ -6,7 +6,20 @@ from Mesh import *
 import code
 
 
-def ElementVolumes(mesh, solver=None):
+def element_volumes(mesh, solver=None):
+    '''
+    Method: element_volumes
+    --------------------------
+    Calculates total and per element volumes
+
+    INPUTS:
+        mesh: mesh object
+        solver: type of solver (i.e. DG, ADER-DG, etc...)
+    
+    OUTPUTS:
+        TotalVolume: total volume in the mesh
+        ElemVolumes: volume at each element
+    '''
     # Check if already calculated
     if solver is not None:
         if hasattr(solver.DataSet, "TotalVolume") \
@@ -27,15 +40,16 @@ def ElementVolumes(mesh, solver=None):
     if QuadChanged:
         quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-    nq = quadData.nquad
     xq = quadData.quad_pts
     wq = quadData.quad_wts
+    nq = xq.shape[0]
 
     for elem in range(mesh.nElem):
-        JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+        JData.element_jacobian(mesh,elem,xq,get_djac=True)
 
-        for iq in range(nq):
-            ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
+        # for iq in range(nq):
+        #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
+        ElemVolumes[elem] = np.sum(wq*JData.djac)
 
         TotalVolume += ElemVolumes[elem]
 
@@ -46,7 +60,21 @@ def ElementVolumes(mesh, solver=None):
     return TotalVolume, ElemVolumes
 
 
-def NeighborAcrossFace(mesh, elem, face):
+def neighbor_across_face(mesh, elem, face):
+    '''
+    Method: neighbor_across_face
+    ------------------------------
+    Identifies neighbor elements across each face
+
+    INPUTS:
+        mesh: mesh object
+        elem: element index
+        face: face index w.r.t. the element in ref space
+    
+    OUTPUTS:
+        eN: element index of the neighboring face
+        faceN: face index w.r.t. the neighboring element in ref space
+    '''
     Face = mesh.Faces[elem][face]
 
     if Face.Type == FaceType.Interior:
@@ -64,7 +92,18 @@ def NeighborAcrossFace(mesh, elem, face):
     return eN, faceN
 
 
-def CheckFaceOrientations(mesh):
+def check_face_orientations(mesh):
+    '''
+    Method: check_face_orientations
+    --------------------------------
+    Checks the face orientations for 2D meshes
+
+    INPUTS:
+        mesh: mesh object
+    
+    NOTES:
+        only returns a message if an error exists
+    '''
 
     if mesh.Dim == 1:
         # don't need to check for 1D
@@ -77,12 +116,12 @@ def CheckFaceOrientations(mesh):
         faceR = IFace.faceR
 
         # Get local q=1 nodes on face for left element
-        lfnodes, nfnode = LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, faceL)
+        lfnodes, nfnode = local_q1_face_nodes(mesh.QBasis, mesh.QOrder, faceL)
         # Convert to global node numbering
         gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
 
         # Get local q=1 nodes on face for right element
-        lfnodes, nfnode = LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, faceR)
+        lfnodes, nfnode = local_q1_face_nodes(mesh.QBasis, mesh.QOrder, faceR)
         # Convert to global node numbering
         gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
 

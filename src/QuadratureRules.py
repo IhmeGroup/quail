@@ -1,4 +1,5 @@
 import numpy as np
+import code
 
 
 '''
@@ -122,33 +123,36 @@ USAGE:
 QuadQuadrilateralPoints = {}
 QuadQuadrilateralWeights = {}
 # Obtain from line segment quadrature
-for Order in QuadLinePoints.keys():
-	# Extract quadrature info for reference line segment
-	xqline = QuadLinePoints[Order]
-	wqline = QuadLineWeights[Order]
-	nqline = len(xqline)
-	nquad = nqline**2
-	quad_wts = np.zeros([nquad,1])
-	quad_pts = np.zeros([nquad,2])
-	iq = 0
-	for j in range(nqline):
-		xqj = xqline[j]
-		wqj = wqline[j]
-		for i in range(nqline):
-			xqi = xqline[i]
-			wqi = wqline[i]
+for order in QuadLinePoints.keys():
+    # Extract quadrature info for reference line segment
+    xqline = QuadLinePoints[order]
+    wqline = QuadLineWeights[order]
+    nqline = len(xqline)
+    nquad = nqline**2
+    quad_wts = np.zeros([nquad,1])
+    quad_pts = np.zeros([nquad,2])
+    # iq = 0
+    # for j in range(nqline):
+    # 	xqj = xqline[j]
+    # 	wqj = wqline[j]
+    # 	for i in range(nqline):
+    # 		xqi = xqline[i]
+    # 		wqi = wqline[i]
 
-			quad_wts[iq] = wqi*wqj
-			quad_pts[iq,0] = xqi
-			quad_pts[iq,1] = xqj
-			iq += 1
+    # 		quad_wts[iq] = wqi*wqj
+    # 		quad_pts[iq,0] = xqi
+    # 		quad_pts[iq,1] = xqj
+    # 		iq += 1
 
-	if iq != nquad:
-		raise ValueError
+    # if iq != nquad:
+    # 	raise ValueError
+    quad_wts[:] = np.reshape(np.outer(wqline, wqline), (-1,), 'F').reshape(-1,1)
+    quad_pts[:,0] = np.tile(xqline, (nqline,1)).reshape(-1)
+    quad_pts[:,1] = np.repeat(xqline, nqline, axis=0).reshape(-1)
 
-	# Store in dictionaries
-	QuadQuadrilateralPoints[Order] = quad_pts
-	QuadQuadrilateralWeights[Order] = quad_wts
+    # Store in dictionaries
+    QuadQuadrilateralPoints[order] = quad_pts
+    QuadQuadrilateralWeights[order] = quad_wts
 
 
 '''
@@ -469,7 +473,7 @@ for key in [18,19]:
     0.001899964427651, 0.001899964427651, 0.001899964427651, 0.001899964427651,
     0.001899964427651])
 # reshape
-for Order in QuadTrianglePoints.keys():
-	QuadTrianglePoints[Order].shape = -1,2
-	QuadTriangleWeights[Order].shape = -1,1
+for order in QuadTrianglePoints.keys():
+	QuadTrianglePoints[order].shape = -1,2
+	QuadTriangleWeights[order].shape = -1,1
 

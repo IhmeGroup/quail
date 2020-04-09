@@ -12,13 +12,13 @@ import General
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
-# Coords = MeshCommon.RefineUniform1D(Coords)
-# # Coords = MeshCommon.RefineUniform1D(Coords)
-# mesh = MeshCommon.Mesh1D(Coords=Coords, Periodic=Periodic)
+# Coords = MeshCommon.refine_uniform_1D(Coords)
+# # Coords = MeshCommon.refine_uniform_1D(Coords)
+# mesh = MeshCommon.mesh_1D(Coords=Coords, Periodic=Periodic)
 
 
 ### Solver parameters
@@ -26,12 +26,12 @@ EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateFlux=True)
+								 InterpBasis="LegendreSeg",TimeScheme="ADER",InterpolateFlux=False)
 nu = -3.
 
 ### Physics
 Velocity = 1.0 
-EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)

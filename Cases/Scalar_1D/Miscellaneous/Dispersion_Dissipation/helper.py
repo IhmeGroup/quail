@@ -1,6 +1,6 @@
 import numpy as np
 import General
-from Basis import GetInvMassMatrix, GetStiffnessMatrix, BasisData
+from Basis import GetInvMassMatrix, get_stiffness_matrix, BasisData
 from Quadrature import get_gaussian_quadrature_elem, QuadData
 import code
 
@@ -8,23 +8,23 @@ import code
 ### Function to calculate mass matrix, stiffness matrix, basis polynomials
 def CalculateBasisAndMatrices(mesh, basis, Order):
 	## Mass, stiffness matrix
-	MMinv,_ = GetElemInvMassMatrix(mesh, basis=basis, Order=Order, PhysicalSpace=True, egrp=0, elem=0)
-	SM,_ = GetStiffnessMatrix(mesh, egrp=0, elem=0, basis=basis, Order=Order)
+	MMinv,_ = get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, PhysicalSpace=True)
+	SM,_ = get_stiffness_matrix(mesh, basis=basis, Order=Order, elem=0)
 
 	## Evaluate basis polynomials
 	# Quadrature
 	QuadOrder,_ = get_gaussian_quadrature_elem(mesh, egrp=0, basis=basis, Order=Order)
 	quadData = QuadData(mesh=mesh, basis=mesh.ElemGroups[0].QBasis, entity=General.EntityType["IFace"], Order=QuadOrder)
-	xq = quadData.quad_pts; nq = quadData.nquad; 
+	xq = quadData.quad_pts; nq = quad_pts.shape[0]; 
 	# Basis on left face
-	PhiDataLeft = BasisData(basis,Order,nq,mesh)
-	PhiDataLeft.EvalBasisOnFace(mesh, egrp=0, face=0, xq=xq, xelem=None, Get_Phi=True)
+	PhiDataLeft = BasisData(basis,Order,mesh)
+	PhiDataLeft.eval_basis_on_face(mesh, egrp=0, face=0, xq=xq, xelem=None, Get_Phi=True)
 	PhiLeft = PhiDataLeft.Phi.transpose() # [nn,1]
 	# Basis on right face
-	PhiDataRight = BasisData(basis,Order,nq,mesh)
-	PhiDataRight.EvalBasisOnFace(mesh, egrp=0, face=1, xq=xq, xelem=None, Get_Phi=True)
+	PhiDataRight = BasisData(basis,Order,mesh)
+	PhiDataRight.eval_basis_on_face(mesh, egrp=0, face=1, xq=xq, xelem=None, Get_Phi=True)
 	PhiRight = PhiDataRight.Phi.transpose() # [nn,1]
-	nn = PhiDataLeft.nn
+	nn = PhiDataLeft.Phi.shape[1]
 
 	return MMinv, SM, PhiLeft, PhiRight, nn
 
@@ -52,7 +52,7 @@ def GetEigValues(MMinv, SM, PhiLeft, PhiRight, L, p, h, alpha, solver=None):
 	# if solver is not None:
 	# 	EqnSet = solver.EqnSet
 	# 	EqnSet.IC.Set(theta = 1.j*L*(p+1))
-	# 	solver.InitState()
+	# 	solver.init_state()
 	# 	U = EqnSet.U.Arrays
 	# 	Unorm = U/np.linalg.norm(U)
 

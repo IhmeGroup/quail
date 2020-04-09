@@ -7,11 +7,12 @@ import MeshCommon
 import Post
 import Plot
 import General
-import Limiter
+
+
 ### Mesh
-Periodic = False
+Periodic = False 
 # Uniform mesh
-mesh = MeshCommon.mesh_1D(Uniform=True, nElem=2, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
@@ -21,26 +22,25 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=2, xmin=-1., xmax=1., Periodic=Per
 
 
 ### Solver parameters
-#dt = 0.001
-#mu = 1.
 EndTime = 0.1
-nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.01))])
-#nTimeStep = int(EndTime/dt)
-InterpOrder = 3
+nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
+InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
-### Physics
-ConstVelocity = 1.
-EqnSet = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-EqnSet.SetParams(AdvectionOperator="Burgers")
-EqnSet.SetParams(ConstVelocity=ConstVelocity, ConvFlux="LaxFriedrichs")
 
+
+### Physics
+Velocity = 1.0
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet.SetParams(ConstVelocity=Velocity)
+#EqnSet.SetParams(AdvectionOperator="Burgers")
+EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnLinearBurgers)
+EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnLinearBurgers)
+EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
 # Boundary conditions
-if ConstVelocity >= 0.:
+if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
@@ -49,7 +49,7 @@ if not Periodic:
 		BC = EqnSet.BCs[ibfgrp]
 		## Left
 		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnLinearBurgers, BCType=EqnSet.BCType["FullState"])
+			BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
 		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
 			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
@@ -67,7 +67,7 @@ solver.solve()
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact = True, PlotIC = True, Label="u")
+Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 Plot.ShowPlot()
 
 

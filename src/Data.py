@@ -4,30 +4,37 @@ import code
 
 class GenericData(object):
     '''
-    Class: IFace
+    Class: GenericData
     --------------------------------------------------------------------------
-    This is a class defined to encapsulate the temperature table with the 
-    relevant methods
+    This is a class designed to store random amounts of generic data
     '''
     def __init__(self):
         '''
         Method: __init__
         --------------------------------------------------------------------------
-        This method initializes the temperature table. The table uses a
-        piecewise linear function for the constant pressure specific heat 
-        coefficients. The coefficients are selected to retain the exact 
-        enthalpies at the table points.
+        This method initializes the GenericData class
         '''
         pass
 
 
 class ICData(object):
+    '''
+    Class: ICData
+    --------------------------------------------------------------------------
+    This is a class that encompases the initial conditions
+
+    ATTRIBUTES: 
+        Function: function that describes the initial condition. Options located in Scalar.py and Euler.py
+        x: coordinates for initial conditions
+        Time: establish the initial time
+        U: solution array at the initial condition
+        Data: generic data needed for specific initial conditions
+    '''
     def __init__(self):
         self.Function = None
         self.x = None
         self.Time = 0.
         self.U = None
-        self.nq = 0
         self.Data = GenericData()
 
     def Set(self, **kwargs):

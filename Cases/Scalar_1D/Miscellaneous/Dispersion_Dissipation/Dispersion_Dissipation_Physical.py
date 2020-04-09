@@ -19,7 +19,7 @@ alpha = 0. # 0 for upwind flux, 1 for central flux
 
 ### Mesh
 # Note: dummy mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=2, xmin=-1., xmax=1., Periodic=True)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=2, xmin=-1., xmax=1., Periodic=True)
 h = mesh.Coords[1,0] - mesh.Coords[0,0]
 
 

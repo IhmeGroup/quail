@@ -12,13 +12,13 @@ import General
 ### Mesh
 Periodic = True 
 # Uniform mesh
-mesh = MeshCommon.Mesh1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
-# Coords = MeshCommon.RefineUniform1D(Coords)
-# # Coords = MeshCommon.RefineUniform1D(Coords)
-# mesh = MeshCommon.Mesh1D(Coords=Coords, Periodic=Periodic)
+# Coords = MeshCommon.refine_uniform_1D(Coords)
+# # Coords = MeshCommon.refine_uniform_1D(Coords)
+# mesh = MeshCommon.mesh_1D(Coords=Coords, Periodic=Periodic)
 
 
 ### Solver parameters
@@ -31,8 +31,8 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 Velocity = 1.
-EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-EqnSet.SetParams(ConstVelocity=Velocity)
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet.SetParams(ConstVelocity=Velocity,ConvFlux="LaxFriedrichs")
 # Initial conditions
 Uinflow = [1.0]
 EqnSet.IC.Set(Function=EqnSet.FcnUniform,State=Uinflow)

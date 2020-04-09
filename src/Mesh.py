@@ -5,9 +5,9 @@ import Basis
 import code
 
 
-def GetEntityDim(mesh, entity):
+def get_entity_dim(mesh, entity):
     '''
-    Function: GetEntityDim
+    Function: get_entity_dim
     -------------------
     This function returns the dimension of a given entity
 
@@ -26,9 +26,9 @@ def GetEntityDim(mesh, entity):
     return dim
 
 
-def Ref2Phys(mesh, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False):
+def ref_to_phys(mesh, elem, PhiData, xref, xphys=None, PointsChanged=False):
     '''
-    Function: Ref2Phys
+    Function: ref_to_phys
     -------------------
     This function converts reference space coordinates to physical
     space coordinates
@@ -46,18 +46,20 @@ def Ref2Phys(mesh, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False)
     '''
     QBasis = mesh.QBasis
     QOrder = mesh.QOrder
+
+    npoint = xref.shape[0]
+
     if PhiData is None:
-        PhiData = Basis.BasisData(QBasis,QOrder,npoint,mesh)
+        PhiData = Basis.BasisData(QBasis,QOrder,mesh)
         PointsChanged = True
-    if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
-        PhiData.EvalBasis(xref, Get_Phi=True)
+    if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
+        PhiData.eval_basis(xref, Get_Phi=True)
 
     dim = mesh.Dim
     Coords = mesh.Coords
     Phi = PhiData.Phi
-    nn = PhiData.nn
-
-    if nn != mesh.nNodePerElem:
+    nb = PhiData.Phi.shape[1]
+    if nb != mesh.nNodePerElem:
         raise Exception("Wrong number of nodes per element")
 
     ElemNodes = mesh.Elem2Nodes[elem]
@@ -67,21 +69,23 @@ def Ref2Phys(mesh, elem, PhiData, npoint, xref, xphys=None, PointsChanged=False)
     else:
         xphys[:] = 0.
 
-    for ipoint in range(npoint):
-        for n in range(nn):
-            nodeNum = ElemNodes[n]
-            val = Phi[ipoint][n]
-            for d in range(dim):
-                xphys[ipoint][d] += val*Coords[nodeNum][d]
+    # for ipoint in range(npoint):
+    #     for n in range(nn):
+    #         nodeNum = ElemNodes[n]
+    #         val = Phi[ipoint][n]
+    #         for d in range(dim):
+    #             xphys[ipoint][d] += val*Coords[nodeNum][d]
+
+    xphys[:] = np.matmul(Phi, Coords[ElemNodes])
 
     return xphys, PhiData
 
-def Ref2PhysTime(mesh, elem, time, dt, PhiData, npoint, xref, tphys=None, PointsChanged=False):
+def ref_to_phys_time(mesh, elem, time, dt, PhiData, xref, tphys=None, PointsChanged=False):
     '''
-    Function: Ref2Phys
-    -------------------
-    This function converts reference space coordinates to physical
-    space coordinates
+    Function: ref_to_phys_time
+    ------------------------------
+    This function converts reference time coordinates to physical
+    time coordinates
 
     INPUTS:
         mesh: Mesh object
@@ -97,16 +101,17 @@ def Ref2PhysTime(mesh, elem, time, dt, PhiData, npoint, xref, tphys=None, Points
     QBasis = BasisType.LagrangeQuad
     QOrder = mesh.QOrder
 
+    npoint = xref.shape[0]
+
     if PhiData is None:
-        PhiData = Basis.BasisData(QBasis,QOrder,npoint,mesh)
+        PhiData = Basis.BasisData(QBasis,QOrder,mesh)
         PointsChanged = True
-    if PointsChanged or PhiData.Basis != QBasis or PhiData.Order != QOrder:
-        PhiData.EvalBasis(xref, Get_Phi=True)
+    if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
+        PhiData.eval_basis(xref, Get_Phi=True)
 
     dim = mesh.Dim
     
     Phi = PhiData.Phi
-    nn = PhiData.nn
 
     if tphys is None:
         tphys = np.zeros([npoint,dim])
@@ -119,12 +124,14 @@ def Ref2PhysTime(mesh, elem, time, dt, PhiData, npoint, xref, tphys=None, Points
             #for d in range(dim):
         tphys[ipoint] = (time/2.)*(1-xref[ipoint,dim])+((time+dt)/2.0)*(1+xref[ipoint,dim])
 
+    # tphys = (time/2.)*(1-xref)+((time+dt)/2.0)*(1+xref)
+
     return tphys, PhiData
 
-def RefFace2Elem(Shape, face, nq, xface, xelem=None):
+def ref_face_to_elem(Shape, face, nq, xface, xelem=None):
     '''
-    Function: RefFace2Elem
-    -------------------
+    Function: ref_face_to_elem
+    ----------------------------
     This function converts coordinates in face reference space to
     element reference space
 
@@ -146,47 +153,61 @@ def RefFace2Elem(Shape, face, nq, xface, xelem=None):
     elif Shape == ShapeType.Quadrilateral:
         if xelem is None: xelem = np.zeros([nq,2])
         # local q = 1 nodes on face
-        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.LagrangeQuad, 1, face)
+        fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeQuad, 1, face)
         # swap for reversed faces
         # if face >= 2: fnodes = fnodes[[1,0]]
         # coordinates of local q = 1 nodes on face
         x0 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
-        for i in range(nq):
-            if face == 0:
-                xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
-                xelem[i,1] = -1.
-            elif face == 1:
-                xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
-                xelem[i,0] = 1.
-            elif face == 2:
-                xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
-                xelem[i,1] = 1.
-            else:
-                xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
-                xelem[i,0] = -1.
+        # for i in range(nq):
+        #     if face == 0:
+        #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+        #         xelem[i,1] = -1.
+        #     elif face == 1:
+        #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+        #         xelem[i,0] = 1.
+        #     elif face == 2:
+        #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+        #         xelem[i,1] = 1.
+        #     else:
+        #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+        #         xelem[i,0] = -1.
+        if face == 0:
+            xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
+            xelem[:,1] = -1.
+        elif face == 1:
+            xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
+            xelem[:,0] = 1.
+        elif face == 2:
+            xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
+            xelem[:,1] = 1.
+        else:
+            xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
+            xelem[:,0] = -1.
         #code.interact(local=locals())
     elif Shape == ShapeType.Triangle:
         if xelem is None: xelem = np.zeros([nq,2])
         xf = np.zeros(nq)
         xf = xf.reshape((nq,1))
         # local q = 1 nodes on face
-        fnodes, nfnode = Basis.LocalQ1FaceNodes(BasisType.LagrangeTri, 1, face)
+        fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeTri, 1, face)
         # coordinates of local q = 1 nodes on face
         x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
         x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
-        for i in range(nq):
-            xf[i] = (xface[i] + 1.)/2.
-            xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
+        # for i in range(nq):
+        #     xf[i] = (xface[i] + 1.)/2.
+        #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
+        xf = (xface + 1.)/2.
+        xelem[:] = (1. - xf)*x0 + xf*x1
     else:
         raise NotImplementedError
 
     return xelem
 
 
-def IFaceNormal(mesh, IFace, nq, xq, NData=None):
+def iface_normal(mesh, IFace, quad_pts, NData=None):
     '''
-    Function: IFaceNormal
+    Function: iface_normal
     -------------------
     This function obtains the outward-pointing normals from the 
     perspective of element on the "left" of IFace
@@ -194,8 +215,7 @@ def IFaceNormal(mesh, IFace, nq, xq, NData=None):
     INPUTS:
         mesh: Mesh object
         IFace: interior face object
-        nq: number of points at which to calculate normals
-        xq: points in reference space at which to calculate normals
+        quad_pts: points in reference space at which to calculate normals
 
     OUTPUTS:
         NData: normal data object
@@ -205,21 +225,23 @@ def IFaceNormal(mesh, IFace, nq, xq, NData=None):
     QOrderL = mesh.QOrder
     QOrderR = mesh.QOrder
 
+    nq = quad_pts.shape[0]
+
     if NData is None: 
         NData = NormalData()
 
     if QOrderL <= QOrderR:
-        NData.CalculateNormals(mesh, elemL, IFace.faceL, nq, xq)
+        NData.calculate_normals(mesh, elemL, IFace.faceL, quad_pts)
     else:
-        NData.CalculateNormals(mesh, elemR, IFace.faceR, nq, xq)
+        NData.calculate_normals(mesh, elemR, IFace.faceR, quad_pts)
         NData.nvec *= -1.
 
     return NData
 
 
-def BFaceNormal(mesh, BFace, nq, xq, NData=None):
+def bface_normal(mesh, BFace, quad_pts, NData=None):
     '''
-    Function: BFaceNormal
+    Function: bface_normal
     -------------------
     This function obtains the outward-pointing normals at a
     boundary face
@@ -227,8 +249,7 @@ def BFaceNormal(mesh, BFace, nq, xq, NData=None):
     INPUTS:
         mesh: Mesh object
         BFace: boundary face object
-        nq: number of points at which to calculate normals
-        xq: points in reference space at which to calculate normals
+        quad_pts: points in reference space at which to calculate normals
 
     OUTPUTS:
         NData: normal data object
@@ -236,10 +257,12 @@ def BFaceNormal(mesh, BFace, nq, xq, NData=None):
     elem = BFace.Elem
     QOrder = mesh.QOrder
 
+    nq = quad_pts.shape[0]
+
     if NData is None:
         NData = NormalData()
 
-    NData.CalculateNormals(mesh, elem, BFace.face, nq, xq)
+    NData.calculate_normals(mesh, elem, BFace.face, quad_pts)
 
     return NData
 
@@ -254,19 +277,14 @@ class NormalData(object):
         nq: number of points at which normals are calculated
         nvec: normals [nq, dim]
         fnodes: for easy storage of local face nodes
+        GPhi: evaluated gradient of basis
+        x_s: ???
     '''
     def __init__(self):
         '''
         Method: __init__
         -------------------
         This method initializes the object
-
-        INPUTS:
-            mesh: Mesh object
-            elem: element
-            face: local face number from elem's perspective
-            nq: number of points at which to calculate normals
-            xq: points in reference space at which to calculate normals
         '''
         self.nq = 0
         self.nvec = None
@@ -274,11 +292,25 @@ class NormalData(object):
         self.GPhi = None
         self.x_s = None
 
-    def CalculateNormals(self, mesh, elem, face, nq, xq):
+    def calculate_normals(self, mesh, elem, face, quad_pts):
+        '''
+        Method: calculate_normals
+        -------------------
+        Calculate the normals
+
+        INPUTS:
+            mesh: Mesh object
+            elem: element index
+            face: face index
+            nq: number of points at which to calculate normals
+            quad_pts: points in reference space at which to calculate normals
+        '''
 
         QBasis = mesh.QBasis
         Shape = Basis.Basis2Shape[QBasis]
         QOrder = mesh.QOrder
+
+        nq = quad_pts.shape[0]
 
         if QOrder == 1:
             nq = 1
@@ -301,7 +333,7 @@ class NormalData(object):
         elif Shape == ShapeType.Quadrilateral or Shape == ShapeType.Triangle:
             ElemNodes = mesh.Elem2Nodes[elem]
             if QOrder == 1:
-                self.fnodes, nfnode = Basis.LocalQ1FaceNodes(QBasis, QOrder, face, self.fnodes)
+                self.fnodes, nfnode = Basis.local_q1_face_nodes(QBasis, QOrder, face, self.fnodes)
                 x0 = mesh.Coords[ElemNodes[self.fnodes[0]]]
                 x1 = mesh.Coords[ElemNodes[self.fnodes[1]]]
 
@@ -312,8 +344,8 @@ class NormalData(object):
                 if self.x_s is None or self.x_s.shape != self.nvec.shape:
                     self.x_s = np.zeros_like(self.nvec)
                 x_s = self.x_s
-                self.fnodes, nfnode = Basis.LocalFaceNodes(QBasis, QOrder, face, self.fnodes)
-                self.GPhi = Basis.GetGrads(BasisType.LagrangeSeg, QOrder, 1, nq, xq, self.GPhi)
+                self.fnodes, nfnode = Basis.local_face_nodes(QBasis, QOrder, face, self.fnodes)
+                self.GPhi = Basis.get_grads(BasisType.LagrangeSeg, QOrder, 1, quad_pts, self.GPhi)
                 Coords = mesh.Coords[ElemNodes[self.fnodes]]
 
                 # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
@@ -438,10 +470,10 @@ class BFaceGroup(object):
         self.nBFace = 0 
         self.BFaces = None
 
-    def AllocBFaces(self):
+    def allocate_bfaces(self):
         '''
-        Method: AllocBFaces
-        -------------------
+        Method: allocate_bfaces
+        ------------------------
         This method allocates the list of BFace objects
 
         OUTPUTS:
@@ -510,7 +542,7 @@ Shape2nNodeQ1 = {
 #         self.nElem = nElem
 #         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
 #         self.Faces = None
-#         self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+#         self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 #         self.Elem2Nodes = None
 #             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
@@ -519,11 +551,11 @@ Shape2nNodeQ1 = {
 #         self.QOrder = QOrder
 #         self.nElem = nElem
 #         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-#         self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+#         self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 
-#     def AllocFaces(self):
+#     def allocate_faces(self):
 #         '''
-#         Method: AllocFaces
+#         Method: allocate_faces
 #         -------------------
 #         This method allocates the list of Face objects
 
@@ -532,9 +564,9 @@ Shape2nNodeQ1 = {
 #         '''
 #         self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
 
-#     def AllocElem2Nodes(self):
+#     def allocate_elem_to_nodes(self):
 #         '''
-#         Method: AllocElem2Nodes
+#         Method: allocate_elem_to_nodes
 #         -------------------
 #         This method allocates Elem2Nodes
 
@@ -610,7 +642,7 @@ class Mesh(object):
         self.nElem = nElem
         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
         self.Faces = None
-        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+        self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
         self.Elem2Nodes = None
             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
@@ -619,12 +651,12 @@ class Mesh(object):
         self.QOrder = QOrder
         self.nElem = nElem
         self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-        self.nNodePerElem = Basis.Order2nNode(QBasis, QOrder)
+        self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 
-    def AllocFaces(self):
+    def allocate_faces(self):
         '''
-        Method: AllocFaces
-        -------------------
+        Method: allocate_faces
+        -----------------------
         This method allocates the list of Face objects
 
         OUTPUTS:
@@ -632,9 +664,9 @@ class Mesh(object):
         '''
         self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
 
-    def AllocElem2Nodes(self):
+    def allocate_elem_to_nodes(self):
         '''
-        Method: AllocElem2Nodes
+        Method: allocate_elem_to_nodes
         -------------------
         This method allocates Elem2Nodes
 
@@ -643,9 +675,9 @@ class Mesh(object):
         '''
         self.Elem2Nodes = np.zeros([self.nElem,self.nNodePerElem], dtype=int)
 
-    def AllocHelpers(self):
+    def allocate_helpers(self):
         '''
-        Method: AllocHelpers
+        Method: allocate_helpers
         -------------------
         This method creates some helper mesh structures
 
@@ -659,9 +691,9 @@ class Mesh(object):
             self.BFGNames.append(self.BFaceGroups[i].Name)
 
 
-    def AllocIFaces(self):
+    def allocate_ifaces(self):
         '''
-        Method: AllocIFaces
+        Method: allocate_ifaces
         -------------------
         This method allocates IFaces
 
@@ -670,9 +702,9 @@ class Mesh(object):
         '''
         self.IFaces = [IFace() for i in range(self.nIFace)]
 
-    def AllocBFaceGroups(self):
+    def allocate_bface_groups(self):
         '''
-        Method: AllocBFaceGroups
+        Method: allocate_bface_groups
         -------------------
         This method allocates BFaceGroups
 
@@ -681,7 +713,7 @@ class Mesh(object):
         '''
         self.BFaceGroups = [BFaceGroup() for i in range(self.nBFaceGroup)]
 
-    def FillFaces(self):
+    def fill_faces(self):
         for iiface in range(self.nIFace):
             IFace = self.IFaces[iiface]
             elemL = IFace.ElemL

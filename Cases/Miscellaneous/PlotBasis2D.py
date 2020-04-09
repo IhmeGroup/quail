@@ -3,7 +3,7 @@ import numpy as np
 import code
 import Plot
 import General
-from Basis import BasisData, EquidistantNodes
+from Basis import BasisData, equidistant_nodes
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 
@@ -18,12 +18,12 @@ b = 3 # which basis fcn to plot
 
 ### Grid
 p_plot = 50 # plot at Lagrange nodes corresponding to p_plot
-xp, np = EquidistantNodes(basis, p_plot)
+xp, np = equidistant_nodes(basis, p_plot)
 
 
 ### Evaluate basis functions
-PhiData = BasisData(basis, p, nq = np)
-PhiData.EvalBasis(xp, Get_Phi=True)
+PhiData = BasisData(basis, p)
+PhiData.eval_basis(xp, Get_Phi=True)
 # Reshape
 phi = PhiData.Phi[:,b-1]
 # Z.shape = n,-1

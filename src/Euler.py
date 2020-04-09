@@ -1,14 +1,388 @@
-from Scalar import Scalar
+import Scalar
 import numpy as np
 import code
 from scipy.optimize import fsolve, root
 from enum import IntEnum, Enum
 import Errors
+import General
 
 
-class Euler1D(Scalar):
+class Roe1DFlux(Scalar.LaxFriedrichsFlux):
+	def __init__(self, u=None):
+		if u is not None:
+			n = u.shape[0]
+			sr = u.shape[1]
+			dim = sr - 2
+		else:
+			n = 0; sr = 0; dim = 0
+
+		self.velL = np.zeros([n,dim])
+		self.velR = np.zeros([n,dim])
+		self.UL = np.zeros_like(u)
+		self.UR = np.zeros_like(u)
+		self.vel = np.zeros([n,dim])
+		self.rhoL_sqrt = np.zeros([n,1])
+		self.rhoR_sqrt = np.zeros([n,1])
+		self.HL = np.zeros([n,1])
+		self.HR = np.zeros([n,1])
+		self.rhoRoe = np.zeros([n,1])
+		self.velRoe = np.zeros([n,dim])
+		self.HRoe = np.zeros([n,1])
+		self.c2 = np.zeros([n,1])
+		self.c = np.zeros([n,1])
+		self.dvel = np.zeros([n,dim])
+		self.drho = np.zeros([n,1])
+		self.dp = np.zeros([n,1])
+		self.alphas = np.zeros_like(u)
+		self.evals = np.zeros_like(u)
+		self.R = np.zeros([n,sr,sr])
+		self.FRoe = np.zeros_like(u)
+		self.FL = np.zeros_like(u)
+		self.FR = np.zeros_like(u)
+
+	def AllocHelperArrays(self, u):
+		self.__init__(u)
+
+	def RotateCoordSys(self, imom, U, n):
+		U[:,imom] *= n
+
+		return U
+
+	def UndoRotateCoordSys(self, imom, U, n):
+		U[:,imom] /= n
+
+		return U
+
+	def RoeAverageState(self, EqnSet, irho, velL, velR, uL, uR):
+		rhoL_sqrt = self.rhoL_sqrt
+		rhoR_sqrt = self.rhoR_sqrt
+		HL = self.HL 
+		HR = self.HR 
+
+		rhoL_sqrt[:] = np.sqrt(uL[:,[irho]])
+		rhoR_sqrt[:] = np.sqrt(uR[:,[irho]])
+		HL[:] = EqnSet.ComputeScalars("TotalEnthalpy", uL, FlagNonPhysical=True)
+		HR[:] = EqnSet.ComputeScalars("TotalEnthalpy", uR, FlagNonPhysical=True)
+
+		self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
+		self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
+		self.rhoRoe = rhoL_sqrt*rhoR_sqrt
+
+		return self.rhoRoe, self.velRoe, self.HRoe
+
+	def GetDifferences(self, EqnSet, irho, velL, velR, uL, uR):
+		dvel = self.dvel
+		drho = self.drho
+		dp = self.dp 
+
+		dvel[:] = velR - velL
+		drho[:] = uR[:,[irho]] - uL[:,[irho]]
+		dp[:] = EqnSet.ComputeScalars("Pressure", uR) - \
+			EqnSet.ComputeScalars("Pressure", uL)
+
+		return dvel, drho, dp
+
+	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
+		alphas = self.alphas 
+
+		alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
+		alphas[:,[1]] = drho - dp/c2 
+		alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
+
+		return alphas 
+
+	def GetEigenvalues(self, velRoe, c):
+		evals = self.evals 
+
+		evals[:,[0]] = velRoe[:,[0]] - c
+		evals[:,[1]] = velRoe[:,[0]]
+		evals[:,[-1]] = velRoe[:,[0]] + c
+
+		return evals 
+
+	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):
+		R = self.R
+
+		# first row
+		R[:,0,[0,1,-1]] = 1.
+		# second row
+		R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,-1] = evals[:,-1]
+		# last row
+		R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+		R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c
+
+		return R 
+
+
+	def ComputeFlux(self, EqnSet, UL_std, UR_std, n):
+		'''
+		Function: ConvFluxLaxFriedrichs
+		-------------------
+		This function computes the numerical flux (dotted with the normal)
+		using the Lax-Friedrichs flux function
+
+		INPUTS:
+		    gam: specific heat ratio
+		    UL: Left state
+		    UR: Right state
+		    n: Normal vector (assumed left to right)
+
+		OUTPUTS:
+		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+		'''
+
+		# Extract helper arrays
+		UL = self.UL 
+		UR = self.UR
+		velL = self.velL
+		velR = self.velR 
+		c2 = self.c2
+		c = self.c 
+		alphas = self.alphas 
+		evals = self.evals 
+		R = self.R 
+		FRoe = self.FRoe 
+		FL = self.FL 
+		FR = self.FR 
+
+		# Indices
+		irho = 0
+		imom = EqnSet.GetMomentumIndices()
+
+		gamma = EqnSet.Params["SpecificHeatRatio"]
+
+		NN = np.linalg.norm(n, axis=1, keepdims=True)
+		n1 = n/NN
+
+		# Copy values before rotating
+		UL[:] = UL_std[:]
+		UR[:] = UR_std[:]
+
+		# Rotated coordinate system
+		UL = self.RotateCoordSys(imom, UL, n1)
+		UR = self.RotateCoordSys(imom, UR, n1)
+
+		# Velocities
+		velL[:] = UL[:,imom]/UL[:,[irho]]
+		velR[:] = UR[:,imom]/UR[:,[irho]]
+
+		rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, irho, velL, velR, UL, UR)
+
+		# Speed of sound from Roe-averaged state
+		c2[:] = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
+		c[:] = np.sqrt(c2)
+
+		# differences
+		dvel, drho, dp = self.GetDifferences(EqnSet, irho, velL, velR, UL, UR)
+
+		# alphas (left eigenvectors multipled by dU)
+		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
+		# alphas[:,[1]] = drho - dp/c2 
+		# alphas[:,ydim] = rhoRoe*dvel[:,[-1]]
+		# alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
+		alphas = self.GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
+
+		# Eigenvalues
+		# evals[:,[0]] = velRoe[:,[0]] - c
+		# evals[:,1:-1] = velRoe[:,[0]]
+		# evals[:,[-1]] = velRoe[:,[0]] + c
+		evals = self.GetEigenvalues(velRoe, c)
+
+		# Right eigenvector matrix
+		# first row
+		# R[:,0,[0,1,-1]] = 1.; R[:,0,ydim] = 0.
+		# # second row
+		# R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,ydim] = 0.; R[:,1,-1] = evals[:,-1]
+		# # last row
+		# R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+		# R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c; R[:,-1,ydim] = velRoe[:,[-1]]
+		# # [third] row
+		# R[:,ydim,0] = velRoe[:,[-1]];  R[:,ydim,1] = velRoe[:,[-1]]; 
+		# R[:,ydim,-1] = velRoe[:,[-1]]; R[:,ydim,ydim] = 1.
+		R = self.GetRightEigenvectors(c, evals, velRoe, HRoe)
+
+		# Form flux Jacobian matrix multiplied by dU
+		FRoe[:] = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
+
+		FRoe = self.UndoRotateCoordSys(imom, FRoe, n1)
+
+		# Left flux
+		FL[:] = EqnSet.ConvFluxProjected(UL_std, n1)
+
+		# Right flux
+		FR[:] = EqnSet.ConvFluxProjected(UR_std, n1)
+
+		return NN*(0.5*(FL+FR) - 0.5*FRoe)
+
+
+class Roe2DFlux(Roe1DFlux):
+
+	def RotateCoordSys(self, imom, U, n):
+		vel = self.vel
+		vel[:] = U[:,imom]
+
+		vel[:,0] = np.sum(U[:,imom]*n, axis=1)
+		vel[:,1] = np.sum(U[:,imom]*n[:,::-1]*np.array([[-1.,1.]]), axis=1)
+		
+		U[:,imom] = vel[:]
+
+		return U
+
+	def UndoRotateCoordSys(self, imom, U, n):
+		vel = self.vel
+		vel[:] = U[:,imom]
+
+		vel[:,0] = np.sum(U[:,imom]*n*np.array([[1.,-1.]]), axis=1)
+		vel[:,1] = np.sum(U[:,imom]*n[:,::-1], axis=1)
+
+		U[:,imom] = vel[:]
+
+		return U
+
+	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
+		alphas = self.alphas 
+
+		alphas = super().GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
+
+		alphas[:,[2]] = rhoRoe*dvel[:,[-1]]
+
+		return alphas 
+
+	def GetEigenvalues(self, velRoe, c):
+		evals = self.evals 
+
+		evals = super().GetEigenvalues(velRoe, c)
+
+		evals[:,[2]] = velRoe[:,[0]]
+
+		return evals 
+
+	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):
+		R = self.R
+
+		R = super().GetRightEigenvectors(c, evals, velRoe, HRoe)
+
+		i = [2]
+
+		# first row
+		R[:,0,i] = 0.
+		# second row
+		R[:,1,i] = 0.
+		# last row
+		R[:,-1,i] = velRoe[:,[-1]]
+		# [third] row
+		R[:,i,0] = velRoe[:,[-1]];  R[:,i,1] = velRoe[:,[-1]]; 
+		R[:,i,-1] = velRoe[:,[-1]]; R[:,i,i] = 1.
+
+		return R 
+
+
+
+	# def ComputeFlux(self, EqnSet, UL_old, UR_old, n):
+	# 	'''
+	# 	Function: ConvFluxLaxFriedrichs
+	# 	-------------------
+	# 	This function computes the numerical flux (dotted with the normal)
+	# 	using the Lax-Friedrichs flux function
+
+	# 	INPUTS:
+	# 	    gam: specific heat ratio
+	# 	    UL: Left state
+	# 	    UR: Right state
+	# 	    n: Normal vector (assumed left to right)
+
+	# 	OUTPUTS:
+	# 	    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+	# 	'''
+
+	# 	# Extract helper arrays
+	# 	FL = self.FL
+	# 	FR = self.FR 
+	# 	du = self.du 
+	# 	a = self.a 
+	# 	aR = self.aR 
+	# 	idx = self.idx 
+
+	# 	# Dimension
+	# 	dim = EqnSet.Dim
+	# 	if dim == 1:
+	# 		ydim = []; # yim = [2]
+	# 	else:
+	# 		ydim = [2]
+
+	# 	# Indices
+	# 	irho = 0
+	# 	imom = EqnSet.GetMomentumIndices()
+
+	# 	gamma = EqnSet.Params["SpecificHeatRatio"]
+
+	# 	NN = np.linalg.norm(n, axis=1, keepdims=True)
+	# 	n1 = n/NN
+
+	# 	# Rotated coordinate system
+	# 	UL = self.RotateCoordSys(imom, UL_old, n1)
+	# 	UR = self.RotateCoordSys(imom, UR_old, n1)
+
+	# 	# Velocities
+	# 	velL = UL[:,imom]/UL[:,[irho]]
+	# 	velR = UR[:,imom]/UR[:,[irho]]
+
+	# 	rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, irho, velL, velR, UL, UR)
+
+	# 	# Speed of sound from Roe-averaged state
+	# 	c2 = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
+	# 	c = np.sqrt(c2)
+
+	# 	# differences
+	# 	dvel, drho, dp = self.GetDifferences(EqnSet, irho, velL, velR, UL, UR)
+
+	# 	# alphas (left eigenvectors multipled by dU)
+	# 	alphas = np.zeros_like(UL)
+	# 	alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
+	# 	alphas[:,[1]] = drho - dp/c2 
+	# 	alphas[:,ydim] = rhoRoe*dvel[:,[-1]]
+	# 	alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
+
+	# 	# Eigenvalues
+	# 	evals = np.zeros_like(UL)
+	# 	evals[:,[0]] = velRoe[:,[0]] - c
+	# 	evals[:,1:-1] = velRoe[:,[0]]
+	# 	evals[:,[-1]] = velRoe[:,[0]] + c
+
+	# 	# Right eigenvector matrix
+	# 	R = np.zeros(UL.shape + (UL.shape[1],))
+	# 	# first row
+	# 	R[:,0,[0,1,-1]] = 1.; R[:,0,ydim] = 0.
+	# 	# second row
+	# 	R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,ydim] = 0.; R[:,1,-1] = evals[:,-1]
+	# 	# last row
+	# 	R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+	# 	R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c; R[:,-1,ydim] = velRoe[:,[-1]]
+	# 	# [third] row
+	# 	R[:,ydim,0] = velRoe[:,[-1]];  R[:,ydim,1] = velRoe[:,[-1]]; 
+	# 	R[:,ydim,-1] = velRoe[:,[-1]]; R[:,ydim,ydim] = 1.
+
+	# 	# Form flux Jacobian matrix multiplied by dU
+	# 	FRoe = np.zeros_like(UL)
+	# 	FRoe[:] = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
+
+	# 	FRoe = self.UndoRotateCoordSys(imom, FRoe, n1)
+
+	# 	# Left flux
+	# 	FL[:] = EqnSet.ConvFluxProjected(UL_old, n1)
+
+	# 	# Right flux
+	# 	FR[:] = EqnSet.ConvFluxProjected(UR_old, n1)
+
+	# 	F = NN*(0.5*(FL+FR) - 0.5*FRoe)
+	# 	# code.interact(local=locals())
+
+	# 	return F
+
+
+class Euler1D(Scalar.ConstAdvScalar):
 	def __init__(self,Order,basis,mesh,StateRank=3):
-		Scalar.__init__(self,Order,basis,mesh,StateRank) 
+		Scalar.ConstAdvScalar.__init__(self,Order,basis,mesh,StateRank) 
 		# self.Params = [Rg,gam]
 
 	def SetParams(self,**kwargs):
@@ -26,6 +400,14 @@ class Euler1D(Scalar):
 			else:
 				Params[key] = kwargs[key]
 
+		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
+			self.ConvFluxFcn = Scalar.LaxFriedrichsFlux()
+		elif Params["ConvFlux"] == self.ConvFluxType["Roe"]:
+			if self.Dim == 1:
+				self.ConvFluxFcn = Roe1DFlux()
+			else:
+				self.ConvFluxFcn = Roe2DFlux()
+
 	class StateVariables(Enum):
 		__Order__ = 'Density XMomentum Energy' # only needed in 2.x
 		# LaTeX format
@@ -38,6 +420,9 @@ class Euler1D(Scalar):
 	    Temperature = "T"
 	    Entropy = "s"
 	    InternalEnergy = "\\rho e"
+	    TotalEnthalpy = "H"
+	    SoundSpeed = "c"
+	    MaxWaveSpeed = "\\lambda"
 
 	# class VariableType(IntEnum):
 	#     Density = 0
@@ -65,9 +450,8 @@ class Euler1D(Scalar):
 	    PressureOutflow = 3
 
 	class ConvFluxType(IntEnum):
-	    HLLC = 0
-	    LaxFriedrichs = 1
-	    Roe = 2
+	    LaxFriedrichs = 0
+	    Roe = 1
 
 	# def GetVariableIndex(self, VariableName):
 	# 	# idx = self.VariableType[VariableName]
@@ -89,202 +473,96 @@ class Euler1D(Scalar):
 
 		return irV
 
-	def ConvFluxInterior(self, u, F):
-		r = u[:,0]
-		ru = u[:,1]
-		rE = u[:,2]
+	def ConvFluxInterior(self, u, F=None):
+		dim = self.Dim
+		irho = 0; irhoE = dim + 1
+		imom = self.GetMomentumIndices()
 
-		eps = 1e-15
-		gam = self.Params["SpecificHeatRatio"]
+		eps = General.eps
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru)/(r+eps))
-		h = (rE + p)/(r+eps)
+		rho = u[:,irho:irho+1]
+		rho += eps
+		rhoE = u[:,irhoE:irhoE+1]
+		mom = u[:,imom]
+
+		p = self.ComputeScalars("Pressure", u)
+		h = self.ComputeScalars("TotalEnthalpy", u)
+
+		pmat = np.zeros([u.shape[0], dim, dim])
+		idx = np.full([dim,dim],False)
+		np.fill_diagonal(idx,True)
+		pmat[:,idx] = p
 
 		if F is None:
-			F = np.empty(u.shape+(self.Dim,))
+			F = np.empty(u.shape+(dim,))
 
-		F[:,0,0] = ru
-		F[:,1,0] = ru*ru/(r+eps) + p
-		F[:,2,0] = ru*h
+		F[:,irho,:] = mom
+		F[:,imom,:] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
+		F[:,irhoE,:] = mom*h
 
-		return F
-
-	def ConvFluxHLLC(self, gam, UL, UR, n, FL, FR, F):
-		gmi = gam - 1.
-		gmi1 = 1./gmi
-
-		ir, iru, irE = self.GetStateIndices()
-
-		NN = np.linalg.norm(n)
-		NN1 = 1./NN
-		n1 = n/NN
-
-		if UL[0] <= 0. or UR[0] <= 0.:
-			raise Exception("Nonphysical density")
-
-		# Left state
-		rhol1 = 1./UL[ir]
-
-		ul = UL[iru]*rhol1
-		u2l = (ul*ul)*UL[ir]
-		unl = ul*n1[0]
-		pl = (UL[irE] - 0.5*u2l  )*gmi
-		hl = (UL[irE] + pl  )*rhol1
-		al = np.sqrt(gam*pl*rhol1)
-
-		FL[ir]     = UL[ir]*unl
-		FL[iru]    = n1[0]*pl   + UL[iru]*unl
-		FL[irE]    = (pl   + UL[irE])*unl
-
-		# Right State
-		rhor1 = 1./UR[ir]
-
-		ur = UR[iru]*rhor1
-		u2r = (ur*ur)*UR[ir]
-		unr = (ur*n1[0])
-		pr = (UR[irE] - 0.5*u2r  )*gmi
-		hr = (UR[irE] + pr  )*rhor1
-		ar = np.sqrt(gam*pr*rhor1)
-
-		FR[ir ]    = UR[ir]*unr
-		FR[iru]    = n1[0]*pr   + UR[iru]*unr
-		FR[irE]    = (pr   + UR[irE])*unr
-
-		# Averages
-		ra = 0.5*(UL[ir]+UR[ir])
-
-		aa = 0.5*(al+ar)
-
-		# Step 1: Pressure estimate in the star region (PVRS)
-		# See the theory guide for the process below
-		ppvrs = 0.5*((pl+pr)-(unr-unl)*ra*aa)
-
-		if ppvrs > 0.0: ps = ppvrs
-		else: ps = 0.0
-
-		pspl = ps/pl
-		pspr = ps/pr
-
-		# Step 2: ssl -> R1 head, ssr -> S3
-		ql = 1.0
-		if pspl > 1.0: ql = np.sqrt(1.0+(gam+1.0)/(2.0*gam)*(pspl-1.0))
-		ssl = unl-al*ql
-
-		qr = 1.0
-		if pspr > 1.0: qr = np.sqrt(1.0+(gam+1.0)/(2.0*gam)*(pspr-1.0))
-		ssr = unr+ar*qr
-
-		# Step 3: Shear wave speed
-		raa1 = 1.0/(ra*aa)
-
-		sss = 0.5*(unl+unr) + 0.5*(pl-pr)*raa1
-
-		if ssl >= 0.0:
-			F[ir ] = NN*FL[ir ]
-			F[iru] = NN*FL[iru]
-			F[irE] = NN*FL[irE]
-		elif ssr <= 0.0:
-			F[ir ] = NN*FR[ir ]
-			F[iru] = NN*FR[iru]
-			F[irE] = NN*FR[irE]
-		# Flux is approximated by one of the star-state fluxes
-		elif ssl <= 0.0 and sss >= 0.0:
-			slul = ssl-unl
-
-			cl = slul/(ssl-sss)
-
-			sssul = sss-unl
-
-			sssel = pl/(UL[ir]*slul)
-
-			ssstl = sss+sssel
-
-			c1l = UL[ir]*cl*sssul
-
-			c2l = UL[ir]*cl*sssul*ssstl
-
-			F[ir ] = NN*(FL[ir ] + ssl*(UL[ir ]*(cl-1.0)))
-			F[iru] = NN*(FL[iru] + ssl*(UL[iru]*(cl-1.0)+c1l*n1[0]))
-			F[irE] = NN*(FL[irE] + ssl*(UL[irE]*(cl-1.0)+c2l))
-		elif sss <= 0.0 and ssr >= 0.0:
-			srur = ssr-unr
-
-			cr = srur/(ssr-sss)
-
-			sssur = sss-unr
-
-			ssser = pr/(UR[ir]*srur)
-
-			ssstr = sss+ssser
-
-			c1r = UR[ir]*cr*sssur
-
-			c2r = UR[ir]*cr*sssur*ssstr
-
-			F[ir ] = NN*(FR[ir ] + ssr*(UR[ir ]*(cr-1.0)))
-			F[iru] = NN*(FR[iru] + ssr*(UR[iru]*(cr-1.0)+c1r*n1[0]))
-			F[irE] = NN*(FR[irE] + ssr*(UR[irE]*(cr-1.0)+c2r))
+		rho -= eps
 
 		return F
 
-	def ConvFluxLaxFriedrichs(self, gam, UL, UR, n, FL, FR, du, F):
-		gmi = gam - 1.
-		gmi1 = 1./gmi
+	# def ConvFluxLaxFriedrichs(self, gam, UL, UR, n, F):
+	# 	'''
+	# 	Function: ConvFluxLaxFriedrichs
+	# 	-------------------
+	# 	This function computes the numerical flux (dotted with the normal)
+	# 	using the Lax-Friedrichs flux function
 
-		ir, iru, irE = self.GetStateIndices()
+	# 	INPUTS:
+	# 	    gam: specific heat ratio
+	# 	    UL: Left state
+	# 	    UR: Right state
+	# 	    n: Normal vector (assumed left to right)
 
-		NN = np.linalg.norm(n)
-		NN1 = 1./NN
-		n1 = n/NN
+	# 	OUTPUTS:
+	# 	    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+	# 	'''
 
-		#code.interact(local=locals())
-		if UL[0] <= 0. or UR[0] <= 0.:
-			raise Exception("Nonphysical density")
+	# 	nq = F.shape[0]
 
-		# Left state
-		rhol1   = 1./UL[ir]
-		ul      = UL[iru]*rhol1
-		u2l     = (ul*ul)*UL[ir]
-		unl     = (ul   *n1[0])
-		pl 	    = gmi*(UL[irE] - 0.5*u2l)
-		if pl <= 0.:
-			raise Errors.NotPhysicalError
-		cl 		= np.sqrt(gam*pl * rhol1)
-		hl      = (UL[irE] + pl  )*rhol1
-		FL[ir]  = UL[ir]*unl
-		FL[iru] = n1[0]*pl    + UL[iru]*unl
-		FL[irE] = (pl   + UL[irE])*unl
+	# 	# Extract intermediate arrays
+	# 	# data = self.DataStorage
+	# 	# try: 
+	# 	# 	NN = data.NN
+	# 	# except AttributeError: 
+	# 	# 	data.NN = NN = np.zeros([nq,1])
+	# 	# try: 
+	# 	# 	n1 = data.n1
+	# 	# except AttributeError: 
+	# 	# 	data.n1 = n1 = np.zeros_like(n)
+	# 	# try: 
+	# 	# 	FL = data.FL
+	# 	# except AttributeError: 
+	# 	# 	data.FL = FL = np.zeros_like(F)
+	# 	# try: 
+	# 	# 	FL = data.FL
+	# 	# except AttributeError: 
+	# 	# 	data.FL = FL = np.zeros_like(F)
 
-		# Right state
-		rhor1   = 1./UR[ir]
-		ur      = UR[iru]*rhor1
-		u2r     = (ur*ur)*UR[ir]
-		unr     = (ur   *n1[0])
-		pr 	    = gmi*(UR[irE] - 0.5*u2r)
-		if pr <= 0.:
-			raise Errors.NotPhysicalError
-		cr      = np.sqrt(gam*pr * rhor1)
-		hr      = (UR[irE] + pr   )*rhor1
-		FR[ir]  = UR[ir]*unr
-		FR[iru] = n1[0]*pr    + UR[iru]*unr
-		FR[irE] = (pr   + UR[irE])*unr
+	# 	NN = np.linalg.norm(n, axis=1, keepdims=True)
+	# 	n1 = n/NN
 
-		# du = UR-UL
-		du[ir ] = UR[ir ] - UL[ir ]
-		du[iru] = UR[iru] - UL[iru]
-		du[irE] = UR[irE] - UL[irE]
+	# 	# Left State
+	# 	FL = self.ConvFluxProjected(UL, n1)
 
-		# max characteristic speed
-		lam = np.sqrt(ul*ul) + cl
-		if (np.sqrt(ur*ur) + cr) > lam: 
-			lam = np.sqrt(ur*ur) + cr
+	# 	# Right State
+	# 	FR = self.ConvFluxProjected(UR, n1)
 
-		# flux assembly 
-		F[ir ] = NN*(0.5*(FL[ir ]+FR[ir ]) - 0.5*lam*du[ir])
-		F[iru] = NN*(0.5*(FL[iru]+FR[iru]) - 0.5*lam*du[iru])
-		F[irE] = NN*(0.5*(FL[irE]+FR[irE]) - 0.5*lam*du[irE])
+	# 	du = UR-UL
 
-		return F
+	# 	# max characteristic speed
+	# 	lam = self.ComputeScalars("MaxWaveSpeed", UL, None, FlagNonPhysical=True)
+	# 	lamr = self.ComputeScalars("MaxWaveSpeed", UR, None, FlagNonPhysical=True)
+	# 	idx = lamr > lam
+	# 	lam[idx] = lamr[idx]
+
+	# 	# flux assembly 
+	# 	F = NN*(0.5*(FL+FR) - 0.5*lam*du)
+
+	# 	return F
 
 	def ConvFluxRoe(self, gam, UL, UR, n, FL, FR, du, lam, F):
 		'''
@@ -438,26 +716,79 @@ class Euler1D(Scalar):
 
 		gam = self.Params["SpecificHeatRatio"]
 
-		for iq in range(nq):
-			if NData.nvec.size < nq:
-				n = NData.nvec[0,:]
-			else:
-				n = NData.nvec[iq,:]
-			UL = uL[iq,:]
-			UR = uR[iq,:]
-			#n = NData.nvec[iq,:]
-			f = F[iq,:]
+		# uL[:] = np.array([[1.3938732, -1.0008760, 1.7139886]]) # rho, rho*u, rho*E (left)
+		# uR[:] = np.array([[1.3935339, -1.0001833, 1.7124593]]) # rho, rho*u, rho*E (right)
 
-			if ConvFlux == self.ConvFluxType.HLLC:
-				f = self.ConvFluxHLLC(gam, UL, UR, n, FL, FR, f)
-			elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
-				f = self.ConvFluxLaxFriedrichs(gam, UL, UR, n, FL, FR, du, f)
-			elif ConvFlux == self.ConvFluxType.Roe:
-				f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
-			else:
-				raise Exception("Invalid flux function")
+		# uL[:] = np.array([[1.3938732, -1.0008760, -0.1, 1.7139886]]) # rho, rho*u, rho*E (left)
+		# uR[:] = np.array([[1.3935339, -1.0001833, -0.11, 1.7124593]]) # rho, rho*u, rho*E (right)
+		# NData.nvec[:,1] = 0.1
+
+		# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
+		if ConvFlux == self.ConvFluxType.LaxFriedrichs or ConvFlux == self.ConvFluxType.Roe:
+			# F = self.ConvFluxLaxFriedrichs(gam, uL, uR, NData.nvec, F)
+			self.ConvFluxFcn.AllocHelperArrays(uL)
+			F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, NData.nvec)
+		else:
+			for iq in range(nq):
+				UL = uL[iq,:]
+				UR = uR[iq,:]
+				n = NData.nvec[iq*(NData.nq != 1),:]
+
+				f = F[iq,:]
+
+				if ConvFlux == self.ConvFluxType.Roe:
+					f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
 
 		return F
+
+	# def ConvFluxNumerical(self, uL, uR, NData, nq, data):
+	# 	sr = self.StateRank
+
+	# 	try: 
+	# 		F = data.F
+	# 	except AttributeError: 
+	# 		data.F = F = np.zeros_like(uL)
+	# 	try: 
+	# 		FL = data.FL
+	# 	except AttributeError: 
+	# 		data.FL = FL = np.zeros(sr)
+	# 	try: 
+	# 		FR = data.FR
+	# 	except AttributeError: 
+	# 		data.FR = FR = np.zeros(sr)
+	# 	try: 
+	# 		du = data.du
+	# 	except AttributeError: 
+	# 		data.du = du = np.zeros(sr)
+	# 	try: 
+	# 		lam = data.lam
+	# 	except AttributeError: 
+	# 		data.lam = lam = np.zeros(sr)
+
+	# 	ConvFlux = self.Params["ConvFlux"]
+
+	# 	gam = self.Params["SpecificHeatRatio"]
+
+	# 	for iq in range(nq):
+	# 		if NData.nvec.size < nq:
+	# 			n = NData.nvec[0,:]
+	# 		else:
+	# 			n = NData.nvec[iq,:]
+	# 		UL = uL[iq,:]
+	# 		UR = uR[iq,:]
+	# 		#n = NData.nvec[iq,:]
+	# 		f = F[iq,:]
+
+	# 		if ConvFlux == self.ConvFluxType.HLLC:
+	# 			f = self.ConvFluxHLLC(gam, UL, UR, n, FL, FR, f)
+	# 		elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
+	# 			f = self.ConvFluxLaxFriedrichs(gam, UL, UR, n, FL, FR, du, f)
+	# 		elif ConvFlux == self.ConvFluxType.Roe:
+	# 			f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
+	# 		else:
+	# 			raise Exception("Invalid flux function")
+
+	# 	return F
 
 	def BCSlipWall(self, BC, nq, NData, uI, uB):
 		irV = self.GetMomentumIndices()
@@ -560,7 +891,7 @@ class Euler1D(Scalar):
 
 		return uB	
 
-	def AdditionalScalars(self, ScalarName, U, scalar):
+	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
 		''' Extract state variables '''
 		irho = self.GetStateIndex("Density")
 		irhoE = self.GetStateIndex("Energy")
@@ -577,25 +908,49 @@ class Euler1D(Scalar):
 		# # Temperature
 		# T = P/(rho*R)
 
+		if FlagNonPhysical:
+			if np.any(rho < 0.):
+				raise Errors.NotPhysicalError
+
 		# if np.any(P < 0.) or np.any(rho < 0.):
 		# 	raise Errors.NotPhysicalError
+		def getP():
+			scalar[:] = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
+			if FlagNonPhysical:
+				if np.any(scalar < 0.):
+					raise Errors.NotPhysicalError
+			return scalar
+		def getT():
+			return getP()/(rho*R)
+
 
 		''' Get final scalars '''
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["Pressure"].name:
-			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
+			scalar[:] = getP()
 		elif sname is self.AdditionalVariables["Temperature"].name:
-			P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
-			scalar = T = P/(rho*R)
+			# scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)/(rho*R)
+			scalar[:] = getT()
 		elif sname is self.AdditionalVariables["Entropy"].name:
 			# Pressure
-			P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
+			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
 			# Temperature
-			T = P/(rho*R)
-			scalar = R*(gamma/(gamma-1.)*np.log(T) - np.log(P))
-			scalar = np.log(P/rho**gamma)
+			# T = getP()/(rho*R)
+
+			# scalar = R*(gamma/(gamma-1.)*np.log(getT()) - np.log(getP()))
+			scalar[:] = np.log(getP()/rho**gamma)
 		elif sname is self.AdditionalVariables["InternalEnergy"].name:
-			scalar = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
+			scalar[:] = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
+		elif sname is self.AdditionalVariables["TotalEnthalpy"].name:
+			scalar[:] = (rhoE + getP())/rho
+		elif sname is self.AdditionalVariables["SoundSpeed"].name:
+			# Pressure
+			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
+			scalar[:] = np.sqrt(gamma*getP()/rho)
+		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Pressure
+			# P = GetPressure()
+			scalar[:] = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*getP()/rho)
 		else:
 			raise NotImplementedError
 
@@ -630,8 +985,11 @@ class Euler1D(Scalar):
 			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 		else:
 			y = np.zeros(len(t))
-			for i in range(len(t)):
-				y[i] = x
+			#for i in range(len(t)):
+			#	code.interact(local=locals())
+			#	y[i] = x
+			y = x.transpose()
+			y = y.reshape(-1)
 			t = t.reshape(-1)
 			x1 = root(f1, 0.*y, (y,t,a)).x
 			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
@@ -778,74 +1136,57 @@ class Euler2D(Euler1D):
 
 		return irho, irhou, irhov, irhoE
 
-	def ConvFluxInterior(self, u, F):
-		ir, iru, irv, irE = self.GetStateIndices()
+	# def ConvFluxInterior(self, u, F=None):
+	# 	ir, iru, irv, irE = self.GetStateIndices()
 
-		r = u[:,ir]
-		ru = u[:,iru]
-		rv = u[:,irv]
-		rE = u[:,irE]
+	# 	r = u[:,ir]
+	# 	ru = u[:,iru]
+	# 	rv = u[:,irv]
+	# 	rE = u[:,irE]
 
-		gam = self.Params["SpecificHeatRatio"]
+	# 	gam = self.Params["SpecificHeatRatio"]
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru + rv*rv)/r)
-		h = (rE + p)/r
+	# 	p = (gam - 1.)*(rE - 0.5*(ru*ru + rv*rv)/r)
+	# 	h = (rE + p)/r
 
-		if F is None:
-			F = np.empty(u.shape+(self.Dim,))
+	# 	if F is None:
+	# 		F = np.empty(u.shape+(self.Dim,))
 
-		# x
-		d = 0
-		F[:,ir,d] = ru
-		F[:,iru,d] = ru*ru/r + p
-		F[:,irv,d] = ru*rv/r 
-		F[:,irE,d] = ru*h
+	# 	# x
+	# 	d = 0
+	# 	F[:,ir,d] = ru
+	# 	F[:,iru,d] = ru*ru/r + p
+	# 	F[:,irv,d] = ru*rv/r 
+	# 	F[:,irE,d] = ru*h
 
-		# y
-		d = 1
-		F[:,ir,d] = rv
-		F[:,iru,d] = rv*ru/r 
-		F[:,irv,d] = rv*rv/r + p
-		F[:,irE,d] = rv*h
+	# 	# y
+	# 	d = 1
+	# 	F[:,ir,d] = rv
+	# 	F[:,iru,d] = rv*ru/r 
+	# 	F[:,irv,d] = rv*rv/r + p
+	# 	F[:,irE,d] = rv*h
 
-		return F
+	# 	return F
 
-	def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
-		bctreatment = self.BCTreatments[BC.BCType]
-		if bctreatment == self.BCTreatment.Riemann:
-			F = self.ConvFluxNumerical(uI, uB, NData, nq, data)
-		else:
-			# Prescribe analytic flux
-			try:
-				Fa = data.Fa
-			except AttributeError:
-				data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
-			Fa = self.ConvFluxInterior(uB, Fa)
-			# Take dot product with n
-			try: 
-				F = data.F
-			except AttributeError:
-				data.F = F = np.zeros_like(uI)
-			for jr in range(self.StateRank):
-				F[:,jr] = np.sum(Fa[:,jr,:]*NData.nvec, axis=1)
+	# def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
+	# 	bctreatment = self.BCTreatments[BC.BCType]
+	# 	if bctreatment == self.BCTreatment.Riemann:
+	# 		F = self.ConvFluxNumerical(uI, uB, NData, nq, data)
+	# 	else:
+	# 		# Prescribe analytic flux
+	# 		try:
+	# 			Fa = data.Fa
+	# 		except AttributeError:
+	# 			data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
+	# 		Fa = self.ConvFluxInterior(uB, Fa)
+	# 		# Take dot product with n
+	# 		try: 
+	# 			F = data.F
+	# 		except AttributeError:
+	# 			data.F = F = np.zeros_like(uI)
+	# 		F[:] = np.sum(Fa.transpose(1,0,2)*NData.nvec, axis=2).transpose()
 
-			# F = np.zeros([nq, self.StateRank])
-			# for iq in range(nq):
-			# 	nx = NData.nvec[iq,0]; ny = NData.nvec[iq,1]
-			# 	r = uB[iq,0]; ru = uB[iq,1]; rv = uB[iq,2]; rE = uB[iq,3]
-			# 	run = ru*nx + rv*ny
-			# 	gmi = self.Params["SpecificHeatRatio"] - 1.
-			# 	p = gmi*(rE - 0.5*(ru*ru + rv*rv)/ r)
-			# 	h  = (rE  + p    ) / r
-			# 	F[iq,0] = run
-			# 	F[iq,1] = run*ru/r + p*nx
-			# 	F[iq,2] = run*rv/r + p*ny
-			# 	F[iq,3] = run*h
-
-
-
-
-		return F
+	# 	return F
 
 	def ConvFluxRoe(self, gam, UL, UR, n, FL, FR, du, lam, F):
 		'''
@@ -963,131 +1304,57 @@ class Euler2D(Euler1D):
 		F[irv]    = NN*(0.5*(FL[irv]+FR[irv])-0.5*(l3*du[irv] + C1*vi + C2*n1[1]))
 		F[irE]    = NN*(0.5*(FL[irE]+FR[irE])-0.5*(l3*du[irE] + C1*hi + C2*ucp  ))
 
-		return F
-
-	def ConvFluxLaxFriedrichs(self, gam, UL, UR, n, FL, FR, du, F):
-		'''
-		Function: ConvFluxLaxFriedrichs
-		-------------------
-		This function computes the numerical flux (dotted with the normal)
-		using the Lax-Friedrichs flux function
-
-		INPUTS:
-		    gam: specific heat ratio
-		    UL: Left state
-		    UR: Right state
-		    n: Normal vector (assumed left to right)
-
-		OUTPUTS:
-		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
-		'''
-		gmi = gam - 1.
-		gmi1 = 1./gmi
-
-		ir, iru, irv, irE = self.GetStateIndices()
-
-		NN = np.linalg.norm(n)
-		NN1 = 1./NN
-		n1 = n/NN
-
-		if UL[ir] <= 0. or UR[ir] <= 0.:
-			raise Exception("Nonphysical density")
-
-		# Left State
-		rhol1 = 1./UL[ir]
-		ul    = UL[iru]*rhol1
-		vl    = UL[irv]*rhol1
-		u2l   = (ul*ul + vl*vl)*UL[ir]
-		unl   = (ul*n1[0] + vl*n1[1])
-		pl    = (UL[irE] - 0.5*u2l  )*gmi
-		if pl <= 0.:
-			raise Errors.NotPhysicalError
-		cl 		= np.sqrt(gam*pl * rhol1)
-		hl    = (UL[irE] + pl  )*rhol1
-		FL[ir]     = UL[ir]*unl
-		FL[iru]    = n1[0]*pl   + UL[iru]*unl
-		FL[irv]    = n1[1]*pl   + UL[irv]*unl
-		FL[irE]    = (pl   + UL[irE])*unl
-
-		# Right State
-		rhor1 = 1./UR[ir]
-		ur    = UR[iru]*rhor1
-		vr    = UR[irv]*rhor1
-		u2r   = (ur*ur + vr*vr)*UR[ir]
-		unr   = (ur*n1[0] + vr*n1[1])
-		pr    = (UR[irE] - 0.5*u2r  )*gmi
-		if pr <= 0.:
-			raise Errors.NotPhysicalError
-		cr      = np.sqrt(gam*pr * rhor1)
-		hr    = (UR[irE] + pr  )*rhor1
-		FR[ir ]    = UR[ir]*unr
-		FR[iru]    = n1[0]*pr   + UR[iru]*unr
-		FR[irv]    = n1[1]*pr   + UR[irv]*unr
-		FR[irE]    = (pr   + UR[irE])*unr
-
-		# du = UR-UL
-		du[ir ] = UR[ir ] - UL[ir ]
-		du[iru] = UR[iru] - UL[iru]
-		du[irv] = UR[irv] - UL[irv]
-		du[irE] = UR[irE] - UL[irE]
-
-		# max characteristic speed
-		lam = np.sqrt(ul*ul + vl*vl) + cl
-		lamr = np.sqrt(ur*ur + vr*vr) + cr
-		if lamr > lam: 
-			lam = lamr
-
-		# flux assembly 
-		F[ir ] = NN*(0.5*(FL[ir ]+FR[ir ]) - 0.5*lam*du[ir])
-		F[iru] = NN*(0.5*(FL[iru]+FR[iru]) - 0.5*lam*du[iru])
-		F[irv] = NN*(0.5*(FL[irv]+FR[irv]) - 0.5*lam*du[irv])
-		F[irE] = NN*(0.5*(FL[irE]+FR[irE]) - 0.5*lam*du[irE])
+		FRoe = np.zeros([1,4])
+		FRoe[0,0] = (l3*du[ir ] + C1   )
+		FRoe[0,1] = (l3*du[iru] + C1*ui + C2*n1[0])
+		FRoe[0,2] = (l3*du[irv] + C1*vi + C2*n1[1])
+		FRoe[0,3] = (l3*du[irE] + C1*hi + C2*ucp  )
+		code.interact(local=locals())
 
 		return F
 
-	def ConvFluxNumerical(self, uL, uR, NData, nq, data):
-		sr = self.StateRank
+	# def ConvFluxNumerical(self, uL, uR, NData, nq, data):
+	# 	sr = self.StateRank
 
-		try: 
-			F = data.F
-		except AttributeError: 
-			data.F = F = np.zeros_like(uL)
-		try: 
-			FL = data.FL
-		except AttributeError: 
-			data.FL = FL = np.zeros(sr)
-		try: 
-			FR = data.FR
-		except AttributeError: 
-			data.FR = FR = np.zeros(sr)
-		try: 
-			du = data.du
-		except AttributeError: 
-			data.du = du = np.zeros(sr)
-		try: 
-			lam = data.lam
-		except AttributeError: 
-			data.lam = lam = np.zeros(sr)
+	# 	try: 
+	# 		F = data.F
+	# 	except AttributeError: 
+	# 		data.F = F = np.zeros_like(uL)
+	# 	try: 
+	# 		FL = data.FL
+	# 	except AttributeError: 
+	# 		data.FL = FL = np.zeros(sr)
+	# 	try: 
+	# 		FR = data.FR
+	# 	except AttributeError: 
+	# 		data.FR = FR = np.zeros(sr)
+	# 	try: 
+	# 		du = data.du
+	# 	except AttributeError: 
+	# 		data.du = du = np.zeros(sr)
+	# 	try: 
+	# 		lam = data.lam
+	# 	except AttributeError: 
+	# 		data.lam = lam = np.zeros(sr)
 
-		ConvFlux = self.Params["ConvFlux"]
+	# 	ConvFlux = self.Params["ConvFlux"]
 
-		gam = self.Params["SpecificHeatRatio"]
+	# 	gam = self.Params["SpecificHeatRatio"]
 
-		for iq in range(nq):
-			UL = uL[iq,:]
-			UR = uR[iq,:]
-			n = NData.nvec[iq*(NData.nq != 1),:]
+	# 	if ConvFlux == self.ConvFluxType.LaxFriedrichs:
+	# 		F = self.ConvFluxLaxFriedrichs(gam, uL, uR, NData.nvec, F)
+	# 	else:
+	# 		for iq in range(nq):
+	# 			UL = uL[iq,:]
+	# 			UR = uR[iq,:]
+	# 			n = NData.nvec[iq*(NData.nq != 1),:]
 
-			f = F[iq,:]
+	# 			f = F[iq,:]
 
-			if ConvFlux == self.ConvFluxType.Roe:
-				f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
-			elif ConvFlux == self.ConvFluxType.LaxFriedrichs:
-				f = self.ConvFluxLaxFriedrichs(gam, UL, UR, n, FL, FR, du, f)
-			else:
-				raise Exception("Invalid flux function")
+	# 			if ConvFlux == self.ConvFluxType.Roe:
+	# 				f = self.ConvFluxRoe(gam, UL, UR, n, FL, FR, du, lam, f)
 
-		return F
+	# 	return F
 
 	def FcnIsentropicVortexPropagation(self, FcnData):
 		x = FcnData.x

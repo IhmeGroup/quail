@@ -22,18 +22,18 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=50, xmin=0., xmax=1., Periodic=Per
 
 ### Solver parameters
 #dt = 0.001
-mu = 1.
+mu = 0.001
 EndTime = 0.3
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 #nTimeStep = int(EndTime/dt)
 InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
+								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3")
 								 #ApplyLimiter="ScalarPositivityPreserving")
 
 ### Physics
 Velocity = 1.0
-EqnSet = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
 #EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
@@ -48,7 +48,7 @@ EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 # something lower, (i.e. 0.001) then you will observe a stable solution, but the location of the shock
 # will not be correct. It will have propogated at some other speed. (Note: RK4 cannot run stiff case)
 # -----------------------------------------------------------------------------------------------------
-EqnSet.SetSource(Function=EqnSet.FcnStiffSource,beta=0.5, stiffness = 1.)
+EqnSet.SetSource(Function=EqnSet.FcnStiffSource,beta=0.5, stiffness = mu)
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 
@@ -74,7 +74,7 @@ if not Periodic:
 
 
 ### Solve
-solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
+solver = Solver.DG_Solver(Params,EqnSet,mesh)
 solver.solve()
 
 

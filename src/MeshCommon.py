@@ -2,9 +2,9 @@ from General import BasisType
 from Mesh import *
 
 
-def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
+def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
 	'''
-	Function: Mesh1D
+	Function: mesh_1D
 	-------------------
 	This function creates a 1D mesh.
 
@@ -39,7 +39,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 	# IFaces
 	if Periodic:
 		mesh.nIFace = mesh.nNode - 1
-		mesh.AllocIFaces()
+		mesh.allocate_ifaces()
 		# mesh.IFaces = [IFace() for i in range(mesh.nIFace)]
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
@@ -53,7 +53,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 	# mesh.IFaces[-1].ElemR = 0
 	else:
 		mesh.nIFace = nElem - 1
-		mesh.AllocIFaces()
+		mesh.allocate_ifaces()
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
 			IFace_.ElemL = i
@@ -62,11 +62,11 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 			IFace_.faceR = 0
 		# Boundary groups
 		mesh.nBFaceGroup = 2
-		mesh.AllocBFaceGroups()
+		mesh.allocate_bface_groups()
 		for i in range(mesh.nBFaceGroup):
 			BFG = mesh.BFaceGroups[i]
 			BFG.nBFace = 1
-			BFG.AllocBFaces()
+			BFG.allocate_bfaces()
 			BF = BFG.BFaces[0]
 			if i == 0:
 				BFG.Name = "Left"
@@ -78,7 +78,7 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 				BF.face = 1
 
 	mesh.SetParams(QBasis=BasisType["LagrangeSeg"], QOrder=1, nElem=nElem)
-	mesh.AllocFaces()
+	mesh.allocate_faces()
 	# interior elements
 	for elem in range(mesh.nElem):
 		for i in range(mesh.nFacePerElem):
@@ -96,20 +96,20 @@ def Mesh1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True
 					Face_.Number = elem + i - 1
 
 
-	mesh.AllocElem2Nodes()
+	mesh.allocate_elem_to_nodes()
 	for elem in range(mesh.nElem):
 		for i in range(mesh.nNodePerElem):
 			mesh.Elem2Nodes[elem][i] = elem + i
 
-	mesh.AllocHelpers()
-	mesh.FillFaces()
+	mesh.allocate_helpers()
+	mesh.fill_faces()
 
 	return mesh
 
 
-def RefineUniform1D(Coords_old):
+def refine_uniform_1D(Coords_old):
 	'''
-	Function: RefineUniform1D
+	Function: refine_uniform_1D
 	-------------------
 	This function uniformly refines a set of coordinates
 

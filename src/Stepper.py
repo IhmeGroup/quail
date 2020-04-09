@@ -1,8 +1,8 @@
 import numpy as np 
 import code
 from Data import ArrayList
-from SolverTools import MultInvMassMatrix, MultInvADER
-#from Basis import GetStiffnessMatrixADER, GetTemporalFluxADER
+from SolverTools import mult_inv_mass_matrix
+#from Basis import get_stiffness_matrix_ader, get_temporal_flux_ader
 #import General
 
 class FE(object):
@@ -27,11 +27,11 @@ class FE(object):
 			dU = np.copy(U)
 			DataSet.dU = dU
 
-		R = solver.CalculateResidual(U, R)
-		MultInvMassMatrix(mesh, solver, self.dt, R, dU)
+		R = solver.calculate_residual(U, R)
+		mult_inv_mass_matrix(mesh, solver, self.dt, R, dU)
 		U += dU
 
-		solver.ApplyLimiter(U)
+		solver.apply_limiter(U)
 
 		return R
 
@@ -80,29 +80,29 @@ class RK4(FE):
 			Utemp = np.copy(U)
 			DataSet.Utemp = Utemp
 		# first stage
-		R = solver.CalculateResidual(U, R)
-		MultInvMassMatrix(mesh, solver, self.dt, R, dU1)
+		R = solver.calculate_residual(U, R)
+		mult_inv_mass_matrix(mesh, solver, self.dt, R, dU1)
 		# Utemp.SetToSum(U, dU1, c2=0.5)
 		Utemp = U + 0.5*dU1
-		solver.ApplyLimiter(Utemp)
+		solver.apply_limiter(Utemp)
 		# second stage
 		solver.Time += self.dt/2.
-		R = solver.CalculateResidual(Utemp, R)
-		MultInvMassMatrix(mesh, solver, self.dt, R, dU2)
+		R = solver.calculate_residual(Utemp, R)
+		mult_inv_mass_matrix(mesh, solver, self.dt, R, dU2)
 		Utemp = U + 0.5*dU2
-		solver.ApplyLimiter(Utemp)
+		solver.apply_limiter(Utemp)
 		# third stage
-		R = solver.CalculateResidual(Utemp, R)
-		MultInvMassMatrix(mesh, solver, self.dt, R, dU3)
+		R = solver.calculate_residual(Utemp, R)
+		mult_inv_mass_matrix(mesh, solver, self.dt, R, dU3)
 		Utemp = U + dU3
-		solver.ApplyLimiter(Utemp)
+		solver.apply_limiter(Utemp)
 		# fourth stage
 		solver.Time += self.dt/2.
-		R = solver.CalculateResidual(Utemp, R)
-		MultInvMassMatrix(mesh, solver, self.dt, R, dU4)
+		R = solver.calculate_residual(Utemp, R)
+		mult_inv_mass_matrix(mesh, solver, self.dt, R, dU4)
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
 		U += dU
-		solver.ApplyLimiter(U)
+		solver.apply_limiter(U)
 		# for egrp in range(mesh.nElemGroup): 
 		# 	R[egrp][:] = 1./6.*(dU1[egrp][:]+2.*dU2[egrp][:]+2.*dU3[egrp][:]+dU4[egrp][:])
 		# 	U[egrp][:] += R[egrp][:]
@@ -159,12 +159,12 @@ class LSRK4(FE):
 		Time = solver.Time
 		for INTRK in range(self.nStage):
 			solver.Time = Time + self.rk4c[INTRK]*self.dt
-			R = solver.CalculateResidual(U, R)
-			MultInvMassMatrix(mesh, solver, self.dt, R, dUtemp)
+			R = solver.calculate_residual(U, R)
+			mult_inv_mass_matrix(mesh, solver, self.dt, R, dUtemp)
 			dU *= self.rk4a[INTRK]
 			dU += dUtemp
 			U += self.rk4b[INTRK]*dU
-			solver.ApplyLimiter(U)
+			solver.apply_limiter(U)
 
 		return R
 
@@ -210,12 +210,12 @@ class SSPRK3(FE):
 		Time = solver.Time
 		for INTRK in range(self.nStage):
 			solver.Time = Time + self.dt
-			R = solver.CalculateResidual(U, R)
-			MultInvMassMatrix(mesh, solver, self.dt, R, dUtemp)
+			R = solver.calculate_residual(U, R)
+			mult_inv_mass_matrix(mesh, solver, self.dt, R, dUtemp)
 			dU *= self.ssprk3a[INTRK]
 			dU += dUtemp
 			U += self.ssprk3b[INTRK]*dU
-			solver.ApplyLimiter(U)
+			solver.apply_limiter(U)
 		return R	
 
 
@@ -242,17 +242,14 @@ class ADER(object):
 			DataSet.dU=dU
 
 		# Prediction Step (Non-linear Case)
-		Up = solver.CalculatePredictorStep(self.dt, W, Up)
-
-		# Prediction Step (Linear Case)
-		#MultInvADER(mesh, solver, self.dt, W, Up)
+		Up = solver.calculate_predictor_step(self.dt, W, Up)
 
 		# Correction Step
-		R = solver.CalculateResidual(Up, R)
+		R = solver.calculate_residual(Up, R)
 
-		MultInvMassMatrix(mesh, solver, self.dt/2., R, dU)
+		mult_inv_mass_matrix(mesh, solver, self.dt/2., R, dU)
 
 		W += dU
-		solver.ApplyLimiter(W)
+		solver.apply_limiter(W)
 		return R
 

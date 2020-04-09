@@ -19,7 +19,7 @@ EndTime = 0.1
 nTimeStep = 100
 InterpOrder = 2
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="RK4",InterpolateIC=True)
+								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateIC=True)
 
 
 ### Physics
@@ -36,7 +36,7 @@ if not Periodic:
 
 
 ### Solve
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
 solver.solve()
 
 

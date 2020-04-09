@@ -69,7 +69,7 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 	x = np.reshape(x, (-1,))
 	nplot = x.shape[0]
 	u.shape = nplot,-1
-	uplot = EqnSet.ComputeScalars(VariableName, u, nplot)
+	uplot = EqnSet.ComputeScalars(VariableName, u)
 
 	### sort
 	idx = np.argsort(x)
@@ -82,14 +82,14 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 		# u_ex = u_exact[:,:,iplot]
 		# u_ex.shape = -1,
 		u_exact.shape = nplot,-1
-		u_ex = EqnSet.ComputeScalars(VariableName, u_exact, nplot)
+		u_ex = EqnSet.ComputeScalars(VariableName, u_exact)
 		plt.plot(x,u_ex,'k-',label="Exact")
 
 	if u_IC is not None: 
 		# u_ex = u_exact[:,:,iplot]
 		# u_ex.shape = -1,
 		u_IC.shape = nplot,-1
-		u_i = EqnSet.ComputeScalars(VariableName, u_IC, nplot)
+		u_i = EqnSet.ComputeScalars(VariableName, u_IC)
 		plt.plot(x,u_i,'k--',label="Initial")
 	plt.plot(x,uplot,'bo',label="DG") 
 	plt.ylabel(SolnLabel)
@@ -124,7 +124,7 @@ def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	X = x[:,0].flatten()
 	Y = x[:,1].flatten()
 	u.shape = nold,-1
-	U = EqnSet.ComputeScalars(VariableName, u, nold).flatten()
+	U = EqnSet.ComputeScalars(VariableName, u).flatten()
 	# U = u[:,:,iplot].flatten()
 	U = U[idx]
 
@@ -202,7 +202,7 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 		X = x[elem,:,0].flatten()
 		Y = x[elem,:,1].flatten()
 		# Compute requested scalar
-		U = EqnSet.ComputeScalars(VariableName, u[elem,:,:], nPoint).flatten()
+		U = EqnSet.ComputeScalars(VariableName, u[elem,:,:]).flatten()
 		# Triangulation
 		triang = tri.Triangulation(X, Y)
 		tris = triang; utri = U
@@ -251,33 +251,34 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 	# Get points to plot at
 	# Note: assumes uniform element type
 	if Equidistant:
-		xpoint, npoint = Basis.EquidistantNodes(EqnSet.Basis, max([1,3*Order]))
+		xpoint, npoint = Basis.equidistant_nodes(EqnSet.Basis, max([1,3*Order]))
 	else:
 		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, EqnSet.Basis, max([2,2*Order]), EqnSet)
 		quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
-		npoint = quadData.nquad
 		xpoint = quadData.quad_pts
+		npoint = xpoint.shape[0]
 	
 	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
-	PhiData = Basis.BasisData(EqnSet.Basis,Order,npoint,mesh)
-	PhiData.EvalBasis(xpoint, True, False, False, None)
+	PhiData = Basis.BasisData(EqnSet.Basis,Order,mesh)
+	PhiData.eval_basis(xpoint, True, False, False, None)
 	GeomPhiData = None
 	el = 0
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
 		JData = Basis.JacobianData(mesh)
-		JData.ElemJacobian(elem,npoint,xpoint,mesh,get_djac=True)
+		JData.element_jacobian(mesh,elem,xpoint,get_djac=True)
 
-		xphys, GeomPhiData = Mesh.Ref2Phys(mesh, elem, GeomPhiData, npoint, xpoint)
+		xphys, GeomPhiData = Mesh.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
 		# u_exact[el,:,:] = f_exact(xphys, EndTime)
 
 		# interpolate state at quad points
-		for ir in range(sr):
-			u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		# for ir in range(sr):
+		# 	u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		u[el,:,:] = np.matmul(PhiData.Phi, U_)
 
 		el += 1
 
@@ -334,7 +335,7 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 		elem = IFace.ElemL; face = IFace.faceL
 
 		# Get local nodes on face
-		fnodes, nfnode = Basis.LocalFaceNodes(mesh.QBasis, 
+		fnodes, nfnode = Basis.local_face_nodes(mesh.QBasis, 
 			mesh.QOrder, face)
 
 		# Convert to global node numbering
@@ -356,7 +357,7 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 			elem = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
-			fnodes, nfnode = Basis.LocalFaceNodes(mesh.QBasis, 
+			fnodes, nfnode = Basis.local_face_nodes(mesh.QBasis, 
 				mesh.QOrder, face)
 
 			# Convert to global node numbering

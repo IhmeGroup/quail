@@ -428,21 +428,21 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	# Allocate additional mesh structures
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BFG = mesh.BFaceGroups[ibfgrp]
-		BFG.AllocBFaces()
+		BFG.allocate_bfaces()
 	# nFaceMax = 0
 	# for EG in mesh.ElemGroups:
 	# 	# also find maximum # faces per elem
-	# 	EG.AllocFaces()
-	# 	EG.AllocElem2Nodes()
+	# 	EG.allocate_faces()
+	# 	EG.allocate_elem_to_nodes()
 	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
-	mesh.AllocFaces()
-	mesh.AllocElem2Nodes()
-	mesh.AllocHelpers() 
+	mesh.allocate_faces()
+	mesh.allocate_elem_to_nodes()
+	mesh.allocate_helpers() 
 	nFaceMax = mesh.nFacePerElem
 
 	# Over-allocate IFaces
 	mesh.nIFace = mesh.nElem*nFaceMax
-	mesh.AllocIFaces()
+	mesh.allocate_ifaces()
 
 	# reset nIFace - use as a counter
 	mesh.nIFace = 0
@@ -502,7 +502,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			ibfgrp = PGroup.Group
 			BFG = mesh.BFaceGroups[ibfgrp]
 			# Number of q = 1 face nodes
-			nfnode = Basis.Order2nNode(QBasis, 1) 
+			nfnode = Basis.order_to_num_basis_coeff(QBasis, 1) 
 			# Add q = 1 nodes to hash table
 			FInfo, Exists = AddFaceToHash(Node2FaceHash, nfnode, nodes, True, 
 				ibfgrp, -1, bf[ibfgrp])
@@ -522,7 +522,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			# if not found:
 			# 	raise Exception("Can't find element group")
 			# Number of element nodes
-			nnode = Basis.Order2nNode(QBasis, QOrder)
+			nnode = Basis.order_to_num_basis_coeff(QBasis, QOrder)
 			# Sanity check
 			if nnode != EntitiesInfo[etype].nNode:
 				raise Exception("Check Gmsh entities")
@@ -546,7 +546,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	for elem in range(mesh.nElem):
 		for face in range(mesh.nFacePerElem):
 			# Local q = 1 nodes on face
-			fnodes, nfnode = Basis.LocalQ1FaceNodes(mesh.QBasis, mesh.QOrder, face)
+			fnodes, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, mesh.QOrder, face)
 
 			# Convert to global nodes
 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
@@ -616,10 +616,10 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		raise ValueError
 	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
 
-	mesh.FillFaces()
+	mesh.fill_faces()
 
 	# Check face orientations
-	MeshTools.CheckFaceOrientations(mesh)
+	MeshTools.check_face_orientations(mesh)
 
 
 

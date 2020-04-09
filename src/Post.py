@@ -3,7 +3,7 @@ import copy
 import code
 from Quadrature import get_gaussian_quadrature_elem, QuadData
 from Basis import BasisData, JacobianData
-from Mesh import Mesh, Ref2Phys
+from Mesh import Mesh, ref_to_phys
 from General import *
 import MeshTools
 from Data import ArrayList
@@ -19,7 +19,7 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 
 	# Get elem volumes 
 	if NormalizeByVolume:
-		TotVol,_ = MeshTools.ElementVolumes(mesh)
+		TotVol,_ = MeshTools.element_volumes(mesh)
 	else:
 		TotVol = 1.
 
@@ -47,32 +47,34 @@ def L2_error(mesh,EqnSet,Time,VariableName,PrintError=True,NormalizeByVolume=Tru
 		if QuadChanged:
 			quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
-		nq = quadData.nquad
 		xq = quadData.quad_pts
 		wq = quadData.quad_wts
-
+		nq = xq.shape[0]
+		
 		if QuadChanged:
-			PhiData = BasisData(basis,Order,nq,mesh)
-			PhiData.EvalBasis(xq, True, False, False, None)
+			PhiData = BasisData(basis,Order,mesh)
+			PhiData.eval_basis(xq, True, False, False, None)
 			xphys = np.zeros([nq, mesh.Dim])
 
-		JData.ElemJacobian(elem,nq,xq,mesh,get_djac=True)
+		JData.element_jacobian(mesh,elem,xq,get_djac=True)
 
-		xphys, GeomPhiData = Ref2Phys(mesh, elem, GeomPhiData, nq, xq, xphys, QuadChanged)
+		xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
 
 		# interpolate state at quad points
 		u = np.zeros([nq, sr])
 		for ir in range(sr):
 			u[:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
+		u[:] = np.matmul(PhiData.Phi, U_)
 
 		# Computed requested quantity
-		s = EqnSet.ComputeScalars(VariableName, u, nq)
-		s_exact = EqnSet.ComputeScalars(VariableName, u_exact, nq)
+		s = EqnSet.ComputeScalars(VariableName, u)
+		s_exact = EqnSet.ComputeScalars(VariableName, u_exact)
 
-		err = 0.
-		for iq in range(nq):
-			err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
+		# err = 0.
+		# for iq in range(nq):
+		# 	err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
+		err = np.sum((s - s_exact)**2.*wq*JData.djac)
 		ElemErr[elem] = err
 		TotErr += ElemErr[elem]
 
