@@ -592,8 +592,7 @@ class DG_Solver(object):
 		#nn = PhiData.nn
 
 		# interpolate state and gradient at quad points
-		for ir in range(sr):
-			uI[:,ir] = np.matmul(PhiData.Phi, U[:,ir])
+		uI[:] = np.matmul(PhiData.Phi, U)
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
