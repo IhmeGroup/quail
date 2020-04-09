@@ -473,22 +473,31 @@ class Euler1D(Scalar.ConstAdvScalar):
 		return irV
 
 	def ConvFluxInterior(self, u, F=None):
-		r = u[:,0]
-		ru = u[:,1]
-		rE = u[:,2]
+		dim = self.Dim
+		irho = 0; irhoE = dim + 1
+		imom = self.GetMomentumIndices()
 
-		eps = 1e-15
-		gam = self.Params["SpecificHeatRatio"]
+		rho = u[:,[irho]]
+		rhoE = u[:,[irhoE]]
+		mom = u[:,imom]
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru)/(r+eps))
-		h = (rE + p)/(r+eps)
+		p = self.ComputeScalars("Pressure", u, FlagNonPhysical=True)
+		h = self.ComputeScalars("TotalEnthalpy", u, FlagNonPhysical=True)
+
+		pmat = np.zeros([u.shape[0], dim, dim])
+		idx = np.full([dim,dim],False)
+		np.fill_diagonal(idx,True)
+		pmat[:,idx] = p
 
 		if F is None:
-			F = np.empty(u.shape+(self.Dim,))
+			F = np.empty(u.shape+(dim,))
 
-		F[:,0,0] = ru
-		F[:,1,0] = ru*ru/(r+eps) + p
-		F[:,2,0] = ru*h
+		F[:,irho,:] = mom
+		try:
+			F[:,imom,:] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
+		except ValueError:
+			code.interact(local=locals())
+		F[:,irhoE,:] = mom*h
 
 		return F
 
@@ -1098,37 +1107,37 @@ class Euler2D(Euler1D):
 
 		return irho, irhou, irhov, irhoE
 
-	def ConvFluxInterior(self, u, F=None):
-		ir, iru, irv, irE = self.GetStateIndices()
+	# def ConvFluxInterior(self, u, F=None):
+	# 	ir, iru, irv, irE = self.GetStateIndices()
 
-		r = u[:,ir]
-		ru = u[:,iru]
-		rv = u[:,irv]
-		rE = u[:,irE]
+	# 	r = u[:,ir]
+	# 	ru = u[:,iru]
+	# 	rv = u[:,irv]
+	# 	rE = u[:,irE]
 
-		gam = self.Params["SpecificHeatRatio"]
+	# 	gam = self.Params["SpecificHeatRatio"]
 
-		p = (gam - 1.)*(rE - 0.5*(ru*ru + rv*rv)/r)
-		h = (rE + p)/r
+	# 	p = (gam - 1.)*(rE - 0.5*(ru*ru + rv*rv)/r)
+	# 	h = (rE + p)/r
 
-		if F is None:
-			F = np.empty(u.shape+(self.Dim,))
+	# 	if F is None:
+	# 		F = np.empty(u.shape+(self.Dim,))
 
-		# x
-		d = 0
-		F[:,ir,d] = ru
-		F[:,iru,d] = ru*ru/r + p
-		F[:,irv,d] = ru*rv/r 
-		F[:,irE,d] = ru*h
+	# 	# x
+	# 	d = 0
+	# 	F[:,ir,d] = ru
+	# 	F[:,iru,d] = ru*ru/r + p
+	# 	F[:,irv,d] = ru*rv/r 
+	# 	F[:,irE,d] = ru*h
 
-		# y
-		d = 1
-		F[:,ir,d] = rv
-		F[:,iru,d] = rv*ru/r 
-		F[:,irv,d] = rv*rv/r + p
-		F[:,irE,d] = rv*h
+	# 	# y
+	# 	d = 1
+	# 	F[:,ir,d] = rv
+	# 	F[:,iru,d] = rv*ru/r 
+	# 	F[:,irv,d] = rv*rv/r + p
+	# 	F[:,irE,d] = rv*h
 
-		return F
+	# 	return F
 
 	# def ConvFluxBoundary(self, BC, uI, uB, NData, nq, data):
 	# 	bctreatment = self.BCTreatments[BC.BCType]
