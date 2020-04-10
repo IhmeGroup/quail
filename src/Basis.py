@@ -746,6 +746,29 @@ def get_inv_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
 
     return iSM, StaticData
 
+def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None):
+    '''
+    Method: get_inv_stiffness_matrix_ader
+    --------------------------------------
+    Calculate the inverse stiffness matrix (Currently not used)
+
+    INPUTS:
+        mesh: mesh object
+        basis: type of basis function
+        order: solution order
+        gradDir: direction to take the gradient in
+        elem: element index
+
+    OUTPUTS: 
+        iSM: inverse stiffness matrix
+    '''
+    SM, StaticData = get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData)
+
+    code.interact(local=locals())
+    iSM = np.linalg.inv(SM) 
+
+    return iSM, StaticData
+
 def get_inv_mass_matrices(mesh, EqnSet, solver=None):
     '''
     Method: compute_inv_mass_matrices
@@ -1591,6 +1614,7 @@ class BasisData(object):
         OUTPUTS:
             xelem: coordinate of face
         '''
+
         self.face = face
         nq = quad_pts.shape[0]
         if Shape2Dim[Basis2Shape[basis]] == ShapeType.Quadrilateral:

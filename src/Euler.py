@@ -998,6 +998,7 @@ class Euler1D(Scalar.ConstAdvScalar1D):
 		f2 = lambda x2,x,t,a: x - np.sqrt(3)*rho0(x2,a)*t - x2
 
 		x_ = x.reshape(-1)
+
 		if isinstance(t,float):
 			x1 = fsolve(f1, 0.*x_, (x_,t,a))
 			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
@@ -1005,15 +1006,16 @@ class Euler1D(Scalar.ConstAdvScalar1D):
 			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 		else:
 			y = np.zeros(len(t))
-			#for i in range(len(t)):
+			for i in range(len(t)):
 			#	code.interact(local=locals())
-			#	y[i] = x
-			y = x.transpose()
-			y = y.reshape(-1)
+				y[i] = x
+			#y = x.transpose()
+			y_ = y.reshape(-1)
 			t = t.reshape(-1)
-			x1 = root(f1, 0.*y, (y,t,a)).x
+
+			x1 = root(f1, 0.*y_, (y_,t,a)).x
 			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
-			x2 = root(f2, 0.*y, (y,t,a)).x
+			x2 = root(f2, 0.*y_, (y_,t,a)).x
 			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 			
 		r = rho(x1,x2,a)

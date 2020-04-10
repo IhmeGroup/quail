@@ -159,11 +159,11 @@ class ConstAdvScalar1D(object):
 				index += 1
 
 
-
 		### ConstAdv scalar only
 		# Don't make Burgers inherit from this after adding abstract base classes
 		self.c = 0.
 		self.cspeed = 0.
+
 
 		# Uarray = np.zeros([mesh.nElemTot, nn, self.StateRank])
 		# self.Uarray = Uarray

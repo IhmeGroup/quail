@@ -26,12 +26,12 @@ EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LegendreSeg",TimeScheme="ADER",InterpolateFlux=False)
+								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateFlux=True)
 nu = -3.
 
 ### Physics
 Velocity = 1.0 
-EqnSet = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)

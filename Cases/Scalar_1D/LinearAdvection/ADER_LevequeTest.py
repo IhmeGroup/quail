@@ -28,12 +28,12 @@ nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))]
 #nTimeStep = int(EndTime/dt)
 InterpOrder = 1
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3")
+								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
 								 #ApplyLimiter="ScalarPositivityPreserving")
 
 ### Physics
 Velocity = 1.0
-EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
 #EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
@@ -74,7 +74,7 @@ if not Periodic:
 
 
 ### Solve
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
 solver.solve()
 
 

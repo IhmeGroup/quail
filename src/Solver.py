@@ -240,6 +240,8 @@ class BFaceOperators(IFaceOperators):
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(EqnSet, basis, order)
 		
+#class ADEROperators(object):
+
 
 
 class DG_Solver(object):
@@ -361,6 +363,9 @@ class DG_Solver(object):
 		TimeScheme = Params["TimeScheme"]		
 		if TimeScheme is "ADER":
 			raise Errors.IncompatibleError
+
+		### Force the BasisADER to be None ###
+		EqnSet.BasisADER = 0 #dummye
 
 
 	def precompute_matrix_operators(self):
@@ -1143,6 +1148,7 @@ class DG_Solver(object):
 				EqnSet.Order = Order
 				# Project
 				project_state_to_new_basis(self, mesh, EqnSet, EqnSet.Basis, Order_old)
+
 				self.precompute_matrix_operators()
 
 			''' Apply time scheme '''
@@ -1153,6 +1159,123 @@ class DG_Solver(object):
 
 		if WriteTimeHistory:
 			fhistory.close()
+
+
+class ElemOperatorsADER(ElemOperators):
+
+	def get_basis_and_geom_data(self, mesh, basis, order):
+		# separate these later
+
+		# Unpack
+		quad_pts = self.quad_pts 
+		# basis data
+		PhiData = BasisData(basis, order, mesh)
+		PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
+
+		self.basis_val = PhiData.Phi 
+
+
+
+class IFaceOperatorsADER(IFaceOperators):
+
+	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
+
+		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.QBasis, order, EqnSet, None)
+		quadData = QuadDataADER(mesh, basis, EntityType.IFace, QuadOrder)
+		self.quad_pts = quadData.quad_pts
+		self.quad_wts = quadData.quad_wts
+
+	def get_basis_and_geom_data(self, mesh, basis, order):
+		# separate these later
+
+		# Unpack
+		dim = mesh.Dim
+		quad_pts = self.quad_pts 
+		nq = quad_pts.shape[0]
+		nb = order_to_num_basis_coeff(basis, order)
+		nFacePerElem = mesh.nFacePerElem + 2
+
+		# Allocate
+		self.faces_to_basisL = np.zeros([nFacePerElem,nq,nb])
+		self.faces_to_basisR = np.zeros([nFacePerElem,nq,nb])
+		self.normals_ifaces = np.zeros([mesh.nIFace,nq,dim])
+
+		# basis data
+		PhiData = BasisData(basis, order, mesh)
+
+		for f in range(nFacePerElem):
+			# Left
+			#eval_basis_on_face_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, Get_Phi=True)
+			_ = PhiData.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_basisL[f] = PhiData.Phi
+			# Right
+			_ = PhiData.eval_basis_on_face_ader(mesh, basis, f, quad_pts[::-1], None, Get_Phi=True)
+			self.faces_to_basisR[f] = PhiData.Phi
+
+		i = 0
+		for IFace in mesh.IFaces:
+			# Normals
+			NData = iface_normal(mesh, IFace, quad_pts)
+			self.normals_ifaces[i] = NData.nvec
+			i += 1
+
+class BFaceOperatorsADER(IFaceOperatorsADER):
+
+	def get_basis_and_geom_data(self, mesh, basis, order):
+		# separate these later
+
+		# Unpack
+		dim = mesh.Dim
+		quad_pts = self.quad_pts 
+		nq = quad_pts.shape[0]
+		nb = order_to_num_basis_coeff(basis, order)
+		nFacePerElem = mesh.nFacePerElem + 2
+
+		# Allocate
+		self.faces_to_basis = np.zeros([nFacePerElem,nq,nb])
+		self.faces_to_xref = np.zeros([nFacePerElem,nq,dim+1])
+		self.normals_bfgroups = []
+		self.x_bfgroups = []
+
+		# basis data
+		PhiData = BasisData(basis, order, mesh)
+		GeomPhiData = None
+
+		for f in range(nFacePerElem):
+			# Left
+			self.faces_to_xref[f] = xref = PhiData.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_basis[f] = PhiData.Phi
+
+		i = 0
+		for BFG in mesh.BFaceGroups:
+			self.normals_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
+			self.x_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
+			normal_bfgroup = self.normals_bfgroups[i]
+			x_bfgroup = self.x_bfgroups[i]
+			j = 0
+			for BFace in BFG.BFaces:
+				# Normals
+				NData = bface_normal(mesh, BFace, quad_pts)
+				normal_bfgroup[j] = NData.nvec
+
+				# Physical coordinates of quadrature points
+				x, GeomPhiData = ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
+				# Store
+				x_bfgroup[j] = x
+
+				# Increment
+				j += 1
+			i += 1
+
+	def alloc_other_arrays(self, EqnSet, basis, order):
+		quad_pts = self.quad_pts 
+		nq = quad_pts.shape[0]
+		ns = EqnSet.StateRank
+
+		self.UqI = np.zeros([nq, ns])
+		self.UqB = np.zeros([nq, ns])
+		self.Fq = np.zeros([nq, ns])
+
 
 class ADERDG_Solver(DG_Solver):
 	'''
@@ -1214,6 +1337,27 @@ class ADERDG_Solver(DG_Solver):
 		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 			raise Errors.IncompatibleError
 
+
+	def precompute_matrix_operators(self):
+		mesh = self.mesh 
+		EqnSet = self.EqnSet
+
+
+		self.elem_operators = ElemOperators()
+		self.elem_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.iface_operators = IFaceOperators()
+		self.iface_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.bface_operators = BFaceOperators()
+		self.bface_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+
+		# Calculate ADER specific space-time operators
+		self.elem_operators_st = ElemOperatorsADER()
+		self.elem_operators_st.compute_operators(mesh, EqnSet, EqnSet.BasisADER, EqnSet.Order)
+		self.iface_operators_st = IFaceOperatorsADER()
+		self.iface_operators_st.compute_operators(mesh, EqnSet, EqnSet.BasisADER, EqnSet.Order)
+		self.bface_operators_st = BFaceOperatorsADER()
+		self.bface_operators_st.compute_operators(mesh, EqnSet, EqnSet.BasisADER, EqnSet.Order)
+
 	def calculate_predictor_step(self, dt, W, Up):
 		'''
 		Method: calculate_predictor_step
@@ -1272,18 +1416,15 @@ class ADERDG_Solver(DG_Solver):
 		FTR,_= get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False, StaticData=None)
 		
 		#Stiffness matrix in time
-		gradDir = 1
-		SMT,_= get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=gradDir)
-		gradDir = 0
-		SMS,_= get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=gradDir)
+		SMT,_= get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=1)
+		SMS,_= get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=0)
 		SMS = np.transpose(SMS)
 		MM,_=  get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False, StaticData=None)
-
 		#MMinv,_= get_elem_inv_mass_matrix_ader(mesh, basis1, Order, PhysicalSpace=True, elem=-1, StaticData=None)
-
+		iK = np.linalg.inv(FTL-SMT) 
 		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadData)
 		QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis_st, order, EqnSet, quadData_st)
-		QuadOrder_st-=1
+		#QuadOrder_st-=1
 
 		if QuadChanged:
 			quadData = QuadData(mesh, basis, entity, QuadOrder)
@@ -1303,58 +1444,29 @@ class ADERDG_Solver(DG_Solver):
 
 		nb_st = order_to_num_basis_coeff(basis_st, order)
 		nb   = order_to_num_basis_coeff(basis, order)
-		'''
-		BEGIN HACKY TEST (BRETT)
-		# Hacky implementation of ADER-DG for linear solve only. Will delete long term.
 
-		# MM = 0.*(dt/2.)*MM
-		# SMS = 1.0*(dt/dx)*SMS
-		# A1 = np.subtract(FTL,SMT)
-		# A2 = np.add(A1,SMS)
-		# ADER = np.add(A2,MM)
+		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
+		fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
+		ntest = 10
+		for i in range(ntest):
+			#f = np.matmul(FTL,u)-np.matmul(FTR,W)-np.matmul(SMT,u)+np.matmul(SMS,fluxpoly)-np.matmul(MM,srcpoly)
 
-		# ADERinv = np.linalg.solve(ADER,FTR)
+			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,W)))
+			err = Up_new - Up
 
+			if np.amax(np.abs(err))<1e-9:
+				Up = Up_new
+				break
 
-		# Up = np.matmul(ADERinv, W)
+			Up = Up_new
 
-		# fluxpoly = self.flux_coefficients(elem, dt, Order, basis1, Up)
-		# srcpoly = self.source_coefficients(elem, dt, Order, basis1, Up)
+			srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
+			fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
 
-		END HACKY TEST (BRETT)
-		'''
-
-		#Make initial guess for the predictor step
-		Up = Up.reshape(nb,nb,ns)
-
-		for ir in range(ns):
-			#for i in range(nn):
-			for j in range(nb):
-				Up[0,j,ir]=W[j,ir]
-		#Up = np.pad(W,pad_width=((0,nnST-nn),(0,0)))
-		Up = Up.reshape(nb_st,ns)
-
-		def F(u):
-			u = u.reshape(nb_st,ns)
-			fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, u)
-			srcpoly = self.source_coefficients(elem, dt, order, basis_st, u)
-			f = np.matmul(FTL,u)-np.matmul(FTR,W)-np.matmul(SMT,u)+np.matmul(SMS,fluxpoly)-np.matmul(MM,srcpoly)
-			f = f.reshape(nb_st*ns)
-			return f
-
-		# def jac(u):
-		# 	jac = np.zeros([nnST*sr,nnST*sr])
-		# 	np.fill_diagonal(jac,1.)
-		# 	return jac
-
-		Up = Up.reshape(nb_st*ns)
-		sol = root(F, Up, method='krylov') #non-linear solve for ADER-DG
-		Up = sol.x
-		Up = Up.reshape(nb_st,ns)
 
 		return Up, StaticData
 
-	def calculate_residual_elem(self, elem, U, ER, StaticData):
+	def calculate_residual_elem(self, elem, Up, ER, StaticData):
 		'''
 		Method: calculate_residual_elem
 		-------------------------------------------
@@ -1367,94 +1479,124 @@ class ADERDG_Solver(DG_Solver):
 		OUTPUTS:
 		ER: calculated residiual array (for volume integral of specified element)
 		'''
-		mesh = self.mesh
-		EqnSet = self.EqnSet
+		# mesh = self.mesh
+		# EqnSet = self.EqnSet
 
-		basis = EqnSet.Basis
-		basis_st = EqnSet.BasisADER
-		order = EqnSet.Order
-		entity = EntityType.Element
+		# basis = EqnSet.Basis
+		# basis_st = EqnSet.BasisADER
+		# order = EqnSet.Order
+		# entity = EntityType.Element
+		# ns = EqnSet.StateRank
+		# dim = EqnSet.Dim
+
+		# if Order == 0:
+		# 	return ER, StaticData
+
+		# if StaticData is None:
+		# 	pnq = -1
+		# 	quadData = None
+		# 	quadData_st = None
+		# 	PhiData = None
+		# 	PsiData = None
+		# 	JData = JacobianData(mesh)
+		# 	xglob = None
+		# 	tglob = None
+		# 	u = None
+		# 	F = None
+		# 	s = None
+		# 	NData = None
+		# 	GeomPhiData = None
+		# 	TimePhiData = None
+		# 	StaticData = GenericData()
+		# else:
+		# 	nq = StaticData.pnq
+		# 	quadData = StaticData.quadData
+		# 	quadData_st = StaticData.quadData_st
+		# 	PhiData = StaticData.PhiData
+		# 	PsiData = StaticData.PsiData
+		# 	JData = StaticData.JData
+		# 	xglob = StaticData.xglob
+		# 	tglob = StaticData.tglob
+		# 	u = StaticData.u
+		# 	F = StaticData.F
+		# 	s = StaticData.s
+		# 	NData = StaticData.NData
+		# 	GeomPhiData = StaticData.GeomPhiData
+		# 	TimePhiData = StaticData.TimePhiData
+
+		# QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order, EqnSet, quadData)
+		# QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis_st, order, EqnSet, quadData_st)
+		# QuadOrder_st-=1
+
+		# if QuadChanged:
+		# 	quadData = QuadData(mesh, basis, entity, QuadOrder)
+		# if QuadChanged_st:
+		# 	quadData_st = QuadData(mesh, basis_st, entity, QuadOrder_st)
+
+		# quad_pts = quadData.quad_pts
+		# quad_wts = quadData.quad_wts
+		# nq = quad_pts.shape[0]
+
+		# quad_pts_st = quadData_st.quad_pts
+		# quad_wts_st = quadData_st.quad_wts
+		# nq_st = quad_pts_st.shape[0]
+
+		# if QuadChanged:
+		# 	PhiData = BasisData(basis_st,order,mesh)
+		# 	PhiData.eval_basis(quad_pts_st, Get_Phi=True, Get_GPhi=False)
+		# 	PsiData = BasisData(basis,order,mesh)
+		# 	PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+
+		# 	xglob = np.zeros([nq, dim])
+		# 	u = np.zeros([nq_st, ns])
+		# 	F = np.zeros([nq_st, ns, dim])
+		# 	s = np.zeros([nq_st, ns])
+
+		# JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_jac=False,get_ijac=True)
+		# PsiData.eval_basis(quad_pts, Get_gPhi=True, JData=JData)
+
+		# xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xglob, QuadChanged)
+		# tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, tglob, QuadChanged_st)
+
+
+		# #nn = PsiData.nn
+		# nb = PsiData.Phi.shape[1]
+
+
+
+
+		EqnSet = self.EqnSet
+		mesh = self.mesh
 		ns = EqnSet.StateRank
 		dim = EqnSet.Dim
 
-		if Order == 0:
-			return ER, StaticData
+		elem_ops = self.elem_operators
+		elem_ops_st = self.elem_operators_st
+		quad_wts = elem_ops.quad_wts
+		quad_wts_st = elem_ops_st.quad_wts
+		quad_pts_st = elem_ops_st.quad_pts
+		basis_val = elem_ops.basis_val 
+		basis_val_st = elem_ops_st.basis_val
+		basis_pgrad_elems = elem_ops.basis_pgrad_elems
+		djac_elems = elem_ops.djac_elems 
+		x_elems = elem_ops.x_elems
+		# Uq = elem_ops.Uq 
+		# Fq = elem_ops.Fq 
+		Sq = elem_ops_st.Sq
 
-		if StaticData is None:
-			pnq = -1
-			quadData = None
-			quadData_st = None
-			PhiData = None
-			PsiData = None
-			JData = JacobianData(mesh)
-			xglob = None
-			tglob = None
-			u = None
-			F = None
-			s = None
-			NData = None
-			GeomPhiData = None
-			TimePhiData = None
-			StaticData = GenericData()
-		else:
-			nq = StaticData.pnq
-			quadData = StaticData.quadData
-			quadData_st = StaticData.quadData_st
-			PhiData = StaticData.PhiData
-			PsiData = StaticData.PsiData
-			JData = StaticData.JData
-			xglob = StaticData.xglob
-			tglob = StaticData.tglob
-			u = StaticData.u
-			F = StaticData.F
-			s = StaticData.s
-			NData = StaticData.NData
-			GeomPhiData = StaticData.GeomPhiData
-			TimePhiData = StaticData.TimePhiData
+		TimePhiData = None
 
-		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order, EqnSet, quadData)
-		QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis_st, order, EqnSet, quadData_st)
-		QuadOrder_st-=1
-
-		if QuadChanged:
-			quadData = QuadData(mesh, basis, entity, QuadOrder)
-		if QuadChanged_st:
-			quadData_st = QuadData(mesh, basis_st, entity, QuadOrder_st)
-
-		quad_pts = quadData.quad_pts
-		quad_wts = quadData.quad_wts
-		nq = quad_pts.shape[0]
-
-		quad_pts_st = quadData_st.quad_pts
-		quad_wts_st = quadData_st.quad_wts
-		nq_st = quad_pts_st.shape[0]
-
-		if QuadChanged:
-			PhiData = BasisData(basis_st,order,mesh)
-			PhiData.eval_basis(quad_pts_st, Get_Phi=True, Get_GPhi=False)
-			PsiData = BasisData(basis,order,mesh)
-			PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
-
-			xglob = np.zeros([nq, dim])
-			u = np.zeros([nq_st, ns])
-			F = np.zeros([nq_st, ns, dim])
-			s = np.zeros([nq_st, ns])
-
-		JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_jac=False,get_ijac=True)
-		PsiData.eval_basis(quad_pts, Get_gPhi=True, JData=JData)
-
-		xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xglob, QuadChanged)
-		tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, tglob, QuadChanged_st)
-
-
-		#nn = PsiData.nn
-		nb = PsiData.Phi.shape[1]
+		# Unpack
+		basis_pgrad = basis_pgrad_elems[elem]
+		djac = djac_elems[elem]
+		nq = quad_wts.shape[0]
+		nq_st = quad_wts_st.shape[0]
+		nb = basis_val.shape[1]
+		x = x_elems[elem]
 		# interpolate state and gradient at quad points
-		u[:] = np.matmul(PhiData.Phi, U)
+		Uq = np.matmul(basis_val_st, Up)
 
-		F = EqnSet.ConvFluxInterior(u, F) # [nq,sr,dim]
-
-		# F = np.reshape(F,(nq,nq,sr,dim))
+		Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,sr,dim]
 
 		# for ir in range(sr):
 		# 	for k in range(nn): # Loop over basis function in space
@@ -1465,11 +1607,13 @@ class ADERDG_Solver(DG_Solver):
 
 		# F = np.reshape(F,(nqST,sr,dim))
 		
-		ER[:] += np.tensordot(np.tile(PsiData.gPhi,(nb,1,1)), F*(quad_wts_st.reshape(nq,nq)*JData.djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nn, sr]
-
-
-		s = np.zeros([nq_st,ns])
-		s = EqnSet.SourceState(nq_st, xglob, tglob, u, s) # [nq,sr,dim]
+		ER += np.tensordot(np.tile(basis_pgrad,(nb,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
+		
+		t = np.zeros([nq_st,dim])
+		t, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
+		
+		Sq[:] = 0.
+		Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
 
 		# s = np.reshape(s,(nq,nq,sr))
 		# #Calculate source term integral
@@ -1481,30 +1625,32 @@ class ADERDG_Solver(DG_Solver):
 		# 				ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
 		# s = np.reshape(s,(nqST,sr))
 
-		ER[:] += np.matmul(np.tile(PsiData.Phi,(nb,1)).transpose(),s*(quad_wts_st.reshape(nq,nq)*JData.djac).reshape(nq_st,1))
+		ER += np.matmul(np.tile(basis_val,(nb,1)).transpose(),Sq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1)) # [nb, ns]
 
 		if elem == echeck:
 			code.interact(local=locals())
 
+		#ER += np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
+
 		# Store in StaticData
-		StaticData.pnq = nq
-		StaticData.quadData = quadData
-		StaticData.quadData_st = quadData_st
-		StaticData.PhiData = PhiData
-		StaticData.PsiData = PsiData
-		StaticData.JData = JData
-		StaticData.xglob = xglob
-		StaticData.tglob = tglob
-		StaticData.u = u
-		StaticData.F = F
-		StaticData.s = s
-		StaticData.NData = NData
-		StaticData.GeomPhiData = GeomPhiData
-		StaticData.TimePhiData = TimePhiData
+		# StaticData.pnq = nq
+		# StaticData.quadData = quadData
+		# StaticData.quadData_st = quadData_st
+		# StaticData.PhiData = PhiData
+		# StaticData.PsiData = PsiData
+		# StaticData.JData = JData
+		# StaticData.xglob = xglob
+		# StaticData.tglob = tglob
+		# StaticData.u = u
+		# StaticData.F = F
+		# StaticData.s = s
+		# StaticData.NData = NData
+		# StaticData.GeomPhiData = GeomPhiData
+		# StaticData.TimePhiData = TimePhiData
 
 		return ER, StaticData
 
-	def calculate_residual_iface(self, iiface, UL, UR, RL, RR, StaticData):
+	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR, StaticData):
 		'''
 		Method: calculate_residual_iface
 		-------------------------------------------
@@ -1519,136 +1665,189 @@ class ADERDG_Solver(DG_Solver):
 			RL: calculated residual array (left neighboring element contribution)
 			RR: calculated residual array (right neighboring element contribution)
 		'''
-		mesh = self.mesh
-		dim = mesh.Dim
-		EqnSet = self.EqnSet
-		ns = EqnSet.StateRank
+		# mesh = self.mesh
+		# dim = mesh.Dim
+		# EqnSet = self.EqnSet
+		# ns = EqnSet.StateRank
 
+		# IFace = mesh.IFaces[iiface]
+		# elemL = IFace.ElemL
+		# elemR = IFace.ElemR
+		# faceL = IFace.faceL
+		# faceR = IFace.faceR
+		# order = EqnSet.Order
+		# nFacePerElem = mesh.nFacePerElem
+		# nFacePerElemADER = nFacePerElem + 2 # Hard-coded for the 1D ADER method
+
+		# if StaticData is None:
+		# 	pnq = -1
+		# 	quadData = None
+		# 	quadData_st = None
+		# 	PhiDataL = None
+		# 	PhiDataR = None
+		# 	PsiDataL = None
+		# 	PsiDataR = None
+		# 	xelemLPhi = None
+		# 	xelemRPhi = None
+		# 	xelemLPsi = None
+		# 	xelemRPsi = None
+		# 	uL = None
+		# 	uR = None
+		# 	StaticData = GenericData()
+		# 	NData = None
+		# else:
+		# 	nq = StaticData.pnq
+		# 	quadData_st = StaticData.quadData_st
+		# 	quadData = StaticData.quadData
+		# 	Faces2PhiDataL = StaticData.Faces2PhiDataL
+		# 	Faces2PhiDataR = StaticData.Faces2PhiDataR
+		# 	Faces2PsiDataL = StaticData.Faces2PsiDataL
+		# 	Faces2PsiDataR = StaticData.Faces2PsiDataR
+		# 	uL = StaticData.uL
+		# 	uR = StaticData.uR
+		# 	NData = StaticData.NData
+
+
+		# basis = EqnSet.Basis
+		# basis_st = EqnSet.BasisADER
+
+		# QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_face(mesh, IFace, basis_st, order, EqnSet, quadData_st)
+		# #QuadOrder_st-=1
+		# QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, IFace, mesh.QBasis, order, EqnSet, quadData)
+
+		# if QuadChanged:
+		# 	quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
+		# if QuadChanged_st:
+		# 	quadData_st = QuadDataADER(mesh,basis_st,EntityType.IFace, QuadOrder_st)
+
+		# quad_pts = quadData.quad_pts
+		# quad_wts = quadData.quad_wts
+		# nq = quad_pts.shape[0]
+
+		# quad_pts_st = quadData_st.quad_pts
+		# quad_wts_st = quadData_st.quad_wts
+		# nq_st = quad_pts_st.shape[0]
+
+		# if faceL == 0:
+		# 	face_stL = 3
+		# elif faceL == 1:
+		# 	face_stL = 1
+		# else:
+		# 	return IncompatibleError
+		# if faceR == 0:
+		# 	face_stR = 3
+		# elif faceR == 1:
+		# 	face_stR = 1
+		# else:
+		# 	return IncompatibleError
+
+		# if QuadChanged or QuadChanged_st:
+
+		# 	Faces2PsiDataL = [None for i in range(nFacePerElem)]
+		# 	Faces2PsiDataR = [None for i in range(nFacePerElem)]
+		# 	Faces2PhiDataL = [None for i in range(nFacePerElemADER)]
+		# 	Faces2PhiDataR = [None for i in range(nFacePerElemADER)]
+		# 	PsiDataL = BasisData(basis, order, mesh)
+		# 	PsiDataR = BasisData(basis, order, mesh)
+		# 	PhiDataL = BasisData(basis_st, order, mesh)
+		# 	PhiDataR = BasisData(basis_st, order, mesh)
+
+		# 	xglob = np.zeros([nq, ns])
+		# 	uL = np.zeros([nq_st, ns])
+		# 	uR = np.zeros([nq_st, ns])
+
+		# 	xelemLPhi = np.zeros([nq_st, dim+1])
+		# 	xelemRPhi = np.zeros([nq_st, dim+1])
+		# 	xelemLPsi = np.zeros([nq, dim])
+		# 	xelemRPsi = np.zeros([nq, dim])
+			
+		# PsiDataL = Faces2PhiDataL[faceL]
+		# PsiDataR = Faces2PsiDataR[faceR]
+		# PhiDataL = Faces2PsiDataL[faceL]
+		# PhiDataR = Faces2PhiDataR[faceR]
+
+		# #Evaluate space-time basis functions
+		# if PhiDataL is None or QuadChanged_st:
+		# 	Faces2PhiDataL[faceL] = PhiDataL = BasisData(basis_st,order,mesh)
+		# 	xelemLPhi = PhiDataL.eval_basis_on_face_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, Get_Phi=True)
+		# if PhiDataR is None or QuadChanged_st:
+		# 	Faces2PhiDataR[faceR] = PhiDataR = BasisData(basis_st,order,mesh)
+		# 	xelemRPhi = PhiDataR.eval_basis_on_face_ader(mesh, basis_st, face_stR, quad_pts_st[::-1], xelemRPhi, Get_Phi=True)
+
+		# #Evaluate spacial basis functions
+		# if PsiDataL is None or QuadChanged:
+		# 	Faces2PsiDataL[faceL] = PsiDataL = BasisData(basis,order,mesh)
+		# 	xelemLPsi = PsiDataL.eval_basis_on_face(mesh, faceL, quad_pts, xelemLPsi, Get_Phi=True)
+		# if PsiDataR is None or QuadChanged:
+		# 	Faces2PsiDataR[faceR] = PsiDataR = BasisData(basis,order,mesh)
+		# 	xelemRPsi = PsiDataR.eval_basis_on_face(mesh, faceR, quad_pts[::-1], xelemRPsi, Get_Phi=True)
+
+		# NData = iface_normal(mesh, IFace, quad_pts, NData)
+
+		# nbL = PsiDataL.Phi.shape[1]
+		# nbR = PsiDataR.Phi.shape[1]
+		# nb = np.amax([nbL,nbR])
+
+		# Stepper = self.Stepper
+		# dt = Stepper.dt
+		mesh = self.mesh
+		EqnSet = self.EqnSet
 		IFace = mesh.IFaces[iiface]
 		elemL = IFace.ElemL
 		elemR = IFace.ElemR
 		faceL = IFace.faceL
 		faceR = IFace.faceR
-		order = EqnSet.Order
-		nFacePerElem = mesh.nFacePerElem
-		nFacePerElemADER = nFacePerElem + 2 # Hard-coded for the 1D ADER method
-
-		if StaticData is None:
-			pnq = -1
-			quadData = None
-			quadData_st = None
-			PhiDataL = None
-			PhiDataR = None
-			PsiDataL = None
-			PsiDataR = None
-			xelemLPhi = None
-			xelemRPhi = None
-			xelemLPsi = None
-			xelemRPsi = None
-			uL = None
-			uR = None
-			StaticData = GenericData()
-			NData = None
-		else:
-			nq = StaticData.pnq
-			quadData_st = StaticData.quadData_st
-			quadData = StaticData.quadData
-			Faces2PhiDataL = StaticData.Faces2PhiDataL
-			Faces2PhiDataR = StaticData.Faces2PhiDataR
-			Faces2PsiDataL = StaticData.Faces2PsiDataL
-			Faces2PsiDataR = StaticData.Faces2PsiDataR
-			uL = StaticData.uL
-			uR = StaticData.uR
-			NData = StaticData.NData
-
-
-		basis = EqnSet.Basis
-		basis_st = EqnSet.BasisADER
-
-		QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_face(mesh, IFace, basis_st, order, EqnSet, quadData_st)
-		QuadOrder_st-=1
-		QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, IFace, mesh.QBasis, order, EqnSet, quadData)
-
-		if QuadChanged:
-			quadData = QuadData(mesh, EqnSet.Basis, EntityType.IFace, QuadOrder)
-		if QuadChanged_st:
-			quadData_st = QuadDataADER(mesh,basis_st,EntityType.IFace, QuadOrder_st)
-
-		quad_pts = quadData.quad_pts
-		quad_wts = quadData.quad_wts
-		nq = quad_pts.shape[0]
-
-		quad_pts_st = quadData_st.quad_pts
-		quad_wts_st = quadData_st.quad_wts
-		nq_st = quad_pts_st.shape[0]
 
 		if faceL == 0:
-			face_stL = 3
+			faceL_st = 3
 		elif faceL == 1:
-			face_stL = 1
+			faceL_st = 1
 		else:
 			return IncompatibleError
 		if faceR == 0:
-			face_stR = 3
+			faceR_st = 3
 		elif faceR == 1:
-			face_stR = 1
+			faceR_st = 1
 		else:
 			return IncompatibleError
 
-		if QuadChanged or QuadChanged_st:
+		iface_ops = self.iface_operators
+		iface_ops_st = self.iface_operators_st
+		quad_pts = iface_ops.quad_pts
+		quad_wts = iface_ops.quad_wts
+		quad_wts_st = iface_ops_st.quad_wts
+		faces_to_basisL = iface_ops.faces_to_basisL
+		faces_to_basisR = iface_ops.faces_to_basisR
+		faces_to_basisL_st = iface_ops_st.faces_to_basisL
+		faces_to_basisR_st = iface_ops_st.faces_to_basisR
 
-			Faces2PsiDataL = [None for i in range(nFacePerElem)]
-			Faces2PsiDataR = [None for i in range(nFacePerElem)]
-			Faces2PhiDataL = [None for i in range(nFacePerElemADER)]
-			Faces2PhiDataR = [None for i in range(nFacePerElemADER)]
-			PsiDataL = BasisData(basis, order, mesh)
-			PsiDataR = BasisData(basis, order, mesh)
-			PhiDataL = BasisData(basis_st, order, mesh)
-			PhiDataR = BasisData(basis_st, order, mesh)
+		normals_ifaces = iface_ops.normals_ifaces
+		UqL = iface_ops.UqL
+		UqR = iface_ops.UqR
+		Fq = iface_ops.Fq
 
-			xglob = np.zeros([nq, ns])
-			uL = np.zeros([nq_st, ns])
-			uR = np.zeros([nq_st, ns])
+		nq = quad_wts.shape[0]
+		nq_st = quad_wts_st.shape[0]
 
-			xelemLPhi = np.zeros([nq_st, dim+1])
-			xelemRPhi = np.zeros([nq_st, dim+1])
-			xelemLPsi = np.zeros([nq, dim])
-			xelemRPsi = np.zeros([nq, dim])
-			
-		PsiDataL = Faces2PhiDataL[faceL]
-		PsiDataR = Faces2PsiDataR[faceR]
-		PhiDataL = Faces2PsiDataL[faceL]
-		PhiDataR = Faces2PhiDataR[faceR]
+		basis_valL = faces_to_basisL[faceL]
+		basis_valR = faces_to_basisR[faceR]
 
-		#Evaluate space-time basis functions
-		if PhiDataL is None or QuadChanged_st:
-			Faces2PhiDataL[faceL] = PhiDataL = BasisData(basis_st,order,mesh)
-			xelemLPhi = PhiDataL.eval_basis_on_face_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, Get_Phi=True)
-		if PhiDataR is None or QuadChanged_st:
-			Faces2PhiDataR[faceR] = PhiDataR = BasisData(basis_st,order,mesh)
-			xelemRPhi = PhiDataR.eval_basis_on_face_ader(mesh, basis_st, face_stR, quad_pts_st[::-1], xelemRPhi, Get_Phi=True)
+		basis_valL_st = faces_to_basisL_st[faceL_st]
+		basis_valR_st = faces_to_basisR_st[faceR_st]
 
-		#Evaluate spacial basis functions
-		if PsiDataL is None or QuadChanged:
-			Faces2PsiDataL[faceL] = PsiDataL = BasisData(basis,order,mesh)
-			xelemLPsi = PsiDataL.eval_basis_on_face(mesh, faceL, quad_pts, xelemLPsi, Get_Phi=True)
-		if PsiDataR is None or QuadChanged:
-			Faces2PsiDataR[faceR] = PsiDataR = BasisData(basis,order,mesh)
-			xelemRPsi = PsiDataR.eval_basis_on_face(mesh, faceR, quad_pts[::-1], xelemRPsi, Get_Phi=True)
-
-		NData = iface_normal(mesh, IFace, quad_pts, NData)
-
-		nbL = PsiDataL.Phi.shape[1]
-		nbR = PsiDataR.Phi.shape[1]
+		nbL = basis_valL.shape[1]
+		nbR = basis_valR.shape[1]
 		nb = np.amax([nbL,nbR])
 
-		Stepper = self.Stepper
-		dt = Stepper.dt
+		UqL = np.matmul(basis_valL_st, UpL)
+		UqR = np.matmul(basis_valR_st, UpR)
 
-		uL[:] = np.matmul(PhiDataL.Phi, UL)
-		uR[:] = np.matmul(PhiDataR.Phi, UR)
+		normals = normals_ifaces[iiface]
 
-		F = EqnSet.ConvFluxNumerical(uL, uR, NData.nvec, nq_st, StaticData) # [nq,sr]
+		if StaticData is None:
+			StaticData = GenericData()
+
+		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq_st, StaticData) # [nq_st,ns]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 		
@@ -1664,8 +1863,8 @@ class ADERDG_Solver(DG_Solver):
 		# F = np.reshape(F,(nqST,sr))
 
 
-		RL -= np.matmul(np.tile(PsiDataL.Phi,(nb,1)).transpose(), F*quad_wts_st*quad_wts)
-		RR += np.matmul(np.tile(PsiDataR.Phi,(nb,1)).transpose(), F*quad_wts_st*quad_wts)
+		RL -= np.matmul(np.tile(basis_valL,(nb,1)).transpose(), Fq*quad_wts_st*quad_wts) # [nb, ns]
+		RR += np.matmul(np.tile(basis_valR,(nb,1)).transpose(), Fq*quad_wts_st*quad_wts) # [nb, ns]
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -1673,16 +1872,21 @@ class ADERDG_Solver(DG_Solver):
 			code.interact(local=locals())
 
 		# Store in StaticData
-		StaticData.pnq = nq
-		StaticData.quadData = quadData
-		StaticData.quadData_st = quadData_st
-		StaticData.Faces2PhiDataL = Faces2PhiDataL
-		StaticData.Faces2PhiDataR = Faces2PhiDataR
-		StaticData.Faces2PsiDataL = Faces2PsiDataL
-		StaticData.Faces2PsiDataR = Faces2PsiDataR
-		StaticData.uL = uL
-		StaticData.uR = uR
-		StaticData.NData = NData
+		# StaticData.pnq = nq
+		# StaticData.quadData = quadData
+		# StaticData.quadData_st = quadData_st
+		# StaticData.Faces2PhiDataL = Faces2PhiDataL
+		# StaticData.Faces2PhiDataR = Faces2PhiDataR
+		# StaticData.Faces2PsiDataL = Faces2PsiDataL
+		# StaticData.Faces2PsiDataR = Faces2PsiDataR
+		# StaticData.uL = uL
+		# StaticData.uR = uR
+		# StaticData.NData = NData
+
+		# interpolate state and gradient at quad points
+		# for ir in range(ns):
+		# 	uL[:,ir] = np.matmul(PhiDataL.Phi, UL[:,ir])
+		# 	uR[:,ir] = np.matmul(PhiDataR.Phi, UR[:,ir])
 
 		return RL, RR, StaticData
 
@@ -1700,73 +1904,134 @@ class ADERDG_Solver(DG_Solver):
 		OUTPUTS:
 			R: calculated residual array (from boundary face)
 		'''
-		mesh = self.mesh
-		EqnSet = self.EqnSet
-		ns = EqnSet.StateRank
-		dim = mesh.Dim
+		# mesh = self.mesh
+		# EqnSet = self.EqnSet
+		# ns = EqnSet.StateRank
+		# dim = mesh.Dim
 
+		# BFG = mesh.BFaceGroups[ibfgrp]
+		# BFace = BFG.BFaces[ibface]
+		# elem = BFace.Elem
+		# face = BFace.face
+		# order = EqnSet.Order
+		# nFacePerElem = mesh.nFacePerElem
+		# nFacePerElemADER = nFacePerElem + 2 # Hard-coded for 1D ADER method
+
+		# if StaticData is None:
+		# 	pnq = -1
+		# 	quadData = None
+		# 	quadData_st = None
+		# 	PhiData = None
+		# 	PsiData = None
+		# 	xglob = None
+		# 	tglob = None
+		# 	uI = None
+		# 	uB = None
+		# 	NData = None
+		# 	GeomPhiData = None
+		# 	TimePhiData = None
+		# 	xelemPsi = None
+		# 	xelemPhi = None
+		# 	StaticData = GenericData()
+
+		# else:
+		# 	nq = StaticData.pnq
+		# 	quadData = StaticData.quadData
+		# 	quadData_st = StaticData.quadData_st
+		# 	PhiData = StaticData.PhiData
+		# 	PsiData = StaticData.PsiData
+		# 	xglob = StaticData.xglob
+		# 	tglob = StaticData.tglob
+		# 	uI = StaticData.uI
+		# 	uB = StaticData.uB
+		# 	NData = StaticData.NData
+		# 	GeomPhiData = StaticData.GeomPhiData
+		# 	TimePhiData = StaticData.TimePhiData
+		# 	Faces2PhiData = StaticData.Faces2PhiData
+		# 	Faces2PsiData = StaticData.Faces2PsiData
+		# 	Faces2xelemADER = StaticData.Faces2xelemADER
+		# 	Faces2xelem = StaticData.Faces2xelem
+		
+		# basis = EqnSet.Basis
+		# basis_st = EqnSet.BasisADER
+
+		# QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_face(mesh, BFace, basis_st, order, EqnSet, quadData_st)
+		# #QuadOrder_st-=1
+		# QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, BFace, mesh.QBasis, order, EqnSet, quadData)
+
+		# if QuadChanged:
+		# 	quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
+		# if QuadChanged_st:
+		# 	quadData_st = QuadDataADER(mesh,basis_st,EntityType.BFace, QuadOrder_st)
+		
+		# quad_pts = quadData.quad_pts
+		# quad_wts = quadData.quad_wts
+		# nq = quad_pts.shape[0]
+
+		# quad_pts_st = quadData_st.quad_pts
+		# quad_wts_st = quadData_st.quad_wts
+		# nq_st = quad_pts_st.shape[0]
+
+		# if face == 0:
+		# 	face_st = 3
+		# elif face == 1:
+		# 	face_st = 1
+		# else:
+		# 	return IncompatibleError
+
+		# if QuadChanged or QuadChanged_st:
+		# 	Faces2PsiData = [None for i in range(nFacePerElem)]
+		# 	Faces2PhiData = [None for i in range(nFacePerElemADER)]
+		# 	PsiData = BasisData(basis, order, mesh)
+		# 	PhiData = BasisData(basis_st, order, mesh)
+		# 	xglob = np.zeros([nq, ns])
+		# 	uI = np.zeros([nq_st, ns])
+		# 	uB = np.zeros([nq_st, ns])
+		# 	Faces2xelem = np.zeros([nFacePerElem, nq, dim])
+		# 	Faces2xelemADER = np.zeros([nFacePerElem, nq_st, dim+1])
+
+		# PsiData = Faces2PhiData[face]
+		# PhiData = Faces2PsiData[face]
+		# xelemPsi = Faces2xelem[face]
+		# xelemPhi = Faces2xelemADER[face]
+
+		# if PsiData is None or QuadChanged:
+		# 	Faces2PsiData[face] = PsiData = BasisData(basis,order,mesh)
+		# 	Faces2xelem[face] = xelemPsi = PsiData.eval_basis_on_face(mesh, face, quad_pts, xelemPsi, Get_Phi=True)
+		# if PhiData is None or QuadChanged_st:
+		# 	Faces2PhiData[face] = PhiData = BasisData(basis_st,order,mesh)
+		# 	Faces2xelemADER[face] = xelemPhi = PhiData.eval_basis_on_face_ader(mesh, basis_st, face_st, quad_pts_st, xelemPhi, Get_Phi=True)
+
+
+		# NData = bface_normal(mesh, BFace, quad_pts, NData)
+		# PointsChanged = QuadChanged or face != GeomPhiData.face
+		# xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xelemPsi, xglob, PointsChanged)
+
+
+		mesh = self.mesh
+		dim = mesh.Dim
+		EqnSet = self.EqnSet
 		BFG = mesh.BFaceGroups[ibfgrp]
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.Elem
 		face = BFace.face
-		order = EqnSet.Order
-		nFacePerElem = mesh.nFacePerElem
-		nFacePerElemADER = nFacePerElem + 2 # Hard-coded for 1D ADER method
 
-		if StaticData is None:
-			pnq = -1
-			quadData = None
-			quadData_st = None
-			PhiData = None
-			PsiData = None
-			xglob = None
-			tglob = None
-			uI = None
-			uB = None
-			NData = None
-			GeomPhiData = None
-			TimePhiData = None
-			xelemPsi = None
-			xelemPhi = None
-			StaticData = GenericData()
+		bface_ops = self.bface_operators
+		bface_ops_st = self.bface_operators_st
+		quad_pts = bface_ops.quad_pts
+		quad_wts = bface_ops.quad_wts
+		quad_pts_st = bface_ops_st.quad_pts
+		quad_wts_st = bface_ops_st.quad_wts
+		faces_to_xref_st = bface_ops_st.faces_to_xref
 
-		else:
-			nq = StaticData.pnq
-			quadData = StaticData.quadData
-			quadData_st = StaticData.quadData_st
-			PhiData = StaticData.PhiData
-			PsiData = StaticData.PsiData
-			xglob = StaticData.xglob
-			tglob = StaticData.tglob
-			uI = StaticData.uI
-			uB = StaticData.uB
-			NData = StaticData.NData
-			GeomPhiData = StaticData.GeomPhiData
-			TimePhiData = StaticData.TimePhiData
-			Faces2PhiData = StaticData.Faces2PhiData
-			Faces2PsiData = StaticData.Faces2PsiData
-			Faces2xelemADER = StaticData.Faces2xelemADER
-			Faces2xelem = StaticData.Faces2xelem
-		
-		basis = EqnSet.Basis
-		basis_st = EqnSet.BasisADER
+		faces_to_basis = bface_ops.faces_to_basis
+		faces_to_basis_st = bface_ops_st.faces_to_basis
+		normals_bfgroups = bface_ops.normals_bfgroups
+		x_bfgroups = bface_ops.x_bfgroups
+		UqI = bface_ops_st.UqI
+		UqB = bface_ops_st.UqB
+		Fq = bface_ops.Fq
 
-		QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_face(mesh, BFace, basis_st, order, EqnSet, quadData_st)
-		QuadOrder_st-=1
-		QuadOrder, QuadChanged = get_gaussian_quadrature_face(mesh, BFace, mesh.QBasis, order, EqnSet, quadData)
-
-		if QuadChanged:
-			quadData = QuadData(mesh, EqnSet.Basis, EntityType.BFace, QuadOrder)
-		if QuadChanged_st:
-			quadData_st = QuadDataADER(mesh,basis_st,EntityType.BFace, QuadOrder_st)
-		
-		quad_pts = quadData.quad_pts
-		quad_wts = quadData.quad_wts
-		nq = quad_pts.shape[0]
-
-		quad_pts_st = quadData_st.quad_pts
-		quad_wts_st = quadData_st.quad_wts
-		nq_st = quad_pts_st.shape[0]
 
 		if face == 0:
 			face_st = 3
@@ -1774,47 +2039,33 @@ class ADERDG_Solver(DG_Solver):
 			face_st = 1
 		else:
 			return IncompatibleError
+	
+		basis_val = faces_to_basis[face]
+		basis_val_st = faces_to_basis_st[face_st]
+		xref_st = faces_to_xref_st[face_st]
 
-		if QuadChanged or QuadChanged_st:
-			Faces2PsiData = [None for i in range(nFacePerElem)]
-			Faces2PhiData = [None for i in range(nFacePerElemADER)]
-			PsiData = BasisData(basis, order, mesh)
-			PhiData = BasisData(basis_st, order, mesh)
-			xglob = np.zeros([nq, ns])
-			uI = np.zeros([nq_st, ns])
-			uB = np.zeros([nq_st, ns])
-			Faces2xelem = np.zeros([nFacePerElem, nq, dim])
-			Faces2xelemADER = np.zeros([nFacePerElem, nq_st, dim+1])
+		nq_st = quad_wts_st.shape[0]
+		nb = basis_val.shape[1]
 
-		PsiData = Faces2PhiData[face]
-		PhiData = Faces2PsiData[face]
-		xelemPsi = Faces2xelem[face]
-		xelemPhi = Faces2xelemADER[face]
+		TimePhiData = None
 
-		if PsiData is None or QuadChanged:
-			Faces2PsiData[face] = PsiData = BasisData(basis,order,mesh)
-			Faces2xelem[face] = xelemPsi = PsiData.eval_basis_on_face(mesh, face, quad_pts, xelemPsi, Get_Phi=True)
-		if PhiData is None or QuadChanged_st:
-			Faces2PhiData[face] = PhiData = BasisData(basis_st,order,mesh)
-			Faces2xelemADER[face] = xelemPhi = PhiData.eval_basis_on_face_ader(mesh, basis_st, face_st, quad_pts_st, xelemPhi, Get_Phi=True)
-
-
-		NData = bface_normal(mesh, BFace, quad_pts, NData)
-		PointsChanged = QuadChanged or face != GeomPhiData.face
-		xglob, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xelemPsi, xglob, PointsChanged)
-
-		tglob, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xelemPhi, tglob, PointsChanged)
-		#nn = PsiData.nn
-		nb = PsiData.Phi.shape[1]
+		t = np.zeros([nq_st,dim])
+		t, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xref_st, t, None)
 
 		# interpolate state and gradient at quad points
-		uI[:] = np.matmul(PhiData.Phi, U)
+		UqI = np.matmul(basis_val_st, U)
+
+		normals = normals_bfgroups[ibfgrp][ibface]
+		x = x_bfgroups[ibfgrp][ibface]
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		uB = EqnSet.BoundaryState(BC, nq_st, xglob, tglob, NData.nvec, uI, uB)
+		UqB = EqnSet.BoundaryState(BC, nq_st, x, t, normals, UqI, UqB)
 
-		F = EqnSet.ConvFluxBoundary(BC, uI, uB, NData.nvec, nq_st, StaticData) # [nq,sr]
+		if StaticData is None:
+			StaticData = GenericData()
+
+		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq_st, StaticData) # [nq_st,ns]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 
@@ -1826,31 +2077,31 @@ class ADERDG_Solver(DG_Solver):
 	
 		# F = np.reshape(F,(nqST,sr))
 
-		R[:] -= np.matmul(np.tile(PsiData.Phi,(nb,1)).transpose(),F*quad_wts_st*quad_wts)
+		R -= np.matmul(np.tile(basis_val,(nb,1)).transpose(),Fq*quad_wts_st*quad_wts)
 
 		if elem == echeck:
 			code.interact(local=locals())
 
 		# Store in StaticData
-		StaticData.pnq = nq
-		StaticData.quadData = quadData
-		StaticData.quadData_st = quadData_st
-		StaticData.PhiData = PhiData
-		StaticData.PsiData = PsiData
-		StaticData.uI = uI
-		StaticData.uB = uB
-		StaticData.F = F
-		StaticData.xglob = xglob
-		StaticData.tglob = tglob
-		StaticData.NData = NData
-		StaticData.xelemPsi = xelemPsi
-		StaticData.xelemPhi = xelemPhi
-		StaticData.GeomPhiData = GeomPhiData
-		StaticData.TimePhiData = TimePhiData
-		StaticData.Faces2PhiData = Faces2PhiData
-		StaticData.Faces2PsiData = Faces2PsiData
-		StaticData.Faces2xelemADER = Faces2xelemADER
-		StaticData.Faces2xelem = Faces2xelem
+		# StaticData.pnq = nq
+		# StaticData.quadData = quadData
+		# StaticData.quadData_st = quadData_st
+		# StaticData.PhiData = PhiData
+		# StaticData.PsiData = PsiData
+		# StaticData.uI = uI
+		# StaticData.uB = uB
+		# StaticData.F = F
+		# StaticData.xglob = xglob
+		# StaticData.tglob = tglob
+		# StaticData.NData = NData
+		# StaticData.xelemPsi = xelemPsi
+		# StaticData.xelemPhi = xelemPhi
+		# StaticData.GeomPhiData = GeomPhiData
+		# StaticData.TimePhiData = TimePhiData
+		# StaticData.Faces2PhiData = Faces2PhiData
+		# StaticData.Faces2PsiData = Faces2PsiData
+		# StaticData.Faces2xelemADER = Faces2xelemADER
+		# StaticData.Faces2xelem = Faces2xelem
 
 		return R, StaticData
 

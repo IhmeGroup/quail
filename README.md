@@ -6,6 +6,9 @@ python TestAllCases.py
 ## 1D scalar advection
 python Cases/Scalar_1D/LinearAdvection/LinearAdvection.py
 
+## 1D scalar advection using ADER-DG
+python Cases/Scalar_1D/LinearAdvection/ADER_LinearAdvection.py
+
 ## 1D nonlinear advection (Inviscid Burger's)
 python Cases/Scalar_1D/BurgersEquation/1DRiemann.py
 
