@@ -71,7 +71,7 @@ class LaxFriedrichsFlux(object):
 		return NN*(0.5*(FL+FR) - 0.5*a*du)
 
 
-class ConstAdvScalar(object):
+class ConstAdvScalar1D(object):
 	'''
 	Class: IFace
 	--------------------------------------------------------------------------
@@ -158,6 +158,13 @@ class ConstAdvScalar(object):
 				self.StateIndices[key.name] = index
 				index += 1
 
+
+
+		### ConstAdv scalar only
+		# Don't make Burgers inherit from this after adding abstract base classes
+		self.c = 0.
+		self.cspeed = 0.
+
 		# Uarray = np.zeros([mesh.nElemTot, nn, self.StateRank])
 		# self.Uarray = Uarray
 		# # nElems = [mesh.ElemGroups[i].nElem for i in range(mesh.nElemGroup)]
@@ -172,7 +179,7 @@ class ConstAdvScalar(object):
 		# Default values
 		if not Params:
 			Params["ConstVelocity"] = 1.
-			Params["AdvectionOperator"] = self.AdvectionOperatorType["ConstVel"]
+			# Params["AdvectionOperator"] = self.AdvectionOperatorType["ConstVel"]
 			Params["ConvFlux"] = self.ConvFluxType["LaxFriedrichs"]
 		# Overwrite
 		for key in kwargs:
@@ -186,6 +193,8 @@ class ConstAdvScalar(object):
 
 		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
 			self.ConvFluxFcn = LaxFriedrichsFlux()
+		self.c = Params["ConstVelocity"]
+		self.cspeed = np.linalg.norm(self.c)
 
 	def SetBC(self, BCName, **kwargs):
 		found = False
@@ -202,7 +211,6 @@ class ConstAdvScalar(object):
 		Scalar = "u"
 
 	class AdditionalVariables(Enum):
-	    AdvectionVelocity = "c"
 	    MaxWaveSpeed = "\\lambda"
 
 	# class VariableType(IntEnum):
@@ -250,27 +258,27 @@ class ConstAdvScalar(object):
 	def QuadOrder(self, Order):
 		return 2*Order+1
 
-	def getWaveSpeed(self):
-		return self.Params["ConstVelocity"]
+	# def getWaveSpeed(self):
+	# 	return self.Params["ConstVelocity"]
 
-	#Calculate velocity based on the advection operator
-	def getAdvOperator(self, u):
-		if self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
-			c = u/2
-			return c
-		elif self.Params["AdvectionOperator"] == self.AdvectionOperatorType.ConstVel:
-			c = self.Params["ConstVelocity"]
-			return c
+	# #Calculate velocity based on the advection operator
+	# def getAdvOperator(self, u):
+	# 	if self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
+	# 		c = u/2
+	# 		return c
+	# 	elif self.Params["AdvectionOperator"] == self.AdvectionOperatorType.ConstVel:
+	# 		c = self.Params["ConstVelocity"]
+	# 		return c
 
 	def ConvFluxInterior(self, u, F=None):
 		# c = self.getAdvOperator(u)
-		c = self.ComputeScalars("AdvectionVelocity", u, None)
+		c = self.c
 		#a = self.Params["Velocity"]
 		if F is None:
 			F = np.zeros(u.shape + (self.Dim,))
 		# for d in range(self.Dim):
 		# 	F[:,:,d] = c*u
-		F[:] = np.expand_dims(c*u, axis=2)
+		F[:] = np.expand_dims(c*u, axis=1)
 		# F = a*u
 		# F.shape = u.shape + (self.Dim,) 
 		return F
@@ -495,10 +503,8 @@ class ConstAdvScalar(object):
 
 	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
 		sname = self.AdditionalVariables[ScalarName].name
-		if sname is self.AdditionalVariables["AdvectionVelocity"].name:
-			scalar[:] = self.Params["ConstVelocity"]
-		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			scalar[:] = np.abs(self.Params["ConstVelocity"])
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			scalar[:] = self.cspeed
 		else:
 			raise NotImplementedError
 
@@ -564,7 +570,7 @@ class ConstAdvScalar(object):
 			omega = 2.*np.pi
 
 		# c = self.getAdvOperator(U)
-		c = self.ComputeScalars("AdvectionVelocity", U, None)
+		c = self.c
 		U[:] = np.sin(omega*(x-c*t))
 
 		return U
@@ -585,7 +591,7 @@ class ConstAdvScalar(object):
 			nu = 1.0
 
 		# c = self.getAdvOperator(U)
-		c = self.ComputeScalars("AdvectionVelocity", U, None)
+		c = self.c
 		U[:] = np.sin(omega*(x-c*t))*np.exp(nu*t)
 
 		return U
@@ -693,6 +699,28 @@ class ConstAdvScalar(object):
 
 		return U
 
+	def FcnGaussian(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		Data = FcnData.Data
+		U = FcnData.U
+
+		# Standard deviation
+		try:
+			sig = Data.sig
+		except AttributeError:
+			sig = 1.
+		# Center
+		try:
+			x0 = Data.x0
+		except AttributeError:
+			x0 = np.zeros(self.Dim)
+
+		r = np.linalg.norm(x-x0-self.c*t, axis=1, keepdims=True)
+		U[:] = 1./(sig*np.sqrt(2.*np.pi))**float(self.Dim) * np.exp(-r**2./(2.*sig**2.))
+
+		return U
+
 	def FcnScalarShock(self, FcnData):
 		x = FcnData.x
 		t = FcnData.Time
@@ -772,15 +800,48 @@ class ConstAdvScalar(object):
 
 		return S
 
-class Burgers(ConstAdvScalar):
+
+class ConstAdvScalar2D(ConstAdvScalar1D):
+	def SetParams(self,**kwargs):
+		Params = self.Params
+		# Default values
+		if not Params:
+			Params["ConstXVelocity"] = 1.
+			Params["ConstYVelocity"] = 1.
+			Params["ConvFlux"] = self.ConvFluxType["LaxFriedrichs"]
+		# Overwrite
+		for key in kwargs:
+			if key not in Params.keys(): raise Exception("Input error")
+			if key is "ConvFlux":
+				Params[key] = self.ConvFluxType[kwargs[key]]
+			elif key is "AdvectionOperator":
+				Params[key] = self.AdvectionOperatorType[kwargs[key]]
+			else:
+				Params[key] = kwargs[key]
+
+		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
+			self.ConvFluxFcn = LaxFriedrichsFlux()
+		self.c = np.array([Params["ConstXVelocity"],Params["ConstYVelocity"]])
+		self.cspeed = np.linalg.norm(self.c)
+
+
+class Burgers(ConstAdvScalar1D):
+
+	def ConvFluxInterior(self, u, F=None):
+		# c = self.getAdvOperator(u)
+		#a = self.Params["Velocity"]
+		if F is None:
+			F = np.zeros(u.shape + (self.Dim,))
+		# for d in range(self.Dim):
+		# 	F[:,:,d] = c*u
+		F[:] = np.expand_dims(u*u/2., axis=2)
+		# F = a*u
+		# F.shape = u.shape + (self.Dim,) 
+		return F
 
 	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
 		sname = self.AdditionalVariables[ScalarName].name
-		if sname is self.AdditionalVariables["AdvectionVelocity"].name:
-			# Pressure
-			# P = GetPressure()
-			scalar[:] = U/2.
-		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure
 			# P = GetPressure()
 			scalar[:] = np.abs(U/2.)

@@ -48,8 +48,12 @@ Cases/Miscellaneous/ME336
 Cases/Miscellaneous/Research
 Cases/Miscellaneous/SaveMeshHDF5
 Cases/Miscellaneous/Testing
+Cases/Miscellaneous/Plot
 
-##################
-# Solution files #
-##################
+###############
+# Other files #
+###############
 *.pdf
+*.gri
+*.m
+*.gmsh

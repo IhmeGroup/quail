@@ -380,9 +380,9 @@ class Roe2DFlux(Roe1DFlux):
 	# 	return F
 
 
-class Euler1D(Scalar.ConstAdvScalar):
+class Euler1D(Scalar.ConstAdvScalar1D):
 	def __init__(self,Order,basis,mesh,StateRank=3):
-		Scalar.ConstAdvScalar.__init__(self,Order,basis,mesh,StateRank) 
+		Scalar.ConstAdvScalar1D.__init__(self,Order,basis,mesh,StateRank) 
 		# self.Params = [Rg,gam]
 
 	def SetParams(self,**kwargs):
