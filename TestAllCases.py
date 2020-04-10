@@ -12,9 +12,9 @@ import argparse
 def str2bool(v):
     if isinstance(v, bool):
        return v
-    if v.lower() in ('yes', 'true', 't', 'y', '1', 'On', 'on'):
+    if v.lower() in ('yes', 'True', 'true', 't', 'y', '1', 'On', 'on'):
         return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0', 'Off', 'off'):
+    elif v.lower() in ('no', 'False', 'false', 'f', 'n', '0', 'Off', 'off'):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
@@ -60,19 +60,19 @@ if args.test_1D is True:
 	sys.path.append('Cases/Scalar_1D/LinearAdvection')
 	import LinearAdvection
 	assert_almost_equal(LinearAdvection.TotErr, 0.000208876119327, decimal=decimal)
-	print('Pass 1D Linear Advection')
+	print('Pass 1D Constant Advection')
 
 	if args.src is True:
 		# Linear advection w/source term
 		import DampingLinearAdvection
 		assert_almost_equal(DampingLinearAdvection.TotErr,0.000372526796142, decimal=decimal)
-		print('Pass 1D Damping Linear Advection')
+		print('Pass 1D Damping Constant Advection')
 
 	if args.ader is True:
 		# Linear advection ADER
 		import ADER_LinearAdvection
 		assert_almost_equal(ADER_LinearAdvection.TotErr,0.000163923152029, decimal=decimal_ader)
-		print('Pass 1D ADER Linear Advection')
+		print('Pass 1D ADER Constant Advection')
 
 	'''
 	1D Euler
@@ -97,6 +97,16 @@ if args.test_1D is True:
 		print('Pass 1D ADER Smooth Isentropic Flow [Euler 1D]')
 
 if args.test_2D is True:
+
+	'''
+	2D Scalar
+	'''
+
+	# Vortex propagation
+	sys.path.append('Cases/Scalar_2D/ConstAdvection')
+	import ConstAdvection
+	assert_almost_equal(ConstAdvection.TotErr, 0.002151760892733, decimal=decimal)
+	print('Pass 2D Constant Advection')
 
 	'''
 	2D Euler
