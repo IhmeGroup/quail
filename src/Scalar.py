@@ -164,7 +164,6 @@ class ConstAdvScalar1D(object):
 		self.c = 0.
 		self.cspeed = 0.
 
-
 		# Uarray = np.zeros([mesh.nElemTot, nn, self.StateRank])
 		# self.Uarray = Uarray
 		# # nElems = [mesh.ElemGroups[i].nElem for i in range(mesh.nElemGroup)]
