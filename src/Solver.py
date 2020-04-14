@@ -1014,7 +1014,6 @@ class DG_Solver(object):
 		Applies the specified time scheme to update the solution
 
 		'''
-
 		EqnSet = self.EqnSet
 		mesh = self.mesh
 		Order = self.Params["InterpOrder"]

@@ -1,11 +1,18 @@
 import numpy as np 
 import code
+from abc import ABC, abstractmethod
 from Data import ArrayList
 from SolverTools import mult_inv_mass_matrix
-#from Basis import get_stiffness_matrix_ader, get_temporal_flux_ader
-#import General
 
-class FE(object):
+class Stepper(ABC):
+	def __init__(self, dt=0.):
+		self.TimeStep = dt
+
+	@abstractmethod
+	def TakeTimeStep(self, solver):
+		pass
+
+class FE(Stepper):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 
@@ -36,7 +43,7 @@ class FE(object):
 		return R
 
 
-class RK4(FE):
+class RK4(Stepper):
 	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
@@ -111,7 +118,7 @@ class RK4(FE):
 		return R
 
 
-class LSRK4(FE):
+class LSRK4(Stepper):
 	# Low-storage RK4
 	def __init__(self, dt=0.):
 		FE.__init__(self, dt)
@@ -168,7 +175,7 @@ class LSRK4(FE):
 
 		return R
 
-class SSPRK3(FE):
+class SSPRK3(Stepper):
 	# Low-storage SSPRK3 with 5 stages (as written in Spiteri. 2002)
 	def __init__(self, dt=0.):
 		FE.__init__(self, dt)
@@ -220,10 +227,8 @@ class SSPRK3(FE):
 
 
 
-class ADER(object):
-	def __init__(self, dt=0.):
-		self.TimeStep = dt
-
+class ADER(Stepper):
+	
 	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
