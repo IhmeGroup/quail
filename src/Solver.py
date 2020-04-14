@@ -2262,9 +2262,8 @@ class ADERDG_Solver(DG_Solver):
 
 		TimePhiData = None
 
-		rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=Up.dtype)
-
 		if not InterpolateFlux:
+			rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=Up.dtype)
 
 			# QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order, EqnSet, quadData)
 			# QuadOrder_st, QuadChanged_st = get_gaussian_quadrature_elem(mesh, basis, order, EqnSet, quadData_st)
@@ -2286,6 +2285,7 @@ class ADERDG_Solver(DG_Solver):
 			basis_val_st = elem_ops_st.basis_val
 			quad_wts_st = elem_ops_st.quad_wts
 			nq_st = quad_wts_st.shape[0]
+			quad_pts_st = elem_ops_st.quad_pts
 			quad_pts = elem_ops.quad_pts
 			nq = quad_pts.shape[0]
 			Uq = np.matmul(basis_val_st, Up)
@@ -2303,7 +2303,7 @@ class ADERDG_Solver(DG_Solver):
 			Sq[:] = 0.
 			Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
 
-			rho *=0.
+			rhs *=0.
 
 			rhs[:] = np.matmul(basis_val_st.transpose(),Sq*quad_wts_st*(np.tile(djac,(nq,1))))
 			S = np.dot(iMM,rhs)*dt/2.0
@@ -2322,7 +2322,8 @@ class ADERDG_Solver(DG_Solver):
 
 		else:
 
-			# quad_pts, nq = equidistant_nodes(mesh.QBasis, order, quad_pts)
+			#quad_pts = None
+			#quad_pts, nq = equidistant_nodes(mesh.QBasis, order, quad_pts)
 			# nb = nq
 			# JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
 			
@@ -2335,11 +2336,15 @@ class ADERDG_Solver(DG_Solver):
 			# quad_pts_st = quadData_st.quad_pts
 			# nq_st = quad_pts_st.shape[0]
 			quad_pts_st = elem_ops_st.quad_pts
+			#quad_pts = elem_ops.quad_pts
+			#code.interact(local=locals())
 			nq_st = quad_pts_st.shape[0]
 			t = np.zeros([nq_st,dim])
+			#x, GeomPhiData = ref_to_phys(mesh,elem,GeomPhiData,quad_pts,x,None)
 			t, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
 
 			#S = np.zeros([nq_st,ns])
+			Sq[:] = 0.
 			Sq = EqnSet.SourceState(nq_st, x, t, Up, Sq)
 			S = Sq*dt/2.0
 
