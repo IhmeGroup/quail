@@ -824,7 +824,7 @@ class ConstAdvScalar2D(ConstAdvScalar1D):
 		self.cspeed = np.linalg.norm(self.c)
 
 
-class Burgers(ConstAdvScalar1D):
+class Burgers1D(ConstAdvScalar1D):
 
 	def ConvFluxInterior(self, u, F=None):
 		# c = self.getAdvOperator(u)
@@ -848,3 +848,24 @@ class Burgers(ConstAdvScalar1D):
 			raise NotImplementedError
 
 		return scalar
+
+class Burgers2D(Burgers1D):
+	def SetParams(self,**kwargs):
+		Params = self.Params
+		# Default values
+		if not Params:
+			Params["ConvFlux"] = self.ConvFluxType["LaxFriedrichs"]
+		# Overwrite
+		for key in kwargs:
+			if key not in Params.keys(): raise Exception("Input error")
+			if key is "ConvFlux":
+				Params[key] = self.ConvFluxType[kwargs[key]]
+			elif key is "AdvectionOperator":
+				Params[key] = self.AdvectionOperatorType[kwargs[key]]
+			else:
+				Params[key] = kwargs[key]
+
+		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
+			self.ConvFluxFcn = LaxFriedrichsFlux()
+		self.c = np.array([Params["ConstXVelocity"],Params["ConstYVelocity"]])
+		self.cspeed = np.linalg.norm(self.c)	
