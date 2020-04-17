@@ -11,7 +11,7 @@ import Limiter
 ### Mesh
 Periodic = True
 # Uniform mesh
-mesh = MeshCommon.mesh_1D(Uniform=True, nElem=8, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
 # Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
@@ -31,8 +31,8 @@ Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 								 InterpBasis="LagrangeSeg",TimeScheme="RK4")
 ### Physics
 ConstVelocity = 1.
-EqnSet = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
-# EqnSet.SetParams(AdvectionOperator="Burgers")
+EqnSet = Scalar.Burgers1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+#EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConstVelocity=ConstVelocity, ConvFlux="LaxFriedrichs")
 
 # Initial conditions
