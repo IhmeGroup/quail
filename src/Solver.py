@@ -11,7 +11,8 @@ import time
 import MeshTools
 import Post
 import Errors
-from scipy.optimize import root
+from scipy.optimize import fsolve, root
+
 import Limiter
 
 global echeck
@@ -1423,7 +1424,7 @@ class ADERDG_Solver(DG_Solver):
 
 		return Up
 
-	def calculate_predictor_elem(self, elem, dt, W, Up, StaticData):
+	def calculate_predictor_elem(self, elem, dt, Wp, Up, StaticData):
 		'''
 		Method: calculate_predictor_elem
 		-------------------------------------------
@@ -1438,25 +1439,63 @@ class ADERDG_Solver(DG_Solver):
 		OUTPUTS:
 			Up: predicted solution in space-time
 		'''
-	
 		EqnSet = self.EqnSet
+		ns = EqnSet.StateRank
+		mesh = self.mesh
+
 		basis = EqnSet.Basis #basis2
 		basis_st = EqnSet.BasisADER #basis1
 		order = EqnSet.Order
+		
+		elem_ops = self.elem_operators
 		ader_ops = self.ader_operators
+		
+		quad_wts = elem_ops.quad_wts
+		basis_val = elem_ops.basis_val 
+		djac_elems = elem_ops.djac_elems 
+		
+		djac = djac_elems[elem]
+		_, ElemVols = MeshTools.element_volumes(mesh, self)
 
 		FTR = ader_ops.FTR
 		MM = ader_ops.MM
 		SMS = ader_ops.SMS
-		iK = ader_ops.iK
+		K = ader_ops.K
+		#iK = ader_ops.iK
+		W_bar = np.zeros([1,ns])
+		Wq = np.matmul(basis_val, Wp)
+		vol = ElemVols[elem]
+
+		W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+
+		# Wh = np.average(W)
+
+		# def F(u):
+		# 	S = 0.
+		# 	S = EqnSet.SourceState(1, 0., 0., u, S)
+		# 	F = u - S[0,0] - W_bar[0,0]
+		# 	return F
+
+		#U_bar = fsolve(F, W_bar)
+		nu= -100000.
+		dsdu = nu
+		# Up[:] = U_bar
+		#code.interact(local=locals())
+		#dsdu = (1./nu)*(2.*U_bar-3.*U_bar**2 - 0.5 +2.*U_bar*0.5)
+		#dsdu = (1./nu)*(2.*Up-3.*Up**2 - 0.5 +2.*Up*0.5)
+		#code.interact(local=locals())
+		### Hacky implementation of implicit source term
+		Kp = K-MM*dt*dsdu
+
+		iK = np.linalg.inv(Kp)
 
 		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
 		fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
 		ntest = 10
 		for i in range(ntest):
-			#f = np.matmul(FTL,u)-np.matmul(FTR,W)-np.matmul(SMT,u)+np.matmul(SMS,fluxpoly)-np.matmul(MM,srcpoly)
 
-			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,W)))
+			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
+			#Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)))
 			err = Up_new - Up
 
 			if np.amax(np.abs(err))<1e-9:
@@ -1464,7 +1503,7 @@ class ADERDG_Solver(DG_Solver):
 				break
 
 			Up = Up_new
-
+			
 			srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
 			fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
 
