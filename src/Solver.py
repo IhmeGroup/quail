@@ -1455,18 +1455,18 @@ class ADERDG_Solver(DG_Solver):
 		djac_elems = elem_ops.djac_elems 
 		
 		djac = djac_elems[elem]
-		_, ElemVols = MeshTools.element_volumes(mesh, self)
+		# _, ElemVols = MeshTools.element_volumes(mesh, self)
 
 		FTR = ader_ops.FTR
 		MM = ader_ops.MM
 		SMS = ader_ops.SMS
-		K = ader_ops.K
-		#iK = ader_ops.iK
-		W_bar = np.zeros([1,ns])
-		Wq = np.matmul(basis_val, Wp)
-		vol = ElemVols[elem]
+		# K = ader_ops.K
+		iK = ader_ops.iK
+		# W_bar = np.zeros([1,ns])
+		# Wq = np.matmul(basis_val, Wp)
+		# vol = ElemVols[elem]
 
-		W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+		# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
 		# Wh = np.average(W)
 
@@ -1477,25 +1477,26 @@ class ADERDG_Solver(DG_Solver):
 		# 	return F
 
 		#U_bar = fsolve(F, W_bar)
-		nu= -100000.
-		dsdu = nu
+		# nu= -100000.
+		# dsdu = nu
 		# Up[:] = U_bar
 		#code.interact(local=locals())
 		#dsdu = (1./nu)*(2.*U_bar-3.*U_bar**2 - 0.5 +2.*U_bar*0.5)
 		#dsdu = (1./nu)*(2.*Up-3.*Up**2 - 0.5 +2.*Up*0.5)
 		#code.interact(local=locals())
-		### Hacky implementation of implicit source term
-		Kp = K-MM*dt*dsdu
 
-		iK = np.linalg.inv(Kp)
+		### Hacky implementation of implicit source term
+		# Kp = K-MM*dt*dsdu
+
+		# iK = np.linalg.inv(Kp)
 
 		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
 		fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
 		ntest = 10
 		for i in range(ntest):
 
-			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
-			#Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)))
+			# Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
+			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)))
 			err = Up_new - Up
 
 			if np.amax(np.abs(err))<1e-9:
