@@ -76,8 +76,8 @@ class PPLimiter(object):
 		'''
 		EqnSet = solver.EqnSet
 		mesh = solver.mesh
+		basis = solver.basis
 
-		basis = EqnSet.Basis
 		order = EqnSet.Order
 		entity = General.EntityType.Element
 		ns = EqnSet.StateRank
@@ -93,9 +93,9 @@ class PPLimiter(object):
 			nq_prev = 0
 			quadElem = None
 			quadFace = None
-			PhiElem = None
+			# PhiElem = None
 			xelem = None
-			JData = JData = Basis.JacobianData(mesh)
+			# JData = JData = Basis.JacobianData(mesh)
 			u = None
 			u_bar = None
 			rho_bar = None
@@ -109,9 +109,9 @@ class PPLimiter(object):
 			nq_prev = StaticData.nq_prev
 			quadElem = StaticData.quadElem
 			quadFace = StaticData.quadFace
-			PhiElem = StaticData.PhiElem
+			# PhiElem = StaticData.PhiElem
 			xelem = StaticData.xelem
-			JData = StaticData.JData
+			# JData = StaticData.JData
 			u = StaticData.u
 			u_bar = StaticData.u_bar
 			rho_bar = StaticData.rho_bar
@@ -131,21 +131,21 @@ class PPLimiter(object):
 		nq = quad_pts.shape[0]
 
 		if QuadChanged:
-			PhiElem = Basis.BasisData(EqnSet.Basis,order,mesh)
-			PhiElem.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True) # [nq, nn]
+			# PhiElem = Basis.BasisData(EqnSet.Basis,order,mesh)
+			basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
 			u = np.zeros([nq, ns])
 			u_bar = np.zeros([1, ns])
 			F = np.zeros([nq, ns, dim])
 
 
-		JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_jac=False,get_ijac=True)
+		djac,_,ijac = Basis.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_jac=False,get_ijac=True)
 
 		#nn = PhiElem.nn
 
 		# interpolate state and gradient at quad points
 		# u = np.zeros([nq, ns])
-		u[:] = np.matmul(PhiElem.Phi, U)
+		u[:] = np.matmul(basis.basis_val, U)
 
 		# Multiply quadrature weights by Jacobian determinant
 		# wq *= JData.djac
@@ -153,7 +153,7 @@ class PPLimiter(object):
 		# Average value of state
 		# vol = np.sum(wq*JData.djac)
 		vol = ElemVols[elem]
-		u_bar[:] = np.matmul(u.transpose(), quad_wts*JData.djac).T/vol
+		u_bar[:] = np.matmul(u.transpose(), quad_wts*djac).T/vol
 		# u_bar.shape = 1, -1
 
 		# Density and pressure
@@ -167,6 +167,7 @@ class PPLimiter(object):
 
 		nq_eval = nq
 		nq_elem = nq
+
 		# Loop through faces
 		for face in range(nFacePerElem):
 			Face = Faces[face]
@@ -177,12 +178,13 @@ class PPLimiter(object):
 				BFG = mesh.BFaceGroups[Face.Group]
 				BF = BFG.BFaces[Face.Number]
 				entity = General.EntityType.IFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, order, EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.gbasis, order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
 				order_n = EqnSet.Order
 				entity = General.EntityType.BFace
-				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([order,order_n]), EqnSet, quadFace)
+				QuadOrder, QuadChanged = Quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.gbasis, np.amax([order,order_n]), EqnSet, quadFace)
+
 
 			if QuadChanged:
 				quadFace = Quadrature.QuadData(mesh, basis, entity, QuadOrder)
@@ -195,10 +197,10 @@ class PPLimiter(object):
 				Faces2PhiData = [None for i in range(nFacePerElem)]
 				uf = np.zeros([nq,ns])
 
-			PhiData = Faces2PhiData[face]
-			if PhiData is None or QuadChanged:
-				Faces2PhiData[face] = PhiData = Basis.BasisData(EqnSet.Basis,order,mesh)
-				xelem = PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, Get_Phi=True)
+			#PhiData = Faces2PhiData[face]
+			#if QuadChanged:
+			Faces2PhiData[face] = basis # PhiData = Basis.BasisData(EqnSet.Basis,order,mesh)
+			xelem = basis.eval_basis_on_face(mesh, face, quad_pts, xelem, Get_Phi=True)
 
 			if face == 0:
 				# first face
@@ -211,7 +213,7 @@ class PPLimiter(object):
 				u_D[:nq_eval,:] = u
 
 			''' Interpolate state to face quadrature points '''
-			uf[:] = np.matmul(PhiData.Phi, U)
+			uf[:] = np.matmul(basis.basis_val, U)
 			# Increment nq_eval
 			nq_eval += nq
 			if nq_eval > nq_prev:
@@ -244,13 +246,13 @@ class PPLimiter(object):
 			U[:,irho] = theta1*U[:,irho] + (1. - theta1)*rho_bar
 
 			# Intermediate limited solution
-			u_D[:nq_elem] = np.matmul(PhiElem.Phi, U)
+			u_D[:nq_elem] = np.matmul(basis.basis_val, U)
 			qcount = nq_elem
 			for face in range(nFacePerElem):
-				PhiData = Faces2PhiData[face]
-				nq = PhiData.Phi.shape[0]
+				basis = Faces2PhiData[face]
+				nq = basis.basis_val.shape[0]
 				#nq = PhiData.nq
-				u_D[qcount:qcount+nq] = np.matmul(PhiData.Phi, U)
+				u_D[qcount:qcount+nq] = np.matmul(basis.basis_val, U)
 				qcount += nq
 
 			if qcount != nq_eval:
@@ -272,9 +274,9 @@ class PPLimiter(object):
 		StaticData.nq_prev = nq_prev
 		StaticData.quadElem = quadElem
 		StaticData.quadFace = quadFace
-		StaticData.PhiElem = PhiElem
+		# StaticData.PhiElem = PhiElem
 		StaticData.xelem = xelem
-		StaticData.JData = JData
+		# StaticData.JData = JData
 		StaticData.u = u
 		StaticData.u_bar = u_bar
 		StaticData.rho_bar = rho_bar
@@ -381,7 +383,7 @@ class PPScalarLimiter(object):
 		nq = quad_pts.shape[0]
 
 		if QuadChanged:
-			PhiElem = Basis.BasisData(EqnSet.Basis,Order,mesh)
+			PhiElem = Basis.BasisData(EqnSet.Basis,order,mesh)
 			PhiElem.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True) # [nq, nn]
 
 			u = np.zeros([nq, ns])

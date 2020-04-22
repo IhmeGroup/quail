@@ -1,5 +1,6 @@
 import numpy as np
 import code
+import copy
 import Basis
 import Data
 
@@ -45,16 +46,19 @@ def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 	''' Old state '''
 	U = EqnSet.U
 
+	basis = copy.copy(basis_old)
 	''' Allocate new state '''
 	# New basis, Order information stored in EqnSet
 	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.Orders[egrp]), EqnSet.StateRank] \
 	# 				for egrp in range(mesh.nElemGroup)]
 	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
-	U_new = np.zeros([mesh.nElem, Basis.order_to_num_basis_coeff(EqnSet.Basis, EqnSet.Order), EqnSet.StateRank])
+	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.Order), EqnSet.StateRank])
 
 	''' Loop through elements '''
-	basis = EqnSet.Basis
 	order = EqnSet.Order
+	basis.order = order
+	basis.nb = basis.get_num_basis_coeff(EqnSet.Order)
+
 	## New mass matrix inverse (in reference space)
 	iMM,_ = Basis.get_elem_inv_mass_matrix(mesh, basis, order)
 	## Projection matrix

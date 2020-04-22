@@ -72,12 +72,12 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	Regular2D=True, ShowTriangulation=False)
 Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()

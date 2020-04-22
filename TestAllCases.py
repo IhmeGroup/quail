@@ -62,6 +62,12 @@ if args.test_1D is True:
 	assert_almost_equal(LinearAdvection.TotErr, 0.000208876119327, decimal=decimal)
 	print('Pass 1D Constant Advection')
 
+	# Inviscid Burgers with a Sine Wave
+	sys.path.append('Cases/Scalar_1D/BurgersEquation')
+	import invBurgersSin
+	assert_almost_equal(invBurgersSin.TotErr, 0.000874105898423, decimal=decimal)
+	print('Pass 1D Inviscid Burgers')
+
 	if args.src is True:
 		# Linear advection w/source term
 		import DampingLinearAdvection

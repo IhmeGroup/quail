@@ -15,9 +15,9 @@ NTYPES = 37
 class GmshEntityInfo(object):
 	def __init__(self):
 		self.nNode = -1
-		self.QOrder = -1
-		self.QBasis = -1
-		self.Shape = -1
+		self.gorder = -1
+		self.gbasis = -1
+		self.shape = -1
 		self.Supported = False
 		self.NodeOrder = None
 
@@ -34,79 +34,79 @@ def CreateGmshEntitiesInfo():
 	# Linear line segments
 	EntityInfo = EntitiesInfo[1]
 	EntityInfo.nNode = 2
-	EntityInfo.QOrder = 1
-	EntityInfo.QBasis = General.BasisType.LagrangeSeg
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 1
+	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+	EntityInfo.shape = Basis.SegShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 1])
 
 	# Linear triangle
 	EntityInfo = EntitiesInfo[2]
 	EntityInfo.nNode = 3
-	EntityInfo.QOrder = 1
-	EntityInfo.QBasis = General.BasisType.LagrangeTri
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 1
+	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+	EntityInfo.shape = Basis.TriShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 1, 2])
 
 	# Linear quadrilateral
 	EntityInfo = EntitiesInfo[3]
 	EntityInfo.nNode = 4
-	EntityInfo.QOrder = 1
-	EntityInfo.QBasis = General.BasisType.LagrangeQuad
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 1
+	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+	EntityInfo.shape = Basis.QuadShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 1, 3, 2])
 
 	# Quadratic line segment
 	EntityInfo = EntitiesInfo[8]
 	EntityInfo.nNode = 3
-	EntityInfo.QOrder = 2
-	EntityInfo.QBasis = General.BasisType.LagrangeSeg
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 2
+	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+	EntityInfo.shape = Basis.SegShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 1])
 
 	# Quadratic triangle
 	EntityInfo = EntitiesInfo[9]
 	EntityInfo.nNode = 6
-	EntityInfo.QOrder = 2
-	EntityInfo.QBasis = General.BasisType.LagrangeTri
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 2
+	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+	EntityInfo.shape = Basis.TriShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 3, 1, 5, 4, 2])
 
 	# Quadratic quadrilateral
 	EntityInfo = EntitiesInfo[10]
 	EntityInfo.nNode = 9
-	EntityInfo.QOrder = 2
-	EntityInfo.QBasis = General.BasisType.LagrangeQuad
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 2
+	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+	EntityInfo.shape = Basis.QuadShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 4, 1, 7, 8, 5, 3, 6, 2])
 
 	# Point
 	EntityInfo = EntitiesInfo[15]
 	EntityInfo.nNode = 1
-	EntityInfo.QOrder = 0
-	EntityInfo.Shape = General.ShapeType.Point
+	EntityInfo.gorder = 0
+	EntityInfo.shape = Basis.PointShape()
 	EntityInfo.Supported = True
 
 	# Cubic triangle
 	EntityInfo = EntitiesInfo[21]
 	EntityInfo.nNode = 10
-	EntityInfo.QOrder = 3
-	EntityInfo.QBasis = General.BasisType.LagrangeTri
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 3
+	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+	EntityInfo.shape = Basis.TriShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 3, 4, 1, 8, 9, 5, 7, 6, 2])
 
 	# Quartic triangle
 	EntityInfo = EntitiesInfo[23]
 	EntityInfo.nNode = 15
-	EntityInfo.QOrder = 4
-	EntityInfo.QBasis = General.BasisType.LagrangeTri
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 4
+	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+	EntityInfo.shape = Basis.TriShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 3, 4, 5, 1, 11, 12, 13, 6, 
 									10, 14, 7, 9, 8, 2])
@@ -114,36 +114,36 @@ def CreateGmshEntitiesInfo():
 	# Cubic line segment
 	EntityInfo = EntitiesInfo[26]
 	EntityInfo.nNode = 4
-	EntityInfo.QOrder = 3
-	EntityInfo.QBasis = General.BasisType.LagrangeSeg
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 3
+	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+	EntityInfo.shape = Basis.SegShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 3, 1])
 
 	# Quartic line segment
 	EntityInfo = EntitiesInfo[27]
 	EntityInfo.nNode = 5
-	EntityInfo.QOrder = 4
-	EntityInfo.QBasis = General.BasisType.LagrangeSeg
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 4
+	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+	EntityInfo.shape = Basis.SegShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 1])
 
 	# Quintic line segment
 	EntityInfo = EntitiesInfo[28]
 	EntityInfo.nNode = 6
-	EntityInfo.QOrder = 5
-	EntityInfo.QBasis = General.BasisType.LagrangeSeg
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 5
+	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+	EntityInfo.shape = Basis.SegShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 5, 1])
 
 	# Cubic quadrilateral
 	EntityInfo = EntitiesInfo[36]
 	EntityInfo.nNode = 16
-	EntityInfo.QOrder = 3
-	EntityInfo.QBasis = General.BasisType.LagrangeQuad
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 3
+	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+	EntityInfo.shape = Basis.QuadShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 4, 5, 1, 11, 12, 13, 6, 10, 15, 14, 
 									7, 3, 9, 8, 2])
@@ -151,9 +151,9 @@ def CreateGmshEntitiesInfo():
 	# Quartic quadrilateral
 	EntityInfo = EntitiesInfo[37]
 	EntityInfo.nNode = 25
-	EntityInfo.QOrder = 4
-	EntityInfo.QBasis = General.BasisType.LagrangeQuad
-	EntityInfo.Shape = Basis.Basis2Shape[EntityInfo.QBasis]
+	EntityInfo.gorder = 4
+	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+	EntityInfo.shape = Basis.QuadShape()
 	EntityInfo.Supported = True
 	EntityInfo.NodeOrder = np.array([0, 4, 5, 6, 1, 15, 16, 20, 17, 7,
 								    14, 23, 24, 21, 8, 13, 19, 22, 18, 9,
@@ -314,10 +314,11 @@ def ReadMeshEntities(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		if PGroup.Dim == mesh.Dim:
 			# Assume only one element type - need to check for this later
 			### Entity is an element
-			QOrder = EntitiesInfo[etype].QOrder
-			QBasis = EntitiesInfo[etype].QBasis
+			gorder = EntitiesInfo[etype].gorder
+			gbasis = EntitiesInfo[etype].gbasis
+
 			if mesh.nElem == 0:
-				mesh.SetParams(QBasis=QBasis, QOrder=QOrder, nElem=0)
+				mesh.SetParams(gbasis=gbasis, gorder=gorder, nElem=0)
 			mesh.nElem += 1
 			# # Check for existing element group
 			# found = False
@@ -497,12 +498,13 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		if PGroup.Group >= 0:
 			### Boundary
 			# Get basic info
-			QBasis = EntitiesInfo[etype].QBasis
-			QOrder = EntitiesInfo[etype].QOrder
+			gbasis = EntitiesInfo[etype].gbasis
+			gorder = EntitiesInfo[etype].gorder
 			ibfgrp = PGroup.Group
 			BFG = mesh.BFaceGroups[ibfgrp]
 			# Number of q = 1 face nodes
-			nfnode = Basis.order_to_num_basis_coeff(QBasis, 1) 
+			nfnode = gbasis.get_num_basis_coeff(1)
+
 			# Add q = 1 nodes to hash table
 			FInfo, Exists = AddFaceToHash(Node2FaceHash, nfnode, nodes, True, 
 				ibfgrp, -1, bf[ibfgrp])
@@ -510,8 +512,8 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 		elif PGroup.Group == -1:
 			### Interior element
 			# Get basic info
-			QOrder = EntitiesInfo[etype].QOrder
-			QBasis = EntitiesInfo[etype].QBasis
+			gorder = EntitiesInfo[etype].gorder
+			gbasis = EntitiesInfo[etype].gbasis
 			# Check for existing element group
 			# found = False
 			# for EG in mesh.ElemGroups:
@@ -522,7 +524,7 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 			# if not found:
 			# 	raise Exception("Can't find element group")
 			# Number of element nodes
-			nnode = Basis.order_to_num_basis_coeff(QBasis, QOrder)
+			nnode = gbasis.get_num_basis_coeff(gorder)
 			# Sanity check
 			if nnode != EntitiesInfo[etype].nNode:
 				raise Exception("Check Gmsh entities")
@@ -546,7 +548,8 @@ def FillMesh(fo, mesh, PGroups, nPGroup, EntitiesInfo):
 	for elem in range(mesh.nElem):
 		for face in range(mesh.nFacePerElem):
 			# Local q = 1 nodes on face
-			fnodes, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, mesh.QOrder, face)
+			gbasis = mesh.gbasis
+			fnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, face)
 
 			# Convert to global nodes
 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]

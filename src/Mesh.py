@@ -44,21 +44,24 @@ def ref_to_phys(mesh, elem, PhiData, xref, xphys=None, PointsChanged=False):
     OUTPUTS:
         xphys: coordinates in physical space
     '''
-    QBasis = mesh.QBasis
-    QOrder = mesh.QOrder
-
+    gbasis = mesh.gbasis
+    gorder = mesh.gorder
+    #PhiData = gbasis.basis_val
     npoint = xref.shape[0]
 
-    if PhiData is None:
-        PhiData = Basis.BasisData(QBasis,QOrder,mesh)
-        PointsChanged = True
-    if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
-        PhiData.eval_basis(xref, Get_Phi=True)
+    # if PhiData is None:
+    #     PhiData = Basis.BasisData(QBasis,QOrder,mesh)
+    #     PointsChanged = True
+    # if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
+    #     PhiData.eval_basis(xref, Get_Phi=True)
 
+    gbasis.eval_basis(xref, Get_Phi=True)
+
+    Phi= gbasis.basis_val
     dim = mesh.Dim
     Coords = mesh.Coords
-    Phi = PhiData.Phi
-    nb = PhiData.Phi.shape[1]
+    # Phi = PhiData.Phi
+    nb = gbasis.basis_val.shape[1]
     if nb != mesh.nNodePerElem:
         raise Exception("Wrong number of nodes per element")
 
@@ -128,81 +131,81 @@ def ref_to_phys_time(mesh, elem, time, dt, PhiData, xref, tphys=None, PointsChan
 
     return tphys, PhiData
 
-def ref_face_to_elem(Shape, face, nq, xface, xelem=None):
-    '''
-    Function: ref_face_to_elem
-    ----------------------------
-    This function converts coordinates in face reference space to
-    element reference space
+# def ref_face_to_elem(Shape, face, nq, xface, xelem=None):
+#     '''
+#     Function: ref_face_to_elem
+#     ----------------------------
+#     This function converts coordinates in face reference space to
+#     element reference space
 
-    INPUTS:
-        Shape: element shape
-        face: local face number
-        nq: number of points to convert 
-        xface: coordinates in face reference space
-        xelem: pre-allocated storage for output coordinates (optional)
+#     INPUTS:
+#         Shape: element shape
+#         face: local face number
+#         nq: number of points to convert 
+#         xface: coordinates in face reference space
+#         xelem: pre-allocated storage for output coordinates (optional)
 
-    OUTPUTS:
-        xelem: coordinates in element reference space
-    '''
-    if Shape == ShapeType.Segment:
-        if xelem is None: xelem = np.zeros([1,1])
-        if face == 0: xelem[0] = -1.
-        elif face == 1: xelem[0] = 1.
-        else: raise ValueError
-    elif Shape == ShapeType.Quadrilateral:
-        if xelem is None: xelem = np.zeros([nq,2])
-        # local q = 1 nodes on face
-        fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeQuad, 1, face)
-        # swap for reversed faces
-        # if face >= 2: fnodes = fnodes[[1,0]]
-        # coordinates of local q = 1 nodes on face
-        x0 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
-        x1 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
-        # for i in range(nq):
-        #     if face == 0:
-        #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
-        #         xelem[i,1] = -1.
-        #     elif face == 1:
-        #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
-        #         xelem[i,0] = 1.
-        #     elif face == 2:
-        #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
-        #         xelem[i,1] = 1.
-        #     else:
-        #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
-        #         xelem[i,0] = -1.
-        if face == 0:
-            xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
-            xelem[:,1] = -1.
-        elif face == 1:
-            xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
-            xelem[:,0] = 1.
-        elif face == 2:
-            xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
-            xelem[:,1] = 1.
-        else:
-            xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
-            xelem[:,0] = -1.
-        #code.interact(local=locals())
-    elif Shape == ShapeType.Triangle:
-        if xelem is None: xelem = np.zeros([nq,2])
-        xf = np.zeros(nq)
-        xf = xf.reshape((nq,1))
-        # local q = 1 nodes on face
-        fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeTri, 1, face)
-        # coordinates of local q = 1 nodes on face
-        x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
-        x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
-        # for i in range(nq):
-        #     xf[i] = (xface[i] + 1.)/2.
-        #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
-        xf = (xface + 1.)/2.
-        xelem[:] = (1. - xf)*x0 + xf*x1
-    else:
-        raise NotImplementedError
+#     OUTPUTS:
+#         xelem: coordinates in element reference space
+#     '''
+#     if Shape == ShapeType.Segment:
+#         if xelem is None: xelem = np.zeros([1,1])
+#         if face == 0: xelem[0] = -1.
+#         elif face == 1: xelem[0] = 1.
+#         else: raise ValueError
+#     elif Shape == ShapeType.Quadrilateral:
+#         if xelem is None: xelem = np.zeros([nq,2])
+#         # local q = 1 nodes on face
+#         fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeQuad, 1, face)
+#         # swap for reversed faces
+#         # if face >= 2: fnodes = fnodes[[1,0]]
+#         # coordinates of local q = 1 nodes on face
+#         x0 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
+#         x1 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
+#         # for i in range(nq):
+#         #     if face == 0:
+#         #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+#         #         xelem[i,1] = -1.
+#         #     elif face == 1:
+#         #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+#         #         xelem[i,0] = 1.
+#         #     elif face == 2:
+#         #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
+#         #         xelem[i,1] = 1.
+#         #     else:
+#         #         xelem[i,1] = (xface[i]*x1[1] - xface[i]*x0[1])/2.
+#         #         xelem[i,0] = -1.
+#         if face == 0:
+#             xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
+#             xelem[:,1] = -1.
+#         elif face == 1:
+#             xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
+#             xelem[:,0] = 1.
+#         elif face == 2:
+#             xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
+#             xelem[:,1] = 1.
+#         else:
+#             xelem[:,1] = np.reshape((xface*x1[1] - xface*x0[1])/2., nq)
+#             xelem[:,0] = -1.
+#         #code.interact(local=locals())
+#     elif Shape == ShapeType.Triangle:
+#         if xelem is None: xelem = np.zeros([nq,2])
+#         xf = np.zeros(nq)
+#         xf = xf.reshape((nq,1))
+#         # local q = 1 nodes on face
+#         fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeTri, 1, face)
+#         # coordinates of local q = 1 nodes on face
+#         x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
+#         x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
+#         # for i in range(nq):
+#         #     xf[i] = (xface[i] + 1.)/2.
+#         #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
+#         xf = (xface + 1.)/2.
+#         xelem[:] = (1. - xf)*x0 + xf*x1
+#     else:
+#         raise NotImplementedError
 
-    return xelem
+#     return xelem
 
 
 def iface_normal(mesh, IFace, quad_pts, NData=None):
@@ -222,21 +225,22 @@ def iface_normal(mesh, IFace, quad_pts, NData=None):
     '''
     elemL = IFace.ElemL
     elemR = IFace.ElemR
-    QOrderL = mesh.QOrder
-    QOrderR = mesh.QOrder
+    gorderL = mesh.gorder
+    gorderR = mesh.gorder
 
     nq = quad_pts.shape[0]
 
-    if NData is None: 
-        NData = NormalData()
+    gbasis = mesh.gbasis
+    # if NData is None: 
+        # NData = NormalData()
 
-    if QOrderL <= QOrderR:
-        NData.calculate_normals(mesh, elemL, IFace.faceL, quad_pts)
+    if gorderL <= gorderR:
+        nvec = gbasis.calculate_normals(mesh, elemL, IFace.faceL, quad_pts)
     else:
-        NData.calculate_normals(mesh, elemR, IFace.faceR, quad_pts)
-        NData.nvec *= -1.
+        nvec = gbasis.calculate_normals(mesh, elemR, IFace.faceR, quad_pts)
+        nvec *= -1.
 
-    return NData
+    return nvec
 
 
 def bface_normal(mesh, BFace, quad_pts, NData=None):
@@ -255,115 +259,116 @@ def bface_normal(mesh, BFace, quad_pts, NData=None):
         NData: normal data object
     '''
     elem = BFace.Elem
-    QOrder = mesh.QOrder
+    gorder = mesh.gorder
+    gbasis = mesh.gbasis
 
     nq = quad_pts.shape[0]
 
-    if NData is None:
-        NData = NormalData()
+    # if NData is None:
+    #     NData = NormalData()
 
-    NData.calculate_normals(mesh, elem, BFace.face, quad_pts)
+    nvec = gbasis.calculate_normals(mesh, elem, BFace.face, quad_pts)
 
-    return NData
+    return nvec
 
 
-class NormalData(object):
-    '''
-    Class: NormalData
-    -------------------
-    This class contains information about normal vectors
+# class NormalData(object):
+#     '''
+#     Class: NormalData
+#     -------------------
+#     This class contains information about normal vectors
 
-    ATTRIBUTES:
-        nq: number of points at which normals are calculated
-        nvec: normals [nq, dim]
-        fnodes: for easy storage of local face nodes
-        GPhi: evaluated gradient of basis
-        x_s: ???
-    '''
-    def __init__(self):
-        '''
-        Method: __init__
-        -------------------
-        This method initializes the object
-        '''
-        self.nq = 0
-        self.nvec = None
-        self.fnodes = None
-        self.GPhi = None
-        self.x_s = None
+#     ATTRIBUTES:
+#         nq: number of points at which normals are calculated
+#         nvec: normals [nq, dim]
+#         fnodes: for easy storage of local face nodes
+#         GPhi: evaluated gradient of basis
+#         x_s: ???
+#     '''
+#     def __init__(self):
+#         '''
+#         Method: __init__
+#         -------------------
+#         This method initializes the object
+#         '''
+#         self.nq = 0
+#         self.nvec = None
+#         self.fnodes = None
+#         self.GPhi = None
+#         self.x_s = None
 
-    def calculate_normals(self, mesh, elem, face, quad_pts):
-        '''
-        Method: calculate_normals
-        -------------------
-        Calculate the normals
+#     def calculate_normals(self, mesh, elem, face, quad_pts):
+#         '''
+#         Method: calculate_normals
+#         -------------------
+#         Calculate the normals
 
-        INPUTS:
-            mesh: Mesh object
-            elem: element index
-            face: face index
-            nq: number of points at which to calculate normals
-            quad_pts: points in reference space at which to calculate normals
-        '''
+#         INPUTS:
+#             mesh: Mesh object
+#             elem: element index
+#             face: face index
+#             nq: number of points at which to calculate normals
+#             quad_pts: points in reference space at which to calculate normals
+#         '''
 
-        QBasis = mesh.QBasis
-        Shape = Basis.Basis2Shape[QBasis]
-        QOrder = mesh.QOrder
+#         QBasis = mesh.QBasis
+#         Shape = Basis.Basis2Shape[QBasis]
+#         QOrder = mesh.QOrder
 
-        nq = quad_pts.shape[0]
+#         nq = quad_pts.shape[0]
 
-        if QOrder == 1:
-            nq = 1
+#         if QOrder == 1:
+#             nq = 1
 
-        if self.nvec is None or self.nvec.shape != (nq,mesh.Dim):
-            self.nvec = np.zeros([nq,mesh.Dim])
+#         if self.nvec is None or self.nvec.shape != (nq,mesh.Dim):
+#             self.nvec = np.zeros([nq,mesh.Dim])
         
-        nvec = self.nvec
-        self.nq = nq
+#         nvec = self.nvec
+#         self.nq = nq
 
-        #1D normals calculation
-        if Shape == ShapeType.Segment:
-            if face == 0:
-                nvec[0] = -1.
-            elif face == 1:
-                nvec[0] = 1.
-            else:
-                raise ValueError
-        #2D normals calculation
-        elif Shape == ShapeType.Quadrilateral or Shape == ShapeType.Triangle:
-            ElemNodes = mesh.Elem2Nodes[elem]
-            if QOrder == 1:
-                self.fnodes, nfnode = Basis.local_q1_face_nodes(QBasis, QOrder, face, self.fnodes)
-                x0 = mesh.Coords[ElemNodes[self.fnodes[0]]]
-                x1 = mesh.Coords[ElemNodes[self.fnodes[1]]]
+#         #1D normals calculation
+#         if Shape == ShapeType.Segment:
+#             if face == 0:
+#                 nvec[0] = -1.
+#             elif face == 1:
+#                 nvec[0] = 1.
+#             else:
+#                 raise ValueError
+#         #2D normals calculation
+#         elif Shape == ShapeType.Quadrilateral or Shape == ShapeType.Triangle:
+#             ElemNodes = mesh.Elem2Nodes[elem]
+#             if QOrder == 1:
+#                 self.fnodes, nfnode = Basis.local_q1_face_nodes(QBasis, QOrder, face, self.fnodes)
+#                 x0 = mesh.Coords[ElemNodes[self.fnodes[0]]]
+#                 x1 = mesh.Coords[ElemNodes[self.fnodes[1]]]
 
-                nvec[0,0] =  (x1[1]-x0[1])/2.;
-                nvec[0,1] = -(x1[0]-x0[0])/2.;
-            # Calculate normals for curved meshes (quads)
-            else:
-                if self.x_s is None or self.x_s.shape != self.nvec.shape:
-                    self.x_s = np.zeros_like(self.nvec)
-                x_s = self.x_s
-                self.fnodes, nfnode = Basis.local_face_nodes(QBasis, QOrder, face, self.fnodes)
-                self.GPhi = Basis.get_grads(BasisType.LagrangeSeg, QOrder, 1, quad_pts, self.GPhi)
-                Coords = mesh.Coords[ElemNodes[self.fnodes]]
+#                 nvec[0,0] =  (x1[1]-x0[1])/2.;
+#                 nvec[0,1] = -(x1[0]-x0[0])/2.;
+#             # Calculate normals for curved meshes (quads)
+#             else:
+#                 if self.x_s is None or self.x_s.shape != self.nvec.shape:
+#                     self.x_s = np.zeros_like(self.nvec)
+#                 x_s = self.x_s
+#                 self.fnodes, nfnode = Basis.local_face_nodes(QBasis, QOrder, face, self.fnodes)
+#                 self.GPhi = Basis.get_grads(BasisType.LagrangeSeg, QOrder, 1, quad_pts, self.GPhi)
+#                 Coords = mesh.Coords[ElemNodes[self.fnodes]]
 
-                # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
-                x_s[:] = np.matmul(Coords.transpose(), self.GPhi).reshape(x_s.shape)
-                nvec[:,0] = x_s[:,1]
-                nvec[:,1] = -x_s[:,0]
+#                 # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
+#                 x_s[:] = np.matmul(Coords.transpose(), self.GPhi).reshape(x_s.shape)
+#                 nvec[:,0] = x_s[:,1]
+#                 nvec[:,1] = -x_s[:,0]
 
-                # for iq in range(nq):
-                #     GPhi = self.GPhi[iq]
+#                 # for iq in range(nq):
+#                 #     GPhi = self.GPhi[iq]
 
-                #     # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
-                #     x_s = np.matmul(Coords.transpose(), GPhi)
+#                 #     # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
+#                 #     x_s = np.matmul(Coords.transpose(), GPhi)
 
-                #     # Cross product between tangent vector and out-of-plane vector
-                #     nvec[iq,0] = x_s[1]
-                #     nvec[iq,1] = -x_s[0]
-        else:
-            raise NotImplementedError
+#                 #     # Cross product between tangent vector and out-of-plane vector
+#                 #     nvec[iq,0] = x_s[1]
+#                 #     nvec[iq,1] = -x_s[0]
+#         else:
+#             raise NotImplementedError
 
 
 
@@ -619,7 +624,7 @@ class Mesh(object):
         nPeriodicGroup: number of periodic groups
         PeriodicGroups: list of periodic groups
     '''
-    def __init__(self,dim=1,nNode=1,nElem=1,QBasis=BasisType.LagrangeSeg,QOrder=1):
+    def __init__(self,dim=1,nNode=1,nElem=1,gbasis=None,gorder=1):
         '''
         Method: __init__
         -------------------
@@ -629,6 +634,9 @@ class Mesh(object):
             dim: dimension of mesh
             nNode: total number of nodes
         '''
+        if gbasis is None:
+            gbasis = Basis.LagrangeSeg(1)
+
         self.Dim = dim
         self.nNode = nNode
         self.Coords = None
@@ -637,21 +645,22 @@ class Mesh(object):
         self.nBFaceGroup = 0
         self.BFaceGroups = []
         self.BFGNames = []
-        self.QBasis = QBasis
-        self.QOrder = QOrder
+        self.gbasis = gbasis
+        self.gorder = gorder
         self.nElem = nElem
-        self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
+        self.nFacePerElem = gbasis.nfaceperelem 
         self.Faces = None
-        self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
+        self.nNodePerElem = gbasis.get_num_basis_coeff(gorder)
         self.Elem2Nodes = None
             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
-    def SetParams(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
-        self.QBasis = QBasis
-        self.QOrder = QOrder
+    def SetParams(self,gbasis,gorder=1,nElem=1):
+
+        self.gbasis = gbasis
+        self.gorder = gorder
         self.nElem = nElem
-        self.nFacePerElem = Shape2nFace[Basis.Basis2Shape[QBasis]] 
-        self.nNodePerElem = Basis.order_to_num_basis_coeff(QBasis, QOrder)
+        self.nFacePerElem = gbasis.nfaceperelem
+        self.nNodePerElem = gbasis.get_num_basis_coeff(gorder)
 
     def allocate_faces(self):
         '''

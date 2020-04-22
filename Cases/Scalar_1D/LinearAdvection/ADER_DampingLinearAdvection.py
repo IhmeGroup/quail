@@ -23,15 +23,15 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Pe
 
 ### Solver parameters
 EndTime = 0.5
-nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
+nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.0002))])
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateFlux=True)
-nu = -3.
+nu = -100000.
 
 ### Physics
 Velocity = 1.0 
-EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(ConstVelocity=Velocity)
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)

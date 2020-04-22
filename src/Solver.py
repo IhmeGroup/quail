@@ -37,7 +37,7 @@ class ElemOperators(object):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
-		QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order, EqnSet, None)
+		QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, EqnSet, None)
 		quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
 		self.quad_pts = quadData.quad_pts
 		self.quad_wts = quadData.quad_wts
@@ -50,7 +50,7 @@ class ElemOperators(object):
 		nElem = mesh.nElem 
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		nb = order_to_num_basis_coeff(basis, order)
+		nb = basis.nb
 
 		# Allocate
 		self.jac_elems = np.zeros([nElem,nq,dim,dim])
@@ -59,37 +59,36 @@ class ElemOperators(object):
 		self.x_elems = np.zeros([nElem,nq,dim])
 		self.basis_pgrad_elems = np.zeros([nElem,nq,nb,dim])
 
-		JData = JacobianData(mesh)
+		# JData = JacobianData(mesh)
 		GeomPhiData = None
 
 		# basis data
-		PhiData = BasisData(basis, order, mesh)
-		PhiData.eval_basis(self.quad_pts, Get_Phi=True, Get_GPhi=True)
+		# PhiData = BasisData(basis, order, mesh)
+		basis.eval_basis(self.quad_pts, Get_Phi=True, Get_GPhi=True)
 
-		self.basis_val = PhiData.Phi 
-		self.basis_grad = PhiData.GPhi 
+		self.basis_val = basis.basis_val 
+		self.basis_grad = basis.basis_grad 
 
 		for elem in range(mesh.nElem):
 			# Jacobian
-			JData.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
+			djac, jac, ijac = element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
 			# Store
-			self.jac_elems[elem] = JData.jac
-			self.ijac_elems[elem] = JData.ijac
-			self.djac_elems[elem] = JData.djac
+			self.jac_elems[elem] = jac
+			self.ijac_elems[elem] = ijac
+			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
 			x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
 			# Store
 			self.x_elems[elem] = x
-
 			# Physical gradient
-			PhiData.eval_basis(quad_pts, Get_gPhi=True, JData=JData) # gPhi is [nq,nb,dim]
-			self.basis_pgrad_elems[elem] = PhiData.gPhi
+			basis.eval_basis(quad_pts, Get_gPhi=True, ijac=ijac) # gPhi is [nq,nb,dim]
+			self.basis_pgrad_elems[elem] = basis.basis_pgrad
 
 	def alloc_other_arrays(self, EqnSet, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		nb = order_to_num_basis_coeff(basis, order)
+		nb = basis.nb
 		ns = EqnSet.StateRank
 		dim = EqnSet.Dim
 
@@ -116,7 +115,7 @@ class IFaceOperators(ElemOperators):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
-		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.QBasis, order, EqnSet, None)
+		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.gbasis, order, EqnSet, None)
 		quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
 		self.quad_pts = quadData.quad_pts
 		self.quad_wts = quadData.quad_wts
@@ -128,7 +127,7 @@ class IFaceOperators(ElemOperators):
 		dim = mesh.Dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		nb = order_to_num_basis_coeff(basis, order)
+		nb = basis.nb
 		nFacePerElem = mesh.nFacePerElem
 
 		# Allocate
@@ -137,21 +136,21 @@ class IFaceOperators(ElemOperators):
 		self.normals_ifaces = np.zeros([mesh.nIFace,nq,dim])
 
 		# basis data
-		PhiData = BasisData(basis, order, mesh)
+		#PhiData = BasisData(basis, order, mesh)
 
 		for f in range(nFacePerElem):
 			# Left
-			_ = PhiData.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
-			self.faces_to_basisL[f] = PhiData.Phi
+			_ = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_basisL[f] = basis.basis_val
 			# Right
-			_ = PhiData.eval_basis_on_face(mesh, f, quad_pts[::-1], None, Get_Phi=True)
-			self.faces_to_basisR[f] = PhiData.Phi
+			_ = basis.eval_basis_on_face(mesh, f, quad_pts[::-1], None, Get_Phi=True)
+			self.faces_to_basisR[f] = basis.basis_val
 
 		i = 0
 		for IFace in mesh.IFaces:
 			# Normals
-			NData = iface_normal(mesh, IFace, quad_pts)
-			self.normals_ifaces[i] = NData.nvec
+			nvec = iface_normal(mesh, IFace, quad_pts)
+			self.normals_ifaces[i] = nvec
 			i += 1
 
 	def alloc_other_arrays(self, EqnSet, basis, order):
@@ -160,7 +159,7 @@ class IFaceOperators(ElemOperators):
 		ns = EqnSet.StateRank
 
 		self.UqL = np.zeros([nq, ns])
-		self.UqR = np.zeros([nq, ns]) 
+		self.UqR = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
 	def compute_operators(self, mesh, EqnSet, basis, order):
@@ -188,7 +187,7 @@ class BFaceOperators(IFaceOperators):
 		dim = mesh.Dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		nb = order_to_num_basis_coeff(basis, order)
+		nb = basis.nb
 		nFacePerElem = mesh.nFacePerElem
 
 		# Allocate
@@ -198,13 +197,13 @@ class BFaceOperators(IFaceOperators):
 		self.x_bfgroups = []
 
 		# basis data
-		PhiData = BasisData(basis, order, mesh)
+		# PhiData = BasisData(basis, order, mesh)
 		GeomPhiData = None
 
 		for f in range(nFacePerElem):
 			# Left
-			self.faces_to_xref[f] = xref = PhiData.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
-			self.faces_to_basis[f] = PhiData.Phi
+			self.faces_to_xref[f] = xref = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
 		for BFG in mesh.BFaceGroups:
@@ -215,8 +214,8 @@ class BFaceOperators(IFaceOperators):
 			j = 0
 			for BFace in BFG.BFaces:
 				# Normals
-				NData = bface_normal(mesh, BFace, quad_pts)
-				normal_bfgroup[j] = NData.nvec
+				nvec = bface_normal(mesh, BFace, quad_pts)
+				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
 				x, GeomPhiData = ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
@@ -296,6 +295,22 @@ class DG_Solver(object):
 		# 	Stepper.dt = Params["EndTime"]/Params["nTimeStep"]
 		self.Stepper = Stepper
 
+		# Set the basis functions for the solver
+		BasisFunction  = Params["InterpBasis"]
+		if BasisFunction is "LagrangeSeg":
+			basis = LagrangeSeg(EqnSet.Order, mesh)
+		elif BasisFunction is "LegendreSeg":
+			basis = LegendreSeg(EqnSet.Order, mesh)
+		elif BasisFunction is "LagrangeQuad":
+			basis = LagrangeQuad(EqnSet.Order, mesh)
+		elif BasisFunction is "LegendreQuad":
+			basis = LegendreQuad(EqnSet.Order, mesh)
+		elif BasisFunction is "LagrangeTri":
+			basis = LagrangeTri(EqnSet.Order, mesh)
+		else:
+			raise NotImplementedError
+		self.basis = basis
+
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = Limiter.set_limiter(limiterType)
@@ -366,20 +381,20 @@ class DG_Solver(object):
 			raise Errors.IncompatibleError
 
 		### Force the BasisADER to be None ###
-		EqnSet.BasisADER = 0 #dummye
+		EqnSet.BasisADER = 0 #dummy
 
 
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
 		EqnSet = self.EqnSet
+		basis = self.basis
 
 		self.elem_operators = ElemOperators()
-		self.elem_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
 		self.iface_operators = IFaceOperators()
-		self.iface_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
 		self.bface_operators = BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
-
+		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
 
 	def init_state(self):
 		'''
@@ -391,6 +406,10 @@ class DG_Solver(object):
 		
 		mesh = self.mesh
 		EqnSet = self.EqnSet
+		basis = self.basis
+
+		nb = basis.nb
+
 		U = EqnSet.U
 		ns = EqnSet.StateRank
 		Params = self.Params
@@ -404,32 +423,32 @@ class DG_Solver(object):
 
 		InterpolateIC = Params["InterpolateIC"]
 		quadData = None
-		JData = JacobianData(mesh)
+		# JData = JacobianData(mesh)
 		GeomPhiData = None
 		quad_pts = None
 		xphys = None
 
-		basis = EqnSet.Basis
+		#basis = EqnSet.Basis
 		order = EqnSet.Order
-		rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=U.dtype)
+		rhs = np.zeros([nb,ns],dtype=U.dtype)
 
 		# Precompute basis and quadrature
 		if not InterpolateIC:
-			QuadOrder,_ = get_gaussian_quadrature_elem(mesh, EqnSet.Basis,
+			QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis,
 				2*np.amax([order,1]), EqnSet, quadData)
 
-			quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
+			quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 
 			quad_pts = quadData.quad_pts
 			quad_wts = quadData.quad_wts
 			nq = quad_pts.shape[0]
 
-			PhiData = BasisData(basis,order,mesh)
-			PhiData.eval_basis(quad_pts, Get_Phi=True)
+			#PhiData = BasisData(basis,order,mesh)
+			basis.eval_basis(quad_pts, Get_Phi=True)
 			xphys = np.zeros([nq, mesh.Dim])
 		
 		else:
-			quad_pts, nq = equidistant_nodes(basis, order, quad_pts)
+			quad_pts, nq = basis.equidistant_nodes(order, quad_pts)
 			#nb = nq
 
 		for elem in range(mesh.nElem):
@@ -441,7 +460,7 @@ class DG_Solver(object):
 
 			if not InterpolateIC:
 
-				JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
+				djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
 
 				iMM = iMM_all[elem]
 
@@ -451,7 +470,7 @@ class DG_Solver(object):
 				# for n in range(nn):
 				# 	for iq in range(nq):
 				# 		rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
-				rhs[:] = np.matmul(PhiData.Phi.transpose(), f*quad_wts*JData.djac) # [nb, ns]
+				rhs[:] = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
 
 				U[elem,:,:] = np.matmul(iMM,rhs)
 			else:
@@ -1070,6 +1089,7 @@ class DG_Solver(object):
 		'''
 		mesh = self.mesh
 		EqnSet = self.EqnSet
+		basis = self.basis
 
 		OrderSequencing = self.Params["OrderSequencing"]
 		InterpOrder = self.Params["InterpOrder"]
@@ -1147,7 +1167,10 @@ class DG_Solver(object):
 				Order_old = EqnSet.Order
 				EqnSet.Order = Order
 				# Project
-				project_state_to_new_basis(self, mesh, EqnSet, EqnSet.Basis, Order_old)
+				project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
+
+				basis.order = Order
+				basis.nb = basis.get_num_basis_coeff(Order)				
 
 				self.precompute_matrix_operators()
 

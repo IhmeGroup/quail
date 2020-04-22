@@ -17,8 +17,10 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 folder = "meshes/"
 ## Quadrilaterals
 subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
-# FileName = "bump0_q1.msh"; 
+#FileName = "bump0_q1.msh"; 
 FileName = "bump0.msh"; 
+#InterpOrder = 0; nTimeStep = 500; EndTime = 40.
+
 InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.]
 # FileName = "bump1_q1.msh"
 # FileName = "bump1.msh"
@@ -26,8 +28,9 @@ InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.
 # FileName = "bump2_q1.msh"
 # FileName = "bump2.msh"
 # InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [10., 12., 13.5]
-## Triangles
-# subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
+# Triangles
+#subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
+#FileName = "bump0_tri.msh"
 MeshFile = CurrentDir + folder + subfolder + FileName
 mesh = MeshGmsh.ReadGmshFile(MeshFile)
 
@@ -70,16 +73,16 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Entropy", NormalizeByVolume=False)
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Entropy", NormalizeByVolume=False)
 # Plot
 axis = None
 EqualAR = False
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Pressure", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	ShowTriangulation=False, EqualAR=EqualAR)
 Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Entropy", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	ShowTriangulation=False, EqualAR=EqualAR)
 Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()

@@ -62,10 +62,10 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, Label="Q_h")
+Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, Label="Q_h")
 Plot.ShowPlot()
 
 

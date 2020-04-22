@@ -42,10 +42,10 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Density")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Energy", PlotExact=True, Equidistant=True)
+Plot.PlotSolution(mesh, EqnSet, solver, "Energy", PlotExact=True, Equidistant=True)
 Plot.ShowPlot()
 
 

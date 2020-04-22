@@ -25,23 +25,25 @@ def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None)
 	'''
 
 	#Add logic to add 1 to the dimension of an ADER case?	
-	QOrder = mesh.QOrder
+	gorder = mesh.gorder
+	shape = basis.__class__.__bases__[1].__name__
 
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
 		QuadOrder = EqnSet.QuadOrder(order)
 	else:
 		QuadOrder = order
-	if QOrder > 1:
+	if gorder > 1:
 		dim = mesh.Dim
-		QuadOrder += dim*(QOrder-1)
+		QuadOrder += dim*(gorder-1)
 
-	Shape = Basis.Basis2Shape[basis]
-	if Shape is ShapeType.Quadrilateral:
+	#is instance instead?
+	if shape is 'QuadShape':
 		QuadOrder += mesh.Dim
 	QuadChanged = True
+
 	if quadData is not None:
-		if QuadOrder == quadData.order and Shape == quadData.Shape:
+		if QuadOrder == quadData.order and shape == quadData.Shape:
 			QuadChanged = False
 	
 	#Logic to subtract one if using ADER
@@ -71,24 +73,28 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 		QuadChanged: boolean flag for a changed quadrature
 	'''
 	# assumes uniform QOrder and QBasis
-	QOrder = mesh.QOrder
+	# QOrder = mesh.QOrder
+
+	gorder = mesh.gorder
+	shape = basis.__class__.__bases__[1].__name__
+	faceshape = basis.faceshape.__class__.__name__
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
 		QuadOrder = EqnSet.QuadOrder(order)
 	else:
 		QuadOrder = order
-	if QOrder > 1:
+	if gorder > 1:
 		dim = mesh.Dim - 1
-		QuadOrder += dim*(QOrder-1)
+		QuadOrder += dim*(gorder-1)
 
-	Shape = Basis.Basis2Shape[basis]
-	FShape = Basis.FaceShape[Shape]
-	if Shape is ShapeType.Quadrilateral:
-		QuadOrder += Basis.Shape2Dim[FShape]
+	# Shape = Basis.Basis2Shape[basis]
+	# FShape = Basis.FaceShape[Shape]
+	if shape is 'QuadShape':
+		QuadOrder += basis.faceshape.dim
 
 	QuadChanged = True
 	if quadData is not None:
-		if QuadOrder == quadData.order and FShape == quadData.Shape:
+		if QuadOrder == quadData.order and faceshape == quadData.Shape:
 			QuadChanged = False
 
 	#Logic to subtract one if using ADER
@@ -150,23 +156,25 @@ class QuadData(object):
 		self.qdim = mesh.Dim
 		self.nvec = None
 
-		Shape = Basis.Basis2Shape[basis]
+		# shape = Basis.Basis2Shape[basis]
+		shape = basis.__class__.__bases__[1].__name__
+		faceshape = basis.faceshape.__class__.__name__
 
 		if entity == EntityType.Element:
-			self.Shape = Shape
+			self.Shape = shape
 		else:
-			self.Shape = Basis.FaceShape[Shape]
+			self.Shape = faceshape
 
-		if self.Shape == ShapeType.Point:
+		if self.Shape == 'PointShape':
 			self.quad_pts = np.zeros([1,1])
 			self.quad_wts = np.ones([1,1])
-		elif self.Shape == ShapeType.Segment:
+		elif self.Shape == 'SegShape':
 			self.quad_pts = QuadLinePoints[order]
 			self.quad_wts = QuadLineWeights[order]
-		elif self.Shape == ShapeType.Quadrilateral:
+		elif self.Shape == 'QuadShape':
 			self.quad_pts = QuadQuadrilateralPoints[order]
 			self.quad_wts = QuadQuadrilateralWeights[order]
-		elif self.Shape == ShapeType.Triangle:
+		elif self.Shape == 'TriShape':
 			self.quad_pts = QuadTrianglePoints[order]
 			self.quad_wts = QuadTriangleWeights[order]
 		else:

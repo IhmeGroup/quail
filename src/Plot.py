@@ -234,11 +234,12 @@ def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kw
 	# plt.axis("equal")
 
 
-def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
+def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
 	IncludeMesh2D=False, Regular2D=False, EqualAR=False, **kwargs):
 
 	# iplot_sr = EqnSet.VariableType[VariableName]
-
+	EndTime = solver.Time
+	basis = solver.basis
 	if PlotExact:
 		if not EqnSet.ExactSoln.Function:
 			raise Exception("No exact solution provided")
@@ -248,28 +249,29 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 	U = EqnSet.U
 	Order = EqnSet.Order
 	sr = EqnSet.StateRank
+
 	# Get points to plot at
 	# Note: assumes uniform element type
 	if Equidistant:
-		xpoint, npoint = Basis.equidistant_nodes(EqnSet.Basis, max([1,3*Order]))
+		xpoint, npoint = basis.equidistant_nodes(max([1,3*Order]))
 	else:
-		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, EqnSet.Basis, max([2,2*Order]), EqnSet)
-		quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
+		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
+		quadData = Quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 		xpoint = quadData.quad_pts
 		npoint = xpoint.shape[0]
 	
 	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
-	PhiData = Basis.BasisData(EqnSet.Basis,Order,mesh)
-	PhiData.eval_basis(xpoint, True, False, False, None)
+	# PhiData = Basis.BasisData(EqnSet.Basis,Order,mesh)
+	basis.eval_basis(xpoint, True, False, False, None)
 	GeomPhiData = None
 	el = 0
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		JData = Basis.JacobianData(mesh)
-		JData.element_jacobian(mesh,elem,xpoint,get_djac=True)
+		# JData = Basis.JacobianData(mesh)
+		djac,_,_=Basis.element_jacobian(mesh,elem,xpoint,get_djac=True)
 
 		xphys, GeomPhiData = Mesh.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
@@ -278,7 +280,7 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 		# interpolate state at quad points
 		# for ir in range(sr):
 		# 	u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
-		u[el,:,:] = np.matmul(PhiData.Phi, U_)
+		u[el,:,:] = np.matmul(basis.basis_val, U_)
 
 		el += 1
 
@@ -323,6 +325,8 @@ def PlotSolution(mesh, EqnSet, EndTime, VariableName, PlotExact=False, PlotIC=Fa
 
 
 def PlotMesh2D(mesh, EqualAR=False, **kwargs):
+	
+	gbasis = mesh.gbasis
 	# Sanity check
 	if mesh.Dim != 2:
 		raise ValueError
@@ -335,8 +339,8 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 		elem = IFace.ElemL; face = IFace.faceL
 
 		# Get local nodes on face
-		fnodes, nfnode = Basis.local_face_nodes(mesh.QBasis, 
-			mesh.QOrder, face)
+		fnodes, nfnode = gbasis.local_face_nodes( 
+			mesh.gorder, face)
 
 		# Convert to global node numbering
 		fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
@@ -357,8 +361,8 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 			elem = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
-			fnodes, nfnode = Basis.local_face_nodes(mesh.QBasis, 
-				mesh.QOrder, face)
+			fnodes, nfnode = gbasis.local_face_nodes( 
+				mesh.gorder, face)
 
 			# Convert to global node numbering
 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]

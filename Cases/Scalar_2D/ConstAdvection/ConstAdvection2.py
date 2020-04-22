@@ -16,15 +16,15 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 Periodic = True
 nElem_x = 5
-mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x=nElem_x, nElem_y = nElem_x, Uniform=True, xmin=-5., xmax=5., 
+mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x= nElem_x, nElem_y = nElem_x, Uniform=True, xmin=-5., xmax=5., 
 	ymin=-5., ymax=5., Periodic=Periodic)
 if Periodic:
 	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
-mesh = MeshCommon.split_quadrils_into_tris(mesh)
+# mesh = MeshCommon.split_quadrils_into_tris(mesh)
 
 ### Solver parameters
-InterpBasis = "LagrangeTri"
+InterpBasis = "LagrangeQuad"
 dt = 0.05
 EndTime = 10.0
 nTimeStep = int(EndTime/dt + 10.*General.eps)
@@ -59,12 +59,13 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, 0., "Scalar")
+solver.Time = 0.
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	Regular2D=True, ShowTriangulation=False)
 Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()

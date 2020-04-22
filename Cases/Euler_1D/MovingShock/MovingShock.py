@@ -48,10 +48,10 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Density")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Pressure", PlotExact=True, Equidistant=True)
+Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", PlotExact=True, Equidistant=True)
 Plot.SaveFigure(FileName=CurrentDir+'Pressure', FileType='pdf', CropLevel=2)
 Plot.ShowPlot()
 

@@ -33,25 +33,25 @@ def element_volumes(mesh, solver=None):
     ElemVolumes = np.zeros(mesh.nElem)
     TotalVolume = 0.
     quadData = None
-    JData = JacobianData(mesh)
+    # JData = JacobianData(mesh)
 
-    Order = mesh.QOrder
+    Order = mesh.gorder
 
-    QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, Order, 
+    QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, Order, 
         quadData=quadData)
     if QuadChanged:
-        quadData = Quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
+        quadData = Quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 
     xq = quadData.quad_pts
     wq = quadData.quad_wts
     nq = xq.shape[0]
 
     for elem in range(mesh.nElem):
-        JData.element_jacobian(mesh,elem,xq,get_djac=True)
+        djac,_,_ = element_jacobian(mesh,elem,xq,get_djac=True)
 
         # for iq in range(nq):
         #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
-        ElemVolumes[elem] = np.sum(wq*JData.djac)
+        ElemVolumes[elem] = np.sum(wq*djac)
 
         TotalVolume += ElemVolumes[elem]
 
@@ -106,7 +106,7 @@ def check_face_orientations(mesh):
     NOTES:
         only returns a message if an error exists
     '''
-
+    gbasis = mesh.gbasis
     if mesh.Dim == 1:
         # don't need to check for 1D
         return
@@ -118,12 +118,12 @@ def check_face_orientations(mesh):
         faceR = IFace.faceR
 
         # Get local q=1 nodes on face for left element
-        lfnodes, nfnode = local_q1_face_nodes(mesh.QBasis, mesh.QOrder, faceL)
+        lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, faceL)
         # Convert to global node numbering
         gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
 
         # Get local q=1 nodes on face for right element
-        lfnodes, nfnode = local_q1_face_nodes(mesh.QBasis, mesh.QOrder, faceR)
+        lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, faceR)
         # Convert to global node numbering
         gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
 
@@ -173,6 +173,7 @@ def RotateNodes(mesh, theta_x = 0., theta_y = 0., theta_z = 0.):
 
 def VerifyPeriodicBoundary(mesh, BFG, icoord):
     coord = np.nan
+    gbasis = mesh.gbasis
     for BF in BFG.BFaces:
         # Extract info
         elem = BF.Elem
@@ -180,8 +181,8 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, 
-            mesh.QOrder, face)
+        lfnodes, nfnode = gbasis.local_q1_face_nodes( 
+            mesh.gorder, face)
 
         # Convert to global node numbering
         gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
@@ -206,6 +207,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     '''
     NOTE: only q = 1 nodes are matched
     '''
+    gbasis = mesh.gbasis
 
     if BFG1 is None and BFG2 is None:
         return
@@ -286,8 +288,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes1, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, 
-            mesh.QOrder, face1)
+        lfnodes1, nfnode = gbasis.local_q1_face_nodes( 
+            mesh.gorder, face1)
 
         # Convert to global node numbering
         gfnodes1 = mesh.Elem2Nodes[elem1][lfnodes1[:]]
@@ -304,8 +306,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
 
             ''' Get physical coordinates of face '''
             # Get local q = 1 nodes on face
-            lfnodes2, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, 
-                mesh.QOrder, face2)
+            lfnodes2, nfnode = gbasis.local_q1_face_nodes(
+                mesh.gorder, face2)
 
             # Convert to global node numbering
             gfnodes2 = mesh.Elem2Nodes[elem2][lfnodes2[:]]
@@ -444,6 +446,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
 
 def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNodeOrder, NextIdx):
 
+    gbasis = mesh.gbasis
+
     if b1 is None and b2 is None:
         return None, None, None, None, NextIdx
 
@@ -499,8 +503,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, 
-            mesh.QOrder, face)
+        lfnodes, nfnode = gbasis.local_q1_face_nodes( 
+            mesh.gorder, face)
 
         # Convert to global node numbering
         gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
@@ -529,8 +533,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = Basis.local_q1_face_nodes(mesh.QBasis, 
-            mesh.QOrder, face)
+        lfnodes, nfnode = gbasis.local_q1_face_nodes( 
+            mesh.gorder, face)
 
         # Convert to global node numbering
         gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
@@ -677,19 +681,19 @@ def VerifyPeriodicMesh(mesh):
         elemR = IF.ElemR
         faceL = IF.faceL
         faceR = IF.faceR
-        QBasis = mesh.QBasis
-        QOrder = mesh.QOrder
+        gbasis = mesh.gbasis
+        gorder = mesh.gorder
 
         ''' Get global face nodes - left '''
-        fnodesL, nfnode = Basis.local_q1_face_nodes(QBasis, 
-            QOrder, faceL)
+        fnodesL, nfnode = gbasis.local_q1_face_nodes( 
+            gorder, faceL)
 
         # Convert to global node numbering
         fnodesL = mesh.Elem2Nodes[elemL][fnodesL[:]]
 
         ''' Get global face nodes - right '''
-        fnodesR, nfnode = Basis.local_q1_face_nodes(QBasis, 
-            QOrder, faceR)
+        fnodesR, nfnode = gbasis.local_q1_face_nodes( 
+            gorder, faceR)
 
         # Convert to global node numbering
         fnodesR = mesh.Elem2Nodes[elemR][fnodesR[:]]

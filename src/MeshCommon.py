@@ -2,7 +2,7 @@ from General import BasisType
 from Mesh import *
 import code
 import copy
-
+import Basis
 
 def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
 	'''
@@ -79,7 +79,7 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 				BF.Elem = nElem - 1
 				BF.face = 1
 
-	mesh.SetParams(QBasis=BasisType["LagrangeSeg"], QOrder=1, nElem=nElem)
+	mesh.SetParams(gbasis=Basis.LagrangeSeg(1), gorder=1, nElem=nElem)
 	mesh.allocate_faces()
 	# interior elements
 	for elem in range(mesh.nElem):
@@ -175,8 +175,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	X, Y = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
 
-	mesh = Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, QBasis=BasisType["LagrangeQuad"],
-		QOrder=1)
+	mesh = Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=Basis.LagrangeQuad(1),
+		gorder=1)
 
 	mesh.Coords = xp
 

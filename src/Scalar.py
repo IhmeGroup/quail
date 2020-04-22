@@ -633,41 +633,6 @@ class ConstAdvScalar1D(object):
 					k+=1
 		return U
 
-	def FcnLinearBurgers(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		a = -1.
-		b = 1.
-		U = (a*x+b)/(a*t+1.)
-
-		return U
-
-	def FcnSineWaveBurgers(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		try:
-			omega = Data.omega
-		except AttributeError:
-			omega = 2.*np.pi
-
-		def F(u):
-			x1 = np.reshape(x,(len(x)))
-			F = u - np.sin(omega*(x1-u*t)) 
-			return F
-		u = np.sin(omega*(x))
-		u1 = np.reshape(u,(len(u)))
-		sol = root(F, u1, tol=1e-12)
-		
-		U[:,0] = sol.x
-
-		return U
-
 	def FcnShiftedCose(self, FcnData):
 		x = FcnData.x
 		t = FcnData.Time
@@ -849,23 +814,37 @@ class Burgers1D(ConstAdvScalar1D):
 
 		return scalar
 
-class Burgers2D(Burgers1D):
-	def SetParams(self,**kwargs):
-		Params = self.Params
-		# Default values
-		if not Params:
-			Params["ConvFlux"] = self.ConvFluxType["LaxFriedrichs"]
-		# Overwrite
-		for key in kwargs:
-			if key not in Params.keys(): raise Exception("Input error")
-			if key is "ConvFlux":
-				Params[key] = self.ConvFluxType[kwargs[key]]
-			elif key is "AdvectionOperator":
-				Params[key] = self.AdvectionOperatorType[kwargs[key]]
-			else:
-				Params[key] = kwargs[key]
+	def FcnSineWaveBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
 
-		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
-			self.ConvFluxFcn = LaxFriedrichsFlux()
-		self.c = np.array([Params["ConstXVelocity"],Params["ConstYVelocity"]])
-		self.cspeed = np.linalg.norm(self.c)	
+		try:
+			omega = Data.omega
+		except AttributeError:
+			omega = 2.*np.pi
+
+		def F(u):
+			x1 = np.reshape(x,(len(x)))
+			F = u - np.sin(omega*(x1-u*t)) 
+			return F
+		u = np.sin(omega*(x))
+		u1 = np.reshape(u,(len(u)))
+		sol = root(F, u1, tol=1e-12)
+		
+		U[:,0] = sol.x
+
+		return U
+
+	def FcnLinearBurgers(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		U = FcnData.U
+		Data = FcnData.Data
+
+		a = -1.
+		b = 1.
+		U = (a*x+b)/(a*t+1.)
+
+		return U
