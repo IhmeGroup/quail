@@ -298,7 +298,7 @@ class PhysicalGroup(object):
 	def __init__(self):
 		self.Dim = 1
 		self.Group = -1
-		self.Number = 0
+		self.Number = -1
 		self.Name = ""
 		self.entity_tags = set()
 
@@ -379,6 +379,10 @@ def ReadPhysicalGroups(fo, mesh):
 		PGroup.Number = int(ls[1])
 		PGroup.Name = ls[2][1:-1]
 
+		if PGroup.Dim < mesh.Dim-1 or PGroup.Dim > mesh.Dim:
+			raise Exception("Physical groups should be created only for " +
+					"elements and boundary faces")
+
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndPhysicalNames"):
@@ -392,7 +396,7 @@ def ReadPhysicalGroups(fo, mesh):
 			break
 
 	if not match:
-		raise Exception("Need all elements to be assigned to a physical group")
+		raise Exception("No elements assigned to a physical group")
 
 	return PGroups, nPGroup
 
@@ -492,7 +496,7 @@ def ReadNodes(fo, ver, mesh):
 	Nodes = Nodes[:,ds]
 
 	if dim == 3:
-		raise ValueError
+		raise ValueError("3D meshes not supported")
 
 	# Store in mesh
 	mesh.Coords = Nodes
@@ -553,6 +557,9 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		enum = int(ls[0])
 		etype = int(ls[1])
 		PGnum = int(ls[3])
+
+		# if PGnum == 0:
+		# 	raise ValueError("All elements need to be assigned to a physical group")
 		
 		found = False
 		for PGidx in range(nPGroup):
@@ -561,7 +568,8 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				found = True
 				break
 		if not found:
-			raise Exception("Physical group not found!")
+			raise Errors.DoesNotExistError("All elements and boundary faces must " +
+					"be assigned to a physical group")
 
 		if PGroup.Dim == mesh.Dim:
 			# Assume only one element type - need to check for this later
@@ -607,6 +615,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 					found = True
 					break
 			if not found:
+				# Group has not been assigned yet
 				mesh.nBFaceGroup += 1
 				BFG = Mesh.BFaceGroup()
 				mesh.BFaceGroups.append(BFG)
@@ -631,6 +640,16 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		etype = lint[2]
 		num_in_block = lint[3]
 
+		# find physical boundary group
+		found = False
+		for PGroup in PGroups:
+			if entity_tag in PGroup.entity_tags and dim == PGroup.Dim:
+				found = True
+				break
+		if not found:
+			raise Errors.DoesNotExistError("All elements and boundary faces must " +
+					"be assigned to a physical group")
+
 		if dim == mesh.Dim:
 			# Element
 			# Get element type data
@@ -649,23 +668,16 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 						raise ValueError(">1 element type not supported")
 				mesh.nElem += 1
 		elif dim == mesh.Dim - 1:
-			# find physical boundary group
-			found = False
-			for PGroup in PGroups:
-				if entity_tag in PGroup.entity_tags:
-					found = True
-					break
-			if found:
-				if PGroup.Group >= 0:
-					BFG = mesh.BFaceGroups[PGroup.Group]
-				else:
-					mesh.nBFaceGroup += 1
-					BFG = Mesh.BFaceGroup()
-					mesh.BFaceGroups.append(BFG)
-					BFG.Name = PGroup.Name
-					PGroup.Group = mesh.nBFaceGroup - 1
+
+			if PGroup.Group >= 0:
+				BFG = mesh.BFaceGroups[PGroup.Group]
 			else:
-				raise ValueError
+				# Group has not been assigned yet
+				mesh.nBFaceGroup += 1
+				BFG = Mesh.BFaceGroup()
+				mesh.BFaceGroups.append(BFG)
+				BFG.Name = PGroup.Name
+				PGroup.Group = mesh.nBFaceGroup - 1
 			# Loop and increment nBFace
 			for _ in range(num_in_block):
 				fo.readline()
