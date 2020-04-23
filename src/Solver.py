@@ -311,6 +311,17 @@ class DG_Solver(object):
 			raise NotImplementedError
 		self.basis = basis
 
+		# Set the space-time basis if using the ADER-DG solver
+		if TimeScheme is "ADER":
+			if BasisFunction is "LagrangeSeg":
+				basis_st = LagrangeQuad(EqnSet.Order, mesh)
+			elif BasisFunction is "LegendreSeg":
+				basis_st = LegendreQuad(EqnSet.Order, mesh)
+			else:
+				raise NotImplementedError
+
+			self.basis_st = basis_st
+
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = Limiter.set_limiter(limiterType)
@@ -1192,10 +1203,10 @@ class ElemOperatorsADER(ElemOperators):
 		# Unpack
 		quad_pts = self.quad_pts 
 		# basis data
-		PhiData = BasisData(basis, order, mesh)
-		PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
+		# PhiData = BasisData(basis, order, mesh)
+		basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
-		self.basis_val = PhiData.Phi 
+		self.basis_val = basis.basis_val
 
 
 
@@ -1203,7 +1214,7 @@ class IFaceOperatorsADER(IFaceOperators):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
-		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.QBasis, order, EqnSet, None)
+		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.gbasis, order, EqnSet, None)
 		quadData = QuadDataADER(mesh, basis, EntityType.IFace, QuadOrder)
 		self.quad_pts = quadData.quad_pts
 		self.quad_wts = quadData.quad_wts
@@ -1215,7 +1226,7 @@ class IFaceOperatorsADER(IFaceOperators):
 		dim = mesh.Dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		nb = order_to_num_basis_coeff(basis, order)
+		nb = basis.get_num_basis_coeff(order)
 		nFacePerElem = mesh.nFacePerElem + 2
 
 		# Allocate
@@ -1224,22 +1235,22 @@ class IFaceOperatorsADER(IFaceOperators):
 		self.normals_ifaces = np.zeros([mesh.nIFace,nq,dim])
 
 		# basis data
-		PhiData = BasisData(basis, order, mesh)
+		# PhiData = BasisData(basis, order, mesh)
 
 		for f in range(nFacePerElem):
 			# Left
 			#eval_basis_on_face_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, Get_Phi=True)
-			_ = PhiData.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
-			self.faces_to_basisL[f] = PhiData.Phi
+			_ = basis.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_basisL[f] = basis.basis_val
 			# Right
-			_ = PhiData.eval_basis_on_face_ader(mesh, basis, f, quad_pts[::-1], None, Get_Phi=True)
-			self.faces_to_basisR[f] = PhiData.Phi
+			_ = basis.eval_basis_on_face_ader(mesh, basis, f, quad_pts[::-1], None, Get_Phi=True)
+			self.faces_to_basisR[f] = basis.basis_val
 
 		i = 0
 		for IFace in mesh.IFaces:
 			# Normals
-			NData = iface_normal(mesh, IFace, quad_pts)
-			self.normals_ifaces[i] = NData.nvec
+			nvec = iface_normal(mesh, IFace, quad_pts)
+			self.normals_ifaces[i] = nvec
 			i += 1
 
 class BFaceOperatorsADER(IFaceOperatorsADER):
@@ -1251,7 +1262,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 		dim = mesh.Dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		nb = order_to_num_basis_coeff(basis, order)
+		nb = basis.get_num_basis_coeff(order)
 		nFacePerElem = mesh.nFacePerElem + 2
 
 		# Allocate
@@ -1261,13 +1272,13 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 		self.x_bfgroups = []
 
 		# basis data
-		PhiData = BasisData(basis, order, mesh)
+		# PhiData = BasisData(basis, order, mesh)
 		GeomPhiData = None
 
 		for f in range(nFacePerElem):
 			# Left
-			self.faces_to_xref[f] = xref = PhiData.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
-			self.faces_to_basis[f] = PhiData.Phi
+			self.faces_to_xref[f] = xref = basis.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
 		for BFG in mesh.BFaceGroups:
@@ -1278,8 +1289,8 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 			j = 0
 			for BFace in BFG.BFaces:
 				# Normals
-				NData = bface_normal(mesh, BFace, quad_pts)
-				normal_bfgroup[j] = NData.nvec
+				nvec = bface_normal(mesh, BFace, quad_pts)
+				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
 				x, GeomPhiData = ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
@@ -1406,24 +1417,27 @@ class ADERDG_Solver(DG_Solver):
 		mesh = self.mesh 
 		EqnSet = self.EqnSet
 
+		basis = self.basis
+		basis_st = self.basis_st
+
 
 		self.elem_operators = ElemOperators()
-		self.elem_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
 		self.iface_operators = IFaceOperators()
-		self.iface_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
 		self.bface_operators = BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.Order)
+		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
 
 		# Calculate ADER specific space-time operators
 		self.elem_operators_st = ElemOperatorsADER()
-		self.elem_operators_st.compute_operators(mesh, EqnSet, EqnSet.BasisADER, EqnSet.Order)
+		self.elem_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
 		self.iface_operators_st = IFaceOperatorsADER()
-		self.iface_operators_st.compute_operators(mesh, EqnSet, EqnSet.BasisADER, EqnSet.Order)
+		self.iface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
 		self.bface_operators_st = BFaceOperatorsADER()
-		self.bface_operators_st.compute_operators(mesh, EqnSet, EqnSet.BasisADER, EqnSet.Order)
+		self.bface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
 
 		self.ader_operators = ADEROperators()
-		self.ader_operators.compute_operators(mesh, EqnSet, EqnSet.Basis, EqnSet.BasisADER, EqnSet.Order)
+		self.ader_operators.compute_operators(mesh, EqnSet, basis, basis_st, EqnSet.Order)
 
 	def calculate_predictor_step(self, dt, W, Up):
 		'''

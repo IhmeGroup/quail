@@ -201,28 +201,31 @@ class QuadDataADER(object):
 			Shape: shape of the basis function
 		'''
 		#ADER is always one dimension greater than physcial space
-		dim = Mesh.get_entity_dim(mesh, entity) + 1 
+		dim = Mesh.get_entity_dim(mesh, entity) + 1
 		self.order = order
+		
 		self.qdim = mesh.Dim + 1
 		self.nvec = None
 
-		Shape = Basis.Basis2Shape[basis]
+		# shape = Basis.Basis2Shape[basis]
+		shape = basis.__class__.__bases__[1].__name__
+		faceshape = basis.faceshape.__class__.__name__
 
 		if entity == EntityType.Element:
-			self.Shape = Shape
+			self.Shape = shape
 		else:
-			self.Shape = Basis.FaceShape[Shape]
+			self.Shape = faceshape
 
-		if self.Shape == ShapeType.Point:
+		if self.Shape == 'PointShape':
 			self.quad_pts = np.zeros([1,1])
 			self.quad_wts = np.ones([1,1])
-		elif self.Shape == ShapeType.Segment:
+		elif self.Shape == 'SegShape':
 			self.quad_pts = QuadLinePoints[order]
 			self.quad_wts = QuadLineWeights[order]
-		elif self.Shape == ShapeType.Quadrilateral:
+		elif self.Shape == 'QuadShape':
 			self.quad_pts = QuadQuadrilateralPoints[order]
 			self.quad_wts = QuadQuadrilateralWeights[order]
-		elif self.Shape == ShapeType.Triangle:
+		elif self.Shape == 'TriShape':
 			self.quad_pts = QuadTrianglePoints[order]
 			self.quad_wts = QuadTriangleWeights[order]
 		else:

@@ -481,12 +481,12 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
     if StaticData is None:
         pnq = -1
         quadData = None
-        PhiData = None
+        # PhiData = None
         StaticData = GenericData()
     else:
         nq = StaticData.pnq
         quadData = StaticData.quadData
-        PhiData = StaticData.PhiData
+        # PhiData = StaticData.PhiData
         # JData = StaticData.JData
 
     QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, order*2., quadData=quadData)
@@ -500,13 +500,13 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
     nq = quad_pts.shape[0]
 
     if QuadChanged:
-        PhiData = BasisData(basis,order,mesh)
-        PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+        # PhiData = BasisData(basis,order,mesh)
+        basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
-    nb = PhiData.Phi.shape[1]
+    nb = basis.basis_val.shape[1]
 
-    phi = PhiData.Phi
-    GPhi = PhiData.GPhi
+    phi = basis.basis_val
+    GPhi = basis.basis_grad
     SM = np.zeros([nb,nb])
     # for i in range(nn):
     #     for j in range(nn):
@@ -518,7 +518,7 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
     SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*quad_wts)
     StaticData.pnq = nq
     StaticData.quadData = quadData
-    StaticData.PhiData = PhiData
+    # StaticData.PhiData = PhiData
 
     return SM, StaticData
 
@@ -546,40 +546,47 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
     if StaticData is None:
         pnq = -1
         quadData = None
-        PhiData = None
-        PsiData = None
+        # PhiData = None
+        # PsiData = None
         StaticData = GenericData()
     else:
         nq = StaticData.pnq
         quadData = StaticData.quadData
-        PhiData = StaticData.PhiData
-        PsiData = StaticData.PsiData
+        # PhiData = StaticData.PhiData
+        # PsiData = StaticData.PsiData
 
     if basis1 == basis2:
         face = 2 
     else:
         face = 0
-    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
   
     if QuadChanged:
-        quadData = QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
+        quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 
     quad_pts = quadData.quad_pts
     quad_wts = quadData.quad_wts
     nq = quad_pts.shape[0]
+
     if QuadChanged:
         if basis1 == basis2:
             face = 2
-            basis = basis1
-            PhiData = BasisData(basis,order,mesh)
-            PsiData = PhiData
+            # PhiData = BasisData(basis,order,mesh)
+            # PsiData = PhiData
+            PhiData = basis1
+            PsiData = basis1
+
             xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.eval_basis_on_face_ader(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
-            PsiData.eval_basis_on_face_ader(mesh, basis, face, quad_pts, xelem, Get_Phi=True)
+            PhiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelem, Get_Phi=True)
+            PsiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelem, Get_Phi=True)
         else:
             face = 0
-            PhiData = BasisData(basis1,order,mesh)
-            PsiData = BasisData(basis2,order,mesh)
+            # PhiData = BasisData(basis1,order,mesh)
+            # PsiData = BasisData(basis2,order,mesh)
+            
+            PhiData = basis1
+            PsiData = basis2
+
             xelemPhi = np.zeros([nq,mesh.Dim+1])
             xelemPsi = np.zeros([nq,mesh.Dim])
             PhiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelemPhi, Get_Phi=True)
@@ -587,8 +594,8 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
             PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
 
-    nb_st = PhiData.Phi.shape[1] #PhiData.nn
-    nb = PsiData.Phi.shape[1] #PsiData.nn
+    nb_st = PhiData.basis_val.shape[1] #PhiData.nn
+    nb = PsiData.basis_val.shape[1] #PsiData.nn
 
     FT = np.zeros([nb_st,nb])
     # for i in range(nn1):
@@ -598,10 +605,10 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
     #             t += phi[iq,i]*psi[iq,j]*wq[iq]
     #         MM[i,j] = t
 
-    FT[:] = np.matmul(PhiData.Phi.transpose(),PsiData.Phi*quad_wts)
+    FT[:] = np.matmul(PhiData.basis_val.transpose(),PsiData.basis_val*quad_wts)
     StaticData.pnq = nq
     StaticData.quadData = quadData
-    StaticData.PhiData = PhiData
+    # StaticData.PhiData = PhiData
  
     return FT, StaticData
 
@@ -625,17 +632,17 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
     if StaticData is None:
         pnq = -1
         quadData = None
-        PhiData = None
-        JData = JacobianData(mesh)
+        # PhiData = None
+        # JData = JacobianData(mesh)
         StaticData = GenericData()
     else:
         nq = StaticData.pnq
         quadData = StaticData.quadData
-        PhiData = StaticData.PhiData
-        JData = StaticData.JData
+        # PhiData = StaticData.PhiData
+        # JData = StaticData.JData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
+        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
     else:
         QuadOrder = order*2 + 1 #Add one for ADER method
         QuadChanged = True
@@ -647,21 +654,21 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
     quad_pts = quadData.quad_pts
     quad_wts = quadData.quad_wts
     nq = quad_pts.shape[0]
+
     if QuadChanged:
 
-        PhiData = BasisData(basis,order,mesh)
-        PhiData.eval_basis(quad_pts, Get_Phi=True)
+        # PhiData = BasisData(basis,order,mesh)
+        basis.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
-        JData.element_jacobian(mesh,elem,quad_pts,get_djac=True)
-        if JData.nq == 1:
-            djac = np.full(nq, JData.djac[0])
-        else:
-            djac = JData.djac
+        djac,_,_=element_jacobian(mesh,elem,quad_pts,get_djac=True)
+        
+        if len(djac) == 1:
+            djac = np.full(nq, djac[0])
     else:
         djac = np.full(nq, 1.)
 
-    nb_st = PhiData.Phi.shape[1]
+    nb_st = basis.basis_val.shape[1]
     MM = np.zeros([nb_st,nb_st])
     # for i in range(nn):
     #     for j in range(nn):
@@ -670,12 +677,12 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
     #             t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq]
     #         MM[i,j] = t
 
-    MM[:] = np.matmul(PhiData.Phi.transpose(), PhiData.Phi*quad_wts*djac)
+    MM[:] = np.matmul(basis.basis_val.transpose(), basis.basis_val*quad_wts*djac)
 
     StaticData.pnq = nq
     StaticData.quadData = quadData
-    StaticData.PhiData = PhiData
-    StaticData.JData = JData
+    # StaticData.PhiData = PhiData
+    # StaticData.JData = JData
 
     return MM, StaticData
 
@@ -1888,6 +1895,41 @@ class BasisBase(ABC):
 
         return xelem
 
+    def eval_basis_on_face_ader(self, mesh, basis, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+        '''
+        Method: eval_basis_on_face_ader
+        ----------------------------
+        Evaluate the basis functions on faces for ADER-DG
+
+        INPUTS:
+            mesh: mesh object
+            basis: type of basis function
+            face: index of face in reference space
+            quad_pts: coordinates of quadrature points
+            Get_Phi: flag to calculate basis functions (Default: True)
+            Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
+            Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
+            JData: jacobian data (needed if calculating physical gradients)
+
+        OUTPUTS:
+            xelem: coordinate of face
+        '''
+
+        shape = basis.__class__.__bases__[1].__name__
+
+        self.face = face
+        nq = quad_pts.shape[0]
+        if shape == 'QuadShape':
+            if xelem is None or xelem.shape != (nq, mesh.Dim+1):
+                xelem = np.zeros([nq, mesh.Dim+1])
+            xelem = basis.ref_face_to_elem(face, nq, quad_pts, xelem)
+        elif shape == 'SegShape':
+            if xelem is None or xelem.shape != (nq, mesh.Dim):
+                xelem = np.zeros([nq, mesh.Dim])
+            xelem = basis.ref_face_to_elem(face, nq, quad_pts, xelem)
+        self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
+
+        return xelem
     # def get_shapes(self, quad_pts, phi=None):
     #     '''
     #     Method: get_shapes
@@ -3119,39 +3161,39 @@ class LegendreQuad(LegendreSeg, QuadShape):
 
     #     return xelem
 
-#     def eval_basis_on_face_ader(self, mesh, basis, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
-#         '''
-#         Method: eval_basis_on_face_ader
-#         ----------------------------
-#         Evaluate the basis functions on faces for ADER-DG
+    # def eval_basis_on_face_ader(self, mesh, basis, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
+    #     '''
+    #     Method: eval_basis_on_face_ader
+    #     ----------------------------
+    #     Evaluate the basis functions on faces for ADER-DG
 
-#         INPUTS:
-#             mesh: mesh object
-#             basis: type of basis function
-#             face: index of face in reference space
-#             quad_pts: coordinates of quadrature points
-#             Get_Phi: flag to calculate basis functions (Default: True)
-#             Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
-#             Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
-#             JData: jacobian data (needed if calculating physical gradients)
+    #     INPUTS:
+    #         mesh: mesh object
+    #         basis: type of basis function
+    #         face: index of face in reference space
+    #         quad_pts: coordinates of quadrature points
+    #         Get_Phi: flag to calculate basis functions (Default: True)
+    #         Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
+    #         Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
+    #         JData: jacobian data (needed if calculating physical gradients)
 
-#         OUTPUTS:
-#             xelem: coordinate of face
-#         '''
+    #     OUTPUTS:
+    #         xelem: coordinate of face
+    #     '''
 
-#         self.face = face
-#         nq = quad_pts.shape[0]
-#         if Shape2Dim[Basis2Shape[basis]] == ShapeType.Quadrilateral:
-#             if xelem is None or xelem.shape != (nq, mesh.Dim+1):
-#                 xelem = np.zeros([nq, mesh.Dim+1])
-#             xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
-#         elif Shape2Dim[Basis2Shape[basis]] == ShapeType.Segment:
-#             if xelem is None or xelem.shape != (nq, mesh.Dim):
-#                 xelem = np.zeros([nq, mesh.Dim])
-#             xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
-#         self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
+    #     self.face = face
+    #     nq = quad_pts.shape[0]
+    #     if Shape2Dim[Basis2Shape[basis]] == ShapeType.Quadrilateral:
+    #         if xelem is None or xelem.shape != (nq, mesh.Dim+1):
+    #             xelem = np.zeros([nq, mesh.Dim+1])
+    #         xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
+    #     elif Shape2Dim[Basis2Shape[basis]] == ShapeType.Segment:
+    #         if xelem is None or xelem.shape != (nq, mesh.Dim):
+    #             xelem = np.zeros([nq, mesh.Dim])
+    #         xelem = Mesh.ref_face_to_elem(Basis2Shape[basis], face, nq, quad_pts, xelem)
+    #     self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
-#         return xelem
+    #     return xelem
     	
 
 # class JacobianData(object):

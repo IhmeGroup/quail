@@ -23,11 +23,11 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Pe
 
 ### Solver parameters
 EndTime = 0.5
-nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.0002))])
+nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 3
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateFlux=True)
-nu = -100000.
+nu = -3.
 
 ### Physics
 Velocity = 1.0 
@@ -67,10 +67,10 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
+TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact=True, PlotIC=True, Label="u")
+Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 Plot.ShowPlot()
 
 

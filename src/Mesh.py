@@ -83,7 +83,7 @@ def ref_to_phys(mesh, elem, PhiData, xref, xphys=None, PointsChanged=False):
 
     return xphys, PhiData
 
-def ref_to_phys_time(mesh, elem, time, dt, PhiData, xref, tphys=None, PointsChanged=False):
+def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChanged=False):
     '''
     Function: ref_to_phys_time
     ------------------------------
@@ -101,20 +101,21 @@ def ref_to_phys_time(mesh, elem, time, dt, PhiData, xref, tphys=None, PointsChan
     OUTPUTS:
         tphys: coordinates in temporal space
     '''
-    QBasis = BasisType.LagrangeQuad
-    QOrder = mesh.QOrder
+    gorder = 1
+    gbasis = Basis.LagrangeQuad(gorder)
+
 
     npoint = xref.shape[0]
 
-    if PhiData is None:
-        PhiData = Basis.BasisData(QBasis,QOrder,mesh)
-        PointsChanged = True
-    if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
-        PhiData.eval_basis(xref, Get_Phi=True)
+    # if gbasis is None:
+        # gbasis = .BasisData(QBasis,QOrder,mesh)
+        # PointsChanged = True
+    # if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
+    gbasis.eval_basis(xref, Get_Phi=True)
 
     dim = mesh.Dim
     
-    Phi = PhiData.Phi
+    Phi = gbasis.basis_val
 
     if tphys is None:
         tphys = np.zeros([npoint,dim])
@@ -129,7 +130,7 @@ def ref_to_phys_time(mesh, elem, time, dt, PhiData, xref, tphys=None, PointsChan
 
     # tphys = (time/2.)*(1-xref)+((time+dt)/2.0)*(1+xref)
 
-    return tphys, PhiData
+    return tphys, gbasis
 
 # def ref_face_to_elem(Shape, face, nq, xface, xelem=None):
 #     '''
