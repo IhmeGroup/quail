@@ -1945,15 +1945,18 @@ class LegendreSeg(BasisBase, SegShape):
             phi: evaluated basis 
             gphi: evaluated physical gradient of basis
         '''
+        leg_poly = np.polynomial.legendre.Legendre
+
         if phi is not None:
-            phi[:,:] = 0.
-            
+            phi[:,:] = 0.            
             x.shape = -1
             
             for it in range(p+1):
-                leg = np.polynomial.legendre.Legendre.basis(it).convert(kind=np.polynomial.Polynomial)
-                phi[:,it] += leg(x)
+                phi[:,it] = leg_poly.basis(it)(x)
 
+            # phi[:,:] = leg
+            # phi[:,:] = np.polynomial.legendre.legval(x,c)
+            # code.interact(local=locals())
             # if p >= 0:
             #     phi[:,0]  = 1.
             # if p>=1:
@@ -1979,8 +1982,7 @@ class LegendreSeg(BasisBase, SegShape):
             gphi[:,:] = 0.
 
             for it in range(p+1):
-                leg = np.polynomial.legendre.Legendre.basis(it).convert(kind=np.polynomial.Polynomial)
-                dleg = leg.deriv(1)
+                dleg = leg_poly.basis(it).deriv(1)
                 gphi[:,it] = dleg(x)
 
             # if p >= 0:
@@ -2102,4 +2104,4 @@ class LegendreQuad(LegendreSeg, QuadShape):
                 gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
                 gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
 
-                
+
