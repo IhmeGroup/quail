@@ -20,3 +20,8 @@ class IncompatibleError(Error):
 	pass
 
 
+class DoesNotExistError(Error):
+	'''Raised when a specific item in, for example, a list does not exist'''
+	pass
+
+
