@@ -883,6 +883,47 @@ class TriShape(QuadShape):
 
         return xelem
 
+class HexShape(QuadShape):
+    faceshape = QuadShape()
+    nfaceperelem = 6
+    dim = 3
+
+    def get_num_basis_coeff(self, p):
+        return (p + 1)**3
+    
+    def equidistant_nodes(self, p, xn=None):
+        '''
+        Method: equidistant_nodes
+        --------------------------
+        Calculate the coordinates in ref space
+
+        INPUTS:
+            basis: type of basis function
+            p: order of polynomial space
+            
+        OUTPUTS: 
+            xn: coordinates of nodes in ref space
+        '''
+        nb = self.get_num_basis_coeff(p)
+        dim = self.dim
+
+        adim = nb,dim
+        if xn is None or xn.shape != adim:
+            xn = np.zeros(adim)
+
+        if p == 0:
+            xn[:] = 0.0 # 0.5
+            return xn, nb
+
+        xseg = equidistant_nodes_1D_range(-1., 1., p+1)
+
+        xn[:,0] = np.tile(xseg, (p+1,1)).reshape(-1)
+        xn[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
+        xn[:,2] = np.repeat(xseg, p+1, axis=1).reshape(-1)
+
+        return xn, nb
+
+
 class BasisBase(ABC): 
     @abstractmethod
     def __init__(self, order, mesh=None):
@@ -1946,13 +1987,17 @@ class LegendreSeg(BasisBase, SegShape):
             gphi: evaluated physical gradient of basis
         '''
         leg_poly = np.polynomial.legendre.Legendre
-
+        c = np.identity(p+1)
         if phi is not None:
             phi[:,:] = 0.            
             x.shape = -1
             
             for it in range(p+1):
                 phi[:,it] = leg_poly.basis(it)(x)
+
+            # code.interact(local=locals())
+            # phi[:] = leg_poly.legval(x,c,tensor=False)
+
 
             # phi[:,:] = leg
             # phi[:,:] = np.polynomial.legendre.legval(x,c)
