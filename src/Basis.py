@@ -19,19 +19,19 @@ Basis2Shape = {
 }
 
 
-Shape2Dim = {
-    ShapeType.Point : 0,
-    ShapeType.Segment : 1,
-    ShapeType.Quadrilateral : 2,
-    ShapeType.Triangle : 2,
-}
+# Shape2Dim = {
+#     ShapeType.Point : 0,
+#     ShapeType.Segment : 1,
+#     ShapeType.Quadrilateral : 2,
+#     ShapeType.Triangle : 2,
+# }
 
 
-FaceShape = {
-    ShapeType.Segment : ShapeType.Point,
-    ShapeType.Quadrilateral : ShapeType.Segment,
-    ShapeType.Triangle : ShapeType.Segment,
-}
+# FaceShape = {
+#     ShapeType.Segment : ShapeType.Point,
+#     ShapeType.Quadrilateral : ShapeType.Segment,
+#     ShapeType.Triangle : ShapeType.Segment,
+# }
 
 
 RefQ1Coords = {
@@ -2958,48 +2958,71 @@ class LegendreSeg(BasisBase, SegShape):
             gphi: evaluated physical gradient of basis
         '''
 
-        if phi is not None:
-            x.shape = -1
-            if p >= 0:
-                phi[:,0]  = 1.
-            if p>=1:
-                phi[:,1]  = x
-            if p>=2:
-                phi[:,2]  = 0.5*(3.*x*x - 1.)
-            if p>=3:
-                phi[:,3]  = 0.5*(5.*x*x*x - 3.*x)
-            if p>=4:
-                phi[:,4]  = 0.125*(35.*x*x*x*x - 30.*x*x + 3.)
-            if p>=5:
-                phi[:,5]  = 0.125*(63.*x*x*x*x*x - 70.*x*x*x + 15.*x)
-            if p>=6:
-                phi[:,6]  = 0.0625*(231.*x*x*x*x*x*x - 315.*x*x*x*x + 105.*x*x -5.)
-            if p==7:
-                phi[:,7]  = 0.0625*(429.*x*x*x*x*x*x*x - 693.*x*x*x*x*x + 315.*x*x*x - 35.*x)
-            if p>7:
-                raise NotImplementedError("Legendre Polynomial > 7 not supported")
+        # if gphi is not None:
+            # gphi[:,:] = 0.
 
+        if phi is not None:
+            phi[:,:] = 0.
+            
+            x.shape = -1
+            
+            for it in range(p+1):
+                leg = np.polynomial.legendre.Legendre.basis(it).convert(kind=np.polynomial.Polynomial)
+                phi[:,it] += leg(x)
+
+                # if gphi is not None:
+                    # dleg = leg.deriv(1)
+                    # gphi[:,it] = dleg(x)
+                    # code.interact(local=locals())
+            # code.interact(local=locals())
+            # if p >= 0:
+            #     phi[:,0]  = 1.
+            # if p>=1:
+            #     phi[:,1]  = x
+            # if p>=2:
+            #     phi[:,2]  = 0.5*(3.*x*x - 1.)
+            # if p>=3:
+            #     phi[:,3]  = 0.5*(5.*x*x*x - 3.*x)
+            # if p>=4:
+            #     phi[:,4]  = 0.125*(35.*x*x*x*x - 30.*x*x + 3.)
+            # if p>=5:
+            #     phi[:,5]  = 0.125*(63.*x*x*x*x*x - 70.*x*x*x + 15.*x)
+            # if p>=6:
+            #     phi[:,6]  = 0.0625*(231.*x*x*x*x*x*x - 315.*x*x*x*x + 105.*x*x -5.)
+            # if p==7:
+            #     phi[:,7]  = 0.0625*(429.*x*x*x*x*x*x*x - 693.*x*x*x*x*x + 315.*x*x*x - 35.*x)
+            # if p>7:
+            #     raise NotImplementedError("Legendre Polynomial > 7 not supported")
+
+            # code.interact(local=locals())
             x.shape = -1,1
 
         if gphi is not None:
-            if p >= 0:
-                gphi[:,0] = 0.
-            if p>=1:
-                gphi[:,1] = 1.
-            if p>=2:
-                gphi[:,2] = 3.*x
-            if p>=3:
-                gphi[:,3] = 0.5*(15.*x*x - 3.)
-            if p>=4:
-                gphi[:,4] = 0.125*(35.*4.*x*x*x - 60.*x)
-            if p>=5:
-                gphi[:,5] = 0.125*(63.*5.*x*x*x*x - 210.*x*x + 15.)
-            if p>=6:
-                gphi[:,6] = 0.0625*(231.*6.*x*x*x*x*x - 315.*4.*x*x*x + 210.*x)
-            if p==7:
-                gphi[:,7] = 0.0625*(429.*7.*x*x*x*x*x*x - 693.*5.*x*x*x*x + 315.*3.*x*x - 35.)
-            if p>7:
-                raise NotImplementedError("Legendre Polynomial > 7 not supported")
+            gphi[:,:] = 0.
+
+            for it in range(p+1):
+                leg = np.polynomial.legendre.Legendre.basis(it).convert(kind=np.polynomial.Polynomial)
+                dleg = leg.deriv(1)
+                gphi[:,it] = dleg(x)
+
+            # if p >= 0:
+            #     gphi[:,0] = 0.
+            # if p>=1:
+            #     gphi[:,1] = 1.
+            # if p>=2:
+            #     gphi[:,2] = 3.*x
+            # if p>=3:
+            #     gphi[:,3] = 0.5*(15.*x*x - 3.)
+            # if p>=4:
+            #     gphi[:,4] = 0.125*(35.*4.*x*x*x - 60.*x)
+            # if p>=5:
+            #     gphi[:,5] = 0.125*(63.*5.*x*x*x*x - 210.*x*x + 15.)
+            # if p>=6:
+            #     gphi[:,6] = 0.0625*(231.*6.*x*x*x*x*x - 315.*4.*x*x*x + 210.*x)
+            # if p==7:
+            #     gphi[:,7] = 0.0625*(429.*7.*x*x*x*x*x*x - 693.*5.*x*x*x*x + 315.*3.*x*x - 35.)
+            # if p>7:
+            #     raise NotImplementedError("Legendre Polynomial > 7 not supported")
 
 class LegendreQuad(LegendreSeg, QuadShape):
     def __init__(self, order, mesh=None):
