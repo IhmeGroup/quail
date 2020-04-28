@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from Data import ArrayList
 from SolverTools import mult_inv_mass_matrix
 
-class Stepper(ABC):
+class StepperBase(ABC):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 
@@ -12,7 +12,7 @@ class Stepper(ABC):
 	def TakeTimeStep(self, solver):
 		pass
 
-class FE(Stepper):
+class FE(StepperBase):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 
@@ -43,7 +43,7 @@ class FE(Stepper):
 		return R
 
 
-class RK4(Stepper):
+class RK4(StepperBase):
 	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
@@ -118,7 +118,7 @@ class RK4(Stepper):
 		return R
 
 
-class LSRK4(Stepper):
+class LSRK4(StepperBase):
 	# Low-storage RK4
 	def __init__(self, dt=0.):
 		FE.__init__(self, dt)
@@ -175,7 +175,7 @@ class LSRK4(Stepper):
 
 		return R
 
-class SSPRK3(Stepper):
+class SSPRK3(StepperBase):
 	# Low-storage SSPRK3 with 5 stages (as written in Spiteri. 2002)
 	def __init__(self, dt=0.):
 		FE.__init__(self, dt)
@@ -227,7 +227,7 @@ class SSPRK3(Stepper):
 
 
 
-class ADER(Stepper):
+class ADER(StepperBase):
 	
 	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
