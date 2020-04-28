@@ -550,9 +550,9 @@ class ConstAdvScalar1D(object):
 	def FcnUniform(self, FcnData):
 		Data = FcnData.Data
 		U = FcnData.U
-		sr = self.StateRank
+		ns = self.StateRank
 
-		for k in range(sr):
+		for k in range(ns):
 			U[:,k] = Data.State[k]
 
 		return U
@@ -593,44 +593,6 @@ class ConstAdvScalar1D(object):
 		c = self.c
 		U[:] = np.sin(omega*(x-c*t))*np.exp(nu*t)
 
-		return U
-
-	def FcnPiecewiseBurgers(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		k = 0
-		ir = len(x)
-		if isinstance(t,float):
-			it = 1
-			t=np.reshape(t,[it])
-		else:
-			it = len(t)
-		for j in range(it):
-			if t[j] == 0.0:
-				for i in range(ir):
-					if x[i]<-1.:
-						U[k] = 1.
-					elif -1.<=x[i] and 0.>x[i]:
-						U[k] = x[i]+2.
-					elif x[i]>=0. and x[i]<2.:
-						U[k] = 2.-1.5*x[i]+(3./8.)*x[i]*x[i]
-					elif x[i]>=2.:
-						U[k] = 0.5
-					k+=1
-			else:
-				for i in range(ir):
-					if x[i]-t[j]<-1.:
-						U[k] = 1.
-					elif -1.<=((x[i]-2.*t[j])/(t[j]+1.)) and 0.>((x[i]-2.*t[j])/(t[j]+1.)):
-						U[k] = (x[i]+2.)/(t[j]+1.)
-					elif (x[i]-2.*t[j])/(t[j]+1.)>=0. and x[i]-t[j]/2.<2.:
-						U[k] = (8.+6.*x[i]*t[j]-12.*t[j]-np.sqrt(96.*x[i]*t[j]-48.*t[j]*t[j]-192.*t[j]+64.))/(6.*t[j]*t[j])
-					elif x[i]-t[j]/2.>=2.:
-						U[k] = 0.5
-					k+=1
 		return U
 
 	def FcnShiftedCose(self, FcnData):
@@ -752,19 +714,6 @@ class ConstAdvScalar1D(object):
 
 		return S
 
-	def FcnDummySource(self,FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		S = FcnData.S
-		Data = FcnData.Data
-
-		print('dummy')
-
-
-		return S
-
-
 class ConstAdvScalar2D(ConstAdvScalar1D):
 	def SetParams(self,**kwargs):
 		Params = self.Params
@@ -829,6 +778,7 @@ class Burgers1D(ConstAdvScalar1D):
 			x1 = np.reshape(x,(len(x)))
 			F = u - np.sin(omega*(x1-u*t)) 
 			return F
+			
 		u = np.sin(omega*(x))
 		u1 = np.reshape(u,(len(u)))
 		sol = root(F, u1, tol=1e-12)
