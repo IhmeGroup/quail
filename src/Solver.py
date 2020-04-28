@@ -3,6 +3,7 @@ from Basis import *
 from Quadrature import *
 from Mesh import *
 import code
+from abc import ABC, abstractmethod
 import copy
 from Data import ArrayList, GenericData
 from SolverTools import *
@@ -18,6 +19,104 @@ import Limiter
 global echeck
 echeck = -1
 
+
+class SolverBase(ABC):
+	def __init__(self,Params,EqnSet,mesh):
+		'''
+		Method: __init__
+		--------------------------------------------------------------------------
+		Initializes the DG_Solver object, verifies parameters, and initializes the state
+
+		INPUTS:
+			Params: list of parameters for the solver
+			EqnSet: solver object (current implementation supports Scalar and Euler equations)
+			mesh: mesh object
+		'''
+
+		self.Params = Params
+		self.EqnSet = EqnSet
+		self.mesh = mesh
+		self.DataSet = GenericData()
+
+		self.Time = Params["StartTime"]
+		self.nTimeStep = 0 # will be set later
+
+		TimeScheme = Params["TimeScheme"]
+		if TimeScheme is "FE":
+			Stepper = FE()
+		elif TimeScheme is "RK4":
+			Stepper = RK4()
+		elif TimeScheme is "LSRK4":
+			Stepper = LSRK4()
+		elif TimeScheme is "SSPRK3":
+			Stepper = SSPRK3()
+		elif TimeScheme is "ADER":
+			Stepper = ADER()
+		else:
+			raise NotImplementedError("Time scheme not supported")
+		# if Params["nTimeStep"] > 0:
+		# 	Stepper.dt = Params["EndTime"]/Params["nTimeStep"]
+		self.Stepper = Stepper
+
+		# Set the basis functions for the solver
+		BasisFunction  = Params["InterpBasis"]
+		if BasisFunction is "LagrangeSeg":
+			basis = LagrangeSeg(EqnSet.Order, mesh)
+		elif BasisFunction is "LegendreSeg":
+			basis = LegendreSeg(EqnSet.Order, mesh)
+		elif BasisFunction is "LagrangeQuad":
+			basis = LagrangeQuad(EqnSet.Order, mesh)
+		elif BasisFunction is "LegendreQuad":
+			basis = LegendreQuad(EqnSet.Order, mesh)
+		elif BasisFunction is "LagrangeTri":
+			basis = LagrangeTri(EqnSet.Order, mesh)
+		else:
+			raise NotImplementedError
+		self.basis = basis
+
+		# Set the space-time basis if using the ADER-DG solver
+		if TimeScheme is "ADER":
+			if BasisFunction is "LagrangeSeg":
+				basis_st = LagrangeQuad(EqnSet.Order, mesh)
+			elif BasisFunction is "LegendreSeg":
+				basis_st = LegendreQuad(EqnSet.Order, mesh)
+			else:
+				raise NotImplementedError
+
+			self.basis_st = basis_st
+
+		# Limiter
+		limiterType = Params["ApplyLimiter"]
+		self.Limiter = Limiter.set_limiter(limiterType)
+
+		# Check validity of parameters
+		self.check_solver_params()
+
+		# Initialize state
+		self.init_state()
+
+		# Precompute operators
+		self.precompute_matrix_operators()
+
+	@abstractmethod
+	def check_solver_params(self):
+		pass
+
+	@abstractmethod
+	def precompute_matrix_operators(self):
+		pass
+
+	@abstractmethod
+	def calculate_residual_elem(self, elem, Up, ER, StaticData):
+		pass
+
+	@abstractmethod
+	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR, StaticData):
+		pass
+
+	@abstractmethod
+	def calculate_residual_bface(self, ibfgrp, ibface, U, R, StaticData):
+		pass
 
 class ElemOperators(object):
 	def __init__(self):
@@ -242,7 +341,7 @@ class BFaceOperators(IFaceOperators):
 
 
 
-class DG_Solver(object):
+class DG_Solver(SolverBase):
 	'''
 	Class: DG_Solver
 	--------------------------------------------------------------------------
@@ -256,83 +355,6 @@ class DG_Solver(object):
 		Time: current time in the simulation
 		nTimeStep: number of time steps
 	'''
-	def __init__(self,Params,EqnSet,mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		Initializes the DG_Solver object, verifies parameters, and initializes the state
-
-		INPUTS:
-			Params: list of parameters for the solver
-			EqnSet: solver object (current implementation supports Scalar and Euler equations)
-			mesh: mesh object
-		'''
-
-		self.Params = Params
-		self.EqnSet = EqnSet
-		self.mesh = mesh
-		self.DataSet = GenericData()
-
-		self.Time = Params["StartTime"]
-		self.nTimeStep = 0 # will be set later
-
-		TimeScheme = Params["TimeScheme"]
-		if TimeScheme is "FE":
-			Stepper = FE()
-		elif TimeScheme is "RK4":
-			Stepper = RK4()
-		elif TimeScheme is "LSRK4":
-			Stepper = LSRK4()
-		elif TimeScheme is "SSPRK3":
-			Stepper = SSPRK3()
-		elif TimeScheme is "ADER":
-			Stepper = ADER()
-		else:
-			raise NotImplementedError("Time scheme not supported")
-		# if Params["nTimeStep"] > 0:
-		# 	Stepper.dt = Params["EndTime"]/Params["nTimeStep"]
-		self.Stepper = Stepper
-
-		# Set the basis functions for the solver
-		BasisFunction  = Params["InterpBasis"]
-		if BasisFunction is "LagrangeSeg":
-			basis = LagrangeSeg(EqnSet.Order, mesh)
-		elif BasisFunction is "LegendreSeg":
-			basis = LegendreSeg(EqnSet.Order, mesh)
-		elif BasisFunction is "LagrangeQuad":
-			basis = LagrangeQuad(EqnSet.Order, mesh)
-		elif BasisFunction is "LegendreQuad":
-			basis = LegendreQuad(EqnSet.Order, mesh)
-		elif BasisFunction is "LagrangeTri":
-			basis = LagrangeTri(EqnSet.Order, mesh)
-		else:
-			raise NotImplementedError
-		self.basis = basis
-
-		# Set the space-time basis if using the ADER-DG solver
-		if TimeScheme is "ADER":
-			if BasisFunction is "LagrangeSeg":
-				basis_st = LagrangeQuad(EqnSet.Order, mesh)
-			elif BasisFunction is "LegendreSeg":
-				basis_st = LegendreQuad(EqnSet.Order, mesh)
-			else:
-				raise NotImplementedError
-
-			self.basis_st = basis_st
-
-		# Limiter
-		limiterType = Params["ApplyLimiter"]
-		self.Limiter = Limiter.set_limiter(limiterType)
-
-		# Check validity of parameters
-		self.check_solver_params()
-
-		# Initialize state
-		self.init_state()
-
-		# Precompute operators
-		self.precompute_matrix_operators()
-
 	def check_solver_params(self):
 		'''
 		Method: check_solver_params
