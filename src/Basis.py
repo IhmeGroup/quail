@@ -4,6 +4,7 @@ from General import *
 from Quadrature import *
 from Math import *
 import Mesh
+import MeshGmsh
 import code
 from Data import ArrayList, GenericData
 from abc import ABC, abstractmethod
@@ -11,22 +12,25 @@ from abc import ABC, abstractmethod
 
 
 Basis2Shape = {
-    BasisType.LagrangeSeg : ShapeType.Segment,
-    BasisType.LagrangeQuad : ShapeType.Quadrilateral,
-    BasisType.LagrangeTri : ShapeType.Triangle,
+    BasisType.LagrangeEqSeg : ShapeType.Segment,
+    BasisType.LagrangeEqQuad : ShapeType.Quadrilateral,
+    BasisType.LagrangeEqTri : ShapeType.Triangle,
     BasisType.LegendreSeg : ShapeType.Segment,
     BasisType.LegendreQuad : ShapeType.Quadrilateral,
+    BasisType.HierarchicH1Tri : ShapeType.Triangle
 }
 
 RefQ1Coords = {
-    BasisType.LagrangeSeg : np.array([[-1.],[1.]]),
-    BasisType.LagrangeQuad : np.array([[-1.,-1.],[1.,-1.],
+    BasisType.LagrangeEqSeg : np.array([[-1.],[1.]]),
+    BasisType.LagrangeEqQuad : np.array([[-1.,-1.],[1.,-1.],
                                 [-1.,1.],[1.,1.]]),
-    BasisType.LagrangeTri : np.array([[0.,0.],[1.,0.],
+    BasisType.LagrangeEqTri : np.array([[0.,0.],[1.,0.],
                                 [0.,1.]]),
     BasisType.LegendreSeg : np.array([[-1.],[1.]]),
     BasisType.LegendreQuad : np.array([[-1.,-1.],[1.,-1.],
                                 [-1.,1.],[1.,1.]]),
+    BasisType.HierarchicH1Tri : np.array([[0.,0.],[1.,0.],
+                                [0.,1.]])
 }
 
 
@@ -789,8 +793,8 @@ class QuadShape(SegShape):
 
         fnodes, nfnode = self.local_q1_face_nodes(1, face)
 
-        x0 = RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
-        x1 = RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
+        x0 = RefQ1Coords[BasisType.LagrangeEqQuad][fnodes[0]]
+        x1 = RefQ1Coords[BasisType.LagrangeEqQuad][fnodes[1]]
 
         if face == 0:
             xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
@@ -873,8 +877,8 @@ class TriShape(QuadShape):
         # local q = 1 nodes on face
         fnodes, nfnode = self.local_q1_face_nodes(1, face)
         # coordinates of local q = 1 nodes on face
-        x0 = RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
-        x1 = RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
+        x0 = RefQ1Coords[BasisType.LagrangeEqTri][fnodes[0]]
+        x1 = RefQ1Coords[BasisType.LagrangeEqTri][fnodes[1]]
         # for i in range(nq):
         #     xf[i] = (xface[i] + 1.)/2.
         #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
@@ -1060,7 +1064,7 @@ class BasisBase(ABC):
 
         return xelem
 
-class LagrangeSeg(BasisBase, SegShape):
+class LagrangeEqSeg(BasisBase, SegShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -1231,7 +1235,7 @@ class LagrangeSeg(BasisBase, SegShape):
 
         return fnodes, nfnode
 
-class LagrangeQuad(LagrangeSeg, QuadShape):
+class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -1372,7 +1376,7 @@ class LagrangeQuad(LagrangeSeg, QuadShape):
             x_s = np.zeros_like(nvec)
             fnodes, nfnode = self.local_face_nodes(gorder, face, fnodes=None)
 
-            basis_seg = LagrangeSeg(gorder)
+            basis_seg = LagrangeEqSeg(gorder)
             basis_grad = basis_seg.get_grads(quad_pts, basis_grad=None)
             Coords = mesh.Coords[ElemNodes[fnodes]]
 
@@ -1448,7 +1452,7 @@ class LagrangeQuad(LagrangeSeg, QuadShape):
 
         return fnodes, nfnode
 
-class LagrangeTri(LagrangeQuad, TriShape):
+class LagrangeEqTri(LagrangeEqQuad, TriShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -1987,7 +1991,7 @@ class LegendreSeg(BasisBase, SegShape):
             gphi: evaluated physical gradient of basis
         '''
         leg_poly = np.polynomial.legendre.Legendre
-        c = np.identity(p+1)
+
         if phi is not None:
             phi[:,:] = 0.            
             x.shape = -1
@@ -2103,5 +2107,298 @@ class LegendreQuad(LegendreSeg, QuadShape):
             for i in range(x.shape[0]):
                 gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
                 gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
+
+class HierarchicH1Tri(LegendreQuad, TriShape):
+    def __init__(self, order, mesh=None):
+        super().__init__(order)
+        self.nb = self.get_num_basis_coeff(order)
+
+    def get_values(self, quad_pts, basis_val=None):
+        '''
+        Method: get_values
+        ------------------------------
+        Calculates Lagrange basis for triangles
+
+        INPUTS:
+            x: coordinate of current node
+
+        OUTPUTS: 
+            phi: evaluated basis 
+        '''
+        p = self.order
+        nb = self.nb
+        nq = quad_pts.shape[0]
+
+        if basis_val is None or basis_val.shape != (nq,nb):
+            basis_val = np.zeros([nq,nb])
+        else:
+            basis_val[:] = 0.
+
+        if p == 0:
+            basis_val[:] = 1.
+            return basis_val
+
+        self.get_modal_basis_tri(p, quad_pts, basis_val)
+
+        return basis_val
+
+    def get_grads(self, quad_pts, basis_grad=None):
+        '''
+        Method: get_grads
+        ------------------------------
+        Calculates the lagrange basis gradients
+
+        INPUTS:
+            x: coordinate of current node
+            
+        OUTPUTS: 
+            gphi: evaluated gradient of basis
+        '''
+        dim = self.dim
+        p = self.order
+        nb = self.nb
+        nq = quad_pts.shape[0]
+
+        if basis_grad is None or basis_grad.shape != (nq,nb,dim):
+            basis_grad = np.zeros([nq,nb,dim])
+        else: 
+            basis_grad[:] = 0.
+
+        if p == 0:
+            basis_grad[:,:] = 0.
+            return basis_grad
+
+        self.get_modal_grad_tri(p, quad_pts, basis_grad)
+
+        basis_grad = 2.*basis_grad
+
+        return basis_grad
+
+    def get_modal_basis_tri(self, p, xi, phi):
+
+        xn, nb = self.equidistant_nodes(p)
+
+        phi_reorder = np.zeros_like(phi)
+
+        # Transform to the modal basis reference element
+        # [-1,-1],[1,-1],[-1,1]
+        xn = 2.*xn - 1.
+        xi = 2.*xi - 1.
+
+        # Define the affine coordinates
+        l = np.zeros([xi.shape[0],3])
+
+        l[:,0] = (xi[:,1]+1.)/2.
+        l[:,1] = -1.*((xi[:,1]+xi[:,0])/2.)
+        l[:,2] = (xi[:,0]+1.)/2.
+
+        if p == 0:
+            phi[:] = 1.
+            return 
+
+        phi_reorder[:,[0,1,2]] = l[:,[1,2,0]]
+
+        e1 = np.arange(3,p-1+3,1)
+        e2 = np.arange(p-1+3,2*p-2+3,1)
+        e3 = np.arange(2*p-2+3,3*p-3+3,1)
+
+        phi_reorder[:,e1] = self.get_edge_basis(p, l[:,2], l[:,1])
+        phi_reorder[:,e2] = self.get_edge_basis(p, l[:,0], l[:,2])
+        phi_reorder[:,e3] = self.get_edge_basis(p, l[:,1], l[:,0])
+
+        internal = np.arange(3*p-3+3,nb,1)
+
+        phi_reorder[:,internal] = self.get_internal_basis(p, internal, l)
+
+        index = MeshGmsh.gmsh_node_order_tri(p)
+
+        phi[:,:] = phi_reorder[:,index]
+
+        return phi
+
+    def get_edge_basis(self, p, ll, lr):
+
+        phi_e = np.zeros([ll.shape[0],p-1])
+        for k in range(p-1):
+            kernel = self.get_kernel_function(k,ll-lr)
+            phi_e[:,k] = ll*lr*kernel
+
+        return phi_e
+
+    def get_internal_basis(self, p, index, l):
+
+        phi_i = np.zeros([l.shape[0],len(index)])
+
+        c=0
+        for i in range(3,p+1):
+            c += i-2
+        
+        n = np.zeros([c,2])
+        n1 = np.arange(1,p-1,1)
+        n2 = np.arange(1,p-1,1)
+        k = 0
+        for i in range(len(n1)):
+            for j in range(len(n2)):
+                if n1[i] + n2[j] <= p-1:
+                    n[k,0] = n1[i]
+                    n[k,1] = n2[j]
+                    k+=1
+
+        for m in range(c):
+            phi_i[:,m] = l[:,0]*l[:,1]**n[m,0]*l[:,2]**n[m,1]
+
+        return phi_i
+
+    def get_kernel_function(self, p, x):
+
+        p+=2
+        # Initialize the legendre polynomial object
+        leg_poly = np.polynomial.legendre.Legendre
+        x.shape = -1
+
+        # Construct the kernel's denominator (series of Lobatto fnc's)                    
+        
+        # First two lobatto shape functions 
+        l0 =  (1.-x)/2.
+        l1 =  (1.+x)/2.
+
+        den = l0*l1
+
+        leg_int = leg_poly.basis(p-1).integ(m=1,lbnd=-1)
+        num = np.sqrt((2.*p-1.)/2.)*leg_int(x)
+
+        kernel = num / (1e-12 + den)
+
+        x.shape = -1,1
+
+        return kernel
+
+
+    def get_modal_grad_tri(self, p, xi, gphi):
+     
+        xn, nb = self.equidistant_nodes(p)
+
+        gphi_reorder = np.zeros_like(gphi)
+        # Transform to the modal basis reference element
+        # [-1,-1],[1,-1],[-1,1]
+
+        xn = 2.*xn - 1.
+        xi = 2.*xi - 1.
+
+        gl = np.zeros([xi.shape[0],3,2])
+        l = np.zeros([xi.shape[0],3])
+
+        # Calculate the affine coordinates
+        l[:,0] = (xi[:,1]+1.)/2.
+        l[:,1] = -1.*((xi[:,1]+xi[:,0])/2.)
+        l[:,2] = (xi[:,0]+1.)/2.
+
+        # Calculate vertex gradients
+        gl[:,0,0] = 0.
+        gl[:,0,1] = 0.5 
+        
+        gl[:,1,0] = -0.5
+        gl[:,1,1] = -0.5
+
+        gl[:,2,0] = 0.5
+        gl[:,2,1] = 0.
+
+        if p == 0:
+            phi[:] = 1.
+            return 
+
+        gphi_reorder[:,[0,1,2],:] = gl[:,[1,2,0],:]
+
+        # Calculate edge gradients
+        e1 = np.arange(3,p-1+3,1)
+        e2 = np.arange(p-1+3,2*p-2+3,1)
+        e3 = np.arange(2*p-2+3,3*p-3+3,1)
+
+        dxdxi = np.zeros([3,2])
+        dxdxi[0,0] = 1.   ; dxdxi[0,1] = 0.5
+        dxdxi[1,0] = -0.5 ; dxdxi[1,1] = 0.5
+        dxdxi[2,0] = -0.5 ; dxdxi[2,1] = -1.
+
+        gphi_reorder[:,e1,0] = self.get_edge_grad(p, dxdxi[0,0], gl[:,2,0], gl[:,1,0], l[:,2], l[:,1])
+        gphi_reorder[:,e1,1] = self.get_edge_grad(p, dxdxi[0,1], gl[:,2,1], gl[:,1,1], l[:,2], l[:,1])
+        gphi_reorder[:,e2,0] = self.get_edge_grad(p, dxdxi[1,0], gl[:,0,0], gl[:,2,0], l[:,0], l[:,2])
+        gphi_reorder[:,e2,1] = self.get_edge_grad(p, dxdxi[1,1], gl[:,0,1], gl[:,2,1], l[:,0], l[:,2])
+        gphi_reorder[:,e3,0] = self.get_edge_grad(p, dxdxi[2,0], gl[:,1,0], gl[:,0,0], l[:,1], l[:,0])
+        gphi_reorder[:,e3,1] = self.get_edge_grad(p, dxdxi[2,1], gl[:,1,1], gl[:,0,1], l[:,1], l[:,0])
+
+        internal = np.arange(3*p-3+3,nb,1)
+
+        gphi_reorder[:,internal,0] = self.get_internal_grad(p, internal, gl[:,:,0], l)
+        gphi_reorder[:,internal,1] = self.get_internal_grad(p, internal, gl[:,:,1], l)
+
+        index = MeshGmsh.gmsh_node_order_tri(p)
+
+        gphi[:,:,:] = gphi_reorder[:,index,:]
+
+        return gphi
+
+
+    def get_edge_grad(self, p, dxdxi, gl, gr, ll, lr):
+
+        gphi_e = np.zeros([ll.shape[0],p-1])
+        for k in range(p-1):
+            gkernel = self.get_kernel_grad(k, dxdxi, ll-lr)
+            kernel = self.get_kernel_function(k,ll-lr)
+            gphi_e[:,k] = (ll*gr+lr*gl)*kernel + ll*lr*gkernel
+
+        return gphi_e
+
+    def get_kernel_grad(self, p, dxdxi, x):
+
+        p+=2
+        leg_poly = np.polynomial.legendre.Legendre
+        x.shape = -1
+
+        # First two lobatto shape functions 
+        l0 =  (1.-x)/2.
+        l1 =  (1.+x)/2.
+        dl0 = -0.5
+        dl1 = 0.5
+
+        leg_int = leg_poly.basis(p-1).integ(m=1,lbnd=-1)
+        lk = np.sqrt((2.*p-1.)/2.)*leg_int(x)
+
+        leg = leg_poly.basis(p-1)
+        dl = np.sqrt((2.*p-1.)/2.)*dxdxi*leg(x)
+
+        num = l0*l1*dl - lk*(l1*dl0*dxdxi+l0*dl1*dxdxi)
+        den = (l0*l1)**2
+
+        kernel = num / (1.e-12+den)
+
+        return kernel
+
+
+    def get_internal_grad(self, p, index, gl,l):
+
+        gphi_i = np.zeros([l.shape[0],len(index)])
+
+        c=0
+        for i in range(3,p+1):
+            c += i-2
+        
+        n = np.zeros([c,2])
+        n1 = np.arange(1,p-1,1)
+        n2 = np.arange(1,p-1,1)
+        k = 0
+        for i in range(len(n1)):
+            for j in range(len(n2)):
+                if n1[i] + n2[j] <= p-1:
+                    n[k,0] = n1[i]
+                    n[k,1] = n2[j]
+                    k+=1
+
+        for m in range(c):
+            dl2l3_1 = n[m,0]*l[:,1]**(n[m,0]-1)*l[:,2]**n[m,1]*gl[:,1]
+            dl2l3_2 = n[m,1]*l[:,2]**(n[m,1]-1)*l[:,1]**n[m,0]*gl[:,2]
+            gphi_i[:,m] = gl[:,0]*l[:,1]**n[m,0]*l[:,2]**n[m,1]+l[:,0]*(dl2l3_1+dl2l3_2)
+
+        return gphi_i
+
 
 

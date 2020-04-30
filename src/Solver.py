@@ -60,24 +60,26 @@ class SolverBase(ABC):
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		if BasisFunction is "LagrangeSeg":
-			basis = LagrangeSeg(EqnSet.Order, mesh)
+		if BasisFunction is "LagrangeEqSeg":
+			basis = LagrangeEqSeg(EqnSet.Order, mesh)
 		elif BasisFunction is "LegendreSeg":
 			basis = LegendreSeg(EqnSet.Order, mesh)
-		elif BasisFunction is "LagrangeQuad":
-			basis = LagrangeQuad(EqnSet.Order, mesh)
+		elif BasisFunction is "LagrangeEqQuad":
+			basis = LagrangeEqQuad(EqnSet.Order, mesh)
 		elif BasisFunction is "LegendreQuad":
 			basis = LegendreQuad(EqnSet.Order, mesh)
-		elif BasisFunction is "LagrangeTri":
-			basis = LagrangeTri(EqnSet.Order, mesh)
+		elif BasisFunction is "LagrangeEqTri":
+			basis = LagrangeEqTri(EqnSet.Order, mesh)
+		elif BasisFunction is "HierarchicH1Tri":
+			basis = HierarchicH1Tri(EqnSet.Order, mesh)
 		else:
 			raise NotImplementedError
 		self.basis = basis
 
 		# Set the space-time basis if using the ADER-DG solver
 		if TimeScheme is "ADER":
-			if BasisFunction is "LagrangeSeg":
-				basis_st = LagrangeQuad(EqnSet.Order, mesh)
+			if BasisFunction is "LagrangeEqSeg":
+				basis_st = LagrangeEqQuad(EqnSet.Order, mesh)
 			elif BasisFunction is "LegendreSeg":
 				basis_st = LegendreQuad(EqnSet.Order, mesh)
 			else:
@@ -366,7 +368,7 @@ class DG_Solver(SolverBase):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
+		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		    if mesh.Dim != 1:
 		        raise Errors.IncompatibleError
 		else:
@@ -387,7 +389,7 @@ class DG_Solver(SolverBase):
 		if Params["LinearGeomMapping"] is True:
 			if mesh.QOrder != 1:
 			    raise Errors.IncompatibleError
-			if mesh.QBasis == BasisType.LagrangeQuad \
+			if mesh.QBasis == BasisType.LagrangeEqQuad \
 			    and Params["UniformMesh"] is False:
 			    raise Errors.IncompatibleError
 
@@ -1114,7 +1116,7 @@ class ADERDG_Solver(DG_Solver):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
+		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		    if mesh.Dim != 1:
 		        raise Errors.IncompatibleError
 		else:
@@ -1135,7 +1137,7 @@ class ADERDG_Solver(DG_Solver):
 		if Params["LinearGeomMapping"] is True:
 			if mesh.QOrder != 1:
 			    raise Errors.IncompatibleError
-			if mesh.QBasis == BasisType.LagrangeQuad \
+			if mesh.QBasis == BasisType.LagrangeEqQuad \
 			    and Params["UniformMesh"] is False:
 			    raise Errors.IncompatibleError
 
