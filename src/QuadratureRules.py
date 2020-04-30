@@ -474,6 +474,20 @@ for key in [18,19]:
     0.001899964427651])
 # reshape
 for order in QuadTrianglePoints.keys():
-	QuadTrianglePoints[order].shape = -1,2
-	QuadTriangleWeights[order].shape = -1,1
+    QuadTrianglePoints[order].shape = -1,2
+    QuadTriangleWeights[order].shape = -1,1
+
+    # pts = QuadQuadrilateralPoints[order]
+    # wts = QuadQuadrilateralWeights[order]
+
+    # # Transform
+    # wts[:,0] *= 0.125*(1. - pts[:,0])
+    # pts[:,1] = 0.25*(1. - pts[:,0])*(1. + pts[:,1])
+    # pts[:,0] = 0.5*(1. + pts[:,0])
+
+    # QuadTrianglePoints[order] = pts
+    # QuadTriangleWeights[order] = wts
+
+
+
 

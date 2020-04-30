@@ -3,7 +3,7 @@ from General import *
 import Mesh
 import code
 import Basis
-from QuadratureRules import *
+import QuadratureRulesSeg, QuadratureRulesQuad, QuadratureRulesTri
 
 
 def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None):
@@ -169,64 +169,71 @@ class QuadData(object):
 			self.quad_pts = np.zeros([1,1])
 			self.quad_wts = np.ones([1,1])
 		elif self.Shape == 'SegShape':
-			self.quad_pts = QuadLinePoints[order]
-			self.quad_wts = QuadLineWeights[order]
+			self.quad_pts, self.quad_wts = QuadratureRulesSeg.get_quadrature_points_weights(order, 0)
+			# self.quad_pts = QuadLinePoints[order]
+			# self.quad_wts = QuadLineWeights[order]
 		elif self.Shape == 'QuadShape':
-			self.quad_pts = QuadQuadrilateralPoints[order]
-			self.quad_wts = QuadQuadrilateralWeights[order]
+			self.quad_pts, self.quad_wts = QuadratureRulesQuad.get_quadrature_points_weights(order, 0)
+			# self.quad_pts = QuadQuadrilateralPoints[order]
+			# self.quad_wts = QuadQuadrilateralWeights[order]
 		elif self.Shape == 'TriShape':
-			self.quad_pts = QuadTrianglePoints[order]
-			self.quad_wts = QuadTriangleWeights[order]
+			self.quad_pts, self.quad_wts = QuadratureRulesTri.get_quadrature_points_weights(order, 0)
+			# self.quad_pts = QuadTrianglePoints[order]
+			# self.quad_wts = QuadTriangleWeights[order]
 		else:
 			raise NotImplementedError
 
-class QuadDataADER(object):
-	'''
-	Class: QuadData
-	--------------------------------------------------------------------------
-	This is a class defined to define the quadrature data for a given entity in ADER-DG
-	(i.e. element, iface, or bface)
-	'''
-	def __init__(self,mesh,basis,entity,order):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the quadrature data for a given entity for the ADER-DG method. 
-		It uses the mesh and basis to determine the shape of the entity as well as its dimension.
-		It also uses the Order of the method to look up the following.
+class QuadDataADER(QuadData):
+	pass
+	# '''
+	# Class: QuadData
+	# --------------------------------------------------------------------------
+	# This is a class defined to define the quadrature data for a given entity in ADER-DG
+	# (i.e. element, iface, or bface)
+	# '''
+	# def __init__(self,mesh,basis,entity,order):
+	# 	'''
+	# 	Method: __init__
+	# 	--------------------------------------------------------------------------
+	# 	This method initializes the quadrature data for a given entity for the ADER-DG method. 
+	# 	It uses the mesh and basis to determine the shape of the entity as well as its dimension.
+	# 	It also uses the Order of the method to look up the following.
 
-		ATTRIBUTES:
-			quad_pts: Locations of points in reference space.
-			quad_wts: Weight of the points in reference space.
-			Shape: shape of the basis function
-		'''
-		#ADER is always one dimension greater than physcial space
-		dim = Mesh.get_entity_dim(mesh, entity) + 1
-		self.order = order
+	# 	ATTRIBUTES:
+	# 		quad_pts: Locations of points in reference space.
+	# 		quad_wts: Weight of the points in reference space.
+	# 		Shape: shape of the basis function
+	# 	'''
+	# 	#ADER is always one dimension greater than physcial space
+	# 	dim = Mesh.get_entity_dim(mesh, entity) + 1
+	# 	self.order = order
 		
-		self.qdim = mesh.Dim + 1
-		self.nvec = None
+	# 	self.qdim = mesh.Dim + 1
+	# 	self.nvec = None
 
-		# shape = Basis.Basis2Shape[basis]
-		shape = basis.__class__.__bases__[1].__name__
-		faceshape = basis.faceshape.__class__.__name__
+	# 	# shape = Basis.Basis2Shape[basis]
+	# 	shape = basis.__class__.__bases__[1].__name__
+	# 	faceshape = basis.faceshape.__class__.__name__
 
-		if entity == EntityType.Element:
-			self.Shape = shape
-		else:
-			self.Shape = faceshape
+	# 	if entity == EntityType.Element:
+	# 		self.Shape = shape
+	# 	else:
+	# 		self.Shape = faceshape
 
-		if self.Shape == 'PointShape':
-			self.quad_pts = np.zeros([1,1])
-			self.quad_wts = np.ones([1,1])
-		elif self.Shape == 'SegShape':
-			self.quad_pts = QuadLinePoints[order]
-			self.quad_wts = QuadLineWeights[order]
-		elif self.Shape == 'QuadShape':
-			self.quad_pts = QuadQuadrilateralPoints[order]
-			self.quad_wts = QuadQuadrilateralWeights[order]
-		elif self.Shape == 'TriShape':
-			self.quad_pts = QuadTrianglePoints[order]
-			self.quad_wts = QuadTriangleWeights[order]
-		else:
-			raise NotImplementedError
+	# 	if self.Shape == 'PointShape':
+	# 		self.quad_pts = np.zeros([1,1])
+	# 		self.quad_wts = np.ones([1,1])
+	# 	elif self.Shape == 'SegShape':
+	# 		self.quad_pts, self.quad_wts = QuadratureRulesSeg.get_quadrature_points_weights(order)
+	# 		# self.quad_pts = QuadLinePoints[order]
+	# 		# self.quad_wts = QuadLineWeights[order]
+	# 	elif self.Shape == 'QuadShape':
+	# 		self.quad_pts, self.quad_wts = QuadratureRulesQuad.get_quadrature_points_weights(order)
+	# 		# self.quad_pts = QuadQuadrilateralPoints[order]
+	# 		# self.quad_wts = QuadQuadrilateralWeights[order]
+	# 	elif self.Shape == 'TriShape':
+	# 		self.quad_pts, self.quad_wts = QuadratureRulesTri.get_quadrature_points_weights(order)
+	# 		# self.quad_pts = QuadTrianglePoints[order]
+	# 		# self.quad_wts = QuadTriangleWeights[order]
+	# 	else:
+	# 		raise NotImplementedError

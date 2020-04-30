@@ -737,6 +737,28 @@ class ConstAdvScalar2D(ConstAdvScalar1D):
 		self.c = np.array([Params["ConstXVelocity"],Params["ConstYVelocity"]])
 		self.cspeed = np.linalg.norm(self.c)
 
+	def FcnParaboloid(self, FcnData):
+		x = FcnData.x
+		t = FcnData.Time
+		Data = FcnData.Data
+		U = FcnData.U
+
+		# Standard deviation
+		# try:
+		# 	sig = Data.sig
+		# except AttributeError:
+		# 	sig = 1.
+		# # Center
+		# try:
+		# 	x0 = Data.x0
+		# except AttributeError:
+		# 	x0 = np.zeros(self.Dim)
+
+		r2 = x[:,0:1]**2. + x[:,1:2]**2.
+		U[:] = r2
+
+		return U
+
 
 class Burgers1D(ConstAdvScalar1D):
 

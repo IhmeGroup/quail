@@ -95,6 +95,29 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 	plt.ylabel(SolnLabel)
 
 
+def triangulate(EqnSet, x, u, variable_name):
+	### Remove duplicates
+	x.shape = -1,2
+	nold = x.shape[0]
+	x, idx = np.unique(x, axis=0, return_index=True)
+
+	### Flatten
+	X = x[:,0].flatten()
+	Y = x[:,1].flatten()
+	u.shape = nold,-1
+	U = EqnSet.ComputeScalars(variable_name, u).flatten()
+	# U = u[:,:,iplot].flatten()
+	U = U[idx]
+
+	### Triangulation
+	triang = tri.Triangulation(X, Y)
+	# refiner = tri.UniformTriRefiner(triang)
+	# tris, utri = refiner.refine_field(U, subdiv=0)
+	tris = triang; utri = U
+
+	return tris, utri
+
+
 def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwargs):
 	'''
 	Function: Plot2D
@@ -116,23 +139,25 @@ def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	'''
 
 	### Remove duplicates
-	x.shape = -1,2
-	nold = x.shape[0]
-	x, idx = np.unique(x, axis=0, return_index=True)
+	# x.shape = -1,2
+	# nold = x.shape[0]
+	# x, idx = np.unique(x, axis=0, return_index=True)
 
-	### Flatten
-	X = x[:,0].flatten()
-	Y = x[:,1].flatten()
-	u.shape = nold,-1
-	U = EqnSet.ComputeScalars(VariableName, u).flatten()
-	# U = u[:,:,iplot].flatten()
-	U = U[idx]
+	# ### Flatten
+	# X = x[:,0].flatten()
+	# Y = x[:,1].flatten()
+	# u.shape = nold,-1
+	# U = EqnSet.ComputeScalars(VariableName, u).flatten()
+	# # U = u[:,:,iplot].flatten()
+	# U = U[idx]
 
-	### Triangulation
-	triang = tri.Triangulation(X, Y)
-	# refiner = tri.UniformTriRefiner(triang)
-	# tris, utri = refiner.refine_field(U, subdiv=0)
-	tris = triang; utri = U
+	# ### Triangulation
+	# triang = tri.Triangulation(X, Y)
+	# # refiner = tri.UniformTriRefiner(triang)
+	# # tris, utri = refiner.refine_field(U, subdiv=0)
+	# tris = triang; utri = U
+
+	tris, utri = triangulate(EqnSet, x, u, VariableName)
 	if "nlevels" in kwargs:
 		TCF = plt.tricontourf(tris, utri, kwargs["nlevels"])
 	elif "levels" in kwargs:
@@ -199,13 +224,15 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	''' Loop through elements '''
 	for elem in range(nElemTot):
 		# Extract x and y
-		X = x[elem,:,0].flatten()
-		Y = x[elem,:,1].flatten()
-		# Compute requested scalar
-		U = EqnSet.ComputeScalars(VariableName, u[elem,:,:]).flatten()
-		# Triangulation
-		triang = tri.Triangulation(X, Y)
-		tris = triang; utri = U
+		# X = x[elem,:,0].flatten()
+		# Y = x[elem,:,1].flatten()
+		# # Compute requested scalar
+		# U = EqnSet.ComputeScalars(VariableName, u[elem,:,:]).flatten()
+		# # Triangulation
+		# triang = tri.Triangulation(X, Y)
+		# tris = triang; utri = U
+
+		tris, utri = triangulate(EqnSet, x[elem], u[elem], VariableName)
 		# Plot
 		plt.tricontourf(tris, utri, levels=levels, extend="both")
 		# if "nlevels" in kwargs:
@@ -234,16 +261,66 @@ def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kw
 	# plt.axis("equal")
 
 
-def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
-	IncludeMesh2D=False, Regular2D=False, EqualAR=False, **kwargs):
+def finalize_plot():
+	plt.xlabel("$x$")
+	ax = plt.gca()
+	handles, labels = ax.get_legend_handles_labels()
+	if handles != []:
+		# only create legend if handles can be found
+		plt.legend(loc="best")
 
-	# iplot_sr = EqnSet.VariableType[VariableName]
-	EndTime = solver.Time
-	basis = solver.basis
-	if PlotExact:
-		if not EqnSet.ExactSoln.Function:
-			raise Exception("No exact solution provided")
 
+def interpolate_2D_soln_to_points(EqnSet, x, u, xpoints, variable_name):
+	tris, utri = triangulate(EqnSet, x, u, variable_name)
+	interpolator = tri.LinearTriInterpolator(tris, utri)
+
+	upoints = interpolator(xpoints[:,0], xpoints[:,1])
+
+	return upoints
+
+
+def plot_line_probe(mesh, EqnSet, solver, variable_name, xy1, xy2, nPoint=101, PlotExact=False, PlotIC=False, 
+		Label=None, vs_x=True, **kwargs):
+
+	# Construct points on line segment
+	x1 = xy1[0]; y1 = xy1[1]
+	x2 = xy2[0]; y2 = xy2[1]
+	xline = np.linspace(x1, x2, nPoint)
+	yline = np.linspace(y1, y2, nPoint)
+
+	# Interpolation
+	x, u = get_sample_points(mesh, EqnSet, solver.basis, True)
+	xyline = np.array([xline,yline]).transpose()
+	uline = interpolate_2D_soln_to_points(EqnSet, x, u, xyline, variable_name)
+
+	# Analytical?
+	u_exact, u_IC = get_analytical_solution(EqnSet, x, u, solver.Time, PlotExact, PlotIC)
+	if u_exact is not None:
+		u_exact = interpolate_2D_soln_to_points(EqnSet, x, u_exact, xyline, variable_name)
+	if u_IC is not None:
+		u_IC = interpolate_2D_soln_to_points(EqnSet, x, u_IC, xyline, variable_name)
+
+	SolnLabel = get_solution_label(EqnSet, variable_name, Label)
+
+	plt.figure()
+	if vs_x:
+		line = xline
+	else:
+		line = yline
+	Plot1D(EqnSet, line, uline, variable_name, SolnLabel, u_exact, u_IC, **kwargs)
+
+	### Finalize plot
+	finalize_plot()
+	# plt.xlabel("$x$")
+	# ax = plt.gca()
+	# handles, labels = ax.get_legend_handles_labels()
+	# if handles != []:
+	# 	# only create legend if handles can be found
+	# 	plt.legend(loc="best")
+
+
+
+def get_sample_points(mesh, EqnSet, basis, equidistant):
 	## Extract data
 	dim = mesh.Dim
 	U = EqnSet.U
@@ -252,14 +329,14 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 
 	# Get points to plot at
 	# Note: assumes uniform element type
-	if Equidistant:
+	if equidistant:
 		xpoint, npoint = basis.equidistant_nodes(max([1,3*Order]))
 	else:
 		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
 		quadData = Quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 		xpoint = quadData.quad_pts
 		npoint = xpoint.shape[0]
-	
+
 	u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
@@ -271,7 +348,7 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 		U_ = U[elem]
 
 		# JData = Basis.JacobianData(mesh)
-		djac,_,_=Basis.element_jacobian(mesh,elem,xpoint,get_djac=True)
+		# djac,_,_=Basis.element_jacobian(mesh,elem,xpoint,get_djac=True)
 
 		xphys, GeomPhiData = Mesh.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
@@ -284,25 +361,76 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 
 		el += 1
 
+	return x, u
+
+
+def get_analytical_solution(EqnSet, x, u, time, get_exact, get_IC):
 	# Exact solution?
-	if PlotExact:
-		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,dim)), Time=EndTime)
+	if get_exact:
+		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,EqnSet.Dim)), Time=time)
 		u_exact.shape = u.shape
 	else:
 		u_exact = None
 	# IC ?
-	if PlotIC:
-		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,dim)),Time=0.)
+	if get_IC:
+		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,EqnSet.Dim)),Time=0.)
 		u_IC.shape = u.shape
 	else:
 		u_IC = None
-	# Solution label
-	if Label is None:
+
+	return u_exact, u_IC
+
+
+def get_solution_label(EqnSet, variable_name, label):
+	if label is None:
 		try:
-			Label = EqnSet.StateVariables[VariableName].value
+			label = EqnSet.StateVariables[variable_name].value
 		except KeyError:
-			Label = EqnSet.AdditionalVariables[VariableName].value
-	SolnLabel = "$" + Label + "$"
+			label = EqnSet.AdditionalVariables[variable_name].value
+	soln_label = "$" + label + "$"
+
+	return soln_label
+
+
+def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
+	IncludeMesh2D=False, Regular2D=False, EqualAR=False, **kwargs):
+
+	# iplot_sr = EqnSet.VariableType[VariableName]
+	if PlotExact:
+		if not EqnSet.ExactSoln.Function:
+			raise Exception("No exact solution provided")
+
+	## Extract params
+	EndTime = solver.Time
+	dim = mesh.Dim
+
+	# Get sample points
+	x, u = get_sample_points(mesh, EqnSet, solver.basis, Equidistant)
+
+	# # Exact solution?
+	# if PlotExact:
+	# 	u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,dim)), Time=EndTime)
+	# 	u_exact.shape = u.shape
+	# else:
+	# 	u_exact = None
+	# # IC ?
+	# if PlotIC:
+	# 	u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,dim)),Time=0.)
+	# 	u_IC.shape = u.shape
+	# else:
+	# 	u_IC = None
+	# Solution label
+
+	u_exact, u_IC = get_analytical_solution(EqnSet, x, u, EndTime, PlotExact, PlotIC)
+
+	# if Label is None:
+	# 	try:
+	# 		Label = EqnSet.StateVariables[VariableName].value
+	# 	except KeyError:
+	# 		Label = EqnSet.AdditionalVariables[VariableName].value
+	# SolnLabel = "$" + Label + "$"
+
+	SolnLabel = get_solution_label(EqnSet, VariableName, Label)
 
 	# Plot solution
 	plt.figure()
@@ -313,12 +441,14 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 		Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)
 
 	### Finalize plot
-	plt.xlabel("$x$")
-	ax = plt.gca()
-	handles, labels = ax.get_legend_handles_labels()
-	if handles != []:
-		# only create legend if handles can be found
-		plt.legend(loc="best")
+	finalize_plot()
+
+	# plt.xlabel("$x$")
+	# ax = plt.gca()
+	# handles, labels = ax.get_legend_handles_labels()
+	# if handles != []:
+	# 	# only create legend if handles can be found
+	# 	plt.legend(loc="best")
 
 	if dim == 2 and IncludeMesh2D:
 		PlotMesh2D(mesh, **kwargs)

@@ -277,7 +277,7 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
         nq = StaticData.pnq
         quadData = StaticData.quadData
 
-    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, order*2., quadData=quadData)
+    QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, order*2, quadData=quadData)
     #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
     QuadOrder+=1
 
