@@ -17,7 +17,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 ### Mesh
 folder = "meshes/"
 # Quadrilaterals
-# subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
+# subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeEqQuad"
 # # # Structured
 # subsubfolder = "Structured/"
 # FileName = "box_5x5.msh"
@@ -32,7 +32,7 @@ folder = "meshes/"
 # FileName = "box_400_elem.msh"
 # FileName = "box_1600_elem.msh"
 ## Triangles
-subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
+subfolder = "Triangles/"; InterpBasis = "LagrangeEqTri"
 # Structured
 subsubfolder = "Structured/"
 FileName = "box_5x5.msh"

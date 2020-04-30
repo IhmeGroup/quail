@@ -21,6 +21,88 @@ class GmshElementData(object):
 		self.NodeOrder = None
 
 
+def gmsh_node_order_seg(gorder):
+	nNode = gorder+1
+	nodes = np.arange(nNode)
+	nodes[1:-1] = nodes[2:]
+	nodes[-1] = 1
+
+	return nodes
+
+def populate_nodes_quadril(gorder, start, nodes):
+	if gorder == 0:
+		return start
+	else:
+		# principal vertices
+		nodes[0,0] = start
+		nodes[0,-1] = start+1
+		nodes[-1,-1] = start+2
+		nodes[-1,0] = start+3
+		# bottom face
+		start += 4
+		nodes[0,1:-1] = np.arange(start, start+gorder-1)
+		# right face
+		start += gorder-1
+		nodes[1:-1,-1] = np.arange(start, start+gorder-1)
+		# top face
+		start += gorder-1
+		nodes[-1,-2:0:-1] = np.arange(start, start+gorder-1)
+		# left face
+		start += gorder-1
+		nodes[-2:0:-1,0] = np.arange(start, start+gorder-1)
+		# interior
+		if gorder >= 2:
+			# recursively fill the interior nodes
+			start += gorder-1
+			nodes[1:-1,1:-1] = populate_nodes_quadril(gorder-2, start, nodes[1:-1,1:-1])
+
+	return nodes
+
+def gmsh_node_order_quadril(gorder):
+
+	nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int))
+	nodes.shape = -1
+
+	return nodes
+
+
+def populate_nodes_tri(gorder, start, nodes):
+	if gorder == 0:
+		return start
+	else:
+		# principal vertices
+		nodes[0,0] = start
+		nodes[0,-1] = start+1
+		nodes[-1,0] = start+2
+		# bottom face
+		start += 3
+		nodes[0,1:-1] = np.arange(start, start+gorder-1)
+		# hypotenuse
+		idx = np.arange(1, gorder), np.arange(gorder-1, 0, -1) 
+			# indices to access diagonal, excluding corner elements
+		start += gorder-1
+		nodes[idx] = np.arange(start, start+gorder-1)
+		# left face
+		start += gorder-1
+		nodes[-2:0:-1,0] = np.arange(start, start+gorder-1)
+		# interior
+		if gorder >= 3:
+			# recursively fill the interior nodes
+			start += gorder-1
+			nodes[1:gorder-1,1:gorder-1] = populate_nodes_tri(gorder-3, start, 
+					nodes[1:gorder-1,1:gorder-1])
+
+	return nodes
+
+def gmsh_node_order_tri(gorder):
+
+	# only lower triangular 
+	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int)-1)
+	nodes = nodes[nodes >= 0]
+
+	return nodes
+
+
 def CreateGmshElementDataBase():
 	# (NTYPES+1) objects due to 1-indexing
 	# gmsh_element_database = [GmshElementData() for n in range(MSH_MAX_NUM+1)]
@@ -36,7 +118,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[1]
 # 	EntityInfo.nNode = 2
 # 	EntityInfo.gorder = 1
-# 	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.SegShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 1])
@@ -45,7 +127,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[2]
 # 	EntityInfo.nNode = 3
 # 	EntityInfo.gorder = 1
-# 	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.TriShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 1, 2])
@@ -54,7 +136,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[3]
 # 	EntityInfo.nNode = 4
 # 	EntityInfo.gorder = 1
-# 	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.QuadShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 1, 3, 2])
@@ -63,7 +145,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[8]
 # 	EntityInfo.nNode = 3
 # 	EntityInfo.gorder = 2
-# 	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.SegShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 2, 1])
@@ -72,7 +154,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[9]
 # 	EntityInfo.nNode = 6
 # 	EntityInfo.gorder = 2
-# 	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.TriShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 3, 1, 5, 4, 2])
@@ -81,7 +163,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[10]
 # 	EntityInfo.nNode = 9
 # 	EntityInfo.gorder = 2
-# 	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.QuadShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 4, 1, 7, 8, 5, 3, 6, 2])
@@ -97,7 +179,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[21]
 # 	EntityInfo.nNode = 10
 # 	EntityInfo.gorder = 3
-# 	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.TriShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 3, 4, 1, 8, 9, 5, 7, 6, 2])
@@ -106,7 +188,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[23]
 # 	EntityInfo.nNode = 15
 # 	EntityInfo.gorder = 4
-# 	EntityInfo.gbasis = Basis.LagrangeTri(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.TriShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 3, 4, 5, 1, 11, 12, 13, 6, 
@@ -116,7 +198,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[26]
 # 	EntityInfo.nNode = 4
 # 	EntityInfo.gorder = 3
-# 	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.SegShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 2, 3, 1])
@@ -125,7 +207,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[27]
 # 	EntityInfo.nNode = 5
 # 	EntityInfo.gorder = 4
-# 	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.SegShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 1])
@@ -134,7 +216,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[28]
 # 	EntityInfo.nNode = 6
 # 	EntityInfo.gorder = 5
-# 	EntityInfo.gbasis = Basis.LagrangeSeg(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.SegShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 5, 1])
@@ -143,7 +225,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[36]
 # 	EntityInfo.nNode = 16
 # 	EntityInfo.gorder = 3
-# 	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.QuadShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 4, 5, 1, 11, 12, 13, 6, 10, 15, 14, 
@@ -153,7 +235,7 @@ def CreateGmshElementDataBase():
 # 	EntityInfo = EntitiesInfo[37]
 # 	EntityInfo.nNode = 25
 # 	EntityInfo.gorder = 4
-# 	EntityInfo.gbasis = Basis.LagrangeQuad(EntityInfo.gorder)
+# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
 # 	EntityInfo.shape = Basis.QuadShape()
 # 	EntityInfo.Supported = True
 # 	EntityInfo.NodeOrder = np.array([0, 4, 5, 6, 1, 15, 16, 20, 17, 7,
@@ -162,87 +244,6 @@ def CreateGmshElementDataBase():
 
 # 	return EntitiesInfo
 # =======
-
-	def gmsh_node_order_seg(gorder):
-		nNode = gorder+1
-		nodes = np.arange(nNode)
-		nodes[1:-1] = nodes[2:]
-		nodes[-1] = 1
-
-		return nodes
-
-	def populate_nodes_quadril(gorder, start, nodes):
-		if gorder == 0:
-			return start
-		else:
-			# principal vertices
-			nodes[0,0] = start
-			nodes[0,-1] = start+1
-			nodes[-1,-1] = start+2
-			nodes[-1,0] = start+3
-			# bottom face
-			start += 4
-			nodes[0,1:-1] = np.arange(start, start+gorder-1)
-			# right face
-			start += gorder-1
-			nodes[1:-1,-1] = np.arange(start, start+gorder-1)
-			# top face
-			start += gorder-1
-			nodes[-1,-2:0:-1] = np.arange(start, start+gorder-1)
-			# left face
-			start += gorder-1
-			nodes[-2:0:-1,0] = np.arange(start, start+gorder-1)
-			# interior
-			if gorder >= 2:
-				# recursively fill the interior nodes
-				start += gorder-1
-				nodes[1:-1,1:-1] = populate_nodes_quadril(gorder-2, start, nodes[1:-1,1:-1])
-
-		return nodes
-
-	def gmsh_node_order_quadril(gorder):
-
-		nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int))
-		nodes.shape = -1
-
-		return nodes
-
-
-	def populate_nodes_tri(gorder, start, nodes):
-		if gorder == 0:
-			return start
-		else:
-			# principal vertices
-			nodes[0,0] = start
-			nodes[0,-1] = start+1
-			nodes[-1,0] = start+2
-			# bottom face
-			start += 3
-			nodes[0,1:-1] = np.arange(start, start+gorder-1)
-			# hypotenuse
-			idx = np.arange(1, gorder), np.arange(gorder-1, 0, -1) 
-				# indices to access diagonal, excluding corner elements
-			start += gorder-1
-			nodes[idx] = np.arange(start, start+gorder-1)
-			# left face
-			start += gorder-1
-			nodes[-2:0:-1,0] = np.arange(start, start+gorder-1)
-			# interior
-			if gorder >= 3:
-				# recursively fill the interior nodes
-				start += gorder-1
-				nodes[1:gorder-1,1:gorder-1] = populate_nodes_tri(gorder-3, start, 
-						nodes[1:gorder-1,1:gorder-1])
-
-		return nodes
-
-	def gmsh_node_order_tri(gorder):
-
-		# only lower triangular 
-		nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int)-1)
-		nodes = nodes[nodes >= 0]
-
-		return nodes
 
 
 	# Point
@@ -262,7 +263,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = Basis.LagrangeSeg(gorder)
+		elem_data.gbasis = Basis.LagrangeEqSeg(gorder)
 		elem_data.nNode = gorder + 1
 		elem_data.NodeOrder = gmsh_node_order_seg(gorder)
 
@@ -274,7 +275,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = Basis.LagrangeTri(gorder)
+		elem_data.gbasis = Basis.LagrangeEqTri(gorder)
 		elem_data.nNode = (gorder + 1)*(gorder + 2)//2
 		elem_data.NodeOrder = gmsh_node_order_tri(gorder)
 
@@ -286,7 +287,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = Basis.LagrangeQuad(gorder)
+		elem_data.gbasis = Basis.LagrangeEqQuad(gorder)
 		elem_data.nNode = (gorder + 1)**2
 		elem_data.NodeOrder = gmsh_node_order_quadril(gorder)
 

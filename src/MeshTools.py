@@ -47,7 +47,7 @@ def element_volumes(mesh, solver=None):
     nq = xq.shape[0]
 
     for elem in range(mesh.nElem):
-        djac,_,_ = element_jacobian(mesh,elem,xq,get_djac=True)
+        djac,_,_ = Basis.element_jacobian(mesh,elem,xq,get_djac=True)
 
         # for iq in range(nq):
         #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]

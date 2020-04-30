@@ -24,7 +24,7 @@ if Periodic:
 # mesh = MeshCommon.split_quadrils_into_tris(mesh)
 
 ### Solver parameters
-InterpBasis = "LagrangeQuad"
+InterpBasis = "LagrangeEqQuad"
 dt = 0.05
 EndTime = 10.0
 nTimeStep = int(EndTime/dt + 10.*General.eps)

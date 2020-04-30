@@ -131,8 +131,8 @@ class ConstAdvScalar1D(object):
 		if dim == 1:
 			if basis == BasisType.LegendreSeg:
 				basisADER = BasisType.LegendreQuad
-			elif basis == BasisType.LagrangeSeg:
-				basisADER = BasisType.LagrangeQuad
+			elif basis == BasisType.LagrangeEqSeg:
+				basisADER = BasisType.LagrangeEqQuad
 			else:
 				raise Errors.IncompatibleError
 		else:

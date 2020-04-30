@@ -16,7 +16,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 ### Mesh
 folder = "meshes/"
 ## Quadrilaterals
-subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
+subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeEqQuad"
 #FileName = "bump0_q1.msh"; 
 FileName = "bump0.msh"; 
 #InterpOrder = 0; nTimeStep = 500; EndTime = 40.
@@ -29,7 +29,7 @@ InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.
 # FileName = "bump2.msh"
 # InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [10., 12., 13.5]
 # Triangles
-#subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
+#subfolder = "Triangles/"; InterpBasis = "LagrangeEqTri"
 #FileName = "bump0_tri.msh"
 MeshFile = CurrentDir + folder + subfolder + FileName
 mesh = MeshGmsh.ReadGmshFile(MeshFile)

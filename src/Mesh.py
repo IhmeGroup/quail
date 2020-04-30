@@ -102,7 +102,7 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
         tphys: coordinates in temporal space
     '''
     gorder = 1
-    gbasis = Basis.LagrangeQuad(gorder)
+    gbasis = Basis.LagrangeEqQuad(gorder)
 
 
     npoint = xref.shape[0]
@@ -157,12 +157,12 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
 #     elif Shape == ShapeType.Quadrilateral:
 #         if xelem is None: xelem = np.zeros([nq,2])
 #         # local q = 1 nodes on face
-#         fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeQuad, 1, face)
+#         fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeEqQuad, 1, face)
 #         # swap for reversed faces
 #         # if face >= 2: fnodes = fnodes[[1,0]]
 #         # coordinates of local q = 1 nodes on face
-#         x0 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
-#         x1 = Basis.RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
+#         x0 = Basis.RefQ1Coords[BasisType.LagrangeEqQuad][fnodes[0]]
+#         x1 = Basis.RefQ1Coords[BasisType.LagrangeEqQuad][fnodes[1]]
 #         # for i in range(nq):
 #         #     if face == 0:
 #         #         xelem[i,0] = (xface[i]*x1[0] - xface[i]*x0[0])/2.
@@ -194,10 +194,10 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
 #         xf = np.zeros(nq)
 #         xf = xf.reshape((nq,1))
 #         # local q = 1 nodes on face
-#         fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeTri, 1, face)
+#         fnodes, nfnode = Basis.local_q1_face_nodes(BasisType.LagrangeEqTri, 1, face)
 #         # coordinates of local q = 1 nodes on face
-#         x0 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
-#         x1 = Basis.RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
+#         x0 = Basis.RefQ1Coords[BasisType.LagrangeEqTri][fnodes[0]]
+#         x1 = Basis.RefQ1Coords[BasisType.LagrangeEqTri][fnodes[1]]
 #         # for i in range(nq):
 #         #     xf[i] = (xface[i] + 1.)/2.
 #         #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
@@ -351,7 +351,7 @@ def bface_normal(mesh, BFace, quad_pts, NData=None):
 #                     self.x_s = np.zeros_like(self.nvec)
 #                 x_s = self.x_s
 #                 self.fnodes, nfnode = Basis.local_face_nodes(QBasis, QOrder, face, self.fnodes)
-#                 self.GPhi = Basis.get_grads(BasisType.LagrangeSeg, QOrder, 1, quad_pts, self.GPhi)
+#                 self.GPhi = Basis.get_grads(BasisType.LagrangeEqSeg, QOrder, 1, quad_pts, self.GPhi)
 #                 Coords = mesh.Coords[ElemNodes[self.fnodes]]
 
 #                 # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
@@ -537,7 +537,7 @@ Shape2nNodeQ1 = {
 #         nNodePerElem: number of nodes per element
 #         Elem2Nodes: element-to-global-node mapping
 #     '''
-#     def __init__(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
+#     def __init__(self,QBasis=BasisType.LagrangeEqSeg,QOrder=1,nElem=1):
 #         '''
 #         Method: __init__
 #         -------------------
@@ -552,7 +552,7 @@ Shape2nNodeQ1 = {
 #         self.Elem2Nodes = None
 #             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
-#     def SetParams(self,QBasis=BasisType.LagrangeSeg,QOrder=1,nElem=1):
+#     def SetParams(self,QBasis=BasisType.LagrangeEqSeg,QOrder=1,nElem=1):
 #         self.QBasis = QBasis
 #         self.QOrder = QOrder
 #         self.nElem = nElem
@@ -636,7 +636,7 @@ class Mesh(object):
             nNode: total number of nodes
         '''
         if gbasis is None:
-            gbasis = Basis.LagrangeSeg(1)
+            gbasis = Basis.LagrangeEqSeg(1)
 
         self.Dim = dim
         self.nNode = nNode
