@@ -7,6 +7,9 @@ from Mesh import Mesh, ref_to_phys
 from General import *
 import MeshTools
 from Data import ArrayList
+import Errors
+import Plot
+from matplotlib import pyplot as plt
 
 
 def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=True):
@@ -87,3 +90,95 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 		print("Total error = %.15f" % (TotErr))
 
 	return TotErr, ElemErr
+
+
+def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True, 
+		vec=0., dot_normal_with_vec=False, plot_vs_x=False, plot_vs_y=False, Label=None):
+
+	if mesh.Dim != 2:
+		raise Errors.IncompatibleError
+	# Find boundary face group
+	found = False
+	ibfgrp = 0
+	for BFG in mesh.BFaceGroups:
+		if BFG.Name == bname:
+			found = True
+			break
+		ibfgrp += 1
+
+	if not found:
+		raise Errors.DoesNotExistError
+
+	bface_ops = solver.bface_operators
+	quad_pts = bface_ops.quad_pts
+	quad_wts = bface_ops.quad_wts
+	faces_to_basis = bface_ops.faces_to_basis
+	normals_bfgroups = bface_ops.normals_bfgroups
+	x_bfgroups = bface_ops.x_bfgroups
+
+	nq = quad_wts.shape[0]
+
+	# For plotting
+	plot = True
+	if plot_vs_x:
+		xlabel = "x"
+		d = 0
+	elif plot_vs_y:
+		xlabel = "y"
+		d = 1
+	else:
+		plot = False
+	if plot:
+		bvalues = np.zeros([BFG.nBFace, nq]) # [nBFace, nq]
+		bpoints = x_bfgroups[ibfgrp][:,:,d].flatten() # [nBFace, nq, dim]
+
+	integ_val = 0.
+
+	if dot_normal_with_vec:
+		# convert to numpy array
+		vec = np.array(vec)
+		vec.shape = 1,2
+
+	for ibface in range(BFG.nBFace):
+		BFace = BFG.BFaces[ibface]
+		elem = BFace.Elem
+		face = BFace.face
+
+		basis_val = faces_to_basis[face]
+
+		# interpolate state and gradient at quad points
+		Uq = np.matmul(basis_val, EqnSet.U[elem])
+
+		# Get requested variable
+		varq = EqnSet.ComputeScalars(variable_name, Uq) # [nq, 1]
+
+		normals = normals_bfgroups[ibfgrp][ibface] # [nq, dim]
+		jac = np.linalg.norm(normals, axis=1, keepdims=True) # [nq, 1]
+
+		# If requested, account for normal and dot with input dir
+		if dot_normal_with_vec:
+			varq *= np.sum(normals/jac*vec, axis=1, keepdims=True)
+
+		# Integrate and add to running sum
+		if integrate:
+			integ_val += np.sum(varq*jac*quad_wts)
+
+		if plot:
+			bvalues[ibface,:] = varq.reshape(-1)
+
+	if integrate:
+		print("Boundary integral = %g" % (integ_val))
+
+	if plot:
+		plt.figure()
+		bvalues = bvalues.flatten()
+		SolnLabel = Plot.get_solution_label(EqnSet, variable_name, Label)
+		Plot.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True)
+		Plot.finalize_plot(xlabel=xlabel)
+
+
+
+
+
+
+

@@ -25,7 +25,7 @@ InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [40., 48., 54.
 # FileName = "bump1_q1.msh"
 # FileName = "bump1.msh"
 # InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [20., 24., 27.]
-# FileName = "bump2_q1.msh"
+# # FileName = "bump2_q1.msh"
 # FileName = "bump2.msh"
 # InterpOrder = [0, 1, 2]; nTimeStep = [500, 1000, 1500]; EndTime = [10., 12., 13.5]
 # Triangles
@@ -85,6 +85,8 @@ Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
 Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	ShowTriangulation=False, EqualAR=EqualAR)
 Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
+Post.get_boundary_info(mesh, EqnSet, solver, "bottom", "Pressure", integrate=True, 
+		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")
 Plot.ShowPlot()
 
 # U = EqnSet.U.Arrays[0]

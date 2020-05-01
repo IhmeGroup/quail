@@ -279,7 +279,7 @@ def split_quadrils_into_tris(mesh_old):
 
 	mesh = copy.deepcopy(mesh_old)
 
-	mesh.SetParams(nElem=nElem, QBasis=BasisType["LagrangeEqTri"])
+	mesh.SetParams(nElem=nElem, gbasis=Basis.LagrangeEqTri(1))
 
 	def reorder_nodes(QOrder, nNodePerQuadril, nNodePerTri):
 		nNodePerFace = QOrder + 1
@@ -304,7 +304,7 @@ def split_quadrils_into_tris(mesh_old):
 
 		return tri1_nodes, tri2_nodes
 
-	tri1_nodes, tri2_nodes = reorder_nodes(mesh.QOrder, mesh_old.nNodePerElem, mesh.nNodePerElem)
+	tri1_nodes, tri2_nodes = reorder_nodes(mesh.gorder, mesh_old.nNodePerElem, mesh.nNodePerElem)
 
 
 	# Elems

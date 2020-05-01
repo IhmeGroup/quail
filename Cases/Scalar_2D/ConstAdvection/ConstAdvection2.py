@@ -15,20 +15,21 @@ import MeshTools
 CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 Periodic = True
-nElem_x = 5
+nElem_x = 2
 mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x= nElem_x, nElem_y = nElem_x, Uniform=True, xmin=-5., xmax=5., 
 	ymin=-5., ymax=5., Periodic=Periodic)
 if Periodic:
 	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
-# mesh = MeshCommon.split_quadrils_into_tris(mesh)
-
 ### Solver parameters
-InterpBasis = "LagrangeEqQuad"
+# InterpBasis = "LagrangeEqTri"
+InterpBasis = "HierarchicH1Tri"
+if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
+	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 dt = 0.05
 EndTime = 10.0
 nTimeStep = int(EndTime/dt + 10.*General.eps)
-InterpOrder = 2
+InterpOrder = 10
 Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 								 ApplyLimiter=None)
@@ -68,6 +69,9 @@ Plot.PreparePlot(axis=axis, linewidth=0.5)
 Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	Regular2D=True, ShowTriangulation=False)
 Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+Plot.plot_line_probe(mesh, EqnSet, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
+# Post.get_boundary_info(mesh, EqnSet, solver, "y1", "Scalar", integrate=True, 
+# 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)
 Plot.ShowPlot()
 
 # U = EqnSet.U.Arrays[0]

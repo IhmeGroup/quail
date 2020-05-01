@@ -61,7 +61,8 @@ def ShowPlot(Interactive=False):
 		plt.show()
 
 
-def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
+def Plot1D(EqnSet, x, u, SolnLabel, VariableName=None, u_exact=None, u_IC=None, 
+		u_var_calculated=False, **kwargs):
 	### reshape
 	# uplot = u[:,:,iplot]
 	# uplot = np.reshape(uplot, (-1,))
@@ -69,7 +70,11 @@ def Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs):
 	x = np.reshape(x, (-1,))
 	nplot = x.shape[0]
 	u.shape = nplot,-1
-	uplot = EqnSet.ComputeScalars(VariableName, u)
+	if not u_var_calculated:
+		uplot = EqnSet.ComputeScalars(VariableName, u)
+	else:
+		# assume desired variable already calculated
+		uplot = u
 
 	### sort
 	idx = np.argsort(x)
@@ -261,8 +266,8 @@ def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kw
 	# plt.axis("equal")
 
 
-def finalize_plot():
-	plt.xlabel("$x$")
+def finalize_plot(xlabel="x"):
+	plt.xlabel("$" + xlabel + "$")
 	ax = plt.gca()
 	handles, labels = ax.get_legend_handles_labels()
 	if handles != []:
@@ -294,23 +299,29 @@ def plot_line_probe(mesh, EqnSet, solver, variable_name, xy1, xy2, nPoint=101, P
 	uline = interpolate_2D_soln_to_points(EqnSet, x, u, xyline, variable_name)
 
 	# Analytical?
-	u_exact, u_IC = get_analytical_solution(EqnSet, x, u, solver.Time, PlotExact, PlotIC)
-	if u_exact is not None:
-		u_exact = interpolate_2D_soln_to_points(EqnSet, x, u_exact, xyline, variable_name)
-	if u_IC is not None:
-		u_IC = interpolate_2D_soln_to_points(EqnSet, x, u_IC, xyline, variable_name)
+	u_exact, u_IC = get_analytical_solution(EqnSet, xyline, solver.Time, PlotExact, PlotIC)
+	# if u_exact is not None:
+	# 	u_exact = EqnSet.ComputeScalars(VariableName, u_exact)
+	# 	# u_exact = interpolate_2D_soln_to_points(EqnSet, x, u_exact, xyline, variable_name)
+	# if u_IC is not None:
+	# 	u_IC = EqnSet.ComputeScalars(VariableName, u_IC)
+		# u_IC = interpolate_2D_soln_to_points(EqnSet, x, u_IC, xyline, variable_name)
 
 	SolnLabel = get_solution_label(EqnSet, variable_name, Label)
 
 	plt.figure()
 	if vs_x:
+		xlabel = "x"
 		line = xline
 	else:
+		xlabel = "y"
 		line = yline
-	Plot1D(EqnSet, line, uline, variable_name, SolnLabel, u_exact, u_IC, **kwargs)
+	Plot1D(EqnSet, line, uline, SolnLabel, variable_name, u_exact, u_IC, u_var_calculated=True, **kwargs)
+
+	# code.interact(local=locals())
 
 	### Finalize plot
-	finalize_plot()
+	finalize_plot(xlabel=xlabel)
 	# plt.xlabel("$x$")
 	# ax = plt.gca()
 	# handles, labels = ax.get_legend_handles_labels()
@@ -364,24 +375,24 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	return x, u
 
 
-def get_analytical_solution(EqnSet, x, u, time, get_exact, get_IC):
+def get_analytical_solution(EqnSet, x, time, get_exact, get_IC, u=None):
 	# Exact solution?
 	if get_exact:
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,EqnSet.Dim)), Time=time)
-		u_exact.shape = u.shape
+		if u is not None: u_exact.shape = u.shape
 	else:
 		u_exact = None
 	# IC ?
 	if get_IC:
 		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,EqnSet.Dim)),Time=0.)
-		u_IC.shape = u.shape
+		if u is not None: u_IC.shape = u.shape
 	else:
 		u_IC = None
 
 	return u_exact, u_IC
 
 
-def get_solution_label(EqnSet, variable_name, label):
+def get_solution_label(EqnSet, variable_name, label=None):
 	if label is None:
 		try:
 			label = EqnSet.StateVariables[variable_name].value
@@ -421,7 +432,7 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 	# 	u_IC = None
 	# Solution label
 
-	u_exact, u_IC = get_analytical_solution(EqnSet, x, u, EndTime, PlotExact, PlotIC)
+	u_exact, u_IC = get_analytical_solution(EqnSet, x, EndTime, PlotExact, PlotIC, u)
 
 	# if Label is None:
 	# 	try:
@@ -435,7 +446,7 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 	# Plot solution
 	plt.figure()
 	if dim == 1:
-		Plot1D(EqnSet, x, u, VariableName, SolnLabel, u_exact, u_IC, **kwargs)
+		Plot1D(EqnSet, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
 	else:
 		if PlotExact: u = u_exact # plot either only numerical or only exact
 		Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)
