@@ -13,6 +13,7 @@ import MeshTools
 import Post
 import Errors
 from scipy.optimize import fsolve, root
+import ReadWriteDataFiles
 
 import Limiter
 
@@ -95,7 +96,8 @@ class SolverBase(ABC):
 		self.check_solver_params()
 
 		# Initialize state
-		self.init_state()
+		if Params["RestartFile"] is None:
+			self.init_state()
 
 		# Precompute operators
 		self.precompute_matrix_operators()
@@ -818,8 +820,17 @@ class DG_Solver(SolverBase):
 
 		# Parameters
 		TrackOutput = self.Params["TrackOutput"]
+		WriteInterval = self.Params["WriteInterval"]
+		if WriteInterval == -1:
+			WriteInterval = np.NAN
+		WriteFinalSolution = self.Params["WriteFinalSolution"]
+		WriteInitialSolution = self.Params["WriteInitialSolution"]
+
+		if WriteInitialSolution:
+			ReadWriteDataFiles.write_data_file(self, 0)
 
 		t0 = time.time()
+		iwrite = 1
 		for iStep in range(self.nTimeStep):
 
 			# Integrate in time
@@ -851,9 +862,17 @@ class DG_Solver(SolverBase):
 					fhistory.write(" %g" % (output))
 				fhistory.write("\n")
 
+			# Write data file
+			if (iStep + 1) % WriteInterval == 0:
+				ReadWriteDataFiles.write_data_file(self, iwrite)
+				iwrite += 1
+
 
 		t1 = time.time()
 		print("Wall clock time = %g seconds" % (t1-t0))
+
+		if WriteFinalSolution:
+			ReadWriteDataFiles.write_data_file(self, -1)
 
 
 	def solve(self):
@@ -917,7 +936,7 @@ class DG_Solver(SolverBase):
 				raise ValueError
 
 		''' Loop through Orders '''
-		Time = 0.
+		Time = self.Time
 		for iOrder in range(nOrder):
 			Order = InterpOrders[iOrder]
 			''' Compute time step '''

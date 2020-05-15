@@ -57,3 +57,4 @@ Cases/Miscellaneous/Plot
 *.gri
 *.m
 *.gmsh
+*.pkl
