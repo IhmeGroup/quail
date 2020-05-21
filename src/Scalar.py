@@ -24,7 +24,7 @@ class LaxFriedrichsFlux(object):
 	def AllocHelperArrays(self, u):
 		self.__init__(u)
 
-	def ComputeFlux(self, EqnSet, UL, UR, n):
+	def compute_flux(self, EqnSet, UL, UR, n):
 		'''
 		Function: ConvFluxLaxFriedrichs
 		-------------------
@@ -409,7 +409,7 @@ class ConstAdvScalar1D(object):
 		# 	c[i] = self.getAdvOperator(u[i])
 
 		self.ConvFluxFcn.AllocHelperArrays(uL)
-		F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, normals)
+		F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
 		
 		# ConvFlux = self.Params["ConvFlux"] 
 		# if ConvFlux == self.ConvFluxType.LaxFriedrichs:

@@ -114,7 +114,7 @@ class Roe1DFlux(Scalar.LaxFriedrichsFlux):
 		return R 
 
 
-	def ComputeFlux(self, EqnSet, UL_std, UR_std, n):
+	def compute_flux(self, EqnSet, UL_std, UR_std, n):
 		'''
 		Function: ConvFluxLaxFriedrichs
 		-------------------
@@ -275,109 +275,6 @@ class Roe2DFlux(Roe1DFlux):
 		R[:,i,-1] = velRoe[:,[-1]]; R[:,i,i] = 1.
 
 		return R 
-
-
-
-	# def ComputeFlux(self, EqnSet, UL_old, UR_old, n):
-	# 	'''
-	# 	Function: ConvFluxLaxFriedrichs
-	# 	-------------------
-	# 	This function computes the numerical flux (dotted with the normal)
-	# 	using the Lax-Friedrichs flux function
-
-	# 	INPUTS:
-	# 	    gam: specific heat ratio
-	# 	    UL: Left state
-	# 	    UR: Right state
-	# 	    n: Normal vector (assumed left to right)
-
-	# 	OUTPUTS:
-	# 	    F: Numerical flux dotted with the normal, i.e. F_hat dot n
-	# 	'''
-
-	# 	# Extract helper arrays
-	# 	FL = self.FL
-	# 	FR = self.FR 
-	# 	du = self.du 
-	# 	a = self.a 
-	# 	aR = self.aR 
-	# 	idx = self.idx 
-
-	# 	# Dimension
-	# 	dim = EqnSet.Dim
-	# 	if dim == 1:
-	# 		ydim = []; # yim = [2]
-	# 	else:
-	# 		ydim = [2]
-
-	# 	# Indices
-	# 	irho = 0
-	# 	imom = EqnSet.GetMomentumSlice()
-
-	# 	gamma = EqnSet.Params["SpecificHeatRatio"]
-
-	# 	NN = np.linalg.norm(n, axis=1, keepdims=True)
-	# 	n1 = n/NN
-
-	# 	# Rotated coordinate system
-	# 	UL = self.RotateCoordSys(imom, UL_old, n1)
-	# 	UR = self.RotateCoordSys(imom, UR_old, n1)
-
-	# 	# Velocities
-	# 	velL = UL[:,imom]/UL[:,[irho]]
-	# 	velR = UR[:,imom]/UR[:,[irho]]
-
-	# 	rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, irho, velL, velR, UL, UR)
-
-	# 	# Speed of sound from Roe-averaged state
-	# 	c2 = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
-	# 	c = np.sqrt(c2)
-
-	# 	# differences
-	# 	dvel, drho, dp = self.GetDifferences(EqnSet, irho, velL, velR, UL, UR)
-
-	# 	# alphas (left eigenvectors multipled by dU)
-	# 	alphas = np.zeros_like(UL)
-	# 	alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
-	# 	alphas[:,[1]] = drho - dp/c2 
-	# 	alphas[:,ydim] = rhoRoe*dvel[:,[-1]]
-	# 	alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
-
-	# 	# Eigenvalues
-	# 	evals = np.zeros_like(UL)
-	# 	evals[:,[0]] = velRoe[:,[0]] - c
-	# 	evals[:,1:-1] = velRoe[:,[0]]
-	# 	evals[:,[-1]] = velRoe[:,[0]] + c
-
-	# 	# Right eigenvector matrix
-	# 	R = np.zeros(UL.shape + (UL.shape[1],))
-	# 	# first row
-	# 	R[:,0,[0,1,-1]] = 1.; R[:,0,ydim] = 0.
-	# 	# second row
-	# 	R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,ydim] = 0.; R[:,1,-1] = evals[:,-1]
-	# 	# last row
-	# 	R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
-	# 	R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c; R[:,-1,ydim] = velRoe[:,[-1]]
-	# 	# [third] row
-	# 	R[:,ydim,0] = velRoe[:,[-1]];  R[:,ydim,1] = velRoe[:,[-1]]; 
-	# 	R[:,ydim,-1] = velRoe[:,[-1]]; R[:,ydim,ydim] = 1.
-
-	# 	# Form flux Jacobian matrix multiplied by dU
-	# 	FRoe = np.zeros_like(UL)
-	# 	FRoe[:] = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
-
-	# 	FRoe = self.UndoRotateCoordSys(imom, FRoe, n1)
-
-	# 	# Left flux
-	# 	FL[:] = EqnSet.ConvFluxProjected(UL_old, n1)
-
-	# 	# Right flux
-	# 	FR[:] = EqnSet.ConvFluxProjected(UR_old, n1)
-
-	# 	F = NN*(0.5*(FL+FR) - 0.5*FRoe)
-	# 	# code.interact(local=locals())
-
-	# 	return F
 
 
 class Euler1D(Scalar.ConstAdvScalar1D):
@@ -747,7 +644,7 @@ class Euler1D(Scalar.ConstAdvScalar1D):
 		# if ConvFlux == self.ConvFluxType.LaxFriedrichs or ConvFlux == self.ConvFluxType.Roe:
 			# F = self.ConvFluxLaxFriedrichs(gam, uL, uR, NData.nvec, F)
 		self.ConvFluxFcn.AllocHelperArrays(uL)
-		F = self.ConvFluxFcn.ComputeFlux(self, uL, uR, normals)
+		F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
 		# else:
 		# 	for iq in range(nq):
 		# 		UL = uL[iq,:]
