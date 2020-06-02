@@ -18,14 +18,14 @@ Periodic = True
 nElem_x = 2
 mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x= nElem_x, nElem_y = nElem_x, Uniform=True, xmin=-5., xmax=5., 
 	ymin=-5., ymax=5., Periodic=Periodic)
-if Periodic:
-	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
 ### Solver parameters
 # InterpBasis = "LagrangeEqTri"
 InterpBasis = "HierarchicH1Tri"
 if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
+if Periodic:
+	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 dt = 0.05
 EndTime = 10.0
 nTimeStep = int(EndTime/dt + 10.*General.eps)

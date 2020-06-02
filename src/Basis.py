@@ -2,6 +2,7 @@ import numpy as np
 from enum import IntEnum
 from General import *
 from Quadrature import *
+import Quadrature
 from Math import *
 import Mesh
 import MeshGmsh
@@ -112,13 +113,13 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, Stati
         quadData = StaticData.quadData
 
     if PhysicalSpace:
-        QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
+        QuadOrder,QuadChanged = Quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
     else:
         QuadOrder = order*2
         QuadChanged = True
 
     if QuadChanged:
-        quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
+        quadData = Quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
 
     quad_pts = quadData.quad_pts
     quad_wts = quadData.quad_wts
@@ -575,8 +576,8 @@ def get_inv_mass_matrices(mesh, EqnSet, solver=None):
 
     # Uniform mesh?
     ReCalcMM = True
-    if solver is not None:
-        ReCalcMM = not solver.Params["UniformMesh"]
+    # if solver is not None:
+    #     ReCalcMM = not solver.Params["UniformMesh"]
     for elem in range(mesh.nElem):
         if elem == 0 or ReCalcMM:
             # Only recalculate if not using uniform mesh

@@ -38,6 +38,25 @@ class LimiterType(IntEnum):
     ScalarPositivityPreserving = 1
 
 
+class SolverType(IntEnum):
+    DG = 0
+    ADERDG = 1
+
+
+class StepperType(IntEnum):
+    FE = 0
+    RK4 = 1
+    LSRK4 = 2
+    SSPRK3 = 3
+    ADER = 4
+
+
+class PhysicsType(IntEnum):
+    ConstAdvScalar = 0
+    Burgers = 1
+    Euler = 2
+
+
 INTERIORFACE = -1
 NULLFACE = -2
 
@@ -73,11 +92,6 @@ def SetSolverParams(Params=None, **kwargs):
     for key in kwargs:
     	if key not in Params.keys(): raise KeyError
     	Params[key] = kwargs[key]
-    if Params["UseNumba"]:
-        try:
-            import numba
-        except:
-            Params["UseNumba"] = False
     return Params
 
 

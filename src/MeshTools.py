@@ -3,6 +3,8 @@ import Data
 import Quadrature
 from Basis import *
 from Mesh import *
+import Basis
+import Mesh
 import code
 
 
@@ -400,7 +402,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                     
                 # Create IFace between these two faces
                 mesh.nIFace += 1
-                IFaces.append(IFace())
+                IFaces.append(Mesh.IFace())
                 IF = IFaces[-1]
                 IF.ElemL = elem1
                 IF.faceL = face1

@@ -378,22 +378,22 @@ class DG_Solver(SolverBase):
 		        raise Errors.IncompatibleError
 
 		### Check uniform mesh
-		if Params["UniformMesh"] is True:
-		    ''' 
-		    Check that element volumes are the same
-		    Note that this is a necessary but not sufficient requirement
-		    '''
-		    TotVol, ElemVols = MeshTools.element_volumes(mesh)
-		    if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
-		        raise ValueError
+		# if Params["UniformMesh"] is True:
+		#     ''' 
+		#     Check that element volumes are the same
+		#     Note that this is a necessary but not sufficient requirement
+		#     '''
+		#     TotVol, ElemVols = MeshTools.element_volumes(mesh)
+		#     if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
+		#         raise ValueError
 
-		### Check linear geometric mapping
-		if Params["LinearGeomMapping"] is True:
-			if mesh.QOrder != 1:
-			    raise Errors.IncompatibleError
-			if mesh.QBasis == BasisType.LagrangeEqQuad \
-			    and Params["UniformMesh"] is False:
-			    raise Errors.IncompatibleError
+		# ### Check linear geometric mapping
+		# if Params["LinearGeomMapping"] is True:
+		# 	if mesh.QOrder != 1:
+		# 	    raise Errors.IncompatibleError
+		# 	if mesh.QBasis == BasisType.LagrangeEqQuad \
+		# 	    and Params["UniformMesh"] is False:
+		# 	    raise Errors.IncompatibleError
 
 		### Check limiter ###
 		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
@@ -1143,22 +1143,22 @@ class ADERDG_Solver(DG_Solver):
 		        raise Errors.IncompatibleError
 
 		### Check uniform mesh
-		if Params["UniformMesh"] is True:
-		    ''' 
-		    Check that element volumes are the same
-		    Note that this is a necessary but not sufficient requirement
-		    '''
-		    TotVol, ElemVols = MeshTools.element_volumes(mesh)
-		    if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
-		        raise ValueError
+		# if Params["UniformMesh"] is True:
+		#     ''' 
+		#     Check that element volumes are the same
+		#     Note that this is a necessary but not sufficient requirement
+		#     '''
+		#     TotVol, ElemVols = MeshTools.element_volumes(mesh)
+		#     if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
+		#         raise ValueError
 
-		### Check linear geometric mapping
-		if Params["LinearGeomMapping"] is True:
-			if mesh.QOrder != 1:
-			    raise Errors.IncompatibleError
-			if mesh.QBasis == BasisType.LagrangeEqQuad \
-			    and Params["UniformMesh"] is False:
-			    raise Errors.IncompatibleError
+		# ### Check linear geometric mapping
+		# if Params["LinearGeomMapping"] is True:
+		# 	if mesh.QOrder != 1:
+		# 	    raise Errors.IncompatibleError
+		# 	if mesh.QBasis == BasisType.LagrangeEqQuad \
+		# 	    and Params["UniformMesh"] is False:
+		# 	    raise Errors.IncompatibleError
 
 		### Check limiter ###
 		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
