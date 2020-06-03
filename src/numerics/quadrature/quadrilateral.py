@@ -1,5 +1,5 @@
 import numpy as np
-import QuadratureRulesSeg as qseg
+import numerics.quadrature.segment as qseg
 
 
 def get_quadrature_points_weights(order, quad_type):
