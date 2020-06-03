@@ -1,7 +1,7 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import MeshGmsh
+import meshing.gmsh as MeshGmsh
 
 
 def WriteMeshToText(mesh, FileName):

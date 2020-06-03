@@ -2,12 +2,12 @@ import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
 import Solver
-import Euler
-import MeshCommon
+import physics.euler.euler as Euler
+import meshing.common as MeshCommon
 import Post
 import Plot
 import General
-import MeshGmsh
+import meshing.gmsh as MeshGmsh
 import os
 
 

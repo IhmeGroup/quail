@@ -2,8 +2,8 @@ import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
 import Solver
-import Scalar
-import MeshCommon
+import physics.scalar.scalar as Scalar
+import meshing.common as MeshCommon
 import Post
 import Plot
 import General

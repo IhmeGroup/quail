@@ -1,13 +1,13 @@
 import sys; sys.path.append('../../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import MeshCommon
+import meshing.common as MeshCommon
 import General
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import Plot
 from helper import *
-import Scalar
+import physics.scalar.scalar as Scalar
 import Solver
 
 

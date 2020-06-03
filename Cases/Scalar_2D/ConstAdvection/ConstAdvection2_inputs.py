@@ -1,4 +1,6 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
+# sys.path.append('../../../src/numerics/quadrature');sys.path.append('./src/numerics/quadrature')
+# sys.path.append('../../../src/numerics/basis');sys.path.append('./src/numerics/basis')
 import numpy as np
 import Post
 import Plot
