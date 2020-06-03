@@ -2,6 +2,7 @@ import numpy as np
 import code
 
 
+
 class GenericData(object):
     '''
     Class: GenericData

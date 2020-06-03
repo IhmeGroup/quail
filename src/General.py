@@ -1,7 +1,6 @@
 import code
 import numpy as np
 from enum import IntEnum, Enum
-
 import errors
 
 

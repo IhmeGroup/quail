@@ -1,4 +1,5 @@
 
+
 class Error(Exception):
     '''Base class for user-defined exceptions.'''
     pass
