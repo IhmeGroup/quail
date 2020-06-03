@@ -1,7 +1,9 @@
-from enum import IntEnum, Enum
-import Errors
-import numpy as np
 import code
+import numpy as np
+from enum import IntEnum, Enum
+
+import errors
+
 
 
 np.set_printoptions(precision=15)
