@@ -1,7 +1,7 @@
 import numpy as np
 import code
 import copy
-import Basis
+import numerics.basis.basis as Basis
 import Data
 
 def mult_inv_mass_matrix(mesh, solver, dt, R, U):

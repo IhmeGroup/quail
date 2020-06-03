@@ -3,14 +3,14 @@ import General
 import Solver
 import numpy as np
 import code
-import Euler
-import Scalar
-import MeshCommon
+import physics.euler.euler as Euler
+import physics.scalar.scalar as Scalar
 import Post
 import Plot
-import MeshGmsh
+import meshing.common as MeshCommon
+import meshing.gmsh as MeshGmsh
+import meshing.tools as MeshTools
 import os
-import MeshTools
 import Errors
 import code
 

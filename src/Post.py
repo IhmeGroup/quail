@@ -1,11 +1,13 @@
+import sys
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
+
 import numpy as np
 import copy
 import code
-from Quadrature import get_gaussian_quadrature_elem, QuadData
-import Basis
-from Mesh import Mesh, ref_to_phys
+import numerics.basis.basis as Basis
+from meshing.meshbase import Mesh, ref_to_phys
 from General import *
-import MeshTools
+import meshing.tools as MeshTools
 from Data import ArrayList
 import Errors
 import Plot

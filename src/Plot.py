@@ -1,9 +1,10 @@
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
+
 import numpy as np
 import copy
 import code
-import Quadrature
-import Basis
-import Mesh
+import numerics.basis.basis as Basis
+import meshing.meshbase as Mesh
 from General import *
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -343,8 +344,8 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	if equidistant:
 		xpoint, npoint = basis.equidistant_nodes(max([1,3*Order]))
 	else:
-		QuadOrder,_ = Quadrature.get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
-		quadData = Quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
+		QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
+		quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 		xpoint = quadData.quad_pts
 		npoint = xpoint.shape[0]
 

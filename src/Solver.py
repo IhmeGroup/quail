@@ -1,15 +1,17 @@
-import numpy as np 
-from Basis import *
-from Quadrature import *
-from Mesh import *
 import code
-from abc import ABC, abstractmethod
 import copy
+
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
+from numerics.basis.basis import *
+import numerics.timestepping.stepper as stepper
+
+import numpy as np 
+from meshing.meshbase import *
+import meshing.tools as MeshTools
+from abc import ABC, abstractmethod
 from Data import ArrayList, GenericData
 from SolverTools import *
-from Stepper import *
 import time
-import MeshTools
 import Post
 import Errors
 from scipy.optimize import fsolve, root
@@ -44,15 +46,15 @@ class SolverBase(ABC):
 
 		TimeScheme = Params["TimeScheme"]
 		if TimeScheme is "FE":
-			Stepper = FE()
+			Stepper = stepper.FE()
 		elif TimeScheme is "RK4":
-			Stepper = RK4()
+			Stepper = stepper.RK4()
 		elif TimeScheme is "LSRK4":
-			Stepper = LSRK4()
+			Stepper = stepper.LSRK4()
 		elif TimeScheme is "SSPRK3":
-			Stepper = SSPRK3()
+			Stepper = stepper.SSPRK3()
 		elif TimeScheme is "ADER":
-			Stepper = ADER()
+			Stepper = stepper.ADER()
 		else:
 			raise NotImplementedError("Time scheme not supported")
 		# if Params["nTimeStep"] > 0:
@@ -985,7 +987,7 @@ class IFaceOperatorsADER(IFaceOperators):
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
 		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.gbasis, order, EqnSet, None)
-		quadData = QuadDataADER(mesh, basis, EntityType.IFace, QuadOrder)
+		quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
 		self.quad_pts = quadData.quad_pts
 		self.quad_wts = quadData.quad_wts
 
