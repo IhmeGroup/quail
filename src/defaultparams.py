@@ -4,7 +4,7 @@ import general
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 1.,
-    "nTimeStep" : 100.,
+    "nTimeStep" : 100,
     "TimeScheme" : "RK4",
 }
 
@@ -37,7 +37,7 @@ Mesh = {
     "xmax" : 1.,
     "ymin" : -1.,
     "ymax" : 1.,
-    "PeriodicBoundariesX" : [],
+    "PeriodicBoundariesX" : ["xmin","xmax"],
     "PeriodicBoundariesY" : [],
 }
 
@@ -48,6 +48,7 @@ Physics = {
 
 InitialCondition = {
     "Function" : "Uniform",
+    "State" : [1.0],
     "SetAsExact" : False,
 }
 
