@@ -2,13 +2,13 @@ import sys; sys.path.append('../../../../src'); sys.path.append('./src')
 import numpy as np
 import code
 import meshing.common as MeshCommon
-import General
+import general
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-import Plot
+import processing.plot as Plot
 from helper import *
 import physics.scalar.scalar as Scalar
-import Solver
+import solver.DG as Solver
 
 
 ### Parameters
@@ -25,7 +25,7 @@ h = mesh.Coords[1,0] - mesh.Coords[0,0]
 
 
 ### Solver and physics
-Params = General.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
+Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(Velocity=1.)
 # Initial conditions

@@ -1,8 +1,8 @@
 import sys; sys.path.append('../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Plot
-import General
+import processing.plot as Plot
+import general
 from Basis import BasisData, equidistant_nodes
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d

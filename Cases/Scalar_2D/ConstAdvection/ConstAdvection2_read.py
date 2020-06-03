@@ -1,16 +1,16 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Solver
+import solver.DG as Solver
 import physics.scalar.scalar as Scalar
 import meshing.common as MeshCommon
-import Post
-import Plot
-import General
+import processing.post as Post
+import processing.plot as Plot
+import general
 import meshing.gmsh as MeshGmsh
 import os
 import MeshTools
-import ReadWriteDataFiles
+import processing.readwritedatafiles as ReadWriteDataFiles
 
 
 ### NOTE: STILL NEED TO BE ABLE TO RESTART WITH DIFFERENT BASIS/ORDER AND PROJECT
@@ -28,9 +28,9 @@ InterpBasis = "HierarchicH1Tri"
 dt = 0.05
 StartTime = 2.5
 EndTime = 10.0
-nTimeStep = int((EndTime-StartTime)/dt + 10.*General.eps)
+nTimeStep = int((EndTime-StartTime)/dt + 10.*general.eps)
 InterpOrder = 10
-Params = General.SetSolverParams(Params, InterpOrder=InterpOrder,StartTime=StartTime,EndTime=EndTime,
+Params = general.SetSolverParams(Params, InterpOrder=InterpOrder,StartTime=StartTime,EndTime=EndTime,
 								 nTimeStep=nTimeStep,InterpBasis=InterpBasis,TimeScheme="RK4",
 								 InterpolateIC=False,ApplyLimiter=None,WriteInterval=50,
 								 RestartFile=fname)

@@ -1,12 +1,12 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Solver
+import solver.DG as Solver
 import physics.euler.euler as Euler
 import meshing.common as MeshCommon
-import Post
-import Plot
-import General
+import processing.post as Post
+import processing.plot as Plot
+import general
 import meshing.gmsh as MeshGmsh
 import os
 
@@ -45,8 +45,8 @@ mesh = MeshGmsh.ReadGmshFile(MeshFile)
 # nTimeStep = 500
 # InterpOrder = [0]; nTimeStep = [500]; EndTime = [40.]
 # dt = 0.05
-# nTimeStep = int(EndTime/dt + 10.*General.eps)
-Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+# nTimeStep = int(EndTime/dt + 10.*general.eps)
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis=InterpBasis,TimeScheme="FE",InterpolateIC=False,
 								 TrackOutput=False,WriteTimeHistory=False,OrderSequencing=True)
 

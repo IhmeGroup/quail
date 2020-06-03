@@ -2,10 +2,10 @@ import sys; sys.path.append('../../../../src'); sys.path.append('./src')
 import numpy as np
 import code
 import meshing.common as MeshCommon
-import General
+import general
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-import Plot
+import processing.plot as Plot
 from helper import *
 
 

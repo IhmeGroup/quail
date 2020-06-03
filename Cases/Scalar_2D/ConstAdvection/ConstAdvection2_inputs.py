@@ -2,11 +2,11 @@ import sys; sys.path.append('../../../src'); sys.path.append('./src')
 # sys.path.append('../../../src/numerics/quadrature');sys.path.append('./src/numerics/quadrature')
 # sys.path.append('../../../src/numerics/basis');sys.path.append('./src/numerics/basis')
 import numpy as np
-import Post
-import Plot
+import processing.post as Post
+import processing.plot as Plot
 import os
 import Driver
-import General
+import general
 import code
 
 
@@ -26,9 +26,9 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 # dt = 0.05
 # EndTime = 10.0
-# nTimeStep = int(EndTime/dt + 10.*General.eps)
+# nTimeStep = int(EndTime/dt + 10.*general.eps)
 # InterpOrder = 10
-# Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+# Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 # 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 # 								 ApplyLimiter=None,WriteInterval=50)
 

@@ -1,13 +1,13 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Solver
+import solver.DG as Solver
 import physics.scalar.scalar as Scalar
 import meshing.common as MeshCommon
-import Post
-import Plot
-import General
-import Limiter
+import processing.post as Post
+import processing.plot as Plot
+import general
+import numerics.limiter as Limiter
 ### Mesh
 Periodic = True
 # Uniform mesh
@@ -27,7 +27,7 @@ EndTime = 0.1
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 #nTimeStep = int(EndTime/dt)
 InterpOrder = 3
-Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeEqSeg",TimeScheme="RK4")
 ### Physics
 ConstVelocity = 1.

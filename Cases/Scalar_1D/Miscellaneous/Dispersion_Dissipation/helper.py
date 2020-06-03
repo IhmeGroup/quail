@@ -1,5 +1,5 @@
 import numpy as np
-import General
+import general
 from Basis import GetInvMassMatrix, get_stiffness_matrix, BasisData
 from Quadrature import get_gaussian_quadrature_elem, QuadData
 import code

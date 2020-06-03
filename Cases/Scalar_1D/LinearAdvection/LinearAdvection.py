@@ -1,12 +1,12 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Solver
+import solver.DG as Solver
 import physics.scalar.scalar as Scalar
 import meshing.common as MeshCommon
-import Post
-import Plot
-import General
+import processing.post as Post
+import processing.plot as Plot
+import general
 
 
 ### Mesh
@@ -25,7 +25,7 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Pe
 EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 2
-Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LegendreSeg",TimeScheme="LSRK4")
 
 

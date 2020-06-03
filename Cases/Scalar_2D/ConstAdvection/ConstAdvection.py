@@ -1,12 +1,12 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Solver
+import solver.DG as Solver
 import physics.scalar.scalar as Scalar
 import meshing.common as MeshCommon
-import Post
-import Plot
-import General
+import processing.post as Post
+import processing.plot as Plot
+import general
 import meshing.gmsh as MeshGmsh
 import os
 
@@ -45,9 +45,9 @@ mesh = MeshGmsh.ReadGmshFile(MeshFile)
 ### Solver parameters
 dt = 0.05
 EndTime = 2.0
-nTimeStep = int(EndTime/dt + 10.*General.eps)
+nTimeStep = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 2
-Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 								 ApplyLimiter=None)
 

@@ -1,12 +1,12 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import Solver
+import solver.DG as Solver
 import physics.euler.euler as Euler
 import meshing.common as MeshCommon
-import Post
-import Plot
-import General
+import processing.post as Post
+import processing.plot as Plot
+import general
 import os
 
 
@@ -21,7 +21,7 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=Fa
 EndTime = 4.e-5
 nTimeStep = 100
 InterpOrder = 1
-Params = General.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis="LagrangeEqSeg",TimeScheme="SSPRK3",InterpolateIC=False,
 								 ApplyLimiter="PositivityPreserving")
 
