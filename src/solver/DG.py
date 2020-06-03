@@ -113,15 +113,15 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def calculate_residual_elem(self, elem, Up, ER, StaticData):
+	def calculate_residual_elem(self, elem, Up, ER):
 		pass
 
 	@abstractmethod
-	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR, StaticData):
+	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR):
 		pass
 
 	@abstractmethod
-	def calculate_residual_bface(self, ibfgrp, ibface, U, R, StaticData):
+	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
 		pass
 
 class ElemOperators(object):
@@ -522,7 +522,7 @@ class DG_Solver(SolverBase):
 			self.Limiter.limit_solution(self, U)
 
 
-	def calculate_residual_elem(self, elem, Up, ER, StaticData):
+	def calculate_residual_elem(self, elem, Up, ER):
 		'''
 		Method: calculate_residual_elem
 		---------------------------------
@@ -581,7 +581,7 @@ class DG_Solver(SolverBase):
 		if elem == echeck:
 			code.interact(local=locals())
 
-		return ER, StaticData
+		return ER
 
 	def calculate_residual_elems(self, U, R):
 		'''
@@ -597,13 +597,12 @@ class DG_Solver(SolverBase):
 		'''
 		mesh = self.mesh
 		EqnSet = self.EqnSet
-		StaticData = None
 
 		for elem in range(mesh.nElem):
-			R[elem], StaticData = self.calculate_residual_elem(elem, U[elem], R[elem], StaticData)
+			R[elem] = self.calculate_residual_elem(elem, U[elem], R[elem])
 
 
-	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR, StaticData):
+	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR):
 		'''
 		Method: calculate_residual_iface
 		---------------------------------
@@ -646,10 +645,7 @@ class DG_Solver(SolverBase):
 
 		normals = normals_ifaces[iiface]
 
-		if StaticData is None:
-			StaticData = GenericData()
-
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq, StaticData) # [nq,ns]
+		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq, GenericData()) # [nq,ns]
 
 		RL -= np.matmul(basis_valL.transpose(), Fq*quad_wts) # [nb,sr]
 		RR += np.matmul(basis_valR.transpose(), Fq*quad_wts) # [nb,sr]
@@ -659,7 +655,7 @@ class DG_Solver(SolverBase):
 			else: print("Right!")
 			code.interact(local=locals())
 
-		return RL, RR, StaticData
+		return RL, RR
 
 
 
@@ -677,7 +673,6 @@ class DG_Solver(SolverBase):
 		'''
 		mesh = self.mesh
 		EqnSet = self.EqnSet
-		StaticData = None
 
 		for iiface in range(mesh.nIFace):
 			IFace = mesh.IFaces[iiface]
@@ -691,9 +686,9 @@ class DG_Solver(SolverBase):
 			RL = R[elemL]
 			RR = R[elemR]
 
-			RL, RR, StaticData = self.calculate_residual_iface(iiface, UL, UR, RL, RR, StaticData)
+			RL, RR = self.calculate_residual_iface(iiface, UL, UR, RL, RR)
 
-	def calculate_residual_bface(self, ibfgrp, ibface, U, R, StaticData):
+	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
 		'''
 		Method: calculate_residual_bface
 		---------------------------------
@@ -737,17 +732,14 @@ class DG_Solver(SolverBase):
 		BC = EqnSet.BCs[ibfgrp]
 		UqB = EqnSet.BoundaryState(BC, nq, x, self.Time, normals, UqI, UqB)
 
-		if StaticData is None:
-			StaticData = GenericData()
-
-		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq, StaticData) # [nq,sr]
+		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq, GenericData()) # [nq,sr]
 
 		R -= np.matmul(basis_val.transpose(), Fq*quad_wts) # [nn,sr]
 
 		if elem == echeck:
 			code.interact(local=locals())
 
-		return R, StaticData
+		return R
 
 
 	def calculate_residual_bfaces(self, U, R):
@@ -764,7 +756,6 @@ class DG_Solver(SolverBase):
 		'''
 		mesh = self.mesh
 		EqnSet = self.EqnSet
-		StaticData = None
 
 		for ibfgrp in range(mesh.nBFaceGroup):
 			BFG = mesh.BFaceGroups[ibfgrp]
@@ -774,7 +765,7 @@ class DG_Solver(SolverBase):
 				elem = BFace.Elem
 				face = BFace.face
 
-				R[elem], StaticData = self.calculate_residual_bface(ibfgrp, ibface, U[elem], R[elem], StaticData)
+				R[elem] = self.calculate_residual_bface(ibfgrp, ibface, U[elem], R[elem])
 
 
 	def calculate_residual(self, U, R):

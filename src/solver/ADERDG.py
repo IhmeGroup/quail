@@ -144,18 +144,18 @@ class ADEROperators(object):
 	def calc_ader_matrices(self, mesh, basis, basis_st, order):
 
 		# Get flux matrices in time
-		FTL,_ = get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False, StaticData=None)
-		FTR,_ = get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False, StaticData=None)
+		FTL = get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False)
+		FTR = get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False)
 
 		# Get stiffness matrix in time
-		SMT,_ = get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=1)
+		SMT = get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=1)
 
 		# Get stiffness matrix in space
-		SMS,_ = get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=0)
+		SMS = get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=0)
 
 		# Get mass matrix in space-time
-		MM,_ =  get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False, StaticData=None)
-		iMM,_ =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=True, StaticData=None)
+		MM =  get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
+		iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=True)
 
 
 		self.FTL = FTL
@@ -255,14 +255,13 @@ class ADERDG_Solver(DG_Solver):
 		'''
 		mesh = self.mesh
 		EqnSet = self.EqnSet
-		StaticData = None
 
 		for elem in range(mesh.nElem):
-			Up[elem], StaticData = self.calculate_predictor_elem(elem, dt, W[elem], Up[elem], StaticData)
+			Up[elem] = self.calculate_predictor_elem(elem, dt, W[elem], Up[elem])
 
 		return Up
 
-	def calculate_predictor_elem(self, elem, dt, Wp, Up, StaticData):
+	def calculate_predictor_elem(self, elem, dt, Wp, Up):
 		'''
 		Method: calculate_predictor_elem
 		-------------------------------------------
@@ -347,9 +346,9 @@ class ADERDG_Solver(DG_Solver):
 			fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
 
 
-		return Up, StaticData
+		return Up
 
-	def calculate_residual_elem(self, elem, Up, ER, StaticData):
+	def calculate_residual_elem(self, elem, Up, ER):
 		'''
 		Method: calculate_residual_elem
 		-------------------------------------------
@@ -426,9 +425,9 @@ class ADERDG_Solver(DG_Solver):
 		if elem == echeck:
 			code.interact(local=locals())
 
-		return ER, StaticData
+		return ER
 
-	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR, StaticData):
+	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR):
 		'''
 		Method: calculate_residual_iface
 		-------------------------------------------
@@ -497,10 +496,7 @@ class ADERDG_Solver(DG_Solver):
 
 		normals = normals_ifaces[iiface]
 
-		if StaticData is None:
-			StaticData = GenericData()
-
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq_st, StaticData) # [nq_st,ns]
+		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq_st, GenericData()) # [nq_st,ns]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 		
@@ -524,9 +520,9 @@ class ADERDG_Solver(DG_Solver):
 			else: print("Right!")
 			code.interact(local=locals())
 
-		return RL, RR, StaticData
+		return RL, RR
 
-	def calculate_residual_bface(self, ibfgrp, ibface, U, R, StaticData):
+	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
 		'''
 		Method: calculate_residual_bface
 		-------------------------------------------
@@ -594,10 +590,7 @@ class ADERDG_Solver(DG_Solver):
 		BC = EqnSet.BCs[ibfgrp]
 		UqB = EqnSet.BoundaryState(BC, nq_st, x, t, normals, UqI, UqB)
 
-		if StaticData is None:
-			StaticData = GenericData()
-
-		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq_st, StaticData) # [nq_st,ns]
+		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq_st, GenericData()) # [nq_st,ns]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 
@@ -614,7 +607,7 @@ class ADERDG_Solver(DG_Solver):
 		if elem == echeck:
 			code.interact(local=locals())
 
-		return R, StaticData
+		return R
 
 	def flux_coefficients(self, elem, dt, order, basis, Up):
 		'''

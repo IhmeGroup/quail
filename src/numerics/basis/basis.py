@@ -88,7 +88,7 @@ def equidistant_nodes_1D_range(start, stop, nnode):
 
     return xnode
 
-def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     Method: get_elem_mass_matrix
     --------------------------
@@ -105,16 +105,8 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, Stati
         MM: mass matrix  
     '''
 
-    if StaticData is None:
-        pnq = -1
-        quadData = None
-        StaticData = GenericData()
-    else:
-        nq = StaticData.pnq
-        quadData = StaticData.quadData
-
     if PhysicalSpace:
-        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
+        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
     else:
         QuadOrder = order*2
         QuadChanged = True
@@ -144,12 +136,9 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, Stati
 
     MM[:] = np.matmul(phi.transpose(), phi*quad_wts*djac) # [nb, nb]
 
-    StaticData.pnq = nq
-    StaticData.quadData = quadData
+    return MM
 
-    return MM, StaticData
-
-def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     Method: get_elem_inv_mass_matrix
     ---------------------------------
@@ -165,13 +154,13 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False, S
     OUTPUTS: 
         iMM: inverse mass matrix  
     '''
-    MM, StaticData = get_elem_mass_matrix(mesh, basis, order, elem, PhysicalSpace, StaticData)
+    MM = get_elem_mass_matrix(mesh, basis, order, elem, PhysicalSpace)
     
     iMM = np.linalg.inv(MM) 
 
-    return iMM, StaticData
+    return iMM
 
-def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     Method: get_elem_inv_mass_matrix_ader
     --------------------------------------
@@ -187,13 +176,13 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=Fal
     OUTPUTS: 
         iMM: inverse mass matrix for ADER-DG predictor step
     '''
-    MM, StaticData = get_elem_mass_matrix_ader(mesh, basis, order, elem, PhysicalSpace, StaticData)
+    MM = get_elem_mass_matrix_ader(mesh, basis, order, elem, PhysicalSpace)
 
     iMM = np.linalg.inv(MM)
 
-    return iMM, StaticData
+    return iMM
 
-def get_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
+def get_stiffness_matrix(mesh, basis, order, elem):
     '''
     Method: get_stiffness_matrix
     --------------------------------------
@@ -208,19 +197,7 @@ def get_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
     OUTPUTS: 
         SM: stiffness matrix
     '''
-    if StaticData is None:
-        pnq = -1
-        quadData = None
-        PhiData = None
-        JData = JacobianData(mesh)
-        StaticData = GenericData()
-    else:
-        nq = StaticData.pnq
-        quadData = StaticData.quadData
-        PhiData = StaticData.PhiData
-        JData = StaticData.JData
-
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2, quadData=quadData)
+    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
     if QuadChanged:
         quadData = quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
 
@@ -247,15 +224,9 @@ def get_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
                 t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
             SM[i,j] = t
 
-    StaticData.pnq = nq
-    StaticData.quadData = quadData
-    StaticData.PhiData = PhiData
-    StaticData.JData = JData
+    return SM
 
-    return SM, StaticData
-
-
-def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None):
+def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     '''
     Method: get_stiffness_matrix_ader
     --------------------------------------
@@ -271,15 +242,7 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
     OUTPUTS: 
         SM: stiffness matrix for ADER-DG
     '''
-    if StaticData is None:
-        pnq = -1
-        quadData = None
-        StaticData = GenericData()
-    else:
-        nq = StaticData.pnq
-        quadData = StaticData.quadData
-
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, basis, order*2, quadData=quadData)
+    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, basis, order*2)
     #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
     QuadOrder+=1
 
@@ -307,12 +270,10 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None
     #         SM[i,j] = t
 
     SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*quad_wts) # [nb,nb]
-    StaticData.pnq = nq
-    StaticData.quadData = quadData
 
-    return SM, StaticData
+    return SM
 
-def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=False, StaticData=None):
+def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=False):
     '''
     Method: get_temporal_flux_ader
     --------------------------------------
@@ -332,20 +293,12 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
     NOTES:
         Can work at tau_n and tau_n+1 depending on basis combinations
     '''
-    if StaticData is None:
-        pnq = -1
-        quadData = None
-        StaticData = GenericData()
-    else:
-        nq = StaticData.pnq
-        quadData = StaticData.quadData
-
     if basis1 == basis2:
         face = 2 
     else:
         face = 0
 
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
+    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
   
     if QuadChanged:
         quadData = quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
@@ -389,13 +342,11 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
     #         MM[i,j] = t
 
     FT[:] = np.matmul(PhiData.basis_val.transpose(),PsiData.basis_val*quad_wts) # [nb_st, nb]
-    StaticData.pnq = nq
-    StaticData.quadData = quadData
- 
-    return FT, StaticData
+
+    return FT
 
 
-def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, StaticData=None):
+def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     Method: get_elem_mass_matrix_ader
     --------------------------------------
@@ -411,16 +362,8 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
     OUTPUTS: 
         MM: mass matrix for ADER-DG
     '''
-    if StaticData is None:
-        pnq = -1
-        quadData = None
-        StaticData = GenericData()
-    else:
-        nq = StaticData.pnq
-        quadData = StaticData.quadData
-
     if PhysicalSpace:
-        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2, quadData=quadData)
+        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
     else:
         QuadOrder = order*2 + 1 #Add one for ADER method
         QuadChanged = True
@@ -456,10 +399,7 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False, 
 
     MM[:] = np.matmul(basis.basis_val.transpose(), basis.basis_val*quad_wts*djac) # [nb_st,nb_st]
 
-    StaticData.pnq = nq
-    StaticData.quadData = quadData
-
-    return MM, StaticData
+    return MM
 
 def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     '''
@@ -510,7 +450,7 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     return PM
 
 
-def get_inv_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
+def get_inv_stiffness_matrix(mesh, basis, order, elem):
     '''
     Method: get_inv_stiffness_matrix
     --------------------------------------
@@ -525,13 +465,13 @@ def get_inv_stiffness_matrix(mesh, basis, order, elem, StaticData=None):
     OUTPUTS: 
         iSM: inverse stiffness matrix
     '''
-    SM, StaticData = get_stiffness_matrix(mesh, basis, order, elem, StaticData)
+    SM = get_stiffness_matrix(mesh, basis, order, elem)
 
     iSM = np.linalg.inv(SM) 
 
-    return iSM, StaticData
+    return iSM
 
-def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=None):
+def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     '''
     Method: get_inv_stiffness_matrix_ader
     --------------------------------------
@@ -547,11 +487,11 @@ def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData=
     OUTPUTS: 
         iSM: inverse stiffness matrix
     '''
-    SM, StaticData = get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir, StaticData)
+    SM = get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir)
 
     iSM = np.linalg.inv(SM) 
 
-    return iSM, StaticData
+    return iSM
 
 def get_inv_mass_matrices(mesh, EqnSet, solver=None):
     '''
@@ -573,8 +513,6 @@ def get_inv_mass_matrices(mesh, EqnSet, solver=None):
 
     iMM_all = np.zeros([mesh.nElem, nb, nb])
 
-    StaticData = None
-
     # Uniform mesh?
     ReCalcMM = True
     # if solver is not None:
@@ -582,7 +520,7 @@ def get_inv_mass_matrices(mesh, EqnSet, solver=None):
     for elem in range(mesh.nElem):
         if elem == 0 or ReCalcMM:
             # Only recalculate if not using uniform mesh
-            iMM,StaticData = get_elem_inv_mass_matrix(mesh, basis, order, elem, True, StaticData)
+            iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
         iMM_all[elem] = iMM
 
     if solver is not None:

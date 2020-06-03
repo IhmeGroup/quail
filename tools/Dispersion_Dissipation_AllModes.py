@@ -1,22 +1,24 @@
 import sys; sys.path.append('../../../../src'); sys.path.append('./src')
-import numpy as np
 import code
-import meshing.common as MeshCommon
-import general
+import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-import processing.plot as Plot
+
 from helper import *
+
+import processing.plot as Plot
+import general
+import meshing.common as MeshCommon
 import physics.scalar.scalar as Scalar
 import solver.DG as Solver
+import numerics.basis.basis as Basis
 
 
 ### Parameters
 InterpOrder = p = 5
-basis = General.BasisType["LagrangeEqSeg"]
+basis = Basis.LagrangeEqSeg(p)
 nL = 51 # number of wavenumbers
 alpha = 0. # 0 for upwind flux, 1 for central flux
-
 
 ### Mesh
 # Note: one element - same as reference element
@@ -28,10 +30,13 @@ h = mesh.Coords[1,0] - mesh.Coords[0,0]
 Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
 EqnSet.SetParams(Velocity=1.)
+
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnExponential)
 U = EqnSet.U.Arrays
 U[0] = U[0].astype(complex)
+
+# Set solver
 solver = Solver.DG_Solver(Params,EqnSet,mesh)
 
 

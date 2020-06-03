@@ -9,7 +9,7 @@ import code
 def CalculateBasisAndMatrices(mesh, basis, Order):
 	## Mass, stiffness matrix
 	MMinv,_ = get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, PhysicalSpace=True)
-	SM,_ = get_stiffness_matrix(mesh, basis=basis, Order=Order, elem=0)
+	SM = get_stiffness_matrix(mesh, basis=basis, Order=Order, elem=0)
 
 	## Evaluate basis polynomials
 	# Quadrature
