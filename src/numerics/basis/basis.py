@@ -1,17 +1,17 @@
-### Built-in python imports
 from abc import ABC, abstractmethod
 import code
 from enum import IntEnum
 import numpy as np
 
+from data import ArrayList, GenericData
+from general import SetSolverParams, BasisType, ShapeType, EntityType
 
-### Local module imports
-from Data import ArrayList, GenericData
-from General import SetSolverParams, BasisType, ShapeType, EntityType
 from numerics.basis import math
+import numerics.quadrature.quadrature as quadrature
+
 import meshing.meshbase as Mesh
 import meshing.gmsh as MeshGmsh
-import numerics.quadrature.quadrature as quadrature
+
 
 Basis2Shape = {
     BasisType.LagrangeEqSeg : ShapeType.Segment,

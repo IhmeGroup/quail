@@ -1,5 +1,5 @@
-import numpy as np
 import code
+import numpy as np
 
 
 '''

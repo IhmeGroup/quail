@@ -1,10 +1,12 @@
-import physics.scalar.scalar as Scalar
-import numpy as np
 import code
-from scipy.optimize import fsolve, root
 from enum import IntEnum, Enum
-import Errors
-import General
+import numpy as np
+from scipy.optimize import fsolve, root
+
+import physics.scalar.scalar as Scalar
+
+import errors
+import general
 
 
 class Roe1DFlux(Scalar.LaxFriedrichsFlux):
@@ -395,7 +397,7 @@ class Euler1D(Scalar.ConstAdvScalar1D):
 		irho = 0; irhoE = dim + 1
 		imom = self.GetMomentumSlice()
 
-		eps = General.eps
+		eps = general.eps
 
 		rho = u[:,irho:irho+1]
 		rho += eps

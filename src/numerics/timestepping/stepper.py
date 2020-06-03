@@ -1,8 +1,9 @@
-import numpy as np 
-import code
 from abc import ABC, abstractmethod
-from Data import ArrayList
-from SolverTools import mult_inv_mass_matrix
+import code
+import numpy as np 
+
+from data import ArrayList
+from solver.tools import mult_inv_mass_matrix
 
 class StepperBase(ABC):
 	def __init__(self, dt=0.):

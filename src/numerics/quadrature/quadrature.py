@@ -1,7 +1,8 @@
-import numpy as np
-from General import *
-import meshing.meshbase as Mesh
 import code
+import numpy as np
+
+from general import *
+import meshing.meshbase as Mesh
 from numerics.quadrature import segment, quadrilateral, triangle
 
 def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None):

@@ -1,10 +1,13 @@
 import numpy as np
 import code
-import Errors
-import General
-import meshing.meshbase as Mesh
-import numerics.basis.basis as Basis 
 import copy
+
+import errors
+import general
+
+import numerics.basis.basis as Basis 
+
+import meshing.meshbase as Mesh
 import meshing.tools as MeshTools
 
 
@@ -488,7 +491,7 @@ def ReadNodes(fo, ver, mesh):
 	for d in ds:
 		# Find max perturbation from zero
 		diff = np.amax(np.abs(Nodes[:,d]))
-		if diff <= General.eps:
+		if diff <= general.eps:
 			# remove from ds
 			ds.remove(d)
 
@@ -1045,11 +1048,11 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					IFace.faceR = face
 					# Store in left Face
 					Face = mesh.Faces[FInfo.Elem][FInfo.Face]
-					Face.Group = General.INTERIORFACE
+					Face.Group = general.INTERIORFACE
 					Face.Number = mesh.nIFace
 					# Store in right face
 					Face = mesh.Faces[elem][face]
-					Face.Group = General.INTERIORFACE
+					Face.Group = general.INTERIORFACE
 					Face.Number = mesh.nIFace
 					# Increment IFace counter
 					mesh.nIFace += 1

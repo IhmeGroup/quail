@@ -1,11 +1,12 @@
+import code
 import numpy as np 
-import Data
+
+import data
+
 import numerics.quadrature.quadrature as quadrature
 import numerics.basis.basis as Basis
-from meshing.meshbase import *
-import meshing.meshbase as Mesh
-import code
 
+import meshing.meshbase as meshbase
 
 tol = 1.e-10
 
@@ -41,7 +42,7 @@ def element_volumes(mesh, solver=None):
     QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, Order, 
         quadData=quadData)
     if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
+        quadData = quadrature.QuadData(mesh, mesh.gbasis, meshbase.EntityType.Element, QuadOrder)
 
     xq = quadData.quad_pts
     wq = quadData.quad_wts
@@ -79,8 +80,8 @@ def neighbor_across_face(mesh, elem, face):
         faceN: face index w.r.t. the neighboring element in ref space
     '''
     Face = mesh.Faces[elem][face]
-
-    if Face.Type == FaceType.Interior:
+    # code.interact(local=locals())
+    if Face.Type == meshbase.FaceType.Interior:
         iiface = Face.Number
         eN  = mesh.IFaces[iiface].ElemR
         faceN = mesh.IFaces[iiface].faceR

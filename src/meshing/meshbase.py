@@ -1,8 +1,9 @@
+import code
 import numpy as np
 from enum import IntEnum
-from General import *
+
+from general import *
 import numerics.basis.basis as Basis
-import code
 
 
 def get_entity_dim(mesh, entity):

@@ -1,11 +1,12 @@
-import numpy as np
-from numerics.basis.basis import order_to_num_basis_coeff
-from General import *
 import code
-import Errors
-from Data import ArrayList, ICData, BCData, ExactData, SourceData, GenericData
-import sys
+import numpy as np
 from scipy.optimize import root
+import sys
+
+from numerics.basis.basis import order_to_num_basis_coeff
+from general import *
+import errors
+from data import ArrayList, ICData, BCData, ExactData, SourceData, GenericData
 
 
 class LaxFriedrichsFlux(object):
