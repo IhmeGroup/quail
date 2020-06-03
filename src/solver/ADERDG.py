@@ -19,7 +19,6 @@ import errors
 global echeck
 echeck = -1
 
-
 from solver.DG import *
 
 
@@ -139,37 +138,80 @@ class ADEROperators(object):
 		self.FTL = None 
 		self.FTR = None
 		self.SMT = None
-		self.SMS = None		
+		self.SMS_elems = None		
 
-	def calc_ader_matrices(self, mesh, basis, basis_st, order):
+	def calc_ader_matrices(self, mesh, basis, basis_st, order, dt):
+
+		nb = basis_st.nb
+		dim = mesh.Dim
+
+		SMS_elems = np.zeros([mesh.nElem, nb, nb, dim])
+		iMM_elems = np.zeros([mesh.nElem, nb, nb])
 
 		# Get flux matrices in time
 		FTL = get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False)
 		FTR = get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False)
 
 		# Get stiffness matrix in time
-		SMT = get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=1)
+		SMT = get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem=0, gradDir=1, PhysicalSpace = False)
 
 		# Get stiffness matrix in space
-		SMS = get_stiffness_matrix_ader(mesh, basis_st, order, elem=0, gradDir=0)
+		for elem in range(mesh.nElem):
+			SMS = get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir=0, PhysicalSpace = True)
+			SMS_elems[elem,:,:,0] = SMS.transpose()
+			# iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=True)
+			# iMM_elems[elem,:,:] = iMM
 
 		# Get mass matrix in space-time
 		MM =  get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 		iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=True)
 
-
 		self.FTL = FTL
 		self.FTR = FTR
 		self.SMT = SMT
-		self.SMS = np.transpose(SMS)
+		self.SMS_elems = SMS_elems
 		self.MM = MM
 		self.iMM = iMM
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K) 
 
-	def compute_operators(self, mesh, EqnSet, basis, basis_st, order):
-		self.calc_ader_matrices(mesh, basis, basis_st, order)
+	def get_geom_data(self, mesh, basis, order):
 
+		# Unpack
+		dim = mesh.Dim 
+		nElem = mesh.nElem 
+		nb = basis.nb
+		xnode = None
+		gbasis=mesh.gbasis
+		xnode, nnode = gbasis.equidistant_nodes(order,xnode)
+
+		# Allocate
+		self.jac_elems = np.zeros([nElem,nb,dim,dim])
+		self.ijac_elems = np.zeros([nElem,nb,dim,dim])
+		self.djac_elems = np.zeros([nElem,nb,1])
+		self.x_elems = np.zeros([nElem,nb,dim])
+
+		GeomPhiData = None
+
+		for elem in range(mesh.nElem):
+			# Jacobian
+			djac, jac, ijac = element_jacobian(mesh, elem, xnode, get_djac=True, get_jac=True, get_ijac=True)
+
+
+			self.jac_elems[elem] = np.tile(jac,(nnode,1,1))
+			self.ijac_elems[elem] = np.tile(ijac,(nnode,1,1))
+			self.djac_elems[elem] = np.tile(djac,(nnode,1))
+
+			# Physical coordinates of nodal points
+			x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xnode)
+			# Store
+			self.x_elems[elem] = np.tile(x,(nnode,1))
+
+
+	def compute_operators(self, mesh, EqnSet, basis, basis_st, order, dt):
+
+		self.calc_ader_matrices(mesh, basis, basis_st, order, dt)
+		self.get_geom_data(mesh, basis_st, order)
 
 class ADERDG_Solver(DG_Solver):
 	'''
@@ -221,6 +263,7 @@ class ADERDG_Solver(DG_Solver):
 		basis = self.basis
 		basis_st = self.basis_st
 
+		dt = self.Params['EndTime']/self.Params['nTimeStep']
 
 		self.elem_operators = ElemOperators()
 		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
@@ -238,7 +281,7 @@ class ADERDG_Solver(DG_Solver):
 		self.bface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
 
 		self.ader_operators = ADEROperators()
-		self.ader_operators.compute_operators(mesh, EqnSet, basis, basis_st, EqnSet.Order)
+		self.ader_operators.compute_operators(mesh, EqnSet, basis, basis_st, EqnSet.Order, dt)
 
 	def calculate_predictor_step(self, dt, W, Up):
 		'''
@@ -280,8 +323,9 @@ class ADERDG_Solver(DG_Solver):
 		ns = EqnSet.StateRank
 		mesh = self.mesh
 
-		basis = EqnSet.Basis #basis2
-		basis_st = EqnSet.BasisADER #basis1
+		basis = self.basis #basis2
+		basis_st = self.basis_st #basis1
+
 		order = EqnSet.Order
 		
 		elem_ops = self.elem_operators
@@ -296,7 +340,8 @@ class ADERDG_Solver(DG_Solver):
 
 		FTR = ader_ops.FTR
 		MM = ader_ops.MM
-		SMS = ader_ops.SMS
+		SMS = ader_ops.SMS_elems[elem]
+
 		# K = ader_ops.K
 		iK = ader_ops.iK
 		# W_bar = np.zeros([1,ns])
@@ -328,15 +373,16 @@ class ADERDG_Solver(DG_Solver):
 		# iK = np.linalg.inv(Kp)
 
 		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
-		fluxpoly = self.flux_coefficients(elem, dt, order, basis_st, Up)
+		flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
+
 		ntest = 10
 		for i in range(ntest):
 
 			# Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
-			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)))
+			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)))
 			err = Up_new - Up
 
-			if np.amax(np.abs(err))<1e-9:
+			if np.amax(np.abs(err))<1e-10:
 				Up = Up_new
 				break
 
@@ -637,20 +683,26 @@ class ADERDG_Solver(DG_Solver):
 		djac_elems = elem_ops.djac_elems 
 		djac = djac_elems[elem]
 
-		rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=Up.dtype)
+
+		rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],dtype=Up.dtype)
+		F = np.zeros_like(rhs)
 
 		if not InterpolateFlux:
+			
 			ader_ops = self.ader_operators
 			elem_ops_st = self.elem_operators_st
 			basis_val_st = elem_ops_st.basis_val
+			
 			quad_wts_st = elem_ops_st.quad_wts
 			nq_st = quad_wts_st.shape[0]
 			quad_pts = elem_ops.quad_pts
 			nq = quad_pts.shape[0]
+			
+			iMM = ader_ops.iMM_elems[elem]
+
 			Uq = np.matmul(basis_val_st, Up)
 			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq_st,ns,dim]
-			Fq = Fq.reshape(nq_st,ns)
-			iMM = ader_ops.iMM
+
 			
 			rhs *=0.
 
@@ -663,14 +715,12 @@ class ADERDG_Solver(DG_Solver):
 
 			rhs = np.matmul(basis_val_st.transpose(), Fq*(quad_wts_st*(np.tile(djac,(nq,1))))) # [nb, ns]
 
-			F = np.dot(iMM,rhs)*(1.0/(np.tile(djac,(nq,1))))*dt/2.0
+			F = np.dot(iMM,rhs)*dt/2.0
 
 		else:
-			quad_pts = elem_ops.quad_pts
-			nq = quad_pts.shape[0]
 
 			Fq = EqnSet.ConvFluxInterior(Up,F=None)
-			F = Fq[:,:,0]*(1.0/(np.tile(djac,(nq,1))))*dt/2.0
+			F = Fq*dt/2.0
 
 		return F
 
@@ -709,19 +759,22 @@ class ADERDG_Solver(DG_Solver):
 		TimePhiData = None
 
 		if not InterpolateFlux:
-			rhs = np.zeros([order_to_num_basis_coeff(basis,order),ns],dtype=Up.dtype)
+
+			rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],dtype=Up.dtype)
 
 			ader_ops = self.ader_operators
 			basis_val_st = elem_ops_st.basis_val
+
 			quad_wts_st = elem_ops_st.quad_wts
 			nq_st = quad_wts_st.shape[0]
 			quad_pts_st = elem_ops_st.quad_pts
 			quad_pts = elem_ops.quad_pts
 			nq = quad_pts.shape[0]
+			
 			Uq = np.matmul(basis_val_st, Up)
 			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq_st,ns,dim]
-			Fq = Fq.reshape(nq_st,ns)
-			iMM = ader_ops.iMM
+
+			iMM = ader_ops.iMM_elems[elem]
 
 
 			t = np.zeros([nq_st,dim])
@@ -739,13 +792,17 @@ class ADERDG_Solver(DG_Solver):
 
 		else:
 
-			quad_pts_st = elem_ops_st.quad_pts
-			nq_st = quad_pts_st.shape[0]
-			t = np.zeros([nq_st,dim])
-			t, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
+			ader_ops = self.ader_operators
+			x_elems_ader = ader_ops.x_elems
+			x_ader = x_elems_ader[elem]
 
-			Sq[:] = 0.
-			Sq = EqnSet.SourceState(nq_st, x, t, Up, Sq)
+			xnode, nb = basis.equidistant_nodes(order)
+
+			t = np.zeros([nb,dim])
+			t, TimePhiData = ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xnode, t, None)
+			Sq = np.zeros([t.shape[0],ns])
+
+			Sq = EqnSet.SourceState(nb, x_ader, t, Up, Sq)
 			S = Sq*dt/2.0
 
 		return S

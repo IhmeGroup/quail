@@ -226,7 +226,7 @@ def get_stiffness_matrix(mesh, basis, order, elem):
 
     return SM
 
-def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
+def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir, PhysicalSpace):
     '''
     Method: get_stiffness_matrix_ader
     --------------------------------------
@@ -242,25 +242,48 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     OUTPUTS: 
         SM: stiffness matrix for ADER-DG
     '''
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, basis, order*2)
-    #Add one to QuadOrder to adjust the mesh.Dim addition in get_gaussian_quadrature_elem.
-    QuadOrder+=1
 
+    dim = mesh.Dim 
+    
+    QuadOrder_st,QuadChanged_st = quadrature.get_gaussian_quadrature_elem(mesh, basis, order*2)
+
+    QuadOrder = QuadOrder_st
+    QuadChanged = True
+
+    if QuadChanged_st:
+        quadData_st = quadrature.QuadData(mesh, basis_st, EntityType.Element, QuadOrder_st)
     if QuadChanged:
         quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
+
+    quad_pts_st = quadData_st.quad_pts
+    quad_wts_st = quadData_st.quad_wts
+    nq_st = quad_pts_st.shape[0]
 
     quad_pts = quadData.quad_pts
     quad_wts = quadData.quad_wts
     nq = quad_pts.shape[0]
 
-    if QuadChanged:
-        basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+    if PhysicalSpace:
+        djac,_,ijac=element_jacobian(mesh,elem,quad_pts_st,get_djac=True, get_ijac=True)
+        if len(djac) == 1:
+            djac = np.full(nq, djac[0])
+        ijac_st = np.zeros([nq_st,dim+1,dim+1])
+        ijac_st[:,0:dim,0:dim] = ijac
+        ijac_st[:,dim,dim] = 1. 
+    else:
+        djac = np.full(nq, 1.)
 
-    nb = basis.basis_val.shape[1]
+    basis_st.eval_basis(quad_pts_st, Get_Phi=True, Get_GPhi=True)
+    nb_st = basis_st.basis_val.shape[1]
+    phi = basis_st.basis_val
 
-    phi = basis.basis_val
-    GPhi = basis.basis_grad
-    SM = np.zeros([nb,nb])
+    if PhysicalSpace:
+        basis_grad = basis_st.basis_grad
+        GPhi = np.transpose(np.matmul(ijac_st.transpose(0,2,1), basis_grad.transpose(0,2,1)), (0,2,1))
+    else:
+        GPhi = basis_st.basis_grad
+
+    SM = np.zeros([nb_st,nb_st])
 
     # for i in range(nn):
     #     for j in range(nn):
@@ -269,7 +292,7 @@ def get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     #             t += GPhi[iq,i,gradDir]*phi[iq,j]*wq[iq]
     #         SM[i,j] = t
 
-    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*quad_wts) # [nb,nb]
+    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*quad_wts_st) # [nb,nb]
 
     return SM
 
