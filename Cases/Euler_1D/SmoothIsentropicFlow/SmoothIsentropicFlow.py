@@ -23,7 +23,7 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 
 ### Physics
-EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
+EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)

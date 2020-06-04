@@ -47,7 +47,7 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 
 	# ElemErr.Arrays[egrp][:] = 0.
 
-	Order = EqnSet.Order
+	Order = EqnSet.order
 	# basis = EqnSet.Basis
 
 	for elem in range(mesh.nElem):

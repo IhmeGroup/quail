@@ -52,7 +52,7 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 
 ### Physics
-EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=4)
+EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnIsentropicVortexPropagation)

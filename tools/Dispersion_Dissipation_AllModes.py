@@ -28,7 +28,7 @@ h = mesh.Coords[1,0] - mesh.Coords[0,0]
 
 ### Solver and physics
 Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
-EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(Velocity=1.)
 
 # Initial conditions

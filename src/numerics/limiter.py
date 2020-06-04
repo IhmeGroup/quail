@@ -81,7 +81,7 @@ class PPLimiter(object):
 		mesh = solver.mesh
 		basis = solver.basis
 
-		order = EqnSet.Order
+		order = EqnSet.order
 		entity = general.EntityType.Element
 		ns = EqnSet.StateRank
 		dim = EqnSet.Dim
@@ -184,7 +184,7 @@ class PPLimiter(object):
 				QuadOrder, QuadChanged = quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.gbasis, order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
-				order_n = EqnSet.Order
+				order_n = EqnSet.order
 				entity = general.EntityType.BFace
 				QuadOrder, QuadChanged = quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.gbasis, np.amax([order,order_n]), EqnSet, quadFace)
 
@@ -342,7 +342,7 @@ class PPScalarLimiter(object):
 		mesh = solver.mesh
 
 		basis = EqnSet.Basis
-		order = EqnSet.Order
+		order = EqnSet.order
 		entity = general.EntityType.Element
 		ns = EqnSet.StateRank
 		dim = EqnSet.Dim
@@ -427,7 +427,7 @@ class PPScalarLimiter(object):
 				QuadOrder, QuadChanged = quadrature.get_gaussian_quadrature_face(mesh, BF, mesh.QBasis, order, EqnSet, quadFace)
 			else:
 				IF = mesh.IFaces[Face.Number]
-				order_n = EqnSet.Order
+				order_n = EqnSet.order
 				entity = general.EntityType.BFace
 				QuadOrder, QuadChanged = quadrature.get_gaussian_quadrature_face(mesh, IF, mesh.QBasis, np.amax([order,order_n]), EqnSet, quadFace)
 

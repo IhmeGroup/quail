@@ -339,7 +339,7 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	## Extract data
 	dim = mesh.Dim
 	U = EqnSet.U
-	Order = EqnSet.Order
+	Order = EqnSet.order
 	sr = EqnSet.StateRank
 
 	# Get points to plot at

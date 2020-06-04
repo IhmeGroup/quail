@@ -1,7 +1,7 @@
 import sys; sys.path.append('../../../src'); sys.path.append('./src')
 import numpy as np
 import code
-import solver.DG as Solver
+import solver.ADERDG as Solver
 import physics.euler.euler as Euler
 import meshing.common as MeshCommon
 import processing.post as Post
@@ -23,7 +23,7 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 
 ### Physics
-EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=3)
+EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)

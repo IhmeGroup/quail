@@ -33,7 +33,7 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 Velocity = 1.0
-EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh, StateRank=1)
+EqnSet = Scalar.ConstAdvScalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(ConstVelocity=Velocity)
 #EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")

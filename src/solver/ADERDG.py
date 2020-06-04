@@ -281,22 +281,22 @@ class ADERDG_Solver(DG_Solver):
 
 
 		self.elem_operators = ElemOperators()
-		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
+		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 		self.iface_operators = IFaceOperators()
-		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
+		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 		self.bface_operators = BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
+		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 
 		# Calculate ADER specific space-time operators
 		self.elem_operators_st = ElemOperatorsADER()
-		self.elem_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
+		self.elem_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.order)
 		self.iface_operators_st = IFaceOperatorsADER()
-		self.iface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
+		self.iface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.order)
 		self.bface_operators_st = BFaceOperatorsADER()
-		self.bface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.Order)
+		self.bface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.order)
 
 		self.ader_operators = ADEROperators()
-		self.ader_operators.compute_operators(mesh, EqnSet, basis, basis_st, dt, EqnSet.Order)
+		self.ader_operators.compute_operators(mesh, EqnSet, basis, basis_st, dt, EqnSet.order)
 
 	def calculate_predictor_step(self, dt, W, Up):
 		'''
@@ -341,7 +341,7 @@ class ADERDG_Solver(DG_Solver):
 		basis = self.basis
 		basis_st = self.basis_st
 
-		order = EqnSet.Order
+		order = EqnSet.order
 		
 		elem_ops = self.elem_operators
 		ader_ops = self.ader_operators

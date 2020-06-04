@@ -64,17 +64,17 @@ class SolverBase(ABC):
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
 		if BasisFunction is "LagrangeEqSeg":
-			basis = LagrangeEqSeg(EqnSet.Order, mesh)
+			basis = LagrangeEqSeg(EqnSet.order, mesh)
 		elif BasisFunction is "LegendreSeg":
-			basis = LegendreSeg(EqnSet.Order, mesh)
+			basis = LegendreSeg(EqnSet.order, mesh)
 		elif BasisFunction is "LagrangeEqQuad":
-			basis = LagrangeEqQuad(EqnSet.Order, mesh)
+			basis = LagrangeEqQuad(EqnSet.order, mesh)
 		elif BasisFunction is "LegendreQuad":
-			basis = LegendreQuad(EqnSet.Order, mesh)
+			basis = LegendreQuad(EqnSet.order, mesh)
 		elif BasisFunction is "LagrangeEqTri":
-			basis = LagrangeEqTri(EqnSet.Order, mesh)
+			basis = LagrangeEqTri(EqnSet.order, mesh)
 		elif BasisFunction is "HierarchicH1Tri":
-			basis = HierarchicH1Tri(EqnSet.Order, mesh)
+			basis = HierarchicH1Tri(EqnSet.order, mesh)
 		else:
 			raise NotImplementedError
 		self.basis = basis
@@ -82,9 +82,9 @@ class SolverBase(ABC):
 		# Set the space-time basis if using the ADER-DG solver
 		if TimeScheme is "ADER":
 			if BasisFunction is "LagrangeEqSeg":
-				basis_st = LagrangeEqQuad(EqnSet.Order, mesh)
+				basis_st = LagrangeEqQuad(EqnSet.order, mesh)
 			elif BasisFunction is "LegendreSeg":
-				basis_st = LegendreQuad(EqnSet.Order, mesh)
+				basis_st = LegendreQuad(EqnSet.order, mesh)
 			else:
 				raise NotImplementedError
 
@@ -420,11 +420,11 @@ class DG_Solver(SolverBase):
 		basis = self.basis
 
 		self.elem_operators = ElemOperators()
-		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
+		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 		self.iface_operators = IFaceOperators()
-		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
+		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 		self.bface_operators = BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.Order)
+		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 
 	def init_state(self):
 		'''
@@ -458,7 +458,7 @@ class DG_Solver(SolverBase):
 		xphys = None
 
 		#basis = EqnSet.Basis
-		order = EqnSet.Order
+		order = EqnSet.order
 		rhs = np.zeros([nb,ns],dtype=U.dtype)
 
 		# Precompute basis and quadrature
@@ -942,8 +942,8 @@ class DG_Solver(SolverBase):
 				delattr(self, "DataSet")
 				self.DataSet = GenericData()
 				# Increment Order
-				Order_old = EqnSet.Order
-				EqnSet.Order = Order
+				Order_old = EqnSet.order
+				EqnSet.order = Order
 				# Project
 				project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
 

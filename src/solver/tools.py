@@ -23,7 +23,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	EqnSet = solver.EqnSet
 	DataSet = solver.DataSet
 	# if MMinv is None:
-	# 	MMinv = GetInvMassMatrix(mesh, 0, 0, EqnSet.Orders[0])
+	# 	MMinv = GetInvMassMatrix(mesh, 0, 0, EqnSet.orders[0])
 
 	try:
 		MMinv_all = DataSet.MMinv_all
@@ -50,18 +50,18 @@ def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 	basis = copy.copy(basis_old)
 	''' Allocate new state '''
 	# New basis, Order information stored in EqnSet
-	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.Orders[egrp]), EqnSet.StateRank] \
+	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.orders[egrp]), EqnSet.StateRank] \
 	# 				for egrp in range(mesh.nElemGroup)]
 	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
-	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.Order), EqnSet.StateRank])
+	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
 
 	''' Loop through elements '''
-	order = EqnSet.Order
+	order = EqnSet.order
 	basis.order = order
-	basis.nb = basis.get_num_basis_coeff(EqnSet.Order)
+	basis.nb = basis.get_num_basis_coeff(EqnSet.order)
 
 	## New mass matrix inverse (in reference space)
-	iMM,_ = Basis.get_elem_inv_mass_matrix(mesh, basis, order)
+	iMM = Basis.get_elem_inv_mass_matrix(mesh, basis, order)
 	## Projection matrix
 	PM = Basis.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
 	for elem in range(mesh.nElem):

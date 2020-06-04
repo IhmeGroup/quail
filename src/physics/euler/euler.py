@@ -3,13 +3,13 @@ from enum import IntEnum, Enum
 import numpy as np
 from scipy.optimize import fsolve, root
 
-import physics.scalar.scalar as Scalar
+import physics.base.base as base
 
 import errors
 import general
 
 
-class Roe1DFlux(Scalar.LaxFriedrichsFlux):
+class Roe1DFlux(base.LaxFriedrichsFlux):
 	def __init__(self, u=None):
 		if u is not None:
 			n = u.shape[0]
@@ -279,33 +279,34 @@ class Roe2DFlux(Roe1DFlux):
 		return R 
 
 
-class Euler1D(Scalar.ConstAdvScalar1D):
-	def __init__(self,Order,basis,mesh,StateRank=3):
-		Scalar.ConstAdvScalar1D.__init__(self,Order,basis,mesh,StateRank) 
-		# self.Params = [Rg,gam]
+class Euler1D(base.PhysicsBase):
 
+	StateRank = 3
+
+	def __init__(self, order, basis, mesh):
+		'''
+		Method: __init__
+		--------------------------------------------------------------------------
+		This method initializes the temperature table. The table uses a
+		piecewise linear function for the constant pressure specific heat 
+		coefficients. The coefficients are selected to retain the exact 
+		enthalpies at the table points.
+		'''
+		super().__init__(order, basis, mesh)
+		# Default parameters
+		self.Params.update(
+			GasConstant = 287., # specific gas constant
+			SpecificHeatRatio = 1.4,
+			ConvFlux = self.ConvFluxType["LaxFriedrichs"]
+		)
+		
 	def SetParams(self,**kwargs):
-		Params = self.Params
-		# Default values
-		if not Params:
-			Params["GasConstant"] = 287. # specific gas constant
-			Params["SpecificHeatRatio"] = 1.4
-			Params["ConvFlux"] = self.ConvFluxType["Roe"]
-		# Overwrite
-		for key in kwargs:
-			if key not in Params.keys(): raise Exception("Input error")
-			if key is "ConvFlux":
-				Params[key] = self.ConvFluxType[kwargs[key]]
-			else:
-				Params[key] = kwargs[key]
+		super().SetParams(**kwargs)
 
-		if Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
-			self.ConvFluxFcn = Scalar.LaxFriedrichsFlux()
-		elif Params["ConvFlux"] == self.ConvFluxType["Roe"]:
-			if self.Dim == 1:
-				self.ConvFluxFcn = Roe1DFlux()
-			else:
-				self.ConvFluxFcn = Roe2DFlux()
+		if self.Params["ConvFlux"] == self.ConvFluxType["LaxFriedrichs"]:
+			self.ConvFluxFcn = base.LaxFriedrichsFlux()
+		elif self.Params["ConvFlux"] == self.ConvFluxType["Roe"]:
+			self.ConvFluxFcn = Roe1DFlux()
 
 	class StateVariables(Enum):
 		__Order__ = 'Density XMomentum Energy' # only needed in 2.x
@@ -347,6 +348,10 @@ class Euler1D(Scalar.ConstAdvScalar1D):
 	    Extrapolation = 1
 	    SlipWall = 2
 	    PressureOutflow = 3
+
+	class BCTreatment(IntEnum):
+		Riemann = 0
+		Prescribed = 1
 
 	class ConvFluxType(IntEnum):
 	    LaxFriedrichs = 0
@@ -1009,8 +1014,17 @@ class Euler1D(Scalar.ConstAdvScalar1D):
 
 
 class Euler2D(Euler1D):
-	def __init__(self,Order,Shape,mesh,StateRank=4):
-		Euler1D.__init__(self,Order,Shape,mesh,StateRank) 
+
+	StateRank = 4
+
+	def __init__(self, order, basis, mesh):
+		Euler1D.__init__(self, order, basis, mesh) 
+
+	def SetParams(self,**kwargs):
+		super().SetParams(**kwargs)
+
+		if self.Params["ConvFlux"] == self.ConvFluxType["Roe"]:
+			self.ConvFluxFcn = Roe2DFlux()
 
 	class StateVariables(Enum):
 		__Order__ = 'Density XMomentum YMomentum Energy' # only needed in 2.x

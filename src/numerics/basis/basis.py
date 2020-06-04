@@ -527,7 +527,7 @@ def get_inv_mass_matrices(mesh, EqnSet, solver=None):
         iMM_all: all inverse mass matrices
     '''
     basis = solver.basis
-    order = EqnSet.Order
+    order = EqnSet.order
     nb = basis.nb
 
     iMM_all = np.zeros([mesh.nElem, nb, nb])
