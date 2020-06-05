@@ -19,7 +19,6 @@ import errors
 global echeck
 echeck = -1
 
-
 from solver.DG import *
 
 
@@ -233,13 +232,68 @@ class ADERDG_Solver(DG_Solver):
 	--------------------------------------------------------------------------
 	Use the ADER-DG method to solve a given set of PDEs
 	'''
+	def __init__(self,Params,EqnSet,mesh):
+		'''
+		Method: __init__
+		--------------------------------------------------------------------------
+		Initializes the DG_Solver object, verifies parameters, and initializes the state
+
+		INPUTS:
+			Params: list of parameters for the solver
+			EqnSet: solver object (current implementation supports Scalar and Euler equations)
+			mesh: mesh object
+		'''
+		self.Params = Params
+		self.EqnSet = EqnSet
+		self.mesh = mesh
+		self.DataSet = GenericData()
+
+		self.Time = Params["StartTime"]
+		self.nTimeStep = 0 # will be set later
+
+		TimeScheme = Params["TimeScheme"]
+		if TimeScheme is "ADER":
+			Stepper = stepper.ADER()
+		else:
+			raise NotImplementedError("Time scheme not supported")
+
+		self.Stepper = Stepper
+
+		# Set the basis functions for the solver
+		BasisFunction  = Params["InterpBasis"]
+		if BasisFunction is "LagrangeEqSeg":
+			basis = LagrangeEqSeg(EqnSet.order, mesh)
+			basis_st = LagrangeEqQuad(EqnSet.order, mesh)
+		elif BasisFunction is "LegendreSeg":
+			basis = LegendreSeg(EqnSet.order, mesh)
+			basis_st = LegendreQuad(EqnSet.order, mesh)
+		else:
+			raise NotImplementedError
+		
+		self.basis = basis
+		self.basis_st = basis_st
+
+		EqnSet.Up = np.zeros([self.mesh.nElem, basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
+
+		# Limiter
+		limiterType = Params["ApplyLimiter"]
+		self.Limiter = Limiter.set_limiter(limiterType)
+
+		# Check validity of parameters
+		self.check_solver_params()
+
+		# Initialize state
+		if Params["RestartFile"] is None:
+			self.init_state()
+
+		# Precompute operators
+		self.precompute_matrix_operators()
 	
 	def check_solver_params(self):
 		'''
 		Method: check_solver_params
 		--------------------------------------------------------------------------
 		Checks the validity of the solver parameters
-
 		'''
 		Params = self.Params
 		mesh = self.mesh
@@ -253,22 +307,14 @@ class ADERDG_Solver(DG_Solver):
 		        raise Errors.IncompatibleError
 
 		### Check limiter ###
-		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
-			and EqnSet.StateRank > 1:
-				raise IncompatibleError
 		if Params["ApplyLimiter"] is 'PositivityPreserving' \
 			and EqnSet.StateRank == 1:
 				raise IncompatibleError
 
-		### Check time integration scheme ###
-		TimeScheme = Params["TimeScheme"]
-		if TimeScheme is not "ADER":
-			raise Errors.IncompatibleError
-
 		### Check flux/source coefficient interpolation compatability with basis functions.
 		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 			raise Errors.IncompatibleError
-
+  
 
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
