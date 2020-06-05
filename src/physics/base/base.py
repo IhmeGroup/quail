@@ -134,22 +134,6 @@ class PhysicsBase(object):
 		self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
 		self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
 
-		if dim == 1:
-			if basis == BasisType.LegendreSeg:
-				basisADER = BasisType.LegendreQuad
-			elif basis == BasisType.LagrangeEqSeg:
-				basisADER = BasisType.LagrangeEqQuad
-			else:
-				raise Errors.IncompatibleError
-		else:
-			basisADER = 0 # dummy	
-
-		self.BasisADER = basisADER # [basisADER for egrp in range(mesh.nElemGroup)]
-		# ADERArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.BasesADER[egrp],self.Orders[egrp]),self.StateRank] \
-		# 			for egrp in range(mesh.nElemGroup)]
-		# self.Up = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ADERArrayDims)
-		self.Up = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.BasisADER, self.order), self.StateRank])
-
 		# BC treatments
 		self.SetBCTreatment()
 
