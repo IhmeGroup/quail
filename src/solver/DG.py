@@ -53,8 +53,6 @@ class SolverBase(ABC):
 			Stepper = stepper.LSRK4()
 		elif TimeScheme is "SSPRK3":
 			Stepper = stepper.SSPRK3()
-		elif TimeScheme is "ADER":
-			Stepper = stepper.ADER()
 		else:
 			raise NotImplementedError("Time scheme not supported")
 		# if Params["nTimeStep"] > 0:
@@ -78,17 +76,6 @@ class SolverBase(ABC):
 		else:
 			raise NotImplementedError
 		self.basis = basis
-
-		# Set the space-time basis if using the ADER-DG solver
-		if TimeScheme is "ADER":
-			if BasisFunction is "LagrangeEqSeg":
-				basis_st = LagrangeEqQuad(EqnSet.order, mesh)
-			elif BasisFunction is "LegendreSeg":
-				basis_st = LegendreQuad(EqnSet.order, mesh)
-			else:
-				raise NotImplementedError
-
-			self.basis_st = basis_st
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
@@ -342,9 +329,6 @@ class BFaceOperators(IFaceOperators):
 		self.get_gaussian_quadrature(mesh, EqnSet, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(EqnSet, basis, order)
-		
-#class ADEROperators(object):
-
 
 
 class DG_Solver(SolverBase):
@@ -404,14 +388,6 @@ class DG_Solver(SolverBase):
 		if Params["ApplyLimiter"] is 'PositivityPreserving' \
 			and EqnSet.StateRank == 1:
 				raise IncompatibleError
-
-		### Check time integration scheme ###
-		TimeScheme = Params["TimeScheme"]		
-		if TimeScheme is "ADER":
-			raise Errors.IncompatibleError
-
-		### Force the BasisADER to be None ###
-		EqnSet.BasisADER = 0 #dummy
 
 
 	def precompute_matrix_operators(self):
