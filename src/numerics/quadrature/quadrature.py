@@ -44,11 +44,6 @@ def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None)
 	if quadData is not None:
 		if QuadOrder == quadData.order and shape == quadData.Shape:
 			QuadChanged = False
-	
-	#Logic to subtract one if using ADER
-	if EqnSet is not None:		
-		if mesh.Dim == 1 and EqnSet.BasisADER is not 0:
-			QuadOrder-=1
 
 	return QuadOrder, QuadChanged
 
@@ -86,8 +81,6 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 		dim = mesh.Dim - 1
 		QuadOrder += dim*(gorder-1)
 
-	# Shape = Basis.Basis2Shape[basis]
-	# FShape = Basis.FaceShape[Shape]
 	if shape is 'QuadShape':
 		QuadOrder += basis.faceshape.dim
 
@@ -95,11 +88,6 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 	if quadData is not None:
 		if QuadOrder == quadData.order and faceshape == quadData.Shape:
 			QuadChanged = False
-
-	#Logic to subtract one if using ADER
-	if EqnSet is not None:		
-		if mesh.Dim == 1 and EqnSet.BasisADER is not 0:
-			QuadOrder-=1
 
 	return QuadOrder, QuadChanged
 
