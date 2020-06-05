@@ -1,14 +1,13 @@
 import code
 import numpy as np
-from scipy.optimize import root
 import sys
 
-
-from data import ArrayList, ICData, BCData, ExactData, SourceData, GenericData
 import errors
 from general import *
 from numerics.basis.basis import order_to_num_basis_coeff
 import physics.base.base as base
+import physics.scalar.functions as scalar_fcns
+from physics.scalar.functions import FcnType as scalar_fcn_type
 
 
 class ConstAdvScalar1D(base.PhysicsBase):
@@ -38,6 +37,18 @@ class ConstAdvScalar1D(base.PhysicsBase):
 		)
 		self._c = 0.
 		self._cspeed = 0.
+
+		self.fcn_map.update({
+			scalar_fcn_type.Sine : scalar_fcns.sine,
+			scalar_fcn_type.DampingSine : scalar_fcns.damping_sine,
+			scalar_fcn_type.ShiftedCosine : scalar_fcns.shifted_cosine,
+			scalar_fcn_type.Exponential : scalar_fcns.exponential,
+			scalar_fcn_type.Gaussian : scalar_fcns.gaussian,
+			scalar_fcn_type.ScalarShock : scalar_fcns.scalar_shock,
+			scalar_fcn_type.Paraboloid : scalar_fcns.paraboloid,
+			scalar_fcn_type.SineBurgers : scalar_fcns.sine_burgers,
+			scalar_fcn_type.LinearBurgers : scalar_fcns.linear_burgers,
+		})
 
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
@@ -90,22 +101,22 @@ class ConstAdvScalar1D(base.PhysicsBase):
 		# F.shape = u.shape + (self.Dim,) 
 		return F
 
-	def ConvFluxNumerical(self, uL, uR, normals, nq, data):
+	def ConvFluxNumerical(self, uL, uR, normals): #, nq, data):
 		# nq = NData.nq
-		if nq != uL.shape[0] or nq != uR.shape[0]:
-			raise Exception("Wrong nq")	
-		try:
-			u = data.u
-		except:
-			data.u = u = np.zeros_like(uL)
-		try: 
-			F = data.F
-		except AttributeError: 
-			data.F = F = np.zeros_like(uL)
-		try:
-			c = data.c
-		except:
-			data.c = c = np.zeros_like(uL)
+		# if nq != uL.shape[0] or nq != uR.shape[0]:
+		# 	raise Exception("Wrong nq")	
+		# try:
+		# 	u = data.u
+		# except:
+		# 	data.u = u = np.zeros_like(uL)
+		# try: 
+		# 	F = data.F
+		# except AttributeError: 
+		# 	data.F = F = np.zeros_like(uL)
+		# try:
+		# 	c = data.c
+		# except:
+		# 	data.c = c = np.zeros_like(uL)
 
 	    #Calculate the max speed and keep its sign.
 		# for i in range(nq):
@@ -183,172 +194,6 @@ class ConstAdvScalar1D(base.PhysicsBase):
 
 		return scalar
 
-	def FcnUniform(self, FcnData):
-		Data = FcnData.Data
-		U = FcnData.U
-		ns = self.StateRank
-
-		for k in range(ns):
-			U[:,k] = Data.State[k]
-
-		return U
-
-	def FcnSine(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		Data = FcnData.Data
-		U = FcnData.U
-
-		try:
-			omega = Data.omega
-		except AttributeError:
-			omega = 2.*np.pi
-
-		# c = self.getAdvOperator(U)
-		c = self._c
-		U[:] = np.sin(omega*(x-c*t))
-
-		return U
-
-	def FcnDampingSine(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		Data = FcnData.Data
-		U = FcnData.U
-
-		try:
-			omega = Data.omega
-		except AttributeError:
-			omega = 2.*np.pi
-		try:
-			nu = Data.nu
-		except AttributeError:
-			nu = 1.0
-
-		# c = self.getAdvOperator(U)
-		c = self._c
-		U[:] = np.sin(omega*(x-c*t))*np.exp(nu*t)
-
-		return U
-
-	def FcnShiftedCose(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		try:
-			omega = Data.omega
-		except AttributeError:
-			omega = 2.*np.pi
-
-		U[:] = 1-np.cos(omega*x)
-
-		return U
-
-	def FcnExponential(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		Data = FcnData.Data
-		U = FcnData.U
-
-		try:
-			theta = Data.theta
-		except AttributeError:
-			theta = 1.
-
-		U[:] = np.exp(theta*x)
-
-		return U
-
-	def FcnGaussian(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		Data = FcnData.Data
-		U = FcnData.U
-
-		# Standard deviation
-		try:
-			sig = Data.sig
-		except AttributeError:
-			sig = 1.
-		# Center
-		try:
-			x0 = Data.x0
-		except AttributeError:
-			x0 = np.zeros(self.Dim)
-
-		r = np.linalg.norm(x-x0-self._c*t, axis=1, keepdims=True)
-		U[:] = 1./(sig*np.sqrt(2.*np.pi))**float(self.Dim) * np.exp(-r**2./(2.*sig**2.))
-
-		return U
-
-	def FcnScalarShock(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		try:
-			uR = Data.uR
-		except AttributeError:
-			uR = 0.
-		try:
-			uL = Data.uL
-		except AttributeError:
-			uL = 1.
-		try:
-			xshock = Data.xshock
-		except AttributeError:
-			xshock = -0.5
-		''' Fill state '''
-		us = (uR+uL)
-		xshock = xshock+us*t
-		ileft = (x <= xshock).reshape(-1)
-		iright = (x > xshock).reshape(-1)
-
-		U[ileft]=uL
-		U[iright]=uR
-
-		return U
-
-		# Source Term Functions
-	def FcnStiffSource(self,FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		S = FcnData.S
-		Data = FcnData.Data
-
-		try:
-			beta = Data.beta
-		except AttributeError:
-			beta = 0.5
-		try: 
-			stiffness = Data.stiffness
-		except AttributeError:
-			stiffness = 1.
-
-		S[:] = (1./stiffness)*(1.-U[:])*(U[:]-beta)*U[:]
-
-
-		return S
-
-	def FcnSimpleSource(self,FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		S = FcnData.S
-		Data = FcnData.Data
-
-		try:
-			nu = Data.nu
-		except AttributeError:
-			nu = -1.0
-
-		S[:] = nu*U[:]
-
-		return S
 
 class ConstAdvScalar2D(ConstAdvScalar1D):
 
@@ -370,34 +215,17 @@ class ConstAdvScalar2D(ConstAdvScalar1D):
 		)
 		self._c = np.zeros(2)
 		self._cspeed = 0.
+
+		self.fcn_map.update({
+			scalar_fcn_type.Gaussian : scalar_fcns.gaussian,
+			scalar_fcn_type.Paraboloid : scalar_fcns.paraboloid,
+		})
 	
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
 
 		self._c = np.array([self.Params["ConstXVelocity"], self.Params["ConstYVelocity"]])
 		self._cspeed = np.linalg.norm(self._c)
-
-	def FcnParaboloid(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		Data = FcnData.Data
-		U = FcnData.U
-
-		# Standard deviation
-		# try:
-		# 	sig = Data.sig
-		# except AttributeError:
-		# 	sig = 1.
-		# # Center
-		# try:
-		# 	x0 = Data.x0
-		# except AttributeError:
-		# 	x0 = np.zeros(self.Dim)
-
-		r2 = x[:,0:1]**2. + x[:,1:2]**2.
-		U[:] = r2
-
-		return U
 
 
 class Burgers1D(ConstAdvScalar1D):
@@ -416,6 +244,11 @@ class Burgers1D(ConstAdvScalar1D):
 		self.Params = {
 			"ConvFlux" : self.ConvFluxType["LaxFriedrichs"]
 		}
+
+		self.fcn_map.update({
+			scalar_fcn_type.SineBurgers : scalar_fcns.sine_burgers,
+			scalar_fcn_type.LinearBurgers : scalar_fcns.linear_burgers,
+		})
 
 	def ConvFluxInterior(self, u, F=None):
 		# c = self.getAdvOperator(u)
@@ -439,39 +272,3 @@ class Burgers1D(ConstAdvScalar1D):
 			raise NotImplementedError
 
 		return scalar
-
-	def FcnSineWaveBurgers(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		try:
-			omega = Data.omega
-		except AttributeError:
-			omega = 2.*np.pi
-
-		def F(u):
-			x1 = np.reshape(x,(len(x)))
-			F = u - np.sin(omega*(x1-u*t)) 
-			return F
-			
-		u = np.sin(omega*(x))
-		u1 = np.reshape(u,(len(u)))
-		sol = root(F, u1, tol=1e-12)
-		
-		U[:,0] = sol.x
-
-		return U
-
-	def FcnLinearBurgers(self, FcnData):
-		x = FcnData.x
-		t = FcnData.Time
-		U = FcnData.U
-		Data = FcnData.Data
-
-		a = -1.
-		b = 1.
-		U = (a*x+b)/(a*t+1.)
-
-		return U

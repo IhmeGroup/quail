@@ -600,7 +600,7 @@ class ADERDG_Solver(DG_Solver):
 
 		normals = normals_ifaces[iiface]
 
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq_st, GenericData()) # [nq_st,ns]
+		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
 
 		# F = np.reshape(F,(nq,nqST,sr))
 		
@@ -692,9 +692,10 @@ class ADERDG_Solver(DG_Solver):
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		UqB = EqnSet.BoundaryState(BC, nq_st, x, t, normals, UqI, UqB)
+		# UqB = EqnSet.BoundaryState(BC, nq_st, x, t, normals, UqI, UqB)
 
-		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq_st, GenericData()) # [nq_st,ns]
+		# Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq_st, GenericData()) # [nq_st,ns]
+		Fq = BC.get_boundary_flux(EqnSet, x, t, normals, UqI)
 
 		# F = np.reshape(F,(nq,nqST,sr))
 

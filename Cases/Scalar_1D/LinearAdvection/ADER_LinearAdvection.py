@@ -36,25 +36,34 @@ EqnSet.SetParams(ConstVelocity=Velocity)
 #EqnSet.SetParams(AdvectionOperator="Burgers")
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+# EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+# EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.set_exact(exact_type="Sine", omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
+	set_BC(self, BC_name, **kwargs)
 if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
-		BC = EqnSet.BCs[ibfgrp]
-		## Left
-		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
-		elif BC.Name is Outflow:
-			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
-		else:
-			raise Exception("BC error")
+		BFG = mesh.BFaceGroups[ibfgrp]
+		if BFG.Name is Inflow:
+			EqnSet.set_BC(BC_type="FullState", fcn_type="Sine", omega = 2*np.pi)
+		elif BFG.Name is Outflow:
+			EqnSet.set_BC(BC_type="Extrapolate")
+
+		# BC = EqnSet.BCs[ibfgrp]
+		# ## Left
+		# if BC.Name is Inflow:
+		# 	BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
+		# elif BC.Name is Outflow:
+		# 	BC.Set(BCType=EqnSet.BCType["Extrapolation"])
+		# 	# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
+		# else:
+		# 	raise Exception("BC error")
 
 
 ### Solve

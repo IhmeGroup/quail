@@ -460,7 +460,7 @@ class DG_Solver(SolverBase):
 
 			xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xphys)
 
-			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, Time=self.Time)
+			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
 			f.shape = nq,ns
 
 			if not InterpolateIC:
@@ -621,7 +621,7 @@ class DG_Solver(SolverBase):
 
 		normals = normals_ifaces[iiface]
 
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals, nq, GenericData()) # [nq,ns]
+		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
 
 		RL -= np.matmul(basis_valL.transpose(), Fq*quad_wts) # [nb,sr]
 		RR += np.matmul(basis_valR.transpose(), Fq*quad_wts) # [nb,sr]
@@ -706,9 +706,11 @@ class DG_Solver(SolverBase):
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		UqB = EqnSet.BoundaryState(BC, nq, x, self.Time, normals, UqI, UqB)
+		# UqB = EqnSet.BoundaryState(BC, nq, x, self.Time, normals, UqI, UqB)
 
-		Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq, GenericData()) # [nq,sr]
+		# Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq, GenericData()) # [nq,sr]
+
+		Fq = BC.get_boundary_flux(EqnSet, x, self.Time, normals, UqI)
 
 		R -= np.matmul(basis_val.transpose(), Fq*quad_wts) # [nn,sr]
 

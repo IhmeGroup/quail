@@ -382,13 +382,13 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 def get_analytical_solution(EqnSet, x, time, get_exact, get_IC, u=None):
 	# Exact solution?
 	if get_exact:
-		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,EqnSet.Dim)), Time=time)
+		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,EqnSet.Dim)), t=time)
 		if u is not None: u_exact.shape = u.shape
 	else:
 		u_exact = None
 	# IC ?
 	if get_IC:
-		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,EqnSet.Dim)),Time=0.)
+		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,EqnSet.Dim)), t=0.)
 		if u is not None: u_IC.shape = u.shape
 	else:
 		u_IC = None
@@ -412,7 +412,8 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 
 	# iplot_sr = EqnSet.VariableType[VariableName]
 	if PlotExact:
-		if not EqnSet.ExactSoln.Function:
+		# if not EqnSet.ExactSoln.Function:
+		if EqnSet.ExactSoln is None:
 			raise Exception("No exact solution provided")
 
 	## Extract params

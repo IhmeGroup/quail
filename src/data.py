@@ -17,61 +17,6 @@ class GenericData(object):
         pass
 
 
-class ICData(object):
-    '''
-    Class: ICData
-    --------------------------------------------------------------------------
-    This is a class that encompases the initial conditions
-
-    ATTRIBUTES: 
-        Function: function that describes the initial condition. Options located in Scalar.py and Euler.py
-        x: coordinates for initial conditions
-        Time: establish the initial time
-        U: solution array at the initial condition
-        Data: generic data needed for specific initial conditions
-    '''
-    def __init__(self):
-        self.Function = None
-        self.x = None
-        self.Time = 0.
-        self.U = None
-        self.Data = GenericData()
-
-    def Set(self, **kwargs):
-        for key in kwargs:
-            # if key in self.__dict__.keys(): self.__dict__[key] = kwargs[key]
-                ## NOTE: __dict__ doesn't work this way for inherited classes
-            # if key in dir(self): 
-            if hasattr(self, key):
-                setattr(self, key, kwargs[key])
-            else: 
-                setattr(self.Data, key, kwargs[key])
-
-
-class BCData(ICData):
-    def __init__(self):
-        BCData.Name = ""
-        BCData.BCType = 0
-        ICData.__init__(self)
-
-    # def Set(self, Function=None, Name="", BCType=0, **kwargs):
-    #     self.Function = Function
-    #     self.Name = Name
-    #     self.BCType = BCType
-    #     for key in kwargs:
-    #         self.Data.__dict__[key] = kwargs[key]
-
-class SourceData(ICData):
-    def __init__(self):
-        SourceData.Name = ""
-        SourceData.S = None
-        ICData.__init__(self)
-
-class ExactData(ICData):
-    def __init__(self):
-        ICData.__init__(self)
-
-
 class ArrayList(object):
     '''
     Class: IFace

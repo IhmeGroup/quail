@@ -34,9 +34,11 @@ Velocity = 1.
 EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(ConstVelocity=Velocity,ConvFlux="LaxFriedrichs")
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+# EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+# EqnSet.ExactSoln.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.set_exact(exact_type="Sine", omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"

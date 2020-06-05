@@ -24,7 +24,8 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 	U = EqnSet.U
 	basis = solver.basis
 	# Check for exact solution
-	if not EqnSet.ExactSoln.Function:
+	# if not EqnSet.ExactSoln.Function:
+	if EqnSet.ExactSoln is None:
 		raise Exception("No exact solution provided")
 
 	# Get elem volumes 
@@ -69,7 +70,7 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 		djac,_,_ = Basis.element_jacobian(mesh,elem,xq,get_djac=True)
 
 		xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
-		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, Time=Time)
+		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points
 		u = np.zeros([nq, sr])

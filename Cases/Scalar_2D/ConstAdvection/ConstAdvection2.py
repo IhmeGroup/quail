@@ -9,7 +9,7 @@ import processing.plot as Plot
 import general
 import meshing.gmsh as MeshGmsh
 import os
-import MeshTools
+import meshing.tools as MeshTools
 
 
 CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
@@ -40,9 +40,11 @@ x0 = np.array([0., 0.])
 EqnSet = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(ConstXVelocity=1.,ConstYVelocity=1.,ConvFlux="LaxFriedrichs")
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnGaussian, x0=x0)
+# EqnSet.IC.Set(Function=EqnSet.FcnGaussian, x0=x0)
+EqnSet.set_IC(IC_type="Gaussian", x0=x0)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnGaussian, x0=x0)
+# EqnSet.ExactSoln.Set(Function=EqnSet.FcnGaussian, x0=x0)
+EqnSet.set_exact(exact_type="Gaussian", x0=x0)
 # Boundary conditions
 if not Periodic:
 	MeshTools.check_face_orientations(mesh)

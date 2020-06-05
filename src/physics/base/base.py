@@ -7,7 +7,10 @@ import sys
 from numerics.basis.basis import order_to_num_basis_coeff
 from general import *
 import errors
-from data import ArrayList, ICData, BCData, ExactData, SourceData, GenericData
+from physics.base.data import ICData, BCData, ExactData, SourceData
+import physics.base.functions as base_fcns
+from physics.base.functions import FcnType as base_fcn_type
+from physics.base.functions import BCType as base_BC_type
 
 
 class LaxFriedrichsFlux(object):
@@ -73,6 +76,18 @@ class LaxFriedrichsFlux(object):
 		return NN*(0.5*(FL+FR) - 0.5*a*du)
 
 
+def process_map(fcn_type, fcn_map):
+	if fcn_type != "":
+		# Update kwargs with reference to desired function 
+		for fcn_keys in fcn_map.keys():
+			if fcn_keys.name == fcn_type:
+				# kwargs.update(Function=fcn_map[fcn_keys])
+				fcn_ref = fcn_map[fcn_keys]
+				break
+
+	return fcn_ref
+
+
 class PhysicsBase(object):
 	'''
 	Class: IFace
@@ -97,8 +112,8 @@ class PhysicsBase(object):
 		dim = mesh.Dim
 		self.Dim = mesh.Dim
 		self.Params = {}
-		self.IC = ICData()
-		self.ExactSoln = ExactData()
+		self.IC = None
+		self.ExactSoln = None
 		self.ConvFluxFcn = None
 		self.BCTreatments = {}
 		self.Sources = []
@@ -107,10 +122,11 @@ class PhysicsBase(object):
 		# for ibfgrp in range(mesh.nBFaceGroup):
 		# 	self.BCs.append(BCData(Name=mesh.BFGNames[ibfgrp]))
 		self.nBC = mesh.nBFaceGroup
-		self.BCs = [BCData() for ibfgrp in range(mesh.nBFaceGroup)]
-		for ibfgrp in range(mesh.nBFaceGroup):
-			self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
-			# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
+		# self.BCs = [BCData() for ibfgrp in range(mesh.nBFaceGroup)]
+		# for ibfgrp in range(mesh.nBFaceGroup):
+		# 	self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
+		# 	# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
+		self.BCs = [None]*mesh.nBFaceGroup
 
 		# Basis, Order data for each element group
 		# For now, ssume uniform basis and Order for each element group 
@@ -148,6 +164,16 @@ class PhysicsBase(object):
 				self.StateIndices[key.name] = index
 				index += 1
 
+		self.fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+		}
+
+		self.BC_map = {
+			base_BC_type.FullState : base_fcns.FullState,
+			base_BC_type.Extrapolate : base_fcns.Extrapolate,
+		}
+
+
 	@abstractmethod
 	def SetParams(self,**kwargs):
 		Params = self.Params
@@ -159,6 +185,25 @@ class PhysicsBase(object):
 				Params[key] = self.ConvFluxType[kwargs[key]]
 			else:
 				Params[key] = kwargs[key]
+
+	def set_IC(self, IC_type, **kwargs):
+		fcn_ref = process_map(IC_type, self.fcn_map)
+		self.IC = fcn_ref(**kwargs)
+
+	def set_exact(self, exact_type, **kwargs):
+		fcn_ref = process_map(exact_type, self.fcn_map)
+		self.ExactSoln = fcn_ref(**kwargs)
+
+	def set_BC(self, BC_type, fcn_type=None, **kwargs):
+		for i in range(len(self.BCs)):
+			BC = self.BCs[i]
+			if BC is None:
+				if fcn_type is not None:
+					fcn_ref = process_map(fcn_type, self.fcn_map)
+					kwargs.update(function=fcn_ref)
+				BC_ref = process_map(BC_type, self.BC_map)
+				BC = BC_ref(**kwargs)
+				self.BCs[i] = BC
 
 	def SetBC(self, BCName, **kwargs):
 		found = False
@@ -293,24 +338,27 @@ class PhysicsBase(object):
 	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
 		pass
 
-	def CallFunction(self, FcnData, **kwargs):
-		for key in kwargs:
-			if key is "x":
-				FcnData.x = kwargs[key]
-				FcnData.nq = FcnData.x.shape[0]
-			elif key is "Time":
-				FcnData.Time = kwargs[key]
-			else:
-				raise Exception("Input error")
+	def CallFunction(self, FcnData, x, t):
+		# for key in kwargs:
+		# 	if key is "x":
+		# 		FcnData.x = kwargs[key]
+		# 		FcnData.nq = FcnData.x.shape[0]
+		# 	elif key is "Time":
+		# 		FcnData.Time = kwargs[key]
+		# 	else:
+		# 		raise Exception("Input error")
 
-		nq = FcnData.nq
-		sr = self.StateRank
-		if FcnData.U is None or FcnData.U.shape != (nq, sr):
-			FcnData.U = np.zeros([nq, sr], dtype=self.U.dtype)
+		# nq = FcnData.nq
+		# sr = self.StateRank
+		# if FcnData.U is None or FcnData.U.shape != (nq, sr):
+		# 	FcnData.U = np.zeros([nq, sr], dtype=self.U.dtype)
 
-		FcnData.U[:] = FcnData.Function(FcnData)
+		# FcnData.U[:] = FcnData.Function(self, FcnData)
+		# FcnData.alloc_helpers([x.shape[0], self.StateRank])
 
-		return FcnData.U
+		FcnData.Up = FcnData.get_state(self, x, t)
+
+		return FcnData.Up
 
 	def CallSourceFunction(self, FcnData, **kwargs):
 		for key in kwargs:
@@ -327,7 +375,7 @@ class PhysicsBase(object):
 		if FcnData.S is None or FcnData.S.shape != (nq, sr):
 			FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
 
-		FcnData.S[:] = FcnData.Function(FcnData)
+		FcnData.S[:] = FcnData.Function(self, FcnData)
 
 		return FcnData.S
 
