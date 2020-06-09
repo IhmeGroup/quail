@@ -8,6 +8,7 @@ from numerics.basis.basis import order_to_num_basis_coeff
 import physics.base.base as base
 import physics.scalar.functions as scalar_fcns
 from physics.scalar.functions import FcnType as scalar_fcn_type
+from physics.scalar.functions import SourceType as scalar_source_type
 
 
 class ConstAdvScalar1D(base.PhysicsBase):
@@ -48,6 +49,10 @@ class ConstAdvScalar1D(base.PhysicsBase):
 			scalar_fcn_type.Paraboloid : scalar_fcns.paraboloid,
 			scalar_fcn_type.SineBurgers : scalar_fcns.sine_burgers,
 			scalar_fcn_type.LinearBurgers : scalar_fcns.linear_burgers,
+		})
+
+		self.source_map.update({
+			scalar_source_type.SimpleSource : scalar_fcns.simple_source,
 		})
 
 	def SetParams(self,**kwargs):
