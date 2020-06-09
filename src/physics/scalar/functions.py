@@ -1,3 +1,4 @@
+import code
 from enum import Enum, auto
 import numpy as np
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase
@@ -156,43 +157,40 @@ class linear_burgers(FcnBase):
 '''
 Source term functions
 '''
+class simple_source(SourceBase):
+	def __init__(self, nu=-1):
+		self.nu = nu
 
-def simple_source(physics, fcn_data):
-	x = fcn_data.x
-	t = fcn_data.Time
-	U = fcn_data.U
-	S = fcn_data.S
-	Data = fcn_data.Data
+	def get_source(self, physics, FcnData, x, t):
+		nu = self.nu
+		U = FcnData.U
+		S = nu*U[:]
 
-	try:
-		nu = Data.nu
-	except AttributeError:
-		nu = -1.0
-
-	S[:] = nu*U[:]
-
-	return S
+		return S
+	def get_jacobian(self):
+		pass
 
 
-def stiff_source(physics, fcn_data):
-	x = fcn_data.x
-	t = fcn_data.Time
-	U = fcn_data.U
-	S = fcn_data.S
-	Data = fcn_data.Data
 
-	try:
-		beta = Data.beta
-	except AttributeError:
-		beta = 0.5
-	try: 
-		stiffness = Data.stiffness
-	except AttributeError:
-		stiffness = 1.
+# def stiff_source(physics, fcn_data):
+# 	x = fcn_data.x
+# 	t = fcn_data.Time
+# 	U = fcn_data.U
+# 	S = fcn_data.S
+# 	Data = fcn_data.Data
 
-	S[:] = (1./stiffness)*(1.-U[:])*(U[:]-beta)*U[:]
+# 	try:
+# 		beta = Data.beta
+# 	except AttributeError:
+# 		beta = 0.5
+# 	try: 
+# 		stiffness = Data.stiffness
+# 	except AttributeError:
+# 		stiffness = 1.
 
-	return S
+# 	S[:] = (1./stiffness)*(1.-U[:])*(U[:]-beta)*U[:]
+
+# 	return S
 
 
 
