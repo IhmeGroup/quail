@@ -10,7 +10,7 @@ import general
 
 
 ### Mesh
-Periodic = False
+Periodic = True
 # Uniform mesh
 mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
@@ -34,14 +34,15 @@ Velocity = 1.0
 EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(ConstVelocity=Velocity)
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
-EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)
+
+EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
+EqnSet.set_exact(exact_type="DampingSine", omega = 2*np.pi, nu = nu)
+EqnSet.set_source(source_type="SimpleSource", nu = nu)
 
 
-Uinflow=[1.]
-# Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
-# Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
+
+
+# EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
