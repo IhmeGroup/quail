@@ -173,6 +173,9 @@ class PhysicsBase(object):
 			base_BC_type.Extrapolate : base_fcns.Extrapolate,
 		}
 
+		self.source_map = {
+		}
+
 
 	@abstractmethod
 	def SetParams(self,**kwargs):
@@ -216,6 +219,11 @@ class PhysicsBase(object):
 		if not found:
 			raise NameError
 
+	def set_source(self, source_type, **kwargs):
+		source_ref = process_map(source_type, self.source_map)
+		Source = source_ref(**kwargs)
+		self.Sources.append(Source)
+		
 	@abstractmethod
 	class StateVariables(Enum):
 		pass
@@ -247,11 +255,11 @@ class PhysicsBase(object):
 	class ConvFluxType(IntEnum):
 		pass
 
-	def SetSource(self, **kwargs):
-		#append src data to Sources list 
-		Source = SourceData()
-		self.Sources.append(Source)
-		Source.Set(**kwargs)
+	# def SetSource(self, **kwargs):
+	# 	#append src data to Sources list 
+	# 	Source = SourceData()
+	# 	self.Sources.append(Source)
+	# 	Source.Set(**kwargs)
 
 	def QuadOrder(self, Order):
 		return 2*Order+1
@@ -277,7 +285,7 @@ class PhysicsBase(object):
 			Source.nq = nq
 			Source.Time = Time
 			Source.U = u
-			s += self.CallSourceFunction(Source)
+			s += self.CallSourceFunction(Source,Source.x,Source.Time)
 
 		return s
 
@@ -355,27 +363,26 @@ class PhysicsBase(object):
 
 		# FcnData.U[:] = FcnData.Function(self, FcnData)
 		# FcnData.alloc_helpers([x.shape[0], self.StateRank])
-
 		FcnData.Up = FcnData.get_state(self, x, t)
 
 		return FcnData.Up
 
-	def CallSourceFunction(self, FcnData, **kwargs):
-		for key in kwargs:
-			if key is "x":
-				FcnData.x = kwargs[key]
-				FcnData.nq = FcnData.x.shape[0]
-			elif key is "Time":
-				FcnData.Time = kwargs[key]
-			else:
-				raise Exception("Input error")
+	def CallSourceFunction(self, FcnData, x, t):
+		# for key in kwargs:
+		# 	if key is "x":
+		# 		FcnData.x = kwargs[key]
+		# 		FcnData.nq = FcnData.x.shape[0]
+		# 	elif key is "Time":
+		# 		FcnData.Time = kwargs[key]
+		# 	else:
+		# 		raise Exception("Input error")
 
-		nq = FcnData.nq
-		sr = self.StateRank
-		if FcnData.S is None or FcnData.S.shape != (nq, sr):
-			FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
-
-		FcnData.S[:] = FcnData.Function(self, FcnData)
+		# nq = FcnData.nq
+		# sr = self.StateRank
+		# if FcnData.S is None or FcnData.S.shape != (nq, sr):
+		# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
+		# code.interact(local=locals())
+		FcnData.S = FcnData.get_source(self, FcnData, x, t)
 
 		return FcnData.S
 
