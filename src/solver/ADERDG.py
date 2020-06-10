@@ -375,7 +375,7 @@ class ADERDG_Solver(DG_Solver):
 		INPUTS:
 			elem: element index
 			dt: time step 
-			W: previous time step solution in space only
+			Wp: previous time step solution in space only
 
 		OUTPUTS:
 			Up: predicted solution in space-time
