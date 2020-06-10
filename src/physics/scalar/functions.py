@@ -168,8 +168,7 @@ class simple_source(SourceBase):
 
 		return S
 	def get_jacobian(self):
-		pass
-
+		return self.nu
 
 
 # def stiff_source(physics, fcn_data):
