@@ -33,9 +33,10 @@ EqnSet.SetParams(GasConstant=287.,SpecificHeatRatio=1.4,ConvFlux="Roe")
 M = 5.
 xshock = 0.2
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnMovingShock, M=M, xshock=xshock)
+EqnSet.set_IC(IC_type="MovingShock", M=M, xshock=xshock)
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnMovingShock, M=M, xshock=xshock)
+EqnSet.set_exact(exact_type="MovingShock", M=M, xshock = xshock)
+
 # Boundary conditions
 EqnSet.SetBC("Left",Function=EqnSet.FcnMovingShock, BCType=EqnSet.BCType["FullState"], M=M, xshock=xshock)
 EqnSet.SetBC("Right",Function=EqnSet.FcnMovingShock, BCType=EqnSet.BCType["FullState"], M=M, xshock=xshock)
