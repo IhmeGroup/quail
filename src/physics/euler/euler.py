@@ -5,6 +5,10 @@ from scipy.optimize import fsolve, root
 
 import physics.base.base as base
 
+import physics.euler.functions as euler_fcns
+from physics.euler.functions import FcnType as euler_fcn_type
+from physics.euler.functions import SourceType as euler_source_type
+
 import errors
 import general
 
@@ -299,7 +303,15 @@ class Euler1D(base.PhysicsBase):
 			SpecificHeatRatio = 1.4,
 			ConvFlux = self.ConvFluxType["LaxFriedrichs"]
 		)
-		
+
+		self.fcn_map.update({
+			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.smooth_isentropic_flow,
+			euler_fcn_type.MovingShock : euler_fcns.moving_shock
+		})
+		self.source_map.update({
+			euler_source_type.StiffFriction : euler_fcns.stiff_friction,
+		})
+
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
 
