@@ -10,7 +10,7 @@ import general
 
 
 ### Mesh
-Periodic = False
+Periodic = True
 mesh = MeshCommon.mesh_1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 
 
@@ -26,9 +26,8 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
-# Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
+EqnSet.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
+EqnSet.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 # Boundary conditions
 if not Periodic:
 	EqnSet.SetBC("Left",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
