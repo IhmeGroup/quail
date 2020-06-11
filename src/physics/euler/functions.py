@@ -27,7 +27,7 @@ class smooth_isentropic_flow(FcnBase):
 		gam = physics.Params["SpecificHeatRatio"]
 		irho, irhou, irhoE = physics.GetStateIndices()
 	
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		# Up = np.zeros([x.shape[0], physics.StateRank])
 
 		rho0 = lambda x,a: 1. + a*np.sin(np.pi*x)
 		pressure = lambda rho,gam: rho**gam
@@ -40,11 +40,16 @@ class smooth_isentropic_flow(FcnBase):
 		x_ = x.reshape(-1)
 
 		if isinstance(t,float):
+			Up = np.zeros([x.shape[0], physics.StateRank])
+
 			x1 = fsolve(f1, 0.*x_, (x_,t,a))
 			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
 			x2 = fsolve(f2, 0.*x_, (x_,t,a))
 			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 		else:
+			
+			Up = np.zeros([t.shape[0], physics.StateRank])
+
 			y = np.zeros(len(t))
 			for i in range(len(t)):
 			#	code.interact(local=locals())
@@ -148,29 +153,28 @@ class moving_shock(FcnBase):
 
 		return Up
 
-def density_wave(physics, FcnData):
-	if self.Dim != 1:
-		raise NotImplementedError
-	irho, irhou, irhoE = self.GetStateIndices()
-	x = FcnData.x
-	t = FcnData.Time
-	U = FcnData.U
-	Data = FcnData.Data
-	gam = self.Params["SpecificHeatRatio"]
+class density_wave(FcnBase):
+	def __init__(self, p = 1.0):
+		self.p = p
 
-	p=1.0
-	x_ = x.reshape(-1)
+	def get_state(self, physics, x, t):
+		p = self.p
+		irho, irhou, irhoE = physics.GetStateIndices()
+		gam = physics.Params["SpecificHeatRatio"]
 
-	
-	r = 1.0+0.1*np.sin(2.*np.pi*x_)
-	ru = r*1.0
-	rE = (p/(gam-1.))+0.5*ru**2/r
+		Up = np.zeros([x.shape[0], physics.StateRank])
 
-	U[:,irho] = r
-	U[:,irhou] = ru
-	U[:,irhoE] = rE
+		x_ = x.reshape(-1)
+		
+		r = 1.0+0.1*np.sin(2.*np.pi*x_)
+		ru = r*1.0
+		rE = (p/(gam-1.))+0.5*ru**2/r
 
-	return U
+		Up[:,irho] = r
+		Up[:,irhou] = ru
+		Up[:,irhoE] = rE
+
+		return Up
 
 def isentropic_vortex(physics, fcn_data):
 	x = fcn_data.x
@@ -258,5 +262,19 @@ class stiff_friction(SourceBase):
 		S[:,irhoE] = nu*((U[:,irhou])**2/(eps+U[:,irho]))
 		
 		return S
-	def get_jacobian(self):
-		pass
+
+	def get_jacobian(self, U):
+
+		nu = self.nu
+		
+		jac = np.zeros([U.shape[-1],U.shape[-1]])
+		vel = U[:,1]/(1.0e-12+U[:,0])
+
+		jac[1,1]=nu
+		jac[2,0]=-nu*vel**2
+		jac[2,1]=2.0*nu*vel
+
+		return jac
+
+
+
