@@ -75,6 +75,9 @@ class moving_shock(FcnBase):
 		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
+
+		M = self.M
+		xshock = self.xshock
 		irho = physics.GetStateIndex("Density")
 		irhou = physics.GetStateIndex("XMomentum")
 		irhoE = physics.GetStateIndex("Energy")
@@ -126,7 +129,7 @@ class moving_shock(FcnBase):
 				# Momentum
 				Up[iright[i], i, irhou] = rho1[i]*u1[i]
 				Up[ileft[i], i, irhou] = rho2[i]*u2[i]
-				if physics.Dim == 2: U[:, irhov] = 0.
+				if physics.Dim == 2: Up[:, irhov] = 0.
 				# Energy
 				Up[iright[i], i, irhoE] = p1[i]/(gam-1.) + 0.5*rho1[i]*u1[i]*u1[i]
 				Up[ileft[i], i, irhoE] = p2[i]/(gam-1.) + 0.5*rho2[i]*u2[i]*u2[i]
@@ -143,7 +146,7 @@ class moving_shock(FcnBase):
 			Up[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
 			Up[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
 
-		return U
+		return Up
 
 def density_wave(physics, FcnData):
 	if self.Dim != 1:
