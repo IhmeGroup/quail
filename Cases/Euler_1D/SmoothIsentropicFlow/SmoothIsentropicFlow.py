@@ -10,7 +10,7 @@ import general
 
 
 ### Mesh
-Periodic = True
+Periodic = False
 mesh = MeshCommon.mesh_1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 
 
@@ -29,13 +29,14 @@ EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
 EqnSet.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
 EqnSet.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 
-# Exact solution
-# EqnSet.ExactSoln.Set(Function=EqnSet.FcnSmoothIsentropicFlow, a=0.9)
 # Boundary conditions
 if not Periodic:
-	EqnSet.SetBC("Left",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
-	EqnSet.SetBC("Right",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
-
+	for ibfgrp in range(mesh.nBFaceGroup):
+		BFG = mesh.BFaceGroups[ibfgrp]
+		if BFG.Name is "Left":
+			EqnSet.set_BC(BC_type="FullState", fcn_type="SmoothIsentropicFlow", a=0.9)
+		elif BFG.Name is "Right":
+			EqnSet.set_BC(BC_type="FullState", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
 solver = Solver.DG_Solver(Params,EqnSet,mesh)

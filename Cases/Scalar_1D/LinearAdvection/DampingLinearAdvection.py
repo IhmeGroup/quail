@@ -10,7 +10,7 @@ import general
 
 
 ### Mesh
-Periodic = True
+Periodic = False
 # Uniform mesh
 mesh = MeshCommon.mesh_1D(Uniform=True, nElem=16, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
@@ -42,23 +42,19 @@ EqnSet.set_source(source_type="SimpleSource", nu = nu)
 
 
 
-# EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
+	set_BC(self, BC_name, **kwargs)
 if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
-		BC = EqnSet.BCs[ibfgrp]
-		## Left
-		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2.*np.pi, nu=nu)
-		elif BC.Name is Outflow:
-			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi, nu=-2.0)
-		else:
-			raise Exception("BC error")
+		BFG = mesh.BFaceGroups[ibfgrp]
+		if BFG.Name is Inflow:
+			EqnSet.set_BC(BC_type="FullState", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+		elif BFG.Name is Outflow:
+			EqnSet.set_BC(BC_type="Extrapolate")
 
 
 ### Solve
