@@ -47,7 +47,7 @@ class smooth_isentropic_flow(FcnBase):
 			x2 = fsolve(f2, 0.*x_, (x_,t,a))
 			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 		else:
-			
+
 			Up = np.zeros([t.shape[0], physics.StateRank])
 
 			y = np.zeros(len(t))
@@ -175,68 +175,66 @@ class density_wave(FcnBase):
 		Up[:,irhoE] = rE
 
 		return Up
+class isentropic_vortex(FcnBase):
+	def __init__(self,rhob=1.,ub=1.,vb=1.,pb=1.,vs=5.):
+		self.rhob = 1.
+		self.ub = 1.
+		self.vb = 1.
+		self.pb = 1.
+		self.vs = 5.
+	def get_state(self,physics,x,t):		
+		Up = np.zeros([x.shape[0], physics.StateRank])
+		gam = physics.Params["SpecificHeatRatio"]
+		Rg = physics.Params["GasConstant"]
 
-def isentropic_vortex(physics, fcn_data):
-	x = fcn_data.x
-	t = fcn_data.Time
-	U = fcn_data.U
-	Data = fcn_data.Data
-	gam = physics.Params["SpecificHeatRatio"]
-	Rg = physics.Params["GasConstant"]
+		### Parameters
+		# Base flow
+		rhob = self.rhob
+		# x-velocity
+		ub = self.ub
+		# y-velocity
+		vb = self.vb
+		# pressure
+		pb = self.pb
+		# vortex strength
+		vs = self.vs
+		# Make sure Rg is 1
+		if Rg != 1.:
+			raise ValueError
 
-	### Parameters
-	# Base flow
-	try: rhob = fcn_data.rho
-	except AttributeError: rhob = 1.
-	# x-velocity
-	try: ub = fcn_data.u
-	except AttributeError: ub = 1.
-	# y-velocity
-	try: vb = fcn_data.v
-	except AttributeError: vb = 1.
-	# pressure
-	try: pb = fcn_data.p
-	except AttributeError: pb = 1.
-	# vortex strength
-	try: vs = fcn_data.vs
-	except AttributeError: vs = 5.
-	# Make sure Rg is 1
-	if Rg != 1.:
-		raise ValueError
+		# Base temperature
+		Tb = pb/(rhob*Rg)
 
-	# Base temperature
-	Tb = pb/(rhob*Rg)
+		# Entropy
+		s = pb/rhob**gam
 
-	# Entropy
-	s = pb/rhob**gam
+		xr = x[:,0] - ub*t
+		yr = x[:,1] - vb*t
+		r = np.sqrt(xr**2. + yr**2.)
 
-	xr = x[:,0] - ub*t
-	yr = x[:,1] - vb*t
-	r = np.sqrt(xr**2. + yr**2.)
+		# Perturbations
+		dU = vs/(2.*np.pi)*np.exp(0.5*(1-r**2.))
+		du = dU*-yr
+		dv = dU*xr
 
-	# Perturbations
-	dU = vs/(2.*np.pi)*np.exp(0.5*(1-r**2.))
-	du = dU*-yr
-	dv = dU*xr
+		dT = -(gam - 1.)*vs**2./(8.*gam*np.pi**2.)*np.exp(1.-r**2.)
 
-	dT = -(gam - 1.)*vs**2./(8.*gam*np.pi**2.)*np.exp(1.-r**2.)
+		u = ub + du 
+		v = vb + dv 
+		T = Tb + dT
 
-	u = ub + du 
-	v = vb + dv 
-	T = Tb + dT
+		# Convert to conservative variables
+		r = np.power(T/s, 1./(gam-1.))
+		ru = r*u
+		rv = r*v
+		rE = r*Rg/(gam-1.)*T + 0.5*(ru*ru + rv*rv)/r
 
-	# Convert to conservative variables
-	r = np.power(T/s, 1./(gam-1.))
-	ru = r*u
-	rv = r*v
-	rE = r*Rg/(gam-1.)*T + 0.5*(ru*ru + rv*rv)/r
+		Up[:,0] = r
+		Up[:,1] = ru
+		Up[:,2] = rv
+		Up[:,3] = rE
 
-	U[:,0] = r
-	U[:,1] = ru
-	U[:,2] = rv
-	U[:,3] = rE
-
-	return U
+		return Up
 
 
 '''
