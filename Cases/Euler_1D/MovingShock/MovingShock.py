@@ -38,8 +38,15 @@ EqnSet.set_IC(IC_type="MovingShock", M=M, xshock=xshock)
 EqnSet.set_exact(exact_type="MovingShock", M=M, xshock = xshock)
 
 # Boundary conditions
-EqnSet.SetBC("Left",Function=EqnSet.FcnMovingShock, BCType=EqnSet.BCType["FullState"], M=M, xshock=xshock)
-EqnSet.SetBC("Right",Function=EqnSet.FcnMovingShock, BCType=EqnSet.BCType["FullState"], M=M, xshock=xshock)
+for ibfgrp in range(mesh.nBFaceGroup):
+	BFG = mesh.BFaceGroups[ibfgrp]
+	if BFG.Name is "Left":
+		EqnSet.set_BC(BC_type="FullState", fcn_type="MovingShock", M=M, xshock=xshock)
+	elif BFG.Name is "Right":
+		EqnSet.set_BC(BC_type="FullState", fcn_type="MovingShock", M=M, xshock=xshock)
+
+# EqnSet.set_BC(BC_type="FullState", fcn_type="MovingShock")
+# EqnSet.SetBC("Right",Function=EqnSet.FcnMovingShock, BCType=EqnSet.BCType["FullState"], M=M, xshock=xshock)
 
 
 ### Solve

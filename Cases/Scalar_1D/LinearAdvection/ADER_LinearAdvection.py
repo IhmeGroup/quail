@@ -55,16 +55,6 @@ if not Periodic:
 		elif BFG.Name is Outflow:
 			EqnSet.set_BC(BC_type="Extrapolate")
 
-		# BC = EqnSet.BCs[ibfgrp]
-		# ## Left
-		# if BC.Name is Inflow:
-		# 	BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
-		# elif BC.Name is Outflow:
-		# 	BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-		# 	# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
-		# else:
-		# 	raise Exception("BC error")
-
 
 ### Solve
 solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
