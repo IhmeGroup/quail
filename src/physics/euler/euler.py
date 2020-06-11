@@ -900,7 +900,11 @@ class Euler2D(Euler1D):
 
 	def __init__(self, order, basis, mesh):
 		Euler1D.__init__(self, order, basis, mesh) 
-
+		
+		self.fcn_map.update({
+			euler_fcn_type.IsentropicVortex : euler_fcns.isentropic_vortex,
+		})
+		
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
 
