@@ -10,7 +10,7 @@ import general
 
 
 ### Mesh
-Periodic = True
+Periodic = False
 mesh = MeshCommon.mesh_1D(Uniform=True, nElem=25, xmin=-1., xmax=1., Periodic=Periodic)
 
 
@@ -19,20 +19,24 @@ EndTime = 0.1
 nTimeStep = 100
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeEqSeg",TimeScheme="ADER",InterpolateIC=True)
+								 InterpBasis="LagrangeEqSeg", InterpolateIC=True)
 
-
+# nu = -1000.
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
 # Initial conditions
 EqnSet.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
 EqnSet.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
+
 # Boundary conditions
 if not Periodic:
-	EqnSet.SetBC("Left",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
-	EqnSet.SetBC("Right",Function=EqnSet.FcnSmoothIsentropicFlow, BCType=EqnSet.BCType["FullState"], a=0.9)
-
+	for ibfgrp in range(mesh.nBFaceGroup):
+		BFG = mesh.BFaceGroups[ibfgrp]
+		if BFG.Name is "Left":
+			EqnSet.set_BC(BC_type="FullState", fcn_type="SmoothIsentropicFlow", a=0.9)
+		elif BFG.Name is "Right":
+			EqnSet.set_BC(BC_type="FullState", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
 solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
