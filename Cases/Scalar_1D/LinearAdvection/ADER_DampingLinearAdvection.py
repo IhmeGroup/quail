@@ -26,7 +26,7 @@ EndTime = 0.5
 nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
 InterpOrder = 3
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeEqSeg",TimeScheme="ADER",InterpolateFlux=True)
+								 InterpBasis="LagrangeEqSeg",InterpolateFlux=True,SourceTreatment="Implicit")
 nu = -3.
 
 ### Physics
@@ -34,30 +34,24 @@ Velocity = 1.0
 EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(ConstVelocity=Velocity)
 EqnSet.SetParams(ConvFlux="LaxFriedrichs")
-EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)
 
+EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
+EqnSet.set_exact(exact_type="DampingSine", omega = 2*np.pi, nu = nu)
+EqnSet.set_source(source_type="SimpleSource", nu = nu)
 
-Uinflow=[1.]
-# Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
-# Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
+	set_BC(self, BC_name, **kwargs)
 if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
-		BC = EqnSet.BCs[ibfgrp]
-		## Left
-		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2.*np.pi, nu=nu)
-		elif BC.Name is Outflow:
-			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi, nu=-2.0)
-		else:
-			raise Exception("BC error")
+		BFG = mesh.BFaceGroups[ibfgrp]
+		if BFG.Name is Inflow:
+			EqnSet.set_BC(BC_type="FullState", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+		elif BFG.Name is Outflow:
+			EqnSet.set_BC(BC_type="Extrapolate")
 
 
 ### Solve
