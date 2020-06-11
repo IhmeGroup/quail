@@ -55,11 +55,13 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="LaxFriedrichs")
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnIsentropicVortexPropagation)
+EqnSet.set_IC(IC_type="IsentropicVortex")
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnIsentropicVortexPropagation)
+EqnSet.set_exact(exact_type="IsentropicVortex")
+# EqnSet.ExactSoln.Set(Function=EqnSet.FcnIsentropicVortexPropagation)
 # Boundary conditions
-EqnSet.SetBC("wall",Function=EqnSet.FcnIsentropicVortexPropagation, BCType=EqnSet.BCType["FullState"])
+EqnSet.set_BC(BC_type="FullState", fcn_type="IsentropicVortex")
+# EqnSet.SetBC("wall",Function=EqnSet.FcnIsentropicVortexPropagation, BCType=EqnSet.BCType["FullState"])
 # raise Exception
 
 
