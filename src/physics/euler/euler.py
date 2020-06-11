@@ -306,7 +306,8 @@ class Euler1D(base.PhysicsBase):
 
 		self.fcn_map.update({
 			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.smooth_isentropic_flow,
-			euler_fcn_type.MovingShock : euler_fcns.moving_shock
+			euler_fcn_type.MovingShock : euler_fcns.moving_shock,
+			euler_fcn_type.DensityWave : euler_fcns.density_wave,
 		})
 		self.source_map.update({
 			euler_source_type.StiffFriction : euler_fcns.stiff_friction,
