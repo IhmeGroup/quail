@@ -1,5 +1,6 @@
 import code
-import numpy as np 
+import numpy as np
+from scipy.linalg import solve_sylvester
 
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 from numerics.basis.basis import *
@@ -14,6 +15,7 @@ import processing.post as Post
 import processing.readwritedatafiles as ReadWriteDataFiles
 
 from data import ArrayList, GenericData
+import general
 import errors
 
 global echeck
@@ -21,6 +23,220 @@ echeck = -1
 
 from solver.DG import *
 
+# Update default solver params.
+general.SolverParams.update({
+	"TimeScheme": "ADER",
+	"SourceTreatment": "Explicit",
+})
+
+def predictor_elem_explicit(solver, elem, dt, Wp, Up):
+	'''
+	Method: calculate_predictor_elem
+	-------------------------------------------
+	Calculates the predicted solution state for the ADER-DG method using a nonlinear solve of the
+	weak form of the DG discretization in time.
+
+	INPUTS:
+		elem: element index
+		dt: time step 
+		Wp: previous time step solution in space only
+
+	OUTPUTS:
+		Up: predicted solution in space-time
+	'''
+	EqnSet = solver.EqnSet
+	ns = EqnSet.StateRank
+	mesh = solver.mesh
+
+	basis = solver.basis
+	basis_st = solver.basis_st
+
+	order = EqnSet.order
+	
+	elem_ops = solver.elem_operators
+	ader_ops = solver.ader_operators
+	
+	quad_wts = elem_ops.quad_wts
+	basis_val = elem_ops.basis_val 
+	djac_elems = elem_ops.djac_elems 
+	djac = djac_elems[elem]
+
+	FTR = ader_ops.FTR
+	MM = ader_ops.MM
+	SMS = ader_ops.SMS_elems[elem]
+	iK = ader_ops.iK
+
+
+	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
+	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+	ntest = 100
+	for i in range(ntest):
+
+		Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)))
+		err = Up_new - Up
+
+		if np.amax(np.abs(err))<1e-10:
+			Up = Up_new
+			break
+
+		Up = Up_new
+		
+		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
+		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+
+	return Up
+
+
+def predictor_elem_implicit(solver, elem, dt, Wp, Up):
+	'''
+	Method: calculate_predictor_elem
+	-------------------------------------------
+	Calculates the predicted solution state for the ADER-DG method using a nonlinear solve of the
+	weak form of the DG discretization in time.
+
+	INPUTS:
+		elem: element index
+		dt: time step 
+		Wp: previous time step solution in space only
+
+	OUTPUTS:
+		Up: predicted solution in space-time
+	'''
+	EqnSet = solver.EqnSet
+	Sources = EqnSet.Sources
+
+	ns = EqnSet.StateRank
+	mesh = solver.mesh
+
+	basis = solver.basis
+	basis_st = solver.basis_st
+
+	order = EqnSet.order
+	
+	elem_ops = solver.elem_operators
+	ader_ops = solver.ader_operators
+	
+	quad_wts = elem_ops.quad_wts
+	basis_val = elem_ops.basis_val 
+	djac_elems = elem_ops.djac_elems 
+	
+	djac = djac_elems[elem]
+	_, ElemVols = MeshTools.element_volumes(mesh, solver)
+
+	FTR = ader_ops.FTR
+	MM = ader_ops.MM
+	SMS = ader_ops.SMS_elems[elem]
+	K = ader_ops.K
+
+	W_bar = np.zeros([1,ns])
+	Wq = np.matmul(basis_val, Wp)
+	vol = ElemVols[elem]
+
+	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+
+	jac = 0.0
+	for Source in Sources:
+		jac += Source.get_jacobian()
+
+	Kp = K-MM*dt*jac 
+	iK = np.linalg.inv(Kp)
+
+
+	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
+	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+	ntest = 100
+	for i in range(ntest):
+
+		Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)-np.matmul(MM,dt*jac*Up)))
+		err = Up_new - Up
+
+		if np.amax(np.abs(err))<1e-10:
+			Up = Up_new
+			break
+
+		Up = Up_new
+		
+		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
+		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+
+	return Up
+
+def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
+	'''
+	Method: calculate_predictor_elem
+	-------------------------------------------
+	Calculates the predicted solution state for the ADER-DG method using a nonlinear solve of the
+	weak form of the DG discretization in time.
+	INPUTS:
+		elem: element index
+		dt: time step 
+		W: previous time step solution in space only
+	OUTPUTS:
+		Up: predicted solution in space-time
+	'''
+	EqnSet = solver.EqnSet
+	Sources = EqnSet.Sources
+
+	ns = EqnSet.StateRank
+	mesh = solver.mesh
+
+	basis = solver.basis
+	basis_st = solver.basis_st
+
+	order = EqnSet.order
+	
+	elem_ops = solver.elem_operators
+	ader_ops = solver.ader_operators
+	
+	quad_wts = elem_ops.quad_wts
+	basis_val = elem_ops.basis_val 
+	djac_elems = elem_ops.djac_elems 
+	
+	djac = djac_elems[elem]
+	_, ElemVols = MeshTools.element_volumes(mesh, solver)
+
+	FTR = ader_ops.FTR
+	iMM = ader_ops.iMM_elems[elem]
+	SMS = ader_ops.SMS_elems[elem]
+	K = ader_ops.K
+
+	W_bar = np.zeros([1,ns])
+	Wq = np.matmul(basis_val, Wp)
+	vol = ElemVols[elem]
+	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+
+	jac = np.zeros([ns,ns])
+	for Source in Sources:
+		jac += Source.get_jacobian(W_bar) 
+
+	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
+	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+
+	ntest = 100
+	for i in range(ntest):
+
+		A = np.matmul(iMM,K)/dt
+		B = -1.0*jac.transpose()
+
+		C = np.matmul(FTR,Wp) - np.einsum('ijk,jlk->il',SMS,flux)
+		Q = srcpoly/dt - np.matmul(Up,jac.transpose()) + np.matmul(iMM,C)/dt
+
+		Up_new = solve_sylvester(A,B,Q)
+
+		# code.interact(local=locals())
+		err = Up_new - Up
+		if np.amax(np.abs(err))<1e-10:
+			Up = Up_new
+			break
+
+		Up = Up_new
+		
+		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
+		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+		if i == ntest-1:
+			print('Sub-iterations not converging',i)
+
+	return Up
 
 class ElemOperatorsADER(ElemOperators):
 
@@ -132,7 +348,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 class ADEROperators(object):
 	def __init__(self):
 		self.MM = None
-		self.iMM = None
+		self.iMM_elems = None
 		self.K = None
 		self.iK = None 
 		self.FTL = None 
@@ -150,6 +366,7 @@ class ADEROperators(object):
 		dim = mesh.Dim
 		nb = basis_st.nb
 		SMS_elems = np.zeros([mesh.nElem,nb,nb,dim])
+		iMM_elems = np.zeros([mesh.nElem,nb,nb])
 		# Get flux matrices in time
 		FTL = get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False)
 		FTR = get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False)
@@ -162,9 +379,12 @@ class ADEROperators(object):
 			SMS = get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir=0,PhysicalSpace = True)
 			SMS_elems[elem,:,:,0] = SMS.transpose()
 
+			iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=False)
+			iMM_elems[elem] = iMM
+
 		# Get mass matrix in space-time
 		MM =  get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
-		iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=True)
+		# iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 
 
 		self.FTL = FTL
@@ -172,7 +392,7 @@ class ADEROperators(object):
 		self.SMT = SMT
 		self.SMS_elems = SMS_elems
 		self.MM = MM
-		self.iMM = iMM
+		self.iMM_elems = iMM_elems
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K) 
 
@@ -251,6 +471,8 @@ class ADERDG_Solver(DG_Solver):
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
+		ns = EqnSet.StateRank
+
 		TimeScheme = Params["TimeScheme"]
 		if TimeScheme is "ADER":
 			Stepper = stepper.ADER()
@@ -275,6 +497,18 @@ class ADERDG_Solver(DG_Solver):
 
 		EqnSet.Up = np.zeros([self.mesh.nElem, basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
 
+
+		# Set predictor function
+		SourceTreatment = Params["SourceTreatment"]
+		if SourceTreatment is "Explicit":
+			self.calculate_predictor_elem = predictor_elem_explicit
+		elif SourceTreatment is "Implicit":
+			if ns is 1:
+				self.calculate_predictor_elem = predictor_elem_implicit
+			else:
+				self.calculate_predictor_elem = predictor_elem_sylvester
+		else:
+			raise NotImplementedError
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = Limiter.set_limiter(limiterType)
@@ -288,7 +522,7 @@ class ADERDG_Solver(DG_Solver):
 
 		# Precompute operators
 		self.precompute_matrix_operators()
-	
+
 	def check_solver_params(self):
 		'''
 		Method: check_solver_params
@@ -361,96 +595,96 @@ class ADERDG_Solver(DG_Solver):
 		EqnSet = self.EqnSet
 
 		for elem in range(mesh.nElem):
-			Up[elem] = self.calculate_predictor_elem(elem, dt, W[elem], Up[elem])
+			Up[elem] = self.calculate_predictor_elem(self, elem, dt, W[elem], Up[elem])
 
 		return Up
 
-	def calculate_predictor_elem(self, elem, dt, Wp, Up):
-		'''
-		Method: calculate_predictor_elem
-		-------------------------------------------
-		Calculates the predicted solution state for the ADER-DG method using a nonlinear solve of the
-		weak form of the DG discretization in time.
+	# def calculate_predictor_elem(self, elem, dt, Wp, Up):
+	# 	'''
+	# 	Method: calculate_predictor_elem
+	# 	-------------------------------------------
+	# 	Calculates the predicted solution state for the ADER-DG method using a nonlinear solve of the
+	# 	weak form of the DG discretization in time.
 
-		INPUTS:
-			elem: element index
-			dt: time step 
-			Wp: previous time step solution in space only
+	# 	INPUTS:
+	# 		elem: element index
+	# 		dt: time step 
+	# 		Wp: previous time step solution in space only
 
-		OUTPUTS:
-			Up: predicted solution in space-time
-		'''
-		EqnSet = self.EqnSet
-		ns = EqnSet.StateRank
-		mesh = self.mesh
+	# 	OUTPUTS:
+	# 		Up: predicted solution in space-time
+	# 	'''
+	# 	EqnSet = self.EqnSet
+	# 	ns = EqnSet.StateRank
+	# 	mesh = self.mesh
 
-		basis = self.basis
-		basis_st = self.basis_st
+	# 	basis = self.basis
+	# 	basis_st = self.basis_st
 
-		order = EqnSet.order
+	# 	order = EqnSet.order
 		
-		elem_ops = self.elem_operators
-		ader_ops = self.ader_operators
+	# 	elem_ops = self.elem_operators
+	# 	ader_ops = self.ader_operators
 		
-		quad_wts = elem_ops.quad_wts
-		basis_val = elem_ops.basis_val 
-		djac_elems = elem_ops.djac_elems 
+	# 	quad_wts = elem_ops.quad_wts
+	# 	basis_val = elem_ops.basis_val 
+	# 	djac_elems = elem_ops.djac_elems 
 		
-		djac = djac_elems[elem]
-		# _, ElemVols = MeshTools.element_volumes(mesh, self)
+	# 	djac = djac_elems[elem]
+	# 	# _, ElemVols = MeshTools.element_volumes(mesh, self)
 
-		FTR = ader_ops.FTR
-		MM = ader_ops.MM
-		SMS = ader_ops.SMS_elems[elem]
-		# K = ader_ops.K
-		iK = ader_ops.iK
-		# W_bar = np.zeros([1,ns])
-		# Wq = np.matmul(basis_val, Wp)
-		# vol = ElemVols[elem]
+	# 	FTR = ader_ops.FTR
+	# 	MM = ader_ops.MM
+	# 	SMS = ader_ops.SMS_elems[elem]
+	# 	# K = ader_ops.K
+	# 	iK = ader_ops.iK
+	# 	# W_bar = np.zeros([1,ns])
+	# 	# Wq = np.matmul(basis_val, Wp)
+	# 	# vol = ElemVols[elem]
 
-		# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	# 	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
-		# Wh = np.average(W)
+	# 	# Wh = np.average(W)
 
-		# def F(u):
-		# 	S = 0.
-		# 	S = EqnSet.SourceState(1, 0., 0., u, S)
-		# 	F = u - S[0,0] - W_bar[0,0]
-		# 	return F
+	# 	# def F(u):
+	# 	# 	S = 0.
+	# 	# 	S = EqnSet.SourceState(1, 0., 0., u, S)
+	# 	# 	F = u - S[0,0] - W_bar[0,0]
+	# 	# 	return F
 
-		#U_bar = fsolve(F, W_bar)
-		# nu= -100000.
-		# dsdu = nu
-		# Up[:] = U_bar
-		#code.interact(local=locals())
-		#dsdu = (1./nu)*(2.*U_bar-3.*U_bar**2 - 0.5 +2.*U_bar*0.5)
-		#dsdu = (1./nu)*(2.*Up-3.*Up**2 - 0.5 +2.*Up*0.5)
-		#code.interact(local=locals())
+	# 	#U_bar = fsolve(F, W_bar)
+	# 	# nu= -100000.
+	# 	# dsdu = nu
+	# 	# Up[:] = U_bar
+	# 	#code.interact(local=locals())
+	# 	#dsdu = (1./nu)*(2.*U_bar-3.*U_bar**2 - 0.5 +2.*U_bar*0.5)
+	# 	#dsdu = (1./nu)*(2.*Up-3.*Up**2 - 0.5 +2.*Up*0.5)
+	# 	#code.interact(local=locals())
 
-		### Hacky implementation of implicit source term
-		# Kp = K-MM*dt*dsdu
+	# 	### Hacky implementation of implicit source term
+	# 	# Kp = K-MM*dt*dsdu
 
-		# iK = np.linalg.inv(Kp)
+	# 	# iK = np.linalg.inv(Kp)
 
-		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
-		flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
-		ntest = 10
-		for i in range(ntest):
+	# 	srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
+	# 	flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
+	# 	ntest = 10
+	# 	for i in range(ntest):
 
-			# Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
-			Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)))
-			err = Up_new - Up
+	# 		# Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
+	# 		Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)))
+	# 		err = Up_new - Up
 
-			if np.amax(np.abs(err))<1e-10:
-				Up = Up_new
-				break
+	# 		if np.amax(np.abs(err))<1e-10:
+	# 			Up = Up_new
+	# 			break
 
-			Up = Up_new
+	# 		Up = Up_new
 			
-			srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
-			flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
+	# 		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
+	# 		flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
 
-		return Up
+	# 	return Up
 
 	def calculate_residual_elem(self, elem, Up, ER):
 		'''
