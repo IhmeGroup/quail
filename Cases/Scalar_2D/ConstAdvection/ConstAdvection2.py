@@ -14,8 +14,8 @@ import meshing.tools as MeshTools
 
 CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
-Periodic = True
-nElem_x = 2
+Periodic = False
+nElem_x = 8
 mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x= nElem_x, nElem_y = nElem_x, Uniform=True, xmin=-5., xmax=5., 
 	ymin=-5., ymax=5., Periodic=Periodic)
 
@@ -26,10 +26,10 @@ if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 if Periodic:
 	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
-dt = 0.05
-EndTime = 10.0
+dt = 0.025
+EndTime = .5
 nTimeStep = int(EndTime/dt + 10.*general.eps)
-InterpOrder = 10
+InterpOrder = 6
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 								 ApplyLimiter=None,WriteInterval=50)
@@ -46,12 +46,19 @@ EqnSet.set_IC(IC_type="Gaussian", x0=x0)
 # EqnSet.ExactSoln.Set(Function=EqnSet.FcnGaussian, x0=x0)
 EqnSet.set_exact(exact_type="Gaussian", x0=x0)
 # Boundary conditions
+# if not Periodic:
+# 	MeshTools.check_face_orientations(mesh)
+# 	EqnSet.SetBC("x1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+# 	EqnSet.SetBC("x2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+# 	EqnSet.SetBC("y1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+# 	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
 if not Periodic:
 	MeshTools.check_face_orientations(mesh)
-	EqnSet.SetBC("x1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-	EqnSet.SetBC("x2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-	EqnSet.SetBC("y1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
+
 # raise Exception
 
 
@@ -78,3 +85,4 @@ Plot.ShowPlot()
 
 # U = EqnSet.U.Arrays[0]
 # code.interact(local=locals())
+# 

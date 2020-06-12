@@ -33,6 +33,7 @@ Mesh = {
     "nElem_x" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
+    # "PeriodicBoundariesX" : ["xmin","xmax"]
 }
 
 Physics = {
@@ -49,12 +50,13 @@ InitialCondition = {
 
 BoundaryConditions = {
     "Left" : {
-	    "Function" : "Sine",
-	    "omega" : 2*np.pi,
+	    "Function" : "Uniform",
+	    # "omega" : 2*np.pi,
+        "state" : [1.],
     	"BCType" : "FullState",
     },
     "Right" : {
-    	"Function" : None,
+    	"Function" : "None",
     	"BCType" : "Extrapolation",
     },
 }

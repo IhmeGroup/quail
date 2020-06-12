@@ -3,7 +3,7 @@ import numpy as np
 import processing.post as Post
 import processing.plot as Plot
 import os
-import Driver
+import driver
 import general
 import code
 
@@ -126,7 +126,7 @@ SourceTerms = {
 }
 
 
-solver, EqnSet, mesh = Driver.driver(TimeStepping, Numerics, Output, Mesh,
+solver, EqnSet, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
 		Physics, InitialCondition, BoundaryConditions, SourceTerms)
 
 

@@ -5,7 +5,7 @@ import numpy as np
 import processing.post as Post
 import processing.plot as Plot
 import os
-import Driver
+import driver
 import general
 import code
 
@@ -92,8 +92,8 @@ Mesh = {
     "xmax" : 5.,
     "ymin" : -5.,
     "ymax" : 5.,
-    "PeriodicBoundariesX" : ["x1", "x2"],
-    "PeriodicBoundariesY" : ["y1", "y2"],
+    # "PeriodicBoundariesX" : ["x1", "x2"],
+    # "PeriodicBoundariesY" : ["y1", "y2"],
 }
 
 Physics = {
@@ -110,23 +110,23 @@ InitialCondition = {
     "SetAsExact" : True,
 }
 
-# bparams = {
-#     "Function" : "Gaussian",
-#     "x0" : x0,
-#     "BCType" : "FullState"
-# }
-# BoundaryConditions = {
-#     "x1" : bparams,
-#     "x2" : bparams,
-#     "y1" : bparams,
-#     "y2" : bparams,
-# }
-BoundaryConditions = {}
+bparams = {
+    "Function" : "Gaussian",
+    "x0" : x0,
+    "BCType" : "FullState"
+}
+BoundaryConditions = {
+    "x1" : bparams,
+    "x2" : bparams,
+    "y1" : bparams,
+    "y2" : bparams,
+}
+# BoundaryConditions = {}
 
 SourceTerms = {}
 
 
-solver, EqnSet, mesh = Driver.driver(TimeStepping, Numerics, Output, Mesh,
+solver, EqnSet, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
 		Physics, InitialCondition, BoundaryConditions, SourceTerms)
 
 
