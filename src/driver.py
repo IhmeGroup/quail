@@ -19,6 +19,28 @@ import meshing.gmsh as MeshGmsh
 import meshing.tools as MeshTools
 
 
+# import sys, getopt
+
+# def main(argv):
+#    inputfile = ''
+#    outputfile = ''
+#    try:
+#       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+#    except getopt.GetoptError:
+#       print('test.py -i <inputfile> -o <outputfile>')
+#       sys.exit(2)
+#    for opt, arg in opts:
+#       if opt == '-h':
+#          print('test.py -i <inputfile> -o <outputfile>')
+#          sys.exit()
+#       elif opt in ("-i", "--ifile"):
+#          inputfile = arg
+#    print('Input file is', inputfile)
+
+# if __name__ == "__main__":
+#    main(sys.argv[1:])
+
+
 def overwrite_params(params, params_new, allow_new_keys=False):
 	if params_new is None:
 		return params
@@ -184,8 +206,11 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 
 	# Source terms
 	for sparams in source_params.values():
-		sparams["Function"] = set_function(physics, sparams["Function"])
-		physics.SetSource(**sparams)
+		sname = sparams["Function"]
+		sparams.pop("Function")
+		physics.set_source(source_type=sname, **sparams)
+
+		# physics.SetSource(**sparams)
 
 	'''
 	Solver
