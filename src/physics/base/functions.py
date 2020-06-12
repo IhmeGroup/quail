@@ -1,4 +1,5 @@
 from enum import Enum, auto
+import numpy as np
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceData
 
 
@@ -25,6 +26,7 @@ class Uniform(FcnBase):
 		self.state = np.array(state)
 
 	def get_state(self, physics, x, t):
+		state = self.state
 		Up = np.tile(state, [x.shape[0], 1])
 		# for s in range(len(self.state)):
 		# 	self.Up[:,s] = self.state[s]

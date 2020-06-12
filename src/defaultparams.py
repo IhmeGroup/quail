@@ -37,7 +37,7 @@ Mesh = {
     "xmax" : 1.,
     "ymin" : -1.,
     "ymax" : 1.,
-    "PeriodicBoundariesX" : ["xmin","xmax"],
+    "PeriodicBoundariesX" : [],
     "PeriodicBoundariesY" : [],
 }
 
@@ -48,7 +48,7 @@ Physics = {
 
 InitialCondition = {
     "Function" : "Uniform",
-    "State" : [1.0],
+    # "State" : [1.0],
     "SetAsExact" : False,
 }
 
