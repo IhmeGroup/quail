@@ -206,9 +206,9 @@ class PhysicsBase(object):
 				BC_ref = process_map(BC_type, self.BC_map)
 				BC = BC_ref(**kwargs)
 				self.BCs[i] = BC
-
 	def SetBC(self, BCName, **kwargs):
 		found = False
+		code.interact(local=locals())
 		for BC in self.BCs:
 			if BC.Name == BCName:
 				BC.Set(**kwargs)
