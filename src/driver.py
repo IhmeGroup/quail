@@ -59,25 +59,6 @@ def read_inputs(TimeStepping, Numerics, Output, Mesh,
 			physics_params, IC_params, BC_params, source_params
 
 
-def set_function(physics, fcn_name):
-	# TEMPORARY
-	if fcn_name is "Gaussian":
-		fcn = physics.FcnGaussian
-	elif fcn_name is "Uniform":
-		fcn = physics.FcnUniform
-	elif fcn_name is "Sine":
-		fcn = physics.FcnSine
-	elif fcn_name is "DampingSine":
-		fcn = physics.FcnDampingSine	
-	elif fcn_name is "SimpleSource":
-		fcn = physics.FcnSimpleSource
-	elif fcn_name == None:
-		fcn = None
-	else:
-		raise Exception
-
-	return fcn
-
 def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=None, 
 		InitialCondition=None, BoundaryConditions=None, SourceTerms=None):
 
@@ -105,11 +86,10 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 		ymin = mesh_params["ymin"]
 		ymax = mesh_params["ymax"]
 		if shape is "Segment":
-			if mesh_params["PeriodicBoundariesX"] != [None]*2 and mesh_params["PeriodicBoundariesY"] == []:
+			if mesh_params["PeriodicBoundariesX"] != [] and mesh_params["PeriodicBoundariesY"] == []:
 				periodic = True
 				mesh = MeshCommon.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 			else:
-				code.interact(local=locals())
 				periodic = False
 				mesh = MeshCommon.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 		else:
@@ -135,7 +115,6 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 		if mesh.Dim == 1:
 			raise Exception
 		MeshTools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], y1=pb[2], y2=pb[3])
-
 
 	'''
 	Physics
@@ -170,26 +149,38 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	# 	IC_params["Function"] = fcn
 	# else:
 	# 	raise Exception
-	IC_params["Function"] = set_function(physics, IC_params["Function"])
 
-	# Initial conditions
+	# Exact Solution
 	set_exact = IC_params["SetAsExact"]
 	iparams = IC_params.copy()
 	iparams.pop("SetAsExact") # don't pass this key
-	physics.IC.Set(**iparams)
-	if IC_params["SetAsExact"]:
-		physics.ExactSoln.Set(**iparams)
+	iparams.pop("Function")
+	physics.set_exact(exact_type=IC_params["Function"],**iparams)
+
+	# Initial conditions
+	IC_params["Function"] = physics.set_IC(IC_type=IC_params["Function"])
+
 
 	# Boundary conditions
+
+	# DRIVER BC & Source term stuff not working (need to fix periodic logic, etc...)
+
 	for bname in BC_params:
 		bparams = BC_params[bname].copy()
-		### Move this to physics modules later
+		bparams.pop("Function")
+
 		btype = physics.BCType[bparams["BCType"]]
-		bparams["BCType"] = btype
-		bparams["Function"] = set_function(physics, bparams["Function"])
+		bparams.pop("BCType")
+
+		# EqnSet.set_BC(BC_type="FullState", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+		physics.set_BC(BC_type=btype.name, fcn_type=BC_params[bname]["Function"], **bparams)
+		# bparams["BCType"] = btype
+		# bparams["Function"] = set_function(physics, bparams["Function"])
+		# code.interact(local=locals())
+
 		###
 		# code.interact(local=locals())
-		physics.SetBC(bname, **bparams)
+		# physics.SetBC(bname, **bparams)
 
 	# Source terms
 	for sparams in source_params.values():
