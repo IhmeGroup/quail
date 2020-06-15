@@ -1,15 +1,5 @@
-import sys; sys.path.append('../../../../src')
-import code
 import numpy as np
-import os 
-
-import processing.post as Post
-import processing.plot as Plot
-
 import driver
-import general
-
-
 
 TimeStepping = {
     "StartTime" : 0.,
@@ -62,11 +52,3 @@ BoundaryConditions = {
 
 solver, EqnSet, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
 		Physics, InitialCondition, BoundaryConditions)
-
-### Postprocess
-# Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
-# Plot
-Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
-Plot.ShowPlot()
