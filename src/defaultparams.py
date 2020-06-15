@@ -24,7 +24,7 @@ Output = {
     "Prefix" : "Data",
     "WriteInterval" : -1,
     "WriteInitialSolution" : False,
-    "WriteFinalSolution" : False,
+    "WriteFinalSolution" : True,
     "RestartFile" : None,
 }
 
