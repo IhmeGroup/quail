@@ -87,11 +87,13 @@ class moving_shock(FcnBase):
 		irhou = physics.GetStateIndex("XMomentum")
 		irhoE = physics.GetStateIndex("Energy")
 		
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		# Up = np.zeros([x.shape[0], physics.StateRank])
 		if physics.Dim == 2: irhov = physics.GetStateIndex("YMomentum")
 		gam = physics.Params["SpecificHeatRatio"]
 		
 		if not isinstance(t,float):
+			Up = np.zeros([t.shape[0], physics.StateRank])
+
 			t = t.reshape(-1)
 			y = np.zeros(len(t))
 			for i in range(len(t)):
@@ -102,6 +104,7 @@ class moving_shock(FcnBase):
 			p1 = np.full(len(t),1.e5)
 			u1 = np.full(len(t),0.)
 		else:
+			Up = np.zeros([x.shape[0], physics.StateRank])
 
 			''' Pre-shock state '''
 			rho1 = 1.
