@@ -22,32 +22,6 @@ import processing.post as Post
 
 import solver.DG as Solver
 
-def main(argv):
-   inputfile = ''
-   outputfile = ''
-   try:
-      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
-   except getopt.GetoptError:
-      print('test.py -i <inputfile> -o <outputfile>')
-      sys.exit(2)
-   for opt, arg in opts:
-      if opt == '-h':
-         print('test.py -i <inputfile> -o <outputfile>')
-         sys.exit()
-      elif opt in ("-i", "--ifile"):
-         inputfile = arg
-
-   inputfile=inputfile.replace('.py','')
-
-   CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
-   sys.path.append(CurrentDir)
-
-   importlib.import_module(inputfile)
-
-if __name__ == "__main__":
-   main(sys.argv[1:])
-
-
 def overwrite_params(params, params_new, allow_new_keys=False):
 	if params_new is None:
 		return params
@@ -237,6 +211,33 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 
 	return solver, physics, mesh
 
+def main(argv):
+   inputfile = ''
+   outputfile = ''
+   try:
+      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+   except getopt.GetoptError:
+      print('test.py -i <inputfile> -o <outputfile>')
+      sys.exit(2)
+   for opt, arg in opts:
+      if opt == '-h':
+         print('test.py -i <inputfile> -o <outputfile>')
+         sys.exit()
+      elif opt in ("-i", "--ifile"):
+         inputfile = arg
+
+   inputfile=inputfile.replace('.py','')
+
+   CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
+   sys.path.append(CurrentDir)
+
+   deck = importlib.import_module(inputfile)
+
+   solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
+		deck.Physics, deck.InitialCondition, deck.BoundaryConditions)
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
 
 
 

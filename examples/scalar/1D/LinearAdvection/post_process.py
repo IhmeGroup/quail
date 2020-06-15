@@ -1,5 +1,4 @@
 import code
-# import general
 
 import processing.post as Post
 import processing.plot as Plot
@@ -12,7 +11,6 @@ fname = "Data_final.pkl"
 mesh, EqnSet, Params, Time = ReadWriteDataFiles.read_data_file(fname)
 print('Solution Final Time:',Time)
 
-# Params = general.SetSolverParams(InterpBasis="LagrangeEqSeg",TimeScheme="RK4")
 solver = Solver.DG_Solver(Params,EqnSet,mesh)
 
 # Error

@@ -1,5 +1,4 @@
 import numpy as np
-import driver
 
 TimeStepping = {
     "StartTime" : 0.,
@@ -48,7 +47,3 @@ BoundaryConditions = {
     	"BCType" : "Extrapolation",
     },
 }
-
-
-solver, EqnSet, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
-		Physics, InitialCondition, BoundaryConditions)
