@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import code
 import numpy as np
 import os
@@ -18,27 +19,36 @@ import meshing.common as MeshCommon
 import meshing.gmsh as MeshGmsh
 import meshing.tools as MeshTools
 
+import importlib
 
-# import sys, getopt
+import sys, getopt
 
-# def main(argv):
-#    inputfile = ''
-#    outputfile = ''
-#    try:
-#       opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
-#    except getopt.GetoptError:
-#       print('test.py -i <inputfile> -o <outputfile>')
-#       sys.exit(2)
-#    for opt, arg in opts:
-#       if opt == '-h':
-#          print('test.py -i <inputfile> -o <outputfile>')
-#          sys.exit()
-#       elif opt in ("-i", "--ifile"):
-#          inputfile = arg
-#    print('Input file is', inputfile)
+def main(argv):
+   inputfile = ''
+   outputfile = ''
+   try:
+      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+   except getopt.GetoptError:
+      print('test.py -i <inputfile> -o <outputfile>')
+      sys.exit(2)
+   for opt, arg in opts:
+      if opt == '-h':
+         print('test.py -i <inputfile> -o <outputfile>')
+         sys.exit()
+      elif opt in ("-i", "--ifile"):
+         inputfile = arg
+   print('Input file is', inputfile)
+   inputfile=inputfile.replace('.py','')
 
-# if __name__ == "__main__":
-#    main(sys.argv[1:])
+   CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
+   sys.path.append(CurrentDir)
+
+   importlib.import_module(inputfile)
+
+
+   # code.interact(local=locals())
+if __name__ == "__main__":
+   main(sys.argv[1:])
 
 
 def overwrite_params(params, params_new, allow_new_keys=False):
@@ -184,9 +194,6 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 
 
 	# Boundary conditions
-
-	# DRIVER BC & Source term stuff not working (need to fix periodic logic, etc...)
-
 	for bname in BC_params:
 		bparams = BC_params[bname].copy()
 		bparams.pop("Function")
