@@ -1,8 +1,9 @@
 import code
 from enum import Enum, auto
 import numpy as np
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase
 from scipy.optimize import root
+
+from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase
 
 
 

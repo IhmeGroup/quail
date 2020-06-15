@@ -2,21 +2,22 @@ import code
 import numpy as np
 from scipy.linalg import solve_sylvester
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
-from numerics.basis.basis import *
-import numerics.timestepping.stepper as stepper
-import numerics.limiter as Limiter
+from data import ArrayList, GenericData
+import errors
+import general
 
 from meshing.meshbase import *
 import meshing.tools as MeshTools
 
-from solver.tools import project_state_to_new_basis
+from numerics.basis.basis import *
+import numerics.limiter as Limiter
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
+import numerics.timestepping.stepper as stepper
+
 import processing.post as Post
 import processing.readwritedatafiles as ReadWriteDataFiles
 
-from data import ArrayList, GenericData
-import general
-import errors
+from solver.tools import project_state_to_new_basis
 
 global echeck
 echeck = -1

@@ -4,20 +4,21 @@ import copy
 import numpy as np 
 import time
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
-from numerics.basis.basis import *
-import numerics.timestepping.stepper as stepper
-import numerics.limiter as Limiter
+import errors
+from data import ArrayList, GenericData
 
 from meshing.meshbase import *
 import meshing.tools as MeshTools
 
-from solver.tools import project_state_to_new_basis
+import numerics.limiter as Limiter
+from numerics.basis.basis import *
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
+import numerics.timestepping.stepper as stepper
+
 import processing.post as Post
 import processing.readwritedatafiles as ReadWriteDataFiles
 
-from data import ArrayList, GenericData
-import errors
+from solver.tools import project_state_to_new_basis
 
 global echeck
 echeck = -1

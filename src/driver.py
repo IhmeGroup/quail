@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 import code
+import getopt
+import importlib
 import numpy as np
 import os
+import sys
 
 import defaultparams as DefaultInput
-import general
 import errors
-
-import solver.DG as Solver
-
-import physics.euler.euler as Euler
-import physics.scalar.scalar as Scalar
-
-import processing.post as Post
-import processing.plot as Plot
+import general
 
 import meshing.common as MeshCommon
 import meshing.gmsh as MeshGmsh
 import meshing.tools as MeshTools
 
-import importlib
+import physics.euler.euler as Euler
+import physics.scalar.scalar as Scalar
 
-import sys, getopt
+import processing.plot as Plot
+import processing.post as Post
+
+import solver.DG as Solver
 
 def main(argv):
    inputfile = ''
@@ -37,7 +36,7 @@ def main(argv):
          sys.exit()
       elif opt in ("-i", "--ifile"):
          inputfile = arg
-   print('Input file is', inputfile)
+
    inputfile=inputfile.replace('.py','')
 
    CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
@@ -45,8 +44,6 @@ def main(argv):
 
    importlib.import_module(inputfile)
 
-
-   # code.interact(local=locals())
 if __name__ == "__main__":
    main(sys.argv[1:])
 

@@ -1,18 +1,18 @@
 import code
 import copy
+from matplotlib import pyplot as plt
 import numpy as np
 import sys
-from matplotlib import pyplot as plt
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
-import numerics.basis.basis as Basis
+from data import ArrayList
+import errors
+from general import *
 
 from meshing.meshbase import Mesh, ref_to_phys
 import meshing.tools as MeshTools
 
-from general import *
-from data import ArrayList
-import errors
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
+import numerics.basis.basis as Basis
 
 import processing.plot as Plot
 

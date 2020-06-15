@@ -1,9 +1,10 @@
-import numpy as np
 import code
 import copy
+import numpy as np
 
-import numerics.basis.basis as Basis
 import data
+import numerics.basis.basis as Basis
+
 
 def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	'''

@@ -1,14 +1,15 @@
-import numpy as np
 import code
 import copy
+import numpy as np
 
 import errors
 import general
 
-import numerics.basis.basis as Basis 
-
 import meshing.meshbase as Mesh
 import meshing.tools as MeshTools
+
+import numerics.basis.basis as Basis 
+
 
 
 VERSION2 = "2.2"

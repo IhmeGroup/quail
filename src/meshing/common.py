@@ -1,10 +1,10 @@
 import code
 import copy
 
+from general import BasisType
+
 from meshing.meshbase import *
 import numerics.basis.basis as Basis
-
-from general import BasisType
 
 def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
 	'''

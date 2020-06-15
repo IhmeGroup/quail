@@ -4,7 +4,9 @@ import sys
 
 import errors
 from general import *
+
 from numerics.basis.basis import order_to_num_basis_coeff
+
 import physics.base.base as base
 import physics.scalar.functions as scalar_fcns
 from physics.scalar.functions import FcnType as scalar_fcn_type

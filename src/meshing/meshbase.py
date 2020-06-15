@@ -1,6 +1,6 @@
 import code
-import numpy as np
 from enum import IntEnum
+import numpy as np
 
 from general import *
 import numerics.basis.basis as Basis

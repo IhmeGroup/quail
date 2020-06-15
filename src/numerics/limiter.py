@@ -1,14 +1,14 @@
 import code
 import numpy as np 
 
-import general
 import data as Data
-
-import numerics.quadrature.quadrature as quadrature
-import numerics.basis.basis as Basis
+import general
 
 import meshing.meshbase as Mesh
 import meshing.tools as MeshTools
+
+import numerics.quadrature.quadrature as quadrature
+import numerics.basis.basis as Basis
 
 PosTol = 1.e-10
 

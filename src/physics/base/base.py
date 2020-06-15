@@ -4,9 +4,11 @@ import numpy as np
 from scipy.optimize import root
 import sys
 
-from numerics.basis.basis import order_to_num_basis_coeff
-from general import *
 import errors
+from general import *
+
+from numerics.basis.basis import order_to_num_basis_coeff
+
 from physics.base.data import ICData, BCData, ExactData, SourceData
 import physics.base.functions as base_fcns
 from physics.base.functions import FcnType as base_fcn_type

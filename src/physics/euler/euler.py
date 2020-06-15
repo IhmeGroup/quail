@@ -3,14 +3,14 @@ from enum import IntEnum, Enum
 import numpy as np
 from scipy.optimize import fsolve, root
 
+import errors
+import general
+
 import physics.base.base as base
 
 import physics.euler.functions as euler_fcns
 from physics.euler.functions import FcnType as euler_fcn_type
 from physics.euler.functions import SourceType as euler_source_type
-
-import errors
-import general
 
 
 class Roe1DFlux(base.LaxFriedrichsFlux):

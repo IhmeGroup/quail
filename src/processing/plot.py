@@ -1,17 +1,16 @@
 import code
 import copy
-import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.tri as tri
-
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
-import numerics.basis.basis as Basis
-
-import meshing.meshbase as Mesh
+import numpy as np
 
 from general import *
 
+import meshing.meshbase as Mesh
+
+from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
+import numerics.basis.basis as Basis
 
 
 def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['DejaVu Sans']},

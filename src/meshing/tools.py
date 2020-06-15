@@ -3,10 +3,10 @@ import numpy as np
 
 import data
 
-import numerics.quadrature.quadrature as quadrature
-import numerics.basis.basis as Basis
-
 import meshing.meshbase as meshbase
+
+import numerics.basis.basis as Basis
+import numerics.quadrature.quadrature as quadrature
 
 tol = 1.e-10
 

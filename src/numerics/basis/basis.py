@@ -6,11 +6,11 @@ import numpy as np
 from data import ArrayList, GenericData
 from general import SetSolverParams, BasisType, ShapeType, EntityType
 
+import meshing.gmsh as MeshGmsh
+import meshing.meshbase as Mesh
+
 from numerics.basis import math
 import numerics.quadrature.quadrature as quadrature
-
-import meshing.meshbase as Mesh
-import meshing.gmsh as MeshGmsh
 
 
 Basis2Shape = {
