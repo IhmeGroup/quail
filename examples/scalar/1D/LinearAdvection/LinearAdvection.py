@@ -9,7 +9,6 @@ import processing.plot as Plot
 import driver
 import general
 
-CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 TimeStepping = {
@@ -50,9 +49,8 @@ InitialCondition = {
 
 BoundaryConditions = {
     "Left" : {
-	    "Function" : "Uniform",
-	    # "omega" : 2*np.pi,
-        "state" : [1.],
+	    "Function" : "Sine",
+	    "omega" : 2*np.pi,
     	"BCType" : "FullState",
     },
     "Right" : {
