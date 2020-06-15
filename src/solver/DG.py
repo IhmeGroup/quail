@@ -46,13 +46,13 @@ class SolverBase(ABC):
 		self.nTimeStep = 0 # will be set later
 
 		TimeScheme = Params["TimeScheme"]
-		if TimeScheme is "FE":
+		if TimeScheme == "FE":
 			Stepper = stepper.FE()
-		elif TimeScheme is "RK4":
+		elif TimeScheme == "RK4":
 			Stepper = stepper.RK4()
-		elif TimeScheme is "LSRK4":
+		elif TimeScheme == "LSRK4":
 			Stepper = stepper.LSRK4()
-		elif TimeScheme is "SSPRK3":
+		elif TimeScheme == "SSPRK3":
 			Stepper = stepper.SSPRK3()
 		else:
 			raise NotImplementedError("Time scheme not supported")
@@ -62,17 +62,17 @@ class SolverBase(ABC):
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		if BasisFunction is "LagrangeEqSeg":
+		if BasisFunction == "LagrangeEqSeg":
 			basis = LagrangeEqSeg(EqnSet.order, mesh)
-		elif BasisFunction is "LegendreSeg":
+		elif BasisFunction == "LegendreSeg":
 			basis = LegendreSeg(EqnSet.order, mesh)
-		elif BasisFunction is "LagrangeEqQuad":
+		elif BasisFunction == "LagrangeEqQuad":
 			basis = LagrangeEqQuad(EqnSet.order, mesh)
-		elif BasisFunction is "LegendreQuad":
+		elif BasisFunction == "LegendreQuad":
 			basis = LegendreQuad(EqnSet.order, mesh)
-		elif BasisFunction is "LagrangeEqTri":
+		elif BasisFunction == "LagrangeEqTri":
 			basis = LagrangeEqTri(EqnSet.order, mesh)
-		elif BasisFunction is "HierarchicH1Tri":
+		elif BasisFunction == "HierarchicH1Tri":
 			basis = HierarchicH1Tri(EqnSet.order, mesh)
 		else:
 			raise NotImplementedError
