@@ -16,7 +16,9 @@ Numerics = {
     "Solver" : "DG",
 }
 
-Output = {}
+Output = {
+    "AutoProcess" : True
+}
 
 Mesh = {
     "File" : None,

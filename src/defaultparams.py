@@ -26,6 +26,7 @@ Output = {
     "WriteInitialSolution" : False,
     "WriteFinalSolution" : True,
     "RestartFile" : None,
+    "AutoProcess" : False,
 }
 
 Mesh = {
