@@ -7,9 +7,13 @@ import errors
 import general
 
 import physics.base.base as base
+import physics.base.functions as base_fcns
+from physics.base.functions import FcnType as base_fcn_type
+from physics.base.functions import BCType as base_BC_type
 
 import physics.euler.functions as euler_fcns
 from physics.euler.functions import FcnType as euler_fcn_type
+from physics.euler.functions import BCType as euler_BC_type
 from physics.euler.functions import SourceType as euler_source_type
 
 
@@ -304,14 +308,27 @@ class Euler1D(base.PhysicsBase):
 			ConvFlux = self.ConvFluxType["LaxFriedrichs"]
 		)
 
-		self.fcn_map.update({
-			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.smooth_isentropic_flow,
-			euler_fcn_type.MovingShock : euler_fcns.moving_shock,
-			euler_fcn_type.DensityWave : euler_fcns.density_wave,
-		})
-		self.source_map.update({
-			euler_source_type.StiffFriction : euler_fcns.stiff_friction,
-		})
+		self.IC_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.SmoothIsentropicFlow,
+			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
+			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
+		}
+
+		self.exact_fcn_map = self.IC_fcn_map.copy()
+
+		self.BC_fcn_map = self.IC_fcn_map.copy()
+
+		self.BC_map = {
+			base_BC_type.StateAll : base_fcns.StateAll,
+			base_BC_type.Extrapolate : base_fcns.Extrapolate,
+			euler_BC_type.SlipWall : euler_fcns.SlipWall,
+			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
+		}
+
+		self.source_map = {
+			euler_source_type.StiffFriction : euler_fcns.StiffFriction,
+		}
 
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
@@ -357,7 +374,7 @@ class Euler1D(base.PhysicsBase):
 	#     Entropy = "s"
 
 	class BCType(IntEnum):
-	    FullState = 0
+	    StateAll = 0
 	    Extrapolation = 1
 	    SlipWall = 2
 	    PressureOutflow = 3
@@ -815,7 +832,7 @@ class Euler1D(base.PhysicsBase):
 		BC.nq = nq
 		BC.Time = Time
 		bctype = BC.BCType
-		if bctype == self.BCType.FullState:
+		if bctype == self.BCType.StateAll:
 			uB = self.CallFunction(BC)
 		elif bctype == self.BCType.Extrapolation:
 			uB[:] = uI[:]
@@ -900,10 +917,15 @@ class Euler2D(Euler1D):
 
 	def __init__(self, order, basis, mesh):
 		Euler1D.__init__(self, order, basis, mesh) 
-		
-		self.fcn_map.update({
-			euler_fcn_type.IsentropicVortex : euler_fcns.isentropic_vortex,
-		})
+
+		self.IC_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			euler_fcn_type.IsentropicVortex : euler_fcns.IsentropicVortex,
+		}
+
+		self.exact_fcn_map = self.IC_fcn_map.copy()
+
+		self.BC_fcn_map = self.IC_fcn_map.copy()
 		
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)

@@ -10,11 +10,11 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBa
 class FcnType(Enum):
     Sine = auto()
     DampingSine = auto()
-    ShiftedCosine = auto()
-    Exponential = auto()
+    # ShiftedCosine = auto()
+    # Exponential = auto()
     Gaussian = auto()
-    ScalarShock = auto()
     Paraboloid = auto()
+    ShockBurgers = auto()
     SineBurgers = auto()
     LinearBurgers = auto()
 
@@ -32,7 +32,7 @@ class SourceType(Enum):
 State functions
 '''
 
-class sine(FcnBase):
+class Sine(FcnBase):
 	def __init__(self, omega=2*np.pi):
 		self.omega = omega
 
@@ -43,7 +43,7 @@ class sine(FcnBase):
 		return Up
 
 
-class damping_sine(FcnBase):
+class DampingSine(FcnBase):
 	def __init__(self, omega=2*np.pi, nu=1.):
 		self.omega = omega
 		self.nu = nu
@@ -55,28 +55,51 @@ class damping_sine(FcnBase):
 		return Up
 
 
-class shifted_cosine(FcnBase):
-	def __init__(self, omega=2*np.pi):
-		self.omega = omega
+# class shifted_cosine(FcnBase):
+# 	def __init__(self, omega=2*np.pi):
+# 		self.omega = omega
+
+# 	def get_state(self, physics, x, t):
+# 		c = physics._c
+# 		Up = 1. - np.cos(self.omega*x)
+
+# 		return Up
+
+
+# class exponential(FcnBase):
+# 	def __init__(self, theta=1.):
+# 		self.theta = theta
+
+# 	def get_state(self, physics, x, t):
+# 		Up = np.exp(self.theta*x)
+
+# 		return Up
+
+
+class Gaussian(FcnBase):
+	def __init__(self, sig=1., x0=0.):
+		self.sig = sig # standard deviation
+		self.x0 = x0 # center
 
 	def get_state(self, physics, x, t):
-		c = physics._c
-		Up = 1. - np.cos(self.omega*x)
+		r = np.linalg.norm(x-self.x0-physics._c*t, axis=1, keepdims=True)
+		Up = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.Dim) * np.exp(-r**2./(2.*self.sig**2.))
 
 		return Up
 
 
-class exponential(FcnBase):
-	def __init__(self, theta=1.):
-		self.theta = theta
+class Paraboloid(FcnBase):
+	def __init__(self):
+		pass
 
 	def get_state(self, physics, x, t):
-		Up = np.exp(self.theta*x)
+		r2 = x[:,0:1]**2. + x[:,1:2]**2.
+		Up = r2
 
 		return Up
 
 
-class scalar_shock(FcnBase):
+class ShockBurgers(FcnBase):
 	def __init__(self, uL=1., uR=0., xshock=-0.5):
 		self.uL = uL 
 		self.uR = uR
@@ -100,30 +123,7 @@ class scalar_shock(FcnBase):
 		return Up
 
 
-class gaussian(FcnBase):
-	def __init__(self, sig=1., x0=0.):
-		self.sig = sig # standard deviation
-		self.x0 = x0 # center
-
-	def get_state(self, physics, x, t):
-		r = np.linalg.norm(x-self.x0-physics._c*t, axis=1, keepdims=True)
-		Up = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.Dim) * np.exp(-r**2./(2.*self.sig**2.))
-
-		return Up
-
-
-class paraboloid(FcnBase):
-	def __init__(self):
-		pass
-
-	def get_state(self, physics, x, t):
-		r2 = x[:,0:1]**2. + x[:,1:2]**2.
-		Up = r2
-
-		return Up
-
-
-class sine_burgers(FcnBase):
+class SineBurgers(FcnBase):
 	def __init__(self, omega=2*np.pi):
 		self.omega = omega
 
@@ -143,7 +143,7 @@ class sine_burgers(FcnBase):
 		return Up
 
 
-class linear_burgers(FcnBase):
+class LinearBurgers(FcnBase):
 	def __init__(self):
 		pass
 
@@ -158,7 +158,7 @@ class linear_burgers(FcnBase):
 '''
 Source term functions
 '''
-class simple_source(SourceBase):
+class SimpleSource(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 

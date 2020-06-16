@@ -8,7 +8,7 @@ class FcnType(Enum):
 
 
 class BCType(Enum):
-	FullState = auto()
+	StateAll = auto()
 	Extrapolate = auto()
 
 
@@ -38,15 +38,15 @@ class Uniform(FcnBase):
 Boundary conditions
 '''
 
-class FullState(BCWeakRiemann):
+class StateAll(BCWeakRiemann):
     def __init__(self, **kwargs):
     	if "function" not in kwargs.keys():
-    		raise Exception("function must be specified for FullState BC")
+    		raise Exception("function must be specified for StateAll BC")
     	fcn_ref = kwargs["function"]
     	kwargs.pop("function")
     	self.function = fcn_ref(**kwargs)
 
-    def get_boundary_state(self, physics, x, t, UpI):
+    def get_boundary_state(self, physics, x, t, normals, UpI):
     	UpB = self.function.get_state(physics, x, t)
 
     	return UpB
@@ -54,7 +54,7 @@ class FullState(BCWeakRiemann):
 
 class Extrapolate(BCWeakPrescribed):
 
-    def get_boundary_state(self, physics, x, t, UpI):
+    def get_boundary_state(self, physics, x, t, normals, UpI):
 
         return UpI.copy()
 

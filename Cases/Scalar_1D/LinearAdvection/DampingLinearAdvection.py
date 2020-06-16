@@ -52,7 +52,7 @@ if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BFG = mesh.BFaceGroups[ibfgrp]
 		if BFG.Name is Inflow:
-			EqnSet.set_BC(BC_type="FullState", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+			EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
 		elif BFG.Name is Outflow:
 			EqnSet.set_BC(BC_type="Extrapolate")
 

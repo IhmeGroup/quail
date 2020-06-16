@@ -8,6 +8,10 @@ from general import *
 from numerics.basis.basis import order_to_num_basis_coeff
 
 import physics.base.base as base
+import physics.base.functions as base_fcns
+from physics.base.functions import FcnType as base_fcn_type
+from physics.base.functions import BCType as base_BC_type
+
 import physics.scalar.functions as scalar_fcns
 from physics.scalar.functions import FcnType as scalar_fcn_type
 from physics.scalar.functions import SourceType as scalar_source_type
@@ -41,21 +45,26 @@ class ConstAdvScalar1D(base.PhysicsBase):
 		self._c = 0.
 		self._cspeed = 0.
 
-		self.fcn_map.update({
-			scalar_fcn_type.Sine : scalar_fcns.sine,
-			scalar_fcn_type.DampingSine : scalar_fcns.damping_sine,
-			scalar_fcn_type.ShiftedCosine : scalar_fcns.shifted_cosine,
-			scalar_fcn_type.Exponential : scalar_fcns.exponential,
-			scalar_fcn_type.Gaussian : scalar_fcns.gaussian,
-			scalar_fcn_type.ScalarShock : scalar_fcns.scalar_shock,
-			scalar_fcn_type.Paraboloid : scalar_fcns.paraboloid,
-			scalar_fcn_type.SineBurgers : scalar_fcns.sine_burgers,
-			scalar_fcn_type.LinearBurgers : scalar_fcns.linear_burgers,
-		})
+		self.IC_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.Sine : scalar_fcns.Sine,
+			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
+			# scalar_fcn_type.ShiftedCosine : scalar_fcns.shifted_cosine,
+			# scalar_fcn_type.Exponential : scalar_fcns.exponential,
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
+		}
 
-		self.source_map.update({
-			scalar_source_type.SimpleSource : scalar_fcns.simple_source,
-		})
+		self.exact_fcn_map = self.IC_fcn_map.copy()
+
+		self.BC_fcn_map = self.IC_fcn_map.copy()
+
+		self.source_map = {
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+		}
+
+		# self.source_map.update({
+		# 	scalar_source_type.SimpleSource : scalar_fcns.simple_source,
+		# })
 
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
@@ -72,7 +81,7 @@ class ConstAdvScalar1D(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 
 	class BCType(IntEnum):
-	    FullState = 0
+	    StateAll = 0
 	    Extrapolation = 1
 
 	class BCTreatment(IntEnum):
@@ -155,7 +164,7 @@ class ConstAdvScalar1D(base.PhysicsBase):
 		BC.nq = nq
 		BC.Time = Time
 		bctype = BC.BCType
-		if bctype == self.BCType.FullState:
+		if bctype == self.BCType.StateAll:
 			uB = self.CallFunction(BC)
 		elif bctype == self.BCType.Extrapolation:
 			uB[:] = uI[:]
@@ -223,11 +232,18 @@ class ConstAdvScalar2D(ConstAdvScalar1D):
 		self._c = np.zeros(2)
 		self._cspeed = 0.
 
-		self.fcn_map.update({
-			scalar_fcn_type.Gaussian : scalar_fcns.gaussian,
-			scalar_fcn_type.Paraboloid : scalar_fcns.paraboloid,
+		self.exact_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
+		}
+
+		self.BC_fcn_map = self.exact_fcn_map.copy()
+
+		self.IC_fcn_map = self.exact_fcn_map.copy()
+		self.IC_fcn_map.update({
+			scalar_fcn_type.Paraboloid : scalar_fcns.Paraboloid,
 		})
-	
+
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
 
@@ -252,10 +268,19 @@ class Burgers1D(ConstAdvScalar1D):
 			"ConvFlux" : self.ConvFluxType["LaxFriedrichs"]
 		}
 
-		self.fcn_map.update({
-			scalar_fcn_type.SineBurgers : scalar_fcns.sine_burgers,
-			scalar_fcn_type.LinearBurgers : scalar_fcns.linear_burgers,
-		})
+		self.IC_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
+			scalar_fcn_type.SineBurgers : scalar_fcns.SineBurgers,
+			scalar_fcn_type.LinearBurgers : scalar_fcns.LinearBurgers,
+		}
+
+		self.exact_fcn_map = self.IC_fcn_map.copy()
+
+		self.BC_fcn_map = self.IC_fcn_map.copy()
+
+		self.source_map = {
+		}
 
 	def ConvFluxInterior(self, u, F=None):
 		# c = self.getAdvOperator(u)

@@ -172,7 +172,7 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 		btype = physics.BCType[bparams["BCType"]]
 		bparams.pop("BCType")
 
-		# EqnSet.set_BC(BC_type="FullState", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+		# EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
 		physics.set_BC(BC_type=btype.name, fcn_type=BC_params[bname]["Function"], **bparams)
 		# bparams["BCType"] = btype
 		# bparams["Function"] = set_function(physics, bparams["Function"])

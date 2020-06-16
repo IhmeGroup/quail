@@ -12,13 +12,21 @@ class FcnType(Enum):
     IsentropicVortex = auto()
     DensityWave = auto()
 
+
+class BCType(Enum):
+	SlipWall = auto()
+	PressureOutlet = auto()
+
+
 class SourceType(Enum):
     StiffFriction = auto()
+
 
 '''
 State functions
 '''
-class smooth_isentropic_flow(FcnBase):
+
+class SmoothIsentropicFlow(FcnBase):
 	def __init__(self, a=0.9):
 		self.a = a
 
@@ -75,7 +83,8 @@ class smooth_isentropic_flow(FcnBase):
 
 		return Up
 
-class moving_shock(FcnBase):
+
+class MovingShock(FcnBase):
 	def __init__(self, M = 5.0, xshock = 0.2):
 		self.M = M
 		self.xshock = xshock
@@ -157,7 +166,8 @@ class moving_shock(FcnBase):
 
 		return Up
 
-class density_wave(FcnBase):
+
+class DensityWave(FcnBase):
 	def __init__(self, p = 1.0):
 		self.p = p
 
@@ -179,7 +189,9 @@ class density_wave(FcnBase):
 		Up[:,irhoE] = rE
 
 		return Up
-class isentropic_vortex(FcnBase):
+
+
+class IsentropicVortex(FcnBase):
 	def __init__(self,rhob=1.,ub=1.,vb=1.,pb=1.,vs=5.):
 		self.rhob = 1.
 		self.ub = 1.
@@ -241,10 +253,98 @@ class isentropic_vortex(FcnBase):
 		return Up
 
 
+
+'''
+Boundary conditions
+'''
+
+class SlipWall(BCWeakPrescribed):
+	def get_boundary_state(self, physics, x, t, normals, UpI):
+		imom = physics.GetMomentumSlice()
+
+		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
+
+		rhoveln = np.sum(UpI[:, imom] * n_hat, axis=1, keepdims=True)
+		UpB = UpI.copy()
+		UpB[:, imom] -= rhoveln * n_hat
+
+		return UpB
+
+
+class PressureOutlet(BCWeakPrescribed):
+	def __init__(self, p):
+		self.p = p
+
+	def get_boundary_state(self, physics, x, t, normals, UpI):
+		irho = physics.GetStateIndex("Density")
+		irhoE = physics.GetStateIndex("Energy")
+		imom = physics.GetMomentumSlice()
+
+		UpB = UpI.copy()
+
+		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
+
+		# Pressure
+		pB = self.p
+
+		gamma = physics.Params["SpecificHeatRatio"]
+
+		# gam = physics.Params["SpecificHeatRatio"]
+		# igam = 1./gam
+		# gmi = gam - 1.
+		# igmi = 1./gmi
+
+		# Interior velocity in normal direction
+		rhoI = UpI[:,irho:irho+1]
+		velI = UpI[:,imom]/rhoI
+		velnI = np.sum(velI*n_hat, axis=1, keepdims=True)
+
+		if np.any(velnI < 0.):
+			print("Incoming flow at outlet")
+
+		# Compute interior pressure
+		# rVI2 = np.sum(UpI[:,imom]**2., axis=1, keepdims=True)/rhoI
+		# pI = gmi*(UpI[:,irhoE:irhoE+1] - 0.5*rVI2)
+		pI = physics.ComputeScalars("Pressure", UpI)
+
+		if np.any(pI < 0.):
+			raise Errors.NotPhysicalError
+
+		# Interior speed of sound
+		# cI = np.sqrt(gam*pI/rhoI)
+		cI = physics.ComputeScalars("SoundSpeed", UpI)
+		JI = velnI + 2.*cI/(gamma - 1.)
+		veltI = velI - velnI*n_hat
+
+		# Normal Mach number
+		Mn = velnI/cI
+		if np.any(Mn >= 1.):
+			return UpB
+
+		# Boundary density from interior entropy
+		rhoB = rhoI*np.power(pB/pI, 1./gamma)
+		UpB[:,irho] = rhoB.reshape(-1)
+
+		# Exterior speed of sound
+		cB = np.sqrt(gamma*pB/rhoB)
+		velB = (JI - 2.*cB/(gamma-1.))*n_hat + veltI
+		UpB[:,imom] = rhoB*velB
+		# dVn = 2.*igmi*(cI-cB)
+		# UpB[:,imom] = rhoB*dVn*n_hat + rhoB*UpI[:,imom]/rhoI
+
+		# Exterior energy
+		# rVB2 = np.sum(UpB[:,imom]**2., axis=1, keepdims=True)/rhoB
+		rhovel2B = rhoB*np.sum(velB**2., axis=1, keepdims=True)
+		UpB[:,irhoE] = (pB/(gamma - 1.) + 0.5*rhovel2B).reshape(-1)
+
+		return UpB
+
+
 '''
 Source term functions
 '''
-class stiff_friction(SourceBase):
+
+class StiffFriction(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 

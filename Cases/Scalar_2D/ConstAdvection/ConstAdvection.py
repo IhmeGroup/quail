@@ -61,8 +61,8 @@ EqnSet.set_IC(IC_type="Gaussian", x0=x0)
 EqnSet.set_exact(exact_type="Gaussian",x0=x0)
 
 # Boundary conditions
-EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
-# EqnSet.SetBC("wall",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+# EqnSet.SetBC("wall",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
 # raise Exception
 
 

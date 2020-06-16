@@ -56,14 +56,28 @@ EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="Roe")
 # Initial conditions
 Uinflow = np.array([1.0, 0.5916079783099616, 0.0, 2.675])
-EqnSet.IC.Set(Function=EqnSet.FcnUniform, State=Uinflow)
+# EqnSet.IC.Set(Function=EqnSet.FcnUniform, State=Uinflow)
+EqnSet.set_IC(IC_type="Uniform", state=Uinflow)
+EqnSet.set_exact(exact_type="Uniform", state=Uinflow)
 # Boundary conditions
-EqnSet.SetBC("inflow", Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["FullState"], State=Uinflow)
-EqnSet.SetBC("outflow", BCType=EqnSet.BCType["PressureOutflow"], p=1.)
-EqnSet.SetBC("top", BCType=EqnSet.BCType["SlipWall"])
-EqnSet.SetBC("bottom", BCType=EqnSet.BCType["SlipWall"])
+# EqnSet.SetBC("inflow", Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["StateAll"], State=Uinflow)
+# EqnSet.SetBC("outflow", BCType=EqnSet.BCType["PressureOutflow"], p=1.)
+# EqnSet.SetBC("top", BCType=EqnSet.BCType["SlipWall"])
+# EqnSet.SetBC("bottom", BCType=EqnSet.BCType["SlipWall"])
+for ibfgrp in range(mesh.nBFaceGroup):
+	BFG = mesh.BFaceGroups[ibfgrp]
+	if BFG.Name == "inflow":
+		EqnSet.set_BC(BC_type="StateAll", fcn_type="Uniform", state=Uinflow)
+	elif BFG.Name == "outflow":
+		EqnSet.set_BC(BC_type="PressureOutlet", p=1.)
+	elif BFG.Name == "top":
+		EqnSet.set_BC(BC_type="SlipWall")
+	elif BFG.Name == "bottom":
+		EqnSet.set_BC(BC_type="SlipWall")
+	else:
+		raise Exception
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["FullState"], State=Uinflow)
+# EqnSet.ExactSoln.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["StateAll"], State=Uinflow)
 
 
 ### Solve

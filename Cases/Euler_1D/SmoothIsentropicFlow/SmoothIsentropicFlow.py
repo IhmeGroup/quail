@@ -34,9 +34,9 @@ if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BFG = mesh.BFaceGroups[ibfgrp]
 		if BFG.Name is "Left":
-			EqnSet.set_BC(BC_type="FullState", fcn_type="SmoothIsentropicFlow", a=0.9)
+			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 		elif BFG.Name is "Right":
-			EqnSet.set_BC(BC_type="FullState", fcn_type="SmoothIsentropicFlow", a=0.9)
+			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
 solver = Solver.DG_Solver(Params,EqnSet,mesh)
