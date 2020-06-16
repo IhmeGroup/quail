@@ -86,7 +86,7 @@ class SolverBase(ABC):
 		self.check_solver_params()
 
 		# Initialize state
-		if Params["RestartFile"] is None:
+		if Params["RestartFile"] == None:
 			self.init_state()
 
 		# Precompute operators
@@ -845,7 +845,6 @@ class DG_Solver(SolverBase):
 
 		if WriteFinalSolution:
 			ReadWriteDataFiles.write_data_file(self, -1)
-
 
 	def solve(self):
 		'''
