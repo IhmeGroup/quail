@@ -5,6 +5,20 @@ import numpy as np
 from data import ArrayList
 from solver.tools import mult_inv_mass_matrix
 
+
+def set_stepper(TimeScheme):
+	if TimeScheme == "FE":
+		stepper = FE()
+	elif TimeScheme == "RK4":
+		stepper = RK4()
+	elif TimeScheme == "LSRK4":
+		stepper = LSRK4()
+	elif TimeScheme == "SSPRK3":
+		stepper = SSPRK3()
+	else:
+		raise NotImplementedError("Time scheme not supported")
+	return stepper
+
 class StepperBase(ABC):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
