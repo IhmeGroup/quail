@@ -42,12 +42,12 @@ BoundaryConditions = {
     "Left" : {
 	    "Function" : "SmoothIsentropicFlow",
         "a" : a,
-    	"BCType" : "FullState",
+    	"BCType" : "StateAll",
     },
     "Right" : {
         "Function" : "SmoothIsentropicFlow",
         "a" : a,
-        "BCType" : "FullState",
+        "BCType" : "StateAll",
     },
 }
 
