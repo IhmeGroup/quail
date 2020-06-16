@@ -16,6 +16,8 @@ Numerics = {
     "InterpolateFlux" : False,
     "OrderSequencing" : False,
     "ApplyLimiter" : None, 
+    "SourceTreatment" : "Explicit",
+    "InterpolateFlux" : True,
 }
 
 Output = {
