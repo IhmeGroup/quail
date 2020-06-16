@@ -212,32 +212,44 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	return solver, physics, mesh
 
 def main(argv):
-   inputfile = ''
-   outputfile = ''
-   try:
-      opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
-   except getopt.GetoptError:
-      print('test.py -i <inputfile> -o <outputfile>')
-      sys.exit(2)
-   for opt, arg in opts:
-      if opt == '-h':
-         print('test.py -i <inputfile> -o <outputfile>')
-         sys.exit()
-      elif opt in ("-i", "--ifile"):
-         inputfile = arg
+	inputfile = ''
+	postfile = ''
+	try:
+		opts, args = getopt.getopt(argv,"hi:p:",["ifile=","pfile="])
+	except getopt.GetoptError:
+		print('test.py -i <inputfile> -p <postfile>')
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt == '-h':
+			print('test.py -i <inputfile> -p <postfile>')
+			sys.exit()
+		elif opt in ("-i", "--ifile"):
+			inputfile = arg
+		elif opt in ("-p", "--pfile"):
+			postfile = arg
 
-   inputfile=inputfile.replace('.py','')
+	inputfile=inputfile.replace('.py','')
+	postfile=postfile.replace('.py','')
 
-   CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
-   sys.path.append(CurrentDir)
 
-   deck = importlib.import_module(inputfile)
+	CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
+	sys.path.append(CurrentDir)
+	deck = importlib.import_module(inputfile)
 
-   solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
+	solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
 		deck.Physics, deck.InitialCondition, deck.BoundaryConditions, deck.SourceTerms)
 
+
+	auto_process = deck.Output["AutoProcess"]
+	if auto_process is True:
+		if postfile is not '':
+			postprocess = importlib.import_module(postfile)
+		else:
+			postfile = 'post_process'
+			postprocess = importlib.import_module(postfile)
+
 if __name__ == "__main__":
-   main(sys.argv[1:])
+	main(sys.argv[1:])
 
 
 
