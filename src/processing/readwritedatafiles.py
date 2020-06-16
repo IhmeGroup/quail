@@ -1,5 +1,5 @@
 import pickle
-
+import code
 
 def write_data_file(solver, iwrite):
 	# Unpack
@@ -15,6 +15,8 @@ def write_data_file(solver, iwrite):
 		fname = prefix + "_final" + ".pkl"
 
 	with open(fname, 'wb') as fo:
+		solver.Params["RestartFile"] = fo.name
+		solver.Params["StartTime"] = Time
 		# mesh
 		pickle.dump(mesh, fo, pickle.HIGHEST_PROTOCOL)
 		# EqnSet
@@ -23,7 +25,6 @@ def write_data_file(solver, iwrite):
 		pickle.dump(Params, fo, pickle.HIGHEST_PROTOCOL)
 		# Time
 		pickle.dump(Time, fo, pickle.HIGHEST_PROTOCOL)
-
 
 def read_data_file(fname):
 
