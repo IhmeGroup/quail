@@ -30,6 +30,29 @@ general.SolverParams.update({
 	"SourceTreatment": "Explicit",
 })
 
+def set_basis_spacetime(mesh, order, BasisFunction):
+	if BasisFunction is "LagrangeEqSeg":
+		basis_st = LagrangeEqQuad(order, mesh)
+	elif BasisFunction is "LegendreSeg":
+		basis_st = LegendreQuad(order, mesh)
+	else:
+		raise NotImplementedError
+
+	return basis_st
+
+def set_source_treatment(ns, SourceTreatment):
+	if SourceTreatment is "Explicit":
+		fcn = predictor_elem_explicit
+	elif SourceTreatment is "Implicit":
+		if ns is 1:
+			fcn = predictor_elem_implicit
+		else:
+			fcn = predictor_elem_sylvester
+	else:
+		raise NotImplementedError
+
+	return fcn
+
 def predictor_elem_explicit(solver, elem, dt, Wp, Up):
 	'''
 	Method: calculate_predictor_elem
@@ -475,41 +498,23 @@ class ADERDG_Solver(DG_Solver):
 		ns = EqnSet.StateRank
 
 		TimeScheme = Params["TimeScheme"]
-		if TimeScheme is "ADER":
-			Stepper = stepper.ADER()
-		else:
-			raise NotImplementedError("Time scheme not supported")
-
-		self.Stepper = Stepper
+		if TimeScheme != 'ADER':
+			raise NotImplementedError
+		self.Stepper = stepper.ADER()
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		if BasisFunction is "LagrangeEqSeg":
-			basis = LagrangeEqSeg(EqnSet.order, mesh)
-			basis_st = LagrangeEqQuad(EqnSet.order, mesh)
-		elif BasisFunction is "LegendreSeg":
-			basis = LegendreSeg(EqnSet.order, mesh)
-			basis_st = LegendreQuad(EqnSet.order, mesh)
-		else:
-			raise NotImplementedError
-		
-		self.basis = basis
-		self.basis_st = basis_st
+		self.basis = set_basis(mesh, EqnSet.order, BasisFunction)
+		self.basis_st = set_basis_spacetime(mesh, EqnSet.order, BasisFunction)
 
-		EqnSet.Up = np.zeros([self.mesh.nElem, basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
+		# Allocate array for predictor step in ADER-Scheme
+		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
 
 
 		# Set predictor function
 		SourceTreatment = Params["SourceTreatment"]
-		if SourceTreatment is "Explicit":
-			self.calculate_predictor_elem = predictor_elem_explicit
-		elif SourceTreatment is "Implicit":
-			if ns is 1:
-				self.calculate_predictor_elem = predictor_elem_implicit
-			else:
-				self.calculate_predictor_elem = predictor_elem_sylvester
-		else:
-			raise NotImplementedError
+		self.calculate_predictor_elem = set_source_treatment(ns, SourceTreatment)
+
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = Limiter.set_limiter(limiterType)

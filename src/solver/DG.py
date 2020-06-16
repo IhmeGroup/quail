@@ -46,37 +46,11 @@ class SolverBase(ABC):
 		self.nTimeStep = 0 # will be set later
 
 		TimeScheme = Params["TimeScheme"]
-		if TimeScheme == "FE":
-			Stepper = stepper.FE()
-		elif TimeScheme == "RK4":
-			Stepper = stepper.RK4()
-		elif TimeScheme == "LSRK4":
-			Stepper = stepper.LSRK4()
-		elif TimeScheme == "SSPRK3":
-			Stepper = stepper.SSPRK3()
-		else:
-			raise NotImplementedError("Time scheme not supported")
-		# if Params["nTimeStep"] > 0:
-		# 	Stepper.dt = Params["EndTime"]/Params["nTimeStep"]
-		self.Stepper = Stepper
+		self.Stepper = stepper.set_stepper(TimeScheme)
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		if BasisFunction == "LagrangeEqSeg":
-			basis = LagrangeEqSeg(EqnSet.order, mesh)
-		elif BasisFunction == "LegendreSeg":
-			basis = LegendreSeg(EqnSet.order, mesh)
-		elif BasisFunction == "LagrangeEqQuad":
-			basis = LagrangeEqQuad(EqnSet.order, mesh)
-		elif BasisFunction == "LegendreQuad":
-			basis = LegendreQuad(EqnSet.order, mesh)
-		elif BasisFunction == "LagrangeEqTri":
-			basis = LagrangeEqTri(EqnSet.order, mesh)
-		elif BasisFunction == "HierarchicH1Tri":
-			basis = HierarchicH1Tri(EqnSet.order, mesh)
-		else:
-			raise NotImplementedError
-		self.basis = basis
+		self.basis = set_basis(mesh, EqnSet.order, BasisFunction)
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
