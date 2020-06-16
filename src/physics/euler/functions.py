@@ -26,7 +26,7 @@ class SourceType(Enum):
 State functions
 '''
 
-class smooth_isentropic_flow(FcnBase):
+class SmoothIsentropicFlow(FcnBase):
 	def __init__(self, a=0.9):
 		self.a = a
 
@@ -84,7 +84,7 @@ class smooth_isentropic_flow(FcnBase):
 		return Up
 
 
-class moving_shock(FcnBase):
+class MovingShock(FcnBase):
 	def __init__(self, M = 5.0, xshock = 0.2):
 		self.M = M
 		self.xshock = xshock
@@ -167,7 +167,7 @@ class moving_shock(FcnBase):
 		return Up
 
 
-class density_wave(FcnBase):
+class DensityWave(FcnBase):
 	def __init__(self, p = 1.0):
 		self.p = p
 
@@ -191,7 +191,7 @@ class density_wave(FcnBase):
 		return Up
 
 
-class isentropic_vortex(FcnBase):
+class IsentropicVortex(FcnBase):
 	def __init__(self,rhob=1.,ub=1.,vb=1.,pb=1.,vs=5.):
 		self.rhob = 1.
 		self.ub = 1.
@@ -344,7 +344,7 @@ class PressureOutlet(BCWeakPrescribed):
 Source term functions
 '''
 
-class stiff_friction(SourceBase):
+class StiffFriction(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 

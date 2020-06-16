@@ -310,9 +310,9 @@ class Euler1D(base.PhysicsBase):
 
 		self.IC_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
-			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.smooth_isentropic_flow,
-			euler_fcn_type.MovingShock : euler_fcns.moving_shock,
-			euler_fcn_type.DensityWave : euler_fcns.density_wave,
+			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.SmoothIsentropicFlow,
+			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
+			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
 		}
 
 		self.exact_fcn_map = self.IC_fcn_map.copy()
@@ -327,7 +327,7 @@ class Euler1D(base.PhysicsBase):
 		}
 
 		self.source_map = {
-			euler_source_type.StiffFriction : euler_fcns.stiff_friction,
+			euler_source_type.StiffFriction : euler_fcns.StiffFriction,
 		}
 
 	def SetParams(self,**kwargs):
@@ -920,7 +920,7 @@ class Euler2D(Euler1D):
 
 		self.IC_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
-			euler_fcn_type.IsentropicVortex : euler_fcns.isentropic_vortex,
+			euler_fcn_type.IsentropicVortex : euler_fcns.IsentropicVortex,
 		}
 
 		self.exact_fcn_map = self.IC_fcn_map.copy()

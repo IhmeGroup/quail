@@ -32,7 +32,7 @@ class SourceType(Enum):
 State functions
 '''
 
-class sine(FcnBase):
+class Sine(FcnBase):
 	def __init__(self, omega=2*np.pi):
 		self.omega = omega
 
@@ -43,7 +43,7 @@ class sine(FcnBase):
 		return Up
 
 
-class damping_sine(FcnBase):
+class DampingSine(FcnBase):
 	def __init__(self, omega=2*np.pi, nu=1.):
 		self.omega = omega
 		self.nu = nu
@@ -76,7 +76,7 @@ class damping_sine(FcnBase):
 # 		return Up
 
 
-class gaussian(FcnBase):
+class Gaussian(FcnBase):
 	def __init__(self, sig=1., x0=0.):
 		self.sig = sig # standard deviation
 		self.x0 = x0 # center
@@ -88,7 +88,7 @@ class gaussian(FcnBase):
 		return Up
 
 
-class paraboloid(FcnBase):
+class Paraboloid(FcnBase):
 	def __init__(self):
 		pass
 
@@ -99,7 +99,7 @@ class paraboloid(FcnBase):
 		return Up
 
 
-class shock_burgers(FcnBase):
+class ShockBurgers(FcnBase):
 	def __init__(self, uL=1., uR=0., xshock=-0.5):
 		self.uL = uL 
 		self.uR = uR
@@ -123,7 +123,7 @@ class shock_burgers(FcnBase):
 		return Up
 
 
-class sine_burgers(FcnBase):
+class SineBurgers(FcnBase):
 	def __init__(self, omega=2*np.pi):
 		self.omega = omega
 
@@ -143,7 +143,7 @@ class sine_burgers(FcnBase):
 		return Up
 
 
-class linear_burgers(FcnBase):
+class LinearBurgers(FcnBase):
 	def __init__(self):
 		pass
 
@@ -158,7 +158,7 @@ class linear_burgers(FcnBase):
 '''
 Source term functions
 '''
-class simple_source(SourceBase):
+class SimpleSource(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 

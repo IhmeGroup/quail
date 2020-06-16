@@ -47,11 +47,11 @@ class ConstAdvScalar1D(base.PhysicsBase):
 
 		self.IC_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
-			scalar_fcn_type.Sine : scalar_fcns.sine,
-			scalar_fcn_type.DampingSine : scalar_fcns.damping_sine,
+			scalar_fcn_type.Sine : scalar_fcns.Sine,
+			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
 			# scalar_fcn_type.ShiftedCosine : scalar_fcns.shifted_cosine,
 			# scalar_fcn_type.Exponential : scalar_fcns.exponential,
-			scalar_fcn_type.Gaussian : scalar_fcns.gaussian,
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
 		}
 
 		self.exact_fcn_map = self.IC_fcn_map.copy()
@@ -59,7 +59,7 @@ class ConstAdvScalar1D(base.PhysicsBase):
 		self.BC_fcn_map = self.IC_fcn_map.copy()
 
 		self.source_map = {
-			scalar_source_type.SimpleSource : scalar_fcns.simple_source,
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
 		}
 
 		# self.source_map.update({
@@ -234,14 +234,14 @@ class ConstAdvScalar2D(ConstAdvScalar1D):
 
 		self.exact_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
-			scalar_fcn_type.Gaussian : scalar_fcns.gaussian,
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
 		}
 
 		self.BC_fcn_map = self.exact_fcn_map.copy()
 
 		self.IC_fcn_map = self.exact_fcn_map.copy()
 		self.IC_fcn_map.update({
-			scalar_fcn_type.Paraboloid : scalar_fcns.paraboloid,
+			scalar_fcn_type.Paraboloid : scalar_fcns.Paraboloid,
 		})
 
 	def SetParams(self,**kwargs):
@@ -270,9 +270,9 @@ class Burgers1D(ConstAdvScalar1D):
 
 		self.IC_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
-			scalar_fcn_type.ShockBurgers : scalar_fcns.shock_burgers,
-			scalar_fcn_type.SineBurgers : scalar_fcns.sine_burgers,
-			scalar_fcn_type.LinearBurgers : scalar_fcns.linear_burgers,
+			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
+			scalar_fcn_type.SineBurgers : scalar_fcns.SineBurgers,
+			scalar_fcn_type.LinearBurgers : scalar_fcns.LinearBurgers,
 		}
 
 		self.exact_fcn_map = self.IC_fcn_map.copy()
