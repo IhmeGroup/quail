@@ -3,17 +3,18 @@ import code
 import numpy as np 
 
 from data import ArrayList
+from general import StepperType
 from solver.tools import mult_inv_mass_matrix
 
 
 def set_stepper(TimeScheme):
-	if TimeScheme == "FE":
+	if StepperType[TimeScheme] == StepperType.FE:
 		stepper = FE()
-	elif TimeScheme == "RK4":
+	elif StepperType[TimeScheme] == StepperType.RK4:
 		stepper = RK4()
-	elif TimeScheme == "LSRK4":
+	elif StepperType[TimeScheme] == StepperType.LSRK4:
 		stepper = LSRK4()
-	elif TimeScheme == "SSPRK3":
+	elif StepperType[TimeScheme] == StepperType.SSPRK3:
 		stepper = SSPRK3()
 	else:
 		raise NotImplementedError("Time scheme not supported")

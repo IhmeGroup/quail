@@ -5,6 +5,7 @@ from scipy.linalg import solve_sylvester
 from data import ArrayList, GenericData
 import errors
 import general
+from general import BasisType
 
 from meshing.meshbase import *
 import meshing.tools as MeshTools
@@ -31,9 +32,9 @@ general.SolverParams.update({
 })
 
 def set_basis_spacetime(mesh, order, BasisFunction):
-	if BasisFunction is "LagrangeEqSeg":
+	if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
 		basis_st = LagrangeEqQuad(order, mesh)
-	elif BasisFunction is "LegendreSeg":
+	elif BasisType[BasisFunction] == BasisType.LegendreSeg:
 		basis_st = LegendreQuad(order, mesh)
 	else:
 		raise NotImplementedError
@@ -41,9 +42,9 @@ def set_basis_spacetime(mesh, order, BasisFunction):
 	return basis_st
 
 def set_source_treatment(ns, SourceTreatment):
-	if SourceTreatment is "Explicit":
+	if SourceTreatment == "Explicit":
 		fcn = predictor_elem_explicit
-	elif SourceTreatment is "Implicit":
+	elif SourceTreatment == "Implicit":
 		if ns is 1:
 			fcn = predictor_elem_implicit
 		else:
@@ -470,9 +471,9 @@ class ADEROperators(object):
 		self.get_geom_data(mesh, basis_st, order)
 
 
-class ADERDG_Solver(DG_Solver):
+class ADERDG(DG):
 	'''
-	Class: ADERDG_Solver
+	Class: ADERDG
 	--------------------------------------------------------------------------
 	Use the ADER-DG method to solve a given set of PDEs
 	'''
@@ -480,7 +481,7 @@ class ADERDG_Solver(DG_Solver):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
-		Initializes the DG_Solver object, verifies parameters, and initializes the state
+		Initializes the DG object, verifies parameters, and initializes the state
 
 		INPUTS:
 			Params: list of parameters for the solver
@@ -498,7 +499,7 @@ class ADERDG_Solver(DG_Solver):
 		ns = EqnSet.StateRank
 
 		TimeScheme = Params["TimeScheme"]
-		if TimeScheme != 'ADER':
+		if StepperType[TimeScheme] != StepperType.ADER:
 			raise NotImplementedError
 		self.Stepper = stepper.ADER()
 

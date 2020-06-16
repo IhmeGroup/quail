@@ -29,7 +29,7 @@ class SolverBase(ABC):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
-		Initializes the DG_Solver object, verifies parameters, and initializes the state
+		Initializes the DG object, verifies parameters, and initializes the state
 
 		INPUTS:
 			Params: list of parameters for the solver
@@ -306,9 +306,9 @@ class BFaceOperators(IFaceOperators):
 		self.alloc_other_arrays(EqnSet, basis, order)
 
 
-class DG_Solver(SolverBase):
+class DG(SolverBase):
 	'''
-	Class: DG_Solver
+	Class: DG
 	--------------------------------------------------------------------------
 	Discontinuous Galerkin method designed to solve a given set of PDEs
 

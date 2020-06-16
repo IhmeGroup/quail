@@ -6,21 +6,19 @@ import numpy as np
 import os
 import sys
 
-import defaultparams as DefaultInput
+import defaultparams as default_input
 import errors
-import general
+from general import SolverType
 
-import meshing.common as MeshCommon
-import meshing.gmsh as MeshGmsh
-import meshing.tools as MeshTools
+import meshing.common as mesh_common
+import meshing.gmsh as mesh_gmsh
+import meshing.tools as mesh_tools
 
-import physics.euler.euler as Euler
-import physics.scalar.scalar as Scalar
+import physics.euler.euler as euler
+import physics.scalar.scalar as scalar
 
-import processing.plot as Plot
-import processing.post as Post
-
-import solver.DG as Solver
+import solver.DG as DG
+import solver.ADERDG as ADERDG
 
 def overwrite_params(params, params_new, allow_new_keys=False):
 	if params_new is None:
@@ -38,14 +36,14 @@ def read_inputs(TimeStepping, Numerics, Output, Mesh,
 		Physics, InitialCondition, BoundaryConditions, SourceTerms):
 
 	# defaults
-	stepper_params = DefaultInput.TimeStepping
-	numerics_params = DefaultInput.Numerics
-	output_params = DefaultInput.Output
-	mesh_params = DefaultInput.Mesh
-	physics_params = DefaultInput.Physics
-	IC_params = DefaultInput.InitialCondition
-	BC_params = DefaultInput.BoundaryConditions
-	source_params = DefaultInput.SourceTerms
+	stepper_params = default_input.TimeStepping
+	numerics_params = default_input.Numerics
+	output_params = default_input.Output
+	mesh_params = default_input.Mesh
+	physics_params = default_input.Physics
+	IC_params = default_input.InitialCondition
+	BC_params = default_input.BoundaryConditions
+	source_params = default_input.SourceTerms
 
 	stepper_params = overwrite_params(stepper_params, TimeStepping)
 	numerics_params = overwrite_params(numerics_params, Numerics)
@@ -78,7 +76,7 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	Mesh
 	'''
 	if mesh_params["File"] is not None:
-		mesh = MeshGmsh.ReadGmshFile(mesh_params["File"])
+		mesh = mesh_gmsh.ReadGmshFile(mesh_params["File"])
 	else:
 		# Unpack
 		shape = mesh_params["ElementShape"]
@@ -91,16 +89,16 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 		if shape is "Segment":
 			if mesh_params["PeriodicBoundariesX"] != [] and mesh_params["PeriodicBoundariesY"] == []:
 				periodic = True
-				mesh = MeshCommon.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
+				mesh = mesh_common.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 			else:
 				periodic = False
-				mesh = MeshCommon.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
+				mesh = mesh_common.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 		else:
 			# 2D - quads or tris
-			mesh = MeshCommon.mesh_2D(nElem_x=nElem_x, nElem_y=nElem_y, Uniform=True, xmin=xmin, xmax=xmax, 
+			mesh = mesh_common.mesh_2D(nElem_x=nElem_x, nElem_y=nElem_y, Uniform=True, xmin=xmin, xmax=xmax, 
 					ymin=ymin, ymax=ymax)
 			if shape is "Triangle":
-				mesh = MeshCommon.split_quadrils_into_tris(mesh)
+				mesh = mesh_common.split_quadrils_into_tris(mesh)
 
 	pb = [None]*4
 	# Store periodic boundaries in pb
@@ -117,7 +115,7 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 		# need to check 1D first
 		if mesh.Dim == 1:
 			raise Exception
-		MeshTools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], y1=pb[2], y2=pb[3])
+		mesh_tools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], y1=pb[2], y2=pb[3])
 
 	'''
 	Physics
@@ -127,19 +125,19 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	basis = numerics_params["InterpBasis"]
 	if physics_params["Type"] is "ConstAdvScalar":
 		if mesh.Dim == 1:
-			physics = Scalar.ConstAdvScalar1D(order, basis, mesh)
+			physics = scalar.ConstAdvScalar1D(order, basis, mesh)
 		else:
-			physics = Scalar.ConstAdvScalar2D(order, basis, mesh)
+			physics = scalar.ConstAdvScalar2D(order, basis, mesh)
 	elif physics_params["Type"] is "Burgers":
 		if mesh.Dim == 1:
-			physics = Scalar.Burgers1D(order, basis, mesh)
+			physics = scalar.Burgers1D(order, basis, mesh)
 		else:
 			raise NotImplementedError
 	elif physics_params["Type"] is "Euler":
 		if mesh.Dim == 1:
-			physics = Euler.Euler1D(order, basis, mesh)
+			physics = euler.Euler1D(order, basis, mesh)
 		else:
-			physics = Euler.Euler2D(order, basis, mesh)
+			physics = euler.Euler2D(order, basis, mesh)
 
 	# Set parameters
 	pparams = physics_params.copy()
@@ -196,10 +194,10 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	# Merge params
 	solver_params = {**stepper_params, **numerics_params, **output_params}
 	solver_type = solver_params.pop("Solver")
-	if solver_type is "DG":
-		solver = Solver.DG_Solver(solver_params, physics, mesh)
-	elif solver_type is "ADERDG":
-		solver = Solver.ADERDG_Solver(solver_params, physics, mesh)
+	if SolverType[solver_type] is SolverType.DG:
+		solver = DG.DG(solver_params, physics, mesh)
+	elif SolverType[solver_type] is SolverType.ADERDG:
+		solver = ADERDG.ADERDG(solver_params, physics, mesh)
 	else: 
 		raise NotImplementedError
 

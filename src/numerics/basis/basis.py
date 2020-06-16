@@ -38,22 +38,22 @@ RefQ1Coords = {
 
 def set_basis(mesh, order, BasisFunction):
 
-    if BasisFunction == "LagrangeEqSeg":
+    if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
         basis = LagrangeEqSeg(order, mesh)
-    elif BasisFunction == "LegendreSeg":
+    elif BasisType[BasisFunction] == BasisType.LegendreSeg:
         basis = LegendreSeg(order, mesh)
-    elif BasisFunction == "LagrangeEqQuad":
+    elif BasisType[BasisFunction] == BasisType.LagrangeEqQuad:
         basis = LagrangeEqQuad(order, mesh)
-    elif BasisFunction == "LegendreQuad":
+    elif BasisType[BasisFunction] == BasisType.LegendreQuad:
         basis = LegendreQuad(order, mesh)
-    elif BasisFunction == "LagrangeEqTri":
+    elif BasisType[BasisFunction] == BasisType.LagrangeEqTri:
         basis = LagrangeEqTri(order, mesh)
-    elif BasisFunction == "HierarchicH1Tri":
+    elif BasisType[BasisFunction] == BasisType.HierarchicH1Tri:
         basis = HierarchicH1Tri(order, mesh)
     else:
         raise NotImplementedError
     return basis
-    
+
 # def order_to_num_basis_coeff(basis,p):
 #     '''
 #     Method: order_to_num_basis_coeff
