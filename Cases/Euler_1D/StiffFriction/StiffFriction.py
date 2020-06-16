@@ -35,7 +35,7 @@ EqnSet.set_IC(IC_type="DensityWave", p=1.0)
 EqnSet.set_source(source_type="StiffFriction",nu=nu)
 
 ### Solve
-solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,EqnSet,mesh)
 solver.solve()
 
 

@@ -11,7 +11,7 @@ fname = "Data_final.pkl"
 mesh, physics, Params, Time = ReadWriteDataFiles.read_data_file(fname)
 print('Solution Final Time:',Time)
 
-solver = Solver.DG_Solver(Params,physics,mesh)
+solver = Solver.DG(Params,physics,mesh)
 # Error
 TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
 # Plot

@@ -11,7 +11,7 @@ fname = "Data_final.pkl"
 mesh, EqnSet, Params, Time = ReadWriteDataFiles.read_data_file(fname)
 print('Solution Final Time:',Time)
 
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.DG(Params,EqnSet,mesh)
 
 # Error
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")

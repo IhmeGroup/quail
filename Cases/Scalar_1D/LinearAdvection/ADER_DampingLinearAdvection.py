@@ -55,7 +55,7 @@ if not Periodic:
 
 
 ### Solve
-solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,EqnSet,mesh)
 solver.solve()
 
 

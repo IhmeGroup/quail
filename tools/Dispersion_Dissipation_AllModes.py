@@ -37,7 +37,7 @@ U = EqnSet.U.Arrays
 U[0] = U[0].astype(complex)
 
 # Set solver
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.DG(Params,EqnSet,mesh)
 
 
 ### Mass matrix, stiffness matrix, basis

@@ -60,7 +60,7 @@ import code
 
 
 # ### Solve
-# solver = Solver.DG_Solver(Params,EqnSet,mesh)
+# solver = Solver.DG(Params,EqnSet,mesh)
 # solver.solve()
 
 

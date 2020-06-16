@@ -52,7 +52,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 # ### Solve
-# solver = Solver.DG_Solver(Params,EqnSet,mesh)
+# solver = Solver.DG(Params,EqnSet,mesh)
 # solver.solve()
 
 

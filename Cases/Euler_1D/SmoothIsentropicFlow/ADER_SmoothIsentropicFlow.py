@@ -39,7 +39,7 @@ if not Periodic:
 			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
-solver = Solver.ADERDG_Solver(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,EqnSet,mesh)
 solver.solve()
 
 

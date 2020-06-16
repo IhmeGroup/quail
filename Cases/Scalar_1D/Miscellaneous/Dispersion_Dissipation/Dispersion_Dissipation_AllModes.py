@@ -32,7 +32,7 @@ EqnSet.SetParams(Velocity=1.)
 EqnSet.IC.Set(Function=EqnSet.FcnExponential)
 U = EqnSet.U.Arrays
 U[0] = U[0].astype(complex)
-solver = Solver.DG_Solver(Params,EqnSet,mesh)
+solver = Solver.DG(Params,EqnSet,mesh)
 
 
 ### Mass matrix, stiffness matrix, basis
