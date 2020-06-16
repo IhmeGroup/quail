@@ -49,11 +49,11 @@ BoundaryConditions = {
 	    "Function" : "DampingSine",
 	    "omega" : 2*np.pi,
 	    "nu" : nu,
-    	"BCType" : "FullState",
+    	"BCType" : "StateAll",
     },
     "Right" : {
     	"Function" : None,
-    	"BCType" : "Extrapolation",
+    	"BCType" : "Extrapolate",
     },
 }
 
