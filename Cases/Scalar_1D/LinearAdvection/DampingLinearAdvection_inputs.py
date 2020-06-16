@@ -51,10 +51,10 @@ import code
 # 		BC = EqnSet.BCs[ibfgrp]
 # 		## Left
 # 		if BC.Name is Inflow:
-# 			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2.*np.pi, nu=nu)
+# 			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["StateAll"], omega = 2.*np.pi, nu=nu)
 # 		elif BC.Name is Outflow:
 # 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-# 			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi, nu=-2.0)
+# 			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["StateAll"], omega = 2*np.pi, nu=-2.0)
 # 		else:
 # 			raise Exception("BC error")
 
@@ -110,7 +110,7 @@ BoundaryConditions = {
 	    "Function" : "DampingSine",
 	    "omega" : 2*np.pi,
 	    "nu" : nu,
-    	"BCType" : "FullState",
+    	"BCType" : "StateAll",
     },
     "Right" : {
     	"Function" : None,

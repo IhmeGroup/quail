@@ -48,16 +48,16 @@ EqnSet.set_exact(exact_type="Gaussian", x0=x0)
 # Boundary conditions
 # if not Periodic:
 # 	MeshTools.check_face_orientations(mesh)
-# 	EqnSet.SetBC("x1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-# 	EqnSet.SetBC("x2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-# 	EqnSet.SetBC("y1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-# 	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+# 	EqnSet.SetBC("x1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+# 	EqnSet.SetBC("x2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+# 	EqnSet.SetBC("y1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+# 	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
 if not Periodic:
 	MeshTools.check_face_orientations(mesh)
-	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
-	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
-	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
-	EqnSet.set_BC(BC_type="FullState", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
 
 # raise Exception
 

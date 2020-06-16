@@ -46,12 +46,11 @@ if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
-	set_BC(self, BC_name, **kwargs)
 if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
 		BFG = mesh.BFaceGroups[ibfgrp]
 		if BFG.Name is Inflow:
-			EqnSet.set_BC(BC_type="FullState", fcn_type="Sine", omega = 2*np.pi)
+			EqnSet.set_BC(BC_type="StateAll", fcn_type="Sine", omega = 2*np.pi)
 		elif BFG.Name is Outflow:
 			EqnSet.set_BC(BC_type="Extrapolate")
 

@@ -40,7 +40,7 @@ BoundaryConditions = {
     "Left" : {
 	    "Function" : "Sine",
 	    "omega" : 2*np.pi,
-    	"BCType" : "FullState",
+    	"BCType" : "StateAll",
     },
     "Right" : {
     	"Function" : "None",

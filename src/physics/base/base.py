@@ -165,13 +165,21 @@ class PhysicsBase(object):
 				self.StateIndices[key.name] = index
 				index += 1
 
-		self.fcn_map = {
+		self.IC_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+		}
+
+		self.exact_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
 		}
 
 		self.BC_map = {
-			base_BC_type.FullState : base_fcns.FullState,
+			base_BC_type.StateAll : base_fcns.StateAll,
 			base_BC_type.Extrapolate : base_fcns.Extrapolate,
+		}
+
+		self.BC_fcn_map = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
 		}
 
 		self.source_map = {
@@ -191,11 +199,11 @@ class PhysicsBase(object):
 				Params[key] = kwargs[key]
 
 	def set_IC(self, IC_type, **kwargs):
-		fcn_ref = process_map(IC_type, self.fcn_map)
+		fcn_ref = process_map(IC_type, self.IC_fcn_map)
 		self.IC = fcn_ref(**kwargs)
 
 	def set_exact(self, exact_type, **kwargs):
-		fcn_ref = process_map(exact_type, self.fcn_map)
+		fcn_ref = process_map(exact_type, self.exact_fcn_map)
 		self.ExactSoln = fcn_ref(**kwargs)
 
 	def set_BC(self, BC_type, fcn_type=None, **kwargs):
@@ -203,11 +211,13 @@ class PhysicsBase(object):
 			BC = self.BCs[i]
 			if BC is None:
 				if fcn_type is not None:
-					fcn_ref = process_map(fcn_type, self.fcn_map)
+					fcn_ref = process_map(fcn_type, self.BC_fcn_map)
 					kwargs.update(function=fcn_ref)
 				BC_ref = process_map(BC_type, self.BC_map)
 				BC = BC_ref(**kwargs)
 				self.BCs[i] = BC
+				break
+
 	def SetBC(self, BCName, **kwargs):
 		found = False
 		code.interact(local=locals())
@@ -250,7 +260,7 @@ class PhysicsBase(object):
 	def SetBCTreatment(self):
 		# default is Prescribed
 		self.BCTreatments = {n:self.BCTreatment.Prescribed for n in range(len(self.BCType))}
-		self.BCTreatments[self.BCType.FullState] = self.BCTreatment.Riemann
+		self.BCTreatments[self.BCType.StateAll] = self.BCTreatment.Riemann
 
 	@abstractmethod
 	class ConvFluxType(IntEnum):

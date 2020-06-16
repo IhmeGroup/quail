@@ -64,11 +64,11 @@ if not Periodic:
 		BC = EqnSet.BCs[ibfgrp]
 		## Left
 		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnScalarShock, BCType=EqnSet.BCType["FullState"], uL = 1., uR = 0., xshock = 0.3)
-			#BC.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["FullState"], State = [1.])
+			BC.Set(Function=EqnSet.FcnScalarShock, BCType=EqnSet.BCType["StateAll"], uL = 1., uR = 0., xshock = 0.3)
+			#BC.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["StateAll"], State = [1.])
 		elif BC.Name is Outflow:
 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["FullState"], omega = 2*np.pi)
+			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["StateAll"], omega = 2*np.pi)
 		else:
 			raise Exception("BC error")
 

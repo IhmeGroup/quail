@@ -44,10 +44,10 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # # Boundary conditions
 # if not Periodic:
 # 	MeshTools.check_face_orientations(mesh)
-# 	EqnSet.SetBC("x1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-# 	EqnSet.SetBC("x2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-# 	EqnSet.SetBC("y1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
-# 	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["FullState"])
+# 	EqnSet.SetBC("x1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+# 	EqnSet.SetBC("x2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+# 	EqnSet.SetBC("y1",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+# 	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
 # # raise Exception
 
 
@@ -113,7 +113,7 @@ InitialCondition = {
 bparams = {
     "Function" : "Gaussian",
     "x0" : x0,
-    "BCType" : "FullState"
+    "BCType" : "StateAll"
 }
 BoundaryConditions = {
     "x1" : bparams,

@@ -10,11 +10,11 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBa
 class FcnType(Enum):
     Sine = auto()
     DampingSine = auto()
-    ShiftedCosine = auto()
-    Exponential = auto()
+    # ShiftedCosine = auto()
+    # Exponential = auto()
     Gaussian = auto()
-    ScalarShock = auto()
     Paraboloid = auto()
+    ShockBurgers = auto()
     SineBurgers = auto()
     LinearBurgers = auto()
 
@@ -55,49 +55,25 @@ class damping_sine(FcnBase):
 		return Up
 
 
-class shifted_cosine(FcnBase):
-	def __init__(self, omega=2*np.pi):
-		self.omega = omega
+# class shifted_cosine(FcnBase):
+# 	def __init__(self, omega=2*np.pi):
+# 		self.omega = omega
 
-	def get_state(self, physics, x, t):
-		c = physics._c
-		Up = 1. - np.cos(self.omega*x)
+# 	def get_state(self, physics, x, t):
+# 		c = physics._c
+# 		Up = 1. - np.cos(self.omega*x)
 
-		return Up
-
-
-class exponential(FcnBase):
-	def __init__(self, theta=1.):
-		self.theta = theta
-
-	def get_state(self, physics, x, t):
-		Up = np.exp(self.theta*x)
-
-		return Up
+# 		return Up
 
 
-class scalar_shock(FcnBase):
-	def __init__(self, uL=1., uR=0., xshock=-0.5):
-		self.uL = uL 
-		self.uR = uR
-		self.xshock = xshock
+# class exponential(FcnBase):
+# 	def __init__(self, theta=1.):
+# 		self.theta = theta
 
-	def get_state(self, physics, x, t):
-		uL = self.uL
-		uR = self.uR
-		xshock = self.xshock
+# 	def get_state(self, physics, x, t):
+# 		Up = np.exp(self.theta*x)
 
-		us = uR + uL
-		xshock = xshock + us*t
-		ileft = (x <= xshock).reshape(-1)
-		iright = (x > xshock).reshape(-1)
-
-		Up = np.zeros([x.shape[0], physics.StateRank])
-
-		Up[ileft] = uL
-		Up[iright] = uR
-
-		return Up
+# 		return Up
 
 
 class gaussian(FcnBase):
@@ -119,6 +95,30 @@ class paraboloid(FcnBase):
 	def get_state(self, physics, x, t):
 		r2 = x[:,0:1]**2. + x[:,1:2]**2.
 		Up = r2
+
+		return Up
+
+
+class shock_burgers(FcnBase):
+	def __init__(self, uL=1., uR=0., xshock=-0.5):
+		self.uL = uL 
+		self.uR = uR
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+		uL = self.uL
+		uR = self.uR
+		xshock = self.xshock
+
+		us = uR + uL
+		xshock = xshock + us*t
+		ileft = (x <= xshock).reshape(-1)
+		iright = (x > xshock).reshape(-1)
+
+		Up = np.zeros([x.shape[0], physics.StateRank])
+
+		Up[ileft] = uL
+		Up[iright] = uR
 
 		return Up
 
