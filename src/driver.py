@@ -234,7 +234,7 @@ def main(argv):
    deck = importlib.import_module(inputfile)
 
    solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
-		deck.Physics, deck.InitialCondition, deck.BoundaryConditions)
+		deck.Physics, deck.InitialCondition, deck.BoundaryConditions, deck.SourceTerms)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
