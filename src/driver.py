@@ -239,8 +239,7 @@ def main(argv):
 	solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
 		deck.Physics, deck.InitialCondition, deck.BoundaryConditions, deck.SourceTerms)
 
-
-	auto_process = deck.Output["AutoProcess"]
+	auto_process = solver.Params["AutoProcess"]
 	if auto_process is True:
 		if postfile is not '':
 			postprocess = importlib.import_module(postfile)
