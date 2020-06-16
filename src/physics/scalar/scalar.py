@@ -5,8 +5,6 @@ import sys
 import errors
 from general import *
 
-from numerics.basis.basis import order_to_num_basis_coeff
-
 import physics.base.base as base
 import physics.base.functions as base_fcns
 from physics.base.functions import FcnType as base_fcn_type

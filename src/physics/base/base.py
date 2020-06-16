@@ -7,7 +7,7 @@ import sys
 import errors
 from general import *
 
-from numerics.basis.basis import order_to_num_basis_coeff
+from numerics.basis.basis import set_basis
 
 from physics.base.data import ICData, BCData, ExactData, SourceData
 import physics.base.functions as base_fcns
@@ -103,7 +103,7 @@ class PhysicsBase(object):
 	def StateRank(self):
 		pass
 
-	def __init__(self, order, basis, mesh):
+	def __init__(self, order, basis_type, mesh):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -133,9 +133,13 @@ class PhysicsBase(object):
 
 		# Basis, Order data for each element group
 		# For now, ssume uniform basis and Order for each element group 
-		if type(basis) is str:
-			basis = BasisType[basis]
-		self.Basis = basis
+		basis = set_basis(mesh, order, basis_type)
+		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(order), self.StateRank])
+		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(order), self.StateRank])
+
+		# if type(basis) is str:
+		# 	basis = BasisType[basis]
+		# self.Basis = basis
 		if type(order) is int:
 			self.order = order
 		elif type(order) is list:
@@ -150,8 +154,8 @@ class PhysicsBase(object):
 		# 			for egrp in range(mesh.nElemGroup)]
 		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		# self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-		self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
-		self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
+		# self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
+		# self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
 
 		# BC treatments
 		self.SetBCTreatment()
