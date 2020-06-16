@@ -53,11 +53,10 @@ class StateAll(BCWeakRiemann):
 
 
 class Extrapolate(BCWeakPrescribed):
-
-    def get_boundary_state(self, physics, x, t, normals, UpI):
-
-        return UpI.copy()
-
+	def __init__(self, **kwargs):
+		pass
+	def get_boundary_state(self, physics, x, t, normals, UpI):
+		return UpI.copy()
 
 # def uniform(physics, fcn_data):
 # 	Data = fcn_data.Data

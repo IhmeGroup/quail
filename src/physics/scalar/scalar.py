@@ -82,7 +82,7 @@ class ConstAdvScalar1D(base.PhysicsBase):
 
 	class BCType(IntEnum):
 	    StateAll = 0
-	    Extrapolation = 1
+	    Extrapolate = 1
 
 	class BCTreatment(IntEnum):
 		Riemann = 0
@@ -166,7 +166,7 @@ class ConstAdvScalar1D(base.PhysicsBase):
 		bctype = BC.BCType
 		if bctype == self.BCType.StateAll:
 			uB = self.CallFunction(BC)
-		elif bctype == self.BCType.Extrapolation:
+		elif bctype == self.BCType.Extrapolate:
 			uB[:] = uI[:]
 		else:
 			raise Exception("BC type not supported")

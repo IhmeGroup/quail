@@ -86,6 +86,8 @@ def process_map(fcn_type, fcn_map):
 				# kwargs.update(Function=fcn_map[fcn_keys])
 				fcn_ref = fcn_map[fcn_keys]
 				break
+	else:
+		fcn_ref = None
 	return fcn_ref
 
 
