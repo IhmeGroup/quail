@@ -85,6 +85,7 @@ SolverParams = {
     "WriteInitialSolution" : False,
     "WriteFinalSolution" : False,
     "RestartFile" : None,
+    "AutoProcess" : False,
 }
 
 
