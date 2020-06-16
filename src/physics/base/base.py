@@ -133,9 +133,7 @@ class PhysicsBase(object):
 
 		# Basis, Order data for each element group
 		# For now, ssume uniform basis and Order for each element group 
-		basis = set_basis(mesh, order, basis_type)
-		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(order), self.StateRank])
-		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(order), self.StateRank])
+
 
 		# if type(basis) is str:
 		# 	basis = BasisType[basis]
@@ -146,6 +144,10 @@ class PhysicsBase(object):
 			self.order = order[0]
 		else:
 			raise Exception("Input error")
+
+		basis = set_basis(mesh, self.order, basis_type)
+		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.StateRank])
+		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.StateRank])
 
 		# State 
 		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.nElemTot,nn,self.StateRank])
