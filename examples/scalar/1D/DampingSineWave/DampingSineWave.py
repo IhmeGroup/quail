@@ -1,4 +1,7 @@
 import numpy as np
+import driver
+# import sys; sys.path.append('../../../src'); sys.path.append('./src')
+import processing.post as Post
 
 TimeStepping = {
     "StartTime" : 0.,
@@ -58,3 +61,11 @@ SourceTerms = {
 		"nu" : nu,
 	},
 }
+
+# solver, EqnSet, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
+#         Physics, InitialCondition, BoundaryConditions, SourceTerms)
+
+
+# ### Postprocess
+# # Error
+# TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")

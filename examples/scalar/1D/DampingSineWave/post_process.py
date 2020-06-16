@@ -19,6 +19,6 @@ TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 Plot.PreparePlot()
 Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 
-Plot.SaveFigure(FileName='LinearAdvection', FileType='pdf', CropLevel=2)
+Plot.SaveFigure(FileName='DampingSineWave', FileType='pdf', CropLevel=2)
 
 Plot.ShowPlot()
