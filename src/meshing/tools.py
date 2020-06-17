@@ -64,6 +64,13 @@ def element_volumes(mesh, solver=None):
     return TotalVolume, ElemVolumes
 
 
+def get_element_centroid(mesh, elem):
+    gbasis = mesh.gbasis
+    xcentroid, _ = meshbase.ref_to_phys(mesh, elem, None, mesh.gbasis.centroid)  
+
+    return xcentroid
+
+
 def neighbor_across_face(mesh, elem, face):
     '''
     Method: neighbor_across_face

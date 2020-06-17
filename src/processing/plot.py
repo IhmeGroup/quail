@@ -8,6 +8,7 @@ import numpy as np
 from general import *
 
 import meshing.meshbase as Mesh
+import meshing.tools as mesh_tools
 
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
 import numerics.basis.basis as Basis
@@ -519,13 +520,18 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 			# Plot face
 			plt.plot(x, y, 'k-')
 
+	'''
+	If requested, plot element IDs at element centroids
+	'''
+	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
+		for elem in range(mesh.nElem):
+			xc = mesh_tools.get_element_centroid(mesh, elem)
+			plt.text(xc[0,0], xc[0,1], str(elem))
+
+
 
 	plt.xlabel("$x$")
 	plt.ylabel("$y$")
 	if EqualAR:
 		plt.gca().set_aspect('equal', adjustable='box')
 	# plt.axis("equal")
-
-
-
-

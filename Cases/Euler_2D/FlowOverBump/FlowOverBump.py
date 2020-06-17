@@ -95,7 +95,7 @@ EqualAR = False
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
 Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
-	ShowTriangulation=False, EqualAR=EqualAR)
+	ShowTriangulation=False, EqualAR=EqualAR, show_elem_IDs=True)
 Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
 Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
 	ShowTriangulation=False, EqualAR=EqualAR)
