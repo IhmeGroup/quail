@@ -408,7 +408,7 @@ def get_solution_label(EqnSet, variable_name, label=None):
 
 
 def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
-	IncludeMesh2D=False, Regular2D=False, EqualAR=False, **kwargs):
+	include_mesh=False, Regular2D=False, EqualAR=False, **kwargs):
 
 	# iplot_sr = EqnSet.VariableType[VariableName]
 	if PlotExact:
@@ -466,37 +466,50 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 	# 	# only create legend if handles can be found
 	# 	plt.legend(loc="best")
 
-	if dim == 2 and IncludeMesh2D:
-		PlotMesh2D(mesh, **kwargs)
+	# if dim == 1 and include_mesh:
+	# 	plot_mesh_1D(mesh, **kwargs)
+	# elif dim == 2 and include_mesh:
+	# 	PlotMesh2D(mesh, **kwargs)
+
+	if include_mesh:
+		plot_mesh(mesh, **kwargs)
 
 
-def PlotMesh2D(mesh, EqualAR=False, **kwargs):
-	
+def plot_mesh(mesh, EqualAR=False, **kwargs):
+
 	gbasis = mesh.gbasis
-	# Sanity check
-	if mesh.Dim != 2:
-		raise ValueError
+	dim = mesh.Dim 
+
+	if dim == 1:
+		y = plt.ylim()
 
 	'''
 	Loop through IFaces and plot interior faces
 	'''
 	for IFace in mesh.IFaces:
-		# Choose left element
-		elem = IFace.ElemL; face = IFace.faceL
+		# Loop through both connected elements to account for periodic boundaries
+		for e in range(2):
+			if e == 0:
+				elem = IFace.ElemL; face = IFace.faceL
+			else:
+				elem = IFace.ElemR; face = IFace.faceR
 
-		# Get local nodes on face
-		fnodes, nfnode = gbasis.local_face_nodes( 
-			mesh.gorder, face)
+			# Get local nodes on face
+			fnodes, nfnode = gbasis.local_face_nodes( 
+				mesh.gorder, face)
 
-		# Convert to global node numbering
-		fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+			# Convert to global node numbering
+			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
-		# Physical coordinates of global nodes
-		coords = mesh.Coords[fnodes]
-		x = coords[:,0]; y = coords[:,1]
+			# Physical coordinates of global nodes
+			coords = mesh.Coords[fnodes]
+			if dim == 1:
+				x = np.full(2, coords[:,0])
+			else:
+				x = coords[:,0]; y = coords[:,1]
 
-		# Plot face
-		plt.plot(x, y, 'k-')
+			# Plot face
+			plt.plot(x, y, 'k-')
 
 	'''
 	Loop through BFaces and plot boundary faces
@@ -515,7 +528,10 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 
 			# Physical coordinates of global nodes
 			coords = mesh.Coords[fnodes]
-			x = coords[:,0]; y = coords[:,1]
+			if dim == 1:
+				x = np.full(2, coords[:,0])
+			else:
+				x = coords[:,0]; y = coords[:,1]
 
 			# Plot face
 			plt.plot(x, y, 'k-')
@@ -526,12 +542,82 @@ def PlotMesh2D(mesh, EqualAR=False, **kwargs):
 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
 		for elem in range(mesh.nElem):
 			xc = mesh_tools.get_element_centroid(mesh, elem)
-			plt.text(xc[0,0], xc[0,1], str(elem))
-
+			if dim == 1:
+				yc = np.mean(y)
+			else:
+				yc = xc[0,1]
+			plt.text(xc[0,0], yc, str(elem))
 
 
 	plt.xlabel("$x$")
-	plt.ylabel("$y$")
+	if dim == 2: plt.ylabel("$y$")
 	if EqualAR:
 		plt.gca().set_aspect('equal', adjustable='box')
 	# plt.axis("equal")
+
+
+# def PlotMesh2D(mesh, EqualAR=False, **kwargs):
+	
+# 	gbasis = mesh.gbasis
+# 	# Sanity check
+# 	if mesh.Dim != 2:
+# 		raise ValueError
+
+# 	'''
+# 	Loop through IFaces and plot interior faces
+# 	'''
+# 	for IFace in mesh.IFaces:
+# 		# Choose left element
+# 		elem = IFace.ElemL; face = IFace.faceL
+
+# 		# Get local nodes on face
+# 		fnodes, nfnode = gbasis.local_face_nodes( 
+# 			mesh.gorder, face)
+
+# 		# Convert to global node numbering
+# 		fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+
+# 		# Physical coordinates of global nodes
+# 		coords = mesh.Coords[fnodes]
+# 		x = coords[:,0]; y = coords[:,1]
+
+# 		# Plot face
+# 		plt.plot(x, y, 'k-')
+
+# 	'''
+# 	Loop through BFaces and plot boundary faces
+# 	'''
+# 	for BFG in mesh.BFaceGroups:
+# 		for BFace in BFG.BFaces:
+# 			# Get adjacent element info
+# 			elem = BFace.Elem; face = BFace.face
+
+# 			# Get local nodes on face
+# 			fnodes, nfnode = gbasis.local_face_nodes( 
+# 				mesh.gorder, face)
+
+# 			# Convert to global node numbering
+# 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+
+# 			# Physical coordinates of global nodes
+# 			coords = mesh.Coords[fnodes]
+# 			x = coords[:,0]; y = coords[:,1]
+
+# 			# Plot face
+# 			plt.plot(x, y, 'k-')
+
+# 	'''
+# 	If requested, plot element IDs at element centroids
+# 	'''
+# 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
+# 		for elem in range(mesh.nElem):
+# 			xc = mesh_tools.get_element_centroid(mesh, elem)
+# 			plt.text(xc[0,0], xc[0,1], str(elem))
+
+
+
+# 	plt.xlabel("$x$")
+# 	plt.ylabel("$y$")
+# 	if EqualAR:
+# 		plt.gca().set_aspect('equal', adjustable='box')
+# 	# plt.axis("equal")

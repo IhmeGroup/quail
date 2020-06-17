@@ -69,7 +69,7 @@ solver.solve()
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, Label="Q_h")
+Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, Label="Q_h", include_mesh=True, EqualAR=True, show_elem_IDs=True)
 Plot.ShowPlot()
 
 

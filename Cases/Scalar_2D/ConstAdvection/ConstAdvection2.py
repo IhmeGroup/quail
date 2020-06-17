@@ -26,6 +26,7 @@ if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 if Periodic:
 	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
+
 dt = 0.025
 EndTime = .5
 nTimeStep = int(EndTime/dt + 10.*general.eps)
@@ -76,7 +77,7 @@ TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 axis = None
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 	Regular2D=True, ShowTriangulation=False)
 Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
 Plot.plot_line_probe(mesh, EqnSet, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)

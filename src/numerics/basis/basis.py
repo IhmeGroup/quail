@@ -1200,6 +1200,12 @@ class LagrangeEqSeg(BasisBase, SegShape):
 
         return fnodes, nfnode
 
+    def local_face_nodes(self, p, face, fnodes=None):
+        fnodes, nfnode = self.local_q1_face_nodes(p, face, fnodes=None)
+
+        return fnodes, nfnode
+
+
 class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
@@ -1416,6 +1422,7 @@ class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
         fnodes[:] = i0 + np.arange(p+1, dtype=int)*d
 
         return fnodes, nfnode
+
 
 class LagrangeEqTri(LagrangeEqQuad, TriShape):
     def __init__(self, order, mesh=None):

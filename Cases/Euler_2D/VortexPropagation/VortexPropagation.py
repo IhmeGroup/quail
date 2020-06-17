@@ -79,7 +79,7 @@ TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
 axis = None
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver, "Density", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 	Regular2D=True, ShowTriangulation=False, show_elem_IDs=True)
 Plot.SaveFigure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
 Plot.PreparePlot(close_all=False, linewidth=1.5)

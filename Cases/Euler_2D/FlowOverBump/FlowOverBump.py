@@ -35,7 +35,7 @@ MeshFile = CurrentDir + folder + subfolder + FileName
 mesh = MeshGmsh.ReadGmshFile(MeshFile)
 
 # Plot.PreparePlot(axis=None, linewidth=0.5)
-# Plot.PlotMesh2D(mesh)
+# Plot.plot_mesh(mesh)
 # Plot.ShowPlot()
 # exit()
 
@@ -94,10 +94,10 @@ axis = None
 EqualAR = False
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
 	ShowTriangulation=False, EqualAR=EqualAR, show_elem_IDs=True)
 Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
-Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
+Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
 	ShowTriangulation=False, EqualAR=EqualAR)
 Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
 Post.get_boundary_info(mesh, EqnSet, solver, "bottom", "Pressure", integrate=True, 
