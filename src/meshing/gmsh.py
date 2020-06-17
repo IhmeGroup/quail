@@ -5,10 +5,10 @@ import numpy as np
 import errors
 import general
 
-import meshing.meshbase as Mesh
-import meshing.tools as MeshTools
+import meshing.meshbase as mesh_defs
+import meshing.tools as mesh_tools
 
-import numerics.basis.basis as Basis 
+import numerics.basis.basis as basis_defs
 
 
 
@@ -255,7 +255,7 @@ def CreateGmshElementDataBase():
 	elem_data = GmshElementData()
 	gmsh_element_database.update({etype_num : elem_data})
 	elem_data.gorder = 0
-	elem_data.gbasis = Basis.PointShape() # shape here instead of gbasis
+	elem_data.gbasis = basis_defs.PointShape() # shape here instead of gbasis
 	elem_data.nNode = 1
 	elem_data.NodeOrder = np.array([0])
 
@@ -267,7 +267,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = Basis.LagrangeEqSeg(gorder)
+		elem_data.gbasis = basis_defs.LagrangeEqSeg(gorder)
 		elem_data.nNode = gorder + 1
 		elem_data.NodeOrder = gmsh_node_order_seg(gorder)
 
@@ -279,7 +279,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = Basis.LagrangeEqTri(gorder)
+		elem_data.gbasis = basis_defs.LagrangeEqTri(gorder)
 		elem_data.nNode = (gorder + 1)*(gorder + 2)//2
 		elem_data.NodeOrder = gmsh_node_order_tri(gorder)
 
@@ -291,7 +291,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = Basis.LagrangeEqQuad(gorder)
+		elem_data.gbasis = basis_defs.LagrangeEqQuad(gorder)
 		elem_data.nNode = (gorder + 1)**2
 		elem_data.NodeOrder = gmsh_node_order_quadril(gorder)
 
@@ -622,7 +622,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			if not found:
 				# Group has not been assigned yet
 				mesh.nBFaceGroup += 1
-				BFG = Mesh.BFaceGroup()
+				BFG = mesh_defs.BFaceGroup()
 				mesh.BFaceGroups.append(BFG)
 				BFG.Name = PGroup.Name
 				PGroup.Group = mesh.nBFaceGroup - 1
@@ -679,7 +679,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			else:
 				# Group has not been assigned yet
 				mesh.nBFaceGroup += 1
-				BFG = Mesh.BFaceGroup()
+				BFG = mesh_defs.BFaceGroup()
 				mesh.BFaceGroups.append(BFG)
 				BFG.Name = PGroup.Name
 				PGroup.Group = mesh.nBFaceGroup - 1
@@ -1082,7 +1082,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	mesh.fill_faces()
 
 	# Check face orientations
-	MeshTools.check_face_orientations(mesh)
+	mesh_tools.check_face_orientations(mesh)
 
 
 
@@ -1095,7 +1095,7 @@ def ReadGmshFile(FileName):
 	fo = open(FileName, "r")
 
 	# Mesh object
-	mesh = Mesh.Mesh(nElem=0)
+	mesh = mesh_defs.Mesh(nElem=0)
 
 	# Object that stores Gmsh entity info
 	gmsh_element_database = CreateGmshElementDataBase()

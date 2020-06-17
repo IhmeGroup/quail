@@ -1,10 +1,11 @@
 import code
 import copy
+import numpy as np
 
 import general
 
-from meshing.meshbase import *
-import numerics.basis.basis as Basis
+import meshing.meshbase as mesh_defs
+import numerics.basis.basis as basis_defs
 
 def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
 	'''
@@ -29,7 +30,7 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 	### Create mesh
 	if Coords is None:
 		nNode = nElem + 1
-		mesh = Mesh(dim=1, nNode=nNode)
+		mesh = mesh_defs.Mesh(dim=1, nNode=nNode)
 		mesh.Coords = np.zeros([mesh.nNode,mesh.Dim])
 		mesh.Coords[:,0] = np.linspace(xmin,xmax,mesh.nNode)
 	else:
@@ -37,7 +38,7 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 		Coords.shape = -1,1
 		nNode = Coords.shape[0]
 		nElem = nNode - 1
-		mesh = Mesh(dim=1, nNode=nNode)
+		mesh = mesh_defs.Mesh(dim=1, nNode=nNode)
 		mesh.Coords = Coords
 
 	# IFaces
@@ -81,7 +82,7 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 				BF.Elem = nElem - 1
 				BF.face = 1
 
-	mesh.SetParams(gbasis=Basis.LagrangeEqSeg(1), gorder=1, nElem=nElem)
+	mesh.SetParams(gbasis=basis_defs.LagrangeEqSeg(1), gorder=1, nElem=nElem)
 	mesh.allocate_faces()
 	# interior elements
 	for elem in range(mesh.nElem):
@@ -177,7 +178,7 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	X, Y = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
 
-	mesh = Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=Basis.LagrangeEqQuad(1),
+	mesh = Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=basis_defs.LagrangeEqQuad(1),
 		gorder=1)
 
 	mesh.Coords = xp
@@ -281,7 +282,7 @@ def split_quadrils_into_tris(mesh_old):
 
 	mesh = copy.deepcopy(mesh_old)
 
-	mesh.SetParams(nElem=nElem, gbasis=Basis.LagrangeEqTri(1))
+	mesh.SetParams(nElem=nElem, gbasis=basis_defs.LagrangeEqTri(1))
 
 	def reorder_nodes(QOrder, nNodePerQuadril, nNodePerTri):
 		nNodePerFace = QOrder + 1

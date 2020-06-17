@@ -1,9 +1,9 @@
 import code
-from enum import IntEnum
+from enum import Enum, auto
 import numpy as np
 
 from general import ShapeType, EntityType
-import numerics.basis.basis as Basis
+import numerics.basis.basis as basis_defs
 
 
 def get_entity_dim(mesh, entity):
@@ -103,7 +103,7 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
         tphys: coordinates in temporal space
     '''
     gorder = 1
-    gbasis = Basis.LagrangeEqQuad(gorder)
+    gbasis = basis_defs.LagrangeEqQuad(gorder)
 
 
     npoint = xref.shape[0]
@@ -374,7 +374,7 @@ def bface_normal(mesh, BFace, quad_pts, NData=None):
 
 
 
-class FaceType(IntEnum):
+class FaceType(Enum):
     '''
     Class: FaceType
     -------------------
@@ -384,8 +384,8 @@ class FaceType(IntEnum):
         Interior: interior face
         Boundary: boundary face
     '''
-    Interior = 0
-    Boundary = 1
+    Interior = auto()
+    Boundary = auto()
 
 
 class Face(object):
@@ -637,7 +637,7 @@ class Mesh(object):
             nNode: total number of nodes
         '''
         if gbasis is None:
-            gbasis = Basis.LagrangeEqSeg(1)
+            gbasis = basis_defs.LagrangeEqSeg(1)
 
         self.Dim = dim
         self.nNode = nNode

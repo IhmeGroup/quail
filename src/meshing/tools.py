@@ -5,7 +5,7 @@ import data
 
 import meshing.meshbase as meshbase
 
-import numerics.basis.basis as Basis
+import numerics.basis.basis as basis_defs
 import numerics.quadrature.quadrature as quadrature
 
 tol = 1.e-10
@@ -49,7 +49,7 @@ def element_volumes(mesh, solver=None):
     nq = xq.shape[0]
 
     for elem in range(mesh.nElem):
-        djac,_,_ = Basis.element_jacobian(mesh,elem,xq,get_djac=True)
+        djac,_,_ = basis_defs.element_jacobian(mesh,elem,xq,get_djac=True)
 
         # for iq in range(nq):
         #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
