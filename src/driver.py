@@ -142,7 +142,10 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	# Set parameters
 	pparams = physics_params.copy()
 	pparams.pop("Type") # don't pass this key
-	physics.SetParams(**pparams)
+	# physics.SetParams(**pparams)
+	conv_flux_type = pparams.pop("ConvFlux")
+	physics.set_conv_num_flux(conv_flux_type)
+	physics.set_physical_params(**pparams)
 
 	# temporary
 	# if IC_params["Function"] is "Gaussian":
@@ -165,20 +168,29 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	# Boundary conditions
 	for bname in BC_params:
 		bparams = BC_params[bname].copy()
-		bparams.pop("Function")
+		# bparams.pop("Function")
 
-		btype = physics.BCType[bparams["BCType"]]
-		bparams.pop("BCType")
+		# btype = physics.BCType[bparams["BCType"]]
+		# bparams.pop("BCType")
 
-		# EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
-		physics.set_BC(BC_type=btype.name, fcn_type=BC_params[bname]["Function"], **bparams)
-		# bparams["BCType"] = btype
-		# bparams["Function"] = set_function(physics, bparams["Function"])
-		# code.interact(local=locals())
+		# # EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+		# # bparams["BCType"] = btype
+		# # bparams["Function"] = set_function(physics, bparams["Function"])
+		# # code.interact(local=locals())
+
+		# EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 		###
 		# code.interact(local=locals())
 		# physics.SetBC(bname, **bparams)
+		
+		BC_type = bparams.pop("BCType")
+
+		try:
+			fcn_type = bparams.pop("Function")
+			physics.set_BC(BC_type, fcn_type, **bparams)
+		except KeyError:
+			physics.set_BC(BC_type, **bparams)
 
 	# Source terms
 	for sparams in source_params.values():

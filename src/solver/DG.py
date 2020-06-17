@@ -155,7 +155,7 @@ class ElemOperators(object):
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		ns = EqnSet.StateRank
-		dim = EqnSet.Dim
+		dim = EqnSet.dim
 
 		self.Uq = np.zeros([nq, ns]) 
 		self.Fq = np.zeros([nq, ns, dim])
@@ -488,7 +488,7 @@ class DG(SolverBase):
 		'''
 		EqnSet = self.EqnSet
 		ns = EqnSet.StateRank
-		dim = EqnSet.Dim
+		dim = EqnSet.dim
 
 		elem_ops = self.elem_operators
 		quad_wts = elem_ops.quad_wts

@@ -53,7 +53,8 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="Roe")
+EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
+EqnSet.set_conv_num_flux("Roe")
 # Initial conditions
 Uinflow = np.array([1.0, 0.5916079783099616, 0.0, 2.675])
 # EqnSet.IC.Set(Function=EqnSet.FcnUniform, State=Uinflow)

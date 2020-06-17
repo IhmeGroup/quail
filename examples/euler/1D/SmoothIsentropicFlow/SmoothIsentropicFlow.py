@@ -15,6 +15,11 @@ Numerics = {
 
 Output = {}
 
+
+Output = {
+    "AutoProcess" : True,
+}
+
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",

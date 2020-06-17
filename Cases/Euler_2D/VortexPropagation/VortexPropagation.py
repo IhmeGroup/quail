@@ -53,7 +53,9 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=1.4,ConvFlux="LaxFriedrichs")
+# EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
+EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
+EqnSet.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions
 EqnSet.set_IC(IC_type="IsentropicVortex")
 # Exact solution

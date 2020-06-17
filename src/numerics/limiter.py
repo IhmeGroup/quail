@@ -84,7 +84,7 @@ class PPLimiter(object):
 		order = EqnSet.order
 		entity = general.EntityType.Element
 		ns = EqnSet.StateRank
-		dim = EqnSet.Dim
+		dim = EqnSet.dim
 		Faces = mesh.Faces[elem]
 		nFacePerElem = mesh.nFacePerElem
 		_, ElemVols = MeshTools.element_volumes(mesh, solver)
@@ -345,7 +345,7 @@ class PPScalarLimiter(object):
 		order = EqnSet.order
 		entity = general.EntityType.Element
 		ns = EqnSet.StateRank
-		dim = EqnSet.Dim
+		dim = EqnSet.dim
 		Faces = mesh.Faces[elem]
 		nFacePerElem = mesh.nFacePerElem
 		_, ElemVols = MeshTools.element_volumes(mesh, solver)

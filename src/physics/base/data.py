@@ -55,7 +55,7 @@ class FcnBase(ABC):
 #     pass
 
 
-class BCWeakRiemann(ABC):
+class BCBase(ABC):
 
     # def __init__(self):
     #     self.UpB = np.zeros(0)
@@ -68,6 +68,13 @@ class BCWeakRiemann(ABC):
     @abstractmethod
     def get_boundary_state(self, physics, x, t, normals, UpI):
         pass
+
+    @abstractmethod
+    def get_boundary_flux(self, physics, x, t, normals, UpI):
+        pass
+
+
+class BCWeakRiemann(ABC):
 
     def get_boundary_flux(self, physics, x, t, normals, UpI):
 
@@ -108,6 +115,13 @@ class SourceBase(ABC):
 
     def get_jacobian(self):
         raise NotImplementedError
+
+
+class ConvNumFluxBase(ABC):
+
+    @abstractmethod
+    def compute_flux(self, physics, UpL, UpR, normals):
+        pass
 
 
 class ICData(object):

@@ -32,8 +32,9 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 ### Physics
 ConstVelocity = 1.
 EqnSet = Scalar.Burgers1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-#EqnSet.SetParams(AdvectionOperator="Burgers")
-EqnSet.SetParams(ConstVelocity=ConstVelocity, ConvFlux="LaxFriedrichs")
+#EqnSet.set_physical_params(AdvectionOperator="Burgers")
+# EqnSet.set_physical_params(ConstVelocity=ConstVelocity)
+EqnSet.set_conv_num_flux("LaxFriedrichs")
 
 # Initial conditions
 # EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)

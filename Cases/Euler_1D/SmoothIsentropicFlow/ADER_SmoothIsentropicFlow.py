@@ -24,7 +24,8 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 # nu = -1000.
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(GasConstant=1.,SpecificHeatRatio=3.,ConvFlux="LaxFriedrichs")
+EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=3.)
+EqnSet.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions
 EqnSet.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
 EqnSet.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)

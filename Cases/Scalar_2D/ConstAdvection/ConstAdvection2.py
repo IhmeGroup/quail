@@ -38,7 +38,8 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 ### Physics
 x0 = np.array([0., 0.])
 EqnSet = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(ConstXVelocity=1.,ConstYVelocity=1.,ConvFlux="LaxFriedrichs")
+EqnSet.set_physical_params(ConstXVelocity=1.,ConstYVelocity=1.)
+EqnSet.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions
 # EqnSet.IC.Set(Function=EqnSet.FcnGaussian, x0=x0)
 EqnSet.set_IC(IC_type="Gaussian", x0=x0)

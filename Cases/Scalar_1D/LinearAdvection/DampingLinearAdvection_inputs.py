@@ -31,8 +31,8 @@ import code
 # ### Physics
 # Velocity = 1.0 
 # EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# EqnSet.SetParams(ConstVelocity=Velocity)
-# EqnSet.SetParams(ConvFlux="LaxFriedrichs")
+# EqnSet.set_physical_params(ConstVelocity=Velocity)
+# EqnSet.set_physical_params(ConvFlux="LaxFriedrichs")
 # EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)
 
 

@@ -3,7 +3,7 @@ from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
 
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase
+from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
 
 
 class FcnType(Enum):
@@ -22,6 +22,10 @@ class SourceType(Enum):
     StiffFriction = auto()
 
 
+class ConvNumFluxType(Enum):
+	Roe = auto()
+
+
 '''
 State functions
 '''
@@ -33,7 +37,7 @@ class SmoothIsentropicFlow(FcnBase):
 	def get_state(self, physics, x, t):
 		
 		a = self.a
-		gam = physics.Params["SpecificHeatRatio"]
+		gam = physics.gamma
 		irho, irhou, irhoE = physics.GetStateIndices()
 	
 		# Up = np.zeros([x.shape[0], physics.StateRank])
@@ -98,8 +102,8 @@ class MovingShock(FcnBase):
 		irhoE = physics.GetStateIndex("Energy")
 		
 		# Up = np.zeros([x.shape[0], physics.StateRank])
-		if physics.Dim == 2: irhov = physics.GetStateIndex("YMomentum")
-		gam = physics.Params["SpecificHeatRatio"]
+		if physics.dim == 2: irhov = physics.GetStateIndex("YMomentum")
+		gam = physics.gamma
 		
 		if not isinstance(t,float):
 			Up = np.zeros([t.shape[0], physics.StateRank])
@@ -147,7 +151,7 @@ class MovingShock(FcnBase):
 				# Momentum
 				Up[iright[i], i, irhou] = rho1[i]*u1[i]
 				Up[ileft[i], i, irhou] = rho2[i]*u2[i]
-				if physics.Dim == 2: Up[:, irhov] = 0.
+				if physics.dim == 2: Up[:, irhov] = 0.
 				# Energy
 				Up[iright[i], i, irhoE] = p1[i]/(gam-1.) + 0.5*rho1[i]*u1[i]*u1[i]
 				Up[ileft[i], i, irhoE] = p2[i]/(gam-1.) + 0.5*rho2[i]*u2[i]*u2[i]
@@ -159,7 +163,7 @@ class MovingShock(FcnBase):
 			# Momentum
 			Up[iright, irhou] = rho1*u1
 			Up[ileft, irhou] = rho2*u2
-			if physics.Dim == 2: Up[:, irhov] = 0.
+			if physics.dim == 2: Up[:, irhov] = 0.
 			# Energy
 			Up[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
 			Up[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
@@ -174,7 +178,7 @@ class DensityWave(FcnBase):
 	def get_state(self, physics, x, t):
 		p = self.p
 		irho, irhou, irhoE = physics.GetStateIndices()
-		gam = physics.Params["SpecificHeatRatio"]
+		gam = physics.gamma
 
 		Up = np.zeros([x.shape[0], physics.StateRank])
 
@@ -200,8 +204,8 @@ class IsentropicVortex(FcnBase):
 		self.vs = 5.
 	def get_state(self,physics,x,t):		
 		Up = np.zeros([x.shape[0], physics.StateRank])
-		gam = physics.Params["SpecificHeatRatio"]
-		Rg = physics.Params["GasConstant"]
+		gam = physics.gamma
+		Rg = physics.R
 
 		### Parameters
 		# Base flow
@@ -287,9 +291,9 @@ class PressureOutlet(BCWeakPrescribed):
 		# Pressure
 		pB = self.p
 
-		gamma = physics.Params["SpecificHeatRatio"]
+		gamma = physics.gamma
 
-		# gam = physics.Params["SpecificHeatRatio"]
+		# gam = physics.gamma
 		# igam = 1./gam
 		# gmi = gam - 1.
 		# igmi = 1./gmi
@@ -377,6 +381,280 @@ class StiffFriction(SourceBase):
 		jac[2,1]=2.0*nu*vel
 
 		return jac
+
+
+'''
+Numerical flux functions
+'''
+
+class Roe1D(ConvNumFluxBase):
+	def __init__(self, u=None):
+		if u is not None:
+			n = u.shape[0]
+			sr = u.shape[1]
+			dim = sr - 2
+		else:
+			n = 0; sr = 0; dim = 0
+
+		self.velL = np.zeros([n,dim])
+		self.velR = np.zeros([n,dim])
+		self.UL = np.zeros_like(u)
+		self.UR = np.zeros_like(u)
+		self.vel = np.zeros([n,dim])
+		self.rhoL_sqrt = np.zeros([n,1])
+		self.rhoR_sqrt = np.zeros([n,1])
+		self.HL = np.zeros([n,1])
+		self.HR = np.zeros([n,1])
+		self.rhoRoe = np.zeros([n,1])
+		self.velRoe = np.zeros([n,dim])
+		self.HRoe = np.zeros([n,1])
+		self.c2 = np.zeros([n,1])
+		self.c = np.zeros([n,1])
+		self.dvel = np.zeros([n,dim])
+		self.drho = np.zeros([n,1])
+		self.dp = np.zeros([n,1])
+		self.alphas = np.zeros_like(u)
+		self.evals = np.zeros_like(u)
+		self.R = np.zeros([n,sr,sr])
+		self.FRoe = np.zeros_like(u)
+		self.FL = np.zeros_like(u)
+		self.FR = np.zeros_like(u)
+
+	def AllocHelperArrays(self, u):
+		self.__init__(u)
+
+	def RotateCoordSys(self, imom, U, n):
+		U[:,imom] *= n
+
+		return U
+
+	def UndoRotateCoordSys(self, imom, U, n):
+		U[:,imom] /= n
+
+		return U
+
+	def RoeAverageState(self, EqnSet, irho, velL, velR, uL, uR):
+		rhoL_sqrt = self.rhoL_sqrt
+		rhoR_sqrt = self.rhoR_sqrt
+		HL = self.HL 
+		HR = self.HR 
+
+		rhoL_sqrt[:] = np.sqrt(uL[:,[irho]])
+		rhoR_sqrt[:] = np.sqrt(uR[:,[irho]])
+		HL[:] = EqnSet.ComputeScalars("TotalEnthalpy", uL, FlagNonPhysical=True)
+		HR[:] = EqnSet.ComputeScalars("TotalEnthalpy", uR, FlagNonPhysical=True)
+
+		self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
+		self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
+		self.rhoRoe = rhoL_sqrt*rhoR_sqrt
+
+		return self.rhoRoe, self.velRoe, self.HRoe
+
+	def GetDifferences(self, EqnSet, irho, velL, velR, uL, uR):
+		dvel = self.dvel
+		drho = self.drho
+		dp = self.dp 
+
+		dvel[:] = velR - velL
+		drho[:] = uR[:,[irho]] - uL[:,[irho]]
+		dp[:] = EqnSet.ComputeScalars("Pressure", uR) - \
+			EqnSet.ComputeScalars("Pressure", uL)
+
+		return dvel, drho, dp
+
+	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
+		alphas = self.alphas 
+
+		alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
+		alphas[:,[1]] = drho - dp/c2 
+		alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
+
+		return alphas 
+
+	def GetEigenvalues(self, velRoe, c):
+		evals = self.evals 
+
+		evals[:,[0]] = velRoe[:,[0]] - c
+		evals[:,[1]] = velRoe[:,[0]]
+		evals[:,[-1]] = velRoe[:,[0]] + c
+
+		return evals 
+
+	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):
+		R = self.R
+
+		# first row
+		R[:,0,[0,1,-1]] = 1.
+		# second row
+		R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,-1] = evals[:,-1]
+		# last row
+		R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+		R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c
+
+		return R 
+
+
+	def compute_flux(self, EqnSet, UL_std, UR_std, n):
+		'''
+		Function: ConvFluxLaxFriedrichs
+		-------------------
+		This function computes the numerical flux (dotted with the normal)
+		using the Lax-Friedrichs flux function
+
+		INPUTS:
+		    gam: specific heat ratio
+		    UL: Left state
+		    UR: Right state
+		    n: Normal vector (assumed left to right)
+
+		OUTPUTS:
+		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+		'''
+
+		# Extract helper arrays
+		UL = self.UL 
+		UR = self.UR
+		velL = self.velL
+		velR = self.velR 
+		c2 = self.c2
+		c = self.c 
+		alphas = self.alphas 
+		evals = self.evals 
+		R = self.R 
+		FRoe = self.FRoe 
+		FL = self.FL 
+		FR = self.FR 
+
+		# Indices
+		irho = 0
+		imom = EqnSet.GetMomentumSlice()
+
+		gamma = EqnSet.gamma
+
+		NN = np.linalg.norm(n, axis=1, keepdims=True)
+		n1 = n/NN
+
+		# Copy values before rotating
+		UL[:] = UL_std[:]
+		UR[:] = UR_std[:]
+
+		# Rotated coordinate system
+		UL = self.RotateCoordSys(imom, UL, n1)
+		UR = self.RotateCoordSys(imom, UR, n1)
+
+		# Velocities
+		velL[:] = UL[:,imom]/UL[:,[irho]]
+		velR[:] = UR[:,imom]/UR[:,[irho]]
+
+		rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, irho, velL, velR, UL, UR)
+
+		# Speed of sound from Roe-averaged state
+		c2[:] = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
+		c[:] = np.sqrt(c2)
+
+		# differences
+		dvel, drho, dp = self.GetDifferences(EqnSet, irho, velL, velR, UL, UR)
+
+		# alphas (left eigenvectors multipled by dU)
+		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
+		# alphas[:,[1]] = drho - dp/c2 
+		# alphas[:,ydim] = rhoRoe*dvel[:,[-1]]
+		# alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
+		alphas = self.GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
+
+		# Eigenvalues
+		# evals[:,[0]] = velRoe[:,[0]] - c
+		# evals[:,1:-1] = velRoe[:,[0]]
+		# evals[:,[-1]] = velRoe[:,[0]] + c
+		evals = self.GetEigenvalues(velRoe, c)
+
+		# Right eigenvector matrix
+		# first row
+		# R[:,0,[0,1,-1]] = 1.; R[:,0,ydim] = 0.
+		# # second row
+		# R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,ydim] = 0.; R[:,1,-1] = evals[:,-1]
+		# # last row
+		# R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+		# R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c; R[:,-1,ydim] = velRoe[:,[-1]]
+		# # [third] row
+		# R[:,ydim,0] = velRoe[:,[-1]];  R[:,ydim,1] = velRoe[:,[-1]]; 
+		# R[:,ydim,-1] = velRoe[:,[-1]]; R[:,ydim,ydim] = 1.
+		R = self.GetRightEigenvectors(c, evals, velRoe, HRoe)
+
+		# Form flux Jacobian matrix multiplied by dU
+		FRoe[:] = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
+
+		FRoe = self.UndoRotateCoordSys(imom, FRoe, n1)
+
+		# Left flux
+		FL[:] = EqnSet.ConvFluxProjected(UL_std, n1)
+
+		# Right flux
+		FR[:] = EqnSet.ConvFluxProjected(UR_std, n1)
+
+		return NN*(0.5*(FL+FR) - 0.5*FRoe)
+
+
+class Roe2D(Roe1D):
+
+	def RotateCoordSys(self, imom, U, n):
+		vel = self.vel
+		vel[:] = U[:,imom]
+
+		vel[:,0] = np.sum(U[:,imom]*n, axis=1)
+		vel[:,1] = np.sum(U[:,imom]*n[:,::-1]*np.array([[-1.,1.]]), axis=1)
+		
+		U[:,imom] = vel[:]
+
+		return U
+
+	def UndoRotateCoordSys(self, imom, U, n):
+		vel = self.vel
+		vel[:] = U[:,imom]
+
+		vel[:,0] = np.sum(U[:,imom]*n*np.array([[1.,-1.]]), axis=1)
+		vel[:,1] = np.sum(U[:,imom]*n[:,::-1], axis=1)
+
+		U[:,imom] = vel[:]
+
+		return U
+
+	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
+		alphas = self.alphas 
+
+		alphas = super().GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
+
+		alphas[:,[2]] = rhoRoe*dvel[:,[-1]]
+
+		return alphas 
+
+	def GetEigenvalues(self, velRoe, c):
+		evals = self.evals 
+
+		evals = super().GetEigenvalues(velRoe, c)
+
+		evals[:,[2]] = velRoe[:,[0]]
+
+		return evals 
+
+	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):
+		R = self.R
+
+		R = super().GetRightEigenvectors(c, evals, velRoe, HRoe)
+
+		i = [2]
+
+		# first row
+		R[:,0,i] = 0.
+		# second row
+		R[:,1,i] = 0.
+		# last row
+		R[:,-1,i] = velRoe[:,[-1]]
+		# [third] row
+		R[:,i,0] = velRoe[:,[-1]];  R[:,i,1] = velRoe[:,[-1]]; 
+		R[:,i,-1] = velRoe[:,[-1]]; R[:,i,i] = 1.
+
+		return R 
 
 
 

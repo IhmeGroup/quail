@@ -11,71 +11,9 @@ from numerics.basis.basis import set_basis
 
 from physics.base.data import ICData, BCData, ExactData, SourceData
 import physics.base.functions as base_fcns
-from physics.base.functions import FcnType as base_fcn_type
 from physics.base.functions import BCType as base_BC_type
-
-
-class LaxFriedrichsFlux(object):
-	def __init__(self, u=None):
-		if u is not None:
-			n = u.shape[0]
-		else:
-			n = 0
-		self.FL = np.zeros_like(u)
-		self.FR = np.zeros_like(u)
-		self.du = np.zeros_like(u)
-		self.a = np.zeros([n,1])
-		self.aR = np.zeros([n,1])
-		self.idx = np.empty([n,1], dtype=bool) 
-
-	def AllocHelperArrays(self, u):
-		self.__init__(u)
-
-	def compute_flux(self, EqnSet, UL, UR, n):
-		'''
-		Function: ConvFluxLaxFriedrichs
-		-------------------
-		This function computes the numerical flux (dotted with the normal)
-		using the Lax-Friedrichs flux function
-
-		INPUTS:
-		    gam: specific heat ratio
-		    UL: Left state
-		    UR: Right state
-		    n: Normal vector (assumed left to right)
-
-		OUTPUTS:
-		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
-		'''
-
-		# Extract helper arrays
-		FL = self.FL
-		FR = self.FR 
-		du = self.du 
-		a = self.a 
-		aR = self.aR 
-		idx = self.idx 
-
-		NN = np.linalg.norm(n, axis=1, keepdims=True)
-		n1 = n/NN
-
-		# Left State
-		FL[:] = EqnSet.ConvFluxProjected(UL, n1)
-
-		# Right State
-		FR[:] = EqnSet.ConvFluxProjected(UR, n1)
-
-		du[:] = UR-UL
-
-		# max characteristic speed
-		# code.interact(local=locals())
-		a[:] = EqnSet.ComputeScalars("MaxWaveSpeed", UL, None, FlagNonPhysical=True)
-		aR[:] = EqnSet.ComputeScalars("MaxWaveSpeed", UR, None, FlagNonPhysical=True)
-		idx[:] = aR > a
-		a[idx] = aR[idx]
-
-		# flux assembly 
-		return NN*(0.5*(FL+FR) - 0.5*a*du)
+from physics.base.functions import FcnType as base_fcn_type
+from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
 
 
 def process_map(fcn_type, fcn_map):
@@ -103,6 +41,11 @@ class PhysicsBase(object):
 	def StateRank(self):
 		pass
 
+	@property
+	@abstractmethod
+	def dim(self):
+		pass
+
 	def __init__(self, order, basis_type, mesh):
 		'''
 		Method: __init__
@@ -112,8 +55,8 @@ class PhysicsBase(object):
 		coefficients. The coefficients are selected to retain the exact 
 		enthalpies at the table points.
 		'''
-		dim = mesh.Dim
-		self.Dim = mesh.Dim
+		# dim = mesh.Dim
+		# self.Dim = mesh.Dim
 		self.Params = {}
 		self.IC = None
 		self.ExactSoln = None
@@ -160,7 +103,7 @@ class PhysicsBase(object):
 		# self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
 
 		# BC treatments
-		self.SetBCTreatment()
+		# self.SetBCTreatment()
 
 		# State indices
 		self.StateIndices = {}
@@ -172,6 +115,13 @@ class PhysicsBase(object):
 			for key in self.StateVariables:
 				self.StateIndices[key.name] = index
 				index += 1
+
+		if mesh.Dim != self.dim:
+			raise errors.IncompatibleError
+
+		self.set_maps()
+
+	def set_maps(self):
 
 		self.IC_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
@@ -190,21 +140,27 @@ class PhysicsBase(object):
 			base_fcn_type.Uniform : base_fcns.Uniform,
 		}
 
-		self.source_map = {
-		}
+		self.source_map = {}
 
+		self.conv_num_flux_map = {}
+		if "MaxWaveSpeed" in self.AdditionalVariables.__members__:
+			self.conv_num_flux_map.update({
+				base_conv_num_flux_type.LaxFriedrichs : base_fcns.LaxFriedrichs,
+			})
 
-	@abstractmethod
-	def SetParams(self,**kwargs):
+	def set_physical_params(self):
+		pass
+
+	def SetParams(self, **kwargs):
 		Params = self.Params
 		# Overwrite
 		for key in kwargs:
-			# Params[key] = kwargs[key]
+			Params[key] = kwargs[key]
 			# if key not in Params.keys(): raise Exception("Input error")
-			if key is "ConvFlux":
-				Params[key] = self.ConvFluxType[kwargs[key]]
-			else:
-				Params[key] = kwargs[key]
+			# if key is "ConvFlux":
+			# 	Params[key] = self.ConvFluxType[kwargs[key]]
+			# else:
+			# 	Params[key] = kwargs[key]
 
 	def set_IC(self, IC_type, **kwargs):
 		fcn_ref = process_map(IC_type, self.IC_fcn_map)
@@ -226,22 +182,26 @@ class PhysicsBase(object):
 				self.BCs[i] = BC
 				break
 
-	def SetBC(self, BCName, **kwargs):
-		found = False
-		code.interact(local=locals())
-		for BC in self.BCs:
-			if BC.Name == BCName:
-				BC.Set(**kwargs)
-				found = True
-				break
+	# def SetBC(self, BCName, **kwargs):
+	# 	found = False
+	# 	code.interact(local=locals())
+	# 	for BC in self.BCs:
+	# 		if BC.Name == BCName:
+	# 			BC.Set(**kwargs)
+	# 			found = True
+	# 			break
 
-		if not found:
-			raise NameError
+	# 	if not found:
+	# 		raise NameError
 
 	def set_source(self, source_type, **kwargs):
 		source_ref = process_map(source_type, self.source_map)
-		Source = source_ref(**kwargs)
-		self.Sources.append(Source)
+		source = source_ref(**kwargs)
+		self.Sources.append(source)
+
+	def set_conv_num_flux(self, conv_num_flux_type, **kwargs):
+		conv_num_flux_ref = process_map(conv_num_flux_type, self.conv_num_flux_map)
+		self.ConvFluxFcn = conv_num_flux_ref(**kwargs)
 		
 	@abstractmethod
 	class StateVariables(Enum):
@@ -257,22 +217,22 @@ class PhysicsBase(object):
 		# idx = self.StateVariables.__members__.keys().index(VariableName)
 		return idx
 
-	@abstractmethod
-	class BCType(IntEnum):
-		pass
+	# @abstractmethod
+	# class BCType(IntEnum):
+	# 	pass
 
-	@abstractmethod
-	class BCTreatment(IntEnum):
-		pass
+	# @abstractmethod
+	# class BCTreatment(IntEnum):
+	# 	pass
 
-	def SetBCTreatment(self):
-		# default is Prescribed
-		self.BCTreatments = {n:self.BCTreatment.Prescribed for n in range(len(self.BCType))}
-		self.BCTreatments[self.BCType.StateAll] = self.BCTreatment.Riemann
+	# def SetBCTreatment(self):
+	# 	# default is Prescribed
+	# 	self.BCTreatments = {n:self.BCTreatment.Prescribed for n in range(len(self.BCType))}
+	# 	self.BCTreatments[self.BCType.StateAll] = self.BCTreatment.Riemann
 
-	@abstractmethod
-	class ConvFluxType(IntEnum):
-		pass
+	# @abstractmethod
+	# class ConvFluxType(IntEnum):
+	# 	pass
 
 	# def SetSource(self, **kwargs):
 	# 	#append src data to Sources list 
@@ -289,11 +249,14 @@ class PhysicsBase(object):
 
 	@abstractmethod
 	def ConvFluxNumerical(self, uL, uR, normals):
-		pass
+		self.ConvFluxFcn.AllocHelperArrays(uL)
+		F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
 
-	@abstractmethod
-	def BoundaryState(self, BC, nq, xglob, Time, normals, uI):
-		pass
+		return F
+
+	# @abstractmethod
+	# def BoundaryState(self, BC, nq, xglob, Time, normals, uI):
+	# 	pass
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
 	def SourceState(self, nq, xglob, Time, u, s=None):
@@ -313,25 +276,25 @@ class PhysicsBase(object):
 		F = self.ConvFluxInterior(u, None)
 		return np.sum(F.transpose(1,0,2)*nvec, axis=2).transpose()
 
-	def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
-		bctreatment = self.BCTreatments[BC.BCType]
-		if bctreatment == self.BCTreatment.Riemann:
-			F = self.ConvFluxNumerical(uI, uB, normals, nq, data)
-		else:
-			# Prescribe analytic flux
-			try:
-				Fa = data.Fa
-			except AttributeError:
-				data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
-			# Fa = self.ConvFluxInterior(uB, Fa)
-			# # Take dot product with n
-			try: 
-				F = data.F
-			except AttributeError:
-				data.F = F = np.zeros_like(uI)
-			F[:] = self.ConvFluxProjected(uB, normals)
+	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
+	# 	bctreatment = self.BCTreatments[BC.BCType]
+	# 	if bctreatment == self.BCTreatment.Riemann:
+	# 		F = self.ConvFluxNumerical(uI, uB, normals, nq, data)
+	# 	else:
+	# 		# Prescribe analytic flux
+	# 		try:
+	# 			Fa = data.Fa
+	# 		except AttributeError:
+	# 			data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
+	# 		# Fa = self.ConvFluxInterior(uB, Fa)
+	# 		# # Take dot product with n
+	# 		try: 
+	# 			F = data.F
+	# 		except AttributeError:
+	# 			data.F = F = np.zeros_like(uI)
+	# 		F[:] = self.ConvFluxProjected(uB, normals)
 
-		return F
+	# 	return F
 
 	def ComputeScalars(self, ScalarNames, U, scalar=None, FlagNonPhysical=False):
 		if type(ScalarNames) is list:
@@ -405,12 +368,12 @@ class PhysicsBase(object):
 
 		return FcnData.S
 
-	def FcnUniform(self, FcnData):
-		Data = FcnData.Data
-		U = FcnData.U
-		ns = self.StateRank
+	# def FcnUniform(self, FcnData):
+	# 	Data = FcnData.Data
+	# 	U = FcnData.U
+	# 	ns = self.StateRank
 
-		for k in range(ns):
-			U[:,k] = Data.State[k]
+	# 	for k in range(ns):
+	# 		U[:,k] = Data.State[k]
 
-		return U
+	# 	return U

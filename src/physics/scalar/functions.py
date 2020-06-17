@@ -3,7 +3,7 @@ from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root
 
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase
+from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
 
 
 
@@ -37,7 +37,7 @@ class Sine(FcnBase):
 		self.omega = omega
 
 	def get_state(self, physics, x, t):
-		c = physics._c
+		c = physics.c
 		Up = np.sin(self.omega*(x-c*t))
 
 		return Up
@@ -49,7 +49,7 @@ class DampingSine(FcnBase):
 		self.nu = nu
 
 	def get_state(self, physics, x, t):
-		c = physics._c
+		c = physics.c
 		Up = np.sin(self.omega*(x-c*t))*np.exp(self.nu*t)
 
 		return Up
@@ -60,7 +60,7 @@ class DampingSine(FcnBase):
 # 		self.omega = omega
 
 # 	def get_state(self, physics, x, t):
-# 		c = physics._c
+# 		c = physics.c
 # 		Up = 1. - np.cos(self.omega*x)
 
 # 		return Up
@@ -82,8 +82,8 @@ class Gaussian(FcnBase):
 		self.x0 = x0 # center
 
 	def get_state(self, physics, x, t):
-		r = np.linalg.norm(x-self.x0-physics._c*t, axis=1, keepdims=True)
-		Up = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.Dim) * np.exp(-r**2./(2.*self.sig**2.))
+		r = np.linalg.norm(x-self.x0-physics.c*t, axis=1, keepdims=True)
+		Up = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.dim) * np.exp(-r**2./(2.*self.sig**2.))
 
 		return Up
 

@@ -13,7 +13,9 @@ Numerics = {
     "Solver" : "DG",
 }
 
-Output = {}
+Output = {
+    "AutoProcess" : True,
+}
 
 Mesh = {
     "File" : None,
@@ -43,7 +45,7 @@ BoundaryConditions = {
     	"BCType" : "StateAll",
     },
     "Right" : {
-    	"Function" : "",
+    	# "Function" : "",
     	"BCType" : "Extrapolate",
     },
 }

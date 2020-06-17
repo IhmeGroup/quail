@@ -28,7 +28,8 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(SpecificHeatRatio=1.4,ConvFlux="Roe")
+EqnSet.set_physical_params(SpecificHeatRatio=1.4)
+EqnSet.set_conv_num_flux("Roe")
 
 # Initial conditions
 EqnSet.set_IC(IC_type="DensityWave", p=1.0)

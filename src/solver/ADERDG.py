@@ -709,7 +709,7 @@ class ADERDG(DG):
 		EqnSet = self.EqnSet
 		mesh = self.mesh
 		ns = EqnSet.StateRank
-		dim = EqnSet.Dim
+		dim = EqnSet.dim
 
 		elem_ops = self.elem_operators
 		elem_ops_st = self.elem_operators_st
@@ -974,7 +974,7 @@ class ADERDG(DG):
 		EqnSet = self.EqnSet
 		mesh = self.mesh
 		ns = EqnSet.StateRank
-		dim = EqnSet.Dim
+		dim = EqnSet.dim
 		Params = self.Params
 
 		InterpolateFlux = Params["InterpolateFlux"]

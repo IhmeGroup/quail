@@ -32,9 +32,11 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 ### Physics
 Velocity = 1.
 EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(ConstVelocity=Velocity,ConvFlux="LaxFriedrichs")
+# EqnSet.set_physical_params(ConstVelocity=Velocity)
+EqnSet.set_physical_params(ConstVelocity=Velocity)
 # Initial conditions
 # EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
+EqnSet.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
 EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
 # Exact solution
 # EqnSet.ExactSoln.Se”t(Function=EqnSet.FcnSine, omega = 2*np.pi)

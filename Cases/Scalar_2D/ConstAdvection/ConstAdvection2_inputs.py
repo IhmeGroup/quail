@@ -36,7 +36,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # ### Physics
 # x0 = np.array([0., 0.])
 # EqnSet = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# EqnSet.SetParams(ConstXVelocity=1.,ConstYVelocity=1.,ConvFlux="LaxFriedrichs")
+# EqnSet.set_physical_params(ConstXVelocity=1.,ConstYVelocity=1.,ConvFlux="LaxFriedrichs")
 # # Initial conditions
 # EqnSet.IC.Set(Function=EqnSet.FcnGaussian, x0=x0)
 # # Exact solution

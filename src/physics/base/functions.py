@@ -1,6 +1,6 @@
 from enum import Enum, auto
 import numpy as np
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceData
+from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, ConvNumFluxBase 
 
 
 class FcnType(Enum):
@@ -14,6 +14,10 @@ class BCType(Enum):
 
 class SourceType(Enum):
 	pass
+
+
+class ConvNumFluxType(Enum):
+	LaxFriedrichs = auto()
 
 
 '''
@@ -57,6 +61,73 @@ class Extrapolate(BCWeakPrescribed):
 		pass
 	def get_boundary_state(self, physics, x, t, normals, UpI):
 		return UpI.copy()
+
+'''
+Numerical flux functions
+'''
+
+class LaxFriedrichs(ConvNumFluxBase):
+	def __init__(self, u=None):
+		if u is not None:
+			n = u.shape[0]
+		else:
+			n = 0
+		self.FL = np.zeros_like(u)
+		self.FR = np.zeros_like(u)
+		self.du = np.zeros_like(u)
+		self.a = np.zeros([n,1])
+		self.aR = np.zeros([n,1])
+		self.idx = np.empty([n,1], dtype=bool) 
+
+	def AllocHelperArrays(self, u):
+		self.__init__(u)
+
+	def compute_flux(self, physics, UpL, UpR, normals):
+		'''
+		Function: ConvFluxLaxFriedrichs
+		-------------------
+		This function computes the numerical flux (dotted with the normal)
+		using the Lax-Friedrichs flux function
+
+		INPUTS:
+		    gam: specific heat ratio
+		    UpL: Left state
+		    UpR: Right state
+		    normals: Normal vector (assumed left to right)
+
+		OUTPUTS:
+		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+		'''
+
+		# Extract helper arrays
+		FL = self.FL
+		FR = self.FR 
+		du = self.du 
+		a = self.a 
+		aR = self.aR 
+		idx = self.idx 
+
+		n_mag = np.linalg.norm(normals, axis=1, keepdims=True)
+		n_hat = normals/n_mag
+
+		# Left State
+		FL[:] = physics.ConvFluxProjected(UpL, n_hat)
+
+		# Right State
+		FR[:] = physics.ConvFluxProjected(UpR, n_hat)
+
+		du[:] = UpR-UpL
+
+		# max characteristic speed
+		# code.interact(local=locals())
+		a[:] = physics.ComputeScalars("MaxWaveSpeed", UpL, None, FlagNonPhysical=True)
+		aR[:] = physics.ComputeScalars("MaxWaveSpeed", UpR, None, FlagNonPhysical=True)
+		idx[:] = aR > a
+		a[idx] = aR[idx]
+
+		# flux assembly 
+		return n_mag*(0.5*(FL+FR) - 0.5*a*du)
+
 
 # def uniform(physics, fcn_data):
 # 	Data = fcn_data.Data

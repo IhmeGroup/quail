@@ -29,7 +29,7 @@ h = mesh.Coords[1,0] - mesh.Coords[0,0]
 ### Solver and physics
 Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
 EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(Velocity=1.)
+EqnSet.set_physical_params(Velocity=1.)
 
 # Initial conditions
 EqnSet.IC.Set(Function=EqnSet.FcnExponential)

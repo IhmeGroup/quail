@@ -28,7 +28,8 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeSt
 
 ### Physics
 EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.SetParams(GasConstant=287.,SpecificHeatRatio=1.4,ConvFlux="Roe")
+EqnSet.set_physical_params(GasConstant=287.,SpecificHeatRatio=1.4)
+EqnSet.set_conv_num_flux("Roe")
 # Parameters
 M = 5.
 xshock = 0.2
