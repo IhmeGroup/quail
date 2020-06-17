@@ -1,13 +1,11 @@
 from abc import ABC, abstractmethod
 import code
-from enum import IntEnum
 import numpy as np
 
 from data import ArrayList, GenericData
 from general import SetSolverParams, BasisType, ShapeType, EntityType
 
-import meshing.gmsh as MeshGmsh
-import meshing.meshbase as Mesh
+import meshing.gmsh as mesh_gmsh
 
 from numerics.basis import math
 import numerics.quadrature.quadrature as quadrature
@@ -53,33 +51,6 @@ def set_basis(mesh, order, BasisFunction):
     else:
         raise NotImplementedError
     return basis
-
-# def order_to_num_basis_coeff(basis,p):
-#     '''
-#     Method: order_to_num_basis_coeff
-#     -------------------
-#     This method specifies the number of basis coefficients
-
-#     INPUTS:
-#         basis: type of basis function
-#         p: order of polynomial space
-
-#     OUTPUTS: 
-#         nb: number of basis coefficients
-#     '''
-#     Shape = Basis2Shape[basis]
-#     if Shape == ShapeType.Point:
-#     	nb = 1
-#     elif Shape == ShapeType.Segment:
-#         nb = p + 1
-#     elif Shape == ShapeType.Triangle:
-#         nb = (p + 1)*(p + 2)//2
-#     elif Shape == ShapeType.Quadrilateral:
-#         nb = (p + 1)**2
-#     else:
-#     	raise Exception("Shape not supported")
-
-#     return nb
 
 def equidistant_nodes_1D_range(start, stop, nnode):
     '''
@@ -1933,7 +1904,7 @@ class HierarchicH1Tri(LegendreQuad, TriShape):
 
         phi_reorder[:,internal] = self.get_internal_basis(p, internal, l)
 
-        index = MeshGmsh.gmsh_node_order_tri(p)
+        index = mesh_gmsh.gmsh_node_order_tri(p)
 
         phi[:,:] = phi_reorder[:,index]
 
@@ -2054,7 +2025,7 @@ class HierarchicH1Tri(LegendreQuad, TriShape):
         gphi_reorder[:,internal,0] = self.get_internal_grad(p, internal, gl[:,:,0], l)
         gphi_reorder[:,internal,1] = self.get_internal_grad(p, internal, gl[:,:,1], l)
 
-        index = MeshGmsh.gmsh_node_order_tri(p)
+        index = mesh_gmsh.gmsh_node_order_tri(p)
 
         gphi[:,:,:] = gphi_reorder[:,index,:]
 
