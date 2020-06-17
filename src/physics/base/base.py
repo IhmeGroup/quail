@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 import code
+from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root
 import sys
 
 import errors
-from general import *
+# from general import *
 
 from numerics.basis.basis import set_basis
 
@@ -44,6 +45,12 @@ class PhysicsBase(object):
 	@property
 	@abstractmethod
 	def dim(self):
+		pass
+
+	@property
+	@abstractmethod
+	def PHYSICS_TYPE(self):
+		# store so this can be easily accessed outside the physics modules
 		pass
 
 	def __init__(self, order, basis_type, mesh):

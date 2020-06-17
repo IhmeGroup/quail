@@ -49,7 +49,7 @@ BoundaryConditions = {
     	"BCType" : "StateAll",
     },
     "Right" : {
-    	"Function" : None,
+    	#"Function" : None,
     	"BCType" : "Extrapolate",
     },
 }

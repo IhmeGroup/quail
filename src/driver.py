@@ -8,7 +8,7 @@ import sys
 
 import defaultparams as default_input
 import errors
-from general import SolverType
+from general import SolverType, PhysicsType
 
 import meshing.common as mesh_common
 import meshing.gmsh as mesh_gmsh
@@ -19,6 +19,28 @@ import physics.scalar.scalar as scalar
 
 import solver.DG as DG
 import solver.ADERDG as ADERDG
+
+
+def set_physics(order, basis_type, mesh, physics_type):
+    dim = mesh.Dim 
+
+    if PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and dim == 1:
+        physics_ref = scalar.ConstAdvScalar1D
+    elif PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and dim == 2:
+        physics_ref = scalar.ConstAdvScalar2D
+    elif PhysicsType[physics_type] == PhysicsType.Burgers and dim == 1:
+        physics_ref = scalar.Burgers1D
+    elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 1:
+        physics_ref = euler.Euler1D
+    elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 2:
+        physics_ref = euler.Euler2D
+    else:
+        raise NotImplementedError
+
+    physics = physics_ref(order, basis_type, mesh)
+
+    return physics
+
 
 def overwrite_params(params, params_new, allow_new_keys=False):
 	if params_new is None:
@@ -122,22 +144,24 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	'''
 	# Create physics object
 	order = numerics_params["InterpOrder"]
-	basis = numerics_params["InterpBasis"]
-	if physics_params["Type"] is "ConstAdvScalar":
-		if mesh.Dim == 1:
-			physics = scalar.ConstAdvScalar1D(order, basis, mesh)
-		else:
-			physics = scalar.ConstAdvScalar2D(order, basis, mesh)
-	elif physics_params["Type"] is "Burgers":
-		if mesh.Dim == 1:
-			physics = scalar.Burgers1D(order, basis, mesh)
-		else:
-			raise NotImplementedError
-	elif physics_params["Type"] is "Euler":
-		if mesh.Dim == 1:
-			physics = euler.Euler1D(order, basis, mesh)
-		else:
-			physics = euler.Euler2D(order, basis, mesh)
+	basis_type = numerics_params["InterpBasis"]
+	# if physics_params["Type"] is "ConstAdvScalar":
+	# 	if mesh.Dim == 1:
+	# 		physics = scalar.ConstAdvScalar1D(order, basis, mesh)
+	# 	else:
+	# 		physics = scalar.ConstAdvScalar2D(order, basis, mesh)
+	# elif physics_params["Type"] is "Burgers":
+	# 	if mesh.Dim == 1:
+	# 		physics = scalar.Burgers1D(order, basis, mesh)
+	# 	else:
+	# 		raise NotImplementedError
+	# elif physics_params["Type"] is "Euler":
+	# 	if mesh.Dim == 1:
+	# 		physics = euler.Euler1D(order, basis, mesh)
+	# 	else:
+	# 		physics = euler.Euler2D(order, basis, mesh)
+
+	physics = set_physics(order, basis_type, mesh, physics_params["Type"])
 
 	# Set parameters
 	pparams = physics_params.copy()

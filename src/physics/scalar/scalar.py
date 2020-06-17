@@ -1,9 +1,11 @@
 import code
+from enum import Enum, auto
 import numpy as np
 import sys
 
 import errors
-from general import *
+import general
+# from general import *
 
 import physics.base.base as base
 import physics.base.functions as base_fcns
@@ -25,6 +27,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	'''
 
 	StateRank = 1
+	PHYSICS_TYPE = general.PhysicsType.ConstAdvScalar
 
 	def __init__(self, order, basis, mesh):
 		'''
@@ -344,6 +347,7 @@ class Burgers1D(base.PhysicsBase):
 
 	StateRank = 1
 	dim = 1
+	PHYSICS_TYPE = general.PhysicsType.Burgers
 
 	def __init__(self, order, basis, mesh):
 		'''

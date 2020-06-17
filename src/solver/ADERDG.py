@@ -499,8 +499,8 @@ class ADERDG(DG):
 		ns = EqnSet.StateRank
 
 		TimeScheme = Params["TimeScheme"]
-		if StepperType[TimeScheme] != StepperType.ADER:
-			raise NotImplementedError
+		if general.StepperType[TimeScheme] != general.StepperType.ADER:
+			raise errors.IncompatibleError
 		self.Stepper = stepper.ADER()
 
 		# Set the basis functions for the solver
@@ -511,14 +511,13 @@ class ADERDG(DG):
 		# Allocate array for predictor step in ADER-Scheme
 		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
 
-
 		# Set predictor function
 		SourceTreatment = Params["SourceTreatment"]
 		self.calculate_predictor_elem = set_source_treatment(ns, SourceTreatment)
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = Limiter.set_limiter(limiterType)
+		self.Limiter = Limiter.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_solver_params()

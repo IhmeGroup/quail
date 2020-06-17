@@ -54,7 +54,7 @@ class SolverBase(ABC):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = Limiter.set_limiter(limiterType)
+		self.Limiter = Limiter.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_solver_params()
@@ -65,6 +65,8 @@ class SolverBase(ABC):
 
 		# Precompute operators
 		self.precompute_matrix_operators()
+		if self.Limiter is not None:
+			self.Limiter.precompute_operators(self)
 
 	@abstractmethod
 	def check_solver_params(self):
@@ -85,6 +87,7 @@ class SolverBase(ABC):
 	@abstractmethod
 	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
 		pass
+
 
 class ElemOperators(object):
 	def __init__(self):

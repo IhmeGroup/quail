@@ -19,7 +19,7 @@ EndTime = 0.1
 nTimeStep = 100
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeEqSeg",TimeScheme="ADER",InterpolateIC=True)
+								 InterpBasis="LagrangeEqSeg",TimeScheme="ADER",InterpolateIC=True,ApplyLimiter=None)
 
 # nu = -1000.
 ### Physics

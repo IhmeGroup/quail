@@ -2,7 +2,7 @@ import code
 from enum import IntEnum
 import numpy as np
 
-from general import *
+from general import ShapeType, EntityType
 import numerics.basis.basis as Basis
 
 

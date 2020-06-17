@@ -21,6 +21,8 @@ from physics.euler.functions import SourceType as euler_source_type
 
 class Euler(base.PhysicsBase):
 
+	PHYSICS_TYPE = general.PhysicsType.Euler
+
 	def __init__(self, order, basis, mesh):
 		'''
 		Method: __init__

@@ -1,7 +1,7 @@
 import code
 import copy
 
-from general import BasisType
+import general
 
 from meshing.meshbase import *
 import numerics.basis.basis as Basis
@@ -87,14 +87,14 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 	for elem in range(mesh.nElem):
 		for i in range(mesh.nFacePerElem):
 			Face_ = mesh.Faces[elem][i]
-			Face_.Type = INTERIORFACE
+			Face_.Type = general.INTERIORFACE
 			Face_.Number = elem + i
 			if not Periodic:
 				if elem == 0 and i == 0:
-					Face_.Type = NULLFACE
+					Face_.Type = general.NULLFACE
 					Face_.Number = 0
 				elif elem == mesh.nElem-1 and i == 1:
-					Face_.Type = NULLFACE
+					Face_.Type = general.NULLFACE
 					Face_.Number = 1
 				else:
 					Face_.Number = elem + i - 1
