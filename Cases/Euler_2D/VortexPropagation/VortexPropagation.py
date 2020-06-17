@@ -80,7 +80,7 @@ axis = None
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
 Plot.PlotSolution(mesh, EqnSet, solver, "Density", Equidistant=True, PlotExact=False, IncludeMesh2D=True, 
-	Regular2D=True, ShowTriangulation=False)
+	Regular2D=True, ShowTriangulation=False, show_elem_IDs=True)
 Plot.SaveFigure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
 Plot.PreparePlot(close_all=False, linewidth=1.5)
 Plot.plot_line_probe(mesh, EqnSet, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)

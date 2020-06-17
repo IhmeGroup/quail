@@ -627,7 +627,27 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
 
     return djac, jac, ijac
 
+
 class ShapeBase(ABC):
+    @property
+    @abstractmethod
+    def faceshape(self):
+        pass
+
+    @property
+    @abstractmethod
+    def nfaceperelem(self):
+        pass
+
+    @property
+    @abstractmethod
+    def dim(self):
+        pass
+
+    @property
+    @abstractmethod
+    def centroid(self):
+        pass
     
     @abstractmethod
     def get_num_basis_coeff(self,p):
@@ -636,23 +656,27 @@ class ShapeBase(ABC):
     @abstractmethod
     def equidistant_nodes(self, p, xn=None):
         pass
+
 
 class PointShape(ShapeBase):
 
     faceshape = None
     nfaceperelem = 0
     dim = 0
+    centroid = np.array([[0.]])
     
     def get_num_basis_coeff(self,p):
         return 1
     def equidistant_nodes(self, p, xn=None):
         pass
 
+
 class SegShape(PointShape):
 
     faceshape = PointShape()
     nfaceperelem = 2
     dim = 1
+    centroid = np.array([[0.]])
 
     def get_num_basis_coeff(self,p):
         return p + 1
@@ -709,11 +733,13 @@ class SegShape(PointShape):
 
         return xelem
 
+
 class QuadShape(SegShape):
 
     faceshape = SegShape()
     nfaceperelem = 4
     dim = 2
+    centroid = np.array([[0., 0.]])
 
     def get_num_basis_coeff(self,p):
         return (p + 1)**2
@@ -788,11 +814,13 @@ class QuadShape(SegShape):
 
         return xelem
 
+
 class TriShape(QuadShape):
 
     faceshape = SegShape()
     nfaceperelem = 3
     dim = 2
+    centroid = np.array([[1./3., 1./3.]])
 
     def get_num_basis_coeff(self,p):
         return (p + 1)*(p + 2)//2
@@ -863,6 +891,7 @@ class TriShape(QuadShape):
         xelem[:] = (1. - xf)*x0 + xf*x1
 
         return xelem
+
 
 class BasisBase(ABC): 
     @abstractmethod
