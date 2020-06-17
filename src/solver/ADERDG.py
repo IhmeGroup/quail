@@ -268,11 +268,39 @@ class ElemOperatorsADER(ElemOperators):
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
 
-		# Unpack
+		dim = mesh.Dim 
 		quad_pts = self.quad_pts 
+		nElem = mesh.nElem 
+		nq = quad_pts.shape[0]
+		nb = basis.nb
+
+		self.jac_elems = np.zeros([nElem,nq,dim,dim])
+		self.ijac_elems = np.zeros([nElem,nq,dim,dim])
+		self.djac_elems = np.zeros([nElem,nq,1])
+		self.x_elems = np.zeros([nElem,nq,dim])
+		self.basis_pgrad_elems = np.zeros([nElem,nq,nb,dim])
+
+		GeomPhiData = None
+
 		basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
 		self.basis_val = basis.basis_val
+
+		for elem in range(mesh.nElem):
+			# Jacobian
+			djac, jac, ijac = element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
+			# Store
+			self.jac_elems[elem] = jac
+			self.ijac_elems[elem] = ijac
+			self.djac_elems[elem] = djac
+
+			# Physical coordinates of quadrature points
+			x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
+			# Store
+			self.x_elems[elem] = x
+			# Physical gradient
+			# basis.eval_basis(quad_pts, Get_gPhi=True, ijac=ijac) # gPhi is [nq,nb,dim]
+			# self.basis_pgrad_elems[elem] = basis.basis_pgrad
 
 class IFaceOperatorsADER(IFaceOperators):
 
@@ -528,6 +556,8 @@ class ADERDG(DG):
 
 		# Precompute operators
 		self.precompute_matrix_operators()
+		if self.Limiter is not None:
+			self.Limiter.precompute_operators(self)
 
 	def check_solver_params(self):
 		'''
