@@ -6,11 +6,12 @@ import time
 
 import errors
 from data import ArrayList, GenericData
+import general
 
 from meshing.meshbase import *
 import meshing.tools as MeshTools
 
-import numerics.limiter as Limiter
+import numerics.limiting.positivitypreserving as pp_limiter
 from numerics.basis.basis import *
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
@@ -22,6 +23,29 @@ from solver.tools import project_state_to_new_basis
 
 global echeck
 echeck = -1
+
+
+def set_limiter(limiter_type, physics_type):
+	'''
+    Method: set_limiter
+    ----------------------------
+	selects limiter bases on input deck
+
+    INPUTS:
+		limiterType: type of limiter selected (Default: None)
+	'''
+	if limiter_type is None:
+		return None
+	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreserving:
+		limiter_ref = pp_limiter.PositivityPreserving
+	elif general.LimiterType[limiter_type] is general.LimiterType.ScalarPositivityPreserving:
+		limiter_ref = pp_limiter.ScalarPositivityPreserving
+	else:
+		raise NotImplementedError
+
+	limiter = limiter_ref(physics_type)
+
+	return limiter
 
 
 class SolverBase(ABC):
@@ -54,7 +78,7 @@ class SolverBase(ABC):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = Limiter.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_solver_params()

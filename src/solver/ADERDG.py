@@ -11,7 +11,7 @@ from meshing.meshbase import *
 import meshing.tools as MeshTools
 
 from numerics.basis.basis import *
-import numerics.limiter as Limiter
+import numerics.limiting.base as limiting
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
 
@@ -545,7 +545,7 @@ class ADERDG(DG):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = Limiter.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_solver_params()

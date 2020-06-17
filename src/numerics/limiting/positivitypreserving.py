@@ -2,84 +2,18 @@ from abc import ABC, abstractmethod
 import code
 import numpy as np 
 
-import data as Data
 import errors
 import general
 
-import meshing.meshbase as Mesh
-import meshing.tools as MeshTools
+import meshing.tools as mesh_tools
 
-import numerics.quadrature.quadrature as quadrature
-import numerics.basis.basis as Basis
+import numerics.limiting.base as base
 
 
 POS_TOL = 1.e-10
 
 
-def set_limiter(limiter_type, physics_type):
-	'''
-    Method: set_limiter
-    ----------------------------
-	selects limiter bases on input deck
-
-    INPUTS:
-		limiterType: type of limiter selected (Default: None)
-	'''
-	if limiter_type is None:
-		return None
-	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreserving:
-		limiter_ref = PPLimiter
-	elif general.LimiterType[limiter_type] is general.LimiterType.ScalarPositivityPreserving:
-		limiter_ref = PPScalarLimiter
-	else:
-		raise NotImplementedError
-
-	limiter = limiter_ref(physics_type)
-
-	return limiter
-
-
-class LimiterBase(ABC):
-	@property
-	@abstractmethod
-	def COMPATIBLE_PHYSICS_TYPES(self):
-		pass
-
-	def __init__(self, physics_type):
-		self.check_compatibility(physics_type)
-
-	def check_compatibility(self, physics_type):
-		try:
-			if physics_type not in self.COMPATIBLE_PHYSICS_TYPES:
-				raise errors.IncompatibleError
-		except TypeError:
-			if physics_type != self.COMPATIBLE_PHYSICS_TYPES:
-				raise errors.IncompatibleError
-
-	@abstractmethod
-	def precompute_operators(self, solver):
-		pass
-
-	@abstractmethod
-	def limit_element(self, solver, elem, U):
-		pass
-
-	def limit_solution(self, solver, U):
-		'''
-		Method: limit_solution
-		------------------------
-		Calls the limiter function for each element
-		INPUTS:
-			solver: type of solver (i.e. DG, ADER-DG, etc...)
-
-		OUTPUTS:
-			U: solution array
-		'''
-		for elem in range(solver.mesh.nElem):
-			U[elem] = self.limit_element(solver, elem, U[elem])
-
-
-class PPLimiter(LimiterBase):
+class PositivityPreserving(base.LimiterBase):
 	'''
     Class: PPLimiter
     ------------------
@@ -105,7 +39,7 @@ class PPLimiter(LimiterBase):
 	def precompute_operators(self, solver):
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
-		_, self.elem_vols = MeshTools.element_volumes(solver.mesh, solver)
+		_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
 
 		# basis values in element interior and on faces
 		basis_val_faces = iface_ops.faces_to_basisL.copy()
@@ -185,7 +119,7 @@ class PPLimiter(LimiterBase):
 		return U
 
 
-class PPScalarLimiter(LimiterBase):
+class ScalarPositivityPreserving(base.LimiterBase):
 	'''
 	Class: PPScalarLimiter
 	-------------------
@@ -209,7 +143,7 @@ class PPScalarLimiter(LimiterBase):
 	def precompute_operators(self, solver):
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
-		_, self.elem_vols = MeshTools.element_volumes(solver.mesh, solver)
+		_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
 
 		# basis values in element interior and on faces
 		basis_val_faces = iface_ops.faces_to_basisL.copy()
@@ -264,15 +198,4 @@ class PPScalarLimiter(LimiterBase):
 		np.seterr(divide='warn')
 
 		return U
-
-
-
-
-
-
-
-
-
-
-
 

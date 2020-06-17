@@ -7,7 +7,7 @@ import meshing.common as MeshCommon
 import processing.post as Post
 import processing.plot as Plot
 import general
-import numerics.limiter as Limiter
+
 ### Mesh
 Periodic = False
 # Uniform mesh
