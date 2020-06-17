@@ -1,5 +1,5 @@
 import code
-from enum import IntEnum, Enum
+from enum import Enum, auto
 import numpy as np
 
 import errors
@@ -13,50 +13,50 @@ eps = 1.e-15
 
 
 ###
-class EntityType(IntEnum):
-    Element = 0
-    IFace = 1
-    BFace = 2
+class EntityType(Enum):
+    Element = auto()
+    IFace = auto()
+    BFace = auto()
 
 
-class ShapeType(IntEnum):
-    Point = 0
-    Segment = 1
-    Quadrilateral = 2
-    Triangle = 3
+class ShapeType(Enum):
+    Point = auto()
+    Segment = auto()
+    Quadrilateral = auto()
+    Triangle = auto()
 
 
-class BasisType(IntEnum):
-    LagrangeEqSeg = 0
-    LagrangeEqQuad = 1
-    LagrangeEqTri = 2
-    LegendreSeg = 3
-    LegendreQuad = 4
-    HierarchicH1Tri= 5
+class BasisType(Enum):
+    LagrangeEqSeg = auto()
+    LagrangeEqQuad = auto()
+    LagrangeEqTri = auto()
+    LegendreSeg = auto()
+    LegendreQuad = auto()
+    HierarchicH1Tri= auto()
 
 
-class LimiterType(IntEnum):
-    PositivityPreserving = 0
-    ScalarPositivityPreserving = 1
+class LimiterType(Enum):
+    PositivityPreserving = auto()
+    ScalarPositivityPreserving = auto()
 
 
-class SolverType(IntEnum):
-    DG = 0
-    ADERDG = 1
+class SolverType(Enum):
+    DG = auto()
+    ADERDG = auto()
 
 
-class StepperType(IntEnum):
-    FE = 0
-    RK4 = 1
-    LSRK4 = 2
-    SSPRK3 = 3
-    ADER = 4
+class StepperType(Enum):
+    FE = auto()
+    RK4 = auto()
+    LSRK4 = auto()
+    SSPRK3 = auto()
+    ADER = auto()
 
 
-class PhysicsType(IntEnum):
-    ConstAdvScalar = 0
-    Burgers = 1
-    Euler = 2
+class PhysicsType(Enum):
+    ConstAdvScalar = auto()
+    Burgers = auto()
+    Euler = auto()
 
 
 INTERIORFACE = -1
