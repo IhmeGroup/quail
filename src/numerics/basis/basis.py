@@ -55,6 +55,7 @@ class ShapeBase(ABC):
 
 class PointShape(ShapeBase):
 
+    shape = ShapeType.Point
     faceshape = None
     nfaceperelem = 0
     dim = 0
@@ -68,7 +69,8 @@ class PointShape(ShapeBase):
 
 class SegShape(PointShape):
 
-    faceshape = PointShape()
+    shape = ShapeType.Segment
+    faceshape = ShapeType.Point
     nfaceperelem = 2
     dim = 1
     centroid = np.array([[0.]])
@@ -131,7 +133,8 @@ class SegShape(PointShape):
 
 class QuadShape(SegShape):
 
-    faceshape = SegShape()
+    shape = ShapeType.Quadrilateral
+    faceshape = ShapeType.Segment
     nfaceperelem = 4
     dim = 2
     centroid = np.array([[0., 0.]])
@@ -212,7 +215,8 @@ class QuadShape(SegShape):
 
 class TriShape(QuadShape):
 
-    faceshape = SegShape()
+    shape = ShapeType.Triangle
+    faceshape = ShapeType.Segment
     nfaceperelem = 3
     dim = 2
     centroid = np.array([[1./3., 1./3.]])

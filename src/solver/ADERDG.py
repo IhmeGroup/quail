@@ -318,10 +318,11 @@ class ElemOperatorsADER(ElemOperators):
 
 		GeomPhiData = None
 
-		basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
+		basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
 		self.basis_val = basis.basis_val
-
+		self.basis_grad = basis.basis_grad
+		
 		for elem in range(mesh.nElem):
 			# Jacobian
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)

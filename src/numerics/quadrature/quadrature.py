@@ -1,7 +1,7 @@
 import code
 import numpy as np
 
-from general import *
+from general import ShapeType, EntityType
 import meshing.meshbase as Mesh
 from numerics.quadrature import segment, quadrilateral, triangle
 
@@ -25,7 +25,7 @@ def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None)
 
 	#Add logic to add 1 to the dimension of an ADER case?	
 	gorder = mesh.gorder
-	shape = basis.__class__.__bases__[1].__name__
+	shape = basis.shape
 
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
@@ -37,7 +37,7 @@ def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None)
 		QuadOrder += dim*(gorder-1)
 
 	#is instance instead?
-	if shape is 'QuadShape':
+	if shape is ShapeType.Quadrilateral:
 		QuadOrder += mesh.Dim
 	QuadChanged = True
 
@@ -66,12 +66,10 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 		QuadOrder: quadrature order
 		QuadChanged: boolean flag for a changed quadrature
 	'''
-	# assumes uniform QOrder and QBasis
-	# QOrder = mesh.QOrder
 
 	gorder = mesh.gorder
-	shape = basis.__class__.__bases__[1].__name__
-	faceshape = basis.faceshape.__class__.__name__
+	shape = basis.shape
+	faceshape = basis.faceshape
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
 		QuadOrder = EqnSet.QuadOrder(order)
@@ -81,8 +79,8 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 		dim = mesh.Dim - 1
 		QuadOrder += dim*(gorder-1)
 
-	if shape is 'QuadShape':
-		QuadOrder += basis.faceshape.dim
+	if shape is ShapeType.Quadrilateral:
+		QuadOrder += 1
 
 	QuadChanged = True
 	if quadData is not None:
@@ -90,32 +88,6 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 			QuadChanged = False
 
 	return QuadOrder, QuadChanged
-
-
-# def get_gaussian_quadrature_bface(mesh, BFace, basis, Order, EqnSet=None, quadData=None):
-# 	# assumes uniform QOrder and QBasis
-# 	QOrder = mesh.QOrder
-# 	# QuadOrder = 2*Order + 1
-# 	if EqnSet is not None:
-# 		QuadOrder = EqnSet.QuadOrder(Order)
-# 	else:
-# 		QuadOrder = Order
-# 	if QOrder > 1:
-# 		dim = mesh.Dim - 1
-# 		QuadOrder += dim*(QOrder-1)
-
-# 	Shape = Basis.Basis2Shape[basis]
-# 	FShape = Basis.FaceShape[Shape]
-# 	if Shape is ShapeType.Quadrilateral:
-# 		QuadOrder += Basis.Shape2Dim[FShape]
-
-# 	QuadChanged = True
-# 	if quadData is not None:
-# 		if QuadOrder == quadData.Order and FShape == quadData.Shape:
-# 			QuadChanged = False
-
-# 	return QuadOrder, QuadChanged
-
 
 class QuadData(object):
 	'''
@@ -144,26 +116,26 @@ class QuadData(object):
 		self.nvec = None
 
 		# shape = Basis.Basis2Shape[basis]
-		shape = basis.__class__.__bases__[1].__name__
-		faceshape = basis.faceshape.__class__.__name__
+		shape = basis.shape
+		faceshape = basis.faceshape
 
 		if entity == EntityType.Element:
 			self.Shape = shape
 		else:
 			self.Shape = faceshape
 
-		if self.Shape == 'PointShape':
+		if self.Shape == ShapeType.Point:
 			self.quad_pts = np.zeros([1,1])
 			self.quad_wts = np.ones([1,1])
-		elif self.Shape == 'SegShape':
+		elif self.Shape == ShapeType.Segment:
 			self.quad_pts, self.quad_wts = segment.get_quadrature_points_weights(order, 0)
 			# self.quad_pts = QuadLinePoints[order]
 			# self.quad_wts = QuadLineWeights[order]
-		elif self.Shape == 'QuadShape':
+		elif self.Shape == ShapeType.Quadrilateral:
 			self.quad_pts, self.quad_wts = quadrilateral.get_quadrature_points_weights(order, 0)
 			# self.quad_pts = QuadQuadrilateralPoints[order]
 			# self.quad_wts = QuadQuadrilateralWeights[order]
-		elif self.Shape == 'TriShape':
+		elif self.Shape == ShapeType.Triangle:
 			self.quad_pts, self.quad_wts = triangle.get_quadrature_points_weights(order, 0)
 			# self.quad_pts = QuadTrianglePoints[order]
 			# self.quad_wts = QuadTriangleWeights[order]
