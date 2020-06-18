@@ -1,5 +1,5 @@
 import code
-from enum import IntEnum, Enum
+from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
 
