@@ -323,8 +323,8 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
             PsiData = basis1
 
             xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelem, Get_Phi=True)
-            PsiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelem, Get_Phi=True)
+            PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
+            PsiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
         else:
             face = 0
             
@@ -333,7 +333,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
 
             xelemPhi = np.zeros([nq,mesh.Dim+1])
             xelemPsi = np.zeros([nq,mesh.Dim])
-            PhiData.eval_basis_on_face_ader(mesh, basis1, face, quad_pts, xelemPhi, Get_Phi=True)
+            PhiData.eval_basis_on_face(mesh, face, quad_pts, xelemPhi, basis1, Get_Phi=True)
             PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
 
@@ -937,7 +937,7 @@ class BasisBase(ABC):
                 raise Exception("Need jacobian data")
             self.basis_pgrad = self.get_physical_grad(ijac)
 
-    def eval_basis_on_face(self, mesh, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, ijac=False):
+    def eval_basis_on_face(self, mesh, face, quad_pts, xelem=None, basis = None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, ijac=False):
         '''
         Method: eval_basis_on_face
         ----------------------------
@@ -957,46 +957,12 @@ class BasisBase(ABC):
         '''
         self.face = face
         nq = quad_pts.shape[0]
-        basis = mesh.gbasis
-        if xelem is None or xelem.shape != (nq, mesh.Dim):
-            xelem = np.zeros([nq, mesh.Dim])
+        if basis is None:
+            basis = mesh.gbasis
+        if xelem is None or xelem.shape != (nq, self.dim):
+            xelem = np.zeros([nq, self.dim])
         xelem = basis.ref_face_to_elem(face, nq, quad_pts, xelem)
         self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, ijac)
-
-        return xelem
-
-    def eval_basis_on_face_ader(self, mesh, basis, face, quad_pts, xelem=None, Get_Phi=True, Get_GPhi=False, Get_gPhi=False, JData=False):
-        '''
-        Method: eval_basis_on_face_ader
-        ----------------------------
-        Evaluate the basis functions on faces for ADER-DG
-
-        INPUTS:
-            mesh: mesh object
-            basis: type of basis function
-            face: index of face in reference space
-            quad_pts: coordinates of quadrature points
-            Get_Phi: flag to calculate basis functions (Default: True)
-            Get_GPhi: flag to calculate gradient of basis functions in ref space (Default: False)
-            Get_gPhi: flag to calculate gradient of basis functions in phys space (Default: False)
-            JData: jacobian data (needed if calculating physical gradients)
-
-        OUTPUTS:
-            xelem: coordinate of face
-        '''
-        shape = basis.__class__.__bases__[1].__name__
-
-        self.face = face
-        nq = quad_pts.shape[0]
-        if shape == 'QuadShape':
-            if xelem is None or xelem.shape != (nq, mesh.Dim+1):
-                xelem = np.zeros([nq, mesh.Dim+1])
-            xelem = basis.ref_face_to_elem(face, nq, quad_pts, xelem)
-        elif shape == 'SegShape':
-            if xelem is None or xelem.shape != (nq, mesh.Dim):
-                xelem = np.zeros([nq, mesh.Dim])
-            xelem = basis.ref_face_to_elem(face, nq, quad_pts, xelem)
-        self.eval_basis(xelem, Get_Phi, Get_GPhi, Get_gPhi, JData)
 
         return xelem
 

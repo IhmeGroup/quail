@@ -11,7 +11,9 @@ from meshing.meshbase import *
 import meshing.tools as MeshTools
 
 from numerics.basis.basis import *
-import numerics.limiting.base as limiting
+# import numerics.limiting.base as limiting
+# import numerics.limiting.positivitypreserving as pp_limiter
+
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
 
@@ -248,7 +250,6 @@ def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
 
 		Up_new = solve_sylvester(A,B,Q)
 
-		# code.interact(local=locals())
 		err = Up_new - Up
 		if np.amax(np.abs(err))<1e-10:
 			Up = Up_new
@@ -329,10 +330,10 @@ class IFaceOperatorsADER(IFaceOperators):
 		for f in range(nFacePerElem):
 			# Left
 			#eval_basis_on_face_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, Get_Phi=True)
-			_ = basis.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
+			_ = basis.eval_basis_on_face(mesh, f, quad_pts, None, basis, Get_Phi=True)
 			self.faces_to_basisL[f] = basis.basis_val
 			# Right
-			_ = basis.eval_basis_on_face_ader(mesh, basis, f, quad_pts[::-1], None, Get_Phi=True)
+			_ = basis.eval_basis_on_face(mesh, f, quad_pts[::-1], None, basis, Get_Phi=True)
 			self.faces_to_basisR[f] = basis.basis_val
 
 		i = 0
@@ -364,7 +365,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 
 		for f in range(nFacePerElem):
 			# Left
-			self.faces_to_xref[f] = xref = basis.eval_basis_on_face_ader(mesh, basis, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_xref[f] = xref = basis.eval_basis_on_face(mesh, f, quad_pts, None, basis, Get_Phi=True)
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
