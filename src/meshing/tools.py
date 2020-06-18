@@ -3,9 +3,9 @@ import numpy as np
 
 import data
 
-import meshing.meshbase as meshbase
+import meshing.meshbase as mesh_defs
 
-import numerics.basis.basis as basis_defs
+import numerics.basis.tools as basis_tools
 import numerics.quadrature.quadrature as quadrature
 
 tol = 1.e-10
@@ -42,14 +42,14 @@ def element_volumes(mesh, solver=None):
     QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, Order, 
         quadData=quadData)
     if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.gbasis, meshbase.EntityType.Element, QuadOrder)
+        quadData = quadrature.QuadData(mesh, mesh.gbasis, mesh_defs.EntityType.Element, QuadOrder)
 
     xq = quadData.quad_pts
     wq = quadData.quad_wts
     nq = xq.shape[0]
 
     for elem in range(mesh.nElem):
-        djac,_,_ = basis_defs.element_jacobian(mesh,elem,xq,get_djac=True)
+        djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
         # for iq in range(nq):
         #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
@@ -66,7 +66,7 @@ def element_volumes(mesh, solver=None):
 
 def get_element_centroid(mesh, elem):
     gbasis = mesh.gbasis
-    xcentroid, _ = meshbase.ref_to_phys(mesh, elem, None, mesh.gbasis.centroid)  
+    xcentroid, _ = mesh_defs.ref_to_phys(mesh, elem, None, mesh.gbasis.centroid)  
 
     return xcentroid
 
@@ -88,7 +88,7 @@ def neighbor_across_face(mesh, elem, face):
     '''
     Face = mesh.Faces[elem][face]
     # code.interact(local=locals())
-    if Face.Type == meshbase.FaceType.Interior:
+    if Face.Type == mesh_defs.FaceType.Interior:
         iiface = Face.Number
         eN  = mesh.IFaces[iiface].ElemR
         faceN = mesh.IFaces[iiface].faceR
@@ -409,7 +409,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                     
                 # Create IFace between these two faces
                 mesh.nIFace += 1
-                IFaces.append(meshbase.IFace())
+                IFaces.append(mesh_defs.IFace())
                 IF = IFaces[-1]
                 IF.ElemL = elem1
                 IF.faceL = face1

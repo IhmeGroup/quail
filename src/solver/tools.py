@@ -3,7 +3,7 @@ import copy
 import numpy as np
 
 import data
-import numerics.basis.basis as Basis
+import numerics.basis.tools as basis_tools
 
 
 def mult_inv_mass_matrix(mesh, solver, dt, R, U):
@@ -30,7 +30,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 		MMinv_all = DataSet.MMinv_all
 	except AttributeError:
 		# not found; need to compute
-		MMinv_all = Basis.get_inv_mass_matrices(mesh, EqnSet, solver=solver)
+		MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver=solver)
 
 
 	if dt is None:
@@ -62,9 +62,9 @@ def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 	basis.nb = basis.get_num_basis_coeff(EqnSet.order)
 
 	## New mass matrix inverse (in reference space)
-	iMM = Basis.get_elem_inv_mass_matrix(mesh, basis, order)
+	iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order)
 	## Projection matrix
-	PM = Basis.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
+	PM = basis_tools.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
 	for elem in range(mesh.nElem):
 		Uc = U[elem]
 		Uc_new = U_new[elem]

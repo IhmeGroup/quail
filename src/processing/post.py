@@ -12,7 +12,8 @@ from meshing.meshbase import Mesh, ref_to_phys
 import meshing.tools as MeshTools
 
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
-import numerics.basis.basis as Basis
+
+import numerics.basis.tools as basis_tools
 
 import processing.plot as Plot
 
@@ -67,7 +68,7 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 			basis.eval_basis(xq, True, False, False, None)
 			xphys = np.zeros([nq, mesh.Dim])
 
-		djac,_,_ = Basis.element_jacobian(mesh,elem,xq,get_djac=True)
+		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
 		xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, t=Time)

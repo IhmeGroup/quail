@@ -3,22 +3,12 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import SetSolverParams, BasisType, ShapeType, EntityType
+from general import BasisType, ShapeType
 
 import meshing.gmsh as mesh_gmsh
 
-from numerics.basis import math
+import numerics.basis.tools as basis_tools
 import numerics.quadrature.quadrature as quadrature
-
-
-Basis2Shape = {
-    BasisType.LagrangeEqSeg : ShapeType.Segment,
-    BasisType.LagrangeEqQuad : ShapeType.Quadrilateral,
-    BasisType.LagrangeEqTri : ShapeType.Triangle,
-    BasisType.LegendreSeg : ShapeType.Segment,
-    BasisType.LegendreQuad : ShapeType.Quadrilateral,
-    BasisType.HierarchicH1Tri : ShapeType.Triangle
-}
 
 RefQ1Coords = {
     BasisType.LagrangeEqSeg : np.array([[-1.],[1.]]),
@@ -32,572 +22,6 @@ RefQ1Coords = {
     BasisType.HierarchicH1Tri : np.array([[0.,0.],[1.,0.],
                                 [0.,1.]])
 }
-
-
-def set_basis(mesh, order, BasisFunction):
-
-    if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
-        basis = LagrangeEqSeg(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LegendreSeg:
-        basis = LegendreSeg(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LagrangeEqQuad:
-        basis = LagrangeEqQuad(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LegendreQuad:
-        basis = LegendreQuad(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LagrangeEqTri:
-        basis = LagrangeEqTri(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.HierarchicH1Tri:
-        basis = HierarchicH1Tri(order, mesh)
-    else:
-        raise NotImplementedError
-    return basis
-
-def equidistant_nodes_1D_range(start, stop, nnode):
-    '''
-    Method: equidistant_nodes_1D_range
-    -----------------------------------
-    Calculate the 1D coordinates in ref space
-
-    INPUTS:
-        start: start of ref space (default: -1)
-        stop:  end of ref space (default: 1)
-        nnode: num of nodes in 1D ref space
-
-    OUTPUS: 
-        xnode: coordinates of nodes in 1D ref space
-    '''
-    if nnode <= 1:
-        raise ValueError
-    if stop <= start:
-        raise ValueError
-    # Note: this is faster than linspace unless p is large
-    xnode = np.zeros(nnode)
-    dx = (stop-start)/float(nnode-1)
-    for i in range(nnode): xnode[i] = start + float(i)*dx
-
-    return xnode
-
-def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
-    '''
-    Method: get_elem_mass_matrix
-    --------------------------
-    Calculate the mass matrix
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
-        elem: element index
-
-    OUTPUTS: 
-        MM: mass matrix  
-    '''
-
-    if PhysicalSpace:
-        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
-    else:
-        QuadOrder = order*2
-        QuadChanged = True
-
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
-    nq = quad_pts.shape[0]
-
-    if QuadChanged:
-        basis.eval_basis(quad_pts, Get_Phi=True)
-
-    if PhysicalSpace:
-        djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
-
-        if len(djac) == 1:
-            djac = np.full(nq, djac[0])
-    else:
-        djac = np.full(nq, 1.)
-
-    nb = basis.get_num_basis_coeff(order)
-    phi = basis.basis_val
-
-    MM = np.zeros([nb,nb])
-
-    MM[:] = np.matmul(phi.transpose(), phi*quad_wts*djac) # [nb, nb]
-
-    return MM
-
-def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
-    '''
-    Method: get_elem_inv_mass_matrix
-    ---------------------------------
-    Calculate the inverse mass matrix
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        elem: element index
-        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
-
-    OUTPUTS: 
-        iMM: inverse mass matrix  
-    '''
-    MM = get_elem_mass_matrix(mesh, basis, order, elem, PhysicalSpace)
-    
-    iMM = np.linalg.inv(MM) 
-
-    return iMM
-
-def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
-    '''
-    Method: get_elem_inv_mass_matrix_ader
-    --------------------------------------
-    Calculate the inverse mass matrix for ADER-DG prediction step
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
-        elem: element index
-
-    OUTPUTS: 
-        iMM: inverse mass matrix for ADER-DG predictor step
-    '''
-    MM = get_elem_mass_matrix_ader(mesh, basis, order, elem, PhysicalSpace)
-
-    iMM = np.linalg.inv(MM)
-
-    return iMM
-
-def get_stiffness_matrix(mesh, basis, order, elem):
-    '''
-    Method: get_stiffness_matrix
-    --------------------------------------
-    Calculate the stiffness_matrix
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        elem: element index
-
-    OUTPUTS: 
-        SM: stiffness matrix
-    '''
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
-    nq = quad_pts.shape[0]
-
-    if QuadChanged:
-        PhiData = BasisData(basis,order,mesh)
-        PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
-
-    JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_ijac=True)
-    PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
-
-    nb = PhiData.Phi.shape[1]
-
-    phi = PhiData.Phi
-    gPhi = PhiData.gPhi
-    SM = np.zeros([nb,nb])
-    for i in range(nb):
-        for j in range(nb):
-            t = 0.
-            for iq in range(nq):
-                t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
-            SM[i,j] = t
-
-    return SM
-
-def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir, PhysicalSpace=False):
-    '''
-    Method: get_stiffness_matrix_ader
-    --------------------------------------
-    Calculate the stiffness matrix for ADER-DG prediction step
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        elem: element index
-        gradDir: direction of gradient calc
-    OUTPUTS: 
-        SM: stiffness matrix for ADER-DG
-    '''
-    
-    dim = mesh.Dim
-
-    QuadOrder_st,QuadChanged_st = quadrature.get_gaussian_quadrature_elem(mesh, basis_st, order*2)
-
-    QuadOrder = QuadOrder_st
-    QuadChanged = True
-    if QuadChanged_st:
-        quadData_st = quadrature.QuadData(mesh, basis_st, EntityType.Element, QuadOrder_st)
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
-
-    quad_pts_st = quadData_st.quad_pts
-    quad_wts_st = quadData_st.quad_wts
-    nq_st = quad_pts_st.shape[0]
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
-    nq = quad_pts.shape[0]
-    
-    if PhysicalSpace:
-        djac,_,ijac=element_jacobian(mesh,elem,quad_pts_st,get_djac=True, get_ijac=True)
-        if len(djac) == 1:
-            djac = np.full(nq, djac[0])
-        ijac_st = np.zeros([nq_st,dim+1,dim+1])
-        ijac_st[:,0:dim,0:dim] = ijac
-        ijac_st[:,dim,dim] = 2./dt
-    else:
-        djac = np.full(nq, 1.)
-
-    basis_st.eval_basis(quad_pts_st, Get_Phi=True, Get_GPhi=True)
-    nb_st = basis_st.basis_val.shape[1]
-    phi = basis_st.basis_val
-
-    if PhysicalSpace:
-        basis_grad = basis_st.basis_grad
-        GPhi = np.transpose(np.matmul(ijac_st.transpose(0,2,1), basis_grad.transpose(0,2,1)), (0,2,1))
-    else:
-        GPhi = basis_st.basis_grad
-
-    SM = np.zeros([nb_st,nb_st])
-    # code.interact(local=locals())
-    # for i in range(nn):
-    #     for j in range(nn):
-    #         t = 0.
-    #         for iq in range(nq):
-    #             t += GPhi[iq,i,gradDir]*phi[iq,j]*wq[iq]
-    #         SM[i,j] = t
-    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(),phi*quad_wts_st) # [nb,nb]
-
-    return SM
-
-def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=False):
-    '''
-    Method: get_temporal_flux_ader
-    --------------------------------------
-    Calculate the temporal flux matrix for ADER-DG prediction step
-
-    INPUTS:
-        mesh: mesh object
-        basis1: type of basis function
-        basis2: type of basis function
-        order: solution order
-        elem: element index
-        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
-
-    OUTPUTS: 
-        FT: flux matrix for ADER-DG
-
-    NOTES:
-        Can work at tau_n and tau_n+1 depending on basis combinations
-    '''
-    if basis1 == basis2:
-        face = 2 
-    else:
-        face = 0
-
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
-  
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
-    nq = quad_pts.shape[0]
-
-    if QuadChanged:
-        if basis1 == basis2:
-            face = 2
-
-            PhiData = basis1
-            PsiData = basis1
-
-            xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
-            PsiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
-        else:
-            face = 0
-            
-            PhiData = basis1
-            PsiData = basis2
-
-            xelemPhi = np.zeros([nq,mesh.Dim+1])
-            xelemPsi = np.zeros([nq,mesh.Dim])
-            PhiData.eval_basis_on_face(mesh, face, quad_pts, xelemPhi, basis1, Get_Phi=True)
-            PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
-
-
-    nb_st = PhiData.basis_val.shape[1]
-    nb = PsiData.basis_val.shape[1]
-
-    FT = np.zeros([nb_st,nb])
-
-    # for i in range(nn1):
-    #     for j in range(nn2):
-    #         t = 0.
-    #         for iq in range(nq):
-    #             t += phi[iq,i]*psi[iq,j]*wq[iq]
-    #         MM[i,j] = t
-
-    FT[:] = np.matmul(PhiData.basis_val.transpose(),PsiData.basis_val*quad_wts) # [nb_st, nb]
-
-    return FT
-
-
-def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
-    '''
-    Method: get_elem_mass_matrix_ader
-    --------------------------------------
-    Calculate the mass matrix for ADER-DG prediction step
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        elem: element index
-        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
-
-    OUTPUTS: 
-        MM: mass matrix for ADER-DG
-    '''
-    if PhysicalSpace:
-        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
-    else:
-        QuadOrder = order*2 + 1 #Add one for ADER method
-        QuadChanged = True
-
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
-
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
-    nq = quad_pts.shape[0]
-
-    if QuadChanged:
-        basis.eval_basis(quad_pts, Get_Phi=True)
-
-    if PhysicalSpace:
-        djac,_,_=element_jacobian(mesh,elem,quad_pts,get_djac=True)
-        
-        if len(djac) == 1:
-            djac = np.full(nq, djac[0])
-    else:
-        djac = np.full(nq, 1.)
-
-    nb_st = basis.basis_val.shape[1]
-    MM = np.zeros([nb_st,nb_st])
-
-    # for i in range(nn):
-    #     for j in range(nn):
-    #         t = 0.
-    #         for iq in range(nq):
-    #             t += phi[iq,i]*phi[iq,j]*wq[iq]*djac[iq]
-    #         MM[i,j] = t
-
-    MM[:] = np.matmul(basis.basis_val.transpose(), basis.basis_val*quad_wts*djac) # [nb_st,nb_st]
-
-    return MM
-
-def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
-    '''
-    Method: get_projection_matrix
-    --------------------------------------
-    Calculate the projection matrix to increase order
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        basis_old: type of basis function from previous order
-        order: solution order
-        order_old: previous solution order
-        iMM: inverse mass matrix
-
-    OUTPUTS: 
-        PM: projection matrix
-    '''
-    QuadOrder = np.amax([order_old+order, 2*order])
-    quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
-    nq = quad_pts.shape[0]
-
-    basis_old.eval_basis(quad_pts, Get_Phi=True)
-
-    phi_old = basis_old.basis_val
-    nb_old = phi_old.shape[1]
-
-    basis.eval_basis(quad_pts, Get_Phi=True)
-    phi = basis.basis_val
-    nb = phi.shape[1]
-
-    A = np.zeros([nb,nb_old])
-
-    # for i in range(nn):
-    #     for j in range(nn_old):
-    #         t = 0.
-    #         for iq in range(nq):
-    #             t += phi[iq,i]*phi_old[iq,j]*wq[iq] # JData.djac[iq*(JData.nq != 1)]
-    #         A[i,j] = t
-
-    A = np.matmul(phi.transpose(), phi_old*quad_wts) # [nb, nb_old]
-
-    PM = np.matmul(iMM,A) # [nb, nb_old]
-
-    return PM
-
-
-def get_inv_stiffness_matrix(mesh, basis, order, elem):
-    '''
-    Method: get_inv_stiffness_matrix
-    --------------------------------------
-    Calculate the inverse stiffness matrix (Currently not used)
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        elem: element index
-
-    OUTPUTS: 
-        iSM: inverse stiffness matrix
-    '''
-    SM = get_stiffness_matrix(mesh, basis, order, elem)
-
-    iSM = np.linalg.inv(SM) 
-
-    return iSM
-
-def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
-    '''
-    Method: get_inv_stiffness_matrix_ader
-    --------------------------------------
-    Calculate the inverse stiffness matrix (Currently not used)
-
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        gradDir: direction to take the gradient in
-        elem: element index
-
-    OUTPUTS: 
-        iSM: inverse stiffness matrix
-    '''
-    SM = get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir)
-
-    iSM = np.linalg.inv(SM) 
-
-    return iSM
-
-def get_inv_mass_matrices(mesh, EqnSet, solver=None):
-    '''
-    Method: compute_inv_mass_matrices
-    --------------------------------------
-    Calculate the inverse mass matrices
-
-    INPUTS:
-        mesh: mesh object
-        EqnSet: type of equation set (i.e. scalar, euler, etc...)
-        solver: type of solver (i.e. DG, ADER-DG, etc...)
-
-    OUTPUTS: 
-        iMM_all: all inverse mass matrices
-    '''
-    basis = solver.basis
-    order = EqnSet.order
-    nb = basis.nb
-
-    iMM_all = np.zeros([mesh.nElem, nb, nb])
-
-    # Uniform mesh?
-    ReCalcMM = True
-    # if solver is not None:
-    #     ReCalcMM = not solver.Params["UniformMesh"]
-    for elem in range(mesh.nElem):
-        if elem == 0 or ReCalcMM:
-            # Only recalculate if not using uniform mesh
-            iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
-        iMM_all[elem] = iMM
-
-    if solver is not None:
-        solver.DataSet.MMinv_all = iMM_all
-
-    return iMM_all
-
-def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
-    '''
-    Method: element_jacobian
-    ----------------------------
-    Evaluate the geometric jacobian for specified element
-
-    INPUTS:
-        mesh: mesh object
-        elem: element index
-        quad_pts: coordinates of quadrature points
-        get_djac: flag to calculate jacobian determinant (Default: False)
-        get_jac: flag to calculate jacobian (Default: False)
-        get_ijac: flag to calculate inverse of the jacobian (Default: False)
-    '''
-
-    basis = mesh.gbasis
-    order = mesh.gorder
-    shape = basis.__class__.__bases__[1].__name__
-    nb = basis.nb
-    dim = basis.dim
-
-    nq = quad_pts.shape[0]
-
-
-    ## Check if we need to resize or recalculate 
-    #if self.dim != dim or self.nq != nq: Resize = True
-    #else: Resize = False
-    if dim != dim: Resize = True
-    else: Resize = False
-
-    basis_pgrad = basis.get_grads(quad_pts, basis.basis_pgrad) # [nq, nb, dim]
-    
-    if dim != mesh.Dim:
-        raise Exception("Dimensions don't match")
-
-    # if get_jac and (Resize or self.jac is None): 
-    #     self.jac = np.zeros([nq,dim,dim])
-
-    #if jac is None or jac.shape != (nq,dim,dim): 
-        # always have jac allocated (at least for temporary storage)
-    jac = np.zeros([nq,dim,dim])
-    # if get_djac: 
-    djac = np.zeros([nq,1])
-    # if get_ijac: 
-    ijac = np.zeros([nq,dim,dim])
-
-
-    A = np.zeros([dim,dim])
-
-    Elem2Nodes = mesh.Elem2Nodes[elem]
-
-    jac = np.tensordot(basis_pgrad, mesh.Coords[Elem2Nodes].transpose(), \
-        axes=[[1],[1]]).transpose((0,2,1))
-
-    for i in range(nq):
-        math.MatDetInv(jac[i], dim, djac[i], ijac[i])
- 
-    if get_djac and np.any(djac[i] <= 0.):
-        raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
-
-    return djac, jac, ijac
-
 
 class ShapeBase(ABC):
     @property
@@ -676,7 +100,7 @@ class SegShape(PointShape):
             xn[:] = 0.0 # 0.5
             return xn, nb
 
-        xn[:,0] = equidistant_nodes_1D_range(-1., 1., nb)
+        xn[:,0] = basis_tools.equidistant_nodes_1D_range(-1., 1., nb)
         
         return xn, nb
 
@@ -739,7 +163,7 @@ class QuadShape(SegShape):
             xn[:] = 0.0 # 0.5
             return xn, nb
 
-        xseg = equidistant_nodes_1D_range(-1., 1., p+1)
+        xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
 
         xn[:,0] = np.tile(xseg, (p+1,1)).reshape(-1)
         xn[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
@@ -822,7 +246,7 @@ class TriShape(QuadShape):
             xn[:] = 0.0 # 0.5
             return xn, nb
         n = 0
-        xseg = equidistant_nodes_1D_range(0., 1., p+1)
+        xseg = basis_tools.equidistant_nodes_1D_range(0., 1., p+1)
         for j in range(p+1):
             xn[n:n+p+1-j,0] = xseg[:p+1-j]
             xn[n:n+p+1-j,1] = xseg[j]
@@ -997,7 +421,7 @@ class LagrangeEqSeg(BasisBase, SegShape):
             return basis_val
 
         nnode = p+1
-        xnode = equidistant_nodes_1D_range(-1., 1., nnode)
+        xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
 
         self.get_lagrange_basis_1D(quad_pts, xnode, nnode, basis_val, None)
 
@@ -1030,7 +454,7 @@ class LagrangeEqSeg(BasisBase, SegShape):
             return basis_grad
 
         nnode = p+1
-        xnode = equidistant_nodes_1D_range(-1., 1., nnode)
+        xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
 
         self.get_lagrange_basis_1D(quad_pts, xnode, nnode, None, basis_grad)
 
@@ -1174,7 +598,7 @@ class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
             return basis_val
 
         nnode = p+1
-        xnode = equidistant_nodes_1D_range(-1., 1., nnode)
+        xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
 
         self.get_lagrange_basis_2D(quad_pts, xnode, nnode, basis_val, None)
 
@@ -1207,7 +631,7 @@ class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
             return basis_grad
 
         nnode = p+1
-        xnode = equidistant_nodes_1D_range(-1., 1., nnode)
+        xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
 
         self.get_lagrange_basis_2D(quad_pts, xnode, nnode, None, basis_grad)
 

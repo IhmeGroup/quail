@@ -6,13 +6,18 @@ import time
 
 import errors
 from data import ArrayList, GenericData
-import general
 
-from meshing.meshbase import *
-import meshing.tools as MeshTools
+import general
+from general import SetSolverParams, BasisType, ShapeType, EntityType
+import meshing.meshbase as mesh_defs
+# from meshing.meshbase import *
+# import meshing.tools as MeshTools
+
+# import numerics.basis.basis as basis_defs
+import numerics.basis.tools as basis_tools
 
 import numerics.limiting.positivitypreserving as pp_limiter
-from numerics.basis.basis import *
+# from numerics.basis.basis import *
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
 
@@ -74,7 +79,7 @@ class SolverBase(ABC):
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		self.basis = set_basis(mesh, EqnSet.order, BasisFunction)
+		self.basis = basis_tools.set_basis(mesh, EqnSet.order, BasisFunction)
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
@@ -163,14 +168,14 @@ class ElemOperators(object):
 
 		for elem in range(mesh.nElem):
 			# Jacobian
-			djac, jac, ijac = element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
+			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
 			# Store
 			self.jac_elems[elem] = jac
 			self.ijac_elems[elem] = ijac
 			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
-			x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
+			x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
@@ -241,7 +246,7 @@ class IFaceOperators(ElemOperators):
 		i = 0
 		for IFace in mesh.IFaces:
 			# Normals
-			nvec = iface_normal(mesh, IFace, quad_pts)
+			nvec = mesh_defs.iface_normal(mesh, IFace, quad_pts)
 			self.normals_ifaces[i] = nvec
 			i += 1
 
@@ -306,11 +311,11 @@ class BFaceOperators(IFaceOperators):
 			j = 0
 			for BFace in BFG.BFaces:
 				# Normals
-				nvec = bface_normal(mesh, BFace, quad_pts)
+				nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x, GeomPhiData = ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
+				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
 				# Store
 				x_bfgroup[j] = x
 
@@ -426,7 +431,7 @@ class DG(SolverBase):
 			iMM = self.DataSet.iMM_all
 		except AttributeError:
 			# not found; need to compute
-			iMM_all = get_inv_mass_matrices(mesh, EqnSet, solver=self)
+			iMM_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver=self)
 
 		InterpolateIC = Params["InterpolateIC"]
 		quadData = None
@@ -460,14 +465,14 @@ class DG(SolverBase):
 
 		for elem in range(mesh.nElem):
 
-			xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xphys)
+			xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xphys)
 
 			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
 			f.shape = nq,ns
 
 			if not InterpolateIC:
 
-				djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
+				djac,_,_ = basis_tools.element_jacobian(mesh,elem,quad_pts,get_djac=True)
 
 				iMM = iMM_all[elem]
 

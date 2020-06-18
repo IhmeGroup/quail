@@ -5,12 +5,15 @@ from scipy.linalg import solve_sylvester
 from data import ArrayList, GenericData
 import errors
 import general
-from general import BasisType
+from general import SetSolverParams, BasisType, ShapeType, EntityType
 
-from meshing.meshbase import *
-import meshing.tools as MeshTools
+import meshing.meshbase as mesh_defs
+import meshing.tools as mesh_tools
 
-from numerics.basis.basis import *
+import numerics.basis.basis as basis_defs
+import numerics.basis.tools as basis_tools
+import numerics.basis.ader_tools as basis_st_tools
+
 # import numerics.limiting.base as limiting
 # import numerics.limiting.positivitypreserving as pp_limiter
 
@@ -32,16 +35,6 @@ general.SolverParams.update({
 	"TimeScheme": "ADER",
 	"SourceTreatment": "Explicit",
 })
-
-def set_basis_spacetime(mesh, order, BasisFunction):
-	if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
-		basis_st = LagrangeEqQuad(order, mesh)
-	elif BasisType[BasisFunction] == BasisType.LegendreSeg:
-		basis_st = LegendreQuad(order, mesh)
-	else:
-		raise NotImplementedError
-
-	return basis_st
 
 def set_source_treatment(ns, SourceTreatment):
 	if SourceTreatment == "Explicit":
@@ -148,7 +141,7 @@ def predictor_elem_implicit(solver, elem, dt, Wp, Up):
 	djac_elems = elem_ops.djac_elems 
 	
 	djac = djac_elems[elem]
-	_, ElemVols = MeshTools.element_volumes(mesh, solver)
+	_, ElemVols = mesh_tools.element_volumes(mesh, solver)
 
 	FTR = ader_ops.FTR
 	MM = ader_ops.MM
@@ -220,7 +213,7 @@ def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
 	djac_elems = elem_ops.djac_elems 
 	
 	djac = djac_elems[elem]
-	_, ElemVols = MeshTools.element_volumes(mesh, solver)
+	_, ElemVols = mesh_tools.element_volumes(mesh, solver)
 
 	FTR = ader_ops.FTR
 	iMM = ader_ops.iMM_elems[elem]
@@ -264,6 +257,48 @@ def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
 
 	return Up
 
+def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChanged=False):
+    '''
+    Function: ref_to_phys_time
+    ------------------------------
+    This function converts reference time coordinates to physical
+    time coordinates
+
+    INPUTS:
+        mesh: Mesh object
+        elem: element 
+        PhiData: basis data
+        npoint: number of coordinates to convert
+        xref: coordinates in reference space
+        tphys: pre-allocated storage for physical time coordinates (optional) 
+
+    OUTPUTS:
+        tphys: coordinates in temporal space
+    '''
+    gorder = 1
+    gbasis = basis_defs.LagrangeEqQuad(gorder)
+
+    npoint = xref.shape[0]
+
+    gbasis.eval_basis(xref, Get_Phi=True)
+
+    dim = mesh.Dim
+    
+    Phi = gbasis.basis_val
+
+    if tphys is None:
+        tphys = np.zeros([npoint,dim])
+    else:
+        tphys[:] = time
+    for ipoint in range(npoint):
+        #for n in range(nn):
+            #nodeNum = ElemNodes[n]
+            #val = Phi[ipoint][n]
+            #for d in range(dim):
+        tphys[ipoint] = (time/2.)*(1-xref[ipoint,dim])+((time+dt)/2.0)*(1+xref[ipoint,dim])
+
+    return tphys, gbasis
+
 class ElemOperatorsADER(ElemOperators):
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
@@ -289,14 +324,14 @@ class ElemOperatorsADER(ElemOperators):
 
 		for elem in range(mesh.nElem):
 			# Jacobian
-			djac, jac, ijac = element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
+			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
 			# Store
 			self.jac_elems[elem] = jac
 			self.ijac_elems[elem] = ijac
 			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
-			x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
+			x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
@@ -339,7 +374,7 @@ class IFaceOperatorsADER(IFaceOperators):
 		i = 0
 		for IFace in mesh.IFaces:
 			# Normals
-			nvec = iface_normal(mesh, IFace, quad_pts)
+			nvec = mesh_defs.iface_normal(mesh, IFace, quad_pts)
 			self.normals_ifaces[i] = nvec
 			i += 1
 
@@ -377,11 +412,11 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 			j = 0
 			for BFace in BFG.BFaces:
 				# Normals
-				nvec = bface_normal(mesh, BFace, quad_pts)
+				nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x, GeomPhiData = ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
+				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
 				# Store
 				x_bfgroup[j] = x
 
@@ -422,22 +457,22 @@ class ADEROperators(object):
 		SMS_elems = np.zeros([mesh.nElem,nb,nb,dim])
 		iMM_elems = np.zeros([mesh.nElem,nb,nb])
 		# Get flux matrices in time
-		FTL = get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False)
-		FTR = get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False)
+		FTL = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False)
+		FTR = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False)
 
 		# Get stiffness matrix in time
-		SMT = get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem=0, gradDir=1,PhysicalSpace = False)
+		SMT = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem=0, gradDir=1,PhysicalSpace = False)
 
 		# Get stiffness matrix in space
 		for elem in range(mesh.nElem):
-			SMS = get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir=0,PhysicalSpace = True)
+			SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir=0,PhysicalSpace = True)
 			SMS_elems[elem,:,:,0] = SMS.transpose()
 
-			iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=False)
+			iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=False)
 			iMM_elems[elem] = iMM
 
 		# Get mass matrix in space-time
-		MM =  get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
+		MM =  basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 		# iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 
 
@@ -473,7 +508,7 @@ class ADEROperators(object):
 
 		for elem in range(mesh.nElem):
 			# Jacobian
-			djac, jac, ijac = element_jacobian(mesh, elem, xnode, get_djac=True, get_jac=True, get_ijac=True)
+			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, xnode, get_djac=True, get_jac=True, get_ijac=True)
 
 			if shape_name is 'HexShape':
 				self.jac_elems[elem] = np.tile(jac,(int(np.sqrt(nnode)),1,1))
@@ -481,7 +516,7 @@ class ADEROperators(object):
 				self.djac_elems[elem] = np.tile(djac,(int(np.sqrt(nnode)),1))
 
 				# Physical coordinates of nodal points
-				x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xnode)
+				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xnode)
 				# Store
 				self.x_elems[elem] = np.tile(x,(int(np.sqrt(nnode)),1))
 
@@ -491,7 +526,7 @@ class ADEROperators(object):
 				self.djac_elems[elem] = np.tile(djac,(nnode,1))
 
 				# Physical coordinates of nodal points
-				x, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xnode)
+				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xnode)
 				# Store
 				self.x_elems[elem] = np.tile(x,(nnode,1))
 
@@ -534,8 +569,8 @@ class ADERDG(DG):
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		self.basis = set_basis(mesh, EqnSet.order, BasisFunction)
-		self.basis_st = set_basis_spacetime(mesh, EqnSet.order, BasisFunction)
+		self.basis = basis_tools.set_basis(mesh, EqnSet.order, BasisFunction)
+		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, EqnSet.order, BasisFunction)
 
 		# Allocate array for predictor step in ADER-Scheme
 		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])

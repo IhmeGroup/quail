@@ -8,8 +8,7 @@ import sys
 import errors
 # from general import *
 
-from numerics.basis.basis import set_basis
-
+import numerics.basis.tools as basis_tools
 from physics.base.data import ICData, BCData, ExactData, SourceData
 import physics.base.functions as base_fcns
 from physics.base.functions import BCType as base_BC_type
@@ -95,7 +94,7 @@ class PhysicsBase(object):
 		else:
 			raise Exception("Input error")
 
-		basis = set_basis(mesh, self.order, basis_type)
+		basis = basis_tools.set_basis(mesh, self.order, basis_type)
 		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.StateRank])
 		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.StateRank])
 
