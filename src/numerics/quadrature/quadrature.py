@@ -22,8 +22,6 @@ def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None)
 		QuadOrder: quadrature order
 		QuadChanged: boolean flag for a changed quadrature
 	'''
-
-	#Add logic to add 1 to the dimension of an ADER case?	
 	gorder = mesh.gorder
 	shape = basis.shape
 
