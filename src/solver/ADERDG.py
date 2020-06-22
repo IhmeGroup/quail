@@ -21,7 +21,6 @@ global echeck
 echeck = -1
 
 import solver.DG as DG
-# from solver.DG import *
 
 # Update default solver params.
 general.SolverParams.update({
