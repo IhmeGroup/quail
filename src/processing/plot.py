@@ -5,14 +5,12 @@ from matplotlib import pyplot as plt
 import matplotlib.tri as tri
 import numpy as np
 
-from general import *
+# from general import *
 
-import meshing.meshbase as Mesh
+import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
-import numerics.basis.basis as Basis
-
 
 def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['DejaVu Sans']},
 	linewidth=1.5, markersize=4.0, axis=None, cmap='viridis', EqualAR=False):
@@ -365,7 +363,7 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 		# JData = Basis.JacobianData(mesh)
 		# djac,_,_=Basis.element_jacobian(mesh,elem,xpoint,get_djac=True)
 
-		xphys, GeomPhiData = Mesh.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
+		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
 		# u_exact[el,:,:] = f_exact(xphys, EndTime)
 

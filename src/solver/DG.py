@@ -21,7 +21,7 @@ import numerics.limiting.positivitypreserving as pp_limiter
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
 
-import processing.post as Post
+import processing.post as post_defs
 import processing.readwritedatafiles as ReadWriteDataFiles
 
 from solver.tools import project_state_to_new_basis
@@ -826,7 +826,7 @@ class DG(SolverBase):
 
 			# Output
 			if TrackOutput:
-				output,_ = Post.L2_error(mesh,EqnSet,Time,"Entropy",False)
+				output,_ = post_defs.L2_error(mesh,EqnSet,Time,"Entropy",False)
 				OutputString = ", Output = %g" % (output)
 				PrintString += OutputString
 

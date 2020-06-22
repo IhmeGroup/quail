@@ -14,21 +14,14 @@ import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 import numerics.basis.ader_tools as basis_st_tools
 
-# import numerics.limiting.base as limiting
-# import numerics.limiting.positivitypreserving as pp_limiter
-
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
-
-import processing.post as Post
-import processing.readwritedatafiles as ReadWriteDataFiles
-
-from solver.tools import project_state_to_new_basis
 
 global echeck
 echeck = -1
 
-from solver.DG import *
+import solver.DG as DG
+# from solver.DG import *
 
 # Update default solver params.
 general.SolverParams.update({
@@ -299,7 +292,7 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
 
     return tphys, gbasis
 
-class ElemOperatorsADER(ElemOperators):
+class ElemOperatorsADER(DG.ElemOperators):
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -322,7 +315,7 @@ class ElemOperatorsADER(ElemOperators):
 
 		self.basis_val = basis.basis_val
 		self.basis_grad = basis.basis_grad
-		
+
 		for elem in range(mesh.nElem):
 			# Jacobian
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
@@ -339,7 +332,7 @@ class ElemOperatorsADER(ElemOperators):
 			# basis.eval_basis(quad_pts, Get_gPhi=True, ijac=ijac) # gPhi is [nq,nb,dim]
 			# self.basis_pgrad_elems[elem] = basis.basis_pgrad
 
-class IFaceOperatorsADER(IFaceOperators):
+class IFaceOperatorsADER(DG.IFaceOperators):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
@@ -536,7 +529,7 @@ class ADEROperators(object):
 		self.get_geom_data(mesh, basis_st, order)
 
 
-class ADERDG(DG):
+class ADERDG(DG.DG):
 	'''
 	Class: ADERDG
 	--------------------------------------------------------------------------
@@ -582,7 +575,7 @@ class ADERDG(DG):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = DG.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_solver_params()
@@ -633,11 +626,11 @@ class ADERDG(DG):
 		dt = self.Params['EndTime']/self.Params['nTimeStep']
 
 
-		self.elem_operators = ElemOperators()
+		self.elem_operators = DG.ElemOperators()
 		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
-		self.iface_operators = IFaceOperators()
+		self.iface_operators = DG.IFaceOperators()
 		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
-		self.bface_operators = BFaceOperators()
+		self.bface_operators = DG.BFaceOperators()
 		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 
 		# Calculate ADER specific space-time operators

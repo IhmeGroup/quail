@@ -6,16 +6,16 @@ import sys
 
 from data import ArrayList
 import errors
-from general import *
+from general import EntityType
 
-from meshing.meshbase import Mesh, ref_to_phys
+import meshing.meshbase as mesh_defs
 import meshing.tools as MeshTools
 
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
 
 import numerics.basis.tools as basis_tools
 
-import processing.plot as Plot
+import processing.plot as plot_defs
 
 
 
@@ -70,7 +70,7 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 
 		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
-		xphys, GeomPhiData = ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
+		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points
@@ -180,9 +180,9 @@ def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True
 	if plot:
 		plt.figure()
 		bvalues = bvalues.flatten()
-		SolnLabel = Plot.get_solution_label(EqnSet, variable_name, Label)
-		Plot.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True)
-		Plot.finalize_plot(xlabel=xlabel)
+		SolnLabel = plot_defs.get_solution_label(EqnSet, variable_name, Label)
+		plot_defs.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True)
+		plot_defs.finalize_plot(xlabel=xlabel)
 
 
 
