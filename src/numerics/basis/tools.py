@@ -351,6 +351,86 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
 
     return djac, jac, ijac
 
+def calculate_1D_normals(self, mesh, elem, face, quad_pts):
+    '''
+    Method: calculate_normals
+    -------------------
+    Calculate the normals
+
+    INPUTS:
+        mesh: Mesh object
+        elem: element index
+        face: face index
+        quad_pts: points in reference space at which to calculate normals
+    '''
+
+    gorder = mesh.gorder
+    nq = quad_pts.shape[0]
+
+    if gorder == 1:
+        nq = 1
+
+    # if self.nvec is None or self.nvec.shape != (nq,mesh.Dim):
+    nvec = np.zeros([nq,mesh.Dim])
+    
+    #1D normals calculation
+    if face == 0:
+        nvec[0] = -1.
+    elif face == 1:
+        nvec[0] = 1.
+    else:
+        raise ValueError
+
+    return nvec
+    
+def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
+    '''
+    Method: calculate_normals
+    -------------------
+    Calculate the normals for 2D shapes
+
+    INPUTS:
+        mesh: Mesh object
+        elem: element index
+        face: face index
+        quad_pts: points in reference space at which to calculate normals
+    '''
+    gbasis = mesh.gbasis
+    gorder = mesh.gorder
+
+    nq = quad_pts.shape[0]
+
+    if gorder == 1:
+        nq = 1
+
+    nvec = np.zeros([nq,mesh.Dim])
+
+    # Calculate 2D normals
+    ElemNodes = mesh.Elem2Nodes[elem]
+    if gorder == 1:
+        fnodes, nfnode = basis.local_q1_face_nodes(gorder, face, fnodes=None)
+        x0 = mesh.Coords[ElemNodes[fnodes[0]]]
+        x1 = mesh.Coords[ElemNodes[fnodes[1]]]
+
+        nvec[0,0] =  (x1[1]-x0[1])/2.;
+        nvec[0,1] = -(x1[0]-x0[0])/2.;
+    
+    # Calculate normals for curved meshes
+    else:
+        x_s = np.zeros_like(nvec)
+        fnodes, nfnode = basis.local_face_nodes(gorder, face, fnodes=None)
+
+        basis_seg = basis_defs.LagrangeEqSeg(gorder)
+        basis_grad = basis_seg.get_grads(quad_pts, basis_grad=None)
+        Coords = mesh.Coords[ElemNodes[fnodes]]
+
+        # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
+        x_s[:] = np.matmul(Coords.transpose(), basis_grad).reshape(x_s.shape)
+        nvec[:,0] = x_s[:,1]
+        nvec[:,1] = -x_s[:,0]
+
+    return nvec
+
 def MatDetInv(A, d, detA, iA):
     if d == 1:
         det = A[0]

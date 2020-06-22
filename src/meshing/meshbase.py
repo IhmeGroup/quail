@@ -111,9 +111,9 @@ def iface_normal(mesh, IFace, quad_pts, NData=None):
         # NData = NormalData()
 
     if gorderL <= gorderR:
-        nvec = gbasis.calculate_normals(mesh, elemL, IFace.faceL, quad_pts)
+        nvec = gbasis.calculate_normals(gbasis, mesh, elemL, IFace.faceL, quad_pts)
     else:
-        nvec = gbasis.calculate_normals(mesh, elemR, IFace.faceR, quad_pts)
+        nvec = gbasis.calculate_normals(gbasis, mesh, elemR, IFace.faceR, quad_pts)
         nvec *= -1.
 
     return nvec
@@ -143,7 +143,7 @@ def bface_normal(mesh, BFace, quad_pts, NData=None):
     # if NData is None:
     #     NData = NormalData()
 
-    nvec = gbasis.calculate_normals(mesh, elem, BFace.face, quad_pts)
+    nvec = gbasis.calculate_normals(gbasis, mesh, elem, BFace.face, quad_pts)
 
     return nvec
 

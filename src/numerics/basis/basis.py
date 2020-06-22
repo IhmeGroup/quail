@@ -67,7 +67,7 @@ class PointShape(ShapeBase):
         pass
 
 
-class SegShape(PointShape):
+class SegShape(ShapeBase):
 
     shape = ShapeType.Segment
     faceshape = ShapeType.Point
@@ -131,7 +131,7 @@ class SegShape(PointShape):
         return xelem
 
 
-class QuadShape(SegShape):
+class QuadShape(ShapeBase):
 
     shape = ShapeType.Quadrilateral
     faceshape = ShapeType.Segment
@@ -213,7 +213,7 @@ class QuadShape(SegShape):
         return xelem
 
 
-class TriShape(QuadShape):
+class TriShape(ShapeBase):
 
     shape = ShapeType.Triangle
     faceshape = ShapeType.Segment
@@ -398,6 +398,7 @@ class LagrangeEqSeg(BasisBase, SegShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
+        self.calculate_normals = basis_tools.calculate_1D_normals
 
     def get_values(self, quad_pts, basis_val=None):
         '''
@@ -508,38 +509,6 @@ class LagrangeEqSeg(BasisBase, SegShape):
                     mask[i] = True
                 mask[j] = True
 
-    def calculate_normals(self, mesh, elem, face, quad_pts):
-        '''
-        Method: calculate_normals
-        -------------------
-        Calculate the normals
-
-        INPUTS:
-            mesh: Mesh object
-            elem: element index
-            face: face index
-            quad_pts: points in reference space at which to calculate normals
-        '''
-
-        gorder = mesh.gorder
-        nq = quad_pts.shape[0]
-
-        if gorder == 1:
-            nq = 1
-
-        # if self.nvec is None or self.nvec.shape != (nq,mesh.Dim):
-        nvec = np.zeros([nq,mesh.Dim])
-        
-        #1D normals calculation
-        if face == 0:
-            nvec[0] = -1.
-        elif face == 1:
-            nvec[0] = 1.
-        else:
-            raise ValueError
-
-        return nvec
-
     def local_q1_face_nodes(self, p, face, fnodes=None):
         '''
         Method: local_q1_face_nodes
@@ -571,10 +540,11 @@ class LagrangeEqSeg(BasisBase, SegShape):
         return fnodes, nfnode
 
 
-class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
+class LagrangeEqQuad(BasisBase, QuadShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
+        self.calculate_normals = basis_tools.calculate_2D_normals
 
     def get_values(self, quad_pts, basis_val=None):
         '''
@@ -663,8 +633,9 @@ class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
         # Always need phi
         phix = np.zeros((x.shape[0],xnode.shape[0])); phiy = np.zeros_like(phix)
 
-        self.get_lagrange_basis_1D(x[:,0].reshape(-1,1), xnode, nnode, phix, gphix)
-        self.get_lagrange_basis_1D(x[:,1].reshape(-1,1), xnode, nnode, phiy, gphiy)
+        lagrange_eq_seg = LagrangeEqSeg(self.order)
+        lagrange_eq_seg.get_lagrange_basis_1D(x[:,0].reshape(-1,1), xnode, nnode, phix, gphix)
+        lagrange_eq_seg.get_lagrange_basis_1D(x[:,1].reshape(-1,1), xnode, nnode, phiy, gphiy)
 
         if phi is not None:
             for i in range(x.shape[0]):
@@ -673,55 +644,6 @@ class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
             for i in range(x.shape[0]):
                 gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
                 gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
-
-
-    def calculate_normals(self, mesh, elem, face, quad_pts):
-        '''
-        Method: calculate_normals
-        -------------------
-        Calculate the normals for 2D shapes
-
-        INPUTS:
-            mesh: Mesh object
-            elem: element index
-            face: face index
-            quad_pts: points in reference space at which to calculate normals
-        '''
-        gbasis = mesh.gbasis
-        gorder = mesh.gorder
-
-        nq = quad_pts.shape[0]
-
-        if gorder == 1:
-            nq = 1
-
-        nvec = np.zeros([nq,mesh.Dim])
-
-        # Calculate 2D normals
-        ElemNodes = mesh.Elem2Nodes[elem]
-        if gorder == 1:
-            fnodes, nfnode = self.local_q1_face_nodes(gorder, face, fnodes=None)
-            x0 = mesh.Coords[ElemNodes[fnodes[0]]]
-            x1 = mesh.Coords[ElemNodes[fnodes[1]]]
-
-            nvec[0,0] =  (x1[1]-x0[1])/2.;
-            nvec[0,1] = -(x1[0]-x0[0])/2.;
-        
-        # Calculate normals for curved meshes
-        else:
-            x_s = np.zeros_like(nvec)
-            fnodes, nfnode = self.local_face_nodes(gorder, face, fnodes=None)
-
-            basis_seg = LagrangeEqSeg(gorder)
-            basis_grad = basis_seg.get_grads(quad_pts, basis_grad=None)
-            Coords = mesh.Coords[ElemNodes[fnodes]]
-
-            # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
-            x_s[:] = np.matmul(Coords.transpose(), basis_grad).reshape(x_s.shape)
-            nvec[:,0] = x_s[:,1]
-            nvec[:,1] = -x_s[:,0]
-
-        return nvec
 
     def local_q1_face_nodes(self, p, face, fnodes=None):
         '''
@@ -789,10 +711,11 @@ class LagrangeEqQuad(LagrangeEqSeg, QuadShape):
         return fnodes, nfnode
 
 
-class LagrangeEqTri(LagrangeEqQuad, TriShape):
+class LagrangeEqTri(BasisBase, TriShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
+        self.calculate_normals = basis_tools.calculate_2D_normals
 
     def get_values(self, quad_pts, basis_val=None):
         '''
@@ -1096,7 +1019,7 @@ class LegendreSeg(BasisBase, SegShape):
                 dleg = leg_poly.basis(it).deriv(1)
                 gphi[:,it] = dleg(x)
 
-class LegendreQuad(LegendreSeg, QuadShape):
+class LegendreQuad(BasisBase, QuadShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -1196,7 +1119,7 @@ class LegendreQuad(LegendreSeg, QuadShape):
                 gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
                 gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
 
-class HierarchicH1Tri(LegendreQuad, TriShape):
+class HierarchicH1Tri(BasisBase, TriShape):
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
