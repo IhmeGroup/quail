@@ -33,7 +33,7 @@ nu = -3.
 Velocity = 1.0 
 EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
 EqnSet.set_physical_params(ConstVelocity=Velocity)
-EqnSet.set_physical_params(ConvFlux="LaxFriedrichs")
+EqnSet.set_conv_num_flux("LaxFriedrichs")
 
 EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
 EqnSet.set_exact(exact_type="DampingSine", omega = 2*np.pi, nu = nu)
