@@ -10,21 +10,17 @@ from data import ArrayList, GenericData
 import general
 from general import SetSolverParams, BasisType, ShapeType, EntityType
 import meshing.meshbase as mesh_defs
-# from meshing.meshbase import *
-# import meshing.tools as MeshTools
 
-# import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 
 import numerics.limiting.positivitypreserving as pp_limiter
-# from numerics.basis.basis import *
+
 from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
 
 import processing.post as post_defs
 import processing.readwritedatafiles as ReadWriteDataFiles
 
-# from solver.tools import project_state_to_new_basis
 import solver.tools as solver_tools
 global echeck
 echeck = -1
@@ -523,15 +519,29 @@ class DG(SolverBase):
 		dim = EqnSet.dim
 		elem_ops = self.elem_operators
 		basis_val = elem_ops.basis_val
+		quad_wts = elem_ops.quad_wts
+
+		x_elems = elem_ops.x_elems
+		nq = quad_wts.shape[0]
+		x = x_elems[elem]
 
 		# interpolate state and gradient at quad points
 		Uq = np.matmul(basis_val, Up)
 
+		'''
+		Evaluate the inviscid flux integral.
+		'''
 		Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,ns,dim]
-
 		ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
 
-		ER += solver_tools.calculate_source_term_integral(self, elem_ops, EqnSet, elem, Uq)
+		'''
+		Evaluate the source term integral
+		'''
+		Sq = elem_ops.Sq
+		Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
+		Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq,ns]
+
+		ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
 
 		if elem == echeck:
 			code.interact(local=locals())

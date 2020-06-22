@@ -32,21 +32,12 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	return R
 
-def calculate_source_term_integral(solver, elem_ops, physics, elem, Uq):
+def calculate_source_term_integral(elem_ops, elem, Sq):
 	
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
 	djac_elems = elem_ops.djac_elems 
-	x_elems = elem_ops.x_elems
-
 	djac = djac_elems[elem]
-	nq = quad_wts.shape[0]
-	x = x_elems[elem]
-
-
-	Sq = elem_ops.Sq
-	Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
-	Sq = physics.SourceState(nq, x, solver.Time, Uq, Sq) # [nq,ns]
 
 	# Calculate source term integral
 	# for ir in range(sr):
