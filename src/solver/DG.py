@@ -24,8 +24,8 @@ import numerics.timestepping.stepper as stepper
 import processing.post as post_defs
 import processing.readwritedatafiles as ReadWriteDataFiles
 
-from solver.tools import project_state_to_new_basis
-
+# from solver.tools import project_state_to_new_basis
+import solver.tools as solver_tools
 global echeck
 echeck = -1
 
@@ -521,45 +521,17 @@ class DG(SolverBase):
 		EqnSet = self.EqnSet
 		ns = EqnSet.StateRank
 		dim = EqnSet.dim
-
 		elem_ops = self.elem_operators
-		quad_wts = elem_ops.quad_wts
-		basis_val = elem_ops.basis_val 
-		basis_pgrad_elems = elem_ops.basis_pgrad_elems
-		djac_elems = elem_ops.djac_elems 
-		x_elems = elem_ops.x_elems
-		Sq = elem_ops.Sq
-
-		# Unpack
-		basis_pgrad = basis_pgrad_elems[elem]
-		djac = djac_elems[elem]
-		nq = quad_wts.shape[0]
-		x = x_elems[elem]
+		basis_val = elem_ops.basis_val
 
 		# interpolate state and gradient at quad points
 		Uq = np.matmul(basis_val, Up)
 
 		Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,ns,dim]
 
-		# for ir in range(ns):
-		# 	for jn in range(nb):
-		# 		for iq in range(nq):
-		# 			gPhi = PhiData.gPhi[iq,jn] # dim
-		# 			ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
+		ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
 
-		ER += np.tensordot(basis_pgrad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
-
-		Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
-		Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq,ns]
-
-		# Calculate source term integral
-		# for ir in range(sr):
-		# 	for jn in range(nn):
-		# 		for iq in range(nq):
-		# 			Phi = PhiData.Phi[iq,jn]
-		# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
-
-		ER += np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
+		ER += solver_tools.calculate_source_term_integral(self, elem_ops, EqnSet, elem, Uq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -630,8 +602,8 @@ class DG(SolverBase):
 
 		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
 
-		RL -= np.matmul(basis_valL.transpose(), Fq*quad_wts) # [nb,sr]
-		RR += np.matmul(basis_valR.transpose(), Fq*quad_wts) # [nb,sr]
+		RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts, Fq)
+		RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts, Fq)
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -713,13 +685,10 @@ class DG(SolverBase):
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		# UqB = EqnSet.BoundaryState(BC, nq, x, self.Time, normals, UqI, UqB)
-
-		# Fq = EqnSet.ConvFluxBoundary(BC, UqI, UqB, normals, nq, GenericData()) # [nq,sr]
 
 		Fq = BC.get_boundary_flux(EqnSet, x, self.Time, normals, UqI)
 
-		R -= np.matmul(basis_val.transpose(), Fq*quad_wts) # [nn,sr]
+		R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -929,7 +898,7 @@ class DG(SolverBase):
 				Order_old = EqnSet.order
 				EqnSet.order = Order
 				# Project
-				project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
+				solver_tools.project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
 
 				basis.order = Order
 				basis.nb = basis.get_num_basis_coeff(Order)				

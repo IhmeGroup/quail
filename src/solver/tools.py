@@ -5,6 +5,59 @@ import numpy as np
 import data
 import numerics.basis.tools as basis_tools
 
+def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
+	
+	quad_wts = elem_ops.quad_wts
+	basis_val = elem_ops.basis_val 
+	basis_pgrad_elems = elem_ops.basis_pgrad_elems
+	djac_elems = elem_ops.djac_elems 
+
+	basis_pgrad = basis_pgrad_elems[elem]
+	djac = djac_elems[elem]
+	nq = quad_wts.shape[0]
+
+	# for ir in range(ns):
+	# 	for jn in range(nb):
+	# 		for iq in range(nq):
+	# 			gPhi = PhiData.gPhi[iq,jn] # dim
+	# 			ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
+
+	ER = np.tensordot(basis_pgrad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
+
+	return ER
+
+def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
+
+	R = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb,sr]
+
+	return R
+
+def calculate_source_term_integral(solver, elem_ops, physics, elem, Uq):
+	
+	quad_wts = elem_ops.quad_wts
+	basis_val = elem_ops.basis_val 
+	djac_elems = elem_ops.djac_elems 
+	x_elems = elem_ops.x_elems
+
+	djac = djac_elems[elem]
+	nq = quad_wts.shape[0]
+	x = x_elems[elem]
+
+
+	Sq = elem_ops.Sq
+	Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
+	Sq = physics.SourceState(nq, x, solver.Time, Uq, Sq) # [nq,ns]
+
+	# Calculate source term integral
+	# for ir in range(sr):
+	# 	for jn in range(nn):
+	# 		for iq in range(nq):
+	# 			Phi = PhiData.Phi[iq,jn]
+	# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
+
+	ER = np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
+
+	return ER
 
 def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	'''
