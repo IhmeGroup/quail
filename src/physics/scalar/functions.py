@@ -100,7 +100,7 @@ class Paraboloid(FcnBase):
 
 
 class ShockBurgers(FcnBase):
-	def __init__(self, uL=1., uR=0., xshock=-0.5):
+	def __init__(self, uL=1., uR=0., xshock=0.3):
 		self.uL = uL 
 		self.uR = uR
 		self.xshock = xshock

@@ -275,6 +275,7 @@ class ConstAdvScalar1D(ConstAdvScalar):
 			base_fcn_type.Uniform : base_fcns.Uniform,
 			scalar_fcn_type.Sine : scalar_fcns.Sine,
 			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
+			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
 			# scalar_fcn_type.ShiftedCosine : scalar_fcns.shifted_cosine,
 			# scalar_fcn_type.Exponential : scalar_fcns.exponential,
 			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
