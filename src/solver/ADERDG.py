@@ -634,6 +634,7 @@ class ADERDG(DG.DG):
 		mesh = self.mesh
 		dim = mesh.Dim
 		EqnSet = self.EqnSet
+		ns = EqnSet.StateRank
 		BFG = mesh.BFaceGroups[ibfgrp]
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.Elem
@@ -652,7 +653,7 @@ class ADERDG(DG.DG):
 
 		UqI = bface_ops_st.UqI
 		UqB = bface_ops_st.UqB
-		Fq = bface_ops.Fq
+		Fq = bface_ops_st.Fq
 
 		if face == 0:
 			face_st = 3
@@ -680,7 +681,11 @@ class ADERDG(DG.DG):
 
 		# Get boundary state
 		BC = EqnSet.BCs[ibfgrp]
-		Fq = BC.get_boundary_flux(EqnSet, x, t, normals, UqI)
+		# Fq = BC.get_boundary_flux(EqnSet, x, t, normals, UqI)
+
+		# Loop over time to apply BC at each temporal quadrature point
+		for i in range(len(t)):	
+			Fq[i,:] = BC.get_boundary_flux(EqnSet, x, t[i], normals, UqI[i,:].reshape([1,ns]))
 
 		R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq)
 

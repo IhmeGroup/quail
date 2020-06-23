@@ -52,29 +52,12 @@ class SmoothIsentropicFlow(FcnBase):
 
 		x_ = x.reshape(-1)
 
-		if isinstance(t,float):
-			Up = np.zeros([x.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.StateRank])
 
-			x1 = fsolve(f1, 0.*x_, (x_,t,a))
-			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
-			x2 = fsolve(f2, 0.*x_, (x_,t,a))
-			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
-		else:
-
-			Up = np.zeros([t.shape[0], physics.StateRank])
-
-			y = np.zeros(len(t))
-			for i in range(len(t)):
-			#	code.interact(local=locals())
-				y[i] = x
-			#y = x.transpose()
-			y_ = y.reshape(-1)
-			t = t.reshape(-1)
-
-			x1 = root(f1, 0.*y_, (y_,t,a)).x
-			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
-			x2 = root(f2, 0.*y_, (y_,t,a)).x
-			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
+		x1 = fsolve(f1, 0.*x_, (x_,t,a))
+		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
+		x2 = fsolve(f2, 0.*x_, (x_,t,a))
+		if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 			
 		r = rho(x1,x2,a)
 		u = vel(x1,x2,a)
@@ -105,25 +88,12 @@ class MovingShock(FcnBase):
 		if physics.dim == 2: irhov = physics.GetStateIndex("YMomentum")
 		gam = physics.gamma
 		
-		if not isinstance(t,float):
-			Up = np.zeros([t.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.StateRank])
 
-			t = t.reshape(-1)
-			y = np.zeros(len(t))
-			for i in range(len(t)):
-				y[i]=x
-			x = y
-
-			rho1 = np.full(len(t),1.)
-			p1 = np.full(len(t),1.e5)
-			u1 = np.full(len(t),0.)
-		else:
-			Up = np.zeros([x.shape[0], physics.StateRank])
-
-			''' Pre-shock state '''
-			rho1 = 1.
-			p1 = 1.e5
-			u1 = 0.
+		''' Pre-shock state '''
+		rho1 = 1.
+		p1 = 1.e5
+		u1 = 0.
 
 		''' Update xshock based on shock speed '''
 		a1 = np.sqrt(gam*p1/rho1)
@@ -143,30 +113,17 @@ class MovingShock(FcnBase):
 		''' Fill state '''
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
-		if not isinstance(t,float):
-			for i in range(len(t)):
-				# Density
-				Up[iright[i], i, irho] = rho1[i]
-				Up[ileft[i], i, irho] = rho2[i]
-				# Momentum
-				Up[iright[i], i, irhou] = rho1[i]*u1[i]
-				Up[ileft[i], i, irhou] = rho2[i]*u2[i]
-				if physics.dim == 2: Up[:, irhov] = 0.
-				# Energy
-				Up[iright[i], i, irhoE] = p1[i]/(gam-1.) + 0.5*rho1[i]*u1[i]*u1[i]
-				Up[ileft[i], i, irhoE] = p2[i]/(gam-1.) + 0.5*rho2[i]*u2[i]*u2[i]
 
-		else:
-			# Density
-			Up[iright, irho] = rho1
-			Up[ileft, irho] = rho2
-			# Momentum
-			Up[iright, irhou] = rho1*u1
-			Up[ileft, irhou] = rho2*u2
-			if physics.dim == 2: Up[:, irhov] = 0.
-			# Energy
-			Up[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
-			Up[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
+		# Density
+		Up[iright, irho] = rho1
+		Up[ileft, irho] = rho2
+		# Momentum
+		Up[iright, irhou] = rho1*u1
+		Up[ileft, irhou] = rho2*u2
+		if physics.dim == 2: Up[:, irhov] = 0.
+		# Energy
+		Up[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
+		Up[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
 
 		return Up
 
