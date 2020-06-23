@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import code
-import getopt
+# import getopt
+import argparse
 import importlib
 import numpy as np
 import os
@@ -285,38 +286,49 @@ def main(argv):
 	inputfile = ''
 	postfile = ''
 
-	try:
-		opts, args = getopt.getopt(argv,"h:p:",["pfile="])
-		inputfile = args[0]
-	except getopt.GetoptError:
-		print('dgp <inputfile> [-p <postfile>]')
-		sys.exit(2)
-	for opt, arg in opts:
-		if opt == '-h':
-			print('dgp <inputfile> [-p <postfile>]')
-			sys.exit()
-		elif opt in ("-p", "--pfile"):
-			postfile = arg
+	my_parser = argparse.ArgumentParser(description='This script is the driver for Stanford\'s DGP solver')
 
-	inputfile=inputfile.replace('.py','')
-	postfile=postfile.replace('.py','')
+	# Argument for the input deck
+	my_parser.add_argument('inputdeck',
+    	                   metavar='inputdeck:',
+        	               type=str,
+            	           help='this file contains all requested parameters for the solver')
+	# Optional argument for the post processing script
+	my_parser.add_argument('-p','--post',
+    	                   metavar='',
+        	               type=str,
+            	           help='this file executes post-processing when included in CLI')	
 
+	# Execute the parse_args() method
+	args = my_parser.parse_args()
+	input_deck = args.inputdeck
+	post_file = args.post
 
-	CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
+	CurrentDir = os.path.dirname(os.path.abspath(input_deck)) + "/"
 	sys.path.append(CurrentDir)
-	deck = importlib.import_module(inputfile)
+
+	input_deck=input_deck.replace('.py','')
+
+	if post_file is not None:
+		post_file=post_file.replace('.py','')
+
+	deck = importlib.import_module(input_deck)
 
 	test_deck(deck)
 	solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
 		deck.Physics, deck.InitialCondition, deck.BoundaryConditions, deck.SourceTerms)
 
 	auto_process = solver.Params["AutoProcess"]
-	if auto_process is True:
-		if postfile is not '':
-			postprocess = importlib.import_module(postfile)
-		else:
-			postfile = 'post_process'
-			postprocess = importlib.import_module(postfile)
+
+	if post_file is not None:
+		postprocess = importlib.import_module(post_file)
+
+	if auto_process is True and post_file is None:
+		post_file = 'post_process'
+		try:
+			postprocess = importlib.import_module(post_file)
+		except:
+			raise errors.FileReadError("post_process.py file not found")
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
