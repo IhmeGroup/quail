@@ -107,7 +107,7 @@ class PositivityPreserving(base.LimiterBase):
 		''' Limit pressure '''
 		p_elem_faces = physics.ComputeScalars(self.scalar2, u_elem_faces)
 		# theta = np.abs((p_bar - POS_TOL)/(p_bar - p_elem_faces))
-		theta[:] = 1.
+		theta[:] = 1.0
 		i_pos_p = (p_elem_faces < 0.).reshape(-1) # indices where pressure is negative
 		theta[i_pos_p] = p_bar/(p_bar - p_elem_faces[i_pos_p])
 		theta2 = np.amin(theta)
@@ -128,7 +128,7 @@ class ScalarPositivityPreserving(base.LimiterBase):
 
 	COMPATIBLE_PHYSICS_TYPES = [general.PhysicsType.ConstAdvScalar, general.PhysicsType.Burgers]
 
-	def __init__(self):
+	def __init__(self, physics_type):
 		'''
 		Method: __init__
 		-------------------
