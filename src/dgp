@@ -86,7 +86,6 @@ def read_inputs(TimeStepping, Numerics, Output, Mesh,
 def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=None, 
 		InitialCondition=None, BoundaryConditions=None, SourceTerms=None):
 
-
 	'''
 	Input deck
 	'''
@@ -187,7 +186,7 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	physics.set_exact(exact_type=IC_params["Function"],**iparams)
 
 	# Initial conditions
-	IC_params["Function"] = physics.set_IC(IC_type=IC_params["Function"])
+	IC_params["Function"] = physics.set_IC(IC_type=IC_params["Function"],**iparams)
 
 
 	# Boundary conditions
