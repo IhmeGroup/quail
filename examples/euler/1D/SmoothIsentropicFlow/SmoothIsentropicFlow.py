@@ -13,9 +13,6 @@ Numerics = {
     "Solver" : "DG",
 }
 
-Output = {}
-
-
 Output = {
     "AutoProcess" : True,
 }
@@ -55,5 +52,3 @@ BoundaryConditions = {
         "BCType" : "StateAll",
     },
 }
-
-SourceTerms = {}
