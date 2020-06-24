@@ -313,32 +313,19 @@ def main(argv):
         	               type=str,
             	           help='this file executes post-processing when included in CLI')	
 
+	my_parser.add_argument('-r', '--restart',
+							metavar='',
+							type=str,
+							help='name of restart file')
+
 	# Execute the parse_args() method
 	args = my_parser.parse_args()
 	input_deck = args.inputdeck
 	post_file = args.post
+	restart_file = args.restart
 
 	CurrentDir = os.path.dirname(os.path.abspath(input_deck)) + "/"
-# =======
-# 	try:
-# 		opts, args = getopt.getopt(argv,"h:p:",["pfile="])
-# 		inputfile = args[0]
-# 	except getopt.GetoptError:
-# 		print('dgp <inputfile> [-p <postfile>]')
-# 		sys.exit(2)
-# 	for opt, arg in opts:
-# 		if opt == '-h':
-# 			print('dgp <inputfile> [-p <postfile>]')
-# 			sys.exit()
-# 		elif opt in ("-p", "--pfile"):
-# 			postfile = arg
 
-# 	inputfile = inputfile.replace('.py','')
-# 	postfile = postfile.replace('.py','')
-
-
-# 	CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
-# >>>>>>> Stashed changes
 	sys.path.append(CurrentDir)
 
 	input_deck=input_deck.replace('.py','')
@@ -346,6 +333,9 @@ def main(argv):
 	if post_file is not None:
 		post_file=post_file.replace('.py','')
 
+	if restart_file is not None:
+		restart_file = restart_file.replace('.py','')
+		
 	deck = importlib.import_module(input_deck)
 
 	# test_deck(deck)
