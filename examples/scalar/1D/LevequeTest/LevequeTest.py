@@ -1,15 +1,20 @@
+import code
+cfl = 0.1
+tfinal = 0.1
+dt = cfl*0.01
+nTimeStep = int(tfinal/dt)
 
 TimeStepping = {
     "StartTime" : 0.,
-    "EndTime" : 0.3,
-    "nTimeStep" : 300,
-    "TimeScheme" : "ADER",
+    "EndTime" : tfinal,
+    "nTimeStep" : nTimeStep,
+    "TimeScheme" : "SSPRK3",
 }
 
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeEqSeg",
-    "Solver" : "ADERDG",
+    "Solver" : "DG",
     "ApplyLimiter" : "ScalarPositivityPreserving", 
 
 }
@@ -51,5 +56,13 @@ BoundaryConditions = {
     },
     "Right" : {
         "BCType" : "Extrapolate",
+    },
+}
+nu = 1000.
+SourceTerms = {
+    "source1" : {
+        "Function" : "StiffSource",
+        "nu" : nu,
+        "beta" : 0.5,
     },
 }

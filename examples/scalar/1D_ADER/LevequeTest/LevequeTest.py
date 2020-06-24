@@ -1,8 +1,13 @@
+import code
+cfl = 0.05
+tfinal = 0.15
+dt = cfl*0.01
+nTimeStep = int(tfinal/dt)
 
 TimeStepping = {
     "StartTime" : 0.,
-    "EndTime" : 0.3,
-    "nTimeStep" : 300,
+    "EndTime" : tfinal,
+    "nTimeStep" : nTimeStep,
     "TimeScheme" : "ADER",
 }
 
@@ -10,7 +15,8 @@ Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "ADERDG",
-    "ApplyLimiter" : "ScalarPositivityPreserving", 
+    # "ApplyLimiter" : "ScalarPositivityPreserving", 
+    "SourceTreatment" : "Implicit",
 
 }
 
@@ -33,7 +39,7 @@ Physics = {
     "ConstVelocity" : 1.,
 }
 
-xshock = 0.2
+xshock = 0.3
 
 InitialCondition = {
     "Function" : "ShockBurgers",
@@ -53,5 +59,14 @@ BoundaryConditions = {
     },
     "Right" : {
         "BCType" : "Extrapolate",
+    },
+}
+
+nu = 2000.
+SourceTerms = {
+    "source1" : {
+        "Function" : "StiffSource",
+        "nu" : nu,
+        "beta" : 0.5,
     },
 }
