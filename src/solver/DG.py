@@ -145,6 +145,8 @@ class SolverBase(ABC):
 		ns = EqnSet.StateRank
 
 		basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
+		if basis_old.shape_type != basis.shape_type:
+			raise errors.IncompatibleError
 
 		if Params["InterpolateIC"]:
 			eval_pts, npts = basis.equidistant_nodes(EqnSet.order)

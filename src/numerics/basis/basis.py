@@ -26,7 +26,12 @@ RefQ1Coords = {
 class ShapeBase(ABC):
     @property
     @abstractmethod
-    def faceshape(self):
+    def shape_type(self):
+        pass
+
+    @property
+    @abstractmethod
+    def face_shape_type(self):
         pass
 
     @property
@@ -55,8 +60,8 @@ class ShapeBase(ABC):
 
 class PointShape(ShapeBase):
 
-    shape = ShapeType.Point
-    faceshape = None
+    shape_type = ShapeType.Point
+    face_shape_type = None
     nfaceperelem = 0
     dim = 0
     centroid = np.array([[0.]])
@@ -69,8 +74,8 @@ class PointShape(ShapeBase):
 
 class SegShape(ShapeBase):
 
-    shape = ShapeType.Segment
-    faceshape = ShapeType.Point
+    shape_type = ShapeType.Segment
+    face_shape_type = ShapeType.Point
     nfaceperelem = 2
     dim = 1
     centroid = np.array([[0.]])
@@ -133,8 +138,8 @@ class SegShape(ShapeBase):
 
 class QuadShape(ShapeBase):
 
-    shape = ShapeType.Quadrilateral
-    faceshape = ShapeType.Segment
+    shape_type = ShapeType.Quadrilateral
+    face_shape_type = ShapeType.Segment
     nfaceperelem = 4
     dim = 2
     centroid = np.array([[0., 0.]])
@@ -215,8 +220,8 @@ class QuadShape(ShapeBase):
 
 class TriShape(ShapeBase):
 
-    shape = ShapeType.Triangle
-    faceshape = ShapeType.Segment
+    shape_type = ShapeType.Triangle
+    face_shape_type = ShapeType.Segment
     nfaceperelem = 3
     dim = 2
     centroid = np.array([[1./3., 1./3.]])
