@@ -10,8 +10,6 @@ import meshing.gmsh as mesh_gmsh
 import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 
-import numerics.quadrature.quadrature as quadrature
-
 def set_basis_spacetime(mesh, order, BasisFunction):
     if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
         basis_st = basis_defs.LagrangeEqQuad(order, mesh)

@@ -8,9 +8,6 @@ import meshing.gmsh as mesh_gmsh
 
 
 import numerics.basis.basis as basis_defs
-import numerics.quadrature.quadrature as quadrature
-
-
 
 Basis2Shape = {
     BasisType.LagrangeEqSeg : ShapeType.Segment,

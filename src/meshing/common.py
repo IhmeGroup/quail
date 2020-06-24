@@ -178,7 +178,7 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	X, Y = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
 
-	mesh = Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=basis_defs.LagrangeEqQuad(1),
+	mesh = mesh_defs.Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=basis_defs.LagrangeEqQuad(1),
 		gorder=1)
 
 	mesh.Coords = xp
@@ -248,7 +248,7 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	### IFaces
 	mesh.nIFace = nElem_y*(nElem_x-1) + nElem_x*(nElem_y-1)
 	mesh.allocate_ifaces()
-	mesh.IFaces = [IFace() for i in range(mesh.nIFace)]
+	mesh.IFaces = [mesh_defs.IFace() for i in range(mesh.nIFace)]
 	# x direction
 	n = 0
 	for ny in range(nElem_y):
@@ -341,7 +341,7 @@ def split_quadrils_into_tris(mesh_old):
 	# New IFaces
 	mesh.nIFace += nElem_old
 	for ielem in range(nElem_old):
-		IF = IFace()
+		IF = mesh_defs.IFace()
 		IF.ElemL = ielem
 		IF.faceL = 0
 		IF.ElemR = ielem + nElem_old

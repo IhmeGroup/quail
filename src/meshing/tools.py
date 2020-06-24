@@ -6,7 +6,6 @@ import data
 import meshing.meshbase as mesh_defs
 
 import numerics.basis.tools as basis_tools
-import numerics.quadrature.quadrature as quadrature
 
 tol = 1.e-10
 
