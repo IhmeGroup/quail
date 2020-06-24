@@ -47,6 +47,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 		self.source_map.update({
 			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+			scalar_source_type.StiffSource : scalar_fcns.StiffSource,
 		})
 
 	class StateVariables(Enum):
@@ -377,6 +378,11 @@ class Burgers1D(base.PhysicsBase):
 		self.IC_fcn_map.update(d)
 		self.exact_fcn_map.update(d)
 		self.BC_fcn_map.update(d)
+		
+		self.source_map.update({
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+			scalar_source_type.StiffSource : scalar_fcns.StiffSource,
+		})
 
 	class StateVariables(Enum):
 		Scalar = "u"

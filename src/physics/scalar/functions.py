@@ -168,29 +168,28 @@ class SimpleSource(SourceBase):
 		S = nu*U[:]
 
 		return S
-	def get_jacobian(self):
+	def get_jacobian(self, U):
 		return self.nu
 
+class StiffSource(SourceBase):
+	def __init__(self, nu=-1., beta =0.5):
+		self.nu = nu
+		self.beta = beta
 
-# def stiff_source(physics, fcn_data):
-# 	x = fcn_data.x
-# 	t = fcn_data.Time
-# 	U = fcn_data.U
-# 	S = fcn_data.S
-# 	Data = fcn_data.Data
+	def get_source(self, physics, FcnData, x, t):
+		nu = self.nu
+		beta = self.beta
+		U = FcnData.U
 
-# 	try:
-# 		beta = Data.beta
-# 	except AttributeError:
-# 		beta = 0.5
-# 	try: 
-# 		stiffness = Data.stiffness
-# 	except AttributeError:
-# 		stiffness = 1.
+		S = -nu*U*(U-1.)*(U-beta)
 
-# 	S[:] = (1./stiffness)*(1.-U[:])*(U[:]-beta)*U[:]
+		return S
 
-# 	return S
+	def get_jacobian(self, U):
+		nu = self.nu
+		beta = self.beta
+		return -nu*(3.*U**2-2.*U-2.*beta*U+beta)
+		# return nu*(2.*U-3.*U**2-beta+2.*beta*U)
 
 
 
