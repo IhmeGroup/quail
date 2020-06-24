@@ -11,8 +11,6 @@ from general import EntityType
 import meshing.meshbase as mesh_defs
 import meshing.tools as MeshTools
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
-
 import numerics.basis.tools as basis_tools
 
 import processing.plot as plot_defs
@@ -55,22 +53,23 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
-		if QuadChanged:
-			quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
+		quad_order = basis.get_quadrature(mesh, 2*np.amax([Order,1]), physics=EqnSet)
+		gbasis = mesh.gbasis
+		gbasis.get_quad_data(quad_order,0)
+		# QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
+		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 
-		xq = quadData.quad_pts
-		wq = quadData.quad_wts
+		xq = gbasis.quad_pts
+		wq = gbasis.quad_wts
 		nq = xq.shape[0]
 		
-		if QuadChanged:
-			# PhiData = BasisData(basis,Order,mesh)
-			basis.eval_basis(xq, True, False, False, None)
-			xphys = np.zeros([nq, mesh.Dim])
+		# PhiData = BasisData(basis,Order,mesh)
+		basis.eval_basis(xq, True, False, False, None)
+		xphys = np.zeros([nq, mesh.Dim])
 
 		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
-		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xq, xphys, QuadChanged)
+		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xq, xphys)
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points

@@ -62,21 +62,18 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir, P
     
     dim = mesh.Dim
 
-    QuadOrder_st,QuadChanged_st = quadrature.get_gaussian_quadrature_elem(mesh, basis_st, order*2)
+    quad_order_st = basis_st.get_quadrature(mesh, order*2)
+    quad_order = quad_order_st
+    
+    basis_st.get_quad_data(quad_order_st, 0)
+    basis.get_quad_data(quad_order, 0)
 
-    QuadOrder = QuadOrder_st
-    QuadChanged = True
-    if QuadChanged_st:
-        quadData_st = quadrature.QuadData(mesh, basis_st, EntityType.Element, QuadOrder_st)
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
-
-    quad_pts_st = quadData_st.quad_pts
-    quad_wts_st = quadData_st.quad_wts
+    quad_pts_st = basis_st.quad_pts
+    quad_wts_st = basis_st.quad_wts
     nq_st = quad_pts_st.shape[0]
 
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
+    quad_pts = basis.quad_pts
+    quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
     
     if PhysicalSpace:
@@ -136,35 +133,33 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
     else:
         face = 0
 
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
-  
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
+    gbasis = mesh.gbasis
+    quad_order = gbasis.get_quadrature(mesh, order*2)
+    gbasis.get_quad_data(quad_order, 0)
 
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
+    quad_pts = gbasis.quad_pts
+    quad_wts = gbasis.quad_wts
     nq = quad_pts.shape[0]
 
-    if QuadChanged:
-        if basis1 == basis2:
-            face = 2
+    if basis1 == basis2:
+        face = 2
 
-            PhiData = basis1
-            PsiData = basis1
+        PhiData = basis1
+        PsiData = basis1
 
-            xelem = np.zeros([nq,mesh.Dim+1])
-            PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
-            PsiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
-        else:
-            face = 0
-            
-            PhiData = basis1
-            PsiData = basis2
+        xelem = np.zeros([nq,mesh.Dim+1])
+        PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
+        PsiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
+    else:
+        face = 0
+        
+        PhiData = basis1
+        PsiData = basis2
 
-            xelemPhi = np.zeros([nq,mesh.Dim+1])
-            xelemPsi = np.zeros([nq,mesh.Dim])
-            PhiData.eval_basis_on_face(mesh, face, quad_pts, xelemPhi, basis1, Get_Phi=True)
-            PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
+        xelemPhi = np.zeros([nq,mesh.Dim+1])
+        xelemPsi = np.zeros([nq,mesh.Dim])
+        PhiData.eval_basis_on_face(mesh, face, quad_pts, xelemPhi, basis1, Get_Phi=True)
+        PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
 
 
     nb_st = PhiData.basis_val.shape[1]
@@ -201,21 +196,18 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
         MM: mass matrix for ADER-DG
     '''
     if PhysicalSpace:
-        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
+        gbasis = mesh.gbasis
+        quad_order = gbasis.get_quadrature(mesh, order*2)
     else:
-        QuadOrder = order*2 + 1 #Add one for ADER method
-        QuadChanged = True
+        quad_order = order*2 + 1 #Add one for ADER method
 
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
+    basis.get_quad_data(quad_order, 0)
 
-
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
+    quad_pts = basis.quad_pts
+    quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
 
-    if QuadChanged:
-        basis.eval_basis(quad_pts, Get_Phi=True)
+    basis.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
         djac,_,_=basis_tools.element_jacobian(mesh,elem,quad_pts,get_djac=True)

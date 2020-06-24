@@ -30,22 +30,17 @@ def element_volumes(mesh, solver=None):
             and hasattr(solver.DataSet, "ElemVolumes"):
                 return solver.DataSet.TotalVolume, solver.DataSet.ElemVolumes
 
-    # ElemVol = ArrayList(SimilarArray=EqnSet.U).Arrays
-    # ElemVolumes = Data.ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
     ElemVolumes = np.zeros(mesh.nElem)
     TotalVolume = 0.
-    quadData = None
-    # JData = JacobianData(mesh)
 
-    Order = mesh.gorder
+    gorder = mesh.gorder
+    gbasis = mesh.gbasis
 
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, Order, 
-        quadData=quadData)
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.gbasis, mesh_defs.EntityType.Element, QuadOrder)
+    quad_order = gbasis.get_quadrature(mesh,gorder)
+    gbasis.get_quad_data(quad_order, 0)
 
-    xq = quadData.quad_pts
-    wq = quadData.quad_wts
+    xq = gbasis.quad_pts
+    wq = gbasis.quad_wts
     nq = xq.shape[0]
 
     for elem in range(mesh.nElem):

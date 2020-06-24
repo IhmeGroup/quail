@@ -14,7 +14,6 @@ import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 import numerics.basis.ader_tools as basis_st_tools
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
 import numerics.timestepping.stepper as stepper
 
 global echeck
@@ -67,11 +66,13 @@ class ElemOperatorsADER(DG.ElemOperators):
 class IFaceOperatorsADER(DG.IFaceOperators):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
+		
+		gbasis = mesh.gbasis
+		quad_order = gbasis.get_face_quadrature(mesh, order, physics=EqnSet)
+		basis.get_face_quad_data(quad_order, 0)
 
-		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.gbasis, order, EqnSet, None)
-		quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
-		self.quad_pts = quadData.quad_pts
-		self.quad_wts = quadData.quad_wts
+		self.quad_pts = basis.quad_pts
+		self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -142,7 +143,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
+				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None)
 				# Store
 				x_bfgroup[j] = x
 

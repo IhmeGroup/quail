@@ -81,22 +81,22 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     OUTPUTS: 
         MM: mass matrix  
     '''
-
+    gbasis = mesh.gbasis
     if PhysicalSpace:
-        QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.gbasis, order*2)
+        quad_order = gbasis.get_quadrature(mesh, order*2)
     else:
-        QuadOrder = order*2
-        QuadChanged = True
+        quad_order = order*2
 
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
+    basis.get_quad_data(quad_order, 0)
 
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
+    quad_pts = basis.quad_pts
+    quad_wts = basis.quad_wts
+
+    # quad_pts = quadData.quad_pts
+    # quad_wts = quadData.quad_wts
     nq = quad_pts.shape[0]
 
-    if QuadChanged:
-        basis.eval_basis(quad_pts, Get_Phi=True)
+    basis.eval_basis(quad_pts, Get_Phi=True)
 
     if PhysicalSpace:
         djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
@@ -152,17 +152,17 @@ def get_stiffness_matrix(mesh, basis, order, elem):
     OUTPUTS: 
         SM: stiffness matrix
     '''
-    QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
-    if QuadChanged:
-        quadData = quadrature.QuadData(mesh, mesh.QBasis, EntityType.Element, QuadOrder)
+    # QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
+    qbasis = mesh.QBasis 
+    quad_order = qbasis.get_quadrature(mesh,order*2)
+    qbasis.get_quad_data(quad_order, 0)
 
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
+    quad_pts = qbasis.quad_pts
+    quad_wts = qbasis.quad_wts
     nq = quad_pts.shape[0]
 
-    if QuadChanged:
-        PhiData = BasisData(basis,order,mesh)
-        PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+    PhiData = BasisData(basis,order,mesh)
+    PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
 
     JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_ijac=True)
     PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
@@ -199,11 +199,11 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     OUTPUTS: 
         PM: projection matrix
     '''
-    QuadOrder = np.amax([order_old+order, 2*order])
-    quadData = quadrature.QuadData(mesh, basis, EntityType.Element, QuadOrder)
+    quad_order = np.amax([order_old+order, 2*order])
+    basis.get_quad_data(quad_order, 0)
 
-    quad_pts = quadData.quad_pts
-    quad_wts = quadData.quad_wts
+    quad_pts = basis.quad_pts
+    quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
 
     basis_old.eval_basis(quad_pts, Get_Phi=True)

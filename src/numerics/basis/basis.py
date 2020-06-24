@@ -8,7 +8,8 @@ from general import BasisType, ShapeType
 import meshing.gmsh as mesh_gmsh
 
 import numerics.basis.tools as basis_tools
-import numerics.quadrature.quadrature as quadrature
+# import numerics.quadrature.quadrature as quadrature
+from numerics.quadrature import segment, quadrilateral, triangle
 
 RefQ1Coords = {
     BasisType.LagrangeEqSeg : np.array([[-1.],[1.]]),
@@ -70,7 +71,22 @@ class PointShape(ShapeBase):
         return 1
     def equidistant_nodes(self, p, xn=None):
         pass
+    def get_quadrature(self, mesh, order, physics = None):
+        
+        dim = self.dim
+        gorder = mesh.gorder
+        if physics is not None:
+            qorder = physics.QuadOrder(order)
+        else:
+            qorder = order
+        if gorder > 1:
+            qorder += dim*(gorder-1)
+            
+        return qorder
+    def get_quad_data(self, order, quad_type):
 
+        self.quad_pts = np.zeros([1,1])
+        self.quad_wts = np.ones([1,1])
 
 class SegShape(ShapeBase):
 
@@ -79,6 +95,9 @@ class SegShape(ShapeBase):
     nfaceperelem = 2
     dim = 1
     centroid = np.array([[0.]])
+
+    get_face_quadrature = PointShape.get_quadrature
+    get_face_quad_data = PointShape.get_quad_data
 
     def get_num_basis_coeff(self,p):
         return p + 1
@@ -135,6 +154,22 @@ class SegShape(ShapeBase):
 
         return xelem
 
+    def get_quadrature(self, mesh, order, physics = None):
+        
+        dim = self.dim
+        gorder = mesh.gorder
+        if physics is not None:
+            qorder = physics.QuadOrder(order)
+        else:
+            qorder = order
+        if gorder > 1:
+            qorder += dim*(gorder-1)
+
+        return qorder
+
+    def get_quad_data(self, order, quad_type):
+
+        self.quad_pts, self.quad_wts = segment.get_quadrature_points_weights(order,0)
 
 class QuadShape(ShapeBase):
 
@@ -143,6 +178,9 @@ class QuadShape(ShapeBase):
     nfaceperelem = 4
     dim = 2
     centroid = np.array([[0., 0.]])
+
+    get_face_quadrature = SegShape.get_quadrature
+    get_face_quad_data = SegShape.get_quad_data
 
     def get_num_basis_coeff(self,p):
         return (p + 1)**2
@@ -216,7 +254,25 @@ class QuadShape(ShapeBase):
             xelem[:,0] = -1.
 
         return xelem
+    
+    def get_quadrature(self, mesh, order, physics = None):
+        
+        dim = self.dim
+        gorder = mesh.gorder
+        if physics is not None:
+            qorder = physics.QuadOrder(order)
+        else:
+            qorder = order
+        if gorder > 1:
+            qorder += dim*(gorder-1)
+            
+        qorder += 2 
 
+        return qorder
+
+    def get_quad_data(self, order, quad_type):
+
+        self.quad_pts, self.quad_wts = quadrilateral.get_quadrature_points_weights(order,0)
 
 class TriShape(ShapeBase):
 
@@ -225,6 +281,9 @@ class TriShape(ShapeBase):
     nfaceperelem = 3
     dim = 2
     centroid = np.array([[1./3., 1./3.]])
+
+    get_face_quadrature = SegShape.get_quadrature
+    get_face_quad_data = SegShape.get_quad_data
 
     def get_num_basis_coeff(self,p):
         return (p + 1)*(p + 2)//2
@@ -296,6 +355,22 @@ class TriShape(ShapeBase):
 
         return xelem
 
+    def get_quadrature(self, mesh, order, physics = None):
+        
+        dim = self.dim
+        gorder = mesh.gorder
+        if physics is not None:
+            qorder = physics.QuadOrder(order)
+        else:
+            qorder = order
+        if gorder > 1:
+            qorder += dim*(gorder-1)
+                    
+        return qorder
+
+    def get_quad_data(self, order, quad_type):
+
+        self.quad_pts, self.quad_wts = triangle.get_quadrature_points_weights(order,0)
 
 class BasisBase(ABC): 
     @property

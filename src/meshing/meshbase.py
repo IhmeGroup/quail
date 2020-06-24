@@ -27,7 +27,7 @@ def get_entity_dim(mesh, entity):
     return dim
 
 
-def ref_to_phys(mesh, elem, PhiData, xref, xphys=None, PointsChanged=False):
+def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
     '''
     Function: ref_to_phys
     -------------------

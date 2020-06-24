@@ -10,8 +10,6 @@ import numpy as np
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, QuadData
-
 def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['DejaVu Sans']},
 	linewidth=1.5, markersize=4.0, axis=None, cmap='viridis', EqualAR=False):
 	# font={'family':'serif', 'serif': ['computer modern roman']}
@@ -337,17 +335,21 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	## Extract data
 	dim = mesh.Dim
 	U = EqnSet.U
-	Order = EqnSet.order
+	order = EqnSet.order
 	sr = EqnSet.StateRank
 
 	# Get points to plot at
 	# Note: assumes uniform element type
 	if equidistant:
-		xpoint, npoint = basis.equidistant_nodes(max([1,3*Order]))
+		xpoint, npoint = basis.equidistant_nodes(max([1,3*order]))
 	else:
-		QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
-		quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
-		xpoint = quadData.quad_pts
+		quad_order = basis.get_quadrature(mesh, max([2,2*order]), physics=EqnSet)
+		gbasis = mesh.gbasis
+		gbasis.get_quad_data(quad_order, 0)
+
+		# QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
+		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
+		xpoint = gbasis.quad_pts
 		npoint = xpoint.shape[0]
 
 	u = np.zeros([mesh.nElem,npoint,sr])
@@ -360,16 +362,8 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		# JData = Basis.JacobianData(mesh)
-		# djac,_,_=Basis.element_jacobian(mesh,elem,xpoint,get_djac=True)
-
 		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
-		# u_exact[el,:,:] = f_exact(xphys, EndTime)
-
-		# interpolate state at quad points
-		# for ir in range(sr):
-		# 	u[el,:,ir] = np.matmul(PhiData.Phi, U_[:,ir])
 		u[el,:,:] = np.matmul(basis.basis_val, U_)
 
 		el += 1

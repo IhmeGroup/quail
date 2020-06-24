@@ -175,9 +175,9 @@ def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 
 
 
-def L2_projection(mesh, iMM, quad_data, basis, elem, f, U):
-	quad_pts = quad_data.quad_pts
-	quad_wts = quad_data.quad_wts
+def L2_projection(mesh, iMM, basis, elem, f, U):
+	quad_pts = basis.quad_pts
+	quad_wts = basis.quad_wts
 
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.eval_basis(quad_pts, Get_Phi=True)
