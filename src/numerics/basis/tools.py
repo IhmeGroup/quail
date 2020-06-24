@@ -22,19 +22,19 @@ Basis2Shape = {
 }
 
 
-def set_basis(mesh, order, BasisFunction):
+def set_basis(mesh, order, basis_name):
 
-    if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
+    if BasisType[basis_name] == BasisType.LagrangeEqSeg:
         basis = basis_defs.LagrangeEqSeg(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LegendreSeg:
+    elif BasisType[basis_name] == BasisType.LegendreSeg:
         basis = basis_defs.LegendreSeg(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LagrangeEqQuad:
+    elif BasisType[basis_name] == BasisType.LagrangeEqQuad:
         basis = basis_defs.LagrangeEqQuad(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LegendreQuad:
+    elif BasisType[basis_name] == BasisType.LegendreQuad:
         basis = basis_defs.LegendreQuad(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.LagrangeEqTri:
+    elif BasisType[basis_name] == BasisType.LagrangeEqTri:
         basis = basis_defs.LagrangeEqTri(order, mesh)
-    elif BasisType[BasisFunction] == BasisType.HierarchicH1Tri:
+    elif BasisType[basis_name] == BasisType.HierarchicH1Tri:
         basis = basis_defs.HierarchicH1Tri(order, mesh)
     else:
         raise NotImplementedError
@@ -254,7 +254,7 @@ def get_inv_stiffness_matrix(mesh, basis, order, elem):
 
 
 
-def get_inv_mass_matrices(mesh, EqnSet, solver=None):
+def get_inv_mass_matrices(mesh, EqnSet, basis):
     '''
     Method: compute_inv_mass_matrices
     --------------------------------------
@@ -268,7 +268,6 @@ def get_inv_mass_matrices(mesh, EqnSet, solver=None):
     OUTPUTS: 
         iMM_all: all inverse mass matrices
     '''
-    basis = solver.basis
     order = EqnSet.order
     nb = basis.nb
 
@@ -284,8 +283,8 @@ def get_inv_mass_matrices(mesh, EqnSet, solver=None):
             iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
         iMM_all[elem] = iMM
 
-    if solver is not None:
-        solver.DataSet.MMinv_all = iMM_all
+    # if solver is not None:
+    #     solver.DataSet.MMinv_all = iMM_all
 
     return iMM_all
 

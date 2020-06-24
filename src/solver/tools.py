@@ -3,6 +3,8 @@ import copy
 import numpy as np
 
 import data
+import general
+
 import numerics.basis.tools as basis_tools
 
 def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
@@ -74,7 +76,8 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 		MMinv_all = DataSet.MMinv_all
 	except AttributeError:
 		# not found; need to compute
-		MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver=solver)
+		MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
+		DataSet.MMinv_all = MMinv_all
 
 
 	if dt is None:
@@ -87,6 +90,9 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 		U_[:,:] = c*np.matmul(MMinv_all[elem], R[elem])
+
+	# U[:,:,:] = c*np.einsum('ijk,ikl->ijl', MMinv_all, R)
+
 
 def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 	''' Old state '''
@@ -119,3 +125,72 @@ def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
 	''' Store in EqnSet '''
 	delattr(EqnSet, "U")
 	EqnSet.U = U_new
+
+
+# def eval_IC_at_pts(mesh, EqnSet, basis, eval_pts, time=0., fcn_data=None, order_old=-1, U_old=None):
+# 	if fcn_data is None and U_old is None:
+# 		raise ValueError
+# 	elif fcn_data is not None and U_old is not None:
+# 		raise ValueError
+
+# 	ns = EqnSet.StateRank
+
+# 	if fcn_data is not None:
+# 		order = 2*np.amax([EqnSet.order, 1])
+# 		order = EqnSet.QuadOrder(order)
+# 	else:
+# 		order = 2*np.amax([EqnSet.order, order_old])
+
+# 	QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, order)
+
+# 	quadData = QuadData(mesh, mesh.gbasis, general.EntityType.Element, QuadOrder)
+
+# 	quad_pts = quadData.quad_pts
+# 	quad_wts = quadData.quad_wts
+
+# 	basis.eval_basis(quad_pts, Get_Phi=True)
+
+
+
+
+
+# 	if basis.basis_val.shape[0] != eval_pts.shape[0]:
+# 		basis.eval_basis(eval_pts, Get_Phi=True)
+
+# 	for elem in range(mesh.nElem):
+
+# 		if fcn_data is not None:
+# 			xphys, _ = ref_to_phys(mesh, elem, None, quad_pts)
+# 			f = EqnSet.CallFunction(fcn_data, x=xphys, t=time)
+# 			f.shape = quad_wts.shape[0],ns
+# 		else:
+# 			f = 
+
+
+# 		djac, _, _ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
+
+# 		rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
+
+# 		U[elem,:,:] = np.matmul(iMM_elems[elem],rhs)
+
+
+
+def L2_projection(mesh, iMM, quad_data, basis, elem, f, U):
+	quad_pts = quad_data.quad_pts
+	quad_wts = quad_data.quad_wts
+
+	if basis.basis_val.shape[0] != quad_wts.shape[0]:
+		basis.eval_basis(quad_pts, Get_Phi=True)
+
+	djac, _, _ = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True)
+
+	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
+
+	U[:,:] = np.matmul(iMM, rhs)
+
+
+def interpolate_to_nodes(f, U):
+	U[:,:] = f
+
+
+		

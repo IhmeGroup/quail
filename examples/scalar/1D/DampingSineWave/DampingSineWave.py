@@ -38,8 +38,9 @@ InitialCondition = {
     "Function" : "DampingSine",
     "omega" : 2*np.pi,
     "nu" : nu,
-    "SetAsExact" : True,
 }
+
+ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
     "Left" : {

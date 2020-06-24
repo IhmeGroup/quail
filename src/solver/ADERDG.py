@@ -312,14 +312,14 @@ class ADERDG(DG.DG):
 		# Check validity of parameters
 		self.check_solver_params()
 
-		# Initialize state
-		if Params["RestartFile"] is None:
-			self.init_state()
-
 		# Precompute operators
 		self.precompute_matrix_operators()
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
+
+		# Initialize state
+		if Params["RestartFile"] is None:
+			self.init_state_from_fcn()
 
 	def check_solver_params(self):
 		'''

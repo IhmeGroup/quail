@@ -32,7 +32,7 @@ class BasisType(Enum):
     LagrangeEqTri = auto()
     LegendreSeg = auto()
     LegendreQuad = auto()
-    HierarchicH1Tri= auto()
+    HierarchicH1Tri = auto()
 
 
 class LimiterType(Enum):

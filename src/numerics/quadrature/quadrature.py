@@ -23,7 +23,7 @@ def get_gaussian_quadrature_elem(mesh, basis, order, EqnSet=None, quadData=None)
 		QuadChanged: boolean flag for a changed quadrature
 	'''
 	gorder = mesh.gorder
-	shape = basis.shape
+	shape = basis.shape_type
 
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
@@ -66,8 +66,8 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 	'''
 
 	gorder = mesh.gorder
-	shape = basis.shape
-	faceshape = basis.faceshape
+	shape = basis.shape_type
+	face_shape_type = basis.face_shape_type
 	# QuadOrder = 2*Order + 1
 	if EqnSet is not None:
 		QuadOrder = EqnSet.QuadOrder(order)
@@ -82,7 +82,7 @@ def get_gaussian_quadrature_face(mesh, IFace, basis, order, EqnSet=None, quadDat
 
 	QuadChanged = True
 	if quadData is not None:
-		if QuadOrder == quadData.order and faceshape == quadData.Shape:
+		if QuadOrder == quadData.order and face_shape_type == quadData.Shape:
 			QuadChanged = False
 
 	return QuadOrder, QuadChanged
@@ -114,13 +114,13 @@ class QuadData(object):
 		self.nvec = None
 
 		# shape = Basis.Basis2Shape[basis]
-		shape = basis.shape
-		faceshape = basis.faceshape
+		shape = basis.shape_type
+		face_shape_type = basis.face_shape_type
 
 		if entity == EntityType.Element:
 			self.Shape = shape
 		else:
-			self.Shape = faceshape
+			self.Shape = face_shape_type
 
 		if self.Shape == ShapeType.Point:
 			self.quad_pts = np.zeros([1,1])

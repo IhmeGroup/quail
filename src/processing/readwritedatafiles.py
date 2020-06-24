@@ -10,7 +10,7 @@ def write_data_file(solver, iwrite):
 
 	prefix = Params["Prefix"]
 	if iwrite >= 0:
-		fname = prefix + str(iwrite) + ".pkl"
+		fname = prefix + "_" + str(iwrite) + ".pkl"
 	else:
 		fname = prefix + "_final" + ".pkl"
 
@@ -26,6 +26,7 @@ def write_data_file(solver, iwrite):
 		# Time
 		pickle.dump(Time, fo, pickle.HIGHEST_PROTOCOL)
 
+
 def read_data_file(fname):
 
 	with open(fname, 'rb') as fo:
@@ -39,4 +40,3 @@ def read_data_file(fname):
 	    Time = pickle.load(fo)
 
 	return mesh, EqnSet, Params, Time
-

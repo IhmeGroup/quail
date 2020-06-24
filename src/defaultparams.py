@@ -1,5 +1,7 @@
-import general
-
+Restart = {
+    "File" : None,
+    "StartFromFileTime" : True
+}
 
 TimeStepping = {
     "StartTime" : 0.,
@@ -18,17 +20,6 @@ Numerics = {
     "ApplyLimiter" : None, 
     "SourceTreatment" : "Explicit",
     "InterpolateFlux" : True,
-}
-
-Output = {
-    "TrackOutput" : None,
-    "WriteTimeHistory" : False,
-    "Prefix" : "Data",
-    "WriteInterval" : -1,
-    "WriteInitialSolution" : False,
-    "WriteFinalSolution" : True,
-    "RestartFile" : None,
-    "AutoProcess" : False,
 }
 
 Mesh = {
@@ -52,9 +43,21 @@ Physics = {
 InitialCondition = {
     "Function" : "Uniform",
     # "State" : [1.0],
-    "SetAsExact" : False,
+    # "SetAsExact" : False,
 }
+
+ExactSolution = {}
 
 BoundaryConditions = {}
 
 SourceTerms = {}
+
+Output = {
+    "TrackOutput" : None,
+    "WriteTimeHistory" : False,
+    "Prefix" : "Data",
+    "WriteInterval" : -1,
+    "WriteInitialSolution" : False,
+    "WriteFinalSolution" : True,
+    "AutoProcess" : False,
+}

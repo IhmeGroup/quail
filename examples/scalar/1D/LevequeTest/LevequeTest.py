@@ -43,8 +43,9 @@ InitialCondition = {
     "uL" : 1.,
     "uR" : 0.,
     "xshock" : 0.3,
-    "SetAsExact" : True,
 }
+
+ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
     "Left" : {
