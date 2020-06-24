@@ -74,8 +74,8 @@ class SolverBase(ABC):
 		self.Stepper = stepper.set_stepper(TimeScheme)
 
 		# Set the basis functions for the solver
-		BasisFunction  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(mesh, EqnSet.order, BasisFunction)
+		basis_name  = Params["InterpBasis"]
+		self.basis = basis_tools.set_basis(mesh, EqnSet.order, basis_name)
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
@@ -84,14 +84,14 @@ class SolverBase(ABC):
 		# Check validity of parameters
 		self.check_solver_params()
 
-		# Initialize state
-		if Params["RestartFile"] == None:
-			self.init_state()
-
 		# Precompute operators
 		self.precompute_matrix_operators()
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
+
+		# Initialize state
+		if Params["RestartFile"] is None:
+			self.init_state_from_fcn()
 
 	@abstractmethod
 	def check_solver_params(self):
@@ -100,6 +100,150 @@ class SolverBase(ABC):
 	@abstractmethod
 	def precompute_matrix_operators(self):
 		pass
+
+	def init_state_from_fcn(self):
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		basis = self.basis
+		Params = self.Params
+		iMM_elems = self.elem_operators.iMM_elems
+
+		U = EqnSet.U
+		ns = EqnSet.StateRank
+		order = EqnSet.order
+
+		if Params["InterpolateIC"]:
+			eval_pts, npts = basis.equidistant_nodes(order)
+		else:
+			order = 2*np.amax([EqnSet.order, 1])
+			order = EqnSet.QuadOrder(order)
+			quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
+			quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
+
+			eval_pts = quad_data.quad_pts
+			npts = eval_pts.shape[0]
+
+		for elem in range(mesh.nElem):
+			xphys, _ = mesh_defs.ref_to_phys(mesh, elem, None, eval_pts)
+			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
+			# f.shape = npts,ns
+
+			if Params["InterpolateIC"]:
+				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
+			else:
+				solver_tools.L2_projection(mesh, iMM_elems[elem], quad_data, basis, elem, f, U[elem,:,:])
+
+
+	def project_state_to_new_basis(self, U_old, basis_name_old, order_old):
+		mesh = self.mesh
+		EqnSet = self.EqnSet
+		basis = self.basis
+		Params = self.Params
+		iMM_elems = self.elem_operators.iMM_elems
+
+		U = EqnSet.U
+		ns = EqnSet.StateRank
+
+		basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
+
+		if Params["InterpolateIC"]:
+			eval_pts, npts = basis.equidistant_nodes(EqnSet.order)
+		else:
+			order = 2*np.amax([EqnSet.order, order_old])
+			quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
+			quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
+
+			eval_pts = quad_data.quad_pts
+			npts = eval_pts.shape[0]
+
+		basis_old.eval_basis(eval_pts, Get_Phi=True)
+
+		for elem in range(mesh.nElem):
+			Up_old = np.matmul(basis_old.basis_val, U_old[elem,:,:])
+
+			if Params["InterpolateIC"]:
+				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
+			else:
+				solver_tools.L2_projection(mesh, iMM_elems[elem], quad_data, basis, elem, Up_old, U[elem,:,:])
+
+
+	# def init_state_from_fcn(self):
+	# 	'''
+	# 	Method: init_state
+	# 	-------------------------
+	# 	Initializes the state based on prescribed initial conditions
+		
+	# 	'''
+	# 	mesh = self.mesh
+	# 	EqnSet = self.EqnSet
+	# 	basis = self.basis
+
+	# 	nb = basis.nb
+
+	# 	U = EqnSet.U
+	# 	ns = EqnSet.StateRank
+	# 	Params = self.Params
+
+	# 	# Get mass matrices
+	# 	try:
+	# 		iMM = self.DataSet.iMM_all
+	# 	except AttributeError:
+	# 		# not found; need to compute
+	# 		iMM_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver=self)
+
+	# 	InterpolateIC = Params["InterpolateIC"]
+	# 	quadData = None
+	# 	# JData = JacobianData(mesh)
+	# 	GeomPhiData = None
+	# 	quad_pts = None
+	# 	xphys = None
+
+	# 	#basis = EqnSet.Basis
+	# 	order = EqnSet.order
+	# 	rhs = np.zeros([nb,ns],dtype=U.dtype)
+
+	# 	# Precompute basis and quadrature
+	# 	if not InterpolateIC:
+	# 		QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis,
+	# 			2*np.amax([order,1]), EqnSet, quadData)
+
+	# 		quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
+
+	# 		quad_pts = quadData.quad_pts
+	# 		quad_wts = quadData.quad_wts
+	# 		nq = quad_pts.shape[0]
+
+	# 		#PhiData = BasisData(basis,order,mesh)
+	# 		basis.eval_basis(quad_pts, Get_Phi=True)
+	# 		xphys = np.zeros([nq, mesh.Dim])
+		
+	# 	else:
+	# 		quad_pts, nq = basis.equidistant_nodes(order, quad_pts)
+	# 		#nb = nq
+
+	# 	for elem in range(mesh.nElem):
+
+	# 		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xphys)
+
+	# 		f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
+	# 		f.shape = nq,ns
+
+	# 		if not InterpolateIC:
+
+	# 			djac,_,_ = basis_tools.element_jacobian(mesh,elem,quad_pts,get_djac=True)
+
+	# 			iMM = iMM_all[elem]
+
+	# 			# rhs *= 0.
+	# 			# for n in range(nn):
+	# 			# 	for iq in range(nq):
+	# 			# 		rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
+
+	# 			rhs[:] = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
+
+	# 			U[elem,:,:] = np.matmul(iMM,rhs)
+	# 		else:
+	# 			U[elem] = f
 
 	@abstractmethod
 	def calculate_residual_elem(self, elem, Up, ER):
@@ -129,6 +273,7 @@ class ElemOperators(object):
 		self.Uq = None 
 		self.Fq = None 
 		self.Sq = None 
+		self.iMM_elems = np.zeros(0)
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
@@ -193,6 +338,7 @@ class ElemOperators(object):
 		self.get_gaussian_quadrature(mesh, EqnSet, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(EqnSet, basis, order)
+		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh, EqnSet, basis)
 
 
 class IFaceOperators(ElemOperators):
@@ -404,84 +550,6 @@ class DG(SolverBase):
 		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 		self.bface_operators = BFaceOperators()
 		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
-
-	def init_state(self):
-		'''
-		Method: init_state
-		-------------------------
-		Initializes the state based on prescribed initial conditions
-		
-		'''
-		mesh = self.mesh
-		EqnSet = self.EqnSet
-		basis = self.basis
-
-		nb = basis.nb
-
-		U = EqnSet.U
-		ns = EqnSet.StateRank
-		Params = self.Params
-
-		# Get mass matrices
-		try:
-			iMM = self.DataSet.iMM_all
-		except AttributeError:
-			# not found; need to compute
-			iMM_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver=self)
-
-		InterpolateIC = Params["InterpolateIC"]
-		quadData = None
-		# JData = JacobianData(mesh)
-		GeomPhiData = None
-		quad_pts = None
-		xphys = None
-
-		#basis = EqnSet.Basis
-		order = EqnSet.order
-		rhs = np.zeros([nb,ns],dtype=U.dtype)
-
-		# Precompute basis and quadrature
-		if not InterpolateIC:
-			QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis,
-				2*np.amax([order,1]), EqnSet, quadData)
-
-			quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
-
-			quad_pts = quadData.quad_pts
-			quad_wts = quadData.quad_wts
-			nq = quad_pts.shape[0]
-
-			#PhiData = BasisData(basis,order,mesh)
-			basis.eval_basis(quad_pts, Get_Phi=True)
-			xphys = np.zeros([nq, mesh.Dim])
-		
-		else:
-			quad_pts, nq = basis.equidistant_nodes(order, quad_pts)
-			#nb = nq
-
-		for elem in range(mesh.nElem):
-
-			xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts, xphys)
-
-			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
-			f.shape = nq,ns
-
-			if not InterpolateIC:
-
-				djac,_,_ = basis_tools.element_jacobian(mesh,elem,quad_pts,get_djac=True)
-
-				iMM = iMM_all[elem]
-
-				# rhs *= 0.
-				# for n in range(nn):
-				# 	for iq in range(nq):
-				# 		rhs[n,:] += f[iq,:]*PhiData.Phi[iq,n]*quad_wts[iq]*JData.djac[iq*(JData.nq != 1)]
-
-				rhs[:] = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
-
-				U[elem,:,:] = np.matmul(iMM,rhs)
-			else:
-				U[elem] = f
 
 	def apply_limiter(self, U):
 		'''

@@ -293,6 +293,11 @@ class TriShape(ShapeBase):
 
 
 class BasisBase(ABC): 
+    @property
+    @abstractmethod
+    def basis_type(self):
+        pass
+
     @abstractmethod
     def __init__(self, order, mesh=None):
 
@@ -394,7 +399,11 @@ class BasisBase(ABC):
 
         return xelem
 
+
 class LagrangeEqSeg(BasisBase, SegShape):
+
+    basis_type =  BasisType.LagrangeEqSeg
+
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -541,6 +550,9 @@ class LagrangeEqSeg(BasisBase, SegShape):
 
 
 class LagrangeEqQuad(BasisBase, QuadShape):
+
+    basis_type = BasisType.LagrangeEqQuad
+
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -712,6 +724,9 @@ class LagrangeEqQuad(BasisBase, QuadShape):
 
 
 class LagrangeEqTri(BasisBase, TriShape):
+
+    basis_type = BasisType.LagrangeEqTri
+
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -923,7 +938,11 @@ class LagrangeEqTri(BasisBase, TriShape):
 
         return fnodes, nfnode
 
+
 class LegendreSeg(BasisBase, SegShape):
+
+    basis_type = BasisType.LegendreSeg
+
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -1019,7 +1038,11 @@ class LegendreSeg(BasisBase, SegShape):
                 dleg = leg_poly.basis(it).deriv(1)
                 gphi[:,it] = dleg(x)
 
+
 class LegendreQuad(BasisBase, QuadShape):
+
+    basis_type = BasisType.LegendreQuad
+
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
@@ -1119,7 +1142,11 @@ class LegendreQuad(BasisBase, QuadShape):
                 gphi[i,:,0] = np.reshape(np.outer(gphix[i,:,0], phiy[i,:]), (-1,), 'F')
                 gphi[i,:,1] = np.reshape(np.outer(phix[i,:], gphiy[i,:,0]), (-1,), 'F')
 
+
 class HierarchicH1Tri(BasisBase, TriShape):
+
+    basis_type = BasisType.HierarchicH1Tri
+
     def __init__(self, order, mesh=None):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)

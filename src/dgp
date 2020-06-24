@@ -7,7 +7,7 @@ import numpy as np
 import os
 import sys
 
-import defaultparams as default_input
+import defaultparams as default_deck
 import errors
 from general import SolverType, PhysicsType
 
@@ -17,6 +17,8 @@ import meshing.tools as mesh_tools
 
 import physics.euler.euler as euler
 import physics.scalar.scalar as scalar
+
+import processing.readwritedatafiles as readwritedatafiles
 
 import solver.DG as DG
 import solver.ADERDG as ADERDG
@@ -55,43 +57,73 @@ def overwrite_params(params, params_new, allow_new_keys=False):
 	return params
 
 
-def read_inputs(TimeStepping, Numerics, Output, Mesh,
-		Physics, InitialCondition, BoundaryConditions, SourceTerms):
+def read_inputs(deck):
 
 	# defaults
-	stepper_params = default_input.TimeStepping
-	numerics_params = default_input.Numerics
-	output_params = default_input.Output
-	mesh_params = default_input.Mesh
-	physics_params = default_input.Physics
-	IC_params = default_input.InitialCondition
-	BC_params = default_input.BoundaryConditions
-	source_params = default_input.SourceTerms
+	restart_params = default_deck.Restart
+	stepper_params = default_deck.TimeStepping
+	numerics_params = default_deck.Numerics
+	mesh_params = default_deck.Mesh
+	physics_params = default_deck.Physics
+	IC_params = default_deck.InitialCondition
+	exact_params = default_deck.ExactSolution
+	BC_params = default_deck.BoundaryConditions
+	source_params = default_deck.SourceTerms
+	output_params = default_deck.Output
 
-	stepper_params = overwrite_params(stepper_params, TimeStepping)
-	numerics_params = overwrite_params(numerics_params, Numerics)
-	output_params = overwrite_params(output_params, Output)
-	mesh_params = overwrite_params(mesh_params, Mesh)
-	physics_params = overwrite_params(physics_params, Physics, True)
-	IC_params = overwrite_params(IC_params, InitialCondition, True)
-	BC_params = overwrite_params(BC_params, BoundaryConditions, True)
-	source_params = overwrite_params(source_params, SourceTerms, True)
+	# overwrite
+	try: 
+		restart_params = overwrite_params(restart_params, deck.Restart)
+	except AttributeError: 
+		pass
+	try:
+		stepper_params = overwrite_params(stepper_params, deck.TimeStepping)
+	except AttributeError: 
+		pass
+	try:
+		numerics_params = overwrite_params(numerics_params, deck.Numerics)
+	except AttributeError: 
+		pass
+	try:
+		mesh_params = overwrite_params(mesh_params, deck.Mesh)
+	except AttributeError: 
+		pass
+	try:
+		physics_params = overwrite_params(physics_params, deck.Physics, True)
+	except AttributeError: 
+		pass
+	try:
+		IC_params = overwrite_params(IC_params, deck.InitialCondition, True)
+	except AttributeError: 
+		pass
+	try:
+		exact_params = overwrite_params(exact_params, deck.ExactSolution, True)
+	except AttributeError: 
+		pass
+	try:
+		BC_params = overwrite_params(BC_params, deck.BoundaryConditions, True)
+	except AttributeError: 
+		pass
+	try:
+		source_params = overwrite_params(source_params, deck.SourceTerms, True)
+	except AttributeError: 
+		pass
+	try:
+		output_params = overwrite_params(output_params, deck.Output)
+	except AttributeError: 
+		pass
 
-	# TODO: process enums
-
-	return stepper_params, numerics_params, output_params, mesh_params, \
-			physics_params, IC_params, BC_params, source_params
+	return restart_params, stepper_params, numerics_params, mesh_params, physics_params, \
+		IC_params, exact_params, BC_params, source_params, output_params
 
 
-def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=None, 
-		InitialCondition=None, BoundaryConditions=None, SourceTerms=None):
+def driver(deck):
 
 	'''
 	Input deck
 	'''
-	stepper_params, numerics_params, output_params, mesh_params, physics_params, \
-			IC_params, BC_params, source_params = read_inputs(TimeStepping, Numerics, 
-			Output, Mesh, Physics, InitialCondition, BoundaryConditions, SourceTerms)
+	restart_params, stepper_params, numerics_params, mesh_params, physics_params, \
+			IC_params, exact_params, BC_params, source_params, output_params = read_inputs(deck)
 
 
 	'''
@@ -99,6 +131,7 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	'''
 	if mesh_params["File"] is not None:
 		mesh = mesh_gmsh.ReadGmshFile(mesh_params["File"])
+		periodic = True
 	else:
 		# Unpack
 		shape = mesh_params["ElementShape"]
@@ -133,7 +166,7 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 		for b in mesh_params["PeriodicBoundariesY"]:
 			pb[i] = b
 			i += 1
-	if pb != [None]*4 and periodic is False:
+	if pb != [None]*4 and periodic:
 		# need to check 1D first
 		if mesh.Dim == 1:
 			raise Exception
@@ -178,19 +211,21 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	# else:
 	# 	raise Exception
 
-	# Exact Solution
-	set_exact = IC_params["SetAsExact"]
+	# Initial condition
 	iparams = IC_params.copy()
-	iparams.pop("SetAsExact") # don't pass this key
-	iparams.pop("Function")
-	physics.set_exact(exact_type=IC_params["Function"],**iparams)
+	IC_type = iparams.pop("Function")
+	physics.set_IC(IC_type=IC_type,**iparams)
 
-	# Initial conditions
-	IC_params["Function"] = physics.set_IC(IC_type=IC_params["Function"],**iparams)
+	# Exact solution
+	if bool(exact_params): # checks if dictionary is not empty
+		eparams = exact_params.copy()
+		exact_type = eparams.pop("Function")
+		physics.set_exact(exact_type=exact_type,**eparams)
 
 
 	# Boundary conditions
-	for bname in BC_params:
+	for BFG in mesh.BFaceGroups:
+		bname = BFG.Name
 		bparams = BC_params[bname].copy()
 		# bparams.pop("Function")
 
@@ -227,8 +262,9 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	'''
 	Solver
 	'''
-	# Merge params
+	# Merge solver-related params
 	solver_params = {**stepper_params, **numerics_params, **output_params}
+	solver_params["RestartFile"] = restart_params["File"]
 	solver_type = solver_params.pop("Solver")
 	if SolverType[solver_type] is SolverType.DG:
 		solver = DG.DG(solver_params, physics, mesh)
@@ -237,6 +273,18 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 	else: 
 		raise NotImplementedError
 
+
+	'''
+	Restart file
+	'''
+	if restart_params["File"] is not None:
+		_, physics_old, params_old, restart_time = readwritedatafiles.read_data_file(solver_params["RestartFile"])
+		# project if different basis and/or order
+		if order != params_old["InterpOrder"] or basis_type != params_old["InterpBasis"]:
+			solver.project_state_to_new_basis(physics_old.U, params_old["InterpBasis"], params_old["InterpOrder"])
+		if restart_params["StartFromFileTime"]:
+			solver.Time = restart_time
+
 	'''
 	Run
 	'''
@@ -244,47 +292,14 @@ def driver(TimeStepping=None, Numerics=None, Output=None, Mesh=None, Physics=Non
 
 
 	return solver, physics, mesh
-
-def test_deck(deck):
-
-	try:
-		TimeStepping = deck.TimeStepping
-	except:
-		deck.TimeStepping = {}
-	try:
-		Numerics = deck.Numerics
-	except:
-		deck.Numerics = {}	
-	try:
-		Output = deck.Output
-	except:
-		deck.Output = {}
-	try:
-		Mesh = deck.Mesh
-	except:
-		deck.Mesh = {}
-	try:
-		Physics = deck.Physics
-	except:
-		deck.Physics = {}
-	try:
-		InitialCondition = deck.InitialCondition
-	except:
-		deck.InitialCondition = {}
-	try:
-		BoundaryConditions = deck.BoundaryConditions
-	except:
-		deck.BoundaryConditions = {}
-	try:
-		SourceTerms = deck.SourceTerms
-	except:
-		deck.SourceTerms = {}
+	
 
 def main(argv):
 	
 	inputfile = ''
 	postfile = ''
 
+# <<<<<<< Updated upstream
 	my_parser = argparse.ArgumentParser(description='This script is the driver for Stanford\'s DGP solver')
 
 	# Argument for the input deck
@@ -304,6 +319,26 @@ def main(argv):
 	post_file = args.post
 
 	CurrentDir = os.path.dirname(os.path.abspath(input_deck)) + "/"
+# =======
+# 	try:
+# 		opts, args = getopt.getopt(argv,"h:p:",["pfile="])
+# 		inputfile = args[0]
+# 	except getopt.GetoptError:
+# 		print('dgp <inputfile> [-p <postfile>]')
+# 		sys.exit(2)
+# 	for opt, arg in opts:
+# 		if opt == '-h':
+# 			print('dgp <inputfile> [-p <postfile>]')
+# 			sys.exit()
+# 		elif opt in ("-p", "--pfile"):
+# 			postfile = arg
+
+# 	inputfile = inputfile.replace('.py','')
+# 	postfile = postfile.replace('.py','')
+
+
+# 	CurrentDir = os.path.dirname(os.path.abspath(inputfile)) + "/"
+# >>>>>>> Stashed changes
 	sys.path.append(CurrentDir)
 
 	input_deck=input_deck.replace('.py','')
@@ -313,9 +348,8 @@ def main(argv):
 
 	deck = importlib.import_module(input_deck)
 
-	test_deck(deck)
-	solver, EqnSet, mesh = driver(deck.TimeStepping, deck.Numerics, deck.Output, deck.Mesh,
-		deck.Physics, deck.InitialCondition, deck.BoundaryConditions, deck.SourceTerms)
+	# test_deck(deck)
+	solver, EqnSet, mesh = driver(deck)
 
 	auto_process = solver.Params["AutoProcess"]
 

@@ -3,13 +3,13 @@ TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 0.3,
     "nTimeStep" : 300,
-    "TimeScheme" : "ADER",
+    "TimeScheme" : "SSPRK3",
 }
 
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeEqSeg",
-    "Solver" : "ADERDG",
+    "Solver" : "DG",
     "ApplyLimiter" : "ScalarPositivityPreserving", 
 
 }
@@ -38,8 +38,9 @@ InitialCondition = {
     "uL" : 1.,
     "uR" : 0.,
     "xshock" : 0.3,
-    "SetAsExact" : True,
 }
+
+ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
     "Left" : {

@@ -37,18 +37,19 @@ a = 0.9
 InitialCondition = {
     "Function" : "SmoothIsentropicFlow",
     "a" : a,
-    "SetAsExact" : True,
 }
+
+ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
     "Left" : {
+        "BCType" : "StateAll",
 	    "Function" : "SmoothIsentropicFlow",
         "a" : a,
-    	"BCType" : "StateAll",
     },
     "Right" : {
+        "BCType" : "StateAll",
         "Function" : "SmoothIsentropicFlow",
         "a" : a,
-        "BCType" : "StateAll",
     },
 }

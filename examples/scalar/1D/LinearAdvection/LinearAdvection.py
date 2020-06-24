@@ -35,8 +35,9 @@ Physics = {
 InitialCondition = {
     "Function" : "Sine",
     "omega" : 2*np.pi,
-    "SetAsExact" : True,
 }
+
+ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
     "Left" : {
