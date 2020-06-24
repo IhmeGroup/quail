@@ -159,7 +159,7 @@ class IsentropicVortex(FcnBase):
 		self.vb = 1.
 		self.pb = 1.
 		self.vs = 5.
-	def get_state(self,physics,x,t):		
+	def get_state(self, physics, x, t):		
 		Up = np.zeros([x.shape[0], physics.StateRank])
 		gam = physics.gamma
 		Rg = physics.R
@@ -269,7 +269,7 @@ class PressureOutlet(BCWeakPrescribed):
 		pI = physics.ComputeScalars("Pressure", UpI)
 
 		if np.any(pI < 0.):
-			raise Errors.NotPhysicalError
+			raise errors.NotPhysicalError
 
 		# Interior speed of sound
 		# cI = np.sqrt(gam*pI/rhoI)

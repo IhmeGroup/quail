@@ -131,7 +131,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
-		for BFG in mesh.BFaceGroups:
+		for BFG in mesh.BFaceGroups.values():
 			self.normals_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			self.x_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
@@ -334,10 +334,10 @@ class ADERDG(DG.DG):
 		### Check interp basis validity
 		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		    if mesh.Dim != 1:
-		        raise Errors.IncompatibleError
+		        raise errors.IncompatibleError
 		else:
 		    if mesh.Dim != 2:
-		        raise Errors.IncompatibleError
+		        raise errors.IncompatibleError
 
 		### Check limiter ###
 		if Params["ApplyLimiter"] is 'PositivityPreserving' \
@@ -346,7 +346,7 @@ class ADERDG(DG.DG):
 
 		### Check flux/source coefficient interpolation compatability with basis functions.
 		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
-			raise Errors.IncompatibleError
+			raise errors.IncompatibleError
   
 
 	def precompute_matrix_operators(self):
@@ -618,7 +618,7 @@ class ADERDG(DG.DG):
 
 		return RL, RR
 
-	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
+	def calculate_residual_bface(self, BFG, ibface, U, R):
 		'''
 		Method: calculate_residual_bface
 		-------------------------------------------
@@ -636,7 +636,8 @@ class ADERDG(DG.DG):
 		dim = mesh.Dim
 		EqnSet = self.EqnSet
 		ns = EqnSet.StateRank
-		BFG = mesh.BFaceGroups[ibfgrp]
+		# BFG = mesh.BFaceGroups[ibfgrp]
+		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.Elem
 		face = BFace.face
@@ -681,7 +682,7 @@ class ADERDG(DG.DG):
 		x = x_bfgroups[ibfgrp][ibface]
 
 		# Get boundary state
-		BC = EqnSet.BCs[ibfgrp]
+		BC = EqnSet.BCs[BFG.name]
 		# Fq = BC.get_boundary_flux(EqnSet, x, t, normals, UqI)
 
 		# Loop over time to apply BC at each temporal quadrature point

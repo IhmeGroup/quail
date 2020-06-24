@@ -103,18 +103,21 @@ def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True
 		vec=0., dot_normal_with_vec=False, plot_vs_x=False, plot_vs_y=False, Label=None):
 
 	if mesh.Dim != 2:
-		raise Errors.IncompatibleError
+		raise errors.IncompatibleError
 	# Find boundary face group
-	found = False
-	ibfgrp = 0
-	for BFG in mesh.BFaceGroups:
-		if BFG.Name == bname:
-			found = True
-			break
-		ibfgrp += 1
+	# found = False
+	# ibfgrp = 0
+	# for BFG in mesh.BFaceGroups:
+	# 	if BFG.Name == bname:
+	# 		found = True
+	# 		break
+	# 	ibfgrp += 1
 
-	if not found:
-		raise Errors.DoesNotExistError
+	# if not found:
+	# 	raise errors.DoesNotExistError
+
+	BFG = mesh.BFaceGroups[bname]
+	ibfgrp = BFG.number
 
 	bface_ops = solver.bface_operators
 	quad_pts = bface_ops.quad_pts

@@ -246,7 +246,8 @@ class BFaceGroup(object):
         -------------------
         This method initializes the object
         '''
-        self.Name = "" 
+        self.name = ""
+        self.number = -1
         self.nBFace = 0 
         self.BFaces = None
 
@@ -357,8 +358,7 @@ class Mesh(object):
         self.nIFace = 0
         self.IFaces = []
         self.nBFaceGroup = 0
-        self.BFaceGroups = []
-        self.BFGNames = []
+        self.BFaceGroups = {}
         self.gbasis = gbasis
         self.gorder = gorder
         self.nElem = nElem
@@ -398,21 +398,6 @@ class Mesh(object):
         '''
         self.Elem2Nodes = np.zeros([self.nElem,self.nNodePerElem], dtype=int)
 
-    def allocate_helpers(self):
-        '''
-        Method: allocate_helpers
-        -------------------
-        This method creates some helper mesh structures
-
-        OUTPUTS:
-            self.nElems
-            self.nElemTot
-            self.BFGNames
-        '''
-
-        for i in range(self.nBFaceGroup):
-            self.BFGNames.append(self.BFaceGroups[i].Name)
-
 
     def allocate_ifaces(self):
         '''
@@ -425,16 +410,27 @@ class Mesh(object):
         '''
         self.IFaces = [IFace() for i in range(self.nIFace)]
 
-    def allocate_bface_groups(self):
-        '''
-        Method: allocate_bface_groups
-        -------------------
-        This method allocates BFaceGroups
+    # def allocate_bface_groups(self):
+    #     '''
+    #     Method: allocate_bface_groups
+    #     -------------------
+    #     This method allocates BFaceGroups
 
-        OUTPUTS:
-            self.BFaceGroups
-        '''
-        self.BFaceGroups = [BFaceGroup() for i in range(self.nBFaceGroup)]
+    #     OUTPUTS:
+    #         self.BFaceGroups
+    #     '''
+    #     self.BFaceGroups = [BFaceGroup() for i in range(self.nBFaceGroup)]
+
+    def add_bface_group(self, bname):
+        if bname in self.BFaceGroups:
+            raise ValueError
+        BFG = BFaceGroup()
+        self.BFaceGroups[bname] = BFG
+        BFG.name = bname
+        self.nBFaceGroup = len(self.BFaceGroups)
+        BFG.number = self.nBFaceGroup - 1
+
+        return BFG
 
     def fill_faces(self):
         for iiface in range(self.nIFace):
@@ -453,8 +449,10 @@ class Mesh(object):
             FaceL.Number = iiface
             FaceR.Number = iiface
 
-        for ibfgrp in range(self.nBFaceGroup):
-            BFG = self.BFaceGroups[ibfgrp]
+        # for ibfgrp in range(self.nBFaceGroup):
+        #     BFG = self.BFaceGroups[ibfgrp]
+
+        for BFG in self.BFaceGroups.values():
             
             for ibface in range(BFG.nBFace):
                 BFace = BFG.BFaces[ibface]
@@ -465,7 +463,8 @@ class Mesh(object):
 
                 Face.Type = FaceType.Boundary
                 Face.Number = ibface
-                Face.Group = ibfgrp
+                # Face.Group = ibfgrp
+                Face.Group = BFG.number
 
 
 

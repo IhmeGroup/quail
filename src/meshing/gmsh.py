@@ -346,7 +346,7 @@ def FindLineAfterString(fo, string):
 			found = True
 
 	if not found:
-		raise Errors.FileReadError
+		raise errors.FileReadError
 
 
 def ReadMeshFormat(fo):
@@ -356,14 +356,14 @@ def ReadMeshFormat(fo):
 	fl = fo.readline()
 	ver = fl.split()[0]
 	if ver != VERSION2 and ver != VERSION4:
-		raise Errors.FileReadError("Unsupported version")
+		raise errors.FileReadError("Unsupported version")
 	file_type = int(fl.split()[1])
 	if file_type != 0:
-		raise Errors.FileReadError("Only ASCII format supported")
+		raise errors.FileReadError("Only ASCII format supported")
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndMeshFormat"):
-		raise Errors.FileReadError
+		raise errors.FileReadError
 
 	return ver
 
@@ -391,7 +391,7 @@ def ReadPhysicalGroups(fo, mesh):
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndPhysicalNames"):
-		raise Errors.FileReadError
+		raise errors.FileReadError
 
 	# Need at least one physical group to correspond to volume elements
 	match = False
@@ -425,7 +425,7 @@ def get_nodes_ver2(fo):
 			Nodes[new_node_tag,d] = float(ls[d+1])
 		# Sanity check
 		if int(ls[0]) > nNode:
-			raise Errors.FileReadError
+			raise errors.FileReadError
 
 		new_node_tag += 1
 
@@ -485,7 +485,7 @@ def ReadNodes(fo, ver, mesh):
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndNodes"):
-		raise Errors.FileReadError
+		raise errors.FileReadError
 	
 	# Change dimension if needed
 	ds = [0,1,2]
@@ -573,7 +573,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				found = True
 				break
 		if not found:
-			raise Errors.DoesNotExistError("All elements and boundary faces must " +
+			raise errors.DoesNotExistError("All elements and boundary faces must " +
 					"be assigned to a physical group")
 
 		if PGroup.Dim == mesh.Dim:
@@ -613,19 +613,23 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		elif PGroup.Dim == mesh.Dim - 1:
 			### Boundary entity
 			# Check for existing boundary face group
-			found = False
-			for ibfgrp in range(mesh.nBFaceGroup):
-				BFG = mesh.BFaceGroups[ibfgrp]
-				if BFG.Name == PGroup.Name:
-					found = True
-					break
-			if not found:
+			# found = False
+			# for ibfgrp in range(mesh.nBFaceGroup):
+			# 	BFG = mesh.BFaceGroups[ibfgrp]
+			# 	if BFG.Name == PGroup.Name:
+			# 		found = True
+			# 		break
+			try:
+				BFG = mesh.BFaceGroups[PGroup.Name]
+			except KeyError:
+			# if PGroup.Name in mesh.BFaceGroups:
 				# Group has not been assigned yet
-				mesh.nBFaceGroup += 1
-				BFG = mesh_defs.BFaceGroup()
-				mesh.BFaceGroups.append(BFG)
-				BFG.Name = PGroup.Name
-				PGroup.Group = mesh.nBFaceGroup - 1
+				# mesh.nBFaceGroup += 1
+				# BFG = mesh_defs.BFaceGroup()
+				# mesh.BFaceGroups.append(BFG)
+				# BFG.Name = PGroup.Name
+				BFG = mesh.add_bface_group(PGroup.Name)
+				PGroup.Group = BFG.number
 			BFG.nBFace += 1
 		# else:
 		# 	raise Exception("Mesh error")
@@ -652,7 +656,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				found = True
 				break
 		if not found:
-			raise Errors.DoesNotExistError("All elements and boundary faces must " +
+			raise errors.DoesNotExistError("All elements and boundary faces must " +
 					"be assigned to a physical group")
 
 		if dim == mesh.Dim:
@@ -675,14 +679,16 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		elif dim == mesh.Dim - 1:
 
 			if PGroup.Group >= 0:
-				BFG = mesh.BFaceGroups[PGroup.Group]
+				# BFG = mesh.BFaceGroups[PGroup.Group]
+				BFG = mesh.BFaceGroups[PGroup.Name]
 			else:
 				# Group has not been assigned yet
-				mesh.nBFaceGroup += 1
-				BFG = mesh_defs.BFaceGroup()
-				mesh.BFaceGroups.append(BFG)
-				BFG.Name = PGroup.Name
-				PGroup.Group = mesh.nBFaceGroup - 1
+				# mesh.nBFaceGroup += 1
+				# BFG = mesh_defs.BFaceGroup()
+				# mesh.BFaceGroups.append(BFG)
+				# BFG.Name = PGroup.Name
+				BFG = mesh.add_bface_group(PGroup.Name)
+				PGroup.Group = BFG.number
 			# Loop and increment nBFace
 			for _ in range(num_in_block):
 				fo.readline()
@@ -709,7 +715,7 @@ def ReadMeshElemsBFaces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database):
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndElements"):
-		raise Errors.FileReadError
+		raise errors.FileReadError
 
 	return mesh
 
@@ -849,7 +855,8 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			gorder = gmsh_element_database[etype].gorder
 # >>>>>>> Stashed changes
 			ibfgrp = PGroup.Group
-			BFG = mesh.BFaceGroups[ibfgrp]
+			# BFG = mesh.BFaceGroups[ibfgrp]
+			BFG = mesh.BFaceGroups[PGroup.Name]
 			# Number of q = 1 face nodes
 			nfnode = gbasis.get_num_basis_coeff(1)
 
@@ -935,7 +942,7 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 					if PGroup.Dim == dim:
 						ibfgrp = PGroup.Group
 						break
-			BFG = mesh.BFaceGroups[ibfgrp]
+			BFG = mesh.BFaceGroups[PGroup.Name]
 			gbasis = gmsh_element_database[etype].gbasis
 			nfnode = gbasis.get_num_basis_coeff(1) 
 			# Loop and increment nBFace
@@ -958,8 +965,10 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 
 def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_node_tags):
 	# Allocate additional mesh structures
-	for ibfgrp in range(mesh.nBFaceGroup):
-		BFG = mesh.BFaceGroups[ibfgrp]
+	# for ibfgrp in range(mesh.nBFaceGroup):
+	# 	BFG = mesh.BFaceGroups[ibfgrp]
+	# 	BFG.allocate_bfaces()
+	for BFG in mesh.BFaceGroups.values():
 		BFG.allocate_bfaces()
 	# nFaceMax = 0
 	# for EG in mesh.ElemGroups:
@@ -969,7 +978,6 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
 	mesh.allocate_faces()
 	mesh.allocate_elem_to_nodes()
-	mesh.allocate_helpers() 
 	nFaceMax = mesh.nFacePerElem
 
 	# Over-allocate IFaces
@@ -1000,7 +1008,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndElements"):
-		raise Errors.FileReadError
+		raise errors.FileReadError
 
 	# Fill boundary and interior face info
 	# for egrp in range(mesh.nElemGroup):
@@ -1028,7 +1036,15 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 				if FInfo.BFlag:
 					# boundary face
 					# Store in BFG
-					BFG = mesh.BFaceGroups[FInfo.Group]
+					# BFG = mesh.BFaceGroups[FInfo.Group]
+					found = False
+					# Make this cleaner later
+					for PGroup in PGroups:
+						if PGroup.Group == FInfo.Group:
+							found = True
+							break
+					if not found: raise Exception
+					BFG = mesh.BFaceGroups[PGroup.Name]
 					# try:
 					# 	BFace = BFG.BFaces[FInfo.Face]
 					# except:
@@ -1089,7 +1105,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 def ReadGmshFile(FileName):
 	# Check file extension
 	if FileName[-4:] != ".msh":
-		raise Errors.FileReadError("Wrong file type")
+		raise errors.FileReadError("Wrong file type")
 
 	# Open file
 	fo = open(FileName, "r")

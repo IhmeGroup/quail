@@ -62,7 +62,7 @@ EqnSet.set_IC(IC_type="IsentropicVortex")
 EqnSet.set_exact(exact_type="IsentropicVortex")
 # EqnSet.ExactSoln.Set(Function=EqnSet.FcnIsentropicVortexPropagation)
 # Boundary conditions
-EqnSet.set_BC(BC_type="StateAll", fcn_type="IsentropicVortex")
+EqnSet.set_BC(bname="wall", BC_type="StateAll", fcn_type="IsentropicVortex")
 # EqnSet.SetBC("wall",Function=EqnSet.FcnIsentropicVortexPropagation, BCType=EqnSet.BCType["StateAll"])
 # raise Exception
 

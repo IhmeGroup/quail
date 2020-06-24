@@ -86,7 +86,7 @@ class PositivityPreserving(base.LimiterBase):
 		p_bar = physics.ComputeScalars(self.scalar2, u_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
-			raise Errors.NotPhysicalError
+			raise errors.NotPhysicalError
 
 		np.seterr(divide='ignore')
 

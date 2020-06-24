@@ -434,8 +434,10 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     #     for elem in range(nElem):
     #         mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
 
-    mesh.BFaceGroups.remove(BFG1)
-    mesh.BFaceGroups.remove(BFG2)
+    # mesh.BFaceGroups.remove(BFG1)
+    # mesh.BFaceGroups.remove(BFG2)
+    mesh.BFaceGroups.pop(BFG1.name)
+    mesh.BFaceGroups.pop(BFG2.name)
 
     # print
     if which_dim == 0:
@@ -453,6 +455,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
     if b1 is None and b2 is None:
         return None, None, None, None, NextIdx
+    elif b1 == b2:
+        raise ValueError("Duplicate boundaries")
 
     NodePairs = np.zeros([mesh.nNode, 2], dtype=int) - 1
     IdxInNodePairs = np.zeros([mesh.nNode, 2], dtype=int) - 1
@@ -460,21 +464,23 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     node2_matched = [False]*mesh.nNode
 
     # Extract relevant BFGs
-    BFG1 = None; BFG2 = None;
-    for BFG in mesh.BFaceGroups:
-        if BFG.Name == b1:
-            BFG1 = BFG
-        if BFG.Name == b2:
-            BFG2 = BFG
-    BFG = None
+    # BFG1 = None; BFG2 = None;
+    # for BFG in mesh.BFaceGroups:
+    #     if BFG.Name == b1:
+    #         BFG1 = BFG
+    #     if BFG.Name == b2:
+    #         BFG2 = BFG
+    # BFG = None
+    BFG1 = mesh.BFaceGroups[b1]
+    BFG2 = mesh.BFaceGroups[b2]
 
     StartIdx = NextIdx
 
     # Sanity check
-    if BFG1 is None or BFG2 is None:
-        raise Exception("One or both boundaries not found")
-    elif BFG1 == BFG2:
-        raise Exception("Duplicate boundaries")
+    # if BFG1 is None or BFG2 is None:
+    #     raise Exception("One or both boundaries not found")
+    # elif BFG1 == BFG2:
+    #     raise Exception("Duplicate boundaries")
 
     icoord = which_dim
     if icoord < 0 or icoord >= mesh.Dim:
@@ -716,6 +722,12 @@ def VerifyPeriodicMesh(mesh):
             raise ValueError        
 
 
+def update_boundary_group_nums(mesh):
+    i = 0
+    for BFG in mesh.BFaceGroups.values():
+        BFG.number = i
+        i += 1
+
 def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None):
 
     ''' Reorder nodes '''
@@ -751,8 +763,11 @@ def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, z1=None,
 
 
     ''' Update face orientations '''
+    # making it periodic messes things up
     # check_face_orientations(mesh)
 
+    ''' Update boundary group numbers '''
+    update_boundary_group_nums(mesh)
 
     ''' Verify valid mesh '''
     VerifyPeriodicMesh(mesh)

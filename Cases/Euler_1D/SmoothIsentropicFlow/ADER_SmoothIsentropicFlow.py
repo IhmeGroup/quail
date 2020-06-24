@@ -31,13 +31,16 @@ EqnSet.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
 EqnSet.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 
 # Boundary conditions
+# if not Periodic:
+# 	for ibfgrp in range(mesh.nBFaceGroup):
+# 		BFG = mesh.BFaceGroups[ibfgrp]
+# 		if BFG.Name is "Left":
+# 			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+# 		elif BFG.Name is "Right":
+# 			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 if not Periodic:
-	for ibfgrp in range(mesh.nBFaceGroup):
-		BFG = mesh.BFaceGroups[ibfgrp]
-		if BFG.Name is "Left":
-			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
-		elif BFG.Name is "Right":
-			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+	EqnSet.set_BC(bname="Left", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+	EqnSet.set_BC(bname="Right", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
 solver = Solver.ADERDG(Params,EqnSet,mesh)

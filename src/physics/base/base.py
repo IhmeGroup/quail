@@ -78,7 +78,8 @@ class PhysicsBase(object):
 		# for ibfgrp in range(mesh.nBFaceGroup):
 		# 	self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
 		# 	# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
-		self.BCs = [None]*mesh.nBFaceGroup
+		# self.BCs = [None]*mesh.nBFaceGroup
+		self.BCs = dict.fromkeys(mesh.BFaceGroups.keys())
 
 		# Basis, Order data for each element group
 		# For now, ssume uniform basis and Order for each element group 
@@ -176,17 +177,27 @@ class PhysicsBase(object):
 		fcn_ref = process_map(exact_type, self.exact_fcn_map)
 		self.ExactSoln = fcn_ref(**kwargs)
 
-	def set_BC(self, BC_type, fcn_type=None, **kwargs):
-		for i in range(len(self.BCs)):
-			BC = self.BCs[i]
-			if BC is None:
-				if fcn_type is not None:
-					fcn_ref = process_map(fcn_type, self.BC_fcn_map)
-					kwargs.update(function=fcn_ref)
-				BC_ref = process_map(BC_type, self.BC_map)
-				BC = BC_ref(**kwargs)
-				self.BCs[i] = BC
-				break
+	def set_BC(self, bname, BC_type, fcn_type=None, **kwargs):
+		if self.BCs[bname] is not None:
+			raise ValueError
+		else:
+			if fcn_type is not None:
+				fcn_ref = process_map(fcn_type, self.BC_fcn_map)
+				kwargs.update(function=fcn_ref)
+			BC_ref = process_map(BC_type, self.BC_map)
+			BC = BC_ref(**kwargs)
+			self.BCs[bname] = BC
+
+		# for i in range(len(self.BCs)):
+		# 	BC = self.BCs[i]
+		# 	if BC is None:
+		# 		if fcn_type is not None:
+		# 			fcn_ref = process_map(fcn_type, self.BC_fcn_map)
+		# 			kwargs.update(function=fcn_ref)
+		# 		BC_ref = process_map(BC_type, self.BC_map)
+		# 		BC = BC_ref(**kwargs)
+		# 		self.BCs[i] = BC
+		# 		break
 
 	# def SetBC(self, BCName, **kwargs):
 	# 	found = False

@@ -131,7 +131,6 @@ def driver(deck):
 	'''
 	if mesh_params["File"] is not None:
 		mesh = mesh_gmsh.ReadGmshFile(mesh_params["File"])
-		periodic = True
 	else:
 		# Unpack
 		shape = mesh_params["ElementShape"]
@@ -142,12 +141,11 @@ def driver(deck):
 		ymin = mesh_params["ymin"]
 		ymax = mesh_params["ymax"]
 		if shape is "Segment":
-			if mesh_params["PeriodicBoundariesX"] != [] and mesh_params["PeriodicBoundariesY"] == []:
+			if mesh_params["PeriodicBoundariesX"] != []:
 				periodic = True
-				mesh = mesh_common.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 			else:
 				periodic = False
-				mesh = mesh_common.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
+			mesh = mesh_common.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 		else:
 			# 2D - quads or tris
 			mesh = mesh_common.mesh_2D(nElem_x=nElem_x, nElem_y=nElem_y, Uniform=True, xmin=xmin, xmax=xmax, 
@@ -167,7 +165,7 @@ def driver(deck):
 		for b in mesh_params["PeriodicBoundariesY"]:
 			pb[i] = b
 			i += 1
-	if pb != [None]*4 and periodic:
+	if pb != [None]*4:
 		# need to check 1D first
 		if mesh.Dim == 1:
 			raise Exception
@@ -225,9 +223,10 @@ def driver(deck):
 
 
 	# Boundary conditions
-	for BFG in mesh.BFaceGroups:
-		bname = BFG.Name
-		bparams = BC_params[bname].copy()
+	# for BFG in mesh.BFaceGroups:
+	for bname, bparams in BC_params.items():
+		# bname = BFG.Name
+		# bparams = BC_params[bname].copy()
 		# bparams.pop("Function")
 
 		# btype = physics.BCType[bparams["BCType"]]
@@ -243,14 +242,16 @@ def driver(deck):
 		###
 		# code.interact(local=locals())
 		# physics.SetBC(bname, **bparams)
+
+		bparams = bparams.copy()
 		
 		BC_type = bparams.pop("BCType")
 
 		try:
 			fcn_type = bparams.pop("Function")
-			physics.set_BC(BC_type, fcn_type, **bparams)
+			physics.set_BC(bname, BC_type, fcn_type, **bparams)
 		except KeyError:
-			physics.set_BC(BC_type, **bparams)
+			physics.set_BC(bname, BC_type, **bparams)
 
 	# Source terms
 	for sparams in source_params.values():

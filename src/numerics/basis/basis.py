@@ -1211,8 +1211,9 @@ class LegendreQuad(BasisBase, QuadShape):
         # Always need phi
         phix = np.zeros((x.shape[0],p+1)); phiy = np.zeros_like(phix)
 
-        self.get_legendre_basis_1D(x[:,0], p, phix, gphix)
-        self.get_legendre_basis_1D(x[:,1], p, phiy, gphiy)
+        legendre_seg = LegendreSeg(self.order)
+        legendre_seg.get_legendre_basis_1D(x[:,0], p, phix, gphix)
+        legendre_seg.get_legendre_basis_1D(x[:,1], p, phiy, gphiy)
 
         if phi is not None:
             for i in range(x.shape[0]):

@@ -22,7 +22,8 @@ mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x= nElem_x, nElem_y 
 ### Solver parameters
 # InterpBasis = "LagrangeEqTri"
 InterpBasis = "HierarchicH1Tri"
-if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
+# InterpBasis = "LagrangeEqQuad"
+if InterpBasis == "LagrangeEqTri" or InterpBasis == "HierarchicH1Tri":
 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 if Periodic:
 	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
@@ -56,10 +57,15 @@ EqnSet.set_exact(exact_type="Gaussian", x0=x0)
 # 	EqnSet.SetBC("y2",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
 if not Periodic:
 	MeshTools.check_face_orientations(mesh)
-	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
-	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
-	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
-	EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	# EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	# EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	# EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	# EqnSet.set_BC(BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+
+	EqnSet.set_BC(bname="x1", BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(bname="x2", BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(bname="y1", BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+	EqnSet.set_BC(bname="y2", BC_type="StateAll", fcn_type="Gaussian", x0=x0)
 
 # raise Exception
 

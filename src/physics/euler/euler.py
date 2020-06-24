@@ -112,15 +112,15 @@ class Euler(base.PhysicsBase):
 
 		if FlagNonPhysical:
 			if np.any(rho < 0.):
-				raise Errors.NotPhysicalError
+				raise errors.NotPhysicalError
 
 		# if np.any(P < 0.) or np.any(rho < 0.):
-		# 	raise Errors.NotPhysicalError
+		# 	raise errors.NotPhysicalError
 		def getP():
 			scalar[:] = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
 			if FlagNonPhysical:
 				if np.any(scalar < 0.):
-					raise Errors.NotPhysicalError
+					raise errors.NotPhysicalError
 			return scalar
 		def getT():
 			return getP()/(rho*R)

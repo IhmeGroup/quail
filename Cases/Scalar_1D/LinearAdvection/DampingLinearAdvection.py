@@ -47,15 +47,17 @@ if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
 else:
 	Inflow = "Right"; Outflow = "Left"
-	set_BC(self, BC_name, **kwargs)
-if not Periodic:
-	for ibfgrp in range(mesh.nBFaceGroup):
-		BFG = mesh.BFaceGroups[ibfgrp]
-		if BFG.Name is Inflow:
-			EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
-		elif BFG.Name is Outflow:
-			EqnSet.set_BC(BC_type="Extrapolate")
+# if not Periodic:
+# 	for ibfgrp in range(mesh.nBFaceGroup):
+# 		BFG = mesh.BFaceGroups[ibfgrp]
+# 		if BFG.Name is Inflow:
+# 			EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+# 		elif BFG.Name is Outflow:
+# 			EqnSet.set_BC(BC_type="Extrapolate")
 
+if not Periodic:
+	EqnSet.set_BC(bname=Inflow, BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+	EqnSet.set_BC(bname=Outflow, BC_type="Extrapolate")
 
 ### Solve
 solver = Solver.DG(Params,EqnSet,mesh)

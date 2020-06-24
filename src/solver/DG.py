@@ -77,6 +77,10 @@ class SolverBase(ABC):
 		basis_name  = Params["InterpBasis"]
 		self.basis = basis_tools.set_basis(mesh, EqnSet.order, basis_name)
 
+		# check for compatibility
+		if mesh.gbasis.shape_type != self.basis.shape_type:
+			raise errors.IncompatibleError
+
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
@@ -456,7 +460,7 @@ class BFaceOperators(IFaceOperators):
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
-		for BFG in mesh.BFaceGroups:
+		for BFG in mesh.BFaceGroups.values():
 			self.normals_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			self.x_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
@@ -518,10 +522,10 @@ class DG(SolverBase):
 		### Check interp basis validity
 		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		    if mesh.Dim != 1:
-		        raise Errors.IncompatibleError
+		        raise errors.IncompatibleError
 		else:
 		    if mesh.Dim != 2:
-		        raise Errors.IncompatibleError
+		        raise errors.IncompatibleError
 
 		### Check uniform mesh
 		# if Params["UniformMesh"] is True:
@@ -536,10 +540,10 @@ class DG(SolverBase):
 		# ### Check linear geometric mapping
 		# if Params["LinearGeomMapping"] is True:
 		# 	if mesh.QOrder != 1:
-		# 	    raise Errors.IncompatibleError
+		# 	    raise errors.IncompatibleError
 		# 	if mesh.QBasis == BasisType.LagrangeEqQuad \
 		# 	    and Params["UniformMesh"] is False:
-		# 	    raise Errors.IncompatibleError
+		# 	    raise errors.IncompatibleError
 
 		### Check limiter ###
 		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
@@ -732,7 +736,7 @@ class DG(SolverBase):
 
 			RL, RR = self.calculate_residual_iface(iiface, UL, UR, RL, RR)
 
-	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
+	def calculate_residual_bface(self, BFG, ibface, U, R):
 		'''
 		Method: calculate_residual_bface
 		---------------------------------
@@ -748,7 +752,8 @@ class DG(SolverBase):
 		'''
 		mesh = self.mesh
 		EqnSet = self.EqnSet
-		BFG = mesh.BFaceGroups[ibfgrp]
+		# BFG = mesh.BFaceGroups[ibfgrp]
+		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.Elem
 		face = BFace.face
@@ -773,7 +778,7 @@ class DG(SolverBase):
 		x = x_bfgroups[ibfgrp][ibface]
 
 		# Get boundary state
-		BC = EqnSet.BCs[ibfgrp]
+		BC = EqnSet.BCs[BFG.name]
 
 		Fq = BC.get_boundary_flux(EqnSet, x, self.Time, normals, UqI)
 
@@ -800,15 +805,17 @@ class DG(SolverBase):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 
-		for ibfgrp in range(mesh.nBFaceGroup):
-			BFG = mesh.BFaceGroups[ibfgrp]
+		# for ibfgrp in range(mesh.nBFaceGroup):
+		# 	BFG = mesh.BFaceGroups[ibfgrp]
+
+		for BFG in mesh.BFaceGroups.values():
 
 			for ibface in range(BFG.nBFace):
 				BFace = BFG.BFaces[ibface]
 				elem = BFace.Elem
 				face = BFace.face
 
-				R[elem] = self.calculate_residual_bface(ibfgrp, ibface, U[elem], R[elem])
+				R[elem] = self.calculate_residual_bface(BFG, ibface, U[elem], R[elem])
 
 
 	def calculate_residual(self, U, R):
@@ -975,7 +982,8 @@ class DG(SolverBase):
 		for iOrder in range(nOrder):
 			Order = InterpOrders[iOrder]
 			''' Compute time step '''
-			self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
+			if nTimeSteps[iOrder] != 0:
+				self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
 			self.nTimeStep = nTimeSteps[iOrder]
 
 			''' After first iteration, project solution to next Order '''
