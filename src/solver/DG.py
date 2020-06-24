@@ -15,7 +15,7 @@ import numerics.basis.tools as basis_tools
 
 import numerics.limiting.positivitypreserving as pp_limiter
 
-from numerics.quadrature.quadrature import get_gaussian_quadrature_elem, get_gaussian_quadrature_face, QuadData
+# from numerics.quadrature.quadrature import QuadData
 import numerics.timestepping.stepper as stepper
 
 import processing.post as post_defs
@@ -117,10 +117,13 @@ class SolverBase(ABC):
 		else:
 			order = 2*np.amax([EqnSet.order, 1])
 			order = EqnSet.QuadOrder(order)
-			quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
-			quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
+			# quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
+			quad_order = basis.get_quadrature(mesh, order)
+			basis.get_quad_data(quad_order, 0)
+			# quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
 
-			eval_pts = quad_data.quad_pts
+			eval_pts = basis.quad_pts
+			# eval_pts = quad_data.quad_pts
 			npts = eval_pts.shape[0]
 
 		for elem in range(mesh.nElem):
@@ -131,7 +134,7 @@ class SolverBase(ABC):
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], quad_data, basis, elem, f, U[elem,:,:])
+				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, elem, f, U[elem,:,:])
 
 
 	def project_state_to_new_basis(self, U_old, basis_name_old, order_old):
@@ -152,10 +155,11 @@ class SolverBase(ABC):
 			eval_pts, npts = basis.equidistant_nodes(EqnSet.order)
 		else:
 			order = 2*np.amax([EqnSet.order, order_old])
-			quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
-			quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
-
-			eval_pts = quad_data.quad_pts
+			quad_order = basis.get_quadrature(mesh, order)
+			# quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
+			# quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
+			basis.get_quad_data(quad_order,0)
+			eval_pts = basis.quad_pts
 			npts = eval_pts.shape[0]
 
 		basis_old.eval_basis(eval_pts, Get_Phi=True)
@@ -166,7 +170,7 @@ class SolverBase(ABC):
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], quad_data, basis, elem, Up_old, U[elem,:,:])
+				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, elem, Up_old, U[elem,:,:])
 
 
 	# def init_state_from_fcn(self):
@@ -279,10 +283,13 @@ class ElemOperators(object):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
-		QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, EqnSet, None)
-		quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
-		self.quad_pts = quadData.quad_pts
-		self.quad_wts = quadData.quad_wts
+		# QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, EqnSet, None)
+		gbasis = mesh.gbasis
+		quad_order = gbasis.get_quadrature(mesh, order, physics = EqnSet)
+		# quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
+		basis.get_quad_data(quad_order, 0)
+		self.quad_pts = basis.quad_pts
+		self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -356,10 +363,12 @@ class IFaceOperators(ElemOperators):
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
-		QuadOrder, _ = get_gaussian_quadrature_face(mesh, None, mesh.gbasis, order, EqnSet, None)
-		quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
-		self.quad_pts = quadData.quad_pts
-		self.quad_wts = quadData.quad_wts
+		gbasis = mesh.gbasis
+		quad_order = gbasis.get_face_quadrature(mesh,order,physics = EqnSet)
+		basis.get_face_quad_data(quad_order, 0)
+		# quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
+		self.quad_pts = basis.quad_pts
+		self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -459,7 +468,7 @@ class BFaceOperators(IFaceOperators):
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None, True)
+				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None)
 				# Store
 				x_bfgroup[j] = x
 
