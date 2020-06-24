@@ -1,6 +1,7 @@
 import code
 import copy
 import numpy as np
+from scipy.optimize import fsolve, root
 
 import general
 
@@ -208,13 +209,22 @@ def predictor_elem_implicit(solver, elem, dt, Wp, Up):
 
 	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
+	# def F(u):
+	# 	S = 0.
+	# 	S = EqnSet.SourceState(1, 0., 0., u, S)
+	# 	F = u - S - W_bar[0,0]
+	# 	return F
+
+	# U_bar = fsolve(F, W_bar)
+
 	jac = 0.0
 	for Source in Sources:
-		jac += Source.get_jacobian()
+		jac += Source.get_jacobian(W_bar)
 
 	Kp = K-MM*dt*jac 
 	iK = np.linalg.inv(Kp)
 
+	Up[:] = W_bar
 
 	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
 	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
@@ -230,6 +240,7 @@ def predictor_elem_implicit(solver, elem, dt, Wp, Up):
 
 		Up = Up_new
 		
+
 		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
 		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
 
