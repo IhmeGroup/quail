@@ -345,7 +345,7 @@ def main(argv):
 							help='name of restart file')
 	my_parser.add_argument('-t','--type',
 							choices=['solve','post'],
-							help='blah')
+							help='if post is selected, read in the post-processing file without \'-p\' instead of the inputdeck (solve executes by default)')
 
 	# Execute the parse_args() method
 	args = my_parser.parse_args()
