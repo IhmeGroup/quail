@@ -195,7 +195,7 @@ class ADEROperators(object):
 			SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir=0,PhysicalSpace = True)
 			SMS_elems[elem,:,:,0] = SMS.transpose()
 
-			iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=False)
+			iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=True)
 			iMM_elems[elem] = iMM
 
 		# Get mass matrix in space-time
