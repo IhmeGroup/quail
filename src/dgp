@@ -287,6 +287,8 @@ def driver(deck):
 		# project if different basis and/or order
 		if order != physics_old.order or solver.basis.basis_type != solver_old.basis.basis_type:
 			solver.project_state_to_new_basis(physics_old.U, solver_old.basis, physics_old.order)
+		else:
+			solver.EqnSet = physics_old
 		if restart_params["StartFromFileTime"]:
 			solver.Time = solver_old.Time
 
@@ -297,15 +299,34 @@ def driver(deck):
 
 
 	return solver, physics, mesh
-	
+
+def process_restart_file(deck, restart_file):
+	if restart_file != None:
+		try:
+			deck.Restart['File'] = restart_file
+		except:
+			deck.Restart = {"File": restart_file}
+
+def process_post_file(auto_process, post_file):
+	if post_file != None:
+		post_file = post_file.replace('.py','')
+		try:
+			postprocess = importlib.import_module(post_file)
+		except:
+			raise errors.FileReadError(f"{post_file}.py not found")
+	if auto_process == True and post_file == None:
+		post_file = 'post_process'
+		try:
+			postprocess = importlib.import_module(post_file)
+		except:
+			print('Warning: post_process.py file not found')
 
 def main(argv):
 	
 	inputfile = ''
 	postfile = ''
 
-# <<<<<<< Updated upstream
-	my_parser = argparse.ArgumentParser(description='This script is the driver for Stanford\'s DGP solver')
+	my_parser = argparse.ArgumentParser(conflict_handler='resolve', description='This script is the driver for Stanford\'s DGP solver')
 
 	# Argument for the input deck
 	my_parser.add_argument('inputdeck',
@@ -322,9 +343,13 @@ def main(argv):
 							metavar='',
 							type=str,
 							help='name of restart file')
+	my_parser.add_argument('-t','--type',
+							choices=['solve','post'],
+							help='blah')
 
 	# Execute the parse_args() method
 	args = my_parser.parse_args()
+
 	input_deck = args.inputdeck
 	post_file = args.post
 	restart_file = args.restart
@@ -332,31 +357,20 @@ def main(argv):
 	CurrentDir = os.path.dirname(os.path.abspath(input_deck)) + "/"
 
 	sys.path.append(CurrentDir)
+	if args.type == None or args.type == 'solve':
+		input_deck=input_deck.replace('.py','')
+		deck = importlib.import_module(input_deck)
 
-	input_deck=input_deck.replace('.py','')
+		process_restart_file(deck, restart_file)
+		# code.interact(local=locals())
+		solver, physics, mesh = driver(deck)
+		auto_process = solver.Params["AutoProcess"]
+		process_post_file(auto_process, post_file)
 
-	if post_file is not None:
-		post_file=post_file.replace('.py','')
-
-	if restart_file is not None:
-		restart_file = restart_file.replace('.py','')
-		
-	deck = importlib.import_module(input_deck)
-
-	# test_deck(deck)
-	solver, EqnSet, mesh = driver(deck)
-
-	auto_process = solver.Params["AutoProcess"]
-
-	if post_file is not None:
-		postprocess = importlib.import_module(post_file)
-
-	if auto_process is True and post_file is None:
-		post_file = 'post_process'
-		try:
-			postprocess = importlib.import_module(post_file)
-		except:
-			raise errors.FileReadError("post_process.py file not found")
+	if args.type == 'post':
+		post_file = input_deck
+		auto_process = True
+		process_post_file(auto_process, post_file)
 
 if __name__ == "__main__":
 	main(sys.argv[1:])

@@ -13,10 +13,6 @@ Numerics = {
     "Solver" : "DG",
 }
 
-Output = {
-    "AutoProcess" : True,
-}
-
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",

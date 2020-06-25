@@ -59,5 +59,5 @@ Output = {
     "WriteInterval" : -1,
     "WriteInitialSolution" : False,
     "WriteFinalSolution" : True,
-    "AutoProcess" : False,
+    "AutoProcess" : True,
 }
