@@ -355,18 +355,19 @@ def main(argv):
 	restart_file = args.restart
 
 	CurrentDir = os.path.dirname(os.path.abspath(input_deck)) + "/"
-
 	sys.path.append(CurrentDir)
+
+	# Run the primary solver while checking for restart files and post processing files
 	if args.type == None or args.type == 'solve':
 		input_deck=input_deck.replace('.py','')
 		deck = importlib.import_module(input_deck)
 
 		process_restart_file(deck, restart_file)
-		# code.interact(local=locals())
 		solver, physics, mesh = driver(deck)
 		auto_process = solver.Params["AutoProcess"]
 		process_post_file(auto_process, post_file)
 
+	# Run the post processor without the solver (Requires the [-t post] option in CLI)
 	if args.type == 'post':
 		post_file = input_deck
 		auto_process = True
