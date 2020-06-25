@@ -141,7 +141,7 @@ class SolverBase(ABC):
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, elem, f, U[elem,:,:])
 
 
-	def project_state_to_new_basis(self, U_old, basis_name_old, order_old):
+	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		mesh = self.mesh
 		EqnSet = self.EqnSet
 		basis = self.basis
@@ -151,7 +151,7 @@ class SolverBase(ABC):
 		U = EqnSet.U
 		ns = EqnSet.StateRank
 
-		basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
+		# basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
 		if basis_old.shape_type != basis.shape_type:
 			raise errors.IncompatibleError
 

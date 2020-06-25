@@ -1,23 +1,24 @@
 import code
 
-import processing.post as Post
-import processing.plot as Plot
-import processing.readwritedatafiles as ReadWriteDataFiles
-
-import solver.DG as Solver
+import processing.post as post
+import processing.plot as plot
+import processing.readwritedatafiles as readwritedatafiles
 
 ### Postprocess
 fname = "Data_final.pkl"
-mesh, physics, Params, Time = ReadWriteDataFiles.read_data_file(fname)
-print('Solution Final Time:',Time)
+solver = readwritedatafiles.read_data_file(fname)
+print('Solution Final Time:', solver.Time)
 
-solver = Solver.DG(Params,physics,mesh)
+# Unpack
+mesh = solver.mesh
+physics = solver.EqnSet
+
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
+TotErr,_ = post.L2_error(mesh, physics, solver, "Density")
 # Plot
-Plot.PreparePlot()
-Plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, PlotIC = True)
+plot.PreparePlot()
+plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, PlotIC = True)
 
-Plot.SaveFigure(FileName='SmoothIsentropicFlow', FileType='pdf', CropLevel=2)
+plot.SaveFigure(FileName='SmoothIsentropicFlow', FileType='pdf', CropLevel=2)
 
-Plot.ShowPlot()
+plot.ShowPlot()

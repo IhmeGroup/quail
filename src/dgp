@@ -280,12 +280,15 @@ def driver(deck):
 	Restart file
 	'''
 	if restart_params["File"] is not None:
-		_, physics_old, params_old, restart_time = readwritedatafiles.read_data_file(solver_params["RestartFile"])
+		solver_old = readwritedatafiles.read_data_file(solver_params["RestartFile"])
+		# unpack
+		physics_old = solver_old.EqnSet
+		params_old = solver_old.Params
 		# project if different basis and/or order
-		if order != params_old["InterpOrder"] or basis_type != params_old["InterpBasis"]:
-			solver.project_state_to_new_basis(physics_old.U, params_old["InterpBasis"], params_old["InterpOrder"])
+		if order != physics_old.order or solver.basis.basis_type != solver_old.basis.basis_type:
+			solver.project_state_to_new_basis(physics_old.U, solver_old.basis, physics_old.order)
 		if restart_params["StartFromFileTime"]:
-			solver.Time = restart_time
+			solver.Time = solver_old.Time
 
 	'''
 	Run

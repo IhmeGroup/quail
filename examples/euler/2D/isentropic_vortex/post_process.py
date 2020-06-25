@@ -4,16 +4,16 @@ import processing.post as post
 import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
-import solver.DG as Solver
-
 ### Postprocess
 fname = "Data_final.pkl"
-mesh, physics, Params, Time = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:',Time)
+solver = readwritedatafiles.read_data_file(fname)
+print('Solution Final Time:', solver.Time)
 
-solver = Solver.DG(Params,physics,mesh)
+# Unpack
+mesh = solver.mesh
+physics = solver.EqnSet
 
-TotErr,_ = post.L2_error(mesh, physics, solver, "Density")
+TotErr, _ = post.L2_error(mesh, physics, solver, "Density")
 # plot
 axis = None
 # axis = [-5., 5., -5., 5.]

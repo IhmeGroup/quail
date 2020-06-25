@@ -1,24 +1,24 @@
 import code
 
-import processing.post as Post
-import processing.plot as Plot
-import processing.readwritedatafiles as ReadWriteDataFiles
-
-import solver.DG as Solver
+import processing.post as post
+import processing.plot as plot
+import processing.readwritedatafiles as readwritedatafiles
 
 ### Postprocess
 fname = "Data_final.pkl"
-mesh, EqnSet, Params, Time = ReadWriteDataFiles.read_data_file(fname)
-print('Solution Final Time:',Time)
+solver = readwritedatafiles.read_data_file(fname)
+print('Solution Final Time:', solver.Time)
 
-solver = Solver.DG(Params,EqnSet,mesh)
+# Unpack
+mesh = solver.mesh
+physics = solver.EqnSet
 
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
+TotErr,_ = post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
-Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
+plot.PreparePlot()
+plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 
-Plot.SaveFigure(FileName='Leveque', FileType='pdf', CropLevel=2)
+plot.SaveFigure(FileName='Leveque', FileType='pdf', CropLevel=2)
 
-Plot.ShowPlot()
+plot.ShowPlot()

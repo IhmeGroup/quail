@@ -3,40 +3,45 @@ import code
 
 def write_data_file(solver, iwrite):
 	# Unpack
-	mesh = solver.mesh
-	EqnSet = solver.EqnSet
-	Params = solver.Params
-	Time = solver.Time
+	# mesh = solver.mesh
+	# EqnSet = solver.EqnSet
+	# Params = solver.Params
+	# Time = solver.Time
 
-	prefix = Params["Prefix"]
+	prefix = solver.Params["Prefix"]
 	if iwrite >= 0:
 		fname = prefix + "_" + str(iwrite) + ".pkl"
 	else:
 		fname = prefix + "_final" + ".pkl"
 
 	with open(fname, 'wb') as fo:
-		solver.Params["RestartFile"] = fo.name
-		solver.Params["StartTime"] = Time
+		# solver.Params["RestartFile"] = fo.name
+		# solver.Params["StartTime"] = Time
+
+		pickle.dump(solver, fo, pickle.HIGHEST_PROTOCOL)
 		# mesh
-		pickle.dump(mesh, fo, pickle.HIGHEST_PROTOCOL)
-		# EqnSet
-		pickle.dump(EqnSet, fo, pickle.HIGHEST_PROTOCOL)
-		# Params
-		pickle.dump(Params, fo, pickle.HIGHEST_PROTOCOL)
-		# Time
-		pickle.dump(Time, fo, pickle.HIGHEST_PROTOCOL)
+		# pickle.dump(mesh, fo, pickle.HIGHEST_PROTOCOL)
+		# # EqnSet
+		# pickle.dump(EqnSet, fo, pickle.HIGHEST_PROTOCOL)
+		# # Params
+		# pickle.dump(Params, fo, pickle.HIGHEST_PROTOCOL)
+		# # Time
+		# pickle.dump(Time, fo, pickle.HIGHEST_PROTOCOL)
 
 
 def read_data_file(fname):
 
 	with open(fname, 'rb') as fo:
-		# mesh
-	    mesh = pickle.load(fo)
-		# EqnSet
-	    EqnSet = pickle.load(fo)
-		# Params
-	    Params = pickle.load(fo)
-		# Time
-	    Time = pickle.load(fo)
+	    solver = pickle.load(fo)
 
-	return mesh, EqnSet, Params, Time
+	return solver
+		# mesh
+	 #    mesh = pickle.load(fo)
+		# # EqnSet
+	 #    EqnSet = pickle.load(fo)
+		# # Params
+	 #    Params = pickle.load(fo)
+		# # Time
+	 #    Time = pickle.load(fo)
+
+	# return mesh, EqnSet, Params, Time
