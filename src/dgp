@@ -305,7 +305,7 @@ def process_restart_file(deck, restart_file):
 	if restart_file != None:
 		try:
 			deck.Restart['File'] = restart_file
-		except:
+		except KeyError:
 			deck.Restart = {"File": restart_file}
 
 def process_post_file(auto_process, post_file):
@@ -313,13 +313,13 @@ def process_post_file(auto_process, post_file):
 		post_file = post_file.replace('.py','')
 		try:
 			postprocess = importlib.import_module(post_file)
-		except:
+		except ModuleNotFoundError:
 			raise errors.FileReadError(f"{post_file}.py not found")
 	if auto_process == True and post_file == None:
 		post_file = 'post_process'
 		try:
 			postprocess = importlib.import_module(post_file)
-		except:
+		except ModuleNotFoundError:
 			print('Warning: post_process.py file not found')
 
 def main(argv):
