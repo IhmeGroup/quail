@@ -94,37 +94,37 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	# U[:,:,:] = c*np.einsum('ijk,ikl->ijl', MMinv_all, R)
 
 
-def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
-	''' Old state '''
-	U = EqnSet.U
+# def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
+# 	''' Old state '''
+# 	U = EqnSet.U
 
-	basis = copy.copy(basis_old)
-	''' Allocate new state '''
-	# New basis, Order information stored in EqnSet
-	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.orders[egrp]), EqnSet.StateRank] \
-	# 				for egrp in range(mesh.nElemGroup)]
-	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
-	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
+# 	basis = copy.copy(basis_old)
+# 	''' Allocate new state '''
+# 	# New basis, Order information stored in EqnSet
+# 	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.orders[egrp]), EqnSet.StateRank] \
+# 	# 				for egrp in range(mesh.nElemGroup)]
+# 	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
+# 	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
 
-	''' Loop through elements '''
-	order = EqnSet.order
-	basis.order = order
-	basis.nb = basis.get_num_basis_coeff(EqnSet.order)
+# 	''' Loop through elements '''
+# 	order = EqnSet.order
+# 	basis.order = order
+# 	basis.nb = basis.get_num_basis_coeff(EqnSet.order)
 
-	## New mass matrix inverse (in reference space)
-	iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order)
-	## Projection matrix
-	PM = basis_tools.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
-	for elem in range(mesh.nElem):
-		Uc = U[elem]
-		Uc_new = U_new[elem]
+# 	## New mass matrix inverse (in reference space)
+# 	iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order)
+# 	## Projection matrix
+# 	PM = basis_tools.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
+# 	for elem in range(mesh.nElem):
+# 		Uc = U[elem]
+# 		Uc_new = U_new[elem]
 
-		# New coefficients
-		Uc_new[:] = np.matmul(PM, Uc)
+# 		# New coefficients
+# 		Uc_new[:] = np.matmul(PM, Uc)
 
-	''' Store in EqnSet '''
-	delattr(EqnSet, "U")
-	EqnSet.U = U_new
+# 	''' Store in EqnSet '''
+# 	delattr(EqnSet, "U")
+# 	EqnSet.U = U_new
 
 
 # def eval_IC_at_pts(mesh, EqnSet, basis, eval_pts, time=0., fcn_data=None, order_old=-1, U_old=None):

@@ -933,7 +933,6 @@ class DG(SolverBase):
 		EqnSet = self.EqnSet
 		basis = self.basis
 
-		OrderSequencing = self.Params["OrderSequencing"]
 		InterpOrder = self.Params["InterpOrder"]
 		nTimeStep = self.Params["nTimeStep"]
 		EndTime = self.Params["EndTime"]
@@ -946,71 +945,81 @@ class DG(SolverBase):
 
 		''' Convert to lists '''
 		# InterpOrder
-		if np.issubdtype(type(InterpOrder), np.integer):
-			InterpOrders = [InterpOrder]
-		elif type(InterpOrder) is list:
-			InterpOrders = InterpOrder 
-		else:
-			raise TypeError
-		nOrder = len(InterpOrders)
-		# nTimeStep
-		if np.issubdtype(type(nTimeStep), np.integer):
-			nTimeSteps = [nTimeStep]*nOrder
-		elif type(nTimeStep) is list:
-			nTimeSteps = nTimeStep 
-		else:
-			raise TypeError
-		# EndTime
-		if np.issubdtype(type(EndTime), np.floating):
-			EndTimes = []
-			for i in range(nOrder):
-				EndTimes.append(EndTime*(i+1))
-		elif type(EndTime) is list:
-			EndTimes = EndTime 
-		else:
-			raise TypeError
+		# if np.issubdtype(type(InterpOrder), np.integer):
+		# 	InterpOrders = [InterpOrder]
+		# elif type(InterpOrder) is list:
+		# 	InterpOrders = InterpOrder 
+		# else:
+		# 	raise TypeError
+		# nOrder = len(InterpOrders)
+		# # nTimeStep
+		# if np.issubdtype(type(nTimeStep), np.integer):
+		# 	nTimeSteps = [nTimeStep]*nOrder
+		# elif type(nTimeStep) is list:
+		# 	nTimeSteps = nTimeStep 
+		# else:
+		# 	raise TypeError
+		# # EndTime
+		# if np.issubdtype(type(EndTime), np.floating):
+		# 	EndTimes = []
+		# 	for i in range(nOrder):
+		# 		EndTimes.append(EndTime*(i+1))
+		# elif type(EndTime) is list:
+		# 	EndTimes = EndTime 
+		# else:
+		# 	raise TypeError
 
 
-		''' Check compatibility '''
-		if nOrder != len(nTimeSteps) or nOrder != len(EndTimes):
-			raise ValueError
+		# ''' Check compatibility '''
+		# if nOrder != len(nTimeSteps) or nOrder != len(EndTimes):
+		# 	raise ValueError
 
-		if np.any(np.diff(EndTimes) < 0.):
-			raise ValueError
+		# if np.any(np.diff(EndTimes) < 0.):
+		# 	raise ValueError
 
-		if not OrderSequencing:
-			if len(InterpOrders) != 1:
-				raise ValueError
+		# if not OrderSequencing:
+		# 	if len(InterpOrders) != 1:
+		# 		raise ValueError
 
 		''' Loop through Orders '''
 		Time = self.Time
-		for iOrder in range(nOrder):
-			Order = InterpOrders[iOrder]
-			''' Compute time step '''
-			if nTimeSteps[iOrder] != 0:
-				self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
-			self.nTimeStep = nTimeSteps[iOrder]
 
-			''' After first iteration, project solution to next Order '''
-			if iOrder > 0:
-				# Clear DataSet
-				delattr(self, "DataSet")
-				self.DataSet = GenericData()
-				# Increment Order
-				Order_old = EqnSet.order
-				EqnSet.order = Order
-				# Project
-				solver_tools.project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
+		''' Compute time step '''
+		if nTimeStep != 0:
+			self.Stepper.dt = (EndTime-Time)/nTimeStep
+		self.nTimeStep = nTimeStep			
 
-				basis.order = Order
-				basis.nb = basis.get_num_basis_coeff(Order)				
+		''' Apply time scheme '''
+		self.apply_time_scheme(fhistory)
 
-				self.precompute_matrix_operators()
 
-			''' Apply time scheme '''
-			self.apply_time_scheme(fhistory)
+		# for iOrder in range(nOrder):
+		# 	Order = InterpOrders[iOrder]
+		# 	''' Compute time step '''
+		# 	if nTimeSteps[iOrder] != 0:
+		# 		self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
+		# 	self.nTimeStep = nTimeSteps[iOrder]
 
-			Time = EndTimes[iOrder]
+		# 	''' After first iteration, project solution to next Order '''
+		# 	if iOrder > 0:
+		# 		# Clear DataSet
+		# 		delattr(self, "DataSet")
+		# 		self.DataSet = GenericData()
+		# 		# Increment Order
+		# 		Order_old = EqnSet.order
+		# 		EqnSet.order = Order
+		# 		# Project
+		# 		solver_tools.project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
+
+		# 		basis.order = Order
+		# 		basis.nb = basis.get_num_basis_coeff(Order)				
+
+		# 		self.precompute_matrix_operators()
+
+		# 	''' Apply time scheme '''
+		# 	self.apply_time_scheme(fhistory)
+
+		# 	Time = EndTimes[iOrder]
 
 
 		if WriteTimeHistory:

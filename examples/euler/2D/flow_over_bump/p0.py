@@ -53,4 +53,5 @@ BoundaryConditions = {
 Output = {
     "Prefix" : "p0",
     "WriteInitialSolution" : True,
+    "AutoProcess": False,
 }

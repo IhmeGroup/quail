@@ -126,10 +126,10 @@ if args.test_2D is True:
 
 
 	# Flow over bump
-	sys.path.append('Cases/Euler_2D/FlowOverBump')
-	import FlowOverBump
-	assert_almost_equal(FlowOverBump.TotErr, 0.000012270459601, decimal=decimal)
-	print('Pass 2D Flow Over Bump')
+	# sys.path.append('Cases/Euler_2D/FlowOverBump')
+	# import FlowOverBump
+	# assert_almost_equal(FlowOverBump.TotErr, 0.000012270459601, decimal=decimal)
+	# print('Pass 2D Flow Over Bump')
 
 
 
