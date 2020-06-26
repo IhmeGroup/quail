@@ -78,6 +78,12 @@ class SolverBase(ABC):
 		basis_name  = Params["InterpBasis"]
 		self.basis = basis_tools.set_basis(mesh, EqnSet.order, basis_name)
 
+		# Set quadrature
+		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
+		self.basis.set_face_quadrature_type(Params["FaceQuadrature"])
+		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
+		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
+
 		# check for compatibility
 		# if mesh.gbasis.shape_type != self.basis.shape_type:
 		# 	raise errors.IncompatibleError
@@ -133,10 +139,11 @@ class SolverBase(ABC):
 			order = EqnSet.QuadOrder(order)
 			# quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
 			quad_order = basis.get_quadrature(mesh, order)
-			basis.get_quad_data(quad_order, 0)
+			quad_pts, quad_wts = basis.get_quad_data(quad_order)
+			eval_pts = quad_pts
 			# quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
 
-			eval_pts = basis.quad_pts
+			# eval_pts = basis.quad_pts
 			# eval_pts = quad_data.quad_pts
 			npts = eval_pts.shape[0]
 
@@ -148,7 +155,7 @@ class SolverBase(ABC):
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, elem, f, U[elem,:,:])
+				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, f, U[elem,:,:])
 
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
@@ -172,8 +179,9 @@ class SolverBase(ABC):
 			quad_order = basis.get_quadrature(mesh, order)
 			# quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
 			# quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
-			basis.get_quad_data(quad_order,0)
-			eval_pts = basis.quad_pts
+			quad_pts, quad_wts = basis.get_quad_data(quad_order)
+			eval_pts = quad_pts
+			# eval_pts = basis.quad_pts
 			npts = eval_pts.shape[0]
 
 		basis_old.eval_basis(eval_pts, Get_Phi=True)
@@ -184,7 +192,7 @@ class SolverBase(ABC):
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, elem, Up_old, U[elem,:,:])
+				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, Up_old, U[elem,:,:])
 
 
 	# def init_state_from_fcn(self):
@@ -301,9 +309,9 @@ class ElemOperators(object):
 		gbasis = mesh.gbasis
 		quad_order = gbasis.get_quadrature(mesh, order, physics = EqnSet)
 		# quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
-		basis.get_quad_data(quad_order, 0)
-		self.quad_pts = basis.quad_pts
-		self.quad_wts = basis.quad_wts
+		self.quad_pts, self.quad_wts = basis.get_quad_data(quad_order)
+		# self.quad_pts = basis.quad_pts
+		# self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -378,11 +386,11 @@ class IFaceOperators(ElemOperators):
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
 		gbasis = mesh.gbasis
-		quad_order = gbasis.get_face_quadrature(mesh,order,physics = EqnSet)
-		basis.get_face_quad_data(quad_order, 0)
+		quad_order = gbasis.get_face_quadrature(mesh,order,physics=EqnSet)
+		self.quad_pts, self.quad_wts = basis.get_face_quad_data(quad_order)
 		# quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
-		self.quad_pts = basis.quad_pts
-		self.quad_wts = basis.quad_wts
+		# self.quad_pts = basis.quad_pts
+		# self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later

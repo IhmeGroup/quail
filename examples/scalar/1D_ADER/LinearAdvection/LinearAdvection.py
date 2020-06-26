@@ -15,6 +15,8 @@ Numerics = {
 }
 
 Output = {
+    "WriteInterval" : 1,
+    "WriteInitialSolution" : True,
     "AutoProcess" : True,
 }
 

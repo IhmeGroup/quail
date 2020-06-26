@@ -55,12 +55,12 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 
 		quad_order = basis.get_quadrature(mesh, 2*np.amax([Order,1]), physics=EqnSet)
 		gbasis = mesh.gbasis
-		gbasis.get_quad_data(quad_order,0)
+		xq, wq = gbasis.get_quad_data(quad_order)
 		# QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
 		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 
-		xq = gbasis.quad_pts
-		wq = gbasis.quad_wts
+		# xq = gbasis.quad_pts
+		# wq = gbasis.quad_wts
 		nq = xq.shape[0]
 		
 		# PhiData = BasisData(basis,Order,mesh)
@@ -100,7 +100,7 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 
 
 def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True, 
-		vec=0., dot_normal_with_vec=False, plot_vs_x=False, plot_vs_y=False, Label=None):
+		vec=0., dot_normal_with_vec=False, plot_vs_x=False, plot_vs_y=False, Label=None, **kwargs):
 
 	if mesh.Dim != 2:
 		raise errors.IncompatibleError
@@ -184,7 +184,7 @@ def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True
 		bvalues = bvalues.flatten()
 		SolnLabel = plot_defs.get_solution_label(EqnSet, variable_name, Label)
 		plot_defs.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True)
-		plot_defs.finalize_plot(xlabel=xlabel)
+		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)
 
 
 

@@ -63,15 +63,15 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir, P
     quad_order_st = basis_st.get_quadrature(mesh, order*2)
     quad_order = quad_order_st
     
-    basis_st.get_quad_data(quad_order_st, 0)
-    basis.get_quad_data(quad_order, 0)
+    quad_pts_st, quad_wts_st = basis_st.get_quad_data(quad_order_st)
+    quad_pts, quad_wts = basis.get_quad_data(quad_order)
 
-    quad_pts_st = basis_st.quad_pts
-    quad_wts_st = basis_st.quad_wts
+    # quad_pts_st = basis_st.quad_pts
+    # quad_wts_st = basis_st.quad_wts
     nq_st = quad_pts_st.shape[0]
 
-    quad_pts = basis.quad_pts
-    quad_wts = basis.quad_wts
+    # quad_pts = basis.quad_pts
+    # quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
     
     if PhysicalSpace:
@@ -133,10 +133,10 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
 
     gbasis = mesh.gbasis
     quad_order = gbasis.get_quadrature(mesh, order*2)
-    gbasis.get_quad_data(quad_order, 0)
+    quad_pts, quad_wts = gbasis.get_quad_data(quad_order)
 
-    quad_pts = gbasis.quad_pts
-    quad_wts = gbasis.quad_wts
+    # quad_pts = gbasis.quad_pts
+    # quad_wts = gbasis.quad_wts
     nq = quad_pts.shape[0]
 
     if basis1 == basis2:
@@ -199,10 +199,10 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
     else:
         quad_order = order*2 + 1 #Add one for ADER method
 
-    basis.get_quad_data(quad_order, 0)
+    quad_pts, quad_wts = basis.get_quad_data(quad_order)
 
-    quad_pts = basis.quad_pts
-    quad_wts = basis.quad_wts
+    # quad_pts = basis.quad_pts
+    # quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
 
     basis.eval_basis(quad_pts, Get_Phi=True)

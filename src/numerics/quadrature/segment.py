@@ -1,10 +1,15 @@
 import numpy as np
 
+import general
+
 
 def get_quadrature_points_weights(order, quad_type):
 
 	# Only Gauss-Legendre for now
-	qpts, qwts = get_quadrature_gauss_legendre(order)
+	if quad_type == general.QuadratureType.GaussLegendre:
+		qpts, qwts = get_quadrature_gauss_legendre(order)
+	else:
+		raise NotImplementedError
 
 	return qpts, qwts
 

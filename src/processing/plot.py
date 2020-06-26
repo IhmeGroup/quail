@@ -258,19 +258,26 @@ def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kw
 		Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
 
 	''' Label plot '''
-	cb = plt.colorbar()
-	cb.ax.set_title(SolnLabel)
+	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
+		pass 
+		# do nothing
+	else:
+		cb = plt.colorbar()
+		cb.ax.set_title(SolnLabel)
 	plt.ylabel("$y$")
 	if EqualAR:
 		plt.gca().set_aspect('equal', adjustable='box')
 	# plt.axis("equal")
 
 
-def finalize_plot(xlabel="x"):
+def finalize_plot(xlabel="x", **kwargs):
 	plt.xlabel("$" + xlabel + "$")
 	ax = plt.gca()
 	handles, labels = ax.get_legend_handles_labels()
-	if handles != []:
+	if "ignore_legend" in kwargs and kwargs["ignore_legend"]:
+		pass
+		# do nothing
+	elif handles != []:
 		# only create legend if handles can be found
 		plt.legend(loc="best")
 
@@ -321,7 +328,7 @@ def plot_line_probe(mesh, EqnSet, solver, variable_name, xy1, xy2, nPoint=101, P
 	# code.interact(local=locals())
 
 	### Finalize plot
-	finalize_plot(xlabel=xlabel)
+	finalize_plot(xlabel=xlabel, **kwargs)
 	# plt.xlabel("$x$")
 	# ax = plt.gca()
 	# handles, labels = ax.get_legend_handles_labels()
@@ -345,11 +352,11 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	else:
 		quad_order = basis.get_quadrature(mesh, max([2,2*order]), physics=EqnSet)
 		gbasis = mesh.gbasis
-		gbasis.get_quad_data(quad_order, 0)
+		xpoint,_ = gbasis.get_quad_data(quad_order)
 
 		# QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
 		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
-		xpoint = gbasis.quad_pts
+		# xpoint = gbasis.quad_pts
 		npoint = xpoint.shape[0]
 
 	u = np.zeros([mesh.nElem,npoint,sr])
@@ -399,7 +406,7 @@ def get_solution_label(EqnSet, variable_name, label=None):
 	return soln_label
 
 
-def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
+def PlotSolution(mesh, EqnSet, solver, VariableName, create_new_figure=True, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
 	include_mesh=False, Regular2D=False, EqualAR=False, **kwargs):
 
 	# iplot_sr = EqnSet.VariableType[VariableName]
@@ -441,7 +448,8 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 	SolnLabel = get_solution_label(EqnSet, VariableName, Label)
 
 	# Plot solution
-	plt.figure()
+	if create_new_figure:
+		plt.figure()
 
 	if dim == 1:
 		Plot1D(EqnSet, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
@@ -450,7 +458,7 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 		Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)
 
 	### Finalize plot
-	finalize_plot()
+	finalize_plot(**kwargs)
 
 	# plt.xlabel("$x$")
 	# ax = plt.gca()

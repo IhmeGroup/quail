@@ -1,21 +1,29 @@
 import numpy as np
+
+import general
 import numerics.quadrature.quadrilateral as qquad
 
 
 def get_quadrature_points_weights(order, quad_type):
 
     # for now, select based on order
-    if order <= 19:
-        qpts, qwts = get_quadrature_dunavant(order)
+    if quad_type == general.QuadratureType.Dunavant:
+        if order <= 19:
+            qpts, qwts = get_quadrature_dunavant(order)
+        else:
+            print("Quadrature order too high; using Gauss-Legendre quadrature")
+            qpts, qwts = get_quadrature_gauss_legendre(order)
+    elif quad_type == general.QuadratureType.GaussLegendre:
+        qpts, qwts = get_quadrature_gauss_legendre(order)
     else:
-       qpts, qwts = get_quadrature_gauss_legendre(order, quad_type)
+        raise NotImplementedError
 
     return qpts, qwts
 
 
-def get_quadrature_gauss_legendre(order, quad_type):
+def get_quadrature_gauss_legendre(order):
     # get quadrature points and weights for quadrilateral
-    qpts, qwts = qquad.get_quadrature_points_weights(order, quad_type)
+    qpts, qwts = qquad.get_quadrature_points_weights(order, general.QuadratureType.GaussLegendre)
 
     # Transform
     qwts[:,0] *= 0.125*(1. - qpts[:,0])

@@ -10,14 +10,16 @@ TimeStepping = {
 
 Numerics = {
     "InterpOrder" : 2,
-    # "InterpBasis" : "LagrangeEqTri",
-    "InterpBasis" : "LagrangeEqQuad",
+    "InterpBasis" : "LagrangeEqTri",
+    #"InterpBasis" : "LagrangeEqQuad",
+    "ElementQuadrature" : "Dunavant",
+    "FaceQuadrature" : "GaussLegendre",
 }
 
 Mesh = {
     # "File" : "meshes/box_5x5.msh",
-    # "ElementShape" : "Triangle",
-    "ElementShape" : "Quadrilateral",
+     "ElementShape" : "Triangle",
+    #"ElementShape" : "Quadrilateral",
     "nElem_x" : 5,
     "nElem_y" : 5,
     "xmin" : -5.,

@@ -66,6 +66,11 @@ class ModalOrNodal(Enum):
     Neither = auto()
 
 
+class QuadratureType(Enum):
+    GaussLegendre = auto()
+    Dunavant = auto()
+
+
 INTERIORFACE = -1
 NULLFACE = -2
 

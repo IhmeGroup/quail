@@ -36,10 +36,10 @@ def element_volumes(mesh, solver=None):
     gbasis = mesh.gbasis
 
     quad_order = gbasis.get_quadrature(mesh,gorder)
-    gbasis.get_quad_data(quad_order, 0)
+    xq, wq = gbasis.get_quad_data(quad_order)
 
-    xq = gbasis.quad_pts
-    wq = gbasis.quad_wts
+    # xq = gbasis.quad_pts
+    # wq = gbasis.quad_wts
     nq = xq.shape[0]
 
     for elem in range(mesh.nElem):

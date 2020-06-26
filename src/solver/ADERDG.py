@@ -69,10 +69,10 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 		
 		gbasis = mesh.gbasis
 		quad_order = gbasis.get_face_quadrature(mesh, order, physics=EqnSet)
-		basis.get_face_quad_data(quad_order, 0)
+		self.quad_pts, self.quad_wts = basis.get_face_quad_data(quad_order)
 
-		self.quad_pts = basis.quad_pts
-		self.quad_wts = basis.quad_wts
+		# self.quad_pts = basis.quad_pts
+		# self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -301,6 +301,14 @@ class ADERDG(DG.DG):
 		BasisFunction  = Params["InterpBasis"]
 		self.basis = basis_tools.set_basis(mesh, EqnSet.order, BasisFunction)
 		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, EqnSet.order, BasisFunction)
+
+		# Set quadrature
+		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
+		self.basis.set_face_quadrature_type(Params["FaceQuadrature"])
+		self.basis_st.set_elem_quadrature_type(Params["ElementQuadrature"])
+		self.basis_st.set_face_quadrature_type(Params["FaceQuadrature"])
+		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
+		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
 		# Allocate array for predictor step in ADER-Scheme
 		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])

@@ -84,10 +84,10 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     else:
         quad_order = order*2
 
-    basis.get_quad_data(quad_order, 0)
+    quad_pts, quad_wts = basis.get_quad_data(quad_order)
 
-    quad_pts = basis.quad_pts
-    quad_wts = basis.quad_wts
+    # quad_pts = basis.quad_pts
+    # quad_wts = basis.quad_wts
 
     # quad_pts = quadData.quad_pts
     # quad_wts = quadData.quad_wts
@@ -152,10 +152,10 @@ def get_stiffness_matrix(mesh, basis, order, elem):
     # QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
     qbasis = mesh.QBasis 
     quad_order = qbasis.get_quadrature(mesh,order*2)
-    qbasis.get_quad_data(quad_order, 0)
+    quad_pts, quad_wts = qbasis.get_quad_data(quad_order)
 
-    quad_pts = qbasis.quad_pts
-    quad_wts = qbasis.quad_wts
+    # quad_pts = qbasis.quad_pts
+    # quad_wts = qbasis.quad_wts
     nq = quad_pts.shape[0]
 
     PhiData = BasisData(basis,order,mesh)
@@ -197,10 +197,10 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
         PM: projection matrix
     '''
     quad_order = np.amax([order_old+order, 2*order])
-    basis.get_quad_data(quad_order, 0)
+    quad_pts, quad_wts = basis.get_quad_data(quad_order)
 
-    quad_pts = basis.quad_pts
-    quad_wts = basis.quad_wts
+    # quad_pts = basis.quad_pts
+    # quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
 
     basis_old.eval_basis(quad_pts, Get_Phi=True)

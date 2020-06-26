@@ -14,6 +14,8 @@ Numerics = {
     "InterpOrder" : 1,
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
+    "ElementQuadrature" : "GaussLegendre",
+    "FaceQuadrature" : "GaussLegendre",
     "InterpolateIC" : False,
     "OrderSequencing" : False,
     "ApplyLimiter" : None, 

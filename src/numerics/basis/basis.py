@@ -3,7 +3,7 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import BasisType, ShapeType, ModalOrNodal
+from general import BasisType, ShapeType, ModalOrNodal, QuadratureType
 
 import meshing.gmsh as mesh_gmsh
 
@@ -37,6 +37,11 @@ class ShapeBase(ABC):
 
     @property
     @abstractmethod
+    def face_shape(self):
+        pass
+
+    @property
+    @abstractmethod
     def nfaceperelem(self):
         pass
 
@@ -58,11 +63,18 @@ class ShapeBase(ABC):
     def equidistant_nodes(self, p, xn=None):
         pass
 
+    def set_elem_quadrature_type(self, quadrature_name):
+        self.quadrature_type = QuadratureType[quadrature_name]
+
+    def set_face_quadrature_type(self, quadrature_name):
+        self.face_shape.quadrature_type = QuadratureType[quadrature_name]
+
 
 class PointShape(ShapeBase):
 
     shape_type = ShapeType.Point
     face_shape_type = None
+    face_shape = None
     nfaceperelem = 0
     dim = 0
     centroid = np.array([[0.]])
@@ -71,8 +83,7 @@ class PointShape(ShapeBase):
         return 1
     def equidistant_nodes(self, p, xn=None):
         pass
-    def get_quadrature(self, mesh, order, physics = None):
-        
+    def get_quadrature(self, mesh, order, physics=None):
         dim = self.dim
         gorder = mesh.gorder
         if physics is not None:
@@ -81,23 +92,28 @@ class PointShape(ShapeBase):
             qorder = order
         if gorder > 1:
             qorder += dim*(gorder-1)
-            
-        return qorder
-    def get_quad_data(self, order, quad_type):
 
-        self.quad_pts = np.zeros([1,1])
-        self.quad_wts = np.ones([1,1])
+        # qorder = 0
+        return qorder
+
+    def get_quad_data(self, order):
+
+        quad_pts = np.zeros([1,1])
+        quad_wts = np.ones([1,1])
+
+        return quad_pts, quad_wts
 
 class SegShape(ShapeBase):
 
     shape_type = ShapeType.Segment
     face_shape_type = ShapeType.Point
+    face_shape = PointShape()
     nfaceperelem = 2
     dim = 1
     centroid = np.array([[0.]])
 
-    get_face_quadrature = PointShape.get_quadrature
-    get_face_quad_data = PointShape.get_quad_data
+    get_face_quadrature = face_shape.get_quadrature
+    get_face_quad_data = face_shape.get_quad_data
 
     def get_num_basis_coeff(self,p):
         return p + 1
@@ -167,20 +183,23 @@ class SegShape(ShapeBase):
 
         return qorder
 
-    def get_quad_data(self, order, quad_type):
+    def get_quad_data(self, order):
 
-        self.quad_pts, self.quad_wts = segment.get_quadrature_points_weights(order,0)
+        quad_pts, quad_wts = segment.get_quadrature_points_weights(order, self.quadrature_type)
+
+        return quad_pts, quad_wts
 
 class QuadShape(ShapeBase):
 
     shape_type = ShapeType.Quadrilateral
     face_shape_type = ShapeType.Segment
+    face_shape = SegShape()
     nfaceperelem = 4
     dim = 2
     centroid = np.array([[0., 0.]])
 
-    get_face_quadrature = SegShape.get_quadrature
-    get_face_quad_data = SegShape.get_quad_data
+    get_face_quadrature = face_shape.get_quadrature
+    get_face_quad_data = face_shape.get_quad_data
 
     def get_num_basis_coeff(self,p):
         return (p + 1)**2
@@ -270,20 +289,23 @@ class QuadShape(ShapeBase):
 
         return qorder
 
-    def get_quad_data(self, order, quad_type):
+    def get_quad_data(self, order):
 
-        self.quad_pts, self.quad_wts = quadrilateral.get_quadrature_points_weights(order,0)
+        quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(order, self.quadrature_type)
+
+        return quad_pts, quad_wts
 
 class TriShape(ShapeBase):
 
     shape_type = ShapeType.Triangle
     face_shape_type = ShapeType.Segment
+    face_shape = SegShape()
     nfaceperelem = 3
     dim = 2
     centroid = np.array([[1./3., 1./3.]])
 
-    get_face_quadrature = SegShape.get_quadrature
-    get_face_quad_data = SegShape.get_quad_data
+    get_face_quadrature = face_shape.get_quadrature
+    get_face_quad_data = face_shape.get_quad_data
 
     def get_num_basis_coeff(self,p):
         return (p + 1)*(p + 2)//2
@@ -368,9 +390,12 @@ class TriShape(ShapeBase):
                     
         return qorder
 
-    def get_quad_data(self, order, quad_type):
+    def get_quad_data(self, order):
 
-        self.quad_pts, self.quad_wts = triangle.get_quadrature_points_weights(order,0)
+        quad_pts, quad_wts = triangle.get_quadrature_points_weights(order, self.quadrature_type)
+
+        return quad_pts, quad_wts
+
 
 class BasisBase(ABC): 
     @property
@@ -392,6 +417,7 @@ class BasisBase(ABC):
         self.basis_pgrad = None
         self.face = -1
         self.nb = 0
+        self.quadrature_type = -1
 
     def get_physical_grad(self, ijac):
         '''

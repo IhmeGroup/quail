@@ -48,7 +48,8 @@ EndTime = 1.0
 nTimeStep = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False)
+								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
+								 ElementQuadrature="Dunavant")
 
 
 ### Physics
