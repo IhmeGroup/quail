@@ -58,3 +58,5 @@ Cases/Miscellaneous/Plot
 *.m
 *.gmsh
 *.pkl
+*.mp4
+*.png
