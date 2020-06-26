@@ -288,7 +288,7 @@ def driver(deck):
 		if order != physics_old.order or solver.basis.basis_type != solver_old.basis.basis_type:
 			solver.project_state_to_new_basis(physics_old.U, solver_old.basis, physics_old.order)
 		else:
-			solver.EqnSet = physics_old
+			solver.EqnSet.U = physics_old.U
 		if restart_params["StartFromFileTime"]:
 			solver.Time = solver_old.Time
 

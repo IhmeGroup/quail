@@ -442,6 +442,7 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, PlotExact=False, PlotIC=Fal
 
 	# Plot solution
 	plt.figure()
+
 	if dim == 1:
 		Plot1D(EqnSet, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
 	else:
