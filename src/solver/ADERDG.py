@@ -523,24 +523,26 @@ class ADERDG(DG.DG):
 		# interpolate state and gradient at quad points
 		Uq = np.matmul(basis_val_st, Up)
 
-		'''
-		Evaluate the inviscid flux integral.
-		'''
-		Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,sr,dim]
-		ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem_ops_st, elem, Fq)
+		if self.Params["ConvFluxSwitch"] == True:
+			'''
+			Evaluate the inviscid flux integral.
+			'''
+			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,sr,dim]
+			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem_ops_st, elem, Fq)
 		
-		'''
-		Evaluate the source term integral
-		'''
-		t = np.zeros([nq_st,dim])
-		TimePhiData = None
-		t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
-		
-		Sq = elem_ops_st.Sq
-		Sq[:] = 0.
-		Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
+		if self.Params["SourceSwitch"] == True:
+			'''
+			Evaluate the source term integral
+			'''
+			t = np.zeros([nq_st,dim])
+			TimePhiData = None
+			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
+			
+			Sq = elem_ops_st.Sq
+			Sq[:] = 0.
+			Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
 
-		ER += solver_tools.calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq)
+			ER += solver_tools.calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -609,10 +611,12 @@ class ADERDG(DG.DG):
 		normals_ifaces = iface_ops.normals_ifaces
 		normals = normals_ifaces[iiface]
 
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
+		if self.Params["ConvFluxSwitch"] == True:
 
-		RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts_st, Fq)
-		RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts_st, Fq)
+			Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
+
+			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts_st, Fq)
+			RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts_st, Fq)
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -688,11 +692,12 @@ class ADERDG(DG.DG):
 		BC = EqnSet.BCs[BFG.name]
 		# Fq = BC.get_boundary_flux(EqnSet, x, t, normals, UqI)
 
-		# Loop over time to apply BC at each temporal quadrature point
-		for i in range(len(t)):	
-			Fq[i,:] = BC.get_boundary_flux(EqnSet, x, t[i], normals, UqI[i,:].reshape([1,ns]))
+		if self.Params["ConvFluxSwitch"] == True:
+			# Loop over time to apply BC at each temporal quadrature point
+			for i in range(len(t)):	
+				Fq[i,:] = BC.get_boundary_flux(EqnSet, x, t[i], normals, UqI[i,:].reshape([1,ns]))
 
-		R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq)
+			R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq)
 
 		if elem == echeck:
 			code.interact(local=locals())

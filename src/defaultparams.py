@@ -15,11 +15,12 @@ Numerics = {
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
     "InterpolateIC" : False,
-    "InterpolateFlux" : False,
     "OrderSequencing" : False,
     "ApplyLimiter" : None, 
     "SourceTreatment" : "Explicit",
     "InterpolateFlux" : True,
+    "ConvFluxSwitch" : True,
+    "SourceSwitch" : True,
 }
 
 Mesh = {

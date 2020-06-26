@@ -610,21 +610,22 @@ class DG(SolverBase):
 
 		# interpolate state and gradient at quad points
 		Uq = np.matmul(basis_val, Up)
+		
+		if self.Params["ConvFluxSwitch"] == True:
+			'''
+			Evaluate the inviscid flux integral.
+			'''
+			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,ns,dim]
+			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
+		if self.Params["SourceSwitch"] == True:
+			'''
+			Evaluate the source term integral
+			'''
+			Sq = elem_ops.Sq
+			Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
+			Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq,ns]
 
-		'''
-		Evaluate the inviscid flux integral.
-		'''
-		Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,ns,dim]
-		ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
-
-		'''
-		Evaluate the source term integral
-		'''
-		Sq = elem_ops.Sq
-		Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
-		Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq,ns]
-
-		ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
+			ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -692,11 +693,13 @@ class DG(SolverBase):
 		UqR = np.matmul(basis_valR, UpR)
 
 		normals = normals_ifaces[iiface]
+		
+		if self.Params["ConvFluxSwitch"] == True:
 
-		Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
+			Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
 
-		RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts, Fq)
-		RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts, Fq)
+			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts, Fq)
+			RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts, Fq)
 
 		if elemL == echeck or elemR == echeck:
 			if elemL == echeck: print("Left!")
@@ -780,9 +783,11 @@ class DG(SolverBase):
 		# Get boundary state
 		BC = EqnSet.BCs[BFG.name]
 
-		Fq = BC.get_boundary_flux(EqnSet, x, self.Time, normals, UqI)
+		if self.Params["ConvFluxSwitch"] == True:
 
-		R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq)
+			Fq = BC.get_boundary_flux(EqnSet, x, self.Time, normals, UqI)
+
+			R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq)
 
 		if elem == echeck:
 			code.interact(local=locals())
