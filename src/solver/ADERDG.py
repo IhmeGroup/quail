@@ -5,7 +5,7 @@ from scipy.linalg import solve_sylvester
 from data import ArrayList, GenericData
 import errors
 import general
-from general import SetSolverParams, BasisType, ShapeType, EntityType
+from general import SetSolverParams, BasisType, ShapeType, EntityType, ModalOrNodal
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
@@ -314,7 +314,7 @@ class ADERDG(DG.DG):
 		self.Limiter = DG.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
-		self.check_solver_params()
+		self.check_compatibility()
 
 		# Precompute operators
 		self.precompute_matrix_operators()
@@ -325,31 +325,39 @@ class ADERDG(DG.DG):
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
 
-	def check_solver_params(self):
+	def check_compatibility(self):
 		'''
-		Method: check_solver_params
+		Method: check_compatibility
 		--------------------------------------------------------------------------
 		Checks the validity of the solver parameters
 		'''
+		super().check_compatibility()
+
+		basis = self.basis
 		Params = self.Params
-		mesh = self.mesh
-		EqnSet = self.EqnSet
-		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
-		    if mesh.Dim != 1:
-		        raise errors.IncompatibleError
-		else:
-		    if mesh.Dim != 2:
-		        raise errors.IncompatibleError
 
-		### Check limiter ###
-		if Params["ApplyLimiter"] is 'PositivityPreserving' \
-			and EqnSet.StateRank == 1:
-				raise IncompatibleError
-
-		### Check flux/source coefficient interpolation compatability with basis functions.
-		if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
+		if Params["InterpolateFlux"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
+
+		# Params = self.Params
+		# mesh = self.mesh
+		# EqnSet = self.EqnSet
+		# ### Check interp basis validity
+		# if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
+		#     if mesh.Dim != 1:
+		#         raise errors.IncompatibleError
+		# else:
+		#     if mesh.Dim != 2:
+		#         raise errors.IncompatibleError
+
+		# ### Check limiter ###
+		# if Params["ApplyLimiter"] is 'PositivityPreserving' \
+		# 	and EqnSet.StateRank == 1:
+		# 		raise IncompatibleError
+
+		# ### Check flux/source coefficient interpolation compatability with basis functions.
+		# if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
+		# 	raise errors.IncompatibleError
   
 
 	def precompute_matrix_operators(self):

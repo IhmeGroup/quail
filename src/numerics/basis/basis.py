@@ -3,7 +3,7 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import BasisType, ShapeType
+from general import BasisType, ShapeType, ModalOrNodal
 
 import meshing.gmsh as mesh_gmsh
 
@@ -378,6 +378,11 @@ class BasisBase(ABC):
     def basis_type(self):
         pass
 
+    @property
+    @abstractmethod
+    def MODAL_OR_NODAL(self):
+        pass
+
     @abstractmethod
     def __init__(self, order, mesh=None):
 
@@ -483,6 +488,7 @@ class BasisBase(ABC):
 class LagrangeEqSeg(BasisBase, SegShape):
 
     basis_type =  BasisType.LagrangeEqSeg
+    MODAL_OR_NODAL = ModalOrNodal.Nodal
 
     def __init__(self, order, mesh=None):
         super().__init__(order)
@@ -632,6 +638,7 @@ class LagrangeEqSeg(BasisBase, SegShape):
 class LagrangeEqQuad(BasisBase, QuadShape):
 
     basis_type = BasisType.LagrangeEqQuad
+    MODAL_OR_NODAL = ModalOrNodal.Nodal
 
     def __init__(self, order, mesh=None):
         super().__init__(order)
@@ -806,6 +813,7 @@ class LagrangeEqQuad(BasisBase, QuadShape):
 class LagrangeEqTri(BasisBase, TriShape):
 
     basis_type = BasisType.LagrangeEqTri
+    MODAL_OR_NODAL = ModalOrNodal.Nodal
 
     def __init__(self, order, mesh=None):
         super().__init__(order)
@@ -1022,6 +1030,7 @@ class LagrangeEqTri(BasisBase, TriShape):
 class LegendreSeg(BasisBase, SegShape):
 
     basis_type = BasisType.LegendreSeg
+    MODAL_OR_NODAL = ModalOrNodal.Modal
 
     def __init__(self, order, mesh=None):
         super().__init__(order)
@@ -1122,6 +1131,7 @@ class LegendreSeg(BasisBase, SegShape):
 class LegendreQuad(BasisBase, QuadShape):
 
     basis_type = BasisType.LegendreQuad
+    MODAL_OR_NODAL = ModalOrNodal.Modal
 
     def __init__(self, order, mesh=None):
         super().__init__(order)
@@ -1227,6 +1237,7 @@ class LegendreQuad(BasisBase, QuadShape):
 class HierarchicH1Tri(BasisBase, TriShape):
 
     basis_type = BasisType.HierarchicH1Tri
+    MODAL_OR_NODAL = ModalOrNodal.Modal
 
     def __init__(self, order, mesh=None):
         super().__init__(order)

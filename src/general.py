@@ -2,6 +2,7 @@ import code
 from enum import Enum, auto
 import numpy as np
 
+import defaultparams
 import errors
 
 
@@ -59,41 +60,51 @@ class PhysicsType(Enum):
     Euler = auto()
 
 
+class ModalOrNodal(Enum):
+    Modal = auto()
+    Nodal = auto()
+    Neither = auto()
+
+
 INTERIORFACE = -1
 NULLFACE = -2
 
 
 # Default solver parameters
-SolverParams = {
-	"StartTime" : 0.,
-	"EndTime" : 1.,
-	"nTimeStep" : 100.,
-    "InterpOrder" : 1,
-    "InterpBasis" : BasisType.LagrangeEqSeg,
-    "TimeScheme" : "RK4",
-    "InterpolateIC" : False,
-    "InterpolateFlux": True,
-    "LinearGeomMapping" : False,
-    "UniformMesh" : False,
-    "UseNumba" : False,
-    "OrderSequencing" : False,
-    "TrackOutput" : None,
-    "WriteTimeHistory" : False,
-    "ApplyLimiter" : None, 
-    "Prefix" : "Data",
-    "WriteInterval" : -1,
-    "WriteInitialSolution" : False,
-    "WriteFinalSolution" : False,
-    "RestartFile" : None,
-    "AutoProcess" : False,
-}
+# SolverParams = {
+# 	"StartTime" : 0.,
+# 	"EndTime" : 1.,
+# 	"nTimeStep" : 100.,
+#     "InterpOrder" : 1,
+#     "InterpBasis" : BasisType.LagrangeEqSeg,
+#     "TimeScheme" : "RK4",
+#     "InterpolateIC" : False,
+#     "InterpolateFlux": True,
+#     "LinearGeomMapping" : False,
+#     "UniformMesh" : False,
+#     "UseNumba" : False,
+#     "OrderSequencing" : False,
+#     "TrackOutput" : None,
+#     "WriteTimeHistory" : False,
+#     "ApplyLimiter" : None, 
+#     "Prefix" : "Data",
+#     "WriteInterval" : -1,
+#     "WriteInitialSolution" : False,
+#     "WriteFinalSolution" : False,
+#     "RestartFile" : None,
+#     "AutoProcess" : False,
+# }
+
+SolverParams = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
 
 
 def SetSolverParams(Params=None, **kwargs):
     if Params is None:
         Params = SolverParams
+        Params["RestartFile"] = SolverParams["File"]
     for key in kwargs:
-    	if key not in Params.keys(): raise KeyError
+    	if key not in Params.keys(): 
+            raise KeyError
     	Params[key] = kwargs[key]
     return Params
 

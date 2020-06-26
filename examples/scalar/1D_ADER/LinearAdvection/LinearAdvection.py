@@ -10,6 +10,7 @@ TimeStepping = {
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeEqSeg",
+    "InterpolateIC" : True,
     "Solver" : "ADERDG",
 }
 

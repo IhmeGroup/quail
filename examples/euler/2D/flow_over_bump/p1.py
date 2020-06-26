@@ -11,4 +11,5 @@ TimeStepping.update({
 })
 
 Numerics["InterpOrder"] = 1
+Numerics["InterpBasis"] = "LegendreQuad"
 Output["Prefix"] = "p1"

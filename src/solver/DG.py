@@ -8,7 +8,8 @@ import errors
 from data import ArrayList, GenericData
 
 import general
-from general import SetSolverParams, BasisType, ShapeType, EntityType
+from general import SetSolverParams, BasisType, ShapeType, EntityType, ModalOrNodal
+
 import meshing.meshbase as mesh_defs
 
 import numerics.basis.tools as basis_tools
@@ -78,15 +79,15 @@ class SolverBase(ABC):
 		self.basis = basis_tools.set_basis(mesh, EqnSet.order, basis_name)
 
 		# check for compatibility
-		if mesh.gbasis.shape_type != self.basis.shape_type:
-			raise errors.IncompatibleError
+		# if mesh.gbasis.shape_type != self.basis.shape_type:
+		# 	raise errors.IncompatibleError
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
-		self.check_solver_params()
+		self.check_compatibility()
 
 		# Precompute operators
 		self.precompute_matrix_operators()
@@ -97,9 +98,18 @@ class SolverBase(ABC):
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
 
-	@abstractmethod
-	def check_solver_params(self):
-		pass
+	def check_compatibility(self):
+		mesh = self.mesh 
+		Params = self.Params
+		basis = self.basis
+
+		# check for same shape between mesh and solution
+		if mesh.gbasis.shape_type != basis.shape_type:
+			raise errors.IncompatibleError
+
+		if Params["InterpolateIC"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
+			raise errors.IncompatibleError
+
 
 	@abstractmethod
 	def precompute_matrix_operators(self):
@@ -509,49 +519,49 @@ class DG(SolverBase):
 		Time: current time in the simulation
 		nTimeStep: number of time steps
 	'''
-	def check_solver_params(self):
-		'''
-		Method: check_solver_params
-		--------------------------------------------------------------------------
-		Checks the validity of the solver parameters
+	# def check_compatibility(self):
+	# 	'''
+	# 	Method: check_compatibility
+	# 	--------------------------------------------------------------------------
+	# 	Checks the validity of the solver parameters
 
-		'''
-		Params = self.Params
-		mesh = self.mesh
-		EqnSet = self.EqnSet
-		### Check interp basis validity
-		if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
-		    if mesh.Dim != 1:
-		        raise errors.IncompatibleError
-		else:
-		    if mesh.Dim != 2:
-		        raise errors.IncompatibleError
+	# 	'''
+	# 	Params = self.Params
+	# 	mesh = self.mesh
+	# 	EqnSet = self.EqnSet
+	# 	### Check interp basis validity
+	# 	if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
+	# 	    if mesh.Dim != 1:
+	# 	        raise errors.IncompatibleError
+	# 	else:
+	# 	    if mesh.Dim != 2:
+	# 	        raise errors.IncompatibleError
 
-		### Check uniform mesh
-		# if Params["UniformMesh"] is True:
-		#     ''' 
-		#     Check that element volumes are the same
-		#     Note that this is a necessary but not sufficient requirement
-		#     '''
-		#     TotVol, ElemVols = MeshTools.element_volumes(mesh)
-		#     if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
-		#         raise ValueError
+	# 	### Check uniform mesh
+	# 	# if Params["UniformMesh"] is True:
+	# 	#     ''' 
+	# 	#     Check that element volumes are the same
+	# 	#     Note that this is a necessary but not sufficient requirement
+	# 	#     '''
+	# 	#     TotVol, ElemVols = MeshTools.element_volumes(mesh)
+	# 	#     if (ElemVols.Max - ElemVols.Min)/TotVol > 1.e-8:
+	# 	#         raise ValueError
 
-		# ### Check linear geometric mapping
-		# if Params["LinearGeomMapping"] is True:
-		# 	if mesh.QOrder != 1:
-		# 	    raise errors.IncompatibleError
-		# 	if mesh.QBasis == BasisType.LagrangeEqQuad \
-		# 	    and Params["UniformMesh"] is False:
-		# 	    raise errors.IncompatibleError
+	# 	# ### Check linear geometric mapping
+	# 	# if Params["LinearGeomMapping"] is True:
+	# 	# 	if mesh.QOrder != 1:
+	# 	# 	    raise errors.IncompatibleError
+	# 	# 	if mesh.QBasis == BasisType.LagrangeEqQuad \
+	# 	# 	    and Params["UniformMesh"] is False:
+	# 	# 	    raise errors.IncompatibleError
 
-		### Check limiter ###
-		if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
-			and EqnSet.StateRank > 1:
-				raise IncompatibleError
-		if Params["ApplyLimiter"] is 'PositivityPreserving' \
-			and EqnSet.StateRank == 1:
-				raise IncompatibleError
+	# 	### Check limiter ###
+	# 	if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
+	# 		and EqnSet.StateRank > 1:
+	# 			raise IncompatibleError
+	# 	if Params["ApplyLimiter"] is 'PositivityPreserving' \
+	# 		and EqnSet.StateRank == 1:
+	# 			raise IncompatibleError
 
 
 	def precompute_matrix_operators(self):
