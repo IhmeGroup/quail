@@ -175,6 +175,7 @@ class ADEROperators(object):
 		self.ijac_elems = None 
 		self.djac_elems = None 
 		self.x_elems = None
+		self.vol_elems = None
 
 
 	def calc_ader_matrices(self, mesh, basis, basis_st, dt, order):
@@ -202,7 +203,9 @@ class ADEROperators(object):
 		MM =  basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 		# iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 
+		_, ElemVols = mesh_tools.element_volumes(mesh)
 
+		self.vol_elems = ElemVols
 		self.FTL = FTL
 		self.FTR = FTR
 		self.SMT = SMT

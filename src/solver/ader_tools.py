@@ -13,6 +13,7 @@ import numerics.basis.basis as basis_defs
 # Update default solver params.
 general.SolverParams.update({
 	"TimeScheme": "ADER",
+	"InterpolateFlux": True,
 	"SourceTreatment": "Explicit",
 })
 
@@ -104,7 +105,7 @@ def calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq):
 
 	return ER
 
-def predictor_elem_explicit(solver, elem, dt, Wp, Up):
+def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 	'''
 	Method: calculate_predictor_elem
 	-------------------------------------------
@@ -142,27 +143,27 @@ def predictor_elem_explicit(solver, elem, dt, Wp, Up):
 	iK = ader_ops.iK
 
 
-	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
-	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
+	flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 	ntest = 100
 	for i in range(ntest):
 
-		Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)))
-		err = Up_new - Up
+		U_pred_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,W)))
+		err = U_pred_new - U_pred
 
 		if np.amax(np.abs(err))<1e-10:
-			Up = Up_new
+			U_pred = U_pred_new
 			break
 
-		Up = Up_new
+		U_pred = U_pred_new
 		
-		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
-		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
+		flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 
-	return Up
+	return U_pred
 
 
-def predictor_elem_implicit(solver, elem, dt, Wp, Up):
+def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	'''
 	Method: calculate_predictor_elem
 	-------------------------------------------
@@ -194,18 +195,17 @@ def predictor_elem_implicit(solver, elem, dt, Wp, Up):
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
 	djac_elems = elem_ops.djac_elems 
-	
 	djac = djac_elems[elem]
-	_, ElemVols = mesh_tools.element_volumes(mesh, solver)
 
 	FTR = ader_ops.FTR
 	MM = ader_ops.MM
 	SMS = ader_ops.SMS_elems[elem]
 	K = ader_ops.K
 
+	vol_elems = ader_ops.vol_elems
 	W_bar = np.zeros([1,ns])
-	Wq = np.matmul(basis_val, Wp)
-	vol = ElemVols[elem]
+	Wq = np.matmul(basis_val, W)
+	vol = vol_elems[elem]
 
 	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
@@ -224,29 +224,29 @@ def predictor_elem_implicit(solver, elem, dt, Wp, Up):
 	Kp = K-MM*dt*jac 
 	iK = np.linalg.inv(Kp)
 
-	Up[:] = W_bar
+	U_pred[:] = W_bar
 
-	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
-	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
+	flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 	ntest = 100
 	for i in range(ntest):
 
-		Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)-np.matmul(MM,dt*jac*Up)))
-		err = Up_new - Up
+		U_pred_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,W)-np.matmul(MM,dt*jac*U_pred)))
+		err = U_pred_new - U_pred
 
 		if np.amax(np.abs(err))<1e-10:
-			Up = Up_new
+			U_pred = U_pred_new
 			break
 
-		Up = Up_new
+		U_pred = U_pred_new
 		
 
-		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
-		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
+		flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 
-	return Up
+	return U_pred
 
-def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
+def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	'''
 	Method: calculate_predictor_elem
 	-------------------------------------------
@@ -278,24 +278,24 @@ def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
 	djac_elems = elem_ops.djac_elems 
 	
 	djac = djac_elems[elem]
-	_, ElemVols = mesh_tools.element_volumes(mesh, solver)
 
 	FTR = ader_ops.FTR
 	iMM = ader_ops.iMM_elems[elem]
 	SMS = ader_ops.SMS_elems[elem]
 	K = ader_ops.K
+	vol_elems = ader_ops.vol_elems
 
 	W_bar = np.zeros([1,ns])
-	Wq = np.matmul(basis_val, Wp)
-	vol = ElemVols[elem]
+	Wq = np.matmul(basis_val, W)
+	vol = vol_elems[elem]
 	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
 	jac = np.zeros([ns,ns])
 	for Source in Sources:
 		jac += Source.get_jacobian(W_bar) 
 
-	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
-	flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
+	flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 
 	ntest = 100
 	for i in range(ntest):
@@ -303,24 +303,24 @@ def predictor_elem_sylvester(solver, elem, dt, Wp, Up):
 		A = np.matmul(iMM,K)/dt
 		B = -1.0*jac.transpose()
 
-		C = np.matmul(FTR,Wp) - np.einsum('ijk,jlk->il',SMS,flux)
-		Q = srcpoly/dt - np.matmul(Up,jac.transpose()) + np.matmul(iMM,C)/dt
+		C = np.matmul(FTR,W) - np.einsum('ijk,jlk->il',SMS,flux)
+		Q = srcpoly/dt - np.matmul(U_pred,jac.transpose()) + np.matmul(iMM,C)/dt
 
-		Up_new = solve_sylvester(A,B,Q)
+		U_pred_new = solve_sylvester(A,B,Q)
 
-		err = Up_new - Up
+		err = U_pred_new - U_pred
 		if np.amax(np.abs(err))<1e-10:
-			Up = Up_new
+			U_pred = U_pred_new
 			break
 
-		Up = Up_new
+		U_pred = U_pred_new
 		
-		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, Up)
-		flux = solver.flux_coefficients(elem, dt, order, basis_st, Up)
+		srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
+		flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 		if i == ntest-1:
 			print('Sub-iterations not converging',i)
 
-	return Up
+	return U_pred
 
 def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChanged=False):
     '''
