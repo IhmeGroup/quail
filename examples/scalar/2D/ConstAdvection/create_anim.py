@@ -25,11 +25,11 @@ for i in range(51):
 	physics = solver.EqnSet
 
 	if j == 0:
-		plot_colorbar = True
+		ignore_colorbar = False
 	else:
-		plot_colorbar = False
+		ignore_colorbar = True
 	plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, Equidistant=True, PlotExact=False, include_mesh=True, 
-			Regular2D=True, ShowTriangulation=False, show_elem_IDs=True, ignore_colorbar=True)
+			Regular2D=True, ShowTriangulation=False, show_elem_IDs=True, ignore_colorbar=ignore_colorbar)
 
 	imgs = ax.collections.copy()
 
