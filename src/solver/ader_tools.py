@@ -2,6 +2,8 @@ import code
 import copy
 import numpy as np
 from scipy.optimize import fsolve, root
+from scipy.linalg import solve_sylvester
+
 
 import general
 
@@ -218,6 +220,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	# U_bar = fsolve(F, W_bar)
 
 	jac = 0.0
+	# jac = np.zeros([1,ns,ns])
 	for Source in Sources:
 		jac += Source.get_jacobian(W_bar)
 
@@ -280,7 +283,8 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	djac = djac_elems[elem]
 
 	FTR = ader_ops.FTR
-	iMM = ader_ops.iMM_elems[elem]
+	# iMM = ader_ops.iMM_elems[elem]
+	iMM = ader_ops.iMM
 	SMS = ader_ops.SMS_elems[elem]
 	K = ader_ops.K
 	vol_elems = ader_ops.vol_elems
@@ -290,10 +294,11 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	vol = vol_elems[elem]
 	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
-	jac = np.zeros([ns,ns])
+	jac_q = np.zeros([1,ns,ns])
 	for Source in Sources:
-		jac += Source.get_jacobian(W_bar) 
-
+		jac_q += Source.get_jacobian(W_bar) 
+	jac = jac_q[0,:,:]
+	
 	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
 	flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 

@@ -164,6 +164,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 class ADEROperators(object):
 	def __init__(self):
 		self.MM = None
+		self.iMM = None
 		self.iMM_elems = None
 		self.K = None
 		self.iK = None 
@@ -199,6 +200,8 @@ class ADEROperators(object):
 			iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=True)
 			iMM_elems[elem] = iMM
 
+		iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=False)
+
 		# Get mass matrix in space-time
 		MM =  basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 		# iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
@@ -211,6 +214,7 @@ class ADEROperators(object):
 		self.SMT = SMT
 		self.SMS_elems = SMS_elems
 		self.MM = MM
+		self.iMM = iMM
 		self.iMM_elems = iMM_elems
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K) 

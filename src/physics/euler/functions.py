@@ -328,13 +328,12 @@ class StiffFriction(SourceBase):
 	def get_jacobian(self, U):
 
 		nu = self.nu
-		
-		jac = np.zeros([U.shape[-1],U.shape[-1]])
+		jac = np.zeros([U.shape[0],U.shape[-1],U.shape[-1]])
 		vel = U[:,1]/(1.0e-12+U[:,0])
 
-		jac[1,1]=nu
-		jac[2,0]=-nu*vel**2
-		jac[2,1]=2.0*nu*vel
+		jac[:,1,1]=nu
+		jac[:,2,0]=-nu*vel**2
+		jac[:,2,1]=2.0*nu*vel
 
 		return jac
 
