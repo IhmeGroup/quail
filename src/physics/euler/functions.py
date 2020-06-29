@@ -80,12 +80,12 @@ class MovingShock(FcnBase):
 
 		M = self.M
 		xshock = self.xshock
-		irho = physics.GetStateIndex("Density")
-		irhou = physics.GetStateIndex("XMomentum")
-		irhoE = physics.GetStateIndex("Energy")
-		
-		# Up = np.zeros([x.shape[0], physics.StateRank])
-		if physics.dim == 2: irhov = physics.GetStateIndex("YMomentum")
+		# srho = physics.get_state_slice("Density")
+		# srhou = physics.get_state_slice("XMomentum")
+		# srhoE = physics.get_state_slice("Energy")
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
 		gam = physics.gamma
 		
 		Up = np.zeros([x.shape[0], physics.StateRank])
@@ -115,15 +115,14 @@ class MovingShock(FcnBase):
 		iright = (x > xshock).reshape(-1)
 
 		# Density
-		Up[iright, irho] = rho1
-		Up[ileft, irho] = rho2
+		Up[iright, srho] = rho1
+		Up[ileft, srho] = rho2
 		# Momentum
-		Up[iright, irhou] = rho1*u1
-		Up[ileft, irhou] = rho2*u2
-		if physics.dim == 2: Up[:, irhov] = 0.
+		Up[iright, srhou] = rho1*u1
+		Up[ileft, srhou] = rho2*u2
 		# Energy
-		Up[iright, irhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
-		Up[ileft, irhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
+		Up[iright, srhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
+		Up[ileft, srhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
 
 		return Up
 
@@ -134,20 +133,18 @@ class DensityWave(FcnBase):
 
 	def get_state(self, physics, x, t):
 		p = self.p
-		irho, irhou, irhoE = physics.GetStateIndices()
+		srho, srhou, srhoE = physics.get_state_slices()
 		gam = physics.gamma
 
 		Up = np.zeros([x.shape[0], physics.StateRank])
-
-		x_ = x.reshape(-1)
 		
-		r = 1.0+0.1*np.sin(2.*np.pi*x_)
-		ru = r*1.0
-		rE = (p/(gam-1.))+0.5*ru**2/r
+		rho = 1.0+0.1*np.sin(2.*np.pi*x)
+		rhou = rho*1.0
+		rhoE = (p/(gam-1.))+0.5*rhou**2/rho
 
-		Up[:,irho] = r
-		Up[:,irhou] = ru
-		Up[:,irhoE] = rE
+		Up[:,srho] = rho
+		Up[:,srhou] = rhou
+		Up[:,srhoE] = rhoE
 
 		return Up
 
@@ -201,15 +198,15 @@ class IsentropicVortex(FcnBase):
 		T = Tb + dT
 
 		# Convert to conservative variables
-		r = np.power(T/s, 1./(gam-1.))
-		ru = r*u
-		rv = r*v
-		rE = r*Rg/(gam-1.)*T + 0.5*(ru*ru + rv*rv)/r
+		rho = np.power(T/s, 1./(gam-1.))
+		rhou = rho*u
+		rhov = rho*v
+		rhoE = rho*Rg/(gam-1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
 
-		Up[:,0] = r
-		Up[:,1] = ru
-		Up[:,2] = rv
-		Up[:,3] = rE
+		Up[:,0] = rho
+		Up[:,1] = rhou
+		Up[:,2] = rhov
+		Up[:,3] = rhoE
 
 		return Up
 
@@ -221,13 +218,13 @@ Boundary conditions
 
 class SlipWall(BCWeakPrescribed):
 	def get_boundary_state(self, physics, x, t, normals, UpI):
-		imom = physics.GetMomentumSlice()
+		smom = physics.GetMomentumSlice()
 
 		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
-		rhoveln = np.sum(UpI[:, imom] * n_hat, axis=1, keepdims=True)
+		rhoveln = np.sum(UpI[:, smom] * n_hat, axis=1, keepdims=True)
 		UpB = UpI.copy()
-		UpB[:, imom] -= rhoveln * n_hat
+		UpB[:, smom] -= rhoveln * n_hat
 
 		return UpB
 
@@ -237,9 +234,9 @@ class PressureOutlet(BCWeakPrescribed):
 		self.p = p
 
 	def get_boundary_state(self, physics, x, t, normals, UpI):
-		irho = physics.GetStateIndex("Density")
-		irhoE = physics.GetStateIndex("Energy")
-		imom = physics.GetMomentumSlice()
+		srho = physics.get_state_slice("Density")
+		srhoE = physics.get_state_slice("Energy")
+		smom = physics.GetMomentumSlice()
 
 		UpB = UpI.copy()
 
@@ -256,8 +253,8 @@ class PressureOutlet(BCWeakPrescribed):
 		# igmi = 1./gmi
 
 		# Interior velocity in normal direction
-		rhoI = UpI[:,irho:irho+1]
-		velI = UpI[:,imom]/rhoI
+		rhoI = UpI[:,srho]
+		velI = UpI[:,smom]/rhoI
 		velnI = np.sum(velI*n_hat, axis=1, keepdims=True)
 
 		if np.any(velnI < 0.):
@@ -284,19 +281,19 @@ class PressureOutlet(BCWeakPrescribed):
 
 		# Boundary density from interior entropy
 		rhoB = rhoI*np.power(pB/pI, 1./gamma)
-		UpB[:,irho] = rhoB.reshape(-1)
+		UpB[:,srho] = rhoB
 
 		# Exterior speed of sound
 		cB = np.sqrt(gamma*pB/rhoB)
 		velB = (JI - 2.*cB/(gamma-1.))*n_hat + veltI
-		UpB[:,imom] = rhoB*velB
+		UpB[:,smom] = rhoB*velB
 		# dVn = 2.*igmi*(cI-cB)
 		# UpB[:,imom] = rhoB*dVn*n_hat + rhoB*UpI[:,imom]/rhoI
 
 		# Exterior energy
 		# rVB2 = np.sum(UpB[:,imom]**2., axis=1, keepdims=True)/rhoB
 		rhovel2B = rhoB*np.sum(velB**2., axis=1, keepdims=True)
-		UpB[:,irhoE] = (pB/(gamma - 1.) + 0.5*rhovel2B).reshape(-1)
+		UpB[:,srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
 
 		return UpB
 
@@ -311,9 +308,11 @@ class StiffFriction(SourceBase):
 
 	def get_source(self, physics, FcnData, x, t):
 		nu = self.nu
-		irho = physics.GetStateIndex("Density")
-		irhou = physics.GetStateIndex("XMomentum")
-		irhoE = physics.GetStateIndex("Energy")
+		# irho = physics.GetStateIndex("Density")
+		# irhou = physics.GetStateIndex("XMomentum")
+		# irhoE = physics.GetStateIndex("Energy")
+
+		irho, irhou, irhoE = physics.GetStateIndices()
 		
 		U = FcnData.U
 		

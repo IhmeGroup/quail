@@ -95,12 +95,12 @@ class Euler(base.PhysicsBase):
 
 	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
 		''' Extract state variables '''
-		irho = self.GetStateIndex("Density")
-		irhoE = self.GetStateIndex("Energy")
-		imom = self.GetMomentumSlice()
-		rho = U[:,irho:irho+1]
-		rhoE = U[:,irhoE:irhoE+1]
-		mom = U[:,imom]
+		srho = self.get_state_slice("Density")
+		srhoE = self.get_state_slice("Energy")
+		smom = self.GetMomentumSlice()
+		rho = U[:,srho]
+		rhoE = U[:,srhoE]
+		mom = U[:,smom]
 
 		''' Common scalars '''
 		gamma = self.gamma
@@ -210,11 +210,18 @@ class Euler1D(Euler):
 
 		return irho, irhou, irhoE
 
+	def get_state_slices(self):
+		srho = self.get_state_slice("Density")
+		srhou = self.get_state_slice("XMomentum")
+		srhoE = self.get_state_slice("Energy")
+
+		return srho, srhou, srhoE
+
 	def GetMomentumSlice(self):
 		irhou = self.GetStateIndex("XMomentum")
-		imom = slice(irhou, irhou+1)
+		smom = slice(irhou, irhou+1)
 
-		return imom
+		return smom
 
 
 class Euler2D(Euler):

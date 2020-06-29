@@ -29,6 +29,19 @@ def process_map(fcn_type, fcn_map):
 	return fcn_ref
 
 
+def set_state_indices_slices(physics):
+	# State indices
+	physics.StateIndices = {}
+	physics.state_slices = {}
+	index = 0
+
+	# indices
+	for key in physics.StateVariables:
+		physics.StateIndices[key.name] = index
+		physics.state_slices[key.name] = slice(index, index+1)
+		index += 1
+
+
 class PhysicsBase(object):
 	'''
 	Class: IFace
@@ -111,17 +124,8 @@ class PhysicsBase(object):
 
 		# BC treatments
 		# self.SetBCTreatment()
+		set_state_indices_slices(self)
 
-		# State indices
-		self.StateIndices = {}
-		if sys.version_info[0] < 3:
-			for key in self.StateVariables.__members__.keys():
-				self.StateIndices[key] = self.StateVariables.__members__.keys().index(key)
-		else:	
-			index = 0
-			for key in self.StateVariables:
-				self.StateIndices[key.name] = index
-				index += 1
 
 		if mesh.Dim != self.dim:
 			raise errors.IncompatibleError
@@ -224,15 +228,20 @@ class PhysicsBase(object):
 	class StateVariables(Enum):
 		pass
 
-	@abstractmethod
 	class AdditionalVariables(Enum):
 		pass
 
-	def GetStateIndex(self, VariableName):
+	def GetStateIndex(self, var_name):
 		# idx = self.VariableType[VariableName]
-		idx = self.StateIndices[VariableName]
+		idx = self.StateIndices[var_name]
 		# idx = self.StateVariables.__members__.keys().index(VariableName)
 		return idx
+
+	def get_state_slice(self, var_name):
+		# idx = self.VariableType[VariableName]
+		slc = self.state_slices[var_name]
+		# idx = self.StateVariables.__members__.keys().index(VariableName)
+		return slc
 
 	# @abstractmethod
 	# class BCType(IntEnum):
