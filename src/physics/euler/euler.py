@@ -161,7 +161,7 @@ class Euler(base.PhysicsBase):
 
 class Euler1D(Euler):
 
-	StateRank = 3
+	NUM_STATE_VARS = 3
 	dim = 1
 
 	def __init__(self, order, basis, mesh):
@@ -226,7 +226,7 @@ class Euler1D(Euler):
 
 class Euler2D(Euler):
 
-	StateRank = 4
+	NUM_STATE_VARS = 4
 	dim = 2
 
 	def __init__(self, order, basis, mesh):

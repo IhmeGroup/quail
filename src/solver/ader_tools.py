@@ -121,7 +121,7 @@ def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 		Up: predicted solution in space-time
 	'''
 	EqnSet = solver.EqnSet
-	ns = EqnSet.StateRank
+	ns = EqnSet.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis
@@ -181,7 +181,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	EqnSet = solver.EqnSet
 	Sources = EqnSet.Sources
 
-	ns = EqnSet.StateRank
+	ns = EqnSet.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis
@@ -262,7 +262,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	EqnSet = solver.EqnSet
 	Sources = EqnSet.Sources
 
-	ns = EqnSet.StateRank
+	ns = EqnSet.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis

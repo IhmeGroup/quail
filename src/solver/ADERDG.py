@@ -154,7 +154,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 	def alloc_other_arrays(self, EqnSet, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 
 		self.UqI = np.zeros([nq, ns])
 		self.UqB = np.zeros([nq, ns])
@@ -290,7 +290,7 @@ class ADERDG(DG.DG):
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 
 		TimeScheme = Params["TimeScheme"]
 		if general.StepperType[TimeScheme] != general.StepperType.ADER:
@@ -311,7 +311,7 @@ class ADERDG(DG.DG):
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
 		# Allocate array for predictor step in ADER-Scheme
-		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
+		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.NUM_STATE_VARS])
 
 		# Set predictor function
 		SourceTreatment = Params["SourceTreatment"]
@@ -360,7 +360,7 @@ class ADERDG(DG.DG):
 
 		# ### Check limiter ###
 		# if Params["ApplyLimiter"] is 'PositivityPreserving' \
-		# 	and EqnSet.StateRank == 1:
+		# 	and EqnSet.NUM_STATE_VARS == 1:
 		# 		raise IncompatibleError
 
 		# ### Check flux/source coefficient interpolation compatability with basis functions.
@@ -433,7 +433,7 @@ class ADERDG(DG.DG):
 	# 		Up: predicted solution in space-time
 	# 	'''
 	# 	EqnSet = self.EqnSet
-	# 	ns = EqnSet.StateRank
+	# 	ns = EqnSet.NUM_STATE_VARS
 	# 	mesh = self.mesh
 
 	# 	basis = self.basis
@@ -519,7 +519,7 @@ class ADERDG(DG.DG):
 		'''
 		EqnSet = self.EqnSet
 		mesh = self.mesh
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		dim = EqnSet.dim
 
 		elem_ops = self.elem_operators
@@ -658,7 +658,7 @@ class ADERDG(DG.DG):
 		mesh = self.mesh
 		dim = mesh.Dim
 		EqnSet = self.EqnSet
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		# BFG = mesh.BFaceGroups[ibfgrp]
 		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
@@ -738,7 +738,7 @@ class ADERDG(DG.DG):
 
 		EqnSet = self.EqnSet
 		mesh = self.mesh
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		dim = EqnSet.dim
 		Params = self.Params
 
@@ -802,7 +802,7 @@ class ADERDG(DG.DG):
 		mesh = self.mesh
 		dim = mesh.Dim
 		EqnSet = self.EqnSet
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		Params = self.Params
 		entity = EntityType.Element
 		InterpolateFlux = Params["InterpolateFlux"]

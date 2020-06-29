@@ -101,10 +101,10 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 # 	basis = copy.copy(basis_old)
 # 	''' Allocate new state '''
 # 	# New basis, Order information stored in EqnSet
-# 	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.orders[egrp]), EqnSet.StateRank] \
+# 	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.orders[egrp]), EqnSet.NUM_STATE_VARS] \
 # 	# 				for egrp in range(mesh.nElemGroup)]
 # 	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
-# 	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.order), EqnSet.StateRank])
+# 	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.order), EqnSet.NUM_STATE_VARS])
 
 # 	''' Loop through elements '''
 # 	order = EqnSet.order
@@ -133,7 +133,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 # 	elif fcn_data is not None and U_old is not None:
 # 		raise ValueError
 
-# 	ns = EqnSet.StateRank
+# 	ns = EqnSet.NUM_STATE_VARS
 
 # 	if fcn_data is not None:
 # 		order = 2*np.amax([EqnSet.order, 1])

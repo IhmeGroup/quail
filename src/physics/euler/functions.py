@@ -40,7 +40,7 @@ class SmoothIsentropicFlow(FcnBase):
 		gam = physics.gamma
 		irho, irhou, irhoE = physics.GetStateIndices()
 	
-		# Up = np.zeros([x.shape[0], physics.StateRank])
+		# Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		rho0 = lambda x,a: 1. + a*np.sin(np.pi*x)
 		pressure = lambda rho,gam: rho**gam
@@ -52,7 +52,7 @@ class SmoothIsentropicFlow(FcnBase):
 
 		x_ = x.reshape(-1)
 
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		x1 = fsolve(f1, 0.*x_, (x_,t,a))
 		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
@@ -88,7 +88,7 @@ class MovingShock(FcnBase):
 
 		gam = physics.gamma
 		
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		''' Pre-shock state '''
 		rho1 = 1.
@@ -136,7 +136,7 @@ class DensityWave(FcnBase):
 		srho, srhou, srhoE = physics.get_state_slices()
 		gam = physics.gamma
 
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		
 		rho = 1.0+0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
@@ -157,7 +157,7 @@ class IsentropicVortex(FcnBase):
 		self.pb = 1.
 		self.vs = 5.
 	def get_state(self, physics, x, t):		
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gam = physics.gamma
 		Rg = physics.R
 

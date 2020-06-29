@@ -129,7 +129,7 @@ class SolverBase(ABC):
 		iMM_elems = self.elem_operators.iMM_elems
 
 		U = EqnSet.U
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		order = EqnSet.order
 
 		if Params["InterpolateIC"]:
@@ -166,7 +166,7 @@ class SolverBase(ABC):
 		iMM_elems = self.elem_operators.iMM_elems
 
 		U = EqnSet.U
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 
 		# basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
 		if basis_old.shape_type != basis.shape_type:
@@ -209,7 +209,7 @@ class SolverBase(ABC):
 	# 	nb = basis.nb
 
 	# 	U = EqnSet.U
-	# 	ns = EqnSet.StateRank
+	# 	ns = EqnSet.NUM_STATE_VARS
 	# 	Params = self.Params
 
 	# 	# Get mass matrices
@@ -358,7 +358,7 @@ class ElemOperators(object):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		dim = EqnSet.dim
 
 		self.Uq = np.zeros([nq, ns]) 
@@ -428,7 +428,7 @@ class IFaceOperators(ElemOperators):
 	def alloc_other_arrays(self, EqnSet, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 
 		self.UqL = np.zeros([nq, ns])
 		self.UqR = np.zeros([nq, ns])
@@ -501,7 +501,7 @@ class BFaceOperators(IFaceOperators):
 	def alloc_other_arrays(self, EqnSet, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 
 		self.UqI = np.zeros([nq, ns])
 		self.UqB = np.zeros([nq, ns])
@@ -565,10 +565,10 @@ class DG(SolverBase):
 
 	# 	### Check limiter ###
 	# 	if Params["ApplyLimiter"] is 'ScalarPositivityPreserving' \
-	# 		and EqnSet.StateRank > 1:
+	# 		and EqnSet.NUM_STATE_VARS > 1:
 	# 			raise IncompatibleError
 	# 	if Params["ApplyLimiter"] is 'PositivityPreserving' \
-	# 		and EqnSet.StateRank == 1:
+	# 		and EqnSet.NUM_STATE_VARS == 1:
 	# 			raise IncompatibleError
 
 
@@ -616,7 +616,7 @@ class DG(SolverBase):
 			ER: calculated residiual array (for volume integral of specified element)
 		'''
 		EqnSet = self.EqnSet
-		ns = EqnSet.StateRank
+		ns = EqnSet.NUM_STATE_VARS
 		dim = EqnSet.dim
 		elem_ops = self.elem_operators
 		basis_val = elem_ops.basis_val

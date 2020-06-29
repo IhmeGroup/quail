@@ -132,7 +132,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 # def uniform(physics, fcn_data):
 # 	Data = fcn_data.Data
 # 	U = fcn_data.U
-# 	ns = physics.StateRank
+# 	ns = physics.NUM_STATE_VARS
 
 # 	for k in range(ns):
 # 		U[:,k] = Data.State[k]
@@ -143,7 +143,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 # def extrapolate(physics, fcn_data):
 # 	Data = fcn_data.Data
 # 	U = fcn_data.U
-# 	ns = physics.StateRank
+# 	ns = physics.NUM_STATE_VARS
 
 # 	for k in range(ns):
 # 		U[:,k] = Data.State[k]

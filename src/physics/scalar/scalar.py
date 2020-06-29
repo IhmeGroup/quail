@@ -26,7 +26,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	relevant methods
 	'''
 
-	StateRank = 1
+	NUM_STATE_VARS = 1
 	PHYSICS_TYPE = general.PhysicsType.ConstAdvScalar
 
 	def __init__(self, order, basis, mesh):
@@ -183,7 +183,7 @@ class ConstAdvScalar(base.PhysicsBase):
 # 			try:
 # 				sidx = self.GetStateIndex(sname)
 # 				scalar[:,iscalar] = U[:,sidx]
-# 			# if sidx < self.StateRank:
+# 			# if sidx < self.NUM_STATE_VARS:
 # 			# 	# State variable
 # 			# 	scalar[:,iscalar] = U[:,sidx]
 # 			# else:
@@ -230,7 +230,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 		try:
 	# 			sidx = self.GetStateIndex(sname)
 	# 			scalar[:,iscalar] = U[:,sidx]
-	# 		# if sidx < self.StateRank:
+	# 		# if sidx < self.NUM_STATE_VARS:
 	# 		# 	# State variable
 	# 		# 	scalar[:,iscalar] = U[:,sidx]
 	# 		# else:
@@ -347,7 +347,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 
 class Burgers1D(base.PhysicsBase):
 
-	StateRank = 1
+	NUM_STATE_VARS = 1
 	dim = 1
 	PHYSICS_TYPE = general.PhysicsType.Burgers
 

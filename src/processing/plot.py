@@ -137,7 +137,7 @@ def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	    x: (x,y) coordinates; 3D array of size [nElemTot x nPoint x 2], where
 	    	nPoint is the number of points per element
 	    u: values of solution at the points in x; 3D array of size
-	    	[nElemTot x nPoint x StateRank]
+	    	[nElemTot x nPoint x NUM_STATE_VARS]
 
 	OUTPUTS:
 	    Plot is created
@@ -196,7 +196,7 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	    x: (x,y) coordinates; 3D array of size [nElemTot x nPoint x 2], where
 	    	nPoint is the number of points per element
 	    u: values of solution at the points in x; 3D array of size
-	    	[nElemTot x nPoint x StateRank]
+	    	[nElemTot x nPoint x NUM_STATE_VARS]
 
 	OUTPUTS:
 	    Plot is created
@@ -343,7 +343,7 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	dim = mesh.Dim
 	U = EqnSet.U
 	order = EqnSet.order
-	sr = EqnSet.StateRank
+	sr = EqnSet.NUM_STATE_VARS
 
 	# Get points to plot at
 	# Note: assumes uniform element type

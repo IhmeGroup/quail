@@ -51,7 +51,7 @@ class PhysicsBase(object):
 	'''
 	@property
 	@abstractmethod
-	def StateRank(self):
+	def NUM_STATE_VARS(self):
 		pass
 
 	@property
@@ -109,18 +109,18 @@ class PhysicsBase(object):
 			raise Exception("Input error")
 
 		basis = basis_tools.set_basis(mesh, self.order, basis_type)
-		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.StateRank])
-		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.StateRank])
+		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
+		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
 
 		# State 
-		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.nElemTot,nn,self.StateRank])
-		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[[mesh.nElemTot,nn,self.StateRank]])
-		# ArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.StateRank] \
+		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.nElemTot,nn,self.NUM_STATE_VARS])
+		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[[mesh.nElemTot,nn,self.NUM_STATE_VARS]])
+		# ArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.NUM_STATE_VARS] \
 		# 			for egrp in range(mesh.nElemGroup)]
 		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
 		# self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-		# self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
-		# self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.StateRank])
+		# self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
+		# self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
 
 		# BC treatments
 		# self.SetBCTreatment()
@@ -311,7 +311,7 @@ class PhysicsBase(object):
 	# 		try:
 	# 			Fa = data.Fa
 	# 		except AttributeError:
-	# 			data.Fa = Fa = np.zeros([nq, self.StateRank, self.Dim])
+	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.Dim])
 	# 		# Fa = self.ConvFluxInterior(uB, Fa)
 	# 		# # Take dot product with n
 	# 		try: 
@@ -340,7 +340,7 @@ class PhysicsBase(object):
 			try:
 				sidx = self.GetStateIndex(sname)
 				scalar[:,iscalar] = U[:,sidx]
-			# if sidx < self.StateRank:
+			# if sidx < self.NUM_STATE_VARS:
 			# 	# State variable
 			# 	scalar[:,iscalar] = U[:,sidx]
 			# else:
@@ -365,12 +365,12 @@ class PhysicsBase(object):
 		# 		raise Exception("Input error")
 
 		# nq = FcnData.nq
-		# sr = self.StateRank
+		# sr = self.NUM_STATE_VARS
 		# if FcnData.U is None or FcnData.U.shape != (nq, sr):
 		# 	FcnData.U = np.zeros([nq, sr], dtype=self.U.dtype)
 
 		# FcnData.U[:] = FcnData.Function(self, FcnData)
-		# FcnData.alloc_helpers([x.shape[0], self.StateRank])
+		# FcnData.alloc_helpers([x.shape[0], self.NUM_STATE_VARS])
 		FcnData.Up = FcnData.get_state(self, x, t)
 
 		return FcnData.Up
@@ -386,7 +386,7 @@ class PhysicsBase(object):
 		# 		raise Exception("Input error")
 
 		# nq = FcnData.nq
-		# sr = self.StateRank
+		# sr = self.NUM_STATE_VARS
 		# if FcnData.S is None or FcnData.S.shape != (nq, sr):
 		# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
 		# code.interact(local=locals())
@@ -397,7 +397,7 @@ class PhysicsBase(object):
 	# def FcnUniform(self, FcnData):
 	# 	Data = FcnData.Data
 	# 	U = FcnData.U
-	# 	ns = self.StateRank
+	# 	ns = self.NUM_STATE_VARS
 
 	# 	for k in range(ns):
 	# 		U[:,k] = Data.State[k]

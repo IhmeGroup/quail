@@ -39,7 +39,7 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 	# ElemErr = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
 	ElemErr = np.zeros([mesh.nElem])
 	TotErr = 0.
-	sr = EqnSet.StateRank
+	sr = EqnSet.NUM_STATE_VARS
 	quadData = None
 	# JData = JacobianData(mesh)
 	# ier = EqnSet.VariableType[VariableName]

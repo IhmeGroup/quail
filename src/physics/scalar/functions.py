@@ -115,7 +115,7 @@ class ShockBurgers(FcnBase):
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
 
-		Up = np.zeros([x.shape[0], physics.StateRank])
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		Up[ileft] = uL
 		Up[iright] = uR
