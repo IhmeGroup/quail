@@ -47,8 +47,31 @@ def calculate_source_term_integral(elem_ops, elem, Sq):
 	# 		for iq in range(nq):
 	# 			Phi = PhiData.Phi[iq,jn]
 	# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
-
 	ER = np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
+
+	return ER
+
+def calculate_dRdU(elem_ops, elem, jac):
+	
+	quad_wts = elem_ops.quad_wts
+	basis_val = elem_ops.basis_val 
+	djac_elems = elem_ops.djac_elems 
+	djac = djac_elems[elem]
+	ns = jac.shape[-1]
+	nb = basis_val.shape[1]
+	nq = quad_wts.shape[0]
+	# ER = np.zeros([nb,nb,ns])
+	# Calculate source term integral
+	# for ir in range(ns):
+	# 	for jn in range(nb):
+	# 		for iq in range(nq):
+	# 			Phi = basis_val[iq,jn]
+				# ER[jn,iq,ir] += Phi*jac[iq,ir,ir]*quad_wts[iq]*djac[iq]
+	# code.interact(local=locals())
+	test1 = quad_wts*djac
+	test = np.einsum('ijk,il->ijk',jac,test1)
+	# ER = np.matmul(basis_val.transpose(),test)
+	ER = np.einsum('bq,qts -> bts',basis_val.transpose(),test)
 
 	return ER
 
@@ -78,7 +101,6 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 		# not found; need to compute
 		MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
 		DataSet.MMinv_all = MMinv_all
-
 
 	if dt is None:
 		c = 1.
@@ -192,5 +214,52 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
 def interpolate_to_nodes(f, U):
 	U[:,:] = f
 
+def get_jacobian_matrix(mesh, solver):
 
+		basis = solver.basis
+		nb = basis.nb
+		DataSet = solver.DataSet
+		physics = solver.EqnSet
+		Up = physics.U
+		ns = physics.StateRank
+
+		try:
+			MMinv_all = DataSet.MMinv_all
+		except AttributeError:
+			# not found; need to compute
+			MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
+			DataSet.MMinv_all = MMinv_all
 		
+		A = np.zeros([mesh.nElem, nb, nb, ns])
+		iA = np.zeros([mesh.nElem, nb, nb, ns])
+
+		for elem in range(mesh.nElem):
+			A[elem],iA[elem] = get_jacobian_matrix_elem(solver, elem, MMinv_all[elem], Up[elem])
+		return A, iA
+
+def get_jacobian_matrix_elem(solver, elem, iMM, Up):
+
+	dt = solver.Stepper.dt
+	physics = solver.EqnSet
+	Sources = physics.Sources
+
+	elem_ops = solver.elem_operators
+	basis_val = elem_ops.basis_val
+	quad_wts = elem_ops.quad_wts
+	nq = quad_wts.shape[0]
+	ns = physics.StateRank
+	nb = basis_val.shape[1]
+	Uq = np.matmul(basis_val, Up)
+	'''
+	Evaluate the source term jacobian
+	'''
+	jac = np.zeros([nq,ns,ns])
+	for Source in Sources:
+		jac += Source.get_jacobian(Uq)
+	dRdU = calculate_dRdU(elem_ops, elem, jac)
+
+	A = np.expand_dims(np.eye(nb), axis=2) - 0.5*dt*np.einsum('ij,jkl->ijl',iMM,dRdU)
+	iA = np.zeros_like(A)
+	for s in range(ns):
+		iA[:,:,s] = np.linalg.inv(A[:,:,s])
+	return A, iA
