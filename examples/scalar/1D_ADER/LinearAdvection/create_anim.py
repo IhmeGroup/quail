@@ -9,7 +9,7 @@ import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
 
-plot.PreparePlot(axis=None, linewidth=0.5)
+plot.PreparePlot(linewidth=0.5)
 fig = plt.figure()
 ax = plt.gca()
 
