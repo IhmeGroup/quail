@@ -5,7 +5,7 @@ import numpy as np
 from data import ArrayList
 from general import StepperType
 from solver.tools import mult_inv_mass_matrix
-
+import solver.tools as solver_tools
 
 def set_stepper(TimeScheme):
 	if StepperType[TimeScheme] == StepperType.FE:
@@ -16,6 +16,8 @@ def set_stepper(TimeScheme):
 		stepper = LSRK4()
 	elif StepperType[TimeScheme] == StepperType.SSPRK3:
 		stepper = SSPRK3()
+	elif StepperType[TimeScheme] == StepperType.Strang:
+		stepper = Strang()
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
@@ -23,7 +25,7 @@ def set_stepper(TimeScheme):
 class StepperBase(ABC):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
-
+		self.dt = dt
 	@abstractmethod
 	def TakeTimeStep(self, solver):
 		pass
@@ -31,6 +33,7 @@ class StepperBase(ABC):
 class FE(StepperBase):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
+		self.dt = dt
 
 	def TakeTimeStep(self, solver):
 		EqnSet = solver.EqnSet
@@ -102,6 +105,9 @@ class RK4(StepperBase):
 		except AttributeError: 
 			Utemp = np.copy(U)
 			DataSet.Utemp = Utemp
+		
+		# print(U[0],U[1])
+
 		# first stage
 		R = solver.calculate_residual(U, R)
 		mult_inv_mass_matrix(mesh, solver, self.dt, R, dU1)
@@ -126,6 +132,9 @@ class RK4(StepperBase):
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
 		U += dU
 		solver.apply_limiter(U)
+
+		# print(U[0],U[1])
+
 		# for egrp in range(mesh.nElemGroup): 
 		# 	R[egrp][:] = 1./6.*(dU1[egrp][:]+2.*dU2[egrp][:]+2.*dU3[egrp][:]+dU4[egrp][:])
 		# 	U[egrp][:] += R[egrp][:]
@@ -229,7 +238,6 @@ class SSPRK3(StepperBase):
 		except AttributeError:
 			dUtemp = np.copy(U)
 			DataSet.dUtemp = dUtemp
-
 		Time = solver.Time
 		for INTRK in range(self.nStage):
 			solver.Time = Time + self.dt
@@ -271,4 +279,63 @@ class ADER(StepperBase):
 		W += dU
 		solver.apply_limiter(W)
 		return R
+
+class Strang(StepperBase):
+
+	def TakeTimeStep(self, solver):
+
+		EqnSet = solver.EqnSet
+		DataSet = solver.DataSet
+		mesh  = solver.mesh
+		U = EqnSet.U
+		#First: take the half-step for the inviscid flux only
+		explicit = SSPRK3(self.dt/2.)
+		implicit = self.Trapezoidal(self.dt)
+		solver.Params["SourceSwitch"] = False
+		R1 = explicit.TakeTimeStep(solver)
+		#Second: take the implicit full step for the source term.
+		solver.Params["SourceSwitch"] = True
+		solver.Params["ConvFluxSwitch"] = False
+
+		R2 = implicit.TakeTimeStep(solver)
+		# EqnSet.U = U
+		#Third: take the second half-step for the inviscid flux only.
+		solver.Params["SourceSwitch"] = False
+		solver.Params["ConvFluxSwitch"] = True
+		R3 = explicit.TakeTimeStep(solver)
+
+		return R2
+
+	class Trapezoidal(StepperBase):
+
+		def TakeTimeStep(self, solver):
+
+			EqnSet = solver.EqnSet
+			DataSet = solver.DataSet
+			mesh = solver.mesh
+			U = EqnSet.U
+
+			try: 
+				R = DataSet.R
+			except AttributeError:
+				R = np.copy(U)
+				DataSet.R = R
+			try:
+				dU = DataSet.dU
+			except AttributeError:
+				dU = np.copy(U)
+				DataSet.dU = dU
+
+			R = solver.calculate_residual(U,R)
+			mult_inv_mass_matrix(mesh, solver, self.dt, R, dU)
+
+			A, iA = solver_tools.get_jacobian_matrix(mesh, solver)
+
+			R = np.einsum('ijkl,ikl->ijl',A,U) + dU
+			U = np.einsum('ijkl,ikl->ijl',iA,R)
+
+			EqnSet.U=U
+			solver.apply_limiter(U)
+
+			return R
 

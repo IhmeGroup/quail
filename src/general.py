@@ -52,7 +52,7 @@ class StepperType(Enum):
     LSRK4 = auto()
     SSPRK3 = auto()
     ADER = auto()
-
+    Strang = auto()
 
 class PhysicsType(Enum):
     ConstAdvScalar = auto()
