@@ -165,7 +165,7 @@ def driver(deck):
 		for b in mesh_params["PeriodicBoundariesY"]:
 			pb[i] = b
 			i += 1
-	if pb != [None]*4:
+	if pb != [None]*4 and mesh.Dim !=1:
 		# need to check 1D first
 		if mesh.Dim == 1:
 			raise Exception
