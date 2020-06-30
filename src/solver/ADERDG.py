@@ -2,15 +2,14 @@ import code
 import numpy as np
 from scipy.linalg import solve_sylvester
 
-from data import ArrayList, GenericData
+from data import GenericData
 import errors
-import general
-from general import SetSolverParams, BasisType, ShapeType, ModalOrNodal
+
+from general import ModalOrNodal, StepperType
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
-import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 import numerics.basis.ader_tools as basis_st_tools
 
@@ -23,6 +22,7 @@ echeck = -1
 
 import solver.ader_tools as solver_tools
 import solver.tools as dg_tools
+import solver.base as base
 import solver.DG as DG
 
 
@@ -272,7 +272,7 @@ class ADEROperators(object):
 		self.get_geom_data(mesh, basis_st, order)
 
 
-class ADERDG(DG.DG):
+class ADERDG(base.SolverBase):
 	'''
 	Class: ADERDG
 	--------------------------------------------------------------------------
@@ -300,7 +300,7 @@ class ADERDG(DG.DG):
 		ns = EqnSet.NUM_STATE_VARS
 
 		TimeScheme = Params["TimeScheme"]
-		if general.StepperType[TimeScheme] != general.StepperType.ADER:
+		if StepperType[TimeScheme] != StepperType.ADER:
 			raise errors.IncompatibleError
 		self.Stepper = stepper.ADER()
 
@@ -369,10 +369,6 @@ class ADERDG(DG.DG):
 		# if Params["ApplyLimiter"] is 'PositivityPreserving' \
 		# 	and EqnSet.NUM_STATE_VARS == 1:
 		# 		raise IncompatibleError
-
-		# ### Check flux/source coefficient interpolation compatability with basis functions.
-		# if Params["InterpolateFlux"] is True and BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
-		# 	raise errors.IncompatibleError
   
 
 	def precompute_matrix_operators(self):
@@ -838,7 +834,7 @@ class ADERDG(DG.DG):
 			nq_st = quad_wts_st.shape[0]
 			nq = quad_wts.shape[0]
 			iMM = ader_ops.iMM_elems[elem]
-			
+
 			Uq = np.matmul(basis_val_st,Up)
 
 			t = np.zeros([nq_st,dim])
