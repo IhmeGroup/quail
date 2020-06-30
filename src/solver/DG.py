@@ -14,7 +14,8 @@ import meshing.meshbase as mesh_defs
 
 import numerics.basis.tools as basis_tools
 
-import numerics.limiting.positivitypreserving as pp_limiter
+import numerics.limiting.tools as limiter_tools
+# import numerics.limiting.positivitypreserving as pp_limiter
 
 # from numerics.quadrature.quadrature import QuadData
 import numerics.timestepping.stepper as stepper
@@ -25,30 +26,6 @@ import processing.readwritedatafiles as ReadWriteDataFiles
 import solver.tools as solver_tools
 global echeck
 echeck = -1
-
-
-def set_limiter(limiter_type, physics_type):
-	'''
-    Method: set_limiter
-    ----------------------------
-	selects limiter bases on input deck
-
-    INPUTS:
-		limiterType: type of limiter selected (Default: None)
-	'''
-	if limiter_type is None:
-		return None
-	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreserving:
-		limiter_ref = pp_limiter.PositivityPreserving
-	elif general.LimiterType[limiter_type] is general.LimiterType.ScalarPositivityPreserving:
-		limiter_ref = pp_limiter.ScalarPositivityPreserving
-	else:
-		raise NotImplementedError
-
-	limiter = limiter_ref(physics_type)
-
-	return limiter
-
 
 class SolverBase(ABC):
 	def __init__(self,Params,EqnSet,mesh):
@@ -90,7 +67,7 @@ class SolverBase(ABC):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = limiter_tools.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_compatibility()

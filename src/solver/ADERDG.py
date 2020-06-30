@@ -14,6 +14,8 @@ import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 import numerics.basis.ader_tools as basis_st_tools
 
+import numerics.limiting.tools as limiter_tools
+
 import numerics.timestepping.stepper as stepper
 
 global echeck
@@ -323,7 +325,7 @@ class ADERDG(DG.DG):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = DG.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = limiter_tools.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_compatibility()
