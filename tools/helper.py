@@ -15,9 +15,7 @@ def CalculateBasisAndMatrices(mesh, basis, Order):
 	# Quadrature
 	quad_order = basis.get_quadrature(mesh, order)
 	xq, _ = basis.get_quad_data(quad_order)
-	# QuadOrder,_ = get_gaussian_quadrature_elem(mesh, egrp=0, basis=basis, Order=Order)
-	# quadData = QuadData(mesh=mesh, basis=mesh.ElemGroups[0].QBasis, entity=General.EntityType["IFace"], Order=QuadOrder)
-	# xq = basis.quad_pts; nq = quad_pts.shape[0]; 
+
 	# Basis on left face
 	PhiDataLeft = BasisData(basis,Order,mesh)
 	PhiDataLeft.eval_basis_on_face(mesh, egrp=0, face=0, xq=xq, xelem=None, Get_Phi=True)

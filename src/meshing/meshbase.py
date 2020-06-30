@@ -2,30 +2,8 @@ import code
 from enum import Enum, auto
 import numpy as np
 
-from general import ShapeType, EntityType
+from general import ShapeType
 import numerics.basis.basis as basis_defs
-
-
-def get_entity_dim(mesh, entity):
-    '''
-    Function: get_entity_dim
-    -------------------
-    This function returns the dimension of a given entity
-
-    INPUTS:
-        mesh: Mesh object
-        entity: Element, IFace, or BFace
-
-    OUTPUTS:
-        dim: entity dimension
-    '''
-    if entity == EntityType.Element:
-        dim = mesh.Dim 
-    else:
-        dim = mesh.Dim - 1
-
-    return dim
-
 
 def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
     '''

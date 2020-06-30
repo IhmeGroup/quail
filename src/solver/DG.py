@@ -8,7 +8,7 @@ import errors
 from data import ArrayList, GenericData
 
 import general
-from general import SetSolverParams, BasisType, ShapeType, EntityType, ModalOrNodal
+from general import SetSolverParams, BasisType, ShapeType, ModalOrNodal
 
 import meshing.meshbase as mesh_defs
 
@@ -137,14 +137,10 @@ class SolverBase(ABC):
 		else:
 			order = 2*np.amax([EqnSet.order, 1])
 			order = EqnSet.QuadOrder(order)
-			# quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
+
 			quad_order = basis.get_quadrature(mesh, order)
 			quad_pts, quad_wts = basis.get_quad_data(quad_order)
 			eval_pts = quad_pts
-			# quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
-
-			# eval_pts = basis.quad_pts
-			# eval_pts = quad_data.quad_pts
 			npts = eval_pts.shape[0]
 
 		for elem in range(mesh.nElem):
@@ -177,11 +173,10 @@ class SolverBase(ABC):
 		else:
 			order = 2*np.amax([EqnSet.order, order_old])
 			quad_order = basis.get_quadrature(mesh, order)
-			# quad_order, _ = get_gaussian_quadrature_elem(mesh, basis, order)
-			# quad_data = QuadData(mesh, mesh.gbasis, general.EntityType.Element, quad_order)
+
 			quad_pts, quad_wts = basis.get_quad_data(quad_order)
 			eval_pts = quad_pts
-			# eval_pts = basis.quad_pts
+
 			npts = eval_pts.shape[0]
 
 		basis_old.eval_basis(eval_pts, Get_Phi=True)
@@ -308,10 +303,7 @@ class ElemOperators(object):
 		# QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, EqnSet, None)
 		gbasis = mesh.gbasis
 		quad_order = gbasis.get_quadrature(mesh, order, physics = EqnSet)
-		# quadData = QuadData(mesh, basis, EntityType.Element, QuadOrder)
 		self.quad_pts, self.quad_wts = basis.get_quad_data(quad_order)
-		# self.quad_pts = basis.quad_pts
-		# self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -388,9 +380,6 @@ class IFaceOperators(ElemOperators):
 		gbasis = mesh.gbasis
 		quad_order = gbasis.get_face_quadrature(mesh,order,physics=EqnSet)
 		self.quad_pts, self.quad_wts = basis.get_face_quad_data(quad_order)
-		# quadData = QuadData(mesh, basis, EntityType.IFace, QuadOrder)
-		# self.quad_pts = basis.quad_pts
-		# self.quad_wts = basis.quad_wts
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later

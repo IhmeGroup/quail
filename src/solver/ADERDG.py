@@ -5,7 +5,7 @@ from scipy.linalg import solve_sylvester
 from data import ArrayList, GenericData
 import errors
 import general
-from general import SetSolverParams, BasisType, ShapeType, EntityType, ModalOrNodal
+from general import SetSolverParams, BasisType, ShapeType, ModalOrNodal
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
@@ -808,7 +808,7 @@ class ADERDG(DG.DG):
 		EqnSet = self.EqnSet
 		ns = EqnSet.NUM_STATE_VARS
 		Params = self.Params
-		entity = EntityType.Element
+
 		InterpolateFlux = Params["InterpolateFlux"]
 
 		elem_ops = self.elem_operators

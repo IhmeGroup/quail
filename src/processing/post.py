@@ -6,7 +6,6 @@ import sys
 
 from data import ArrayList
 import errors
-from general import EntityType
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as MeshTools
@@ -56,14 +55,8 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 		quad_order = basis.get_quadrature(mesh, 2*np.amax([Order,1]), physics=EqnSet)
 		gbasis = mesh.gbasis
 		xq, wq = gbasis.get_quad_data(quad_order)
-		# QuadOrder,QuadChanged = get_gaussian_quadrature_elem(mesh, basis, 2*np.amax([Order,1]), EqnSet, quadData)
-		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
-
-		# xq = gbasis.quad_pts
-		# wq = gbasis.quad_wts
 		nq = xq.shape[0]
 		
-		# PhiData = BasisData(basis,Order,mesh)
 		basis.eval_basis(xq, True, False, False, None)
 		xphys = np.zeros([nq, mesh.Dim])
 

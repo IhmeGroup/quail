@@ -12,14 +12,6 @@ np.set_printoptions(precision=15)
 # Constants
 eps = 1.e-15
 
-
-###
-class EntityType(Enum):
-    Element = auto()
-    IFace = auto()
-    BFace = auto()
-
-
 class ShapeType(Enum):
     Point = auto()
     Segment = auto()

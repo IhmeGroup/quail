@@ -5,8 +5,6 @@ from matplotlib import pyplot as plt
 import matplotlib.tri as tri
 import numpy as np
 
-# from general import *
-
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
