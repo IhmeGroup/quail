@@ -327,6 +327,14 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 
 	return U_pred
 
+def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
+
+	if basis.basis_val.shape[0] != quad_wts.shape[0]:
+		basis.eval_basis(quad_pts, Get_Phi=True)
+
+	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
+	U[:,:] = np.matmul(iMM, rhs)
+
 def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChanged=False):
     '''
     Function: ref_to_phys_time

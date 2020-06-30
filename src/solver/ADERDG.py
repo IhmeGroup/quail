@@ -22,6 +22,7 @@ global echeck
 echeck = -1
 
 import solver.ader_tools as solver_tools
+import solver.tools as dg_tools
 import solver.DG as DG
 
 
@@ -751,44 +752,34 @@ class ADERDG(DG.DG):
 		InterpolateFlux = Params["InterpolateFlux"]
 
 		elem_ops = self.elem_operators
+		elem_ops_st = self.elem_operators_st
 		djac_elems = elem_ops.djac_elems 
 		djac = djac_elems[elem]
 
 		rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],dtype=Up.dtype)
 		F = np.zeros_like(rhs)
 
-		if not InterpolateFlux:
-			ader_ops = self.ader_operators
-			elem_ops_st = self.elem_operators_st
-			basis_val_st = elem_ops_st.basis_val
-			quad_wts_st = elem_ops_st.quad_wts
-			nq_st = quad_wts_st.shape[0]
-			quad_pts = elem_ops.quad_pts
-			nq = quad_pts.shape[0]
-			Uq = np.matmul(basis_val_st, Up)
-			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq_st,ns,dim]
-			Fq = Fq.reshape(nq_st,ns)
-			iMM = ader_ops.iMM
-			
-			rhs *=0.
-
-			# for ir in range(ns):
-			# 	for k in range(nb): # Loop over basis function in space
-			# 		for i in range(nq): # Loop over time
-			# 			for j in range(nq): # Loop over space
-			# 				#Phi = PhiData.Phi[j,k]
-			# 				rhs[k,ir] += wq[i]*wq[j]*JData.djac[j*(JData.nq!=1)]*f[i,j,ir]*Phi[i,j,k]
-
-			rhs = np.matmul(basis_val_st.transpose(), Fq*(quad_wts_st*(np.tile(djac,(nq,1))))) # [nb, ns]
-
-			F = np.dot(iMM,rhs)*dt/2.0
-
-		else:
+		if Params["InterpolateFlux"]:
 
 			Fq = EqnSet.ConvFluxInterior(Up,F=None)
-			F = Fq*dt/2.0
+			dg_tools.interpolate_to_nodes(Fq, F)
+		else:
+			ader_ops = self.ader_operators
+			basis_val_st = elem_ops_st.basis_val
+			quad_wts_st = elem_ops_st.quad_wts
+			quad_wts = elem_ops.quad_wts
+			quad_pts_st = elem_ops_st.quad_pts
+			quad_pts = elem_ops.quad_pts
+			nq_st = quad_wts_st.shape[0]
+			nq = quad_wts.shape[0]
+			iMM = ader_ops.iMM_elems[elem]
 
-		return F
+			Uq = np.matmul(basis_val_st,Up)
+
+			Fq = EqnSet.ConvFluxInterior(Uq,F=None)
+			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
+
+		return F*dt/2.0
 
 	def source_coefficients(self, elem, dt, order, basis, Up):
 		'''
@@ -817,7 +808,7 @@ class ADERDG(DG.DG):
 		elem_ops_st = self.elem_operators_st
 		djac_elems = elem_ops.djac_elems 
 		djac = djac_elems[elem]
-		Sq = elem_ops_st.Sq
+		S = elem_ops_st.Sq
 
 		x_elems = elem_ops.x_elems
 		x = x_elems[elem]
@@ -828,44 +819,33 @@ class ADERDG(DG.DG):
 
 		TimePhiData = None
 
-		if not InterpolateFlux:
-			rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],dtype=Up.dtype)
-
-			ader_ops = self.ader_operators
-			basis_val_st = elem_ops_st.basis_val
-			quad_wts_st = elem_ops_st.quad_wts
-			nq_st = quad_wts_st.shape[0]
-			quad_pts_st = elem_ops_st.quad_pts
-			quad_pts = elem_ops.quad_pts
-			nq = quad_pts.shape[0]
-			Uq = np.matmul(basis_val_st, Up)
-			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq_st,ns,dim]
-			Fq = Fq.reshape(nq_st,ns)
-			iMM = ader_ops.iMM
-
-
-			t = np.zeros([nq_st,dim])
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
-
-			Uq = np.matmul(basis_val_st,Up)
-		
-			Sq[:] = 0.
-			Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
-
-			rhs *=0.
-
-			rhs[:] = np.matmul(basis_val_st.transpose(),Sq*quad_wts_st*(np.tile(djac,(nq,1)))) # [nb, ns]
-			S = np.dot(iMM,rhs)*dt/2.0
-
-		else:
-
+		if Params["InterpolateFlux"]:
 			xnode, nb = basis.equidistant_nodes(order)
 
 			t = np.zeros([nb,dim])
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xnode, t, None)
 			Sq = np.zeros([t.shape[0],ns])
-
 			Sq = EqnSet.SourceState(nb, x_ader, t, Up, Sq)
-			S = Sq*dt/2.0
 
-		return S
+			dg_tools.interpolate_to_nodes(Sq, S)
+		else:
+
+			ader_ops = self.ader_operators
+			basis_val_st = elem_ops_st.basis_val
+			quad_wts_st = elem_ops_st.quad_wts
+			quad_wts = elem_ops.quad_wts
+			quad_pts_st = elem_ops_st.quad_pts
+			nq_st = quad_wts_st.shape[0]
+			nq = quad_wts.shape[0]
+			iMM = ader_ops.iMM_elems[elem]
+			
+			Uq = np.matmul(basis_val_st,Up)
+
+			t = np.zeros([nq_st,dim])
+			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
+		
+			Sq = np.zeros([t.shape[0],ns])
+			Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]		
+			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Sq, S)
+
+		return S*dt/2.0

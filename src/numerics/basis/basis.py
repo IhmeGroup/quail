@@ -8,6 +8,7 @@ from general import BasisType, ShapeType, ModalOrNodal, QuadratureType
 import meshing.gmsh as mesh_gmsh
 
 import numerics.basis.tools as basis_tools
+import numerics.basis.basis as basis_defs
 # import numerics.quadrature.quadrature as quadrature
 from numerics.quadrature import segment, quadrilateral, triangle
 
@@ -503,6 +504,11 @@ class BasisBase(ABC):
         nq = quad_pts.shape[0]
         if basis is None:
             basis = mesh.gbasis
+
+        #Note: This logic is for ADER-DG when using a modal basis function
+        if basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
+            basis = basis_defs.LagrangeEqQuad(1,mesh=mesh)
+
         if xelem is None or xelem.shape != (nq, self.dim):
             xelem = np.zeros([nq, self.dim])
         xelem = basis.ref_face_to_elem(face, nq, quad_pts, xelem)
