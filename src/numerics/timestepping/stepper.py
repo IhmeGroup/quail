@@ -26,6 +26,8 @@ class StepperBase(ABC):
 	def __init__(self, dt=0.):
 		self.TimeStep = dt
 		self.dt = dt
+	def __repr__(self):
+		return '{self.__class__.__name__}(TimeStep={self.dt})'.format(self=self)
 	@abstractmethod
 	def TakeTimeStep(self, solver):
 		pass
@@ -68,7 +70,6 @@ class RK4(StepperBase):
 		DataSet = solver.DataSet
 		mesh = solver.mesh
 		U = EqnSet.U
-
 		# Residual, dU arrays
 		try: 
 			R = DataSet.R

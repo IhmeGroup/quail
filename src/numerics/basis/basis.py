@@ -419,6 +419,8 @@ class BasisBase(ABC):
         self.face = -1
         self.nb = 0
         self.quadrature_type = -1
+    def __repr__(self):
+        return '{self.__class__.__name__}(Order={self.order})'.format(self=self)
 
     def get_physical_grad(self, ijac):
         '''

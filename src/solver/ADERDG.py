@@ -339,7 +339,8 @@ class ADERDG(base.SolverBase):
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
-
+	def __repr__(self):
+		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   Basis: {self.basis},\n   Basis_st: {self.basis_st},\n   Stepper: {self.Stepper})'.format(self=self)
 	def check_compatibility(self):
 		'''
 		Method: check_compatibility

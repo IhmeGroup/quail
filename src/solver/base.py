@@ -59,7 +59,6 @@ class SolverBase(ABC):
 		self.basis.set_face_quadrature_type(Params["FaceQuadrature"])
 		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
-
 		# check for compatibility
 		# if mesh.gbasis.shape_type != self.basis.shape_type:
 		# 	raise errors.IncompatibleError
@@ -79,7 +78,8 @@ class SolverBase(ABC):
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
-
+	def __repr__(self):
+		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
 	def check_compatibility(self):
 		mesh = self.mesh 
 		Params = self.Params

@@ -131,7 +131,8 @@ class PhysicsBase(object):
 			raise errors.IncompatibleError
 
 		self.set_maps()
-
+	def __repr__(self):
+		return '{self.__class__.__name__}'.format(self=self)
 	def set_maps(self):
 
 		self.IC_fcn_map = {
