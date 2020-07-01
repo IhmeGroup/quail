@@ -69,9 +69,9 @@ solver.solve()
 # Error
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
-Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact = True, PlotIC = True, Label="u")
-Plot.ShowPlot()
+# Plot.PreparePlot()
+# Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact = True, PlotIC = True, Label="u")
+# Plot.ShowPlot()
 
 
 # code.interact(local=locals())

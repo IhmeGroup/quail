@@ -100,10 +100,10 @@ EqualAR = False
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
 Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
-	ShowTriangulation=False, EqualAR=EqualAR, show_elem_IDs=True)
+	show_triangulation=False, EqualAR=EqualAR, show_elem_IDs=True)
 Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
 Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
-	ShowTriangulation=False, EqualAR=EqualAR)
+	show_triangulation=False, EqualAR=EqualAR)
 Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
 Post.get_boundary_info(mesh, EqnSet, solver, "bottom", "Pressure", integrate=True, 
 		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")

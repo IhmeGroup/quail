@@ -24,8 +24,15 @@ for i in range(41):
 	mesh = solver.mesh
 	physics = solver.EqnSet
 
-	plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
-			ignore_legend=True)
+	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
+	# 		ignore_legend=True)
+	plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
+			include_mesh=False, regular_2D=False, equal_AR=False, ignore_legend=True)
+	plot.plot_solution(mesh, physics, solver, "Scalar", plot_exact=True, plot_numerical=False, create_new_figure=False, 
+			fmt='k-', ignore_legend=True)
+	plot.plot_solution(mesh, physics, solver, "Scalar", plot_IC=True, plot_numerical=False, create_new_figure=False, 
+			fmt='k--', ignore_legend=True)
 
 	imgs = ax.get_lines().copy()
 

@@ -16,7 +16,7 @@ import processing.plot as plot_defs
 
 
 
-def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=True):
+def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVolume=True):
 
 	Time = solver.Time
 	U = EqnSet.U
@@ -92,8 +92,8 @@ def L2_error(mesh,EqnSet,solver,VariableName,PrintError=True,NormalizeByVolume=T
 	return TotErr, ElemErr
 
 
-def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True, 
-		vec=0., dot_normal_with_vec=False, plot_vs_x=False, plot_vs_y=False, Label=None, **kwargs):
+def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, vec=0., dot_normal_with_vec=False, 
+		plot_vs_x=False, plot_vs_y=False, ylabel=None, fmt='k-', legend_label=None, **kwargs):
 
 	if mesh.Dim != 2:
 		raise errors.IncompatibleError
@@ -150,10 +150,10 @@ def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True
 		basis_val = faces_to_basis[face]
 
 		# interpolate state and gradient at quad points
-		Uq = np.matmul(basis_val, EqnSet.U[elem])
+		Uq = np.matmul(basis_val, physics.U[elem])
 
 		# Get requested variable
-		varq = EqnSet.ComputeScalars(variable_name, Uq) # [nq, 1]
+		varq = physics.ComputeScalars(var_name, Uq) # [nq, 1]
 
 		normals = normals_bfgroups[ibfgrp][ibface] # [nq, dim]
 		jac = np.linalg.norm(normals, axis=1, keepdims=True) # [nq, 1]
@@ -175,8 +175,10 @@ def get_boundary_info(mesh, EqnSet, solver, bname, variable_name, integrate=True
 	if plot:
 		plt.figure()
 		bvalues = bvalues.flatten()
-		SolnLabel = plot_defs.get_solution_label(EqnSet, variable_name, Label)
-		plot_defs.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True)
+		# SolnLabel = plot_defs.get_solution_label(EqnSet, variable_name, ylabel)
+		# plot_defs.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True, **kwargs)
+		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
+		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)
 
 

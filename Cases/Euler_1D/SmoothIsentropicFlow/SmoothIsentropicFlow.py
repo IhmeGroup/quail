@@ -51,9 +51,9 @@ solver.solve()
 # Error
 TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
 # Plot
-Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Energy", PlotExact=True, Equidistant=True, include_mesh=True, EqualAR=True, show_elem_IDs=True)
-Plot.ShowPlot()
+# Plot.PreparePlot()
+# Plot.PlotSolution(mesh, EqnSet, solver, "Energy", PlotExact=True, Equidistant=True, include_mesh=True, EqualAR=True, show_elem_IDs=True)
+# Plot.ShowPlot()
 
 
 # code.interact(local=locals())

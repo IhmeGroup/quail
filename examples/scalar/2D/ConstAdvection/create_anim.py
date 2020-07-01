@@ -28,8 +28,10 @@ for i in range(51):
 		ignore_colorbar = False
 	else:
 		ignore_colorbar = True
-	plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, Equidistant=True, PlotExact=False, include_mesh=True, 
-			Regular2D=True, ShowTriangulation=False, show_elem_IDs=True, ignore_colorbar=ignore_colorbar)
+	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, Equidistant=True, PlotExact=False, include_mesh=True, 
+	# 		Regular2D=True, show_triangulation=False, show_elem_IDs=True, ignore_colorbar=ignore_colorbar)
+	plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, create_new_figure=False, 
+			include_mesh=True, regular_2D=True, equal_AR=False, show_elem_IDs=True, ignore_colorbar=ignore_colorbar)
 
 	imgs = ax.collections.copy()
 

@@ -94,11 +94,63 @@ def Plot1D(EqnSet, x, u, SolnLabel, VariableName=None, u_exact=None, u_IC=None,
 		u_IC.shape = nplot,-1
 		u_i = EqnSet.ComputeScalars(VariableName, u_IC)
 		plt.plot(x,u_i,'k--',label="Initial")
-	plt.plot(x,uplot,'bo',label="DG") 
+
+	if "legend_label" in kwargs:
+		legend_label = kwargs["legend_label"]
+	else:
+		legend_label = "DG"
+	plt.plot(x,uplot,'bo',label=legend_label) 
 	plt.ylabel(SolnLabel)
 
 
-def triangulate(EqnSet, x, u, variable_name):
+def plot_1D(EqnSet, x, var_plot, ylabel, fmt, legend_label, **kwargs):
+	### reshape
+	# uplot = u[:,:,iplot]
+	# uplot = np.reshape(uplot, (-1,))
+	# u_exact = np.reshape(u_exact, (-1,1))
+	# x = np.reshape(x, (-1,))
+	# nplot = x.shape[0]
+	# u.shape = nplot,-1
+	# if not u_var_calculated:
+	# 	uplot = EqnSet.ComputeScalars(VariableName, u)
+	# else:
+	# 	# assume desired variable already calculated
+	# 	uplot = u
+
+	# Reshape
+	x = np.reshape(x, (-1,))
+	var_plot = np.reshape(var_plot, x.shape)
+
+	### sort
+	idx = np.argsort(x)
+	idx.flatten()
+	x = x[idx]
+	var_plot = var_plot[idx]
+	# u_exact = u_exact[idx]
+
+	# if u_exact is not None: 
+	# 	# u_ex = u_exact[:,:,iplot]
+	# 	# u_ex.shape = -1,
+	# 	u_exact.shape = nplot,-1
+	# 	u_ex = EqnSet.ComputeScalars(VariableName, u_exact)
+	# 	plt.plot(x,u_ex,'k-',label="Exact")
+
+	# if u_IC is not None: 
+	# 	# u_ex = u_exact[:,:,iplot]
+	# 	# u_ex.shape = -1,
+	# 	u_IC.shape = nplot,-1
+	# 	u_i = EqnSet.ComputeScalars(VariableName, u_IC)
+	# 	plt.plot(x,u_i,'k--',label="Initial")
+
+	# if "legend_label" in kwargs:
+	# 	legend_label = kwargs["legend_label"]
+	# else:
+	# 	legend_label = "DG"
+	plt.plot(x, var_plot, fmt, label=legend_label) 
+	plt.ylabel(ylabel)
+
+
+def triangulate(EqnSet, x, var):
 	### Remove duplicates
 	x.shape = -1,2
 	nold = x.shape[0]
@@ -107,21 +159,21 @@ def triangulate(EqnSet, x, u, variable_name):
 	### Flatten
 	X = x[:,0].flatten()
 	Y = x[:,1].flatten()
-	u.shape = nold,-1
-	U = EqnSet.ComputeScalars(variable_name, u).flatten()
+	var.shape = nold,-1
+	# U = EqnSet.ComputeScalars(variable_name, u).flatten()
 	# U = u[:,:,iplot].flatten()
-	U = U[idx]
+	var = var.flatten()[idx]
 
 	### Triangulation
 	triang = tri.Triangulation(X, Y)
 	# refiner = tri.UniformTriRefiner(triang)
 	# tris, utri = refiner.refine_field(U, subdiv=0)
-	tris = triang; utri = U
+	tris = triang; var_tris = var
 
-	return tris, utri
+	return tris, var_tris
 
 
-def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwargs):
+def Plot2D_Regular(EqnSet, x, var_plot, **kwargs):
 	'''
 	Function: Plot2D
 	-------------------
@@ -160,27 +212,27 @@ def Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 	# # tris, utri = refiner.refine_field(U, subdiv=0)
 	# tris = triang; utri = U
 
-	tris, utri = triangulate(EqnSet, x, u, VariableName)
+	tris, var_tris = triangulate(EqnSet, x, var_plot)
 	if "nlevels" in kwargs:
-		TCF = plt.tricontourf(tris, utri, kwargs["nlevels"])
+		TCF = plt.tricontourf(tris, var_tris, kwargs["nlevels"])
 	elif "levels" in kwargs:
-		TCF = plt.tricontourf(tris, utri, levels=kwargs["levels"])
+		TCF = plt.tricontourf(tris, var_tris, levels=kwargs["levels"])
 	else:
-		TCF = plt.tricontourf(tris, utri)
+		TCF = plt.tricontourf(tris, var_tris)
 
 	### Plot contours 
 	# cb = plt.colorbar()
 	# cb.ax.set_title(SolnLabel)
 	# plt.ylabel("$y$")
-	if "ShowTriangulation" in kwargs:
-		if kwargs["ShowTriangulation"]: 
-			plt.triplot(triang, lw=0.5, color='white')
+	if "show_triangulation" in kwargs:
+		if kwargs["show_triangulation"]: 
+			plt.triplot(tris, lw=0.5, color='white')
 	# plt.axis("equal")
 
 	return TCF.levels
 
 
-def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwargs):
+def Plot2D_General(EqnSet, x, var_plot, **kwargs):
 	'''
 	Function: Plot2D
 	-------------------
@@ -215,7 +267,7 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 		# plt.close(figtmp)
 
 		figtmp = plt.figure()
-		levels = Plot2D_Regular(EqnSet, np.copy(x), np.copy(u), VariableName, SolnLabel, **kwargs)
+		levels = Plot2D_Regular(EqnSet, np.copy(x), np.copy(var_plot), **kwargs)
 		# plt.colorbar()
 		# ShowPlot()
 		plt.close(figtmp)
@@ -235,7 +287,7 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 		# triang = tri.Triangulation(X, Y)
 		# tris = triang; utri = U
 
-		tris, utri = triangulate(EqnSet, x[elem], u[elem], VariableName)
+		tris, utri = triangulate(EqnSet, x[elem], var_plot[elem])
 		# Plot
 		plt.tricontourf(tris, utri, levels=levels, extend="both")
 		# if "nlevels" in kwargs:
@@ -244,16 +296,35 @@ def Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR=False, **kwarg
 		# 	plt.tricontourf(tris, utri, levels=kwargs["levels"], extend="both")
 		# else:
 		# 	plt.tricontourf(tris, utri)
-		if "ShowTriangulation" in kwargs:
-			if kwargs["ShowTriangulation"]: 
+		if "show_triangulation" in kwargs:
+			if kwargs["show_triangulation"]: 
 				plt.triplot(triang, lw=0.5, color='white')
 
 
-def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kwargs):
-	if Regular2D:
-		Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
+# def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kwargs):
+# 	if Regular2D:
+# 		Plot2D_Regular(EqnSet, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
+# 	else:
+# 		Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
+
+# 	''' Label plot '''
+# 	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
+# 		pass 
+# 		# do nothing
+# 	else:
+# 		cb = plt.colorbar()
+# 		cb.ax.set_title(SolnLabel)
+# 	plt.ylabel("$y$")
+# 	if EqualAR:
+# 		plt.gca().set_aspect('equal', adjustable='box')
+# 	# plt.axis("equal")
+
+
+def plot_2D(EqnSet, x, var_plot, ylabel, regular_2D, equal_AR=False, **kwargs):
+	if regular_2D:
+		Plot2D_Regular(EqnSet, x, var_plot, **kwargs)
 	else:
-		Plot2D_General(EqnSet, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
+		Plot2D_General(EqnSet, x, var_plot, **kwargs)
 
 	''' Label plot '''
 	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
@@ -261,9 +332,9 @@ def Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kw
 		# do nothing
 	else:
 		cb = plt.colorbar()
-		cb.ax.set_title(SolnLabel)
+		cb.ax.set_title(ylabel)
 	plt.ylabel("$y$")
-	if EqualAR:
+	if equal_AR:
 		plt.gca().set_aspect('equal', adjustable='box')
 	# plt.axis("equal")
 
@@ -280,17 +351,23 @@ def finalize_plot(xlabel="x", **kwargs):
 		plt.legend(loc="best")
 
 
-def interpolate_2D_soln_to_points(EqnSet, x, u, xpoints, variable_name):
-	tris, utri = triangulate(EqnSet, x, u, variable_name)
+def interpolate_2D_soln_to_points(EqnSet, x, var, xpoints):
+	tris, utri = triangulate(EqnSet, x, var)
 	interpolator = tri.LinearTriInterpolator(tris, utri)
 
-	upoints = interpolator(xpoints[:,0], xpoints[:,1])
+	var_points = interpolator(xpoints[:,0], xpoints[:,1])
 
-	return upoints
+	return var_points
 
 
-def plot_line_probe(mesh, EqnSet, solver, variable_name, xy1, xy2, nPoint=101, PlotExact=False, PlotIC=False, 
-		Label=None, vs_x=True, **kwargs):
+def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, nPoint=101, plot_numerical=True, plot_exact=False,
+		plot_IC=False, create_new_figure=True, ylabel=None, vs_x=True, fmt="k-", legend_label=None, **kwargs):
+
+	plot_sum = plot_numerical + plot_exact + plot_IC
+	if plot_sum >= 2:
+		raise ValueError("Can only plot one solution at a time")
+	elif plot_sum == 0:
+		raise ValueError("Need to plot a solution")
 
 	# Construct points on line segment
 	x1 = xy1[0]; y1 = xy1[1]
@@ -299,12 +376,15 @@ def plot_line_probe(mesh, EqnSet, solver, variable_name, xy1, xy2, nPoint=101, P
 	yline = np.linspace(y1, y2, nPoint)
 
 	# Interpolation
-	x, u = get_sample_points(mesh, EqnSet, solver.basis, True)
+	x = get_sample_points(mesh, physics, solver.basis, True)
 	xyline = np.array([xline,yline]).transpose()
-	uline = interpolate_2D_soln_to_points(EqnSet, x, u, xyline, variable_name)
+	# U_line = interpolate_2D_soln_to_points(EqnSet, x, u, xyline, var_name)
+
+	if create_new_figure:
+		plt.figure()
 
 	# Analytical?
-	u_exact, u_IC = get_analytical_solution(EqnSet, xyline, solver.Time, PlotExact, PlotIC)
+	# u_exact, u_IC = get_analytical_solution(EqnSet, xyline, solver.Time, PlotExact, PlotIC)
 	# if u_exact is not None:
 	# 	u_exact = EqnSet.ComputeScalars(VariableName, u_exact)
 	# 	# u_exact = interpolate_2D_soln_to_points(EqnSet, x, u_exact, xyline, variable_name)
@@ -312,16 +392,31 @@ def plot_line_probe(mesh, EqnSet, solver, variable_name, xy1, xy2, nPoint=101, P
 	# 	u_IC = EqnSet.ComputeScalars(VariableName, u_IC)
 		# u_IC = interpolate_2D_soln_to_points(EqnSet, x, u_IC, xyline, variable_name)
 
-	SolnLabel = get_solution_label(EqnSet, variable_name, Label)
+	if plot_numerical:
+		var = get_numerical_solution(physics, physics.U, x, solver.basis, var_name)
+		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
+		default_label = "Numerical"
+	elif plot_exact:
+		var_plot = get_analytical_solution(physics, physics.ExactSoln, xyline, solver.Time, var_name)
+		default_label = "Exact"
+	elif plot_IC:
+		var_plot = get_analytical_solution(physics, physics.IC, xyline, 0., var_name)
+		default_label = "Initial"
 
-	plt.figure()
+	if legend_label is None:
+		legend_label = default_label
+
+	# SolnLabel = get_solution_label(EqnSet, variable_name, Label)
+	ylabel = get_ylabel(physics, var_name, ylabel)
+
 	if vs_x:
 		xlabel = "x"
 		line = xline
 	else:
 		xlabel = "y"
 		line = yline
-	Plot1D(EqnSet, line, uline, SolnLabel, variable_name, u_exact, u_IC, u_var_calculated=True, **kwargs)
+	plot_1D(physics, line, var_plot, ylabel, fmt, legend_label, **kwargs)
+	# Plot1D(EqnSet, line, uline, SolnLabel, var_name, u_exact, u_IC, u_var_calculated=True, **kwargs)
 
 	# code.interact(local=locals())
 
@@ -357,7 +452,7 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 		# xpoint = gbasis.quad_pts
 		npoint = xpoint.shape[0]
 
-	u = np.zeros([mesh.nElem,npoint,sr])
+	# u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
 	# PhiData = Basis.BasisData(EqnSet.Basis,Order,mesh)
@@ -369,94 +464,174 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 
 		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
 		x[el,:,:] = xphys
-		u[el,:,:] = np.matmul(basis.basis_val, U_)
+		# u[el,:,:] = np.matmul(basis.basis_val, U_)
 
 		el += 1
 
-	return x, u
+	return x
 
 
-def get_analytical_solution(EqnSet, x, time, get_exact, get_IC, u=None):
-	# Exact solution?
-	if get_exact:
-		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,EqnSet.dim)), t=time)
-		if u is not None: u_exact.shape = u.shape
-	else:
-		u_exact = None
-	# IC ?
-	if get_IC:
-		u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,EqnSet.dim)), t=0.)
-		if u is not None: u_IC.shape = u.shape
-	else:
-		u_IC = None
+def get_analytical_solution(physics, fcn_data, x, time, var_name):
 
-	return u_exact, u_IC
-
-
-def get_solution_label(EqnSet, variable_name, label=None):
-	if label is None:
-		try:
-			label = EqnSet.StateVariables[variable_name].value
-		except KeyError:
-			label = EqnSet.AdditionalVariables[variable_name].value
-	soln_label = "$" + label + "$"
-
-	return soln_label
-
-
-def PlotSolution(mesh, EqnSet, solver, VariableName, create_new_figure=True, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
-	include_mesh=False, Regular2D=False, EqualAR=False, **kwargs):
-
-	# iplot_sr = EqnSet.VariableType[VariableName]
-	if PlotExact:
-		# if not EqnSet.ExactSoln.Function:
-		if EqnSet.ExactSoln is None:
-			raise Exception("No exact solution provided")
-
-	## Extract params
-	EndTime = solver.Time
-	dim = mesh.Dim
-
-	# Get sample points
-	x, u = get_sample_points(mesh, EqnSet, solver.basis, Equidistant)
+	Uplot = physics.CallFunction(fcn_data, x=np.reshape(x, (-1, physics.dim)), t=time)
+	var_plot = physics.ComputeScalars(var_name, Uplot)
+	# var_plot.shape = x.shape[0], x.shape[1], -1
+	# if u is not None: u_IC.shape = u.shape
 
 	# # Exact solution?
-	# if PlotExact:
-	# 	u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,dim)), Time=EndTime)
-	# 	u_exact.shape = u.shape
+	# if get_exact:
+	# 	u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,EqnSet.dim)), t=time)
+	# 	if u is not None: u_exact.shape = u.shape
 	# else:
 	# 	u_exact = None
 	# # IC ?
-	# if PlotIC:
-	# 	u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,dim)),Time=0.)
-	# 	u_IC.shape = u.shape
+	# if get_IC:
+	# 	u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,EqnSet.dim)), t=0.)
+	# 	if u is not None: u_IC.shape = u.shape
 	# else:
 	# 	u_IC = None
-	# Solution label
 
-	u_exact, u_IC = get_analytical_solution(EqnSet, x, EndTime, PlotExact, PlotIC, u)
+	return var_plot
 
-	# if Label is None:
-	# 	try:
-	# 		Label = EqnSet.StateVariables[VariableName].value
-	# 	except KeyError:
-	# 		Label = EqnSet.AdditionalVariables[VariableName].value
-	# SolnLabel = "$" + Label + "$"
 
-	SolnLabel = get_solution_label(EqnSet, VariableName, Label)
+def get_numerical_solution(physics, U, x, basis, var_name, already_interpolated=False):
+	GeomPhiData = None
+
+	if already_interpolated:
+		var_numer = physics.ComputeScalars(var_name, U)
+	else:
+		var_numer = np.zeros([x.shape[0], x.shape[1], 1])
+		for elem in range(x.shape[0]):
+			Up = np.matmul(basis.basis_val, U[elem])
+			var_numer[elem,:,:] = physics.ComputeScalars(var_name, Up)
+
+	return var_numer
+
+
+def get_ylabel(physics, variable_name, ylabel=None):
+	if ylabel is None:
+		try:
+			ylabel = physics.StateVariables[variable_name].value
+		except KeyError:
+			ylabel = physics.AdditionalVariables[variable_name].value
+		ylabel = "$" + ylabel + "$"
+
+	return ylabel
+
+
+# def PlotSolution(mesh, EqnSet, solver, VariableName, create_new_figure=True, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
+# 	include_mesh=False, Regular2D=False, EqualAR=False, **kwargs):
+
+# 	# iplot_sr = EqnSet.VariableType[VariableName]
+# 	if PlotExact:
+# 		# if not EqnSet.ExactSoln.Function:
+# 		if EqnSet.ExactSoln is None:
+# 			raise Exception("No exact solution provided")
+
+# 	## Extract params
+# 	EndTime = solver.Time
+# 	dim = mesh.Dim
+
+# 	# Get sample points
+# 	x, u = get_sample_points(mesh, EqnSet, solver.basis, Equidistant)
+
+# 	# # Exact solution?
+# 	# if PlotExact:
+# 	# 	u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=np.reshape(x, (-1,dim)), Time=EndTime)
+# 	# 	u_exact.shape = u.shape
+# 	# else:
+# 	# 	u_exact = None
+# 	# # IC ?
+# 	# if PlotIC:
+# 	# 	u_IC = EqnSet.CallFunction(EqnSet.IC, x=np.reshape(x,(-1,dim)),Time=0.)
+# 	# 	u_IC.shape = u.shape
+# 	# else:
+# 	# 	u_IC = None
+# 	# Solution label
+
+# 	u_exact, u_IC = get_analytical_solution(EqnSet, x, EndTime, PlotExact, PlotIC, u)
+
+# 	# if Label is None:
+# 	# 	try:
+# 	# 		Label = EqnSet.StateVariables[VariableName].value
+# 	# 	except KeyError:
+# 	# 		Label = EqnSet.AdditionalVariables[VariableName].value
+# 	# SolnLabel = "$" + Label + "$"
+
+# 	SolnLabel = get_solution_label(EqnSet, VariableName, Label)
+
+# 	# Plot solution
+# 	if create_new_figure:
+# 		plt.figure()
+
+# 	if dim == 1:
+# 		Plot1D(EqnSet, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
+# 	else:
+# 		if PlotExact: u = u_exact # plot either only numerical or only exact
+# 		Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)
+
+# 	### Finalize plot
+# 	finalize_plot(**kwargs)
+
+# 	# plt.xlabel("$x$")
+# 	# ax = plt.gca()
+# 	# handles, labels = ax.get_legend_handles_labels()
+# 	# if handles != []:
+# 	# 	# only create legend if handles can be found
+# 	# 	plt.legend(loc="best")
+
+# 	# if dim == 1 and include_mesh:
+# 	# 	plot_mesh_1D(mesh, **kwargs)
+# 	# elif dim == 2 and include_mesh:
+# 	# 	PlotMesh2D(mesh, **kwargs)
+
+# 	if include_mesh:
+# 		plot_mesh(mesh, **kwargs)
+
+
+def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+			ylabel=None, fmt='k-', legend_label=None, equidistant_pts=True, 
+			include_mesh=False, regular_2D=False, equal_AR=False, **kwargs):
+
+	plot_sum = plot_numerical + plot_exact + plot_IC
+	if plot_sum >= 2:
+		raise ValueError("Can only plot one solution at a time")
+	elif plot_sum == 0:
+		raise ValueError("Need to plot a solution")
+
+	## Extract params
+	time = solver.Time
+	dim = mesh.Dim
+
+	# Get sample points
+	x = get_sample_points(mesh, physics, solver.basis, equidistant_pts)
+
+	if plot_numerical:
+		var_plot = get_numerical_solution(physics, physics.U, x, solver.basis, var_name)
+		default_label = "Numerical"
+	elif plot_exact:
+		var_plot = get_analytical_solution(physics, physics.ExactSoln, x, time, var_name)
+		var_plot.shape = x.shape[0], x.shape[1], -1
+		default_label = "Exact"
+	elif plot_IC:
+		var_plot = get_analytical_solution(physics, physics.IC, x, 0., var_name)
+		var_plot.shape = x.shape[0], x.shape[1], -1
+		default_label = "Initial"
+
+	if legend_label is None:
+		legend_label = default_label
+
+	ylabel = get_ylabel(physics, var_name, ylabel)
 
 	# Plot solution
 	if create_new_figure:
 		plt.figure()
 
 	if dim == 1:
-		Plot1D(EqnSet, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
+		plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, **kwargs)
 	else:
-		if PlotExact: u = u_exact # plot either only numerical or only exact
-		Plot2D(EqnSet, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)
-
-	### Finalize plot
-	finalize_plot(**kwargs)
+		# if PlotExact: u = u_exact # plot either only numerical or only exact
+		plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR, **kwargs)
 
 	# plt.xlabel("$x$")
 	# ax = plt.gca()
@@ -472,6 +647,9 @@ def PlotSolution(mesh, EqnSet, solver, VariableName, create_new_figure=True, Plo
 
 	if include_mesh:
 		plot_mesh(mesh, **kwargs)
+
+	### Finalize plot
+	finalize_plot(**kwargs)
 
 
 def plot_mesh(mesh, EqualAR=False, **kwargs):

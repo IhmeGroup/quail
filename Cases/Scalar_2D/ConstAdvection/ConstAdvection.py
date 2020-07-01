@@ -79,11 +79,11 @@ TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
-Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
-	Regular2D=True, ShowTriangulation=False)
-Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
-Plot.ShowPlot()
+# Plot.PreparePlot(axis=axis, linewidth=0.5)
+# Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
+# 	Regular2D=True, show_triangulation=False)
+# Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+# Plot.ShowPlot()
 
 # U = EqnSet.U.Arrays[0]
 # code.interact(local=locals())

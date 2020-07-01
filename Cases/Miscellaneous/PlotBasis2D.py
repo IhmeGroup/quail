@@ -18,7 +18,7 @@ b = 3 # which basis fcn to plot
 
 ### Grid
 p_plot = 50 # plot at Lagrange nodes corresponding to p_plot
-xp, np = equidistant_nodes(basis, p_plot)
+xp, npoint = equidistant_nodes(basis, p_plot)
 
 
 ### Evaluate basis functions
