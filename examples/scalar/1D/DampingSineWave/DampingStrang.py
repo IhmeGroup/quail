@@ -17,7 +17,7 @@ Numerics = {
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
     "ConvFluxSwitch" : True,
-    "SourceTreatment" : "Implicit"
+    # "SourceTreatment" : "Implicit"
 }
 
 Output = {

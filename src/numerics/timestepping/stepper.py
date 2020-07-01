@@ -5,6 +5,7 @@ import numpy as np
 from data import ArrayList
 from general import StepperType
 from solver.tools import mult_inv_mass_matrix
+import numerics.basis.tools as basis_tools
 import solver.tools as solver_tools
 
 def set_stepper(TimeScheme):
@@ -291,7 +292,7 @@ class Strang(StepperBase):
 		U = EqnSet.U
 		#First: take the half-step for the inviscid flux only
 		explicit = SSPRK3(self.dt/2.)
-		implicit = self.Trapezoidal(self.dt)
+		implicit = self.IE(self.dt)
 		solver.Params["SourceSwitch"] = False
 		R1 = explicit.TakeTimeStep(solver)
 		#Second: take the implicit full step for the source term.
@@ -305,9 +306,11 @@ class Strang(StepperBase):
 		solver.Params["ConvFluxSwitch"] = True
 		R3 = explicit.TakeTimeStep(solver)
 
-		return R2
+		return R3
 
-	class Trapezoidal(StepperBase):
+	class IE(StepperBase):
+
+		BETA = 1.0
 
 		def TakeTimeStep(self, solver):
 
@@ -330,7 +333,7 @@ class Strang(StepperBase):
 			R = solver.calculate_residual(U,R)
 			mult_inv_mass_matrix(mesh, solver, self.dt, R, dU)
 
-			A, iA = solver_tools.get_jacobian_matrix(mesh, solver)
+			A, iA = self.get_jacobian_matrix(mesh, solver)
 
 			R = np.einsum('ijkl,ikl->ijl',A,U) + dU
 			U = np.einsum('ijkl,ikl->ijl',iA,R)
@@ -339,4 +342,61 @@ class Strang(StepperBase):
 			solver.apply_limiter(U)
 
 			return R
+		def get_jacobian_matrix(self, mesh, solver):
+
+				basis = solver.basis
+				nb = basis.nb
+				DataSet = solver.DataSet
+				physics = solver.EqnSet
+				Up = physics.U
+				ns = physics.NUM_STATE_VARS
+
+				try:
+					MMinv_all = DataSet.MMinv_all
+				except AttributeError:
+					# not found; need to compute
+					MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
+					DataSet.MMinv_all = MMinv_all
+				
+				A = np.zeros([mesh.nElem, nb, nb, ns])
+				iA = np.zeros([mesh.nElem, nb, nb, ns])
+
+				for elem in range(mesh.nElem):
+					A[elem],iA[elem] = self.get_jacobian_matrix_elem(solver, elem, MMinv_all[elem], Up[elem])
+				return A, iA
+
+		def get_jacobian_matrix_elem(self, solver, elem, iMM, Up):
+
+			beta = self.BETA
+			dt = solver.Stepper.dt
+			physics = solver.EqnSet
+			Sources = physics.Sources
+
+			elem_ops = solver.elem_operators
+			basis_val = elem_ops.basis_val
+			quad_wts = elem_ops.quad_wts
+			nq = quad_wts.shape[0]
+			ns = physics.NUM_STATE_VARS
+			nb = basis_val.shape[1]
+			Uq = np.matmul(basis_val, Up)
+			'''
+			Evaluate the source term jacobian
+			'''
+			jac = np.zeros([nq,ns,ns])
+			for Source in Sources:
+				jac += Source.get_jacobian(Uq)
+			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)
+
+			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt*np.einsum('ij,jkl->ijl',iMM,dRdU)
+			iA = np.zeros_like(A)
+			for s in range(ns):
+				iA[:,:,s] = np.linalg.inv(A[:,:,s])
+			return A, iA
+	class Trapezoidal(IE):
+		BETA = 0.5
+
+		def TakeTimeStep(self, solver):
+			super().TakeTimeStep(solver)
+
+
 
