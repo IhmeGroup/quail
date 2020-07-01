@@ -8,6 +8,8 @@ TimeStepping = {
     "EndTime" : 1.,
     "nTimeStep" : 100,
     "TimeScheme" : "RK4",
+    "OperatorSplitting_Exp" : "SSPRK3",
+    "OperatorSplitting_Imp" : "BDF1",
 }
 
 Numerics = {

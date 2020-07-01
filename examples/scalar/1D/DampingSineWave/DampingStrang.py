@@ -9,6 +9,8 @@ TimeStepping = {
     "EndTime" : EndTime,
     "nTimeStep" : nTimeStep,
     "TimeScheme" : "Strang",
+    "OperatorSplitting_Imp" : "BDF1",
+
 }
 
 Numerics = {
@@ -17,7 +19,7 @@ Numerics = {
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
     "ConvFluxSwitch" : True,
-    # "SourceTreatment" : "Implicit"
+    "SourceTreatment" : "Implicit"
 }
 
 Output = {
@@ -40,7 +42,7 @@ Physics = {
     "ConstVelocity" : 1.,
 }
 
-nu = -10000.
+nu = -100000.
 InitialCondition = {
     "Function" : "DampingSine",
     "omega" : 2*np.pi,

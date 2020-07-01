@@ -1,6 +1,6 @@
 import code
 cfl = 0.1
-tfinal = 0.1
+tfinal = 0.3
 dt = cfl*0.01
 nTimeStep = int(tfinal/dt)
 
@@ -8,14 +8,15 @@ TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : tfinal,
     "nTimeStep" : nTimeStep,
-    "TimeScheme" : "SSPRK3",
+    "TimeScheme" : "Strang",
 }
 
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
-    "ApplyLimiter" : "ScalarPositivityPreserving", 
+    # "ApplyLimiter" : "ScalarPositivityPreserving", 
+    "SourceTreatment" : "Explicit"
 
 }
 
@@ -59,7 +60,7 @@ BoundaryConditions = {
         "BCType" : "Extrapolate",
     },
 }
-nu = 1000.
+nu = 2000.
 SourceTerms = {
     "source1" : {
         "Function" : "StiffSource",

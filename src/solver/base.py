@@ -47,8 +47,7 @@ class SolverBase(ABC):
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
-		TimeScheme = Params["TimeScheme"]
-		self.Stepper = stepper.set_stepper(TimeScheme)
+		self.Stepper = stepper.set_stepper(Params)
 
 		# Set the basis functions for the solver
 		basis_name  = Params["InterpBasis"]

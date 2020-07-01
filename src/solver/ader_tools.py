@@ -219,11 +219,10 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 
 	# U_bar = fsolve(F, W_bar)
 
-	jac = 0.0
-	# jac = np.zeros([1,ns,ns])
+	jac_q = np.zeros([1,ns,ns])
 	for Source in Sources:
-		jac += Source.get_jacobian(W_bar)
-
+		jac_q += Source.get_jacobian(W_bar)
+	jac = jac_q[0,:,:]
 	Kp = K-MM*dt*jac 
 	iK = np.linalg.inv(Kp)
 

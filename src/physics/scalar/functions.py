@@ -182,15 +182,14 @@ class StiffSource(SourceBase):
 		U = FcnData.U
 
 		S = -nu*U*(U-1.)*(U-beta)
-
 		return S
 
 	def get_jacobian(self, U):
+		jac = np.zeros([U.shape[0],U.shape[-1],U.shape[-1]])
 		nu = self.nu
 		beta = self.beta
-		return -nu*(3.*U**2-2.*U-2.*beta*U+beta)
-		# return nu*(2.*U-3.*U**2-beta+2.*beta*U)
-
+		jac[:,0,0] =  -nu*(3.*U[:,0]**2-2.*U[:,0]-2.*beta*U[:,0]+beta)
+		return jac
 
 
 

@@ -46,6 +46,10 @@ class StepperType(Enum):
     ADER = auto()
     Strang = auto()
 
+class ODESolverType(Enum):
+    BDF1 = auto()
+    Trapezoidal = auto()
+
 class PhysicsType(Enum):
     ConstAdvScalar = auto()
     Burgers = auto()

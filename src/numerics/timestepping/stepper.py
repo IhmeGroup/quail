@@ -3,12 +3,13 @@ import code
 import numpy as np 
 
 from data import ArrayList
-from general import StepperType
+from general import StepperType, ODESolverType
 from solver.tools import mult_inv_mass_matrix
 import numerics.basis.tools as basis_tools
 import solver.tools as solver_tools
 
-def set_stepper(TimeScheme):
+def set_stepper(Params):
+	TimeScheme = Params["TimeScheme"]
 	if StepperType[TimeScheme] == StepperType.FE:
 		stepper = FE()
 	elif StepperType[TimeScheme] == StepperType.RK4:
@@ -19,6 +20,7 @@ def set_stepper(TimeScheme):
 		stepper = SSPRK3()
 	elif StepperType[TimeScheme] == StepperType.Strang:
 		stepper = Strang()
+		stepper.set_split_schemes(Params["OperatorSplitting_Exp"],Params["OperatorSplitting_Imp"])
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
@@ -284,15 +286,29 @@ class ADER(StepperBase):
 
 class Strang(StepperBase):
 
+	def set_split_schemes(self, explicit, implicit):
+		param = {"TimeScheme":explicit}
+		self.explicit = set_stepper(param)
+
+		if ODESolverType[implicit] == ODESolverType.BDF1:
+			self.implicit = self.BDF1()
+		elif ODESolverType[implicit] == ODESolverType.Trapezoidal:
+			self.implicit = self.Trapezoidal()
+		else:
+			raise NotImplementedError("Time scheme not supported")
+
 	def TakeTimeStep(self, solver):
 
 		EqnSet = solver.EqnSet
 		DataSet = solver.DataSet
 		mesh  = solver.mesh
 		U = EqnSet.U
+
+		explicit = self.explicit
+		explicit.dt = self.dt/2.
+		implicit = self.implicit
+		implicit.dt = self.dt
 		#First: take the half-step for the inviscid flux only
-		explicit = SSPRK3(self.dt/2.)
-		implicit = self.IE(self.dt)
 		solver.Params["SourceSwitch"] = False
 		R1 = explicit.TakeTimeStep(solver)
 		#Second: take the implicit full step for the source term.
@@ -308,7 +324,7 @@ class Strang(StepperBase):
 
 		return R3
 
-	class IE(StepperBase):
+	class BDF1(StepperBase):
 
 		BETA = 1.0
 
@@ -392,7 +408,7 @@ class Strang(StepperBase):
 			for s in range(ns):
 				iA[:,:,s] = np.linalg.inv(A[:,:,s])
 			return A, iA
-	class Trapezoidal(IE):
+	class Trapezoidal(BDF1):
 		BETA = 0.5
 
 		def TakeTimeStep(self, solver):
