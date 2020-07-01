@@ -72,12 +72,12 @@ class LaxFriedrichs(ConvNumFluxBase):
 			n = u.shape[0]
 		else:
 			n = 0
-		self.FL = np.zeros_like(u)
-		self.FR = np.zeros_like(u)
-		self.du = np.zeros_like(u)
-		self.a = np.zeros([n,1])
-		self.aR = np.zeros([n,1])
-		self.idx = np.empty([n,1], dtype=bool) 
+		# self.FL = np.zeros_like(u)
+		# self.FR = np.zeros_like(u)
+		# self.du = np.zeros_like(u)
+		# self.a = np.zeros([n,1])
+		# self.aR = np.zeros([n,1])
+		# self.idx = np.empty([n,1], dtype=bool) 
 
 	def AllocHelperArrays(self, u):
 		self.__init__(u)
@@ -100,29 +100,29 @@ class LaxFriedrichs(ConvNumFluxBase):
 		'''
 
 		# Extract helper arrays
-		FL = self.FL
-		FR = self.FR 
-		du = self.du 
-		a = self.a 
-		aR = self.aR 
-		idx = self.idx 
+		# FL = self.FL
+		# FR = self.FR 
+		# du = self.du 
+		# a = self.a 
+		# aR = self.aR 
+		# idx = self.idx 
 
 		n_mag = np.linalg.norm(normals, axis=1, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left State
-		FL[:] = physics.ConvFluxProjected(UpL, n_hat)
+		FL = physics.ConvFluxProjected(UpL, n_hat)
 
 		# Right State
-		FR[:] = physics.ConvFluxProjected(UpR, n_hat)
+		FR = physics.ConvFluxProjected(UpR, n_hat)
 
-		du[:] = UpR-UpL
+		du = UpR-UpL
 
 		# max characteristic speed
 		# code.interact(local=locals())
-		a[:] = physics.ComputeScalars("MaxWaveSpeed", UpL, None, FlagNonPhysical=True)
-		aR[:] = physics.ComputeScalars("MaxWaveSpeed", UpR, None, FlagNonPhysical=True)
-		idx[:] = aR > a
+		a = physics.ComputeScalars("MaxWaveSpeed", UpL, None, FlagNonPhysical=True)
+		aR = physics.ComputeScalars("MaxWaveSpeed", UpR, None, FlagNonPhysical=True)
+		idx = aR > a
 		a[idx] = aR[idx]
 
 		# flux assembly 

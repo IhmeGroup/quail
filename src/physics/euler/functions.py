@@ -150,12 +150,13 @@ class DensityWave(FcnBase):
 
 
 class IsentropicVortex(FcnBase):
-	def __init__(self,rhob=1.,ub=1.,vb=1.,pb=1.,vs=5.):
+	def __init__(self, rhob=1., ub=1., vb=1., pb=1., vs=5.):
 		self.rhob = 1.
 		self.ub = 1.
 		self.vb = 1.
 		self.pb = 1.
 		self.vs = 5.
+
 	def get_state(self, physics, x, t):		
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gam = physics.gamma
@@ -346,34 +347,34 @@ class Roe1D(ConvNumFluxBase):
 	def __init__(self, u=None):
 		if u is not None:
 			n = u.shape[0]
-			sr = u.shape[1]
-			dim = sr - 2
+			ns = u.shape[1]
+			dim = ns - 2
 		else:
-			n = 0; sr = 0; dim = 0
+			n = 0; ns = 0; dim = 0
 
-		self.velL = np.zeros([n,dim])
-		self.velR = np.zeros([n,dim])
+		# self.velL = np.zeros([n,dim])
+		# self.velR = np.zeros([n,dim])
 		self.UL = np.zeros_like(u)
 		self.UR = np.zeros_like(u)
 		self.vel = np.zeros([n,dim])
-		self.rhoL_sqrt = np.zeros([n,1])
-		self.rhoR_sqrt = np.zeros([n,1])
-		self.HL = np.zeros([n,1])
-		self.HR = np.zeros([n,1])
-		self.rhoRoe = np.zeros([n,1])
-		self.velRoe = np.zeros([n,dim])
-		self.HRoe = np.zeros([n,1])
-		self.c2 = np.zeros([n,1])
-		self.c = np.zeros([n,1])
-		self.dvel = np.zeros([n,dim])
-		self.drho = np.zeros([n,1])
-		self.dp = np.zeros([n,1])
+		# self.rhoL_sqrt = np.zeros([n,1])
+		# self.rhoR_sqrt = np.zeros([n,1])
+		# self.HL = np.zeros([n,1])
+		# self.HR = np.zeros([n,1])
+		# self.rhoRoe = np.zeros([n,1])
+		# self.velRoe = np.zeros([n,dim])
+		# self.HRoe = np.zeros([n,1])
+		# self.c2 = np.zeros([n,1])
+		# self.c = np.zeros([n,1])
+		# self.dvel = np.zeros([n,dim])
+		# self.drho = np.zeros([n,1])
+		# self.dp = np.zeros([n,1])
 		self.alphas = np.zeros_like(u)
 		self.evals = np.zeros_like(u)
-		self.R = np.zeros([n,sr,sr])
-		self.FRoe = np.zeros_like(u)
-		self.FL = np.zeros_like(u)
-		self.FR = np.zeros_like(u)
+		self.R = np.zeros([n,ns,ns])
+		# self.FRoe = np.zeros_like(u)
+		# self.FL = np.zeros_like(u)
+		# self.FR = np.zeros_like(u)
 
 	def AllocHelperArrays(self, u):
 		self.__init__(u)
@@ -388,31 +389,35 @@ class Roe1D(ConvNumFluxBase):
 
 		return U
 
-	def RoeAverageState(self, EqnSet, irho, velL, velR, uL, uR):
-		rhoL_sqrt = self.rhoL_sqrt
-		rhoR_sqrt = self.rhoR_sqrt
-		HL = self.HL 
-		HR = self.HR 
+	def RoeAverageState(self, EqnSet, srho, velL, velR, uL, uR):
+		# rhoL_sqrt = self.rhoL_sqrt
+		# rhoR_sqrt = self.rhoR_sqrt
+		# HL = self.HL 
+		# HR = self.HR 
 
-		rhoL_sqrt[:] = np.sqrt(uL[:,[irho]])
-		rhoR_sqrt[:] = np.sqrt(uR[:,[irho]])
-		HL[:] = EqnSet.ComputeScalars("TotalEnthalpy", uL, FlagNonPhysical=True)
-		HR[:] = EqnSet.ComputeScalars("TotalEnthalpy", uR, FlagNonPhysical=True)
+		rhoL_sqrt = np.sqrt(uL[:,srho])
+		rhoR_sqrt = np.sqrt(uR[:,srho])
+		HL = EqnSet.ComputeScalars("TotalEnthalpy", uL, FlagNonPhysical=True)
+		HR = EqnSet.ComputeScalars("TotalEnthalpy", uR, FlagNonPhysical=True)
 
-		self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
-		self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
-		self.rhoRoe = rhoL_sqrt*rhoR_sqrt
+		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
+		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
+		# self.rhoRoe = rhoL_sqrt*rhoR_sqrt
 
-		return self.rhoRoe, self.velRoe, self.HRoe
+		velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
+		HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
+		rhoRoe = rhoL_sqrt*rhoR_sqrt
 
-	def GetDifferences(self, EqnSet, irho, velL, velR, uL, uR):
-		dvel = self.dvel
-		drho = self.drho
-		dp = self.dp 
+		return rhoRoe, velRoe, HRoe
 
-		dvel[:] = velR - velL
-		drho[:] = uR[:,[irho]] - uL[:,[irho]]
-		dp[:] = EqnSet.ComputeScalars("Pressure", uR) - \
+	def GetDifferences(self, EqnSet, srho, velL, velR, uL, uR):
+		# dvel = self.dvel
+		# drho = self.drho
+		# dp = self.dp 
+
+		dvel = velR - velL
+		drho = uR[:,srho] - uL[:,srho]
+		dp = EqnSet.ComputeScalars("Pressure", uR) - \
 			EqnSet.ComputeScalars("Pressure", uL)
 
 		return dvel, drho, dp
@@ -420,18 +425,18 @@ class Roe1D(ConvNumFluxBase):
 	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
 		alphas = self.alphas 
 
-		alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
-		alphas[:,[1]] = drho - dp/c2 
-		alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
+		alphas[:,0:1] = 0.5/c2*(dp - c*rhoRoe*dvel[:,0:1])
+		alphas[:,1:2] = drho - dp/c2 
+		alphas[:,-1:] = 0.5/c2*(dp + c*rhoRoe*dvel[:,0:1])
 
 		return alphas 
 
 	def GetEigenvalues(self, velRoe, c):
 		evals = self.evals 
 
-		evals[:,[0]] = velRoe[:,[0]] - c
-		evals[:,[1]] = velRoe[:,[0]]
-		evals[:,[-1]] = velRoe[:,[0]] + c
+		evals[:,0:1] = velRoe[:,0:1] - c
+		evals[:,1:2] = velRoe[:,0:1]
+		evals[:,-1:] = velRoe[:,0:1] + c
 
 		return evals 
 
@@ -439,12 +444,13 @@ class Roe1D(ConvNumFluxBase):
 		R = self.R
 
 		# first row
-		R[:,0,[0,1,-1]] = 1.
+		# R[:,0,[0,1,-1]] = 1.
+		R[:,0,0:2] = 1.; R[:,0,-1] = 1.
 		# second row
 		R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,-1] = evals[:,-1]
 		# last row
-		R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
-		R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c
+		R[:,-1,0:1] = HRoe - velRoe[:,0:1]*c; R[:,-1,1:2] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+		R[:,-1,-1:] = HRoe + velRoe[:,0:1]*c
 
 		return R 
 
@@ -469,20 +475,20 @@ class Roe1D(ConvNumFluxBase):
 		# Extract helper arrays
 		UL = self.UL 
 		UR = self.UR
-		velL = self.velL
-		velR = self.velR 
-		c2 = self.c2
-		c = self.c 
-		alphas = self.alphas 
-		evals = self.evals 
-		R = self.R 
-		FRoe = self.FRoe 
-		FL = self.FL 
-		FR = self.FR 
+		# velL = self.velL
+		# velR = self.velR 
+		# c2 = self.c2
+		# c = self.c 
+		# alphas = self.alphas 
+		# evals = self.evals 
+		# R = self.R 
+		# FRoe = self.FRoe 
+		# FL = self.FL 
+		# FR = self.FR 
 
 		# Indices
-		irho = 0
-		imom = EqnSet.GetMomentumSlice()
+		srho = EqnSet.get_state_slice("Density")
+		smom = EqnSet.GetMomentumSlice()
 
 		gamma = EqnSet.gamma
 
@@ -490,25 +496,25 @@ class Roe1D(ConvNumFluxBase):
 		n1 = n/NN
 
 		# Copy values before rotating
-		UL[:] = UL_std[:]
-		UR[:] = UR_std[:]
+		UL[:] = UL_std
+		UR[:] = UR_std
 
 		# Rotated coordinate system
-		UL = self.RotateCoordSys(imom, UL, n1)
-		UR = self.RotateCoordSys(imom, UR, n1)
+		UL = self.RotateCoordSys(smom, UL, n1)
+		UR = self.RotateCoordSys(smom, UR, n1)
 
 		# Velocities
-		velL[:] = UL[:,imom]/UL[:,[irho]]
-		velR[:] = UR[:,imom]/UR[:,[irho]]
+		velL = UL[:,smom]/UL[:,srho]
+		velR = UR[:,smom]/UR[:,srho]
 
-		rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, irho, velL, velR, UL, UR)
+		rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, srho, velL, velR, UL, UR)
 
 		# Speed of sound from Roe-averaged state
-		c2[:] = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
-		c[:] = np.sqrt(c2)
+		c2 = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
+		c = np.sqrt(c2)
 
 		# differences
-		dvel, drho, dp = self.GetDifferences(EqnSet, irho, velL, velR, UL, UR)
+		dvel, drho, dp = self.GetDifferences(EqnSet, srho, velL, velR, UL, UR)
 
 		# alphas (left eigenvectors multipled by dU)
 		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
@@ -537,15 +543,15 @@ class Roe1D(ConvNumFluxBase):
 		R = self.GetRightEigenvectors(c, evals, velRoe, HRoe)
 
 		# Form flux Jacobian matrix multiplied by dU
-		FRoe[:] = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
+		FRoe = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
 
-		FRoe = self.UndoRotateCoordSys(imom, FRoe, n1)
+		FRoe = self.UndoRotateCoordSys(smom, FRoe, n1)
 
 		# Left flux
-		FL[:] = EqnSet.ConvFluxProjected(UL_std, n1)
+		FL = EqnSet.ConvFluxProjected(UL_std, n1)
 
 		# Right flux
-		FR[:] = EqnSet.ConvFluxProjected(UR_std, n1)
+		FR = EqnSet.ConvFluxProjected(UR_std, n1)
 
 		return NN*(0.5*(FL+FR) - 0.5*FRoe)
 
@@ -559,7 +565,7 @@ class Roe2D(Roe1D):
 		vel[:,0] = np.sum(U[:,imom]*n, axis=1)
 		vel[:,1] = np.sum(U[:,imom]*n[:,::-1]*np.array([[-1.,1.]]), axis=1)
 		
-		U[:,imom] = vel[:]
+		U[:,imom] = vel
 
 		return U
 
@@ -570,7 +576,7 @@ class Roe2D(Roe1D):
 		vel[:,0] = np.sum(U[:,imom]*n*np.array([[1.,-1.]]), axis=1)
 		vel[:,1] = np.sum(U[:,imom]*n[:,::-1], axis=1)
 
-		U[:,imom] = vel[:]
+		U[:,imom] = vel
 
 		return U
 
@@ -579,7 +585,7 @@ class Roe2D(Roe1D):
 
 		alphas = super().GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
 
-		alphas[:,[2]] = rhoRoe*dvel[:,[-1]]
+		alphas[:,2:3] = rhoRoe*dvel[:,-1:]
 
 		return alphas 
 
@@ -588,7 +594,7 @@ class Roe2D(Roe1D):
 
 		evals = super().GetEigenvalues(velRoe, c)
 
-		evals[:,[2]] = velRoe[:,[0]]
+		evals[:,2:3] = velRoe[:,0:1]
 
 		return evals 
 
@@ -597,17 +603,17 @@ class Roe2D(Roe1D):
 
 		R = super().GetRightEigenvectors(c, evals, velRoe, HRoe)
 
-		i = [2]
+		i = 2
 
 		# first row
 		R[:,0,i] = 0.
 		# second row
 		R[:,1,i] = 0.
 		# last row
-		R[:,-1,i] = velRoe[:,[-1]]
+		R[:,-1,i] = velRoe[:,-1]
 		# [third] row
-		R[:,i,0] = velRoe[:,[-1]];  R[:,i,1] = velRoe[:,[-1]]; 
-		R[:,i,-1] = velRoe[:,[-1]]; R[:,i,i] = 1.
+		R[:,i,0] = velRoe[:,-1];  R[:,i,1] = velRoe[:,-1]; 
+		R[:,i,-1] = velRoe[:,-1]; R[:,i,i] = 1.
 
 		return R 
 
