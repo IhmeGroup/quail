@@ -261,7 +261,7 @@ class DG(base.SolverBase):
 		self.iface_operators = IFaceOperators()
 		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 		self.bface_operators = BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)\
+		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
 
 	def calculate_residual_elem(self, elem, Up, ER):
 		'''

@@ -108,7 +108,7 @@ class PhysicsBase(object):
 		else:
 			raise Exception("Input error")
 
-		basis = basis_tools.set_basis(mesh, self.order, basis_type)
+		basis = basis_tools.set_basis(self.order, basis_type)
 		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
 		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
 

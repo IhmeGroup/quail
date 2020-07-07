@@ -19,20 +19,20 @@ Basis2Shape = {
 }
 
 
-def set_basis(mesh, order, basis_name):
+def set_basis(order, basis_name):
 
     if BasisType[basis_name] == BasisType.LagrangeEqSeg:
-        basis = basis_defs.LagrangeEqSeg(order, mesh)
+        basis = basis_defs.LagrangeEqSeg(order)
     elif BasisType[basis_name] == BasisType.LegendreSeg:
-        basis = basis_defs.LegendreSeg(order, mesh)
+        basis = basis_defs.LegendreSeg(order)
     elif BasisType[basis_name] == BasisType.LagrangeEqQuad:
-        basis = basis_defs.LagrangeEqQuad(order, mesh)
+        basis = basis_defs.LagrangeEqQuad(order)
     elif BasisType[basis_name] == BasisType.LegendreQuad:
-        basis = basis_defs.LegendreQuad(order, mesh)
+        basis = basis_defs.LegendreQuad(order)
     elif BasisType[basis_name] == BasisType.LagrangeEqTri:
-        basis = basis_defs.LagrangeEqTri(order, mesh)
+        basis = basis_defs.LagrangeEqTri(order)
     elif BasisType[basis_name] == BasisType.HierarchicH1Tri:
-        basis = basis_defs.HierarchicH1Tri(order, mesh)
+        basis = basis_defs.HierarchicH1Tri(order)
     else:
         raise NotImplementedError
     return basis
@@ -315,7 +315,7 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
     if dim != dim: Resize = True
     else: Resize = False
 
-    basis_pgrad = basis.get_grads(quad_pts, basis.basis_pgrad) # [nq, nb, dim]
+    basis_pgrad = basis.get_grads(quad_pts) #, basis.basis_pgrad) # [nq, nb, dim]
     
     if dim != mesh.Dim:
         raise Exception("Dimensions don't match")
@@ -417,7 +417,7 @@ def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
         fnodes, nfnode = basis.local_face_nodes(gorder, face, fnodes=None)
 
         basis_seg = basis_defs.LagrangeEqSeg(gorder)
-        basis_grad = basis_seg.get_grads(quad_pts, basis_grad=None)
+        basis_grad = basis_seg.get_grads(quad_pts)
         Coords = mesh.Coords[ElemNodes[fnodes]]
 
         # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)

@@ -51,7 +51,7 @@ class SolverBase(ABC):
 
 		# Set the basis functions for the solver
 		basis_name  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(mesh, EqnSet.order, basis_name)
+		self.basis = basis_tools.set_basis(EqnSet.order, basis_name)
 
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])

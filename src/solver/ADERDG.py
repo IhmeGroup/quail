@@ -306,7 +306,7 @@ class ADERDG(base.SolverBase):
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(mesh, EqnSet.order, BasisFunction)
+		self.basis = basis_tools.set_basis(EqnSet.order, BasisFunction)
 		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, EqnSet.order, BasisFunction)
 
 		# Set quadrature

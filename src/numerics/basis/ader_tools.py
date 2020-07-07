@@ -12,9 +12,9 @@ import numerics.basis.tools as basis_tools
 
 def set_basis_spacetime(mesh, order, BasisFunction):
     if BasisType[BasisFunction] == BasisType.LagrangeEqSeg:
-        basis_st = basis_defs.LagrangeEqQuad(order, mesh)
+        basis_st = basis_defs.LagrangeEqQuad(order)
     elif BasisType[BasisFunction] == BasisType.LegendreSeg:
-        basis_st = basis_defs.LegendreQuad(order, mesh)
+        basis_st = basis_defs.LegendreQuad(order)
     else:
         raise NotImplementedError
 
