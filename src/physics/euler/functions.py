@@ -397,8 +397,8 @@ class Roe1D(ConvNumFluxBase):
 
 		rhoL_sqrt = np.sqrt(uL[:,srho])
 		rhoR_sqrt = np.sqrt(uR[:,srho])
-		HL = EqnSet.ComputeScalars("TotalEnthalpy", uL, FlagNonPhysical=True)
-		HR = EqnSet.ComputeScalars("TotalEnthalpy", uR, FlagNonPhysical=True)
+		HL = EqnSet.ComputeScalars("TotalEnthalpy", uL, flag_non_physical=True)
+		HR = EqnSet.ComputeScalars("TotalEnthalpy", uR, flag_non_physical=True)
 
 		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)

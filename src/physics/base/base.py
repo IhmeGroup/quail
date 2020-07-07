@@ -323,36 +323,49 @@ class PhysicsBase(object):
 
 	# 	return F
 
-	def ComputeScalars(self, ScalarNames, U, scalar=None, FlagNonPhysical=False):
-		if type(ScalarNames) is list:
-			nscalar = len(ScalarNames)
-		elif type(ScalarNames) is str:
-			nscalar = 1
-			ScalarNames = [ScalarNames]
-		else:
-			raise TypeError
+	def ComputeScalars(self, scalar_name, Up, flag_non_physical=False):
+		# if type(ScalarNames) is list:
+		# 	nscalar = len(ScalarNames)
+		# elif type(ScalarNames) is str:
+		# 	nscalar = 1
+		# 	ScalarNames = [ScalarNames]
+		# else:
+		# 	raise TypeError
 
-		nq = U.shape[0]
-		if scalar is None or scalar.shape != (nq, nscalar):
-			scalar = np.zeros([nq, nscalar])
+		# nq = U.shape[0]
+		# if scalar is None or scalar.shape != (nq, nscalar):
+		# 	scalar = np.zeros([nq, nscalar])
+		# scalar = np.zeros([Up.shape[0], 1])
 
-		for iscalar in range(nscalar):
-			sname = ScalarNames[iscalar]
-			try:
-				sidx = self.GetStateIndex(sname)
-				scalar[:,iscalar] = U[:,sidx]
-			# if sidx < self.NUM_STATE_VARS:
-			# 	# State variable
-			# 	scalar[:,iscalar] = U[:,sidx]
-			# else:
-			except KeyError:
-				scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
-					FlagNonPhysical)
+		# for iscalar in range(nscalar):
+		# 	sname = ScalarNames[iscalar]
+		# 	try:
+		# 		sidx = self.GetStateIndex(sname)
+		# 		scalar[:,iscalar] = U[:,sidx]
+		# 	# if sidx < self.NUM_STATE_VARS:
+		# 	# 	# State variable
+		# 	# 	scalar[:,iscalar] = U[:,sidx]
+		# 	# else:
+		# 	except KeyError:
+		# 		scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
+		# 			flag_non_physical)
+
+		try:
+			sidx = self.GetStateIndex(scalar_name)
+			# scalar[:,iscalar] = Up[:,sidx]
+			scalar = Up[:, sidx:sidx+1].copy()
+		# if sidx < self.NUM_STATE_VARS:
+		# 	# State variable
+		# 	scalar[:,iscalar] = U[:,sidx]
+		# else:
+		except KeyError:
+			scalar = self.AdditionalScalars(scalar_name, Up, 
+					flag_non_physical)
 
 		return scalar
 
 	@abstractmethod
-	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
+	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
 		pass
 
 	def CallFunction(self, FcnData, x, t):

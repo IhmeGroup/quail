@@ -120,8 +120,8 @@ class LaxFriedrichs(ConvNumFluxBase):
 
 		# max characteristic speed
 		# code.interact(local=locals())
-		a = physics.ComputeScalars("MaxWaveSpeed", UpL, None, FlagNonPhysical=True)
-		aR = physics.ComputeScalars("MaxWaveSpeed", UpR, None, FlagNonPhysical=True)
+		a = physics.ComputeScalars("MaxWaveSpeed", UpL, flag_non_physical=True)
+		aR = physics.ComputeScalars("MaxWaveSpeed", UpR, flag_non_physical=True)
 		idx = aR > a
 		a[idx] = aR[idx]
 

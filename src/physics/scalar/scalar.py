@@ -99,10 +99,11 @@ class ConstAdvScalar(base.PhysicsBase):
 		# F.shape = u.shape + (self.Dim,) 
 		return F
 
-	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
+	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			scalar[:] = self.cspeed
+			scalar = np.full([Up.shape[0], 1], self.cspeed)
+			# scalar[:] = self.cspeed
 		else:
 			raise NotImplementedError
 
@@ -165,7 +166,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 # 		return uB
 
-# 	def ComputeScalars(self, ScalarNames, U, scalar=None, FlagNonPhysical=False):
+# 	def ComputeScalars(self, ScalarNames, U, scalar=None, flag_non_physical=False):
 # 		if type(ScalarNames) is list:
 # 			nscalar = len(ScalarNames)
 # 		elif type(ScalarNames) is str:
@@ -189,7 +190,7 @@ class ConstAdvScalar(base.PhysicsBase):
 # 			# else:
 # 			except KeyError:
 # 				scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
-# 					FlagNonPhysical)
+# 					flag_non_physical)
 
 # 		return scalar
 # =======
@@ -212,7 +213,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 	# 	return uB
 
-	# def ComputeScalars(self, ScalarNames, U, scalar=None, FlagNonPhysical=False):
+	# def ComputeScalars(self, ScalarNames, U, scalar=None, flag_non_physical=False):
 	# 	if type(ScalarNames) is list:
 	# 		nscalar = len(ScalarNames)
 	# 	elif type(ScalarNames) is str:
@@ -236,7 +237,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 		# else:
 	# 		except KeyError:
 	# 			scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
-	# 				FlagNonPhysical)
+	# 				flag_non_physical)
 
 	# 	return scalar
 # >>>>>>> Stashed changes
@@ -402,12 +403,12 @@ class Burgers1D(base.PhysicsBase):
 		# F.shape = u.shape + (self.Dim,) 
 		return F
 
-	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
+	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure
 			# P = GetPressure()
-			scalar[:] = np.abs(U/2.)
+			scalar = np.abs(Up/2.)
 		else:
 			raise NotImplementedError
 

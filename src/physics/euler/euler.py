@@ -93,14 +93,16 @@ class Euler(base.PhysicsBase):
 
 		return F
 
-	def AdditionalScalars(self, ScalarName, U, scalar, FlagNonPhysical):
+	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		smom = self.GetMomentumSlice()
-		rho = U[:,srho]
-		rhoE = U[:,srhoE]
-		mom = U[:,smom]
+		rho = Up[:,srho]
+		rhoE = Up[:,srhoE]
+		mom = Up[:,smom]
+
+		# scalar = np.zeros([Up.shape[0], 1])
 
 		''' Common scalars '''
 		gamma = self.gamma
@@ -110,15 +112,15 @@ class Euler(base.PhysicsBase):
 		# # Temperature
 		# T = P/(rho*R)
 
-		if FlagNonPhysical:
+		if flag_non_physical:
 			if np.any(rho < 0.):
 				raise errors.NotPhysicalError
 
 		# if np.any(P < 0.) or np.any(rho < 0.):
 		# 	raise errors.NotPhysicalError
 		def getP():
-			scalar[:] = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
-			if FlagNonPhysical:
+			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
+			if flag_non_physical:
 				if np.any(scalar < 0.):
 					raise errors.NotPhysicalError
 			return scalar
@@ -129,10 +131,10 @@ class Euler(base.PhysicsBase):
 		''' Get final scalars '''
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["Pressure"].name:
-			scalar[:] = getP()
+			scalar = getP()
 		elif sname is self.AdditionalVariables["Temperature"].name:
 			# scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)/(rho*R)
-			scalar[:] = getT()
+			scalar = getT()
 		elif sname is self.AdditionalVariables["Entropy"].name:
 			# Pressure
 			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
@@ -140,19 +142,19 @@ class Euler(base.PhysicsBase):
 			# T = getP()/(rho*R)
 
 			# scalar = R*(gamma/(gamma-1.)*np.log(getT()) - np.log(getP()))
-			scalar[:] = np.log(getP()/rho**gamma)
+			scalar = np.log(getP()/rho**gamma)
 		elif sname is self.AdditionalVariables["InternalEnergy"].name:
-			scalar[:] = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
+			scalar = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
 		elif sname is self.AdditionalVariables["TotalEnthalpy"].name:
-			scalar[:] = (rhoE + getP())/rho
+			scalar = (rhoE + getP())/rho
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
 			# Pressure
 			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
-			scalar[:] = np.sqrt(gamma*getP()/rho)
+			scalar = np.sqrt(gamma*getP()/rho)
 		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure
 			# P = GetPressure()
-			scalar[:] = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*getP()/rho)
+			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*getP()/rho)
 		else:
 			raise NotImplementedError
 
