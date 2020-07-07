@@ -119,6 +119,12 @@ class SourceBase(ABC):
 
 class ConvNumFluxBase(ABC):
 
+    def __init__(self, Up=None):
+        pass
+
+    def alloc_helpers(self, Up):
+        self.__init__(Up)
+
     @abstractmethod
     def compute_flux(self, physics, UpL, UpR, normals):
         pass

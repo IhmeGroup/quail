@@ -50,11 +50,11 @@ class ElemOperators(object):
 		nb = basis.nb
 
 		# Allocate
-		self.jac_elems = np.zeros([nElem,nq,dim,dim])
-		self.ijac_elems = np.zeros([nElem,nq,dim,dim])
-		self.djac_elems = np.zeros([nElem,nq,1])
-		self.x_elems = np.zeros([nElem,nq,dim])
-		self.basis_pgrad_elems = np.zeros([nElem,nq,nb,dim])
+		self.jac_elems = np.zeros([nElem, nq, dim, dim])
+		self.ijac_elems = np.zeros([nElem, nq, dim, dim])
+		self.djac_elems = np.zeros([nElem, nq, 1])
+		self.x_elems = np.zeros([nElem, nq, dim])
+		self.basis_pgrad_elems = np.zeros([nElem, nq, nb, dim])
 
 		GeomPhiData = None
 

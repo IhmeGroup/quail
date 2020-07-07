@@ -344,19 +344,19 @@ Numerical flux functions
 '''
 
 class Roe1D(ConvNumFluxBase):
-	def __init__(self, u=None):
-		if u is not None:
-			n = u.shape[0]
-			ns = u.shape[1]
+	def __init__(self, Up=None):
+		if Up is not None:
+			n = Up.shape[0]
+			ns = Up.shape[1]
 			dim = ns - 2
 		else:
 			n = 0; ns = 0; dim = 0
 
 		# self.velL = np.zeros([n,dim])
 		# self.velR = np.zeros([n,dim])
-		self.UL = np.zeros_like(u)
-		self.UR = np.zeros_like(u)
-		self.vel = np.zeros([n,dim])
+		self.UL = np.zeros_like(Up)
+		self.UR = np.zeros_like(Up)
+		self.vel = np.zeros([n, dim])
 		# self.rhoL_sqrt = np.zeros([n,1])
 		# self.rhoR_sqrt = np.zeros([n,1])
 		# self.HL = np.zeros([n,1])
@@ -369,15 +369,15 @@ class Roe1D(ConvNumFluxBase):
 		# self.dvel = np.zeros([n,dim])
 		# self.drho = np.zeros([n,1])
 		# self.dp = np.zeros([n,1])
-		self.alphas = np.zeros_like(u)
-		self.evals = np.zeros_like(u)
-		self.R = np.zeros([n,ns,ns])
+		self.alphas = np.zeros_like(Up)
+		self.evals = np.zeros_like(Up)
+		self.R = np.zeros([n, ns, ns])
 		# self.FRoe = np.zeros_like(u)
 		# self.FL = np.zeros_like(u)
 		# self.FR = np.zeros_like(u)
 
-	def AllocHelperArrays(self, u):
-		self.__init__(u)
+	# def AllocHelperArrays(self, u):
+	# 	self.__init__(u)
 
 	def RotateCoordSys(self, imom, U, n):
 		U[:,imom] *= n
@@ -504,13 +504,13 @@ class Roe1D(ConvNumFluxBase):
 		UR = self.RotateCoordSys(smom, UR, n1)
 
 		# Velocities
-		velL = UL[:,smom]/UL[:,srho]
-		velR = UR[:,smom]/UR[:,srho]
+		velL = UL[:, smom]/UL[:, srho]
+		velR = UR[:, smom]/UR[:, srho]
 
 		rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, srho, velL, velR, UL, UR)
 
 		# Speed of sound from Roe-averaged state
-		c2 = (gamma-1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
+		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
 		c = np.sqrt(c2)
 
 		# differences
@@ -552,7 +552,7 @@ class Roe1D(ConvNumFluxBase):
 
 		# Right flux
 		FR = EqnSet.ConvFluxProjected(UR_std, n1)
-
+		
 		return NN*(0.5*(FL+FR) - 0.5*FRoe)
 
 

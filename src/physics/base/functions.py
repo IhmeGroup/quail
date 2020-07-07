@@ -67,20 +67,20 @@ Numerical flux functions
 '''
 
 class LaxFriedrichs(ConvNumFluxBase):
-	def __init__(self, u=None):
-		if u is not None:
-			n = u.shape[0]
-		else:
-			n = 0
-		# self.FL = np.zeros_like(u)
-		# self.FR = np.zeros_like(u)
-		# self.du = np.zeros_like(u)
-		# self.a = np.zeros([n,1])
-		# self.aR = np.zeros([n,1])
-		# self.idx = np.empty([n,1], dtype=bool) 
+	# def __init__(self, u=None):
+	# 	if u is not None:
+	# 		n = u.shape[0]
+	# 	else:
+	# 		n = 0
+	# 	# self.FL = np.zeros_like(u)
+	# 	# self.FR = np.zeros_like(u)
+	# 	# self.du = np.zeros_like(u)
+	# 	# self.a = np.zeros([n,1])
+	# 	# self.aR = np.zeros([n,1])
+	# 	# self.idx = np.empty([n,1], dtype=bool) 
 
-	def AllocHelperArrays(self, u):
-		self.__init__(u)
+	# def AllocHelperArrays(self, u):
+	# 	self.__init__(u)
 
 	def compute_flux(self, physics, UpL, UpR, normals):
 		'''
@@ -116,7 +116,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 		# Right State
 		FR = physics.ConvFluxProjected(UpR, n_hat)
 
-		du = UpR-UpL
+		dU = UpR - UpL
 
 		# max characteristic speed
 		# code.interact(local=locals())
@@ -126,7 +126,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 		a[idx] = aR[idx]
 
 		# flux assembly 
-		return n_mag*(0.5*(FL+FR) - 0.5*a*du)
+		return n_mag*(0.5*(FL+FR) - 0.5*a*dU)
 
 
 # def uniform(physics, fcn_data):

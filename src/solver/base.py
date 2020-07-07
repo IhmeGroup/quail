@@ -27,7 +27,7 @@ global echeck
 echeck = -1
 
 class SolverBase(ABC):
-	def __init__(self,Params,EqnSet,mesh):
+	def __init__(self, Params, EqnSet, mesh):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -73,12 +73,15 @@ class SolverBase(ABC):
 		self.precompute_matrix_operators()
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
+		EqnSet.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators.quad_wts.shape[0], EqnSet.NUM_STATE_VARS]))
 
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
+
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
+
 	def check_compatibility(self):
 		mesh = self.mesh 
 		Params = self.Params

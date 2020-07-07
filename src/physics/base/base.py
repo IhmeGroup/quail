@@ -276,7 +276,7 @@ class PhysicsBase(object):
 
 	@abstractmethod
 	def ConvFluxNumerical(self, uL, uR, normals):
-		self.ConvFluxFcn.AllocHelperArrays(uL)
+		# self.ConvFluxFcn.AllocHelperArrays(uL)
 		F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
 
 		return F
