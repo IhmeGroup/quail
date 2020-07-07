@@ -294,7 +294,7 @@ class DG(base.SolverBase):
 			'''
 			Evaluate the inviscid flux integral.
 			'''
-			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,ns,dim]
+			Fq = EqnSet.ConvFluxInterior(Uq) # [nq,ns,dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
 
 		if self.Params["SourceSwitch"] == True:

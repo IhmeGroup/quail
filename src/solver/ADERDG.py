@@ -547,7 +547,7 @@ class ADERDG(base.SolverBase):
 			'''
 			Evaluate the inviscid flux integral.
 			'''
-			Fq = EqnSet.ConvFluxInterior(Uq, F=None) # [nq,sr,dim]
+			Fq = EqnSet.ConvFluxInterior(Uq) # [nq,sr,dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem_ops_st, elem, Fq)
 		
 		if self.Params["SourceSwitch"] == True:
@@ -758,7 +758,7 @@ class ADERDG(base.SolverBase):
 
 		if Params["InterpolateFlux"]:
 
-			Fq = EqnSet.ConvFluxInterior(Up,F=None)
+			Fq = EqnSet.ConvFluxInterior(Up)
 			dg_tools.interpolate_to_nodes(Fq, F)
 		else:
 			ader_ops = self.ader_operators
@@ -773,7 +773,7 @@ class ADERDG(base.SolverBase):
 
 			Uq = np.matmul(basis_val_st,Up)
 
-			Fq = EqnSet.ConvFluxInterior(Uq,F=None)
+			Fq = EqnSet.ConvFluxInterior(Uq)
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
 
 		return F*dt/2.0

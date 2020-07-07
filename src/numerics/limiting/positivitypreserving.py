@@ -75,7 +75,7 @@ class PositivityPreserving(base.LimiterBase):
 		# interpolate state and gradient at quad points over element and on faces
 		u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
 		nq_elem = self.quad_wts_elem.shape[0]
-		u_elem = u_elem_faces[:nq_elem,:]
+		u_elem = u_elem_faces[:nq_elem, :]
 
 		# Average value of state
 		vol = self.elem_vols[elem]

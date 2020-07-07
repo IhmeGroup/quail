@@ -37,36 +37,36 @@ class SmoothIsentropicFlow(FcnBase):
 	def get_state(self, physics, x, t):
 		
 		a = self.a
-		gam = physics.gamma
+		gamma = physics.gamma
 		irho, irhou, irhoE = physics.GetStateIndices()
 	
 		# Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
-		rho0 = lambda x,a: 1. + a*np.sin(np.pi*x)
-		pressure = lambda rho,gam: rho**gam
-		rho = lambda x1,x2,a: 0.5*(rho0(x1,a) + rho0(x2,a))
-		vel = lambda x1,x2,a: np.sqrt(3)*(rho(x1,x2,a) - rho0(x1,a))
+		rho0 = lambda x, a: 1. + a*np.sin(np.pi*x)
+		pressure = lambda rho, gamma: rho**gamma
+		rho = lambda x1, x2, a: 0.5*(rho0(x1, a) + rho0(x2, a))
+		vel = lambda x1, x2, a: np.sqrt(3)*(rho(x1, x2, a) - rho0(x1, a))
 
-		f1 = lambda x1,x,t,a: x + np.sqrt(3)*rho0(x1,a)*t - x1
-		f2 = lambda x2,x,t,a: x - np.sqrt(3)*rho0(x2,a)*t - x2
+		f1 = lambda x1, x, t, a: x + np.sqrt(3)*rho0(x1, a)*t - x1
+		f2 = lambda x2, x, t, a: x - np.sqrt(3)*rho0(x2, a)*t - x2
 
-		x_ = x.reshape(-1)
+		xr = x.reshape(-1)
 
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
-		x1 = fsolve(f1, 0.*x_, (x_,t,a))
+		x1 = fsolve(f1, 0.*xr, (xr, t, a))
 		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
-		x2 = fsolve(f2, 0.*x_, (x_,t,a))
+		x2 = fsolve(f2, 0.*xr, (xr, t, a))
 		if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
 			
-		r = rho(x1,x2,a)
-		u = vel(x1,x2,a)
-		p = pressure(r,gam)
-		rE = p/(gam-1.) + 0.5*r*u*u
+		den = rho(x1, x2, a)
+		u = vel(x1, x2, a)
+		p = pressure(den, gamma)
+		rhoE = p/(gamma - 1.) + 0.5*den*u*u
 
-		Up[:,irho] = r
-		Up[:,irhou] = r*u
-		Up[:,irhoE] = rE
+		Up[:, irho] = den
+		Up[:, irhou] = den*u
+		Up[:, irhoE] = rhoE
 
 		return Up
 
@@ -86,7 +86,7 @@ class MovingShock(FcnBase):
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
-		gam = physics.gamma
+		gamma = physics.gamma
 		
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
@@ -96,14 +96,14 @@ class MovingShock(FcnBase):
 		u1 = 0.
 
 		''' Update xshock based on shock speed '''
-		a1 = np.sqrt(gam*p1/rho1)
+		a1 = np.sqrt(gamma*p1/rho1)
 		W = M*a1 
 		us = u1 + W # shock speed in lab frame
 		xshock = xshock + us*t
 
 		''' Post-shock state '''
-		rho2 = (gam+1.)*M**2./((gam-1.)*M**2. + 2.)*rho1
-		p2 = (2.*gam*M**2. - (gam-1.))/(gam + 1.)*p1
+		rho2 = (gamma + 1.)*M**2./((gamma - 1.)*M**2. + 2.)*rho1
+		p2 = (2.*gamma*M**2. - (gamma - 1.))/(gamma + 1.)*p1
 		# To get velocity, first work in reference frame fixed to shock
 		ux = W
 		uy = ux*rho1/rho2
@@ -121,26 +121,26 @@ class MovingShock(FcnBase):
 		Up[iright, srhou] = rho1*u1
 		Up[ileft, srhou] = rho2*u2
 		# Energy
-		Up[iright, srhoE] = p1/(gam-1.) + 0.5*rho1*u1*u1
-		Up[ileft, srhoE] = p2/(gam-1.) + 0.5*rho2*u2*u2
+		Up[iright, srhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1
+		Up[ileft, srhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2
 
 		return Up
 
 
 class DensityWave(FcnBase):
-	def __init__(self, p = 1.0):
+	def __init__(self, p=1.0):
 		self.p = p
 
 	def get_state(self, physics, x, t):
 		p = self.p
 		srho, srhou, srhoE = physics.get_state_slices()
-		gam = physics.gamma
+		gamma = physics.gamma
 
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		
-		rho = 1.0+0.1*np.sin(2.*np.pi*x)
+		rho = 1.0 + 0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
-		rhoE = (p/(gam-1.))+0.5*rhou**2/rho
+		rhoE = (p/(gamma - 1.)) + 0.5*rhou**2/rho
 
 		Up[:,srho] = rho
 		Up[:,srhou] = rhou
@@ -151,15 +151,15 @@ class DensityWave(FcnBase):
 
 class IsentropicVortex(FcnBase):
 	def __init__(self, rhob=1., ub=1., vb=1., pb=1., vs=5.):
-		self.rhob = 1.
-		self.ub = 1.
-		self.vb = 1.
-		self.pb = 1.
-		self.vs = 5.
+		self.rhob = rhob
+		self.ub = ub
+		self.vb = vb
+		self.pb = pb
+		self.vs = vs
 
 	def get_state(self, physics, x, t):		
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-		gam = physics.gamma
+		gamma = physics.gamma
 		Rg = physics.R
 
 		### Parameters
@@ -181,7 +181,7 @@ class IsentropicVortex(FcnBase):
 		Tb = pb/(rhob*Rg)
 
 		# Entropy
-		s = pb/rhob**gam
+		s = pb/rhob**gamma
 
 		xr = x[:,0] - ub*t
 		yr = x[:,1] - vb*t
@@ -192,22 +192,22 @@ class IsentropicVortex(FcnBase):
 		du = dU*-yr
 		dv = dU*xr
 
-		dT = -(gam - 1.)*vs**2./(8.*gam*np.pi**2.)*np.exp(1.-r**2.)
+		dT = -(gamma - 1.)*vs**2./(8.*gamma*np.pi**2.)*np.exp(1. - r**2.)
 
 		u = ub + du 
 		v = vb + dv 
 		T = Tb + dT
 
 		# Convert to conservative variables
-		rho = np.power(T/s, 1./(gam-1.))
+		rho = np.power(T/s, 1./(gamma - 1.))
 		rhou = rho*u
 		rhov = rho*v
-		rhoE = rho*Rg/(gam-1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
+		rhoE = rho*Rg/(gamma - 1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
 
-		Up[:,0] = rho
-		Up[:,1] = rhou
-		Up[:,2] = rhov
-		Up[:,3] = rhoE
+		Up[:, 0] = rho
+		Up[:, 1] = rhou
+		Up[:, 2] = rhov
+		Up[:, 3] = rhoE
 
 		return Up
 
@@ -254,8 +254,8 @@ class PressureOutlet(BCWeakPrescribed):
 		# igmi = 1./gmi
 
 		# Interior velocity in normal direction
-		rhoI = UpI[:,srho]
-		velI = UpI[:,smom]/rhoI
+		rhoI = UpI[:, srho]
+		velI = UpI[:, smom]/rhoI
 		velnI = np.sum(velI*n_hat, axis=1, keepdims=True)
 
 		if np.any(velnI < 0.):
@@ -282,19 +282,19 @@ class PressureOutlet(BCWeakPrescribed):
 
 		# Boundary density from interior entropy
 		rhoB = rhoI*np.power(pB/pI, 1./gamma)
-		UpB[:,srho] = rhoB
+		UpB[:, srho] = rhoB
 
 		# Exterior speed of sound
 		cB = np.sqrt(gamma*pB/rhoB)
 		velB = (JI - 2.*cB/(gamma-1.))*n_hat + veltI
-		UpB[:,smom] = rhoB*velB
+		UpB[:, smom] = rhoB*velB
 		# dVn = 2.*igmi*(cI-cB)
 		# UpB[:,imom] = rhoB*dVn*n_hat + rhoB*UpI[:,imom]/rhoI
 
 		# Exterior energy
 		# rVB2 = np.sum(UpB[:,imom]**2., axis=1, keepdims=True)/rhoB
 		rhovel2B = rhoB*np.sum(velB**2., axis=1, keepdims=True)
-		UpB[:,srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
+		UpB[:, srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
 
 		return UpB
 
@@ -329,12 +329,12 @@ class StiffFriction(SourceBase):
 	def get_jacobian(self, U):
 
 		nu = self.nu
-		jac = np.zeros([U.shape[0],U.shape[-1],U.shape[-1]])
-		vel = U[:,1]/(1.0e-12+U[:,0])
+		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+		vel = U[:, 1]/(1.0e-12 + U[:, 0])
 
-		jac[:,1,1]=nu
-		jac[:,2,0]=-nu*vel**2
-		jac[:,2,1]=2.0*nu*vel
+		jac[:, 1, 1] = nu
+		jac[:, 2, 0] = -nu*vel**2
+		jac[:, 2, 1] = 2.0*nu*vel
 
 		return jac
 

@@ -165,7 +165,7 @@ class SimpleSource(SourceBase):
 	def get_source(self, physics, FcnData, x, t):
 		nu = self.nu
 		U = FcnData.U
-		S = nu*U[:]
+		S = nu*U
 
 		return S
 	def get_jacobian(self, U):
@@ -185,10 +185,10 @@ class StiffSource(SourceBase):
 		return S
 
 	def get_jacobian(self, U):
-		jac = np.zeros([U.shape[0],U.shape[-1],U.shape[-1]])
+		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
 		nu = self.nu
 		beta = self.beta
-		jac[:,0,0] =  -nu*(3.*U[:,0]**2-2.*U[:,0]-2.*beta*U[:,0]+beta)
+		jac[:,0,0] = -nu*(3.*U[:,0]**2 - 2.*U[:,0] - 2.*beta*U[:,0] + beta)
 		return jac
 
 

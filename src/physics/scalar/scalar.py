@@ -86,15 +86,15 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 		c = self.Params["ConstVelocity"]
 	# 		return c
 
-	def ConvFluxInterior(self, u, F=None):
+	def ConvFluxInterior(self, u):
 		# c = self.getAdvOperator(u)
 		c = self.c
 		#a = self.Params["Velocity"]
-		if F is None:
-			F = np.zeros(u.shape + (self.dim,))
+		# if F is None:
+		# 	F = np.zeros(u.shape + (self.dim,))
 		# for d in range(self.Dim):
 		# 	F[:,:,d] = c*u
-		F[:] = np.expand_dims(c*u, axis=1)
+		F = np.expand_dims(c*u, axis=1)
 		# F = a*u
 		# F.shape = u.shape + (self.Dim,) 
 		return F
@@ -391,14 +391,14 @@ class Burgers1D(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def ConvFluxInterior(self, u, F=None):
+	def ConvFluxInterior(self, u):
 		# c = self.getAdvOperator(u)
 		#a = self.Params["Velocity"]
-		if F is None:
-			F = np.zeros(u.shape + (self.dim,))
+		# if F is None:
+		# 	F = np.zeros(u.shape + (self.dim,))
 		# for d in range(self.Dim):
 		# 	F[:,:,d] = c*u
-		F[:] = np.expand_dims(u*u/2., axis=2)
+		F = np.expand_dims(u*u/2., axis=2)
 		# F = a*u
 		# F.shape = u.shape + (self.Dim,) 
 		return F

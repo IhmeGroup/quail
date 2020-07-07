@@ -49,7 +49,7 @@ class Euler(base.PhysicsBase):
 			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
 
-	def set_physical_params(self, GasConstant=287., SpecificHeatRatio = 1.4):
+	def set_physical_params(self, GasConstant=287., SpecificHeatRatio=1.4):
 		self.R = GasConstant
 		self.gamma = SpecificHeatRatio
 
@@ -62,32 +62,38 @@ class Euler(base.PhysicsBase):
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
 
-	def ConvFluxInterior(self, u, F=None):
+	def ConvFluxInterior(self, Up):
 		dim = self.dim
-		irho = 0; irhoE = dim + 1
-		imom = self.GetMomentumSlice()
+		# irho = 0; irhoE = dim + 1
+		irho = self.GetStateIndex("Density")
+		irhoE = self.GetStateIndex("Energy")
+		# imom = self.GetMomentumSlice()
+		srho = self.get_state_slice("Density")
+		srhoE = self.get_state_slice("Energy")
+		smom = self.GetMomentumSlice()
 
 		eps = general.eps
 
-		rho = u[:,irho:irho+1]
+		rho = Up[:, srho]
 		rho += eps
-		rhoE = u[:,irhoE:irhoE+1]
-		mom = u[:,imom]
+		rhoE = Up[:, srhoE]
+		mom = Up[:, smom]
 
-		p = self.ComputeScalars("Pressure", u)
-		h = self.ComputeScalars("TotalEnthalpy", u)
+		p = self.ComputeScalars("Pressure", Up)
+		h = self.ComputeScalars("TotalEnthalpy", Up)
 
-		pmat = np.zeros([u.shape[0], dim, dim])
-		idx = np.full([dim,dim],False)
-		np.fill_diagonal(idx,True)
-		pmat[:,idx] = p
+		pmat = np.zeros([Up.shape[0], dim, dim])
+		idx = np.full([dim, dim], False)
+		np.fill_diagonal(idx, True)
+		pmat[:, idx] = p
 
-		if F is None:
-			F = np.empty(u.shape+(dim,))
+		# if F is None:
+		# 	F = np.empty(Up.shape+(dim,))
 
-		F[:,irho,:] = mom
-		F[:,imom,:] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
-		F[:,irhoE,:] = mom*h
+		F = np.empty(Up.shape + (dim,))
+		F[:, irho, :] = mom
+		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
+		F[:, irhoE, :] = mom*h
 
 		rho -= eps
 
@@ -98,9 +104,9 @@ class Euler(base.PhysicsBase):
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		smom = self.GetMomentumSlice()
-		rho = Up[:,srho]
-		rhoE = Up[:,srhoE]
-		mom = Up[:,smom]
+		rho = Up[:, srho]
+		rhoE = Up[:, srhoE]
+		mom = Up[:, smom]
 
 		# scalar = np.zeros([Up.shape[0], 1])
 
@@ -118,23 +124,23 @@ class Euler(base.PhysicsBase):
 
 		# if np.any(P < 0.) or np.any(rho < 0.):
 		# 	raise errors.NotPhysicalError
-		def getP():
+		def get_pressure():
 			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
 			if flag_non_physical:
 				if np.any(scalar < 0.):
 					raise errors.NotPhysicalError
 			return scalar
-		def getT():
-			return getP()/(rho*R)
+		def get_temperature():
+			return get_pressure()/(rho*R)
 
 
 		''' Get final scalars '''
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["Pressure"].name:
-			scalar = getP()
+			scalar = get_pressure()
 		elif sname is self.AdditionalVariables["Temperature"].name:
 			# scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)/(rho*R)
-			scalar = getT()
+			scalar = get_temperature()
 		elif sname is self.AdditionalVariables["Entropy"].name:
 			# Pressure
 			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
@@ -142,19 +148,19 @@ class Euler(base.PhysicsBase):
 			# T = getP()/(rho*R)
 
 			# scalar = R*(gamma/(gamma-1.)*np.log(getT()) - np.log(getP()))
-			scalar = np.log(getP()/rho**gamma)
+			scalar = np.log(get_pressure()/rho**gamma)
 		elif sname is self.AdditionalVariables["InternalEnergy"].name:
 			scalar = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
 		elif sname is self.AdditionalVariables["TotalEnthalpy"].name:
-			scalar = (rhoE + getP())/rho
+			scalar = (rhoE + get_pressure())/rho
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
 			# Pressure
 			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
-			scalar = np.sqrt(gamma*getP()/rho)
+			scalar = np.sqrt(gamma*get_pressure()/rho)
 		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure
 			# P = GetPressure()
-			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*getP()/rho)
+			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
 		else:
 			raise NotImplementedError
 

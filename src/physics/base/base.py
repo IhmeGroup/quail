@@ -303,7 +303,7 @@ class PhysicsBase(object):
 
 	def ConvFluxProjected(self, Up, normals):
 
-		F = self.ConvFluxInterior(Up, None)
+		F = self.ConvFluxInterior(Up)
 		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
 
 	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
