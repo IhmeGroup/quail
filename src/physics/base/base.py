@@ -131,8 +131,10 @@ class PhysicsBase(object):
 			raise errors.IncompatibleError
 
 		self.set_maps()
+
 	def __repr__(self):
 		return '{self.__class__.__name__}'.format(self=self)
+
 	def set_maps(self):
 
 		self.IC_fcn_map = {
@@ -222,7 +224,8 @@ class PhysicsBase(object):
 		self.Sources.append(source)
 
 	def set_conv_num_flux(self, conv_num_flux_type, **kwargs):
-		conv_num_flux_ref = process_map(conv_num_flux_type, self.conv_num_flux_map)
+		conv_num_flux_ref = process_map(conv_num_flux_type, 
+				self.conv_num_flux_map)
 		self.ConvFluxFcn = conv_num_flux_ref(**kwargs)
 		
 	@abstractmethod
@@ -267,17 +270,17 @@ class PhysicsBase(object):
 	# 	self.Sources.append(Source)
 	# 	Source.Set(**kwargs)
 
-	def QuadOrder(self, Order):
-		return 2*Order+1
+	def QuadOrder(self, order):
+		return 2*order+1
 
 	@abstractmethod
 	def ConvFluxInterior(self, u):
 		pass
 
 	@abstractmethod
-	def ConvFluxNumerical(self, uL, uR, normals):
+	def ConvFluxNumerical(self, UpL, UpR, normals):
 		# self.ConvFluxFcn.AllocHelperArrays(uL)
-		F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
+		F = self.ConvFluxFcn.compute_flux(self, UpL, UpR, normals)
 
 		return F
 
@@ -286,22 +289,22 @@ class PhysicsBase(object):
 	# 	pass
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
-	def SourceState(self, nq, xglob, Time, u, s=None):
+	def SourceState(self, nq, xglob, Time, Up, s=None):
 		for Source in self.Sources:
 
 			#loop through available source terms
 			Source.x = xglob
 			Source.nq = nq
 			Source.Time = Time
-			Source.U = u
+			Source.U = Up
 			s += self.CallSourceFunction(Source,Source.x,Source.Time)
 
 		return s
 
-	def ConvFluxProjected(self, u, nvec):
+	def ConvFluxProjected(self, Up, normals):
 
-		F = self.ConvFluxInterior(u, None)
-		return np.sum(F.transpose(1,0,2)*nvec, axis=2).transpose()
+		F = self.ConvFluxInterior(Up, None)
+		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
 
 	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
 	# 	bctreatment = self.BCTreatments[BC.BCType]
