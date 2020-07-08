@@ -7,16 +7,14 @@ import time
 import errors
 from data import ArrayList, GenericData
 
-from general import ModalOrNodal
+from general import ModalOrNodal, NodeType, ShapeType
 
 import meshing.meshbase as mesh_defs
 
 import numerics.basis.tools as basis_tools
 
 import numerics.limiting.tools as limiter_tools
-# import numerics.limiting.positivitypreserving as pp_limiter
 
-# from numerics.quadrature.quadrature import QuadData
 import numerics.timestepping.stepper as stepper
 
 import processing.post as post_defs
@@ -53,11 +51,16 @@ class SolverBase(ABC):
 		basis_name  = Params["InterpBasis"]
 		self.basis = basis_tools.set_basis(EqnSet.order, basis_name)
 
+		node_type = Params["NodeType"]
+		self.basis.get_1d_nodes = basis_tools.set_node_type(node_type)
+
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		self.basis.set_face_quadrature_type(Params["FaceQuadrature"])
 		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
+
+		self.basis.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
 		# check for compatibility
 		# if mesh.gbasis.shape_type != self.basis.shape_type:
 		# 	raise errors.IncompatibleError
@@ -94,6 +97,12 @@ class SolverBase(ABC):
 		if Params["InterpolateIC"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
+		node_type = Params["NodeType"]
+		if NodeType[node_type] == NodeType.GaussLobatto and basis.shape_type == ShapeType.Triangle:
+			raise errors.IncompatibleError
+
+		code.interact(local=locals())
+
 
 	@abstractmethod
 	def precompute_matrix_operators(self):
@@ -122,7 +131,7 @@ class SolverBase(ABC):
 		order = EqnSet.order
 
 		if Params["InterpolateIC"]:
-			eval_pts, npts = basis.equidistant_nodes(order)
+			eval_pts, npts = basis.get_nodes(order)
 		else:
 			order = 2*np.amax([EqnSet.order, 1])
 			order = EqnSet.QuadOrder(order)
@@ -136,7 +145,6 @@ class SolverBase(ABC):
 			xphys, _ = mesh_defs.ref_to_phys(mesh, elem, None, eval_pts)
 			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
 			# f.shape = npts,ns
-
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
 			else:
@@ -158,7 +166,7 @@ class SolverBase(ABC):
 			raise errors.IncompatibleError
 
 		if Params["InterpolateIC"]:
-			eval_pts, npts = basis.equidistant_nodes(EqnSet.order)
+			eval_pts, npts = basis.get_nodes(EqnSet.order)
 		else:
 			order = 2*np.amax([EqnSet.order, order_old])
 			quad_order = basis.get_quadrature(mesh, order)
