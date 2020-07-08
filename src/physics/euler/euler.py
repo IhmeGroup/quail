@@ -61,6 +61,7 @@ class Euler(base.PhysicsBase):
 	    TotalEnthalpy = "H"
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
+	    Velocity = "u"
 
 	def ConvFluxInterior(self, Up):
 		dim = self.dim
@@ -161,6 +162,8 @@ class Euler(base.PhysicsBase):
 			# Pressure
 			# P = GetPressure()
 			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
+		elif sname is self.AdditionalVariables["Velocity"].name:
+			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho
 		else:
 			raise NotImplementedError
 
@@ -190,6 +193,9 @@ class Euler1D(Euler):
 			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.SmoothIsentropicFlow,
 			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
+			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
+			euler_fcn_type.SmoothRiemannProblem : euler_fcns.SmoothRiemannProblem,
+
 		}
 
 		self.IC_fcn_map.update(d)

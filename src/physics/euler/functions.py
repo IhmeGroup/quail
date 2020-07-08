@@ -11,7 +11,8 @@ class FcnType(Enum):
     MovingShock = auto()
     IsentropicVortex = auto()
     DensityWave = auto()
-
+    RiemannProblem = auto()
+    SmoothRiemannProblem = auto()
 
 class BCType(Enum):
 	SlipWall = auto()
@@ -80,16 +81,12 @@ class MovingShock(FcnBase):
 
 		M = self.M
 		xshock = self.xshock
-		# srho = physics.get_state_slice("Density")
-		# srhou = physics.get_state_slice("XMomentum")
-		# srhoE = physics.get_state_slice("Energy")
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
 		gamma = physics.gamma
 		
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-
 		''' Pre-shock state '''
 		rho1 = 1.
 		p1 = 1.e5
@@ -126,6 +123,93 @@ class MovingShock(FcnBase):
 
 		return Up
 
+class RiemannProblem(FcnBase):
+	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xshock=0.):
+		# Default conditions set up for Sod Problem.
+		self.uL = uL
+		self.uR = uR
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+
+		xshock = self.xshock
+		uL = self.uL
+		uR = self.uR
+
+		rhoL = uL[0]
+		vL = uL[1]
+		pL = uL[2]
+		
+		rhoR = uR[0]
+		vR = uR[1]
+		pR = uR[2]
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		gam = physics.gamma
+		
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+
+		''' Fill state '''
+		ileft = (x <= xshock).reshape(-1)
+		iright = (x > xshock).reshape(-1)
+
+		# Density
+		Up[iright, srho] = rhoR
+		Up[ileft, srho] = rhoL
+		# Momentum
+		Up[iright, srhou] = rhoR*vR
+		Up[ileft, srhou] = rhoL*vL
+		# Energy
+		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR
+		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL
+
+		return Up
+
+class SmoothRiemannProblem(FcnBase):
+	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), w=0.05, xshock=0.):
+		# Default conditions set up for Sod Problem.
+		self.uL = uL
+		self.uR = uR
+		self.w = w
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+
+		xshock = self.xshock
+		uL = self.uL
+		uR = self.uR
+		w = self.w
+
+		rhoL = uL[0]
+		vL = uL[1]
+		pL = uL[2]
+		
+		rhoR = uR[0]
+		vR = uR[1]
+		pR = uR[2]
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		gam = physics.gamma
+		
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+
+
+		# w = 0.05
+		def set_tanh(a,b,w,xo):
+			return 0.5*((a+b)+(b-a)*np.tanh((x-xo)/w))
+		# Density
+		Up[:, srho] =  set_tanh(rhoL,rhoR,w,xshock)
+
+		# Momentum
+		Up[:, srhou] = set_tanh(rhoL*vL,rhoR*vR,w,xshock)
+		# Energy
+		rhoeL = pL/(gam-1.) + 0.5*rhoL*vL*vL
+		rhoeR = pR/(gam-1.) + 0.5*rhoR*vR*vR
+		Up[:, srhoE] = set_tanh(rhoeL,rhoeR,w,xshock)
+
+		return Up
 
 class DensityWave(FcnBase):
 	def __init__(self, p=1.0):
