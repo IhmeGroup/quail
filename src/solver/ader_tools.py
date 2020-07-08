@@ -56,7 +56,8 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem_ops_st, elem,
 
 	# F = np.reshape(F,(nqST,sr,dim))
 	
-	ER = np.tensordot(np.tile(basis_pgrad,(nb,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
+	# ER = np.tensordot(np.tile(basis_pgrad,(nb,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
+	ER = np.tensordot(np.tile(basis_pgrad,(nq,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
 
 	return ER
 
@@ -76,7 +77,9 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	# F = np.reshape(F,(nqST,sr))
 	
 	nb = basis_val.shape[1]
-	R = np.matmul(np.tile(basis_val,(nb,1)).transpose(), Fq*quad_wts_st) # [nb, ns]
+	nq = quad_wts_st.shape[0]
+	# code.interact(local=locals())
+	R = np.matmul(np.tile(basis_val,(nq,1)).transpose(), Fq*quad_wts_st) # [nb, ns]
 
 	return R
 
@@ -103,7 +106,8 @@ def calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq):
 	# 				ER[k,ir] += wq[i]*wq[j]*s[i,j,ir]*JData.djac[j*(JData.nq!=1)]*Psi
 	# s = np.reshape(s,(nqST,sr))
 
-	ER = np.matmul(np.tile(basis_val,(nb,1)).transpose(),Sq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1)) # [nb, ns]
+	# ER = np.matmul(np.tile(basis_val,(nb,1)).transpose(),Sq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1)) # [nb, ns]
+	ER = np.matmul(np.tile(basis_val,(nq,1)).transpose(),Sq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1)) # [nb, ns]
 
 	return ER
 

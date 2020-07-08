@@ -233,7 +233,7 @@ class ADEROperators(object):
 		nb = basis.nb
 		xnode = None
 		gbasis=mesh.gbasis
-		xnode, nnode = gbasis.equidistant_nodes(order,xnode)
+		xnode, nnode = gbasis.get_nodes(order,xnode)
 
 		# Allocate
 		self.jac_elems = np.zeros([nElem,nb,dim,dim])
@@ -317,6 +317,10 @@ class ADERDG(base.SolverBase):
 		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
+		self.basis.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
+		self.basis_st.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
+
+
 		# Allocate array for predictor step in ADER-Scheme
 		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.NUM_STATE_VARS])
 
@@ -339,8 +343,10 @@ class ADERDG(base.SolverBase):
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
+	
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   Basis: {self.basis},\n   Basis_st: {self.basis_st},\n   Stepper: {self.Stepper})'.format(self=self)
+	
 	def check_compatibility(self):
 		'''
 		Method: check_compatibility
@@ -420,93 +426,6 @@ class ADERDG(base.SolverBase):
 			Up[elem] = self.calculate_predictor_elem(self, elem, dt, W[elem], Up[elem])
 
 		return Up
-
-	# def calculate_predictor_elem(self, elem, dt, Wp, Up):
-	# 	'''
-	# 	Method: calculate_predictor_elem
-	# 	-------------------------------------------
-	# 	Calculates the predicted solution state for the ADER-DG method using a nonlinear solve of the
-	# 	weak form of the DG discretization in time.
-
-	# 	INPUTS:
-	# 		elem: element index
-	# 		dt: time step 
-	# 		Wp: previous time step solution in space only
-
-	# 	OUTPUTS:
-	# 		Up: predicted solution in space-time
-	# 	'''
-	# 	EqnSet = self.EqnSet
-	# 	ns = EqnSet.NUM_STATE_VARS
-	# 	mesh = self.mesh
-
-	# 	basis = self.basis
-	# 	basis_st = self.basis_st
-
-	# 	order = EqnSet.order
-		
-	# 	elem_ops = self.elem_operators
-	# 	ader_ops = self.ader_operators
-		
-	# 	quad_wts = elem_ops.quad_wts
-	# 	basis_val = elem_ops.basis_val 
-	# 	djac_elems = elem_ops.djac_elems 
-		
-	# 	djac = djac_elems[elem]
-	# 	# _, ElemVols = MeshTools.element_volumes(mesh, self)
-
-	# 	FTR = ader_ops.FTR
-	# 	MM = ader_ops.MM
-	# 	SMS = ader_ops.SMS_elems[elem]
-	# 	# K = ader_ops.K
-	# 	iK = ader_ops.iK
-	# 	# W_bar = np.zeros([1,ns])
-	# 	# Wq = np.matmul(basis_val, Wp)
-	# 	# vol = ElemVols[elem]
-
-	# 	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
-
-	# 	# Wh = np.average(W)
-
-	# 	# def F(u):
-	# 	# 	S = 0.
-	# 	# 	S = EqnSet.SourceState(1, 0., 0., u, S)
-	# 	# 	F = u - S[0,0] - W_bar[0,0]
-	# 	# 	return F
-
-	# 	#U_bar = fsolve(F, W_bar)
-	# 	# nu= -100000.
-	# 	# dsdu = nu
-	# 	# Up[:] = U_bar
-	# 	#code.interact(local=locals())
-	# 	#dsdu = (1./nu)*(2.*U_bar-3.*U_bar**2 - 0.5 +2.*U_bar*0.5)
-	# 	#dsdu = (1./nu)*(2.*Up-3.*Up**2 - 0.5 +2.*Up*0.5)
-	# 	#code.interact(local=locals())
-
-	# 	### Hacky implementation of implicit source term
-	# 	# Kp = K-MM*dt*dsdu
-
-	# 	# iK = np.linalg.inv(Kp)
-
-	# 	srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
-	# 	flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
-	# 	ntest = 10
-	# 	for i in range(ntest):
-
-	# 		# Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.matmul(SMS,fluxpoly)+np.matmul(FTR,Wp)-np.matmul(MM,dt*dsdu*Up)))
-	# 		Up_new = np.matmul(iK,(np.matmul(MM,srcpoly)-np.einsum('ijk,jlk->il',SMS,flux)+np.matmul(FTR,Wp)))
-	# 		err = Up_new - Up
-
-	# 		if np.amax(np.abs(err))<1e-10:
-	# 			Up = Up_new
-	# 			break
-
-	# 		Up = Up_new
-			
-	# 		srcpoly = self.source_coefficients(elem, dt, order, basis_st, Up)
-	# 		flux = self.flux_coefficients(elem, dt, order, basis_st, Up)
-
-	# 	return Up
 
 	def calculate_residual_elem(self, elem, Up, ER):
 		'''
@@ -805,7 +724,6 @@ class ADERDG(base.SolverBase):
 		elem_ops_st = self.elem_operators_st
 		djac_elems = elem_ops.djac_elems 
 		djac = djac_elems[elem]
-		S = elem_ops_st.Sq
 
 		x_elems = elem_ops.x_elems
 		x = x_elems[elem]
@@ -817,13 +735,12 @@ class ADERDG(base.SolverBase):
 		TimePhiData = None
 
 		if Params["InterpolateFlux"]:
-			xnode, nb = basis.equidistant_nodes(order)
-
+			xnode, nb = basis.get_nodes(order)
 			t = np.zeros([nb,dim])
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xnode, t, None)
 			Sq = np.zeros([t.shape[0],ns])
+			S = np.zeros_like(Sq)
 			Sq = EqnSet.SourceState(nb, x_ader, t, Up, Sq)
-
 			dg_tools.interpolate_to_nodes(Sq, S)
 		else:
 
