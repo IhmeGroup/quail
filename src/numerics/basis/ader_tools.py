@@ -213,7 +213,7 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
     else:
-        djac = np.full(nq, 1.)
+        djac = np.full(nq, 1.).reshape(nq,1)
 
     nb_st = basis.basis_val.shape[1]
     MM = np.zeros([nb_st,nb_st])

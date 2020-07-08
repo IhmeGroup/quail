@@ -18,6 +18,8 @@ Numerics = {
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
+    "NodeType" : "GaussLegendre",
+    "NodesEqualQuadpts" : False,
     "InterpolateIC" : False,
     "OrderSequencing" : False,
     "ApplyLimiter" : None, 

@@ -31,6 +31,7 @@ class BasisType(Enum):
 class LimiterType(Enum):
     PositivityPreserving = auto()
     ScalarPositivityPreserving = auto()
+    PositivityPreservingChem = auto()
 
 
 class SolverType(Enum):
@@ -54,7 +55,7 @@ class PhysicsType(Enum):
     ConstAdvScalar = auto()
     Burgers = auto()
     Euler = auto()
-
+    Chemistry = auto()
 
 class ModalOrNodal(Enum):
     Modal = auto()
@@ -64,7 +65,12 @@ class ModalOrNodal(Enum):
 
 class QuadratureType(Enum):
     GaussLegendre = auto()
+    GaussLobatto = auto()
     Dunavant = auto()
+
+class NodeType(Enum):
+    GaussLegendre = auto()
+    GaussLobatto = auto()
 
 
 INTERIORFACE = -1
