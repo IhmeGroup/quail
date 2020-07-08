@@ -92,15 +92,17 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	'''
 	EqnSet = solver.EqnSet
 	DataSet = solver.DataSet
+	iMM_elems = solver.elem_operators.iMM_elems
+
 	# if MMinv is None:
 	# 	MMinv = GetInvMassMatrix(mesh, 0, 0, EqnSet.orders[0])
 
-	try:
-		MMinv_all = DataSet.MMinv_all
-	except AttributeError:
-		# not found; need to compute
-		MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
-		DataSet.MMinv_all = MMinv_all
+	# try:
+	# 	MMinv_all = DataSet.MMinv_all
+	# except AttributeError:
+	# 	# not found; need to compute
+	# 	MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
+	# 	DataSet.MMinv_all = MMinv_all
 
 	if dt is None:
 		c = 1.
@@ -110,8 +112,8 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	# 	U = copy.deepcopy(R)
 
 	for elem in range(mesh.nElem):
-		U_ = U[elem]
-		U_[:,:] = c*np.matmul(MMinv_all[elem], R[elem])
+		Ue = U[elem]
+		Ue[:,:] = c*np.matmul(iMM_elems[elem], R[elem])
 
 	# U[:,:,:] = c*np.einsum('ijk,ikl->ijl', MMinv_all, R)
 
