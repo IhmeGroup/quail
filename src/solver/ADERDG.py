@@ -302,7 +302,7 @@ class ADERDG(base.SolverBase):
 		TimeScheme = Params["TimeScheme"]
 		if StepperType[TimeScheme] != StepperType.ADER:
 			raise errors.IncompatibleError
-		self.Stepper = stepper.ADER()
+		self.Stepper = stepper.ADER(EqnSet.U)
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]

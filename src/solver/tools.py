@@ -75,7 +75,7 @@ def calculate_dRdU(elem_ops, elem, jac):
 
 	return ER
 
-def mult_inv_mass_matrix(mesh, solver, dt, R, U):
+def mult_inv_mass_matrix(mesh, solver, dt, R):
 	'''
 	Method: mult_inv_mass_matrix
 	-------------------------------
@@ -111,11 +111,13 @@ def mult_inv_mass_matrix(mesh, solver, dt, R, U):
 	# if not U:
 	# 	U = copy.deepcopy(R)
 
-	for elem in range(mesh.nElem):
-		Ue = U[elem]
-		Ue[:,:] = c*np.matmul(iMM_elems[elem], R[elem])
+	# for elem in range(mesh.nElem):
+	# 	Ue = U[elem]
+	# 	Ue[:,:] = c*np.matmul(iMM_elems[elem], R[elem])
 
 	# U[:,:,:] = c*np.einsum('ijk,ikl->ijl', MMinv_all, R)
+
+	return c*np.einsum('ijk,ikl->ijl', iMM_elems, R)
 
 
 # def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
