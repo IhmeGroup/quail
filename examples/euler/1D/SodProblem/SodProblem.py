@@ -1,6 +1,6 @@
 import numpy as np
 import copy
-cfl = 0.05
+cfl = 0.1
 u = 1.
 dx = 0.1
 
@@ -12,13 +12,13 @@ TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
     "nTimeStep" : nTimeSteps,
-    "TimeScheme" : "ADER",
+    "TimeScheme" : "SSPRK3",
 }
 
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeEqSeg",
-    "Solver" : "ADERDG",
+    "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     "InterpolateIC" : True,
     "NodeType" : "GaussLobatto",
