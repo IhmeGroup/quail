@@ -7,7 +7,11 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
 
 	# Get quadrature points and weights for segment
 	# Only Gauss-Legendre for now
-	fpts = int(np.sqrt(forced_pts))
+	try:
+		fpts = int(np.sqrt(forced_pts))
+	except:
+		fpts = None
+		
 	qpts_seg, qwts_seg = qseg.get_quadrature_points_weights(order, quad_type, fpts)
 
 	# tensor product
