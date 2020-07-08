@@ -3,13 +3,13 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import BasisType, ShapeType, ModalOrNodal, QuadratureType
+from general import BasisType, ShapeType, ModalOrNodal, QuadratureType, NodeType
 
 import meshing.gmsh as mesh_gmsh
 
 import numerics.basis.tools as basis_tools
 import numerics.basis.basis as basis_defs
-# import numerics.quadrature.quadrature as quadrature
+
 from numerics.quadrature import segment, quadrilateral, triangle
 
 RefQ1Coords = {
@@ -70,6 +70,9 @@ class ShapeBase(ABC):
     def set_face_quadrature_type(self, quadrature_name):
         self.face_shape.quadrature_type = QuadratureType[quadrature_name]
 
+    def force_nodes_equal_quadpts(self, force_flag):
+        if force_flag == True:
+            self.forced_pts = self.get_num_basis_coeff(self.order)
 
 class PointShape(ShapeBase):
 
@@ -144,7 +147,7 @@ class SegShape(ShapeBase):
             return xn, nb
 
         xn[:,0] = basis_tools.equidistant_nodes_1D_range(-1., 1., nb)
-        
+
         return xn, nb
 
     def ref_face_to_elem(self, face, nq, xface, xelem=None):
@@ -171,7 +174,7 @@ class SegShape(ShapeBase):
 
         return xelem
 
-    def get_quadrature(self, mesh, order, physics = None):
+    def get_quadrature(self, mesh, order, physics=None):
         
         dim = self.dim
         gorder = mesh.gorder
@@ -186,7 +189,12 @@ class SegShape(ShapeBase):
 
     def get_quad_data(self, order):
 
-        quad_pts, quad_wts = segment.get_quadrature_points_weights(order, self.quadrature_type)
+        try:
+            fpts = self.forced_pts
+        except:
+            fpts = None
+
+        quad_pts, quad_wts = segment.get_quadrature_points_weights(order, self.quadrature_type, forced_pts=fpts)
 
         return quad_pts, quad_wts
 
@@ -292,7 +300,12 @@ class QuadShape(ShapeBase):
 
     def get_quad_data(self, order):
 
-        quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(order, self.quadrature_type)
+        try:
+            fpts = self.forced_pts
+        except:
+            fpts = None
+
+        quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(order, self.quadrature_type, forced_pts=fpts)
 
         return quad_pts, quad_wts
 
@@ -419,6 +432,8 @@ class BasisBase(ABC):
         self.face = -1
         self.nb = 0
         self.quadrature_type = -1
+        self.get_1d_nodes = basis_tools.set_node_type("GaussLegendre")
+
     def __repr__(self):
         return '{self.__class__.__name__}(Order={self.order})'.format(self=self)
 
@@ -610,8 +625,42 @@ class LagrangeEqSeg(BasisBase, SegShape):
         super().__init__(order)
         self.nb = self.get_num_basis_coeff(order)
         self.calculate_normals = basis_tools.calculate_1D_normals
+ 
+    def get_nodes(self, p, xn=None):
+        '''
+        Method: equidistant_nodes
+        --------------------------
+        Calculate the coordinates in ref space
 
+        INPUTS:
+            p: order of polynomial space
+            
+        OUTPUTS: 
+            xn: coordinates of nodes in ref space
+        '''
+        nb = self.get_num_basis_coeff(p)
+
+        dim = self.dim
+
+        adim = nb,dim
+        if xn is None or xn.shape != adim:
+            xn = np.zeros(adim)
+
+        if p == 0:
+            xn[:] = 0.0 # 0.5
+            return xn, nb
+
+        # xn[:,0] = basis_tools.equidistant_nodes_1D_range(-1., 1., nb)
+        xn[:,0] = self.get_1d_nodes(-1., 1., nb)
+
+        return xn, nb
+
+# <<<<<<< Updated upstream
     def get_values(self, quad_pts):
+# =======
+        # return xn, nb
+    # def get_values(self, quad_pts, basis_val=None):
+# >>>>>>> Stashed changes
         '''
         Method: get_values
         ------------------------------
@@ -637,10 +686,20 @@ class LagrangeEqSeg(BasisBase, SegShape):
             basis_val[:] = 1.
             return basis_val
 
+# <<<<<<< Updated upstream
         # nnode = p + 1
-        xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., p + 1)
+        # xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., p + 1)
+        xnodes = self.get_1d_nodes(-1., 1., p + 1)
 
         get_lagrange_basis_1D(quad_pts, xnodes, basis_val)
+# =======
+        # nnode = p+1
+        # xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
+        # xnode = self.get_1d_nodes(-1., 1., nnode)
+
+        # scheme = quadpy.line_segment.gauss_lobatto(nnode)
+        # xnode = scheme.points
+# >>>>>>> Stashed changes
 
         # self.basis_val = basis_val
 
@@ -673,8 +732,16 @@ class LagrangeEqSeg(BasisBase, SegShape):
             # basis_grad[:,:] = 0.
             return basis_grad
 
-        # nnode = p + 1
-        xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., p + 1)
+# <<<<<<< Updated upstream
+#         # nnode = p + 1
+#         xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., p + 1)
+# =======
+        # nnode = p+1
+        # xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
+        xnodes = self.get_1d_nodes(-1., 1., p + 1)
+        # scheme = quadpy.line_segment.gauss_lobatto(nnode)
+        # xnode = scheme.points
+# >>>>>>> Stashed changes
 
         get_lagrange_basis_1D(quad_pts, xnodes, gphi=basis_grad)
 
@@ -767,7 +834,40 @@ class LagrangeEqQuad(BasisBase, QuadShape):
         self.nb = self.get_num_basis_coeff(order)
         self.calculate_normals = basis_tools.calculate_2D_normals
 
+    def get_nodes(self, p, xn=None):
+        '''
+        Method: equidistant_nodes
+        --------------------------
+        Calculate the coordinates in ref space
+
+        INPUTS:
+            basis: type of basis function
+            p: order of polynomial space
+            
+        OUTPUTS: 
+            xn: coordinates of nodes in ref space
+        '''
+        nb = self.get_num_basis_coeff(p)
+        dim = self.dim
+
+        adim = nb,dim
+        if xn is None or xn.shape != adim:
+            xn = np.zeros(adim)
+
+        if p == 0:
+            xn[:] = 0.0 # 0.5
+            return xn, nb
+
+        # xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+        xseg = self.get_1d_nodes(-1., 1., p + 1)
+
+        xn[:,0] = np.tile(xseg, (p+1,1)).reshape(-1)
+        xn[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
+
+        return xn, nb
+
     def get_values(self, quad_pts):
+# >>>>>>> Stashed changes
         '''
         Method: get_values
         ------------------------------
@@ -793,8 +893,14 @@ class LagrangeEqQuad(BasisBase, QuadShape):
             basis_val[:] = 1.
             return basis_val
 
+# <<<<<<< Updated upstream
         # nnode = p + 1
-        xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+        # xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+# =======
+        # nnode = p+1
+        # xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+        xnodes = self.get_1d_nodes(-1., 1., p+1)
+# >>>>>>> Stashed changes
 
         get_lagrange_basis_2D(quad_pts, xnodes, basis_val)
 
@@ -829,10 +935,18 @@ class LagrangeEqQuad(BasisBase, QuadShape):
             # basis_grad[:,:] = 0.
             return basis_grad
 
-        # nnode = p + 1
-        xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+
+        xnode = self.get_1d_nodes(-1., 1., p + 1)
+
+# <<<<<<< Updated upstream
+#         # nnode = p + 1
+#         xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
 
         get_lagrange_basis_2D(quad_pts, xnode, gphi=basis_grad)
+# =======
+        # nnode = p+1
+        # xnode = basis_tools.equidistant_nodes_1D_range(-1., 1., nnode)
+# >>>>>>> Stashed changes
 
         # self.basis_grad = basis_grad
 
