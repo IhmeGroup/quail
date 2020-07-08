@@ -178,7 +178,7 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 		# SolnLabel = plot_defs.get_solution_label(EqnSet, variable_name, ylabel)
 		# plot_defs.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True, **kwargs)
 		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
-		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label)
+		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label, 0)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)
 
 
