@@ -103,7 +103,7 @@ def Plot1D(EqnSet, x, u, SolnLabel, VariableName=None, u_exact=None, u_IC=None,
 	plt.ylabel(SolnLabel)
 
 
-def plot_1D(EqnSet, x, var_plot, ylabel, fmt, legend_label, **kwargs):
+def plot_1D(EqnSet, x, var_plot, ylabel, fmt, legend_label, skip=0, **kwargs):
 	### reshape
 	# uplot = u[:,:,iplot]
 	# uplot = np.reshape(uplot, (-1,))
@@ -146,7 +146,10 @@ def plot_1D(EqnSet, x, var_plot, ylabel, fmt, legend_label, **kwargs):
 	# 	legend_label = kwargs["legend_label"]
 	# else:
 	# 	legend_label = "DG"
-	plt.plot(x, var_plot, fmt, label=legend_label) 
+	if skip !=0:
+		plt.plot(x[idx[0]:idx[-1]:skip], var_plot[idx[0]:idx[-1]:skip], fmt, label=legend_label) 
+	else:
+		plt.plot(x, var_plot, fmt, label=legend_label) 
 	plt.ylabel(ylabel)
 
 
@@ -415,7 +418,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, nPoint=101, plot_
 	else:
 		xlabel = "y"
 		line = yline
-	plot_1D(physics, line, var_plot, ylabel, fmt, legend_label, **kwargs)
+	plot_1D(physics, line, var_plot, ylabel, fmt, legend_label, 0, **kwargs)
 	# Plot1D(EqnSet, line, uline, SolnLabel, var_name, u_exact, u_IC, u_var_calculated=True, **kwargs)
 
 	# code.interact(local=locals())
@@ -591,7 +594,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 
 def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 			ylabel=None, fmt='k-', legend_label=None, equidistant_pts=True, 
-			include_mesh=False, regular_2D=False, equal_AR=False, **kwargs):
+			include_mesh=False, regular_2D=False, equal_AR=False, skip=0, **kwargs):
 
 	plot_sum = plot_numerical + plot_exact + plot_IC
 	if plot_sum >= 2:
@@ -628,7 +631,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exa
 		plt.figure()
 
 	if dim == 1:
-		plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, **kwargs)
+		plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip, **kwargs)
 	else:
 		# if PlotExact: u = u_exact # plot either only numerical or only exact
 		plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR, **kwargs)
