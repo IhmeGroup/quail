@@ -2,12 +2,14 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import SetSolverParams, BasisType, ShapeType
+from general import SetSolverParams, BasisType, ShapeType, NodeType
 
 import meshing.gmsh as mesh_gmsh
 
 
 import numerics.basis.basis as basis_defs
+
+import numerics.quadrature.segment as segment
 
 Basis2Shape = {
     BasisType.LagrangeEqSeg : ShapeType.Segment,
@@ -37,11 +39,20 @@ def set_basis(order, basis_name):
         raise NotImplementedError
     return basis
 
+def set_node_type(node_type):
+    if NodeType[node_type] == NodeType.GaussLegendre:
+        fcn = equidistant_nodes_1D_range
+    elif NodeType[node_type] == NodeType.GaussLobatto:
+        fcn = gauss_lobatto_nodes_1D_range
+    else:
+        raise NotImplementedError
+
+    return fcn
+
+
 def equidistant_nodes_1D_range(start, stop, nnode):
     '''
-    Method: equidistant_nodes_1D_range
-    -----------------------------------
-    Calculate the 1D coordinates in ref space
+    This function calculates the 1D coordinates in reference space.
 
     INPUTS:
         start: start of ref space (default: -1)
@@ -62,6 +73,18 @@ def equidistant_nodes_1D_range(start, stop, nnode):
 
     return xnode
 
+def gauss_lobatto_nodes_1D_range(start, stop, nnode):
+
+    if nnode <= 1: 
+        raise ValueError
+    if stop <= start:
+        raise ValueError
+    
+    xnode,_ = segment.gauss_lobatto(nnode) 
+
+    return xnode
+
+
 def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     Method: get_elem_mass_matrix
@@ -72,7 +95,8 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
         mesh: mesh object
         basis: type of basis function
         order: solution order
-        PhysicalSpace: Flag to calc matrix in physical or reference space (default: False {reference space})
+        PhysicalSpace: Flag to calc matrix in physical or reference 
+                       space (default: False {reference space}) 
         elem: element index
 
     OUTPUTS: 
@@ -85,7 +109,6 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
         quad_order = order*2
 
     quad_pts, quad_wts = basis.get_quad_data(quad_order)
-
     # quad_pts = basis.quad_pts
     # quad_wts = basis.quad_wts
 
@@ -112,7 +135,8 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
 
     return MM
 
-def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
+def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, 
+        PhysicalSpace=False):
     '''
     Method: get_elem_inv_mass_matrix
     ---------------------------------
@@ -173,7 +197,8 @@ def get_stiffness_matrix(mesh, basis, order, elem):
         for j in range(nb):
             t = 0.
             for iq in range(nq):
-                t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]*JData.djac[iq*(JData.nq != 1)]
+                t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]* \
+                    JData.djac[iq*(JData.nq != 1)]
             SM[i,j] = t
 
     return SM
