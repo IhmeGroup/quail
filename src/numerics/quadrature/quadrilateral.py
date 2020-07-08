@@ -1,12 +1,14 @@
 import numpy as np
+import code
 import numerics.quadrature.segment as qseg
 
 
-def get_quadrature_points_weights(order, quad_type):
+def get_quadrature_points_weights(order, quad_type, forced_pts=None):
 
 	# Get quadrature points and weights for segment
 	# Only Gauss-Legendre for now
-	qpts_seg, qwts_seg = qseg.get_quadrature_points_weights(order, quad_type)
+	fpts = int(np.sqrt(forced_pts))
+	qpts_seg, qwts_seg = qseg.get_quadrature_points_weights(order, quad_type, fpts)
 
 	# tensor product
 
