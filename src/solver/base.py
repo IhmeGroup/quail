@@ -101,9 +101,6 @@ class SolverBase(ABC):
 		if NodeType[node_type] == NodeType.GaussLobatto and basis.shape_type == ShapeType.Triangle:
 			raise errors.IncompatibleError
 
-		code.interact(local=locals())
-
-
 	@abstractmethod
 	def precompute_matrix_operators(self):
 		pass
