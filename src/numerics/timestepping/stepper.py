@@ -397,12 +397,6 @@ class Strang(StepperBase):
 				Up = physics.U
 				ns = physics.NUM_STATE_VARS
 
-				# try:
-				# 	MMinv_all = DataSet.MMinv_all
-				# except AttributeError:
-				# 	# not found; need to compute
-				# 	MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
-				# 	DataSet.MMinv_all = MMinv_all
 				iMM_elems = solver.elem_operators.iMM_elems
 				
 				A = np.zeros([mesh.nElem, nb, nb, ns])
