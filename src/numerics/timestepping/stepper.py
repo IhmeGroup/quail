@@ -422,6 +422,8 @@ class Strang(StepperBase):
 			elem_ops = solver.elem_operators
 			basis_val = elem_ops.basis_val
 			quad_wts = elem_ops.quad_wts
+			x_elems = elem_ops.x_elems
+			x = x_elems[elem]
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
@@ -430,8 +432,10 @@ class Strang(StepperBase):
 			Evaluate the source term jacobian
 			'''
 			jac = np.zeros([nq,ns,ns])
-			for Source in Sources:
-				jac += Source.get_jacobian(Uq)
+			# for Source in Sources:
+			# 	jac += Source.get_jacobian(Uq)
+			jac = physics.SourceJacobianState(nq, x, solver.Time, Uq, jac) # [nq,ns]
+
 			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt*np.einsum('ij,jkl->ijl',iMM,dRdU)

@@ -1,6 +1,6 @@
 import numpy as np
 
-cfl = 0.05
+cfl = 0.1
 dx = 0.05
 EndTime = 0.2
 nTimeStep = int(EndTime/(cfl*dx))
@@ -9,6 +9,8 @@ TimeStepping = {
     "EndTime" : EndTime,
     "nTimeStep" : nTimeStep,
     "TimeScheme" : "Strang",
+    # "OperatorSplitting_Exp" : "SSPRK3",
+    # "OperatorSplitting_Imp" : "BDF1",
 }
 
 Numerics = {
@@ -33,11 +35,11 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "Roe",
+    "ConvFlux" : "LaxFriedrichs",
     "SpecificHeatRatio" : 1.4,
 }
 
-nu = -3.
+nu = -100.
 InitialCondition = {
     "Function" : "DensityWave",
     "p" : 1.,

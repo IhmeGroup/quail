@@ -202,6 +202,8 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	basis_val = elem_ops.basis_val 
 	djac_elems = elem_ops.djac_elems 
 	djac = djac_elems[elem]
+	x_elems = elem_ops.x_elems
+	x = x_elems[elem]
 
 	FTR = ader_ops.FTR
 	MM = ader_ops.MM
@@ -224,8 +226,9 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	# U_bar = fsolve(F, W_bar)
 
 	jac_q = np.zeros([1,ns,ns])
-	for Source in Sources:
-		jac_q += Source.get_jacobian(W_bar)
+	# for Source in Sources:
+		# jac_q += Source.get_jacobian(W_bar)
+	jac_q = EqnSet.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
 	jac = jac_q[0,:,:]
 	Kp = K-MM*dt*jac 
 	iK = np.linalg.inv(Kp)
@@ -282,8 +285,9 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
 	djac_elems = elem_ops.djac_elems 
-	
 	djac = djac_elems[elem]
+	x_elems = elem_ops.x_elems
+	x = x_elems[elem]
 
 	FTR = ader_ops.FTR
 	# iMM = ader_ops.iMM_elems[elem]
@@ -298,8 +302,9 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 
 	jac_q = np.zeros([1,ns,ns])
-	for Source in Sources:
-		jac_q += Source.get_jacobian(W_bar) 
+	# for Source in Sources:
+	# 	jac_q += Source.get_jacobian(W_bar) 
+	jac_q = EqnSet.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
 	jac = jac_q[0,:,:]
 	
 	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)

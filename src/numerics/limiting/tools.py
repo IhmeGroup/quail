@@ -16,6 +16,8 @@ def set_limiter(limiter_type, physics_type):
 		limiter_ref = pp_limiter.PositivityPreserving
 	elif general.LimiterType[limiter_type] is general.LimiterType.ScalarPositivityPreserving:
 		limiter_ref = pp_limiter.ScalarPositivityPreserving
+	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreservingChem:
+		limiter_ref = pp_limiter.PositivityPreservingChem
 	else:
 		raise NotImplementedError
 

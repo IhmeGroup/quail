@@ -29,7 +29,7 @@ Numerics = {
 }
 
 Output = {
-    # "WriteInterval" : 5,
+    "WriteInterval" : 1,
     "WriteInitialSolution" : True,
     "AutoProcess" : True,
 }

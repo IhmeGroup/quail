@@ -301,6 +301,17 @@ class PhysicsBase(object):
 
 		return s
 
+	def SourceJacobianState(self, nq, xglob, Time, Up, jac=None):
+		for Source in self.Sources:
+			#loop through available source terms
+			Source.x = xglob
+			Source.nq = nq
+			Source.Time = Time
+			Source.U = Up
+			jac += self.CallSourceJacobianFunction(Source,Source.x,Source.Time)
+
+		return jac
+		
 	def ConvFluxProjected(self, Up, normals):
 
 		F = self.ConvFluxInterior(Up)
@@ -410,6 +421,24 @@ class PhysicsBase(object):
 		FcnData.S = FcnData.get_source(self, FcnData, x, t)
 
 		return FcnData.S
+
+	def CallSourceJacobianFunction(self, FcnData, x, t):
+		# for key in kwargs:
+		# 	if key is "x":
+		# 		FcnData.x = kwargs[key]
+		# 		FcnData.nq = FcnData.x.shape[0]
+		# 	elif key is "Time":
+		# 		FcnData.Time = kwargs[key]
+		# 	else:
+		# 		raise Exception("Input error")
+
+		# nq = FcnData.nq
+		# sr = self.NUM_STATE_VARS
+		# if FcnData.S is None or FcnData.S.shape != (nq, sr):
+		# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
+		# code.interact(local=locals())
+		FcnData.jac = FcnData.get_jacobian(self, FcnData, x, t)
+		return FcnData.jac
 
 	# def FcnUniform(self, FcnData):
 	# 	Data = FcnData.Data
