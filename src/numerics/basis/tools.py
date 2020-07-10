@@ -129,9 +129,9 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     nb = basis.get_num_basis_coeff(order)
     phi = basis.basis_val
 
-    MM = np.zeros([nb,nb])
+    # MM = np.zeros([nb,nb])
 
-    MM[:] = np.matmul(phi.transpose(), phi*quad_wts*djac) # [nb, nb]
+    MM = np.matmul(phi.transpose(), phi*quad_wts*djac) # [nb, nb]
 
     return MM
 
@@ -158,7 +158,7 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1,
 
     return iMM
 
-def get_stiffness_matrix(mesh, basis, order, elem):
+def get_stiffness_matrix(solver, mesh, order, elem):
     '''
     Method: get_stiffness_matrix
     --------------------------------------
@@ -173,33 +173,44 @@ def get_stiffness_matrix(mesh, basis, order, elem):
     OUTPUTS: 
         SM: stiffness matrix
     '''
-    # QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
-    qbasis = mesh.QBasis 
-    quad_order = qbasis.get_quadrature(mesh,order*2)
-    quad_pts, quad_wts = qbasis.get_quad_data(quad_order)
+    # # QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
+    # gbasis = mesh.gbasis 
+    # quad_order = gbasis.get_quadrature(mesh, order*2)
+    # quad_pts, quad_wts = gbasis.get_quad_data(quad_order)
 
     # quad_pts = qbasis.quad_pts
     # quad_wts = qbasis.quad_wts
+
+    # PhiData = BasisData(basis,order,mesh)
+    # PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+
+    # # JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_ijac=True)
+    # djac, _, ijac = element_jacobian(mesh, elem, quad_pts, get_djac=True, get_ijac=True)
+    # PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
+
+    # nb = PhiData.Phi.shape[1]
+
+    quad_pts = solver.elem_operators.quad_pts
+    quad_wts = solver.elem_operators.quad_wts
+    djac = solver.elem_operators.djac_elems[elem]
+    phi = solver.elem_operators.basis_val
+    gPhi = solver.elem_operators.basis_pgrad_elems[elem]
+
     nq = quad_pts.shape[0]
+    nb = phi.shape[1]
 
-    PhiData = BasisData(basis,order,mesh)
-    PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+    # phi = PhiData.Phi
+    # gPhi = PhiData.gPhi
+    # SM = np.zeros([nb, nb])
+    # for i in range(nb):
+    #     for j in range(nb):
+    #         t = 0.
+    #         for iq in range(nq):
+    #             t += gPhi[iq,i,0]*phi[iq,j]*quad_wts[iq]* \
+    #                 djac[iq]
+    #         SM[i,j] = t
 
-    JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_ijac=True)
-    PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
-
-    nb = PhiData.Phi.shape[1]
-
-    phi = PhiData.Phi
-    gPhi = PhiData.gPhi
-    SM = np.zeros([nb,nb])
-    for i in range(nb):
-        for j in range(nb):
-            t = 0.
-            for iq in range(nq):
-                t += gPhi[iq,i,0]*phi[iq,j]*wq[iq]* \
-                    JData.djac[iq*(JData.nq != 1)]
-            SM[i,j] = t
+    SM = np.matmul(gPhi[:,:,0].transpose(), phi*quad_wts*djac) # [nb, nb]
 
     return SM
 
@@ -253,26 +264,26 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     return PM
 
 
-def get_inv_stiffness_matrix(mesh, basis, order, elem):
-    '''
-    Method: get_inv_stiffness_matrix
-    --------------------------------------
-    Calculate the inverse stiffness matrix (Currently not used)
+# def get_inv_stiffness_matrix(mesh, basis, order, elem):
+#     '''
+#     Method: get_inv_stiffness_matrix
+#     --------------------------------------
+#     Calculate the inverse stiffness matrix (Currently not used)
 
-    INPUTS:
-        mesh: mesh object
-        basis: type of basis function
-        order: solution order
-        elem: element index
+#     INPUTS:
+#         mesh: mesh object
+#         basis: type of basis function
+#         order: solution order
+#         elem: element index
 
-    OUTPUTS: 
-        iSM: inverse stiffness matrix
-    '''
-    SM = get_stiffness_matrix(mesh, basis, order, elem)
+#     OUTPUTS: 
+#         iSM: inverse stiffness matrix
+#     '''
+#     SM = get_stiffness_matrix(mesh, basis, order, elem)
 
-    iSM = np.linalg.inv(SM) 
+#     iSM = np.linalg.inv(SM) 
 
-    return iSM
+#     return iSM
 
 
 

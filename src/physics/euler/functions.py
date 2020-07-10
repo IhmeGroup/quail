@@ -13,6 +13,7 @@ class FcnType(Enum):
     DensityWave = auto()
     RiemannProblem = auto()
     SmoothRiemannProblem = auto()
+    TaylorGreenVortex = auto()
 
 class BCType(Enum):
 	SlipWall = auto()
@@ -21,6 +22,7 @@ class BCType(Enum):
 
 class SourceType(Enum):
     StiffFriction = auto()
+    TaylorGreenSource = auto()
 
 
 class ConvNumFluxType(Enum):
@@ -123,115 +125,6 @@ class MovingShock(FcnBase):
 
 		return Up
 
-class RiemannProblem(FcnBase):
-	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xshock=0.):
-		# Default conditions set up for Sod Problem.
-		self.uL = uL
-		self.uR = uR
-		self.xshock = xshock
-
-	def get_state(self, physics, x, t):
-
-		xshock = self.xshock
-		uL = self.uL
-		uR = self.uR
-
-		rhoL = uL[0]
-		vL = uL[1]
-		pL = uL[2]
-		
-		rhoR = uR[0]
-		vR = uR[1]
-		pR = uR[2]
-
-		srho, srhou, srhoE = physics.get_state_slices()
-
-		gam = physics.gamma
-		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-
-		''' Fill state '''
-		ileft = (x <= xshock).reshape(-1)
-		iright = (x > xshock).reshape(-1)
-
-		# Density
-		Up[iright, srho] = rhoR
-		Up[ileft, srho] = rhoL
-		# Momentum
-		Up[iright, srhou] = rhoR*vR
-		Up[ileft, srhou] = rhoL*vL
-		# Energy
-		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR
-		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL
-
-		return Up
-
-class SmoothRiemannProblem(FcnBase):
-	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), w=0.05, xshock=0.):
-		# Default conditions set up for Sod Problem.
-		self.uL = uL
-		self.uR = uR
-		self.w = w
-		self.xshock = xshock
-
-	def get_state(self, physics, x, t):
-
-		xshock = self.xshock
-		uL = self.uL
-		uR = self.uR
-		w = self.w
-
-		rhoL = uL[0]
-		vL = uL[1]
-		pL = uL[2]
-		
-		rhoR = uR[0]
-		vR = uR[1]
-		pR = uR[2]
-
-		srho, srhou, srhoE = physics.get_state_slices()
-
-		gam = physics.gamma
-		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-
-
-		# w = 0.05
-		def set_tanh(a,b,w,xo):
-			return 0.5*((a+b)+(b-a)*np.tanh((x-xo)/w))
-		# Density
-		Up[:, srho] =  set_tanh(rhoL,rhoR,w,xshock)
-
-		# Momentum
-		Up[:, srhou] = set_tanh(rhoL*vL,rhoR*vR,w,xshock)
-		# Energy
-		rhoeL = pL/(gam-1.) + 0.5*rhoL*vL*vL
-		rhoeR = pR/(gam-1.) + 0.5*rhoR*vR*vR
-		Up[:, srhoE] = set_tanh(rhoeL,rhoeR,w,xshock)
-
-		return Up
-
-class DensityWave(FcnBase):
-	def __init__(self, p=1.0):
-		self.p = p
-
-	def get_state(self, physics, x, t):
-		p = self.p
-		srho, srhou, srhoE = physics.get_state_slices()
-		gamma = physics.gamma
-
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-		
-		rho = 1.0 + 0.1*np.sin(2.*np.pi*x)
-		rhou = rho*1.0
-		rhoE = (p/(gamma - 1.)) + 0.5*rhou**2/rho
-
-		Up[:,srho] = rho
-		Up[:,srhou] = rhou
-		Up[:,srhoE] = rhoE
-
-		return Up
-
 
 class IsentropicVortex(FcnBase):
 	def __init__(self, rhob=1., ub=1., vb=1., pb=1., vs=5.):
@@ -295,6 +188,140 @@ class IsentropicVortex(FcnBase):
 
 		return Up
 
+
+class DensityWave(FcnBase):
+	def __init__(self, p=1.0):
+		self.p = p
+
+	def get_state(self, physics, x, t):
+		p = self.p
+		srho, srhou, srhoE = physics.get_state_slices()
+		gamma = physics.gamma
+
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		
+		rho = 1.0 + 0.1*np.sin(2.*np.pi*x)
+		rhou = rho*1.0
+		rhoE = (p/(gamma - 1.)) + 0.5*rhou**2/rho
+
+		Up[:,srho] = rho
+		Up[:,srhou] = rhou
+		Up[:,srhoE] = rhoE
+
+		return Up
+
+
+class RiemannProblem(FcnBase):
+	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xshock=0.):
+		# Default conditions set up for Sod Problem.
+		self.uL = uL
+		self.uR = uR
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+
+		xshock = self.xshock
+		uL = self.uL
+		uR = self.uR
+
+		rhoL = uL[0]
+		vL = uL[1]
+		pL = uL[2]
+		
+		rhoR = uR[0]
+		vR = uR[1]
+		pR = uR[2]
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		gam = physics.gamma
+		
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+
+		''' Fill state '''
+		ileft = (x <= xshock).reshape(-1)
+		iright = (x > xshock).reshape(-1)
+
+		# Density
+		Up[iright, srho] = rhoR
+		Up[ileft, srho] = rhoL
+		# Momentum
+		Up[iright, srhou] = rhoR*vR
+		Up[ileft, srhou] = rhoL*vL
+		# Energy
+		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR
+		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL
+
+		return Up
+
+
+class SmoothRiemannProblem(FcnBase):
+	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), w=0.05, xshock=0.):
+		# Default conditions set up for Sod Problem.
+		self.uL = uL
+		self.uR = uR
+		self.w = w
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+
+		xshock = self.xshock
+		uL = self.uL
+		uR = self.uR
+		w = self.w
+
+		rhoL = uL[0]
+		vL = uL[1]
+		pL = uL[2]
+		
+		rhoR = uR[0]
+		vR = uR[1]
+		pR = uR[2]
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		gam = physics.gamma
+		
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+
+
+		# w = 0.05
+		def set_tanh(a,b,w,xo):
+			return 0.5*((a+b)+(b-a)*np.tanh((x-xo)/w))
+		# Density
+		Up[:, srho] =  set_tanh(rhoL,rhoR,w,xshock)
+
+		# Momentum
+		Up[:, srhou] = set_tanh(rhoL*vL,rhoR*vR,w,xshock)
+		# Energy
+		rhoeL = pL/(gam-1.) + 0.5*rhoL*vL*vL
+		rhoeR = pR/(gam-1.) + 0.5*rhoR*vR*vR
+		Up[:, srhoE] = set_tanh(rhoeL,rhoeR,w,xshock)
+
+		return Up
+
+
+class TaylorGreenVortex(FcnBase):
+
+	def get_state(self, physics, x, t):		
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		gamma = physics.gamma
+		Rg = physics.R
+
+		irho, irhou, irhov, irhoE = physics.GetStateIndices()
+
+		rho = 1.
+		u = np.sin(np.pi*x[:, 0])*np.cos(np.pi*x[:, 1])
+		v = -np.cos(np.pi*x[:, 0])*np.sin(np.pi*x[:, 1])
+		p = 0.25*(np.cos(2.*np.pi*x[:, 0]) + np.cos(2*np.pi*x[:, 1])) + 1.
+		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
+
+		Up[:, irho] = rho
+		Up[:, irhou] = rho*u
+		Up[:, irhov] = rho*v
+		Up[:, irhoE] = rho*E
+
+		return Up
 
 
 '''
@@ -404,9 +431,9 @@ class StiffFriction(SourceBase):
 		S = np.zeros_like(U)
 
 		eps = 1.0e-12
-		S[:,irho] = 0.0
-		S[:,irhou] = nu*(U[:,irhou])
-		S[:,irhoE] = nu*((U[:,irhou])**2/(eps+U[:,irho]))
+		S[:, irho] = 0.0
+		S[:, irhou] = nu*(U[:, irhou])
+		S[:, irhoE] = nu*((U[:, irhou])**2/(eps+U[:, irho]))
 		
 		return S
 
@@ -446,6 +473,24 @@ class StiffFriction(SourceBase):
 		jac[:, 2, 1] = 2.0*nu*vel
 
 		return jac
+
+
+class TaylorGreenSource(SourceBase):
+
+	def get_source(self, physics, FcnData, x, t):
+		gamma = physics.gamma
+
+		irho, irhou, irhov, irhoE = physics.GetStateIndices()
+		
+		U = FcnData.U
+		
+		S = np.zeros_like(U)
+
+		S[:, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, 0])*np.cos(np.pi*x[:, 1]) - 
+				np.cos(np.pi*x[:, 0])*np.cos(3.*np.pi*x[:, 1]))
+		
+		return S
+
 
 '''
 Numerical flux functions

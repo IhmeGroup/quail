@@ -251,6 +251,7 @@ class Euler2D(Euler):
 
 		d = {
 			euler_fcn_type.IsentropicVortex : euler_fcns.IsentropicVortex,
+			euler_fcn_type.TaylorGreenVortex : euler_fcns.TaylorGreenVortex,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -259,6 +260,7 @@ class Euler2D(Euler):
 
 		self.source_map.update({
 			euler_source_type.StiffFriction : euler_fcns.StiffFriction,
+			euler_source_type.TaylorGreenSource : euler_fcns.TaylorGreenSource,
 		})
 
 		self.conv_num_flux_map.update({
