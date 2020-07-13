@@ -1,6 +1,6 @@
 import code
-cfl = 0.1
-tfinal = 0.3
+cfl = 0.05
+tfinal = 0.15
 dt = cfl*0.01
 nTimeStep = int(tfinal/dt)
 
@@ -8,15 +8,15 @@ TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : tfinal,
     "nTimeStep" : nTimeStep,
-    "TimeScheme" : "Strang",
+    "TimeScheme" : "ADER",
 }
 
 Numerics = {
     "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeEqSeg",
-    "Solver" : "DG",
+    "InterpBasis" : "LagrangeSeg",
+    "Solver" : "ADERDG",
     # "ApplyLimiter" : "ScalarPositivityPreserving", 
-    "SourceTreatment" : "Explicit"
+    "SourceTreatment" : "Implicit",
 
 }
 
@@ -39,11 +39,13 @@ Physics = {
     "ConstVelocity" : 1.,
 }
 
+xshock = 0.3
+
 InitialCondition = {
     "Function" : "ShockBurgers",
     "uL" : 1.,
     "uR" : 0.,
-    "xshock" : 0.3,
+    "xshock" : xshock,
 }
 
 ExactSolution = InitialCondition.copy()
@@ -53,13 +55,14 @@ BoundaryConditions = {
         "Function" : "ShockBurgers",
         "uL" : 1.,
         "uR" : 0.,
-        "xshock" : 0.3,
+        "xshock" : xshock,
         "BCType" : "StateAll",
     },
     "Right" : {
         "BCType" : "Extrapolate",
     },
 }
+
 nu = 2000.
 SourceTerms = {
     "source1" : {

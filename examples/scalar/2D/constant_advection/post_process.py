@@ -23,7 +23,7 @@ plot.PreparePlot(axis=axis, linewidth=0.5)
 # 	Regular2D=True, show_triangulation=False)
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, create_new_figure=True, 
 			include_mesh=True, regular_2D=True, equal_AR=False, show_elem_IDs=True)
-plot.SaveFigure(FileName='Gaussian', FileType='pdf', CropLevel=2)
+plot.SaveFigure(FileName='gaussian', FileType='pdf', CropLevel=2)
 
 # plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
 plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=False, plot_exact=False,

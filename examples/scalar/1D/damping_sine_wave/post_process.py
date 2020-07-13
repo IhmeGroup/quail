@@ -14,7 +14,7 @@ mesh = solver.mesh
 physics = solver.EqnSet
 
 # Error
-TotErr, _ = post.L2_error(mesh, physics, solver, "Scalar")
+TotErr,_ = post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 plot.PreparePlot()
 # plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
@@ -24,6 +24,6 @@ plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, plot_ex
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
 
-plot.SaveFigure(FileName='LinearAdvection', FileType='pdf', CropLevel=2)
+plot.SaveFigure(FileName='dampingsinewave', FileType='pdf', CropLevel=2)
 
 plot.ShowPlot()

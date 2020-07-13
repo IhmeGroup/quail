@@ -15,7 +15,7 @@ TimeStepping = {
 
 Numerics = {
     "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeEqSeg",
+    "InterpBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "SourceTreatment" : "Implicit"
 }

@@ -34,6 +34,6 @@ plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=False, plot
 # plot.PlotSolution(mesh, physics, solver, "Density", PlotExact=False, PlotIC = True)
 
 
-# plot.SaveFigure(FileName='StiffFriction', FileType='pdf', CropLevel=2)
+# plot.SaveFigure(FileName='stiff_friction', FileType='pdf', CropLevel=2)
 
 plot.ShowPlot()
