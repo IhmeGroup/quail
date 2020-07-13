@@ -69,7 +69,7 @@ class QuadratureType(Enum):
     Dunavant = auto()
 
 class NodeType(Enum):
-    GaussLegendre = auto()
+    Equidistant = auto()
     GaussLobatto = auto()
 
 

@@ -40,7 +40,7 @@ def set_basis(order, basis_name):
     return basis
 
 def set_node_type(node_type):
-    if NodeType[node_type] == NodeType.GaussLegendre:
+    if NodeType[node_type] == NodeType.Equidistant:
         fcn = equidistant_nodes_1D_range
     elif NodeType[node_type] == NodeType.GaussLobatto:
         fcn = gauss_lobatto_nodes_1D_range

@@ -432,7 +432,7 @@ class BasisBase(ABC):
         self.face = -1
         self.nb = 0
         self.quadrature_type = -1
-        self.get_1d_nodes = basis_tools.set_node_type("GaussLegendre")
+        self.get_1d_nodes = basis_tools.set_node_type("Equidistant")
 
     def __repr__(self):
         return '{self.__class__.__name__}(Order={self.order})'.format(self=self)
