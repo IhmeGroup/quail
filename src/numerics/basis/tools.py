@@ -173,23 +173,6 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     OUTPUTS: 
         SM: stiffness matrix
     '''
-    # # QuadOrder,QuadChanged = quadrature.get_gaussian_quadrature_elem(mesh, mesh.QBasis, order*2)
-    # gbasis = mesh.gbasis 
-    # quad_order = gbasis.get_quadrature(mesh, order*2)
-    # quad_pts, quad_wts = gbasis.get_quad_data(quad_order)
-
-    # quad_pts = qbasis.quad_pts
-    # quad_wts = qbasis.quad_wts
-
-    # PhiData = BasisData(basis,order,mesh)
-    # PhiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
-
-    # # JData.element_jacobian(mesh,elem,quad_pts,get_djac=True,get_ijac=True)
-    # djac, _, ijac = element_jacobian(mesh, elem, quad_pts, get_djac=True, get_ijac=True)
-    # PhiData.eval_basis(quad_points, Get_gPhi=True, JData=JData)
-
-    # nb = PhiData.Phi.shape[1]
-
     quad_pts = solver.elem_operators.quad_pts
     quad_wts = solver.elem_operators.quad_wts
     djac = solver.elem_operators.djac_elems[elem]

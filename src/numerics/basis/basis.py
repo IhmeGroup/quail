@@ -3,7 +3,7 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import BasisType, ShapeType, ModalOrNodal, QuadratureType, NodeType
+from general import BasisType, ShapeType, ModalOrNodal, QuadratureType,NodeType
 
 import meshing.gmsh as mesh_gmsh
 
