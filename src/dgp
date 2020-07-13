@@ -17,7 +17,7 @@ import meshing.tools as mesh_tools
 
 import physics.euler.euler as euler
 import physics.scalar.scalar as scalar
-# import physics.chemistry.chemistry as chemistry
+import physics.chemistry.chemistry as chemistry
 
 import processing.readwritedatafiles as readwritedatafiles
 
@@ -38,8 +38,8 @@ def set_physics(order, basis_type, mesh, physics_type):
         physics_ref = euler.Euler1D
     elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 2:
         physics_ref = euler.Euler2D
-    # elif PhysicsType[physics_type] == PhysicsType.Chemistry and dim ==1:
-    # 	physics_ref = chemistry.Chemistry1D
+    elif PhysicsType[physics_type] == PhysicsType.Chemistry and dim ==1:
+    	physics_ref = chemistry.Chemistry1D
     else:
         raise NotImplementedError
 

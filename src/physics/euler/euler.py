@@ -195,13 +195,14 @@ class Euler1D(Euler):
 			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
 			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
 			euler_fcn_type.SmoothRiemannProblem : euler_fcns.SmoothRiemannProblem,
+			euler_fcn_type.ExactRiemannSolution : euler_fcns.ExactRiemannSolution,
 		}
 
 		self.IC_fcn_map.update(d)
 		self.exact_fcn_map.update(d)
-		self.exact_fcn_map.update({
-			euler_fcn_type.ExactRiemannSolution : euler_fcns.ExactRiemannSolution,
-		})
+		# self.exact_fcn_map.update({
+		# 	euler_fcn_type.ExactRiemannSolution : euler_fcns.ExactRiemannSolution,
+		# })
 		self.BC_fcn_map.update(d)
 
 		self.source_map.update({
