@@ -371,7 +371,7 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
         tphys: coordinates in temporal space
     '''
     gorder = 1
-    gbasis = basis_defs.LagrangeEqQuad(gorder)
+    gbasis = basis_defs.LagrangeQuad(gorder)
 
     npoint = xref.shape[0]
 

@@ -12,9 +12,9 @@ import numerics.basis.basis as basis_defs
 import numerics.quadrature.segment as segment
 
 Basis2Shape = {
-    BasisType.LagrangeEqSeg : ShapeType.Segment,
-    BasisType.LagrangeEqQuad : ShapeType.Quadrilateral,
-    BasisType.LagrangeEqTri : ShapeType.Triangle,
+    BasisType.LagrangeSeg : ShapeType.Segment,
+    BasisType.LagrangeQuad : ShapeType.Quadrilateral,
+    BasisType.LagrangeTri : ShapeType.Triangle,
     BasisType.LegendreSeg : ShapeType.Segment,
     BasisType.LegendreQuad : ShapeType.Quadrilateral,
     BasisType.HierarchicH1Tri : ShapeType.Triangle
@@ -23,16 +23,16 @@ Basis2Shape = {
 
 def set_basis(order, basis_name):
 
-    if BasisType[basis_name] == BasisType.LagrangeEqSeg:
-        basis = basis_defs.LagrangeEqSeg(order)
+    if BasisType[basis_name] == BasisType.LagrangeSeg:
+        basis = basis_defs.LagrangeSeg(order)
     elif BasisType[basis_name] == BasisType.LegendreSeg:
         basis = basis_defs.LegendreSeg(order)
-    elif BasisType[basis_name] == BasisType.LagrangeEqQuad:
-        basis = basis_defs.LagrangeEqQuad(order)
+    elif BasisType[basis_name] == BasisType.LagrangeQuad:
+        basis = basis_defs.LagrangeQuad(order)
     elif BasisType[basis_name] == BasisType.LegendreQuad:
         basis = basis_defs.LegendreQuad(order)
-    elif BasisType[basis_name] == BasisType.LagrangeEqTri:
-        basis = basis_defs.LagrangeEqTri(order)
+    elif BasisType[basis_name] == BasisType.LagrangeTri:
+        basis = basis_defs.LagrangeTri(order)
     elif BasisType[basis_name] == BasisType.HierarchicH1Tri:
         basis = basis_defs.HierarchicH1Tri(order)
     else:
@@ -452,7 +452,7 @@ def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
         x_s = np.zeros_like(nvec)
         fnodes, nfnode = basis.local_face_nodes(gorder, face, fnodes=None)
 
-        basis_seg = basis_defs.LagrangeEqSeg(gorder)
+        basis_seg = basis_defs.LagrangeSeg(gorder)
         basis_grad = basis_seg.get_grads(quad_pts)
         Coords = mesh.Coords[ElemNodes[fnodes]]
 

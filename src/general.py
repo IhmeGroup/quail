@@ -20,9 +20,9 @@ class ShapeType(Enum):
 
 
 class BasisType(Enum):
-    LagrangeEqSeg = auto()
-    LagrangeEqQuad = auto()
-    LagrangeEqTri = auto()
+    LagrangeSeg = auto()
+    LagrangeQuad = auto()
+    LagrangeTri = auto()
     LegendreSeg = auto()
     LegendreQuad = auto()
     HierarchicH1Tri = auto()

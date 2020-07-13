@@ -36,37 +36,33 @@ def get_quadrature_gauss_lobatto(order, forced_pts=None):
     if order == 1:
         qpts, qwts = get_quadrature_points_weights(order, general.QuadratureType["GaussLegendre"])
     else:
-    	if forced_pts != None:
+        if forced_pts != None:
             qpts, qwts = gauss_lobatto(forced_pts)
-    		# qpts = scheme.points
-    		# qwts = scheme.weights
-    	else:
-    		qpts, qwts = gauss_lobatto(order)
-    		# qpts = scheme.points
-    		# qwts = scheme.weights
+        else:
+            qpts, qwts = gauss_lobatto(order)
 
-    	qpts=qpts.reshape(qpts.shape[0],1)
-    	qwts=qwts.reshape(qwts.shape[0],1)
+        qpts=qpts.reshape(qpts.shape[0],1)
+        qwts=qwts.reshape(qwts.shape[0],1)
 
     return qpts, qwts
 
-def gauss_lobatto(n, a=0.0, b=0.0):
-    assert n >= 2
-    degree = 2 * n - 3
-    _, _, alpha, beta = jacobi(n, a, b)
-    qpts, qwts = _lobatto(alpha, beta, -1.0, 1.0)
+def gauss_lobatto(order):
+    if order % 2 == 0:
+        order += 1
+    npts = int((order+3)/2)
+
+    alpha, beta = jacobi(npts)
+    qpts, qwts = get_lobatto_pts_wts(alpha, beta, -1.0, 1.0)
 
     return qpts, qwts
 
 
-def _lobatto(alpha, beta, xl1, xl2):
+def get_lobatto_pts_wts(alpha, beta, xl1, xl2):
     """Compute the Lobatto nodes and weights with the preassigned node xl1, xl2.
     Based on the section 7 of the paper
         Some modified matrix eigenvalue problems,
         Gene Golub,
         SIAM Review Vol 15, No. 2, April 1973, pp.318--334,
-    and
-        http://www.scientificpython.net/pyblog/radau-quadrature
     """
     from scipy.linalg import solve_banded, solve
 
@@ -97,7 +93,7 @@ def scheme_from_rc(alpha, beta):
     w = beta[0] * V[0, :] ** 2
     return x, w
 
-def jacobi(n, alpha, beta):
+def jacobi(n):
     """Generate the recurrence coefficients a_k, b_k, c_k in
 
     P_{k+1}(x) = (a_k x - b_k)*P_{k}(x) - c_k P_{k-1}(x)
@@ -107,12 +103,12 @@ def jacobi(n, alpha, beta):
     <https://en.wikipedia.org/wiki/Jacobi_polynomials#Recurrence_relations>.
     """
     iterator = Jacobi(alpha, beta)
-    p0 = iterator.p0
-    lst = list(itertools.islice(iterator, n))
-    a = np.array([item[0] for item in lst])
-    b = np.array([item[1] for item in lst])
-    c = np.array([item[2] for item in lst])
-    return p0, a, b, c
+    # p0 = iterator.p0
+    # lst = list(itertools.islice(iterator, n))
+    # a = np.array([item[0] for item in lst])
+    a = np.array([item[1] for item in lst])
+    b = np.array([item[2] for item in lst])
+    return a, b
 
 class Jacobi:
     def __init__(self, alpha, beta):

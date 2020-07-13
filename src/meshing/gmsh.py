@@ -267,7 +267,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = basis_defs.LagrangeEqSeg(gorder)
+		elem_data.gbasis = basis_defs.LagrangeSeg(gorder)
 		elem_data.nNode = gorder + 1
 		elem_data.NodeOrder = gmsh_node_order_seg(gorder)
 
@@ -279,7 +279,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = basis_defs.LagrangeEqTri(gorder)
+		elem_data.gbasis = basis_defs.LagrangeTri(gorder)
 		elem_data.nNode = (gorder + 1)*(gorder + 2)//2
 		elem_data.NodeOrder = gmsh_node_order_tri(gorder)
 
@@ -291,7 +291,7 @@ def CreateGmshElementDataBase():
 		gmsh_element_database.update({etype_num : elem_data})
 		gorder = i + 1
 		elem_data.gorder = gorder
-		elem_data.gbasis = basis_defs.LagrangeEqQuad(gorder)
+		elem_data.gbasis = basis_defs.LagrangeQuad(gorder)
 		elem_data.nNode = (gorder + 1)**2
 		elem_data.NodeOrder = gmsh_node_order_quadril(gorder)
 

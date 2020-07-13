@@ -20,7 +20,7 @@ ntot = n**2 # total number of points
 p = 3 # Order
 b = 11 # which basis fcn to plot
 
-basis = Basis.LagrangeEqQuad(p)
+basis = Basis.LagrangeQuad(p)
 ### Evaluate basis functions
 basis.eval_basis(xp, Get_Phi=True)
 # Reshape

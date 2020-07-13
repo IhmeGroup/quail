@@ -3,6 +3,7 @@ import code
 import copy
 import numpy as np 
 import time
+import warnings
 
 import errors
 from data import ArrayList, GenericData
@@ -98,8 +99,13 @@ class SolverBase(ABC):
 			raise errors.IncompatibleError
 
 		node_type = Params["NodeType"]
+		forcing_switch = Params["NodesEqualQuadpts"]
+
 		if NodeType[node_type] == NodeType.GaussLobatto and basis.shape_type == ShapeType.Triangle:
 			raise errors.IncompatibleError
+
+		if NodeType[node_type] == NodeType.Equidistant and forcing_switch == True:
+			warnings.warn("Forcing equal nodes and quad_pts not compatable with Equidistant nodes")
 
 	@abstractmethod
 	def precompute_matrix_operators(self):

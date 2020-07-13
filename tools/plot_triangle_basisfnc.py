@@ -14,7 +14,7 @@ import numerics.basis.basis as Basis
 
 p = 1 # Order
 b = 3 # which basis fcn to plot
-basis = Basis.LagrangeEqTri(p)
+basis = Basis.LagrangeTri(p)
 
 
 ### Grid

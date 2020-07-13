@@ -13,10 +13,10 @@ import numerics.basis.basis as basis_defs
 from numerics.quadrature import segment, quadrilateral, triangle
 
 RefQ1Coords = {
-    BasisType.LagrangeEqSeg : np.array([[-1.],[1.]]),
-    BasisType.LagrangeEqQuad : np.array([[-1.,-1.],[1.,-1.],
+    BasisType.LagrangeSeg : np.array([[-1.],[1.]]),
+    BasisType.LagrangeQuad : np.array([[-1.,-1.],[1.,-1.],
                                 [-1.,1.],[1.,1.]]),
-    BasisType.LagrangeEqTri : np.array([[0.,0.],[1.,0.],
+    BasisType.LagrangeTri : np.array([[0.,0.],[1.,0.],
                                 [0.,1.]]),
     BasisType.LegendreSeg : np.array([[-1.],[1.]]),
     BasisType.LegendreQuad : np.array([[-1.,-1.],[1.,-1.],
@@ -265,8 +265,8 @@ class QuadShape(ShapeBase):
 
         fnodes, nfnode = self.local_q1_face_nodes(1, face)
 
-        x0 = RefQ1Coords[BasisType.LagrangeEqQuad][fnodes[0]]
-        x1 = RefQ1Coords[BasisType.LagrangeEqQuad][fnodes[1]]
+        x0 = RefQ1Coords[BasisType.LagrangeQuad][fnodes[0]]
+        x1 = RefQ1Coords[BasisType.LagrangeQuad][fnodes[1]]
 
         if face == 0:
             xelem[:,0] = np.reshape((xface*x1[0] - xface*x0[0])/2., nq)
@@ -381,8 +381,8 @@ class TriShape(ShapeBase):
         # local q = 1 nodes on face
         fnodes, nfnode = self.local_q1_face_nodes(1, face)
         # coordinates of local q = 1 nodes on face
-        x0 = RefQ1Coords[BasisType.LagrangeEqTri][fnodes[0]]
-        x1 = RefQ1Coords[BasisType.LagrangeEqTri][fnodes[1]]
+        x0 = RefQ1Coords[BasisType.LagrangeTri][fnodes[0]]
+        x1 = RefQ1Coords[BasisType.LagrangeTri][fnodes[1]]
         # for i in range(nq):
         #     xf[i] = (xface[i] + 1.)/2.
         #     xelem[i,:] = (1. - xf[i])*x0 + xf[i]*x1
@@ -525,7 +525,7 @@ class BasisBase(ABC):
 
         #Note: This logic is for ADER-DG when using a modal basis function
         if basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
-            basis = basis_defs.LagrangeEqQuad(1,mesh=mesh)
+            basis = basis_defs.LagrangeQuad(1,mesh=mesh)
 
         if xelem is None or xelem.shape != (nq, self.dim):
             xelem = np.zeros([nq, self.dim])
@@ -603,7 +603,7 @@ def get_lagrange_basis_2D(x, xnodes, phi=None, gphi=None):
     phix = np.zeros((x.shape[0], xnodes.shape[0])); phiy = np.zeros_like(phix)
 
     nnodes_1D = xnodes.shape[0]
-    lagrange_eq_seg = LagrangeEqSeg(nnodes_1D-1)
+    lagrange_eq_seg = LagrangeSeg(nnodes_1D-1)
     get_lagrange_basis_1D(x[:, 0].reshape(-1, 1), xnodes, phix, gphix)
     get_lagrange_basis_1D(x[:, 1].reshape(-1, 1), xnodes, phiy, gphiy)
 
@@ -616,9 +616,9 @@ def get_lagrange_basis_2D(x, xnodes, phi=None, gphi=None):
             gphi[i, :, 1] = np.reshape(np.outer(phix[i, :], gphiy[i, :, 0]), (-1, ), 'F')
 
 
-class LagrangeEqSeg(BasisBase, SegShape):
+class LagrangeSeg(BasisBase, SegShape):
 
-    basis_type =  BasisType.LagrangeEqSeg
+    basis_type =  BasisType.LagrangeSeg
     MODAL_OR_NODAL = ModalOrNodal.Nodal
 
     def __init__(self, order):
@@ -824,9 +824,9 @@ class LagrangeEqSeg(BasisBase, SegShape):
         return fnodes, nfnode
 
 
-class LagrangeEqQuad(BasisBase, QuadShape):
+class LagrangeQuad(BasisBase, QuadShape):
 
-    basis_type = BasisType.LagrangeEqQuad
+    basis_type = BasisType.LagrangeQuad
     MODAL_OR_NODAL = ModalOrNodal.Nodal
 
     def __init__(self, order):
@@ -1141,9 +1141,9 @@ def get_tri_grad_area_coordinates(p, alpha, l):
     return dN
 
 
-class LagrangeEqTri(BasisBase, TriShape):
+class LagrangeTri(BasisBase, TriShape):
 
-    basis_type = BasisType.LagrangeEqTri
+    basis_type = BasisType.LagrangeTri
     MODAL_OR_NODAL = ModalOrNodal.Nodal
 
     def __init__(self, order):

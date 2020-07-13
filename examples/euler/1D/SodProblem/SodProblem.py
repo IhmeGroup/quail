@@ -21,15 +21,15 @@ Numerics = {
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     "InterpolateIC" : False,
-    "NodeType" : "Equidistant",
-    "ElementQuadrature" : "GaussLobatto",
-    "FaceQuadrature" : "GaussLobatto",
-    "NodesEqualQuadpts" : False,
+    # "NodeType" : "GaussLobatto",
+    # "ElementQuadrature" : "GaussLobatto",
+    # "FaceQuadrature" : "GaussLobatto",
+    # "NodesEqualQuadpts" : False,
 
 }
 
 Output = {
-    # "WriteInterval" : 1,
+    "WriteInterval" : 5,
     "WriteInitialSolution" : True,
     "AutoProcess" : True,
 }
@@ -71,7 +71,7 @@ state_exact = {
 InitialCondition = state
 state2 = state.copy()
 state2.update({"BCType":"StateAll"})
-ExactSolution = state_exact
+ExactSolution = state
 # ExactSolution = state_exact
 
 BoundaryConditions = {

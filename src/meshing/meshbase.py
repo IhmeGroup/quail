@@ -328,7 +328,7 @@ class Mesh(object):
             nNode: total number of nodes
         '''
         if gbasis is None:
-            gbasis = basis_defs.LagrangeEqSeg(1)
+            gbasis = basis_defs.LagrangeSeg(1)
 
         self.Dim = dim
         self.nNode = nNode

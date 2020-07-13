@@ -14,11 +14,11 @@ TimeStepping = {
 
 Numerics = {
     "InterpOrder" : 1,
-    "InterpBasis" : "LagrangeEqSeg",
+    "InterpBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-    "NodeType" : "GaussLegendre",
+    "NodeType" : "Equidistant",
     "NodesEqualQuadpts" : False,
     "InterpolateIC" : False,
     "OrderSequencing" : False,
