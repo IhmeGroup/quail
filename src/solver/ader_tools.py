@@ -148,6 +148,13 @@ def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 	SMS = ader_ops.SMS_elems[elem]
 	iK = ader_ops.iK
 
+	vol_elems = ader_ops.vol_elems
+	W_bar = np.zeros([1,ns])
+	Wq = np.matmul(basis_val, W)
+	vol = vol_elems[elem]
+
+	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	U_pred[:] = W_bar
 
 	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
 	flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
@@ -307,6 +314,8 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	jac_q = EqnSet.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
 	jac = jac_q[0,:,:]
 	
+	U_pred[:] = W_bar
+
 	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
 	flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 

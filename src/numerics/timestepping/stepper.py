@@ -287,16 +287,6 @@ class ADER(StepperBase):
 		mesh = solver.mesh
 		W = EqnSet.U
 		Up = EqnSet.Up
-		# try:
-		# 	R = DataSet.R
-		# except AttributeError:
-		# 	R = np.copy(W)
-		# 	DataSet.R = R
-		# try: 
-		# 	dU = DataSet.dU
-		# except AttributeError:
-		# 	dU = np.copy(W)
-		# 	DataSet.dU=dU
 
 		R = self.R
 
@@ -363,17 +353,6 @@ class Strang(StepperBase):
 			mesh = solver.mesh
 			U = EqnSet.U
 
-			# try: 
-			# 	R = DataSet.R
-			# except AttributeError:
-			# 	R = np.copy(U)
-			# 	DataSet.R = R
-			# try:
-			# 	dU = DataSet.dU
-			# except AttributeError:
-			# 	dU = np.copy(U)
-			# 	DataSet.dU = dU
-
 			R = self.R
 
 			R = solver.calculate_residual(U, R)
@@ -437,6 +416,7 @@ class Strang(StepperBase):
 			for s in range(ns):
 				iA[:,:,s] = np.linalg.inv(A[:,:,s])
 			return A, iA
+
 	class Trapezoidal(BDF1):
 		BETA = 0.5
 

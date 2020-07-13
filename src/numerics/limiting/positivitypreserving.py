@@ -136,7 +136,7 @@ class PositivityPreservingChem(base.LimiterBase):
 		super().__init__(physics_type)
 		self.scalar1 = "Density"
 		self.scalar2 = "Pressure"
-		self.scalar3 = "MassFraction"
+		self.scalar3 = "Mixture"
 		self.elem_vols = np.zeros(0)
 		self.basis_val_elem_faces = None
 		self.quad_wts_elem = np.zeros(0)

@@ -2,10 +2,10 @@ import numpy as np
 import copy
 cfl = 0.1
 u = 1.
-dx = 0.1
+dx = 0.005
 
 dt = cfl*dx/u
-EndTime = 2.0
+EndTime = 0.25
 nTimeSteps =int(EndTime/dt)
 print(nTimeSteps)
 TimeStepping = {
@@ -13,6 +13,8 @@ TimeStepping = {
     "EndTime" : EndTime,
     "nTimeStep" : nTimeSteps,
     "TimeScheme" : "SSPRK3",
+    # "OperatorSplitting_Imp" : "Trapezoidal",
+
 }
 
 Numerics = {
@@ -20,16 +22,16 @@ Numerics = {
     "InterpBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
-    "InterpolateIC" : True,
+    "InterpolateIC" : False,
     "NodeType" : "GaussLobatto",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
-    "NodesEqualQuadpts" : True,
+    "NodesEqualQuadpts" : False,
 
 }
 
 Output = {
-    "WriteInterval" : 1,
+    # "WriteInterval" : 1,
     "WriteInitialSolution" : True,
     "AutoProcess" : True,
 }
@@ -37,9 +39,9 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 100,
-    "xmin" : -5.,
-    "xmax" : 5.,
+    "nElem_x" : 200,
+    "xmin" : 0.,
+    "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
@@ -55,18 +57,29 @@ uL = np.array([1.,0.,1.])
 uR = np.array([0.125,0.,0.1])
 
 state = { 
-    "Function" : "SmoothRiemannProblem",
+    "Function" : "RiemannProblem",
     "uL" : uL,
     "uR" : uR,
-    "w" : 0.05,
-    "xshock" : 0.,
+    # "w" : 0.05,
+    "xshock" : 0.5,
+}
+state_exact = {
+    "Function" : "ExactRiemannSolution",
+    "uL" : uL,
+    "uR" : uR,
+    "length" : 1.,
 }
 InitialCondition = state
 state2 = state.copy()
 state2.update({"BCType":"StateAll"})
-# ExactSolution = InitialCondition.copy()
+ExactSolution = state_exact
+# ExactSolution = state_exact
 
 BoundaryConditions = {
-    "Left" : state2,
-    "Right" : state2,
+    "Left" : {
+        "BCType" : "SlipWall"
+        },
+    "Right" : { 
+        "BCType" : "SlipWall"
+        }
 }

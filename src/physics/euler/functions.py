@@ -14,6 +14,7 @@ class FcnType(Enum):
     RiemannProblem = auto()
     SmoothRiemannProblem = auto()
     TaylorGreenVortex = auto()
+    ExactRiemannSolution = auto()
 
 class BCType(Enum):
 	SlipWall = auto()
@@ -254,6 +255,98 @@ class RiemannProblem(FcnBase):
 
 		return Up
 
+class ExactRiemannSolution(FcnBase):
+	# This is only used for exact solutions. Not for IC or BCs
+	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), length=1.):
+		self.uL = uL
+		self.uR = uR
+		self.length = length
+
+	def get_state(self, physics, x, t):
+
+		uL = self.uL
+		uR = self.uR
+		L = self.length
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		gam = physics.gamma
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		rho4 = uL[0]; p4 = uL[2]; u4 = uL[1];
+		rho1 = uR[0]; p1 = uR[2]; u1 = uR[1];
+
+		c4 = np.sqrt(gam*p4/rho4)
+		c1 = np.sqrt(gam*p1/rho1)
+		p41 = p4/p1
+
+		def F(y):
+			F = y*(1.+(gam-1.)/(2.*c4)*(u4-u1-c1/gam*(y-1.)/np.sqrt((gam+1.)/(2.*gam)*(y-1.)+1)))**(-2.*gam/(gam-1))-p4/p1;
+			return F			
+
+		y0 = 0.5*p4/p1
+		Y = fsolve(F,y0)
+
+		# can now get p2
+		p2 = Y*p1
+
+		# Equation 11
+		u2 = u1 + c1/gam*(p2/p1-1)/np.sqrt((gam+1)/(2*gam)*(p2/p1-1) + 1)
+		# Equation 10
+		num = (gam+1)/(gam-1) + p2/p1
+		den = 1 + (gam+1)/(gam-1)*(p2/p1)
+		c2 = c1*np.sqrt(p2/p1*num/den)
+		# Equation 12 - shock speed
+		V = u1 + c1*np.sqrt((gam+1)/(2*gam)*(p2/p1-1) + 1)
+		# density for state 2
+		rho2 = gam*p2/c2**2
+
+		# Equations 13 and 14
+		u3 = u2
+		p3 = p2 
+		# Equation 16
+		c3 = (gam-1)/2*(u4-u3+2/(gam-1)*c4)
+		rho3 = gam*p3/c3**2
+
+		# now deal with expansion fan
+		xe1 = (u4-c4)*t; # "start" of expansion fan
+		xe2 = t*((gam+1)/2*u3 - (gam-1)/2*u4 - c4) # end
+		xe = np.linspace(xe1,xe2,101);
+		ue = 2/(gam+1)*(xe/t + (gam-1)/2*u4 + c4)
+		ce = ue - xe/t
+		pe = p4*(ce/c4)**(2*gam/(gam-1))
+		rhoe = gam*pe/ce**2		
+
+		# create x's for different regions
+		dx = xe[2]-xe[1]
+		x4 = np.arange(xe1, -L, -dx)
+		x4 = x4[::-1]
+
+		# location of shock
+		xs = V*t
+		# location of contact
+		xc = u2*t
+
+		uu = np.zeros_like(x); pp = np.zeros_like(x); rr = np.zeros_like(x);
+
+		for i in range(len(x)):
+		    if x[i] <= xe1:
+		        uu[i] = u4; pp[i] = p4; rr[i] = rho4;
+		    elif x[i] > xe1 and x[i] <= xe2:
+		        uu[i] = 2/(gam+1)*(x[i]/t + (gam-1)/2*u4 + c4)
+		        cc = uu[i] - x[i]/t
+		        pp[i] = p4*(cc/c4)**(2*gam/(gam-1))
+		        rr[i] = gam*pp[i]/cc**2
+		    elif x[i] > xe2 and x[i] <= xc:
+		        uu[i] = u3; pp[i] = p3; rr[i] = rho3;
+		    elif x[i] > xc and x[i] <= xs:
+		        uu[i] = u2; pp[i] = p2; rr[i] = rho2;
+		    else:
+		        uu[i] = u1; pp[i] = p1; rr[i] = rho1;
+
+		Up[:, srho] = rr
+		Up[:, srhou] = rr*uu
+		Up[:, srhoE] = pp/(gam-1.) + 0.5*rr*uu*uu
+
+		return Up
 
 class SmoothRiemannProblem(FcnBase):
 	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), w=0.05, xshock=0.):
@@ -283,7 +376,6 @@ class SmoothRiemannProblem(FcnBase):
 		gam = physics.gamma
 		
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-
 
 		# w = 0.05
 		def set_tanh(a,b,w,xo):
@@ -455,22 +547,22 @@ class StiffFriction(SourceBase):
 	# 	# jac[:, 2, 1] = 2.0*nu*vel
 
 	# 	return jac
-	def get_jacobian(self, U):
+	def get_jacobian(self, physics, FcnData, x, t):
 
 		nu = self.nu
+		U = FcnData.U
 
-		# U = FcnData.U
-		# irho, irhou, irhoE = physics.GetStateIndices()
+		irho, irhou, irhoE = physics.GetStateIndices()
 
 		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
 		vel = U[:, 1]/(1.0e-12 + U[:, 0])
 
-		# jac[:, irhou, irhou] = nu
-		# jac[:, irhoE, irho] = -nu*vel**2
-		# jac[:, irhoE, irhou] = 2.0*nu*vel
-		jac[:, 1, 1] = nu
-		jac[:, 2, 0] = -nu*vel**2
-		jac[:, 2, 1] = 2.0*nu*vel
+		jac[:, irhou, irhou] = nu
+		jac[:, irhoE, irho] = -nu*vel**2
+		jac[:, irhoE, irhou] = 2.0*nu*vel
+		# jac[:, 1, 1] = nu
+		# jac[:, 2, 0] = -nu*vel**2
+		# jac[:, 2, 1] = 2.0*nu*vel
 
 		return jac
 
