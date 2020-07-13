@@ -16,7 +16,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 ### Mesh
 folder = "meshes/"
 ## Quadrilaterals
-subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeEqQuad"
+subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
 #FileName = "bump0_q1.msh"; 
 FileName = "bump0.msh"; 
 #InterpOrder = 0; nTimeStep = 500; EndTime = 40.

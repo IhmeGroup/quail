@@ -28,7 +28,7 @@ nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))]
 #nTimeStep = int(EndTime/dt)
 InterpOrder = 3
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeEqSeg",TimeScheme="RK4")
+								 InterpBasis="LagrangeSeg",TimeScheme="RK4")
 ### Physics
 ConstVelocity = 1.
 EqnSet = Scalar.Burgers1D(Params["InterpOrder"], Params["InterpBasis"], mesh)

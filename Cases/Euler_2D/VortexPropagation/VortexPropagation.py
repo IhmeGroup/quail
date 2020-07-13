@@ -32,7 +32,7 @@ folder = "meshes/"
 # FileName = "box_400_elem.msh"
 # FileName = "box_1600_elem.msh"
 ## Triangles
-subfolder = "Triangles/"; InterpBasis = "LagrangeEqTri"
+subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
 # Structured
 subsubfolder = "Structured/"
 FileName = "box_5x5.msh"

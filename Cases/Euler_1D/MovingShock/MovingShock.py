@@ -22,7 +22,7 @@ EndTime = 4.e-5
 nTimeStep = 100
 InterpOrder = 1
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeEqSeg",TimeScheme="SSPRK3",InterpolateIC=False,
+								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",InterpolateIC=False,
 								 ApplyLimiter="PositivityPreserving")
 
 

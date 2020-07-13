@@ -23,7 +23,7 @@ nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.075)
 # nTimeStep = 100
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
-								 InterpBasis="LagrangeEqSeg",SourceTreatment="Implicit")
+								 InterpBasis="LagrangeSeg",SourceTreatment="Implicit")
 
 
 ### Physics
