@@ -1,11 +1,11 @@
 import numpy as np
 import copy
-cfl = 0.1
+cfl = 1.0
 u = 1.
-dx = 0.005
+dx = 0.01
 
 dt = cfl*dx/u
-EndTime = 0.25
+EndTime = 2.
 nTimeSteps =int(EndTime/dt)
 print(nTimeSteps)
 TimeStepping = {
@@ -21,7 +21,7 @@ Numerics = {
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     "InterpolateIC" : False,
-    "NodeType" : "GaussLobatto",
+    "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
     "NodesEqualQuadpts" : False,
@@ -37,17 +37,17 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 200,
-    "xmin" : 0.,
-    "xmax" : 1.,
+    "nElem_x" : 100,
+    "xmin" : -5.,
+    "xmax" : 5.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
     "Type" : "Euler",
     "ConvFlux" : "LaxFriedrichs",
-    # "GasConstant" : 1.,
-    # "SpecificHeatRatio" : 3.,
+    "GasConstant" : 1.,
+    "SpecificHeatRatio" : 1.4,
 }
 
 # a = 0.9
@@ -59,14 +59,9 @@ state = {
     "uL" : uL,
     "uR" : uR,
     # "w" : 0.05,
-    "xshock" : 0.5,
+    "xshock" : 0.0,
 }
-state_exact = {
-    "Function" : "ExactRiemannSolution",
-    "uL" : uL,
-    "uR" : uR,
-    "length" : 1.,
-}
+
 state_exact = {
     "Function" : "ExactRiemannSolution",
     "uL" : uL,
