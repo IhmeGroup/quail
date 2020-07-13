@@ -13,8 +13,6 @@ TimeStepping = {
     "EndTime" : EndTime,
     "nTimeStep" : nTimeSteps,
     "TimeScheme" : "SSPRK3",
-    # "OperatorSplitting_Imp" : "Trapezoidal",
-
 }
 
 Numerics = {
@@ -68,6 +66,12 @@ state_exact = {
     "uL" : uL,
     "uR" : uR,
     "length" : 1.,
+}
+state_exact = {
+    "Function" : "ExactRiemannSolution",
+    "uL" : uL,
+    "uR" : uR,
+    "length" : 10.,
 }
 InitialCondition = state
 state2 = state.copy()

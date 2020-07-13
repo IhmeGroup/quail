@@ -33,6 +33,10 @@ plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, pl
 plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='k--', legend_label="DG", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
+
+# plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+			# ylabel=None, fmt='bx-', legend_label="DG", equidistant_pts=True, 
+			# include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
 # plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='go', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=7)
@@ -45,6 +49,9 @@ plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=False, p
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='k-', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
+plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=False, 
+			ylabel=None, fmt='k-', legend_label="DG", equidistant_pts=True, 
+			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
 
 # plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='go', legend_label="DG", equidistant_pts=True, 
