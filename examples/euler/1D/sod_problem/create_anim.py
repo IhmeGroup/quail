@@ -18,7 +18,7 @@ imgs_all = []
 j = 0
 for i in range(200):
 	print(i)
-	fname = "Data_" + str(i) + ".pkl"
+	fname = "Data_" + str(j) + ".pkl"
 	solver = readwritedatafiles.read_data_file(fname)
 	# Unpack
 	mesh = solver.mesh
@@ -27,26 +27,26 @@ for i in range(200):
 	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
 	# 		ignore_legend=True)
 	plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
-			ylabel=None, fmt='bx', legend_label="DG", equidistant_pts=True, 
+			ylabel=None, fmt='b-', legend_label="DG", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False, ignore_legend=True, skip=7)
 	# plot.plot_solution(mesh, physics, solver, "Density", plot_exact=True, plot_numerical=False, create_new_figure=False, 
 	# 		fmt='k-', ignore_legend=True)
-	plot.plot_solution(mesh, physics, solver, "Density", plot_IC=True, plot_numerical=False, create_new_figure=False, 
-			fmt='k--', ignore_legend=True)
+	# plot.plot_solution(mesh, physics, solver, "Density", plot_IC=False, plot_exact=True, plot_numerical=False, create_new_figure=False, 
+	# 		fmt='k--', ignore_legend=True)
 
 	imgs = ax.get_lines().copy()
 
-	if j == 0:
+	if i == 0:
 		plt.legend(loc="best")
 		imgs_all.append(imgs)
 	else:
-		nc = len(imgs_all[j-1])
+		nc = len(imgs_all[i-1])
 		imgs_all.append(imgs[-nc:])
 
-	j += 1
-	# k +=5
+	j += 5
+	# k += 5
 
-anim = animation.ArtistAnimation(fig, imgs_all, interval=200, blit=False,
+anim = animation.ArtistAnimation(fig, imgs_all, interval=50, blit=False,
                                 repeat_delay=None)
 
 plt.show()

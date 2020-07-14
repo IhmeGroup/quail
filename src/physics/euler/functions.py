@@ -687,7 +687,15 @@ class Roe1D(ConvNumFluxBase):
 		evals[:,0:1] = velRoe[:,0:1] - c
 		evals[:,1:2] = velRoe[:,0:1]
 		evals[:,-1:] = velRoe[:,0:1] + c
-
+		
+		# entropy fix
+		ep = 1e-2
+		for iq in range(evals.shape[0]):
+			eps = ep*c[iq]
+			for i in range(evals.shape[-1]):
+				if evals[iq,i] < eps and evals[iq,i] > -eps:
+					eps1 = 1./eps
+					evals[iq,i] = 0.5*(eps+evals[iq,i]*evals[iq,i]*eps1)
 		return evals 
 
 	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):

@@ -5,13 +5,15 @@ import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
 ### Postprocess
-fname = "Data_final.pkl"
+fname = "exact.pkl"
 solver1 = readwritedatafiles.read_data_file(fname)
 print('Solution Final Time:', solver1.Time)
-
+solver1.Time = 0.25
 # Unpack
 mesh1 = solver1.mesh
 physics1 = solver1.EqnSet
+# code.interact(local=locals())
+# mesh1.Coords += 0.5
 
 ### Postprocess
 # fname = "Data_Final.pkl"
@@ -27,13 +29,46 @@ physics1 = solver1.EqnSet
 # Plot
 plot.PreparePlot()
 skip=0
-plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
-			ylabel=None, fmt='b-', legend_label="DG", equidistant_pts=True, 
+plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
+			ylabel=None, fmt='k-.', legend_label="Exact", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=False)
-plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=False, 
-			ylabel=None, fmt='k--', legend_label="DG", equidistant_pts=True, 
-			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
+# plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=False, plot_IC=True, create_new_figure=False, 
+# 			ylabel=None, fmt='k-.', legend_label="DG", equidistant_pts=True, 
+# 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
 
+# fname = "nolimiter_cfl0p025.pkl"
+# solver2 = readwritedatafiles.read_data_file(fname)
+# print('Solution Final Time:', solver2.Time)
+# # Unpack
+# mesh2 = solver2.mesh
+# physics2 = solver2.EqnSet
+
+# plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# 			ylabel=None, fmt='b-', legend_label="NoLimiter", equidistant_pts=True, 
+# 			include_mesh=False, regular_2D=False, equal_AR=False,skip=0, show_elem_IDs=False)
+
+fname = "Data_final.pkl"
+solver2 = readwritedatafiles.read_data_file(fname)
+print('Solution Final Time:', solver2.Time)
+# Unpack
+mesh2 = solver2.mesh
+physics2 = solver2.EqnSet
+
+plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+			ylabel=None, fmt='g-', legend_label="NoLimiter", equidistant_pts=True, 
+			include_mesh=False, regular_2D=False, equal_AR=False,skip=0, show_elem_IDs=False)
+
+
+# fname = "nolimiter_cfl0p1.pkl"
+# solver2 = readwritedatafiles.read_data_file(fname)
+# print('Solution Final Time:', solver2.Time)
+# # Unpack
+# mesh2 = solver2.mesh
+# physics2 = solver2.EqnSet
+
+# plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# 			ylabel=None, fmt='b-', legend_label="CFL=0.1", equidistant_pts=True, 
+# 			include_mesh=False, regular_2D=False, equal_AR=False,skip=0, show_elem_IDs=False)
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 			# ylabel=None, fmt='bx-', legend_label="DG", equidistant_pts=True, 
 			# include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
@@ -47,7 +82,7 @@ plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, pl
 # plot.SaveFigure(FileName='Velocity', FileType='pdf', CropLevel=2)
 
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=False, 
-# 			ylabel=None, fmt='k-', legend_label="DG", equidistant_pts=True, 
+#			ylabel=None, fmt='k-', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
 #plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=False, 
 #			ylabel=None, fmt='k-', legend_label="DG", equidistant_pts=True, 

@@ -155,7 +155,6 @@ class SolverBase(ABC):
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, f, U[elem,:,:])
 
-
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		mesh = self.mesh
 		EqnSet = self.EqnSet

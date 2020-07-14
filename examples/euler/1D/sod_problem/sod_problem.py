@@ -1,25 +1,22 @@
 import numpy as np
 import copy
-cfl = 1.0
-u = 1.
-dx = 0.01
 
-dt = cfl*dx/u
-EndTime = 2.
-NumTimeStepss =int(EndTime/dt)
-print(NumTimeStepss)
+EndTime = 0.25
+nTimeSteps = 2000
+
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "NumTimeSteps" : NumTimeStepss,
-    "TimeScheme" : "SSPRK3",
+    "NumTimeSteps" : nTimeSteps,
+    # "CFL" : 0.025,
+    "TimeScheme" : "RK4",
 }
 
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "ApplyLimiter" : "PositivityPreserving",
+    # "ApplyLimiter" : "PositivityPreserving",
     "InterpolateIC" : False,
     # "NodeType" : "GaussLobatto",
     # "ElementQuadrature" : "GaussLobatto",
@@ -29,23 +26,24 @@ Numerics = {
 }
 
 Output = {
-    "WriteInterval" : 5,
-    "WriteInitialSolution" : True,
+    # "WriteInterval" : 2,
+    # "WriteInitialSolution" : True,
     "AutoProcess" : True,
+    "Prefix" : "Test2",
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 100,
-    "xmin" : -5.,
-    "xmax" : 5.,
+    "nElem_x" : 200,
+    "xmin" : 0.,
+    "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFlux" : "Roe",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
 }
@@ -59,19 +57,21 @@ state = {
     "uL" : uL,
     "uR" : uR,
     # "w" : 0.05,
-    "xshock" : 0.0,
+    "xshock" : 0.5,
 }
 
 state_exact = {
     "Function" : "ExactRiemannSolution",
     "uL" : uL,
     "uR" : uR,
-    "length" : 10.,
+    "xmin" : 0.,
+    "xmax" : 1.,
+    "xshock" : 0.5,
 }
 InitialCondition = state
 state2 = state.copy()
 state2.update({"BCType":"StateAll"})
-ExactSolution = state
+ExactSolution = state_exact
 # ExactSolution = state_exact
 
 BoundaryConditions = {
