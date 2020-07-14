@@ -21,6 +21,7 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=100, xmin=0., xmax=1., Periodic=Fa
 EndTime = 4.e-5
 NumTimeSteps = 100
 InterpOrder = 1
+
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
 								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",InterpolateIC=False,
 								 ApplyLimiter="PositivityPreserving")
