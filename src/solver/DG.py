@@ -7,6 +7,7 @@ import time
 import errors
 
 import meshing.meshbase as mesh_defs
+import meshing.tools as mesh_tools
 
 import numerics.basis.tools as basis_tools
 
@@ -31,6 +32,7 @@ class ElemOperators(object):
 		self.Fq = None 
 		self.Sq = None 
 		self.iMM_elems = np.zeros(0)
+		self.vol_elems = None
 
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
@@ -79,6 +81,9 @@ class ElemOperators(object):
 			# Physical gradient
 			basis.eval_basis(quad_pts, Get_gPhi=True, ijac=ijac) # gPhi is [nq,nb,dim]
 			self.basis_pgrad_elems[elem] = basis.basis_pgrad
+
+		_, ElemVols = mesh_tools.element_volumes(mesh)
+		self.vol_elems = ElemVols
 
 	def alloc_other_arrays(self, EqnSet, basis, order):
 		quad_pts = self.quad_pts 

@@ -3,7 +3,8 @@ import numpy as np
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 0.1,
-    "nTimeStep" : 100,
+    # "CFL" : 0.05,
+    "NumTimeSteps" : 100,
     "TimeScheme" : "RK4",
 }
 
@@ -28,7 +29,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "Roe",
+    "ConvFlux" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 3.,
 }

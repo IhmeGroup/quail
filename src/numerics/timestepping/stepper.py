@@ -8,23 +8,6 @@ from solver.tools import mult_inv_mass_matrix
 import numerics.basis.tools as basis_tools
 import solver.tools as solver_tools
 
-def set_stepper(Params, U):
-	TimeScheme = Params["TimeScheme"]
-	if StepperType[TimeScheme] == StepperType.FE:
-		stepper = FE(U)
-	elif StepperType[TimeScheme] == StepperType.RK4:
-		stepper = RK4(U)
-	elif StepperType[TimeScheme] == StepperType.LSRK4:
-		stepper = LSRK4(U)
-	elif StepperType[TimeScheme] == StepperType.SSPRK3:
-		stepper = SSPRK3(U)
-	elif StepperType[TimeScheme] == StepperType.Strang:
-		stepper = Strang(U)
-		stepper.set_split_schemes(Params["OperatorSplitting_Exp"], Params["OperatorSplitting_Imp"], U)
-	else:
-		raise NotImplementedError("Time scheme not supported")
-	return stepper
-
 class StepperBase(ABC):
 	def __init__(self, U):
 		# self.TimeStep = dt
@@ -83,6 +66,7 @@ class RK4(StepperBase):
 		DataSet = solver.DataSet
 		mesh = solver.mesh
 		U = EqnSet.U
+
 		# Residual, dU arrays
 		# try: 
 		# 	R = DataSet.R

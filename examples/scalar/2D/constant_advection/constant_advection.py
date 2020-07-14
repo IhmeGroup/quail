@@ -1,7 +1,8 @@
+
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 10.,
-    "nTimeStep" : 200,
+    "CFL" : 0.01,
     "TimeScheme" : "RK4",
 }
 

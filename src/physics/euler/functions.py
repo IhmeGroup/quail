@@ -257,16 +257,19 @@ class RiemannProblem(FcnBase):
 
 class ExactRiemannSolution(FcnBase):
 	# This is only used for exact solutions. Not for IC or BCs
-	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), length=1.):
+	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xmin=0., xmax=1., xshock=0.5):
 		self.uL = uL
 		self.uR = uR
-		self.length = length
+		self.xmin = xmin
+		self.xmax = xmax
+		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
 
 		uL = self.uL
 		uR = self.uR
-		L = self.length
+		L = self.xmax - self.xmin
+		xshock = self.xshock
 		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gam = physics.gamma
 		srho, srhou, srhoE = physics.get_state_slices()
@@ -307,23 +310,25 @@ class ExactRiemannSolution(FcnBase):
 		rho3 = gam*p3/c3**2
 
 		# now deal with expansion fan
-		xe1 = (u4-c4)*t; # "start" of expansion fan
-		xe2 = t*((gam+1)/2*u3 - (gam-1)/2*u4 - c4) # end
-		xe = np.linspace(xe1,xe2,101);
-		ue = 2/(gam+1)*(xe/t + (gam-1)/2*u4 + c4)
-		ce = ue - xe/t
-		pe = p4*(ce/c4)**(2*gam/(gam-1))
-		rhoe = gam*pe/ce**2		
+		xe1 = (u4-c4)*t + xshock; # "start" of expansion fan
+		xe2 = (t*((gam+1)/2*u3 - (gam-1)/2*u4 - c4)+xshock) # end
 
-		# create x's for different regions
-		dx = xe[2]-xe[1]
-		x4 = np.arange(xe1, -L, -dx)
-		x4 = x4[::-1]
+		# code.interact(local=locals())
+		# xe = np.linspace(xe1,xe2,101);
+		# ue = 2/(gam+1)*(xe/t + (gam-1)/2*u4 + c4)
+		# ce = ue - xe/t
+		# pe = p4*(ce/c4)**(2*gam/(gam-1))
+		# rhoe = gam*pe/ce**2		
+
+		# # create x's for different regions
+		# dx = xe[2]-xe[1]
+		# x4 = np.arange(xe1, -L, -dx)
+		# x4 = x4[::-1]
 
 		# location of shock
-		xs = V*t
+		xs = V*t + xshock
 		# location of contact
-		xc = u2*t
+		xc = u2*t + xshock
 
 		uu = np.zeros_like(x); pp = np.zeros_like(x); rr = np.zeros_like(x);
 
@@ -331,8 +336,8 @@ class ExactRiemannSolution(FcnBase):
 		    if x[i] <= xe1:
 		        uu[i] = u4; pp[i] = p4; rr[i] = rho4;
 		    elif x[i] > xe1 and x[i] <= xe2:
-		        uu[i] = 2/(gam+1)*(x[i]/t + (gam-1)/2*u4 + c4)
-		        cc = uu[i] - x[i]/t
+		        uu[i] = (2/(gam+1)*((x[i]-xshock)/t + (gam-1)/2*u4 + c4)) 
+		        cc = uu[i] - (x[i]-xshock)/t
 		        pp[i] = p4*(cc/c4)**(2*gam/(gam-1))
 		        rr[i] = gam*pp[i]/cc**2
 		    elif x[i] > xe2 and x[i] <= xc:

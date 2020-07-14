@@ -148,7 +148,7 @@ def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 	SMS = ader_ops.SMS_elems[elem]
 	iK = ader_ops.iK
 
-	vol_elems = ader_ops.vol_elems
+	vol_elems = elem_ops.vol_elems
 	W_bar = np.zeros([1,ns])
 	Wq = np.matmul(basis_val, W)
 	vol = vol_elems[elem]
@@ -217,7 +217,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	SMS = ader_ops.SMS_elems[elem]
 	K = ader_ops.K
 
-	vol_elems = ader_ops.vol_elems
+	vol_elems = elem_ops.vol_elems
 	W_bar = np.zeros([1,ns])
 	Wq = np.matmul(basis_val, W)
 	vol = vol_elems[elem]
@@ -301,7 +301,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	iMM = ader_ops.iMM
 	SMS = ader_ops.SMS_elems[elem]
 	K = ader_ops.K
-	vol_elems = ader_ops.vol_elems
+	vol_elems = elem_ops.vol_elems
 
 	W_bar = np.zeros([1,ns])
 	Wq = np.matmul(basis_val, W)

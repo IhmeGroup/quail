@@ -16,7 +16,8 @@ import numerics.basis.tools as basis_tools
 
 import numerics.limiting.tools as limiter_tools
 
-import numerics.timestepping.stepper as stepper
+import numerics.timestepping.tools as stepper_tools
+import numerics.timestepping.stepper as stepper_defs
 
 import processing.post as post_defs
 import processing.readwritedatafiles as ReadWriteDataFiles
@@ -46,7 +47,8 @@ class SolverBase(ABC):
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
-		self.Stepper = stepper.set_stepper(Params, EqnSet.U)
+		self.Stepper = stepper_tools.set_stepper(Params, EqnSet.U)
+		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
 		# Set the basis functions for the solver
 		basis_name  = Params["InterpBasis"]
@@ -291,6 +293,8 @@ class SolverBase(ABC):
 				face = BFace.face
 
 				R[elem] = self.calculate_residual_bface(BFG, ibface, U[elem], R[elem])
+
+
 	def apply_time_scheme(self, fhistory=None):
 		'''
 		Method: apply_time_scheme
@@ -317,8 +321,12 @@ class SolverBase(ABC):
 
 		t0 = time.time()
 		iwrite = 1
-		for iStep in range(self.nTimeStep):
 
+		# for iStep in range(Stepper.numtimesteps):
+		iStep = 0
+		while iStep < Stepper.numtimesteps:
+
+			Stepper.dt = Stepper.get_time_step(Stepper, self)
 			# Integrate in time
 			# self.Time is used for local time
 			R = Stepper.TakeTimeStep(self)
@@ -353,6 +361,7 @@ class SolverBase(ABC):
 				ReadWriteDataFiles.write_data_file(self, iwrite)
 				iwrite += 1
 
+			iStep += 1
 
 		t1 = time.time()
 		print("Wall clock time = %g seconds" % (t1-t0))
@@ -360,6 +369,7 @@ class SolverBase(ABC):
 		if WriteFinalSolution:
 			ReadWriteDataFiles.write_data_file(self, -1)
 			
+
 	def apply_limiter(self, U):
 		'''
 		Method: apply_limiter
@@ -377,6 +387,7 @@ class SolverBase(ABC):
 		if self.Limiter is not None:
 			self.Limiter.limit_solution(self, U)
 
+
 	def solve(self):
 		'''
 		Method: solve
@@ -389,8 +400,8 @@ class SolverBase(ABC):
 		basis = self.basis
 
 		InterpOrder = self.Params["InterpOrder"]
-		nTimeStep = self.Params["nTimeStep"]
-		EndTime = self.Params["EndTime"]
+		# numtimesteps = self.Params["NumTimeSteps"]
+		# EndTime = self.Params["EndTime"]
 		WriteTimeHistory = self.Params["WriteTimeHistory"]
 		if WriteTimeHistory:
 			fhistory = open("TimeHistory.txt", "w")
@@ -437,12 +448,11 @@ class SolverBase(ABC):
 		# 		raise ValueError
 
 		''' Loop through Orders '''
-		Time = self.Time
 
 		''' Compute time step '''
-		if nTimeStep != 0:
-			self.Stepper.dt = (EndTime-Time)/nTimeStep
-		self.nTimeStep = nTimeStep			
+		# if nTimeStep != 0:
+		# 	self.Stepper.dt = (EndTime-Time)/nTimeStep
+		# self.numtimesteps = numtimesteps			
 
 		''' Apply time scheme '''
 		self.apply_time_scheme(fhistory)
