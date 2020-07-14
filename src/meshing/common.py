@@ -96,22 +96,22 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 		BF.face = 1
 
 	mesh.SetParams(gbasis=basis_defs.LagrangeSeg(1), gorder=1, nElem=nElem)
-	mesh.allocate_faces()
+	# mesh.allocate_faces()
 	# interior elements
-	for elem in range(mesh.nElem):
-		for i in range(mesh.nFacePerElem):
-			Face_ = mesh.Faces[elem][i]
-			Face_.Type = general.INTERIORFACE
-			Face_.Number = elem + i
-			if not Periodic:
-				if elem == 0 and i == 0:
-					Face_.Type = general.NULLFACE
-					Face_.Number = 0
-				elif elem == mesh.nElem-1 and i == 1:
-					Face_.Type = general.NULLFACE
-					Face_.Number = 1
-				else:
-					Face_.Number = elem + i - 1
+	# for elem in range(mesh.nElem):
+	# 	for i in range(mesh.nFacePerElem):
+	# 		Face_ = mesh.Faces[elem][i]
+	# 		Face_.Type = general.INTERIORFACE
+	# 		Face_.Number = elem + i
+	# 		if not Periodic:
+	# 			if elem == 0 and i == 0:
+	# 				Face_.Type = general.NULLFACE
+	# 				Face_.Number = 0
+	# 			elif elem == mesh.nElem-1 and i == 1:
+	# 				Face_.Type = general.NULLFACE
+	# 				Face_.Number = 1
+	# 			else:
+	# 				Face_.Number = elem + i - 1
 
 
 	mesh.allocate_elem_to_nodes()
@@ -119,37 +119,38 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 		for i in range(mesh.nNodePerElem):
 			mesh.Elem2Nodes[elem][i] = elem + i
 
-	mesh.fill_faces()
+	# mesh.fill_faces()
+	mesh.create_elements()
 
 	return mesh
 
 
-def refine_uniform_1D(Coords_old):
-	'''
-	Function: refine_uniform_1D
-	-------------------
-	This function uniformly refines a set of coordinates
+# def refine_uniform_1D(Coords_old):
+# 	'''
+# 	Function: refine_uniform_1D
+# 	-------------------
+# 	This function uniformly refines a set of coordinates
 
-	INPUTS:
-	    Coords_old: coordinates to refine
+# 	INPUTS:
+# 	    Coords_old: coordinates to refine
 
-	OUTPUTS:
-	    Coords: refined coordinates
-	'''
-	nNode_old = len(Coords_old)
-	nElem_old = nNode_old-1
+# 	OUTPUTS:
+# 	    Coords: refined coordinates
+# 	'''
+# 	nNode_old = len(Coords_old)
+# 	nElem_old = nNode_old-1
 
-	nElem = nElem_old*2
-	nNode = nElem+1
+# 	nElem = nElem_old*2
+# 	nNode = nElem+1
 
-	Coords = np.zeros([nNode,1])
+# 	Coords = np.zeros([nNode,1])
 
-	for n in range(nNode_old-1):
-		Coords[2*n] = Coords_old[n]
-		Coords[2*n+1] = np.mean(Coords_old[n:n+2])
-	Coords[-1] = Coords_old[-1]
+# 	for n in range(nNode_old-1):
+# 		Coords[2*n] = Coords_old[n]
+# 		Coords[2*n+1] = np.mean(Coords_old[n:n+2])
+# 	Coords[-1] = Coords_old[-1]
 
-	return Coords
+# 	return Coords
 
 
 def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, xmin=-1., xmax=1., 
@@ -206,7 +207,7 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 			mesh.Elem2Nodes[elem][3] = nNode_x*(ny+1) + nx + 1
 			elem += 1
 
-	mesh.allocate_faces()
+	# mesh.allocate_faces()
 
 	### BFGs
 	# mesh.nBFaceGroup = 4
@@ -294,7 +295,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 			IF.faceR = 0
 			n += 1
 
-	mesh.fill_faces()
+	# mesh.fill_faces()
+	mesh.create_elements()
 
 	return mesh
 
@@ -377,8 +379,9 @@ def split_quadrils_into_tris(mesh_old):
 		IF.faceR = 0
 		mesh.IFaces.append(IF)
 
-	mesh.allocate_faces()
-	mesh.fill_faces()
+	# mesh.allocate_faces()
+	# mesh.fill_faces()
+	mesh.create_elements()
 
 	return mesh
 

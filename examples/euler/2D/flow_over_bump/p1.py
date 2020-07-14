@@ -7,7 +7,7 @@ Restart = {
 
 TimeStepping.update({
     "EndTime" : 48.,
-    "nTimeStep" : 1000,
+    "NumTimeSteps" : 1000,
 })
 
 Numerics["InterpOrder"] = 1

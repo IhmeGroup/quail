@@ -976,7 +976,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# 	EG.allocate_faces()
 	# 	EG.allocate_elem_to_nodes()
 	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
-	mesh.allocate_faces()
+	# mesh.allocate_faces()
 	mesh.allocate_elem_to_nodes()
 	nFaceMax = mesh.nFacePerElem
 
@@ -1020,7 +1020,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 			fnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, face)
 
 			# Convert to global nodes
-			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+			fnodes = mesh.Elem2Nodes[elem][fnodes]
 
 			# Add to hash table
 			FInfo, Exists = AddFaceToHash(Node2FaceTable, nfnode, fnodes, False, 
@@ -1052,9 +1052,9 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					BFace = BFG.BFaces[FInfo.Face]
 					BFace.Elem = elem; BFace.face = face
 					# Store in Face
-					Face = mesh.Faces[elem][face]
-					Face.Group = FInfo.Group
-					Face.Number = FInfo.Face
+					# Face = mesh.Faces[elem][face]
+					# Face.Group = FInfo.Group
+					# Face.Number = FInfo.Face
 				else:
 					# interior face
 					# Store in IFace
@@ -1064,13 +1064,13 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					IFace.ElemR = elem
 					IFace.faceR = face
 					# Store in left Face
-					Face = mesh.Faces[FInfo.Elem][FInfo.Face]
-					Face.Group = general.INTERIORFACE
-					Face.Number = mesh.nIFace
-					# Store in right face
-					Face = mesh.Faces[elem][face]
-					Face.Group = general.INTERIORFACE
-					Face.Number = mesh.nIFace
+					# Face = mesh.Faces[FInfo.Elem][FInfo.Face]
+					# Face.Group = general.INTERIORFACE
+					# Face.Number = mesh.nIFace
+					# # Store in right face
+					# Face = mesh.Faces[elem][face]
+					# Face.Group = general.INTERIORFACE
+					# Face.Number = mesh.nIFace
 					# Increment IFace counter
 					mesh.nIFace += 1
 
@@ -1095,7 +1095,8 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 		raise ValueError
 	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
 
-	mesh.fill_faces()
+	# mesh.fill_faces()
+	mesh.create_elements()
 
 	# Check face orientations
 	mesh_tools.check_face_orientations(mesh)

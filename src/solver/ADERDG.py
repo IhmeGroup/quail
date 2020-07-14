@@ -15,7 +15,8 @@ import numerics.basis.ader_tools as basis_st_tools
 
 import numerics.limiting.tools as limiter_tools
 
-import numerics.timestepping.stepper as stepper
+import numerics.timestepping.tools as stepper_tools
+import numerics.timestepping.stepper as stepper_defs
 
 global echeck
 echeck = -1
@@ -299,7 +300,8 @@ class ADERDG(base.SolverBase):
 		TimeScheme = Params["TimeScheme"]
 		if StepperType[TimeScheme] != StepperType.ADER:
 			raise errors.IncompatibleError
-		self.Stepper = stepper.ADER(EqnSet.U)
+		self.Stepper = stepper_defs.ADER(EqnSet.U)
+		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
 		# Set the basis functions for the solver
 		BasisFunction  = Params["InterpBasis"]
@@ -382,7 +384,7 @@ class ADERDG(base.SolverBase):
 		basis = self.basis
 		basis_st = self.basis_st
 		
-		dt = self.Params['EndTime']/self.Params['nTimeStep']
+		dt = self.Params['EndTime']/self.Params['NumTimeSteps']
 
 
 		self.elem_operators = DG.ElemOperators()

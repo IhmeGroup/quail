@@ -297,6 +297,16 @@ class PeriodicGroup(object):
         self.PeriodicNodes = None
 
 
+class Element(object):
+    def __init__(self, number=-1):
+        self.number = number
+        self.node_nums = np.zeros(0, dtype=int)
+        self.node_coords = np.zeros(0)
+        self.face_to_neighbors = np.zeros(0, dtype=int)
+
+
+
+
 class Mesh(object):
     '''
     Class: Mesh
@@ -341,12 +351,13 @@ class Mesh(object):
         self.gorder = gorder
         self.nElem = nElem
         self.nFacePerElem = gbasis.nfaceperelem 
-        self.Faces = None
+        # self.Faces = None
         self.nNodePerElem = gbasis.get_num_basis_coeff(gorder)
         self.Elem2Nodes = None
+        self.elements = []
             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,nNodePerElem
 
-    def SetParams(self,gbasis,gorder=1,nElem=1):
+    def SetParams(self, gbasis, gorder=1, nElem=1):
 
         self.gbasis = gbasis
         self.gorder = gorder
@@ -354,16 +365,16 @@ class Mesh(object):
         self.nFacePerElem = gbasis.nfaceperelem
         self.nNodePerElem = gbasis.get_num_basis_coeff(gorder)
 
-    def allocate_faces(self):
-        '''
-        Method: allocate_faces
-        -----------------------
-        This method allocates the list of Face objects
+    # def allocate_faces(self):
+    #     '''
+    #     Method: allocate_faces
+    #     -----------------------
+    #     This method allocates the list of Face objects
 
-        OUTPUTS:
-            self.Faces
-        '''
-        self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
+    #     OUTPUTS:
+    #         self.Faces
+    #     '''
+    #     self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
 
     def allocate_elem_to_nodes(self):
         '''
@@ -410,39 +421,66 @@ class Mesh(object):
 
         return BFG
 
-    def fill_faces(self):
-        for iiface in range(self.nIFace):
-            IFace = self.IFaces[iiface]
-            elemL = IFace.ElemL
-            elemR = IFace.ElemR
-            faceL = IFace.faceL
-            faceR = IFace.faceR
+    def create_elements(self):
+        self.elements = [Element() for i in range(self.nElem)]
 
-            FaceL = self.Faces[elemL][faceL]
-            FaceR = self.Faces[elemR][faceR]
+        for ielem in range(self.nElem):
+            elem = self.elements[ielem]
 
-            FaceL.Type = FaceType.Interior
-            FaceR.Type = FaceType.Interior
+            elem.number = ielem
+            elem.node_nums = self.Elem2Nodes[ielem]
+            elem.node_coords = self.Coords[elem.node_nums]
+            elem.face_to_neighbors = np.full(self.gbasis.nfaceperelem, -1)
 
-            FaceL.Number = iiface
-            FaceR.Number = iiface
+        # neighbors
+        for iif in range(self.nIFace):
+            int_face = self.IFaces[iif]
+            ielemL = int_face.ElemL
+            ielemR = int_face.ElemR
+            faceL = int_face.faceL
+            faceR = int_face.faceR
 
-        # for ibfgrp in range(self.nBFaceGroup):
-        #     BFG = self.BFaceGroups[ibfgrp]
+            elemL = self.elements[ielemL]
+            elemR = self.elements[ielemR]
 
-        for BFG in self.BFaceGroups.values():
+            elemL.face_to_neighbors[faceL] = ielemR
+            elemR.face_to_neighbors[faceR] = ielemL
+
+
+
+    # def fill_faces(self):
+    #     for iiface in range(self.nIFace):
+    #         IFace = self.IFaces[iiface]
+    #         elemL = IFace.ElemL
+    #         elemR = IFace.ElemR
+    #         faceL = IFace.faceL
+    #         faceR = IFace.faceR
+
+    #         FaceL = self.Faces[elemL][faceL]
+    #         FaceR = self.Faces[elemR][faceR]
+
+    #         FaceL.Type = FaceType.Interior
+    #         FaceR.Type = FaceType.Interior
+
+    #         FaceL.Number = iiface
+    #         FaceR.Number = iiface
+
+    #     # for ibfgrp in range(self.nBFaceGroup):
+    #     #     BFG = self.BFaceGroups[ibfgrp]
+
+    #     for BFG in self.BFaceGroups.values():
             
-            for ibface in range(BFG.nBFace):
-                BFace = BFG.BFaces[ibface]
-                elem = BFace.Elem
-                face = BFace.face
+    #         for ibface in range(BFG.nBFace):
+    #             BFace = BFG.BFaces[ibface]
+    #             elem = BFace.Elem
+    #             face = BFace.face
 
-                Face = self.Faces[elem][face]
+    #             Face = self.Faces[elem][face]
 
-                Face.Type = FaceType.Boundary
-                Face.Number = ibface
-                # Face.Group = ibfgrp
-                Face.Group = BFG.number
+    #             Face.Type = FaceType.Boundary
+    #             Face.Number = ibface
+    #             # Face.Group = ibfgrp
+    #             Face.Group = BFG.number
 
 
 

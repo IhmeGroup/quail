@@ -23,8 +23,8 @@ plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=True, plot_
 			include_mesh=True, regular_2D=True, equal_AR=False, show_elem_IDs=True)
 # # plot.PlotSolution(mesh, physics, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 # # 	Regular2D=True, show_triangulation=False, show_elem_IDs=True)
-# plot.SaveFigure(FileName='vortex', FileType='pdf', CropLevel=2)
-plot.PreparePlot(close_all=False, linewidth=1.5)
+plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
+#plot.PreparePlot(close_all=False, linewidth=1.5)
 # plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
 # plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, plot_numerical=False, plot_exact=False,
 # 		plot_IC=True, create_new_figure=True, ylabel=None, vs_x=True, fmt="k-.", legend_label=None)

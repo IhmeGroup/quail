@@ -115,26 +115,30 @@ def check_face_orientations(mesh):
         return
 
     for IFace in mesh.IFaces:
-        elemL = IFace.ElemL
-        elemR = IFace.ElemR
+        ielemL = IFace.ElemL
+        ielemR = IFace.ElemR
         faceL = IFace.faceL
         faceR = IFace.faceR
+
+        elemL_nodes = mesh.elements[ielemL].node_nums
+        elemR_nodes = mesh.elements[ielemR].node_nums
 
         # Get local q=1 nodes on face for left element
         lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, faceL)
         # Convert to global node numbering
-        gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
+        # gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
+        gfnodesL = elemL_nodes[lfnodes]
 
         # Get local q=1 nodes on face for right element
         lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, faceR)
         # Convert to global node numbering
-        gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
+        # gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
+        gfnodesR = elemR_nodes[lfnodes]
 
         # Node Ordering should be reversed between the two elements
         if not np.all(gfnodesL == gfnodesR[::-1]):
-            code.interact(local=locals())
-            raise Exception("Face orientation for elemL = %d, elemR = %d \\ is incorrect"
-                % (elemL, elemR))
+            raise Exception("Face orientation for ielemL = %d, ielemR = %d \\ is incorrect"
+                % (ielemL, ielemR))
 
 
 def RandomizeNodes(mesh, elem = -1, orient = -1):
@@ -179,24 +183,25 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
     gbasis = mesh.gbasis
     for BF in BFG.BFaces:
         # Extract info
-        elem = BF.Elem
+        ielem = BF.Elem
         face = BF.face
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = gbasis.local_q1_face_nodes( 
-            mesh.gorder, face)
+        lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, face)
 
         # Convert to global node numbering
-        gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
+        # gfnodes = mesh.Elem2Nodes[ielem][lfnodes]
 
         # Physical coordinates of global nodes
-        coords = mesh.Coords[gfnodes]
+        # coords = mesh.Coords[gfnodes]
+        elem_coords = mesh.elements[ielem].node_coords
+        coords = elem_coords[lfnodes]
         if np.isnan(coord):
             coord = coords[0, icoord]
 
         # Make sure coord1 matches for all nodes
-        if np.any(np.abs(coords[:,icoord] - coord)) > tol:
+        if np.any(np.abs(coords[:,icoord] - coord) > tol):
             raise ValueError
 
         # Now force each node to have the same exact coord1 
@@ -286,7 +291,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     '''
     for BFace1 in BFG1.BFaces:
         # Extract info
-        elem1 = BFace1.Elem
+        ielem1 = BFace1.Elem
         face1 = BFace1.face
 
         ''' Get physical coordinates of face '''
@@ -295,7 +300,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
             mesh.gorder, face1)
 
         # Convert to global node numbering
-        gfnodes1 = mesh.Elem2Nodes[elem1][lfnodes1[:]]
+        gfnodes1 = mesh.Elem2Nodes[ielem1][lfnodes1]
         nodesort1 = np.sort(gfnodes1)
 
         # Physical coordinates of global nodes
@@ -304,7 +309,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
         # Pair each node with corresponding one on other boundary
         for BFace2 in BFG2.BFaces:
             # Extract info
-            elem2 = BFace2.Elem
+            ielem2 = BFace2.Elem
             face2 = BFace2.face
 
             ''' Get physical coordinates of face '''
@@ -313,7 +318,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                 mesh.gorder, face2)
 
             # Convert to global node numbering
-            gfnodes2 = mesh.Elem2Nodes[elem2][lfnodes2[:]]
+            gfnodes2 = mesh.Elem2Nodes[ielem2][lfnodes2]
 
             # Physical coordinates of global nodes
             coords2 = mesh.Coords[gfnodes2]
@@ -405,9 +410,9 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                 mesh.nIFace += 1
                 IFaces.append(mesh_defs.IFace())
                 IF = IFaces[-1]
-                IF.ElemL = elem1
+                IF.ElemL = ielem1
                 IF.faceL = face1
-                IF.ElemR = elem2
+                IF.ElemR = ielem2
                 IF.faceR = face2
 
                 BFG1.nBFace -= 1
@@ -771,6 +776,9 @@ def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, z1=None,
 
     ''' Verify valid mesh '''
     VerifyPeriodicMesh(mesh)
+
+    ''' Update elements '''
+    mesh.create_elements()
 
 
 

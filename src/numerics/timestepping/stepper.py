@@ -13,6 +13,8 @@ class StepperBase(ABC):
 		# self.TimeStep = dt
 		self.R = np.zeros_like(U)
 		self.dt = 0.
+		self.numtimesteps = 0
+		self.get_time_step = None
 	def __repr__(self):
 		return '{self.__class__.__name__}(TimeStep={self.dt})'.format(self=self)
 	@abstractmethod

@@ -356,9 +356,10 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
 
     A = np.zeros([dim,dim])
 
-    Elem2Nodes = mesh.Elem2Nodes[elem]
+    # Elem2Nodes = mesh.Elem2Nodes[elem]
+    elem_coords = mesh.elements[elem].node_coords
 
-    jac = np.tensordot(basis_pgrad, mesh.Coords[Elem2Nodes].transpose(), \
+    jac = np.tensordot(basis_pgrad, elem_coords.transpose(), \
         axes=[[1],[1]]).transpose((0,2,1))
 
     for i in range(nq):
@@ -418,36 +419,41 @@ def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
     gbasis = mesh.gbasis
     gorder = mesh.gorder
 
-    nq = quad_pts.shape[0]
+    # nq = quad_pts.shape[0]
 
-    if gorder == 1:
-        nq = 1
+    # if gorder == 1:
+    #     nq = 1
 
-    nvec = np.zeros([nq,mesh.Dim])
+    # nvec = np.zeros([nq,mesh.Dim])
 
     # Calculate 2D normals
     ElemNodes = mesh.Elem2Nodes[elem]
-    if gorder == 1:
-        fnodes, nfnode = basis.local_q1_face_nodes(gorder, face, fnodes=None)
-        x0 = mesh.Coords[ElemNodes[fnodes[0]]]
-        x1 = mesh.Coords[ElemNodes[fnodes[1]]]
+    elem_coords = mesh.elements[elem].node_coords
+    # if gorder == 1:
+    #     fnodes, nfnode = basis.local_q1_face_nodes(gorder, face, fnodes=None)
+    #     x0 = mesh.Coords[ElemNodes[fnodes[0]]]
+    #     x1 = mesh.Coords[ElemNodes[fnodes[1]]]
 
-        nvec[0,0] =  (x1[1]-x0[1])/2.;
-        nvec[0,1] = -(x1[0]-x0[0])/2.;
+    #     nvec[0,0] =  (x1[1]-x0[1])/2.;
+    #     nvec[0,1] = -(x1[0]-x0[0])/2.;
     
-    # Calculate normals for curved meshes
-    else:
-        x_s = np.zeros_like(nvec)
-        fnodes, nfnode = basis.local_face_nodes(gorder, face, fnodes=None)
+    # # Calculate normals for curved meshes
+    # else:
+    # x_s = np.zeros_like(nvec)
+    fnodes, _ = basis.local_face_nodes(gorder, face, fnodes=None)
 
-        basis_seg = basis_defs.LagrangeSeg(gorder)
-        basis_grad = basis_seg.get_grads(quad_pts)
-        Coords = mesh.Coords[ElemNodes[fnodes]]
+    basis_seg = basis_defs.LagrangeSeg(gorder)
+    basis_grad = basis_seg.get_grads(quad_pts)
+    # Coords = mesh.Coords[ElemNodes[fnodes]]
+    face_coords = elem_coords[fnodes]
 
         # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
-        x_s[:] = np.matmul(Coords.transpose(), basis_grad).reshape(x_s.shape)
-        nvec[:,0] = x_s[:,1]
-        nvec[:,1] = -x_s[:,0]
+    # x_s = np.matmul(face_coords.transpose(), basis_grad).reshape(nvec.shape)
+    x_s = np.matmul(face_coords.transpose(), basis_grad)[:, :, 0]
+    nvec = x_s[:,::-1]
+    nvec[:,1] *= -1.
+    # nvec[:,0] = x_s[:,1]
+    # nvec[:,1] = -x_s[:,0]
 
     return nvec
 
@@ -679,7 +685,7 @@ def get_legendre_basis_2D(x, p, phi=None, gphi=None):
     # Always need phi
     phix = np.zeros((nq, p+1)); phiy = np.zeros_like(phix)
 
-    legendre_seg = LegendreSeg(p)
+    legendre_seg = basis_defs.LegendreSeg(p)
     get_legendre_basis_1D(x[:, 0], p, phix, gphix)
     get_legendre_basis_1D(x[:, 1], p, phiy, gphiy)
 

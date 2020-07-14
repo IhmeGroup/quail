@@ -1,4 +1,4 @@
-from LinearAdvection import *
+from constant_advection import *
 
 Restart = {
     "File" : "Data_final.pkl",
@@ -7,7 +7,7 @@ Restart = {
 
 TimeStepping.update({
     "EndTime" : 1.,
-    "nTimeStep" : 40,
+    "NumTimeSteps" : 40,
     "TimeScheme" : "ADER",
 })
 

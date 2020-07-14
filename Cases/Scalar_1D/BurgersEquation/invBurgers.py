@@ -24,10 +24,10 @@ mesh = MeshCommon.mesh_1D(Uniform=True, nElem=2, xmin=-1., xmax=1., Periodic=Per
 #dt = 0.001
 #mu = 1.
 EndTime = 0.1
-nTimeStep = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.01))])
-#nTimeStep = int(EndTime/dt)
+NumTimeSteps = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.01))])
+#NumTimeSteps = int(EndTime/dt)
 InterpOrder = 3
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
 ### Physics
 ConstVelocity = 1.

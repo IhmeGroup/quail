@@ -28,10 +28,10 @@ InterpBasis = "HierarchicH1Tri"
 dt = 0.05
 StartTime = 2.5
 EndTime = 10.0
-nTimeStep = int((EndTime-StartTime)/dt + 10.*general.eps)
+NumTimeSteps = int((EndTime-StartTime)/dt + 10.*general.eps)
 InterpOrder = 10
 Params = general.SetSolverParams(Params, InterpOrder=InterpOrder,StartTime=StartTime,EndTime=EndTime,
-								 nTimeStep=nTimeStep,InterpBasis=InterpBasis,TimeScheme="RK4",
+								 NumTimeSteps=NumTimeSteps,InterpBasis=InterpBasis,TimeScheme="RK4",
 								 InterpolateIC=False,ApplyLimiter=None,WriteInterval=50,
 								 RestartFile=fname)
 

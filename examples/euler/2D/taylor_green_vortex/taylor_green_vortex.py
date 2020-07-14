@@ -9,7 +9,7 @@ nt = int(tfinal/dt + 1.e-12)
 
 TimeStepping = {
     "EndTime" : tfinal,
-    "nTimeStep" : nt,
+    "NumTimeSteps" : nt,
     "TimeScheme" : "FE",
 }
 

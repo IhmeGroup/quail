@@ -45,9 +45,9 @@ mesh = MeshGmsh.ReadGmshFile(MeshFile)
 ### Solver parameters
 dt = 0.05
 EndTime = 2.0
-nTimeStep = int(EndTime/dt + 10.*general.eps)
+NumTimeSteps = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,nTimeStep=nTimeStep,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 								 ElementQuadrature="Dunavant",ApplyLimiter=None)
 

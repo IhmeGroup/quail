@@ -4,12 +4,12 @@ nElem = 128
 dx = float(1./nElem)
 dt = cfl*dx
 EndTime = 0.5
-nTimeStep = int(EndTime/dt)
-print(nTimeStep)
+NumTimeSteps = int(EndTime/dt)
+print(NumTimeSteps)
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "nTimeStep" : nTimeStep,
+    "NumTimeSteps" : NumTimeSteps,
     "TimeScheme" : "Strang",
     "OperatorSplitting_Imp" : "Trapezoidal",
 

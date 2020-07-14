@@ -6,12 +6,12 @@ dx = 0.01
 
 dt = cfl*dx/u
 EndTime = 2.
-nTimeSteps =int(EndTime/dt)
-print(nTimeSteps)
+NumTimeStepss =int(EndTime/dt)
+print(NumTimeStepss)
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "nTimeStep" : nTimeSteps,
+    "NumTimeSteps" : NumTimeStepss,
     "TimeScheme" : "SSPRK3",
 }
 

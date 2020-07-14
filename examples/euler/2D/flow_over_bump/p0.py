@@ -3,13 +3,13 @@ import numpy as np
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 40.,
-    "nTimeStep" : 500,
+    "NumTimeSteps" : 500,
     "TimeScheme" : "FE",
 }
 
 Numerics = {
     "InterpOrder" : 0,
-    "InterpBasis" : "LagrangeEqQuad",
+    "InterpBasis" : "LagrangeQuad",
     "Solver" : "DG",
 }
 

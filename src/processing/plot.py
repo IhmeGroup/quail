@@ -670,19 +670,21 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 		# Loop through both connected elements to account for periodic boundaries
 		for e in range(2):
 			if e == 0:
-				elem = IFace.ElemL; face = IFace.faceL
+				ielem = IFace.ElemL; face = IFace.faceL
 			else:
-				elem = IFace.ElemR; face = IFace.faceR
+				ielem = IFace.ElemR; face = IFace.faceR
 
 			# Get local nodes on face
-			fnodes, nfnode = gbasis.local_face_nodes( 
-				mesh.gorder, face)
+			lfnodes, nfnode = gbasis.local_face_nodes(mesh.gorder, face)
 
 			# Convert to global node numbering
-			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+			# fnodes = mesh.Elem2Nodes[elem][fnodes]
 
-			# Physical coordinates of global nodes
-			coords = mesh.Coords[fnodes]
+			# # Physical coordinates of global nodes
+			# coords = mesh.Coords[fnodes]
+
+			elem = mesh.elements[ielem]
+			coords = elem.node_coords[lfnodes]
 			if dim == 1:
 				x = np.full(2, coords[:,0])
 			else:
@@ -698,17 +700,20 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	for BFG in mesh.BFaceGroups.values():
 		for BFace in BFG.BFaces:
 			# Get adjacent element info
-			elem = BFace.Elem; face = BFace.face
+			ielem = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
-			fnodes, nfnode = gbasis.local_face_nodes( 
+			lfnodes, nfnode = gbasis.local_face_nodes( 
 				mesh.gorder, face)
 
 			# Convert to global node numbering
-			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+			# fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
 			# Physical coordinates of global nodes
-			coords = mesh.Coords[fnodes]
+			# coords = mesh.Coords[fnodes]
+
+			elem = mesh.elements[ielem]
+			coords = elem.node_coords[lfnodes]
 			if dim == 1:
 				x = np.full(2, coords[:,0])
 			else:
@@ -721,13 +726,13 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	If requested, plot element IDs at element centroids
 	'''
 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
-		for elem in range(mesh.nElem):
-			xc = mesh_tools.get_element_centroid(mesh, elem)
+		for ielem in range(mesh.nElem):
+			xc = mesh_tools.get_element_centroid(mesh, ielem)
 			if dim == 1:
 				yc = np.mean(y)
 			else:
 				yc = xc[0,1]
-			plt.text(xc[0,0], yc, str(elem))
+			plt.text(xc[0,0], yc, str(ielem))
 
 
 	plt.xlabel("$x$")

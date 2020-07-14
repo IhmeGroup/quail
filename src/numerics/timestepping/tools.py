@@ -54,7 +54,8 @@ def get_dt_from_numtimesteps(stepper, solver):
 	tfinal = solver.Params["EndTime"]
 	time = solver.Time
 
-	if solver.Time == 0.0:
+	# if solver.Time == 0.0:
+	if stepper.dt == 0.0:
 		return (tfinal-time)/numtimesteps
 	else:
 		return stepper.dt
