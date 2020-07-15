@@ -38,8 +38,8 @@ class ElemOperators(object):
 
 		# QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, EqnSet, None)
 		gbasis = mesh.gbasis
-		quad_order = gbasis.get_quadrature(mesh, order, physics = EqnSet)
-		self.quad_pts, self.quad_wts = basis.get_quad_data(quad_order)
+		quad_order = gbasis.get_quadrature_order(mesh, order, physics = EqnSet)
+		self.quad_pts, self.quad_wts = basis.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -117,8 +117,8 @@ class IFaceOperators(ElemOperators):
 	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
 
 		gbasis = mesh.gbasis
-		quad_order = gbasis.get_face_quadrature(mesh,order,physics=EqnSet)
-		self.quad_pts, self.quad_wts = basis.get_face_quad_data(quad_order)
+		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh,order,physics=EqnSet)
+		self.quad_pts, self.quad_wts = basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -128,17 +128,18 @@ class IFaceOperators(ElemOperators):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
-		nFacePerElem = mesh.nFacePerElem
+		# nFacePerElem = mesh.nFacePerElem
+		nfaces_per_elem = mesh.gbasis.NFACES
 
 		# Allocate
-		self.faces_to_basisL = np.zeros([nFacePerElem,nq,nb])
-		self.faces_to_basisR = np.zeros([nFacePerElem,nq,nb])
-		self.normals_ifaces = np.zeros([mesh.nIFace,nq,dim])
+		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
+		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
+		self.normals_ifaces = np.zeros([mesh.nIFace, nq, dim])
 
 		# basis data
 		#PhiData = BasisData(basis, order, mesh)
 
-		for f in range(nFacePerElem):
+		for f in range(nfaces_per_elem):
 			# Left
 			_ = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
 			self.faces_to_basisL[f] = basis.basis_val
@@ -188,11 +189,12 @@ class BFaceOperators(IFaceOperators):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
-		nFacePerElem = mesh.nFacePerElem
+		# nFacePerElem = mesh.nFacePerElem
+		nfaces_per_elem = mesh.gbasis.NFACES
 
 		# Allocate
-		self.faces_to_basis = np.zeros([nFacePerElem,nq,nb])
-		self.faces_to_xref = np.zeros([nFacePerElem,nq,dim])
+		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
+		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, dim])
 		self.normals_bfgroups = []
 		self.x_bfgroups = []
 
@@ -200,7 +202,7 @@ class BFaceOperators(IFaceOperators):
 		# PhiData = BasisData(basis, order, mesh)
 		GeomPhiData = None
 
-		for f in range(nFacePerElem):
+		for f in range(nfaces_per_elem):
 			# Left
 			self.faces_to_xref[f] = xref = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
 			self.faces_to_basis[f] = basis.basis_val

@@ -35,8 +35,8 @@ def element_volumes(mesh, solver=None):
     gorder = mesh.gorder
     gbasis = mesh.gbasis
 
-    quad_order = gbasis.get_quadrature(mesh,gorder)
-    xq, wq = gbasis.get_quad_data(quad_order)
+    quad_order = gbasis.get_quadrature_order(mesh,gorder)
+    xq, wq = gbasis.get_quadrature_data(quad_order)
 
     # xq = gbasis.quad_pts
     # wq = gbasis.quad_wts
@@ -60,7 +60,7 @@ def element_volumes(mesh, solver=None):
 
 def get_element_centroid(mesh, elem):
     gbasis = mesh.gbasis
-    xcentroid, _ = mesh_defs.ref_to_phys(mesh, elem, None, mesh.gbasis.centroid)  
+    xcentroid, _ = mesh_defs.ref_to_phys(mesh, elem, None, mesh.gbasis.CENTROID)  
 
     return xcentroid
 

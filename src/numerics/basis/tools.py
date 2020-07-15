@@ -164,11 +164,11 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     gbasis = mesh.gbasis
     if PhysicalSpace:
-        quad_order = gbasis.get_quadrature(mesh, order*2)
+        quad_order = gbasis.get_quadrature_order(mesh, order*2)
     else:
         quad_order = order*2
 
-    quad_pts, quad_wts = basis.get_quad_data(quad_order)
+    quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
     # quad_pts = basis.quad_pts
     # quad_wts = basis.quad_wts
 
@@ -254,7 +254,7 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
         PM: projection matrix
     '''
     quad_order = np.amax([order_old+order, 2*order])
-    quad_pts, quad_wts = basis.get_quad_data(quad_order)
+    quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 
     # quad_pts = basis.quad_pts
     # quad_wts = basis.quad_wts
@@ -326,7 +326,7 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
     order = mesh.gorder
     shape = basis.__class__.__bases__[1].__name__
     nb = basis.nb
-    dim = basis.dim
+    dim = basis.DIM
 
     nq = quad_pts.shape[0]
 

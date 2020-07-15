@@ -52,9 +52,9 @@ def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVol
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		quad_order = basis.get_quadrature(mesh, 2*np.amax([Order,1]), physics=EqnSet)
+		quad_order = basis.get_quadrature_order(mesh, 2*np.amax([Order,1]), physics=EqnSet)
 		gbasis = mesh.gbasis
-		xq, wq = gbasis.get_quad_data(quad_order)
+		xq, wq = gbasis.get_quadrature_data(quad_order)
 		nq = xq.shape[0]
 		
 		basis.eval_basis(xq, True, False, False, None)

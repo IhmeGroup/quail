@@ -19,7 +19,7 @@ basis = Basis.LagrangeTri(p)
 
 ### Grid
 p_plot = 50 # plot at Lagrange nodes corresponding to p_plot
-xp, npoint = basis.equidistant_nodes(p_plot)
+xp = basis.equidistant_nodes(p_plot)
 
 ### Evaluate basis functions
 basis.eval_basis(xp, Get_Phi=True)

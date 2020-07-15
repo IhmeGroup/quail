@@ -65,7 +65,7 @@ class SolverBase(ABC):
 
 		self.basis.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
 		# check for compatibility
-		# if mesh.gbasis.shape_type != self.basis.shape_type:
+		# if mesh.gbasis.SHAPE_TYPE != self.basis.SHAPE_TYPE:
 		# 	raise errors.IncompatibleError
 
 		# Limiter
@@ -94,7 +94,7 @@ class SolverBase(ABC):
 		basis = self.basis
 
 		# check for same shape between mesh and solution
-		if mesh.gbasis.shape_type != basis.shape_type:
+		if mesh.gbasis.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
 		if Params["InterpolateIC"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
@@ -103,7 +103,7 @@ class SolverBase(ABC):
 		node_type = Params["NodeType"]
 		forcing_switch = Params["NodesEqualQuadpts"]
 
-		if NodeType[node_type] == NodeType.GaussLobatto and basis.shape_type == ShapeType.Triangle:
+		if NodeType[node_type] == NodeType.GaussLobatto and basis.SHAPE_TYPE == ShapeType.Triangle:
 			raise errors.IncompatibleError
 
 		if NodeType[node_type] == NodeType.Equidistant and forcing_switch == True:
@@ -141,8 +141,8 @@ class SolverBase(ABC):
 			order = 2*np.amax([EqnSet.order, 1])
 			order = EqnSet.QuadOrder(order)
 
-			quad_order = basis.get_quadrature(mesh, order)
-			quad_pts, quad_wts = basis.get_quad_data(quad_order)
+			quad_order = basis.get_quadrature_order(mesh, order)
+			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 			eval_pts = quad_pts
 			npts = eval_pts.shape[0]
 
@@ -166,16 +166,16 @@ class SolverBase(ABC):
 		ns = EqnSet.NUM_STATE_VARS
 
 		# basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
-		if basis_old.shape_type != basis.shape_type:
+		if basis_old.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
 		if Params["InterpolateIC"]:
 			eval_pts, npts = basis.get_nodes(EqnSet.order)
 		else:
 			order = 2*np.amax([EqnSet.order, order_old])
-			quad_order = basis.get_quadrature(mesh, order)
+			quad_order = basis.get_quadrature_order(mesh, order)
 
-			quad_pts, quad_wts = basis.get_quad_data(quad_order)
+			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 			eval_pts = quad_pts
 
 			npts = eval_pts.shape[0]

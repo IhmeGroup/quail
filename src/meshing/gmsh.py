@@ -978,7 +978,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
 	# mesh.allocate_faces()
 	mesh.allocate_elem_to_nodes()
-	nFaceMax = mesh.nFacePerElem
+	nFaceMax = mesh.gbasis.NFACES
 
 	# Over-allocate IFaces
 	mesh.nIFace = mesh.nElem*nFaceMax
@@ -1014,7 +1014,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# for egrp in range(mesh.nElemGroup):
 	# 	EG = mesh.ElemGroups[egrp]
 	for elem in range(mesh.nElem):
-		for face in range(mesh.nFacePerElem):
+		for face in range(mesh.gbasis.NFACES):
 			# Local q = 1 nodes on face
 			gbasis = mesh.gbasis
 			fnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, face)

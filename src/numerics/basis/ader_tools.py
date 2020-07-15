@@ -60,11 +60,11 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir, P
     
     dim = mesh.Dim
 
-    quad_order_st = basis_st.get_quadrature(mesh, order*2)
+    quad_order_st = basis_st.get_quadrature_order(mesh, order*2)
     quad_order = quad_order_st
     
-    quad_pts_st, quad_wts_st = basis_st.get_quad_data(quad_order_st)
-    quad_pts, quad_wts = basis.get_quad_data(quad_order)
+    quad_pts_st, quad_wts_st = basis_st.get_quadrature_data(quad_order_st)
+    quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 
     # quad_pts_st = basis_st.quad_pts
     # quad_wts_st = basis_st.quad_wts
@@ -132,8 +132,8 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
         face = 0
 
     gbasis = mesh.gbasis
-    quad_order = gbasis.get_quadrature(mesh, order*2)
-    quad_pts, quad_wts = gbasis.get_quad_data(quad_order)
+    quad_order = gbasis.get_quadrature_order(mesh, order*2)
+    quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
 
     # quad_pts = gbasis.quad_pts
     # quad_wts = gbasis.quad_wts
@@ -195,11 +195,11 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     if PhysicalSpace:
         gbasis = mesh.gbasis
-        quad_order = gbasis.get_quadrature(mesh, order*2)
+        quad_order = gbasis.get_quadrature_order(mesh, order*2)
     else:
         quad_order = order*2 + 1 #Add one for ADER method
 
-    quad_pts, quad_wts = basis.get_quad_data(quad_order)
+    quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 
     # quad_pts = basis.quad_pts
     # quad_wts = basis.quad_wts

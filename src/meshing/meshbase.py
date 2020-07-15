@@ -350,7 +350,7 @@ class Mesh(object):
         self.gbasis = gbasis
         self.gorder = gorder
         self.nElem = nElem
-        self.nFacePerElem = gbasis.nfaceperelem 
+        # self.nFacePerElem = gbasis.nfaceperelem 
         # self.Faces = None
         self.nNodePerElem = gbasis.get_num_basis_coeff(gorder)
         self.Elem2Nodes = None
@@ -362,7 +362,7 @@ class Mesh(object):
         self.gbasis = gbasis
         self.gorder = gorder
         self.nElem = nElem
-        self.nFacePerElem = gbasis.nfaceperelem
+        # self.nFacePerElem = gbasis.nfaceperelem
         self.nNodePerElem = gbasis.get_num_basis_coeff(gorder)
 
     # def allocate_faces(self):
@@ -430,7 +430,7 @@ class Mesh(object):
             elem.number = ielem
             elem.node_nums = self.Elem2Nodes[ielem]
             elem.node_coords = self.Coords[elem.node_nums]
-            elem.face_to_neighbors = np.full(self.gbasis.nfaceperelem, -1)
+            elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
         # neighbors
         for iif in range(self.nIFace):

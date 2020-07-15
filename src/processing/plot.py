@@ -444,16 +444,16 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	# Get points to plot at
 	# Note: assumes uniform element type
 	if equidistant:
-		xpoint, npoint = basis.equidistant_nodes(max([1,3*order]))
+		xpoint = basis.equidistant_nodes(max([1, 3*order]))
 	else:
-		quad_order = basis.get_quadrature(mesh, max([2,2*order]), physics=EqnSet)
+		quad_order = basis.get_quadrature_order(mesh, max([2,2*order]), physics=EqnSet)
 		gbasis = mesh.gbasis
-		xpoint,_ = gbasis.get_quad_data(quad_order)
+		xpoint, _ = gbasis.get_quadrature_data(quad_order)
 
 		# QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), EqnSet)
 		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
 		# xpoint = gbasis.quad_pts
-		npoint = xpoint.shape[0]
+	npoint = xpoint.shape[0]
 
 	# u = np.zeros([mesh.nElem,npoint,sr])
 	# u_exact = np.copy(u)
