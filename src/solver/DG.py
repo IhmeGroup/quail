@@ -21,8 +21,8 @@ class ElemOperators(object):
 		self.quad_pts = None
 		self.quad_wts = None
 		self.basis_val = None 
-		self.basis_grad = None 
-		self.basis_pgrad_elems = None 
+		self.basis_ref_grad = None 
+		self.basis_phys_grad_elems = None 
 		self.gbasis_val = None 
 		self.jac_elems = None 
 		self.ijac_elems = None 
@@ -56,15 +56,15 @@ class ElemOperators(object):
 		self.ijac_elems = np.zeros([nElem, nq, dim, dim])
 		self.djac_elems = np.zeros([nElem, nq, 1])
 		self.x_elems = np.zeros([nElem, nq, dim])
-		self.basis_pgrad_elems = np.zeros([nElem, nq, nb, dim])
+		self.basis_phys_grad_elems = np.zeros([nElem, nq, nb, dim])
 
 		GeomPhiData = None
 
 		# basis data
-		basis.eval_basis(self.quad_pts, Get_Phi=True, Get_GPhi=True)
+		basis.get_basis_val_grads(self.quad_pts, get_val=True, get_ref_grad=True)
 
 		self.basis_val = basis.basis_val 
-		self.basis_grad = basis.basis_grad 
+		self.basis_ref_grad = basis.basis_ref_grad 
 
 		for elem in range(mesh.nElem):
 			# Jacobian
@@ -79,8 +79,8 @@ class ElemOperators(object):
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
-			basis.eval_basis(quad_pts, Get_gPhi=True, ijac=ijac) # gPhi is [nq,nb,dim]
-			self.basis_pgrad_elems[elem] = basis.basis_pgrad
+			basis.get_basis_val_grads(quad_pts, get_phys_grad=True, ijac=ijac) # gPhi is [nq,nb,dim]
+			self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
 
 		_, ElemVols = mesh_tools.element_volumes(mesh)
 		self.vol_elems = ElemVols
@@ -141,10 +141,10 @@ class IFaceOperators(ElemOperators):
 
 		for f in range(nfaces_per_elem):
 			# Left
-			_ = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
+			basis.get_basis_face_val_grads(mesh, f, quad_pts, get_val=True)
 			self.faces_to_basisL[f] = basis.basis_val
 			# Right
-			_ = basis.eval_basis_on_face(mesh, f, quad_pts[::-1], None, Get_Phi=True)
+			basis.get_basis_face_val_grads(mesh, f, quad_pts[::-1], get_val=True)
 			self.faces_to_basisR[f] = basis.basis_val
 
 		i = 0
@@ -204,7 +204,8 @@ class BFaceOperators(IFaceOperators):
 
 		for f in range(nfaces_per_elem):
 			# Left
-			self.faces_to_xref[f] = xref = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
+			self.faces_to_xref[f] = basis.get_elem_ref_from_face_ref(f, quad_pts)
+			basis.get_basis_face_val_grads(mesh, f, quad_pts, get_val=True)
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0

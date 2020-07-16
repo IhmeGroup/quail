@@ -84,15 +84,15 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir, P
     else:
         djac = np.full(nq, 1.)
 
-    basis_st.eval_basis(quad_pts_st, Get_Phi=True, Get_GPhi=True)
+    basis_st.get_basis_val_grads(quad_pts_st, get_val=True, get_ref_grad=True)
     nb_st = basis_st.basis_val.shape[1]
     phi = basis_st.basis_val
 
     if PhysicalSpace:
-        basis_grad = basis_st.basis_grad
-        GPhi = np.transpose(np.matmul(ijac_st.transpose(0,2,1), basis_grad.transpose(0,2,1)), (0,2,1))
+        basis_ref_grad = basis_st.basis_ref_grad
+        GPhi = np.transpose(np.matmul(ijac_st.transpose(0,2,1), basis_ref_grad.transpose(0,2,1)), (0,2,1))
     else:
-        GPhi = basis_st.basis_grad
+        GPhi = basis_st.basis_ref_grad
 
     SM = np.zeros([nb_st,nb_st])
     # code.interact(local=locals())
@@ -145,19 +145,19 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, PhysicalSpace=F
         PhiData = basis1
         PsiData = basis1
 
-        xelem = np.zeros([nq,mesh.Dim+1])
-        PhiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
-        PsiData.eval_basis_on_face(mesh, face, quad_pts, xelem, basis1, Get_Phi=True)
+        # xelem = np.zeros([nq,mesh.Dim+1])
+        PhiData.get_basis_face_val_grads(mesh, face, quad_pts, basis1, get_val=True)
+        PsiData.get_basis_face_val_grads(mesh, face, quad_pts, basis1, get_val=True)
     else:
         face = 0
         
         PhiData = basis1
         PsiData = basis2
 
-        xelemPhi = np.zeros([nq,mesh.Dim+1])
-        xelemPsi = np.zeros([nq,mesh.Dim])
-        PhiData.eval_basis_on_face(mesh, face, quad_pts, xelemPhi, basis1, Get_Phi=True)
-        PsiData.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=False)
+        # xelemPhi = np.zeros([nq,mesh.Dim+1])
+        # xelemPsi = np.zeros([nq,mesh.Dim])
+        PhiData.get_basis_face_val_grads(mesh, face, quad_pts, basis1, get_val=True)
+        PsiData.get_basis_val_grads(quad_pts, get_val=True, get_ref_grad=False)
 
 
     nb_st = PhiData.basis_val.shape[1]
@@ -205,7 +205,7 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, PhysicalSpace=False):
     # quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
 
-    basis.eval_basis(quad_pts, Get_Phi=True)
+    basis.get_basis_val_grads(quad_pts, get_val=True)
 
     if PhysicalSpace:
         djac,_,_=basis_tools.element_jacobian(mesh,elem,quad_pts,get_djac=True)

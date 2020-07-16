@@ -55,7 +55,7 @@ class SolverBase(ABC):
 		self.basis = basis_tools.set_basis(EqnSet.order, basis_name)
 
 		node_type = Params["NodeType"]
-		self.basis.get_1d_nodes = basis_tools.set_node_type(node_type)
+		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(node_type)
 
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
@@ -63,7 +63,7 @@ class SolverBase(ABC):
 		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
+		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
 		# check for compatibility
 		# if mesh.gbasis.SHAPE_TYPE != self.basis.SHAPE_TYPE:
 		# 	raise errors.IncompatibleError
@@ -136,7 +136,7 @@ class SolverBase(ABC):
 		order = EqnSet.order
 
 		if Params["InterpolateIC"]:
-			eval_pts, npts = basis.get_nodes(order)
+			eval_pts = basis.get_nodes(order)
 		else:
 			order = 2*np.amax([EqnSet.order, 1])
 			order = EqnSet.QuadOrder(order)
@@ -144,7 +144,7 @@ class SolverBase(ABC):
 			quad_order = basis.get_quadrature_order(mesh, order)
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 			eval_pts = quad_pts
-			npts = eval_pts.shape[0]
+		npts = eval_pts.shape[0]
 
 		for elem in range(mesh.nElem):
 			xphys, _ = mesh_defs.ref_to_phys(mesh, elem, None, eval_pts)
@@ -170,7 +170,7 @@ class SolverBase(ABC):
 			raise errors.IncompatibleError
 
 		if Params["InterpolateIC"]:
-			eval_pts, npts = basis.get_nodes(EqnSet.order)
+			eval_pts = basis.get_nodes(EqnSet.order)
 		else:
 			order = 2*np.amax([EqnSet.order, order_old])
 			quad_order = basis.get_quadrature_order(mesh, order)
@@ -178,9 +178,9 @@ class SolverBase(ABC):
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 			eval_pts = quad_pts
 
-			npts = eval_pts.shape[0]
+		npts = eval_pts.shape[0]
 
-		basis_old.eval_basis(eval_pts, Get_Phi=True)
+		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
 		for elem in range(mesh.nElem):
 			Up_old = np.matmul(basis_old.basis_val, U_old[elem,:,:])

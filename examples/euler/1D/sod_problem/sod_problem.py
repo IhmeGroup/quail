@@ -18,10 +18,10 @@ Numerics = {
     "Solver" : "DG",
     # "ApplyLimiter" : "PositivityPreserving",
     "InterpolateIC" : False,
-    # "NodeType" : "GaussLobatto",
-    # "ElementQuadrature" : "GaussLobatto",
-    # "FaceQuadrature" : "GaussLobatto",
-    # "NodesEqualQuadpts" : False,
+    "NodeType" : "GaussLobatto",
+    "ElementQuadrature" : "GaussLobatto",
+    "FaceQuadrature" : "GaussLobatto",
+    "NodesEqualQuadpts" : True,
 
 }
 

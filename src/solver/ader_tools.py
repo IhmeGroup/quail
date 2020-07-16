@@ -37,10 +37,10 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem_ops_st, elem,
 	quad_wts = elem_ops.quad_wts
 	quad_wts_st = elem_ops_st.quad_wts
 	basis_val = elem_ops.basis_val 
-	basis_pgrad_elems = elem_ops.basis_pgrad_elems
+	basis_phys_grad_elems = elem_ops.basis_phys_grad_elems
 	djac_elems = elem_ops.djac_elems 
 
-	basis_pgrad = basis_pgrad_elems[elem]
+	basis_phys_grad = basis_phys_grad_elems[elem]
 	djac = djac_elems[elem]
 
 	nb = basis_val.shape[1]
@@ -56,8 +56,8 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem_ops_st, elem,
 
 	# F = np.reshape(F,(nqST,sr,dim))
 	
-	# ER = np.tensordot(np.tile(basis_pgrad,(nb,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
-	ER = np.tensordot(np.tile(basis_pgrad,(nq,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
+	# ER = np.tensordot(np.tile(basis_phys_grad,(nb,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
+	ER = np.tensordot(np.tile(basis_phys_grad,(nq,1,1)), Fq*(quad_wts_st.reshape(nq,nq)*djac).reshape(nq_st,1,1), axes=([0,2],[0,2])) # [nb, ns]
 
 	return ER
 
@@ -347,7 +347,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
 
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
-		basis.eval_basis(quad_pts, Get_Phi=True)
+		basis.get_basis_val_grads(quad_pts, get_val=True)
 
 	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
 	U[:,:] = np.matmul(iMM, rhs)
@@ -375,7 +375,7 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
 
     npoint = xref.shape[0]
 
-    gbasis.eval_basis(xref, Get_Phi=True)
+    gbasis.get_basis_val_grads(xref, get_val=True)
 
     dim = mesh.Dim
     

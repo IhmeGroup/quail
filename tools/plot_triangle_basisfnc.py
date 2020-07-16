@@ -22,7 +22,7 @@ p_plot = 50 # plot at Lagrange nodes corresponding to p_plot
 xp = basis.equidistant_nodes(p_plot)
 
 ### Evaluate basis functions
-basis.eval_basis(xp, Get_Phi=True)
+basis.get_basis_val_grads(xp, get_val=True)
 # Reshape
 phi = basis.basis_val[:,b-1]
 

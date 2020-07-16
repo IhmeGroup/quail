@@ -1017,7 +1017,8 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 		for face in range(mesh.gbasis.NFACES):
 			# Local q = 1 nodes on face
 			gbasis = mesh.gbasis
-			fnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, face)
+			fnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, face)
+			nfnode = fnodes.shape[0]
 
 			# Convert to global nodes
 			fnodes = mesh.Elem2Nodes[elem][fnodes]

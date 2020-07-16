@@ -459,7 +459,7 @@ def get_sample_points(mesh, EqnSet, basis, equidistant):
 	# u_exact = np.copy(u)
 	x = np.zeros([mesh.nElem,npoint,dim])
 	# PhiData = Basis.BasisData(EqnSet.Basis,Order,mesh)
-	basis.eval_basis(xpoint, True, False, False, None)
+	basis.get_basis_val_grads(xpoint, True, False, False, None)
 	GeomPhiData = None
 	el = 0
 	for elem in range(mesh.nElem):
@@ -667,7 +667,8 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	Loop through IFaces and plot interior faces
 	'''
 	for IFace in mesh.IFaces:
-		# Loop through both connected elements to account for periodic boundaries
+		# Loop through both connected elements to account for periodic 
+		# boundaries
 		for e in range(2):
 			if e == 0:
 				ielem = IFace.ElemL; face = IFace.faceL
@@ -675,7 +676,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 				ielem = IFace.ElemR; face = IFace.faceR
 
 			# Get local nodes on face
-			lfnodes, nfnode = gbasis.local_face_nodes(mesh.gorder, face)
+			lfnodes = gbasis.get_local_face_node_nums(mesh.gorder, face)
 
 			# Convert to global node numbering
 			# fnodes = mesh.Elem2Nodes[elem][fnodes]
@@ -703,7 +704,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			ielem = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
-			lfnodes, nfnode = gbasis.local_face_nodes( 
+			lfnodes = gbasis.get_local_face_node_nums( 
 				mesh.gorder, face)
 
 			# Convert to global node numbering

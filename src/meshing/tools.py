@@ -124,13 +124,13 @@ def check_face_orientations(mesh):
         elemR_nodes = mesh.elements[ielemR].node_nums
 
         # Get local q=1 nodes on face for left element
-        lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, faceL)
+        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceL)
         # Convert to global node numbering
         # gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
         gfnodesL = elemL_nodes[lfnodes]
 
         # Get local q=1 nodes on face for right element
-        lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, faceR)
+        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceR)
         # Convert to global node numbering
         # gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
         gfnodesR = elemR_nodes[lfnodes]
@@ -188,7 +188,7 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = gbasis.local_q1_face_nodes(mesh.gorder, face)
+        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, face)
 
         # Convert to global node numbering
         # gfnodes = mesh.Elem2Nodes[ielem][lfnodes]
@@ -296,8 +296,9 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes1, nfnode = gbasis.local_q1_face_nodes( 
+        lfnodes1 = gbasis.get_local_face_principal_node_nums( 
             mesh.gorder, face1)
+        nfnode = lfnodes1.shape[0]
 
         # Convert to global node numbering
         gfnodes1 = mesh.Elem2Nodes[ielem1][lfnodes1]
@@ -314,7 +315,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
 
             ''' Get physical coordinates of face '''
             # Get local q = 1 nodes on face
-            lfnodes2, nfnode = gbasis.local_q1_face_nodes(
+            lfnodes2 = gbasis.get_local_face_principal_node_nums(
                 mesh.gorder, face2)
 
             # Convert to global node numbering
@@ -517,8 +518,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = gbasis.local_q1_face_nodes( 
-            mesh.gorder, face)
+        lfnodes = gbasis.get_local_face_principal_node_nums( 
+                mesh.gorder, face)
 
         # Convert to global node numbering
         gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
@@ -547,8 +548,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
-        lfnodes, nfnode = gbasis.local_q1_face_nodes( 
-            mesh.gorder, face)
+        lfnodes = gbasis.get_local_face_principal_node_nums( 
+                mesh.gorder, face)
 
         # Convert to global node numbering
         gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
@@ -699,14 +700,14 @@ def VerifyPeriodicMesh(mesh):
         gorder = mesh.gorder
 
         ''' Get global face nodes - left '''
-        fnodesL, nfnode = gbasis.local_q1_face_nodes( 
+        fnodesL = gbasis.get_local_face_principal_node_nums( 
             gorder, faceL)
 
         # Convert to global node numbering
         fnodesL = mesh.Elem2Nodes[elemL][fnodesL[:]]
 
         ''' Get global face nodes - right '''
-        fnodesR, nfnode = gbasis.local_q1_face_nodes( 
+        fnodesR = gbasis.get_local_face_principal_node_nums( 
             gorder, faceR)
 
         # Convert to global node numbering

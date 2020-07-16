@@ -23,7 +23,7 @@ b = 11 # which basis fcn to plot
 
 ### Evaluate basis functions
 PhiData = BasisData(General.BasisType.LagrangeEqQuad, p)
-PhiData.eval_basis(xp, Get_Phi=True)
+PhiData.get_basis_val_grads(xp, get_val=True)
 # Reshape
 Z = PhiData.Phi[:,b-1]
 Z.shape = n,-1

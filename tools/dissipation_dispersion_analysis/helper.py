@@ -14,7 +14,7 @@ def CalculateBasisAndMatrices(solver, mesh, order):
 	MMinv = solver.elem_operators.iMM_elems[0]
 	SM = basis_tools.get_stiffness_matrix(solver, mesh, order=order, elem=0)
 
-	# _ = basis.eval_basis_on_face(mesh, f, quad_pts, None, Get_Phi=True)
+	# _ = basis.get_basis_face_val_grads(mesh, f, quad_pts, None, get_val=True)
 	# 		self.faces_to_basisL[f] = basis.basis_val
 	PhiLeft = solver.iface_operators.faces_to_basisL[0].transpose()
 	PhiRight = solver.iface_operators.faces_to_basisL[1].transpose()
@@ -27,11 +27,11 @@ def CalculateBasisAndMatrices(solver, mesh, order):
 
 	# # Basis on left face
 	# PhiDataLeft = BasisData(basis,order,mesh)
-	# PhiDataLeft.eval_basis_on_face(mesh, egrp=0, face=0, xq=xq, xelem=None, Get_Phi=True)
+	# PhiDataLeft.get_basis_face_val_grads(mesh, egrp=0, face=0, xq=xq, xelem=None, get_val=True)
 	# PhiLeft = PhiDataLeft.Phi.transpose() # [nn,1]
 	# # Basis on right face
 	# PhiDataRight = BasisData(basis,order,mesh)
-	# PhiDataRight.eval_basis_on_face(mesh, egrp=0, face=1, xq=xq, xelem=None, Get_Phi=True)
+	# PhiDataRight.get_basis_face_val_grads(mesh, egrp=0, face=1, xq=xq, xelem=None, get_val=True)
 	# PhiRight = PhiDataRight.Phi.transpose() # [nn,1]
 	# nn = PhiDataLeft.Phi.shape[1]
 

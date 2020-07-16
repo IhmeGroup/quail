@@ -57,7 +57,7 @@ def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVol
 		xq, wq = gbasis.get_quadrature_data(quad_order)
 		nq = xq.shape[0]
 		
-		basis.eval_basis(xq, True, False, False, None)
+		basis.get_basis_val_grads(xq, True, False, False, None)
 		xphys = np.zeros([nq, mesh.Dim])
 
 		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)

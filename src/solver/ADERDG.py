@@ -42,14 +42,14 @@ class ElemOperatorsADER(DG.ElemOperators):
 		self.ijac_elems = np.zeros([nElem,nq,dim,dim])
 		self.djac_elems = np.zeros([nElem,nq,1])
 		self.x_elems = np.zeros([nElem,nq,dim])
-		self.basis_pgrad_elems = np.zeros([nElem,nq,nb,dim])
+		self.basis_phys_grad_elems = np.zeros([nElem,nq,nb,dim])
 
 		GeomPhiData = None
 
-		basis.eval_basis(quad_pts, Get_Phi=True, Get_GPhi=True)
+		basis.get_basis_val_grads(quad_pts, get_val=True, get_ref_grad=True)
 
 		self.basis_val = basis.basis_val
-		self.basis_grad = basis.basis_grad
+		self.basis_ref_grad = basis.basis_ref_grad
 
 		for elem in range(mesh.nElem):
 			# Jacobian
@@ -64,8 +64,8 @@ class ElemOperatorsADER(DG.ElemOperators):
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
-			# basis.eval_basis(quad_pts, Get_gPhi=True, ijac=ijac) # gPhi is [nq,nb,dim]
-			# self.basis_pgrad_elems[elem] = basis.basis_pgrad
+			# basis.get_basis_val_grads(quad_pts, get_phys_grad=True, ijac=ijac) # gPhi is [nq,nb,dim]
+			# self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
 
 class IFaceOperatorsADER(DG.IFaceOperators):
 
@@ -95,11 +95,11 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 
 		for f in range(nfaces_per_elem):
 			# Left
-			#eval_basis_on_face_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, Get_Phi=True)
-			_ = basis.eval_basis_on_face(mesh, f, quad_pts, None, basis, Get_Phi=True)
+			#get_basis_face_val_grads_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, get_val=True)
+			basis.get_basis_face_val_grads(mesh, f, quad_pts, basis, get_val=True)
 			self.faces_to_basisL[f] = basis.basis_val
 			# Right
-			_ = basis.eval_basis_on_face(mesh, f, quad_pts[::-1], None, basis, Get_Phi=True)
+			basis.get_basis_face_val_grads(mesh, f, quad_pts[::-1], basis, get_val=True)
 			self.faces_to_basisR[f] = basis.basis_val
 
 		i = 0
@@ -132,7 +132,8 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 
 		for f in range(nfaces_per_elem):
 			# Left
-			self.faces_to_xref[f] = xref = basis.eval_basis_on_face(mesh, f, quad_pts, None, basis, Get_Phi=True)
+			self.faces_to_xref[f] = basis.get_elem_ref_from_face_ref(f, quad_pts)
+			basis.get_basis_face_val_grads(mesh, f, quad_pts, basis, get_val=True)
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
@@ -230,9 +231,9 @@ class ADEROperators(object):
 		dim = mesh.Dim 
 		nElem = mesh.nElem 
 		nb = basis.nb
-		xnode = None
-		gbasis=mesh.gbasis
-		xnode, nnode = gbasis.get_nodes(order,xnode)
+		gbasis = mesh.gbasis
+		xnode = gbasis.get_nodes(order)
+		nnode = xnode.shape[0]
 
 		# Allocate
 		self.jac_elems = np.zeros([nElem,nb,dim,dim])
@@ -317,8 +318,8 @@ class ADERDG(base.SolverBase):
 		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
-		self.basis_st.force_nodes_equal_quadpts(Params["NodesEqualQuadpts"])
+		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
+		self.basis_st.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
 
 
 		# Allocate array for predictor step in ADER-Scheme
@@ -735,7 +736,8 @@ class ADERDG(base.SolverBase):
 		TimePhiData = None
 
 		if Params["InterpolateFlux"]:
-			xnode, nb = basis.get_nodes(order)
+			xnode = basis.get_nodes(order)
+			nb = xnode.shape[0]
 			t = np.zeros([nb,dim])
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xnode, t, None)
 			Sq = np.zeros([t.shape[0],ns])

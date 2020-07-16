@@ -32,9 +32,9 @@ def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
     #     PhiData = Basis.BasisData(QBasis,QOrder,mesh)
     #     PointsChanged = True
     # if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
-    #     PhiData.eval_basis(xref, Get_Phi=True)
+    #     PhiData.get_basis_val_grads(xref, get_val=True)
 
-    gbasis.eval_basis(xref, Get_Phi=True)
+    gbasis.get_basis_val_grads(xref, get_val=True)
 
     Phi= gbasis.basis_val
     dim = mesh.Dim

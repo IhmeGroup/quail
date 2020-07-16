@@ -23,7 +23,7 @@ xp = equidistant_nodes(basis, p_plot)
 
 ### Evaluate basis functions
 PhiData = BasisData(basis, p)
-PhiData.eval_basis(xp, Get_Phi=True)
+PhiData.get_basis_val_grads(xp, get_val=True)
 # Reshape
 phi = PhiData.Phi[:,b-1]
 # Z.shape = n,-1

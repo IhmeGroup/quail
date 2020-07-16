@@ -18,11 +18,11 @@ def CalculateBasisAndMatrices(mesh, basis, Order):
 	xq = quadData.quad_pts; nq = quad_pts.shape[0]; 
 	# Basis on left face
 	PhiDataLeft = BasisData(basis,Order,mesh)
-	PhiDataLeft.eval_basis_on_face(mesh, egrp=0, face=0, xq=xq, xelem=None, Get_Phi=True)
+	PhiDataLeft.get_basis_face_val_grads(mesh, egrp=0, face=0, xq=xq, xelem=None, get_val=True)
 	PhiLeft = PhiDataLeft.Phi.transpose() # [nn,1]
 	# Basis on right face
 	PhiDataRight = BasisData(basis,Order,mesh)
-	PhiDataRight.eval_basis_on_face(mesh, egrp=0, face=1, xq=xq, xelem=None, Get_Phi=True)
+	PhiDataRight.get_basis_face_val_grads(mesh, egrp=0, face=1, xq=xq, xelem=None, get_val=True)
 	PhiRight = PhiDataRight.Phi.transpose() # [nn,1]
 	nn = PhiDataLeft.Phi.shape[1]
 

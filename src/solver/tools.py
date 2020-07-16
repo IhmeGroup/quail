@@ -11,10 +11,10 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
 	
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
-	basis_pgrad_elems = elem_ops.basis_pgrad_elems
+	basis_phys_grad_elems = elem_ops.basis_phys_grad_elems
 	djac_elems = elem_ops.djac_elems 
 
-	basis_pgrad = basis_pgrad_elems[elem]
+	basis_phys_grad = basis_phys_grad_elems[elem]
 	djac = djac_elems[elem]
 	nq = quad_wts.shape[0]
 
@@ -24,7 +24,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
 	# 			gPhi = PhiData.gPhi[iq,jn] # dim
 	# 			ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 
-	ER = np.tensordot(basis_pgrad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
+	ER = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
 
 	return ER
 
@@ -174,14 +174,14 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 # 	quad_pts = quadData.quad_pts
 # 	quad_wts = quadData.quad_wts
 
-# 	basis.eval_basis(quad_pts, Get_Phi=True)
+# 	basis.get_basis_val_grads(quad_pts, get_val=True)
 
 
 
 
 
 # 	if basis.basis_val.shape[0] != eval_pts.shape[0]:
-# 		basis.eval_basis(eval_pts, Get_Phi=True)
+# 		basis.get_basis_val_grads(eval_pts, get_val=True)
 
 # 	for elem in range(mesh.nElem):
 
@@ -206,7 +206,7 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
 	# quad_wts = basis.quad_wts
 
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
-		basis.eval_basis(quad_pts, Get_Phi=True)
+		basis.get_basis_val_grads(quad_pts, get_val=True)
 
 	djac, _, _ = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True)
 

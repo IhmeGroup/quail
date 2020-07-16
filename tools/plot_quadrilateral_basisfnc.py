@@ -22,7 +22,7 @@ b = 11 # which basis fcn to plot
 
 basis = Basis.LagrangeQuad(p)
 ### Evaluate basis functions
-basis.eval_basis(xp, Get_Phi=True)
+basis.get_basis_val_grads(xp, get_val=True)
 # Reshape
 Z = basis.basis_val[:,b-1]
 Z.shape = n,-1

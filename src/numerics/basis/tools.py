@@ -40,7 +40,7 @@ def set_basis(order, basis_name):
     return basis
 
 
-def set_node_type(node_type):
+def set_1D_node_calc(node_type):
     if NodeType[node_type] == NodeType.Equidistant:
         fcn = equidistant_nodes_1D_range
     elif NodeType[node_type] == NodeType.GaussLobatto:
@@ -176,7 +176,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     # quad_wts = quadData.quad_wts
     nq = quad_pts.shape[0]
 
-    basis.eval_basis(quad_pts, Get_Phi=True)
+    basis.get_basis_val_grads(quad_pts, get_val=True)
 
     if PhysicalSpace:
         djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
@@ -215,7 +215,7 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     quad_wts = solver.elem_operators.quad_wts
     djac = solver.elem_operators.djac_elems[elem]
     phi = solver.elem_operators.basis_val
-    gPhi = solver.elem_operators.basis_pgrad_elems[elem]
+    gPhi = solver.elem_operators.basis_phys_grad_elems[elem]
 
     nq = quad_pts.shape[0]
     nb = phi.shape[1]
@@ -260,12 +260,12 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     # quad_wts = basis.quad_wts
     nq = quad_pts.shape[0]
 
-    basis_old.eval_basis(quad_pts, Get_Phi=True)
+    basis_old.get_basis_val_grads(quad_pts, get_val=True)
 
     phi_old = basis_old.basis_val
     nb_old = phi_old.shape[1]
 
-    basis.eval_basis(quad_pts, Get_Phi=True)
+    basis.get_basis_val_grads(quad_pts, get_val=True)
     phi = basis.basis_val
     nb = phi.shape[1]
 
@@ -337,7 +337,7 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
     if dim != dim: Resize = True
     else: Resize = False
 
-    basis_pgrad = basis.get_grads(quad_pts) #, basis.basis_pgrad) # [nq, nb, dim]
+    basis_phys_grad = basis.get_grads(quad_pts) #, basis.basis_phys_grad) # [nq, nb, dim]
     
     if dim != mesh.Dim:
         raise Exception("Dimensions don't match")
@@ -359,7 +359,7 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
     # Elem2Nodes = mesh.Elem2Nodes[elem]
     elem_coords = mesh.elements[elem].node_coords
 
-    jac = np.tensordot(basis_pgrad, elem_coords.transpose(), \
+    jac = np.tensordot(basis_phys_grad, elem_coords.transpose(), \
         axes=[[1],[1]]).transpose((0,2,1))
 
     for i in range(nq):
@@ -440,16 +440,16 @@ def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
     # # Calculate normals for curved meshes
     # else:
     # x_s = np.zeros_like(nvec)
-    fnodes, _ = basis.local_face_nodes(gorder, face, fnodes=None)
+    fnodes = basis.get_local_face_node_nums(gorder, face)
 
     basis_seg = basis_defs.LagrangeSeg(gorder)
-    basis_grad = basis_seg.get_grads(quad_pts)
+    basis_ref_grad = basis_seg.get_grads(quad_pts)
     # Coords = mesh.Coords[ElemNodes[fnodes]]
     face_coords = elem_coords[fnodes]
 
         # Face Jacobian (gradient of (x,y) w.r.t reference coordinate)
-    # x_s = np.matmul(face_coords.transpose(), basis_grad).reshape(nvec.shape)
-    x_s = np.matmul(face_coords.transpose(), basis_grad)[:, :, 0]
+    # x_s = np.matmul(face_coords.transpose(), basis_ref_grad).reshape(nvec.shape)
+    x_s = np.matmul(face_coords.transpose(), basis_ref_grad)[:, :, 0]
     nvec = x_s[:,::-1]
     nvec[:,1] *= -1.
     # nvec[:,0] = x_s[:,1]
