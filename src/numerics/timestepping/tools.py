@@ -89,7 +89,6 @@ def get_dt_from_cfl(stepper, solver):
 	a = np.zeros([mesh.nElem,Up.shape[1],1])
 	for i in range(mesh.nElem):
 		a[i] = physics.ComputeScalars("MaxWaveSpeed", Up[i], flag_non_physical=True)
-	# code.interact(local=locals())
 	dt_elems = cfl*vol_elems**(1./dim)/a
 	dt = np.min(dt_elems)
 

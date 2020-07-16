@@ -37,7 +37,9 @@ def get_quadrature_gauss_lobatto(order, forced_pts=None):
         qpts, qwts = get_quadrature_points_weights(order, general.QuadratureType["GaussLegendre"])
     else:
         if forced_pts != None:
-            qpts, qwts = gauss_lobatto(forced_pts)
+            # Get order from forced_pts -> pass order.
+            order = 2*forced_pts - 3
+            qpts, qwts = gauss_lobatto(order)
         else:
             qpts, qwts = gauss_lobatto(order)
 
@@ -49,9 +51,9 @@ def get_quadrature_gauss_lobatto(order, forced_pts=None):
 def gauss_lobatto(order):
     if order % 2 == 0:
         order += 1
-    npts = int((order+3)/2)
+    npts = int((order + 3)/2)
 
-    alpha, beta = jacobi(npts)
+    alpha, beta = jacobi(npts, 0., 0.)
     qpts, qwts = get_lobatto_pts_wts(alpha, beta, -1.0, 1.0)
 
     return qpts, qwts
@@ -93,7 +95,7 @@ def scheme_from_rc(alpha, beta):
     w = beta[0] * V[0, :] ** 2
     return x, w
 
-def jacobi(n):
+def jacobi(n, alpha, beta):
     """Generate the recurrence coefficients a_k, b_k, c_k in
 
     P_{k+1}(x) = (a_k x - b_k)*P_{k}(x) - c_k P_{k-1}(x)
@@ -103,12 +105,12 @@ def jacobi(n):
     <https://en.wikipedia.org/wiki/Jacobi_polynomials#Recurrence_relations>.
     """
     iterator = Jacobi(alpha, beta)
-    # p0 = iterator.p0
-    # lst = list(itertools.islice(iterator, n))
-    # a = np.array([item[0] for item in lst])
-    a = np.array([item[1] for item in lst])
-    b = np.array([item[2] for item in lst])
-    return a, b
+    p0 = iterator.p0
+    lst = list(itertools.islice(iterator, n))
+    a = np.array([item[0] for item in lst])
+    b = np.array([item[1] for item in lst])
+    c = np.array([item[2] for item in lst])
+    return b, c
 
 class Jacobi:
     def __init__(self, alpha, beta):
