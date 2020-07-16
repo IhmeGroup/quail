@@ -341,6 +341,8 @@ class ADERDG(base.SolverBase):
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
 
+		EqnSet.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators_st.quad_wts.shape[0], EqnSet.NUM_STATE_VARS]))
+
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
@@ -554,7 +556,6 @@ class ADERDG(base.SolverBase):
 		if self.Params["ConvFluxSwitch"] == True:
 
 			Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
-
 			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts_st, Fq)
 			RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts_st, Fq)
 
