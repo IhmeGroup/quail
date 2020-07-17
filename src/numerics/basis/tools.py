@@ -81,8 +81,9 @@ def gauss_lobatto_nodes_1D_range(start, stop, nnode):
         raise ValueError
     if stop <= start:
         raise ValueError
-    
-    xnode,_ = segment.gauss_lobatto(nnode) 
+        
+    order = 2*nnode-3
+    xnode,_ = segment.gauss_lobatto(order) 
 
     return xnode
 
