@@ -2,13 +2,14 @@ import numpy as np
 import copy
 
 EndTime = 0.25
-nTimeSteps = 2000
+nTimeSteps = 4000
+#nTimeSteps = 0
 
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
     "NumTimeSteps" : nTimeSteps,
-    # "CFL" : 0.025,
+    #"CFL" : 0.025,
     "TimeScheme" : "RK4",
 }
 
@@ -16,12 +17,12 @@ Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    # "ApplyLimiter" : "PositivityPreserving",
+    "ApplyLimiter" : "PositivityPreserving",
     "InterpolateIC" : False,
-    "NodeType" : "GaussLobatto",
-    "ElementQuadrature" : "GaussLobatto",
-    "FaceQuadrature" : "GaussLobatto",
-    "NodesEqualQuadpts" : True,
+    #"NodeType" : "GaussLobatto",
+    #"ElementQuadrature" : "GaussLobatto",
+    #"FaceQuadrature" : "GaussLobatto",
+    #"NodesEqualQuadpts" : True,
 
 }
 
@@ -35,7 +36,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 200,
+    "nElem_x" : 60,
     "xmin" : 0.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
