@@ -300,9 +300,9 @@ class DG(base.SolverBase):
 		
 		if self.Params["ConvFluxSwitch"] == True:
 			'''
-			Evaluate the inviscid flux integral.
+			Evaluate the inviscid flux integral
 			'''
-			Fq = EqnSet.ConvFluxInterior(Uq) # [nq,ns,dim]
+			Fq = EqnSet.ConvFluxInterior(Uq) # [nq, ns, dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
 
 		if self.Params["SourceSwitch"] == True:
@@ -311,7 +311,7 @@ class DG(base.SolverBase):
 			'''
 			Sq = elem_ops.Sq
 			Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
-			Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq,ns]
+			Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq, ns]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
 
