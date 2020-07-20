@@ -18,6 +18,7 @@ import numerics.limiting.tools as limiter_tools
 
 import numerics.timestepping.tools as stepper_tools
 import numerics.timestepping.stepper as stepper_defs
+import numerics.quadrature.segment as segment
 
 import processing.post as post_defs
 import processing.readwritedatafiles as ReadWriteDataFiles
@@ -64,6 +65,7 @@ class SolverBase(ABC):
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
 		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
+
 		# check for compatibility
 		# if mesh.gbasis.SHAPE_TYPE != self.basis.SHAPE_TYPE:
 		# 	raise errors.IncompatibleError
@@ -143,6 +145,7 @@ class SolverBase(ABC):
 
 			quad_order = basis.get_quadrature_order(mesh, order)
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
+			# quad_pts, quad_wts = segment.get_quadrature_gauss_legendre(quad_order)
 			eval_pts = quad_pts
 		npts = eval_pts.shape[0]
 
@@ -205,13 +208,16 @@ class SolverBase(ABC):
 
 		mesh = self.mesh
 		EqnSet = self.EqnSet
+		stepper = self.Stepper
 
 		if R is None:
-			# R = ArrayList(SimilarArray=U)
 			R = np.copy(U)
 		# Initialize residual to zero
-		# R.SetUniformValue(0.)
-		R[:] = 0.
+
+		if stepper.balance_const is None:
+			R[:] = 0.
+		else:
+			R[:] = stepper.balance_const
 
 		self.calculate_residual_bfaces(U, R)
 		self.calculate_residual_elems(U, R)
