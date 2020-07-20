@@ -46,6 +46,7 @@ class StepperType(Enum):
     SSPRK3 = auto()
     ADER = auto()
     Strang = auto()
+    Simpler = auto()
 
 class ODESolverType(Enum):
     BDF1 = auto()

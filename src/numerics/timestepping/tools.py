@@ -23,6 +23,9 @@ def set_stepper(Params, U):
 	elif StepperType[TimeScheme] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
 		stepper.set_split_schemes(Params["OperatorSplitting_Exp"], Params["OperatorSplitting_Imp"], U)
+	elif StepperType[TimeScheme] == StepperType.Simpler:
+		stepper = stepper_defs.Simpler(U)
+		stepper.set_split_schemes(Params["OperatorSplitting_Exp"], Params["OperatorSplitting_Imp"], U)
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
