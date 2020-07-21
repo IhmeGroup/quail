@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : numerics/quadrature/triangle.py
+#
+#       Contains functions to evaluate quadrature for triangle shapes
+#      
+# ------------------------------------------------------------------------ #
 import numpy as np
 
 import general
@@ -5,13 +12,29 @@ import numerics.quadrature.quadrilateral as qquad
 
 
 def get_quadrature_points_weights(order, quad_type):
+    '''
+    Method: get_quadrature_points_weights
+    --------------------------------------
+    Calculates the quad points and weights for a triangle shape.
 
-    # for now, select based on order
+    Using Dunavant points minimizes the number of quadrature points for 
+    evaluation (as compared to GL quadrature). When using Dunavant, orders
+    greater than 19 automatically switches to GL quadrature.
+
+    INPUTS: 
+        order: solution order [int]
+        quad_type: Enum that points to the appropriate quadrature calc [enum]
+
+    OUTPUTS:
+        qpts: quadrature point coordinates [nq, dim]
+        qwts: quadrature weights [nq, 1]
+    '''
     if quad_type == general.QuadratureType.Dunavant:
         if order <= 19:
             qpts, qwts = get_quadrature_dunavant(order)
         else:
-            print("Quadrature order too high; using Gauss-Legendre quadrature")
+            print("Quadrature order too high; \
+                using Gauss-Legendre quadrature")
             qpts, qwts = get_quadrature_gauss_legendre(order)
     elif quad_type == general.QuadratureType.GaussLegendre:
         qpts, qwts = get_quadrature_gauss_legendre(order)
@@ -22,10 +45,25 @@ def get_quadrature_points_weights(order, quad_type):
 
 
 def get_quadrature_gauss_legendre(order):
-    # get quadrature points and weights for quadrilateral
-    qpts, qwts = qquad.get_quadrature_points_weights(order, general.QuadratureType.GaussLegendre)
+    '''
+    Method: get_quadrature_gauss_legendre
+    --------------------------------------
+    Calculate the quadrature points and weights using Gauss Legendre rules 
+    for a triangle
 
-    # Transform
+    INPUTS: 
+        order: solution order [int]
+
+    OUTPUTS:
+        qpts: quadrature point coordinates [nq, dim]
+        qwts: quadrature weights [nq, 1]
+    '''
+    
+    # get quadrature points and weights for quadrilateral
+    qpts, qwts = qquad.get_quadrature_points_weights(order, 
+        general.QuadratureType.GaussLegendre)
+
+    # apply transformation
     qwts[:,0] *= 0.125*(1. - qpts[:,0])
     qpts[:,1] = 0.25*(1. - qpts[:,0])*(1. + qpts[:,1])
     qpts[:,0] = 0.5*(1. + qpts[:,0])
@@ -34,6 +72,20 @@ def get_quadrature_gauss_legendre(order):
 
 
 def get_quadrature_dunavant(order):
+    '''
+    Method: get_quadrature_dunavant
+    --------------------------------------
+    Calculate the quadrature points and weights using the Dunavant 
+    quadrature rules. These are hard coded up to order 19. If order > 19, we 
+    automatically switch to Gauss Legendre quadrature.
+
+    INPUTS: 
+        order: solution order [int]
+
+    OUTPUTS:
+        qpts: quadrature point coordinates [nq, dim]
+        qwts: quadrature weights [nq, 1]
+    '''
     if order == 0 or order == 1:
         # Order 1
         qpts = np.array([0.333333333333333, 0.333333333333333])

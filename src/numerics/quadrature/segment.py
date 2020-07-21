@@ -203,6 +203,9 @@ def jacobi(n, alpha, beta):
 
 
 class Jacobi:
+    '''
+    Helper class for calculating Gauss Lobatto quadrature
+    '''
     def __init__(self, alpha, beta):
         
         self.iterator = Monic(alpha, beta)
@@ -217,6 +220,9 @@ class Jacobi:
 
 
 class Monic:
+    '''
+    Helper class for calculating Gauss Lobatto quadrature
+    '''
     def __init__(self, alpha, beta):
         self.alpha = alpha
         self.beta = beta
