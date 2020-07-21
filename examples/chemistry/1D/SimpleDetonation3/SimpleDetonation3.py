@@ -1,7 +1,7 @@
 import numpy as np
 
-cfl = 0.5
-nElem = 1000
+cfl = 0.25
+nElem = 150
 dx = float(1/nElem)
 u = 5.
 dt = cfl*dx/u
@@ -13,14 +13,14 @@ TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
     "NumTimeSteps" : NumTimeStepss,
-    "TimeScheme" : "SSPRK3",
-    # "OperatorSplitting_Imp" : "Trapezoidal",
+    "TimeScheme" : "Simpler",
+    "OperatorSplitting_Imp" : "Trapezoidal",
 
 }
 
 Numerics = {
-    "InterpOrder" : 0,
-    "InterpBasis" : "LagrangeEqSeg",
+    "InterpOrder" : 2,
+    "InterpBasis" : "LagrangeSeg",
     "InterpolateIC" : True,
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreservingChem",
@@ -35,7 +35,7 @@ Output = {
     # "WriteInterval" : 10,
     # "WriteInitialSolution" : True,
     "AutoProcess" : False,
-    "Prefix" : "Data",
+    "Prefix" : "TestSimpler",
 
 }
 
