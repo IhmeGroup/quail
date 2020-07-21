@@ -17,14 +17,14 @@ import processing.plot as plot_defs
 
 
 
-def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVolume=True):
+def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVolume=True):
 
 	Time = solver.Time
-	U = EqnSet.U
+	U = physics.U
 	basis = solver.basis
 	# Check for exact solution
-	# if not EqnSet.ExactSoln.Function:
-	if EqnSet.ExactSoln is None:
+	# if not physics.ExactSoln.Function:
+	if physics.ExactSoln is None:
 		raise Exception("No exact solution provided")
 
 	# Get elem volumes 
@@ -35,25 +35,25 @@ def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVol
 
 	# Get error
 	# ElemErr = copy.deepcopy(U)
-	# ElemErr = ArrayList(SimilarArray=EqnSet.U).Arrays
+	# ElemErr = ArrayList(SimilarArray=physics.U).Arrays
 	# ElemErr = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
 	ElemErr = np.zeros([mesh.nElem])
 	TotErr = 0.
-	sr = EqnSet.NUM_STATE_VARS
+	sr = physics.NUM_STATE_VARS
 	quadData = None
 	# JData = JacobianData(mesh)
-	# ier = EqnSet.VariableType[VariableName]
+	# ier = physics.VariableType[VariableName]
 	GeomPhiData = None
 
 	# ElemErr.Arrays[egrp][:] = 0.
 
-	Order = EqnSet.order
-	# basis = EqnSet.Basis
+	Order = physics.order
+	# basis = physics.Basis
 
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		quad_order = basis.get_quadrature_order(mesh, 2*np.amax([Order,1]), physics=EqnSet)
+		quad_order = basis.get_quadrature_order(mesh, 2*np.amax([Order,1]), physics=physics)
 		gbasis = mesh.gbasis
 		xq, wq = gbasis.get_quadrature_data(quad_order)
 		nq = xq.shape[0]
@@ -64,7 +64,7 @@ def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVol
 		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
 		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xq, xphys)
-		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, t=Time)
+		u_exact = physics.CallFunction(physics.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points
 		# u = np.zeros([nq, sr])
@@ -74,8 +74,8 @@ def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVol
 		u = helpers.evaluate_state(U_, basis.basis_val)
 
 		# Computed requested quantity
-		s = EqnSet.ComputeScalars(VariableName, u)
-		s_exact = EqnSet.ComputeScalars(VariableName, u_exact)
+		s = physics.ComputeScalars(VariableName, u)
+		s_exact = physics.ComputeScalars(VariableName, u_exact)
 
 		# err = 0.
 		# for iq in range(nq):
@@ -178,8 +178,8 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 	if plot:
 		plt.figure()
 		bvalues = bvalues.flatten()
-		# SolnLabel = plot_defs.get_solution_label(EqnSet, variable_name, ylabel)
-		# plot_defs.Plot1D(EqnSet, bpoints, bvalues, SolnLabel, u_var_calculated=True, **kwargs)
+		# SolnLabel = plot_defs.get_solution_label(physics, variable_name, ylabel)
+		# plot_defs.Plot1D(physics, bpoints, bvalues, SolnLabel, u_var_calculated=True, **kwargs)
 		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
 		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label, 0)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)

@@ -33,7 +33,7 @@ echeck = -1
 
 
 class SolverBase(ABC):
-	def __init__(self, Params, EqnSet, mesh):
+	def __init__(self, Params, physics, mesh):
 		'''
 		Method: __init__
 		-------------------------------------------------------------------
@@ -41,23 +41,23 @@ class SolverBase(ABC):
 
 		INPUTS:
 			Params: list of parameters for the solver
-			EqnSet: solver object (current implementation supports Scalar and Euler equations)
+			physics: solver object (current implementation supports Scalar and Euler equations)
 			mesh: mesh object
 		'''
 		self.Params = Params
-		self.EqnSet = EqnSet
+		self.physics = physics
 		self.mesh = mesh
 		self.DataSet = GenericData()
 
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
-		self.Stepper = stepper_tools.set_stepper(Params, EqnSet.U)
+		self.Stepper = stepper_tools.set_stepper(Params, physics.U)
 		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
 		# Set the basis functions for the solver
 		basis_name  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(EqnSet.order, basis_name)
+		self.basis = basis_tools.set_basis(physics.order, basis_name)
 
 		node_type = Params["NodeType"]
 		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(node_type)
@@ -72,7 +72,7 @@ class SolverBase(ABC):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = limiter_tools.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = limiter_tools.set_limiter(limiterType, physics.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_compatibility()
@@ -81,14 +81,14 @@ class SolverBase(ABC):
 		self.precompute_matrix_operators()
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
-		EqnSet.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators.quad_wts.shape[0], EqnSet.NUM_STATE_VARS]))
+		physics.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators.quad_wts.shape[0], physics.NUM_STATE_VARS]))
 
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
 
 	def __repr__(self):
-		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   \
+		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
 		Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
 
 	def check_compatibility(self):
@@ -120,8 +120,8 @@ class SolverBase(ABC):
 		# Compatibility check for forcing nodes equal to quadrature points
 		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
 			raise errors.IncompatibleError
-		if QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
-			QuadratureType[face_quad] != QuadratureType.GaussLobatto \
+		if (QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
+			QuadratureType[face_quad] != QuadratureType.GaussLobatto) \
 			and forcing_switch:
 			raise errors.IncompatibleError
 		
@@ -145,20 +145,20 @@ class SolverBase(ABC):
 
 	def init_state_from_fcn(self):
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		basis = self.basis
 		Params = self.Params
 		iMM_elems = self.elem_operators.iMM_elems
 
-		U = EqnSet.U
-		ns = EqnSet.NUM_STATE_VARS
-		order = EqnSet.order
+		U = physics.U
+		ns = physics.NUM_STATE_VARS
+		order = physics.order
 
 		if Params["InterpolateIC"]:
 			eval_pts = basis.get_nodes(order)
 		else:
-			order = 2*np.amax([EqnSet.order, 1])
-			order = EqnSet.QuadOrder(order)
+			order = 2*np.amax([physics.order, 1])
+			order = physics.QuadOrder(order)
 
 			quad_order = basis.get_quadrature_order(mesh, order)
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
@@ -168,7 +168,7 @@ class SolverBase(ABC):
 
 		for elem in range(mesh.nElem):
 			xphys, _ = mesh_defs.ref_to_phys(mesh, elem, None, eval_pts)
-			f = EqnSet.CallFunction(EqnSet.IC, x=xphys, t=self.Time)
+			f = physics.CallFunction(physics.IC, x=xphys, t=self.Time)
 			# f.shape = npts,ns
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
@@ -177,22 +177,22 @@ class SolverBase(ABC):
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		basis = self.basis
 		Params = self.Params
 		iMM_elems = self.elem_operators.iMM_elems
 
-		U = EqnSet.U
-		ns = EqnSet.NUM_STATE_VARS
+		U = physics.U
+		ns = physics.NUM_STATE_VARS
 
 		# basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
 		if basis_old.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
 		if Params["InterpolateIC"]:
-			eval_pts = basis.get_nodes(EqnSet.order)
+			eval_pts = basis.get_nodes(physics.order)
 		else:
-			order = 2*np.amax([EqnSet.order, order_old])
+			order = 2*np.amax([physics.order, order_old])
 			quad_order = basis.get_quadrature_order(mesh, order)
 
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
@@ -225,7 +225,7 @@ class SolverBase(ABC):
 		'''
 
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		stepper = self.Stepper
 
 		if R is None:
@@ -256,7 +256,7 @@ class SolverBase(ABC):
 			R: calculated residiual array
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 
 		for elem in range(mesh.nElem):
 			R[elem] = self.calculate_residual_elem(elem, U[elem], R[elem])
@@ -274,7 +274,7 @@ class SolverBase(ABC):
 			R: calculated residual array (includes all face contributions)
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 
 		for iiface in range(mesh.nIFace):
 			IFace = mesh.IFaces[iiface]
@@ -303,7 +303,7 @@ class SolverBase(ABC):
 			R: calculated residual array from boundary face
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 
 		# for ibfgrp in range(mesh.nBFaceGroup):
 		# 	BFG = mesh.BFaceGroups[ibfgrp]
@@ -325,7 +325,7 @@ class SolverBase(ABC):
 		Applies the specified time scheme to update the solution
 
 		'''
-		EqnSet = self.EqnSet
+		physics = self.physics
 		mesh = self.mesh
 		Order = self.Params["InterpOrder"]
 		Stepper = self.Stepper
@@ -365,7 +365,7 @@ class SolverBase(ABC):
 
 			# Output
 			if TrackOutput:
-				output,_ = post_defs.L2_error(mesh,EqnSet,Time,"Entropy",False)
+				output,_ = post_defs.L2_error(mesh,physics,Time,"Entropy",False)
 				OutputString = ", Output = %g" % (output)
 				PrintString += OutputString
 
@@ -419,7 +419,7 @@ class SolverBase(ABC):
 
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		basis = self.basis
 
 		InterpOrder = self.Params["InterpOrder"]
@@ -494,10 +494,10 @@ class SolverBase(ABC):
 		# 		delattr(self, "DataSet")
 		# 		self.DataSet = GenericData()
 		# 		# Increment Order
-		# 		Order_old = EqnSet.order
-		# 		EqnSet.order = Order
+		# 		Order_old = physics.order
+		# 		physics.order = Order
 		# 		# Project
-		# 		solver_tools.project_state_to_new_basis(self, mesh, EqnSet, basis, Order_old)
+		# 		solver_tools.project_state_to_new_basis(self, mesh, physics, basis, Order_old)
 
 		# 		basis.order = Order
 		# 		basis.nb = basis.get_num_basis_coeff(Order)				

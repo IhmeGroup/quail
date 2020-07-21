@@ -17,12 +17,12 @@ import numerics.basis.basis as basis_defs
 
 def get_physical_modes(mesh, params, order, nL):
 	params["InterpOrder"] = order 
-	# EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
+	# physics = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
 	physics = scalar.ConstAdvScalar1D(order, params["InterpBasis"], mesh)
-	# EqnSet.set_physical_params(Velocity=1.)
+	# physics.set_physical_params(Velocity=1.)
 
 	# Initial conditions
-	# EqnSet.IC.Set(Function=EqnSet.FcnExponential)
+	# physics.IC.Set(Function=physics.FcnExponential)
 	physics.set_IC(IC_type="Sine")
 	physics.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
 	U = physics.U
@@ -118,12 +118,12 @@ params["ElementQuadrature"] = "GaussLegendre"
 params["FaceQuadrature"] = "GaussLegendre"
 params["NodeType"] = "Equidistant"
 params["NodesEqualQuadpts"] = False
-# # EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# # physics = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
 # physics = scalar.ConstAdvScalar1D(order, params["InterpBasis"], mesh)
-# # EqnSet.set_physical_params(Velocity=1.)
+# # physics.set_physical_params(Velocity=1.)
 
 # # Initial conditions
-# # EqnSet.IC.Set(Function=EqnSet.FcnExponential)
+# # physics.IC.Set(Function=physics.FcnExponential)
 # physics.set_IC(IC_type="Sine")
 # physics.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
 # U = physics.U

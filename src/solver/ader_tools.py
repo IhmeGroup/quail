@@ -127,14 +127,14 @@ def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 	OUTPUTS:
 		Up: predicted solution in space-time
 	'''
-	EqnSet = solver.EqnSet
-	ns = EqnSet.NUM_STATE_VARS
+	physics = solver.physics
+	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis
 	basis_st = solver.basis_st
 
-	order = EqnSet.order
+	order = physics.order
 	
 	elem_ops = solver.elem_operators
 	ader_ops = solver.ader_operators
@@ -194,16 +194,16 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	OUTPUTS:
 		Up: predicted solution in space-time
 	'''
-	EqnSet = solver.EqnSet
-	Sources = EqnSet.Sources
+	physics = solver.physics
+	Sources = physics.Sources
 
-	ns = EqnSet.NUM_STATE_VARS
+	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis
 	basis_st = solver.basis_st
 
-	order = EqnSet.order
+	order = physics.order
 	
 	elem_ops = solver.elem_operators
 	ader_ops = solver.ader_operators
@@ -231,7 +231,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 
 	# def F(u):
 	# 	S = 0.
-	# 	S = EqnSet.SourceState(1, 0., 0., u, S)
+	# 	S = physics.SourceState(1, 0., 0., u, S)
 	# 	F = u - S - W_bar[0,0]
 	# 	return F
 
@@ -240,7 +240,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	jac_q = np.zeros([1,ns,ns])
 	# for Source in Sources:
 		# jac_q += Source.get_jacobian(W_bar)
-	jac_q = EqnSet.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
+	jac_q = physics.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
 	jac = jac_q[0,:,:]
 	Kp = K-MM*dt*jac 
 	iK = np.linalg.inv(Kp)
@@ -280,16 +280,16 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	OUTPUTS:
 		Up: predicted solution in space-time
 	'''
-	EqnSet = solver.EqnSet
-	Sources = EqnSet.Sources
+	physics = solver.physics
+	Sources = physics.Sources
 
-	ns = EqnSet.NUM_STATE_VARS
+	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis
 	basis_st = solver.basis_st
 
-	order = EqnSet.order
+	order = physics.order
 	
 	elem_ops = solver.elem_operators
 	ader_ops = solver.ader_operators
@@ -318,7 +318,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	jac_q = np.zeros([1,ns,ns])
 	# for Source in Sources:
 	# 	jac_q += Source.get_jacobian(W_bar) 
-	jac_q = EqnSet.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
+	jac_q = physics.SourceJacobianState(1, x, solver.Time, W_bar, jac_q) # [nq,ns]
 	jac = jac_q[0,:,:]
 	
 	U_pred[:] = W_bar

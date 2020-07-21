@@ -25,10 +25,10 @@ class ODESolvers():
 
 		def TakeTimeStep(self, solver):
 
-			EqnSet = solver.EqnSet
+			physics = solver.physics
 			DataSet = solver.DataSet
 			mesh = solver.mesh
-			U = EqnSet.U
+			U = physics.U
 
 			R = self.R
 
@@ -41,7 +41,7 @@ class ODESolvers():
 			U = np.einsum('ijkl,ikl->ijl',iA,R)
 
 			solver.apply_limiter(U)
-			EqnSet.U = U
+			physics.U = U
 
 			return R
 		def get_jacobian_matrix(self, mesh, solver):
@@ -49,7 +49,7 @@ class ODESolvers():
 				basis = solver.basis
 				nb = basis.nb
 				DataSet = solver.DataSet
-				physics = solver.EqnSet
+				physics = solver.physics
 				Up = physics.U
 				ns = physics.NUM_STATE_VARS
 
@@ -66,7 +66,7 @@ class ODESolvers():
 
 			beta = self.BETA
 			dt = solver.Stepper.dt
-			physics = solver.EqnSet
+			physics = solver.physics
 			Sources = physics.Sources
 
 			elem_ops = solver.elem_operators

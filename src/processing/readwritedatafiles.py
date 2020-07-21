@@ -4,7 +4,7 @@ import code
 def write_data_file(solver, iwrite):
 	# Unpack
 	# mesh = solver.mesh
-	# EqnSet = solver.EqnSet
+	# physics = solver.physics
 	# Params = solver.Params
 	# Time = solver.Time
 
@@ -21,8 +21,8 @@ def write_data_file(solver, iwrite):
 		pickle.dump(solver, fo, pickle.HIGHEST_PROTOCOL)
 		# mesh
 		# pickle.dump(mesh, fo, pickle.HIGHEST_PROTOCOL)
-		# # EqnSet
-		# pickle.dump(EqnSet, fo, pickle.HIGHEST_PROTOCOL)
+		# # physics
+		# pickle.dump(physics, fo, pickle.HIGHEST_PROTOCOL)
 		# # Params
 		# pickle.dump(Params, fo, pickle.HIGHEST_PROTOCOL)
 		# # Time
@@ -37,11 +37,11 @@ def read_data_file(fname):
 	return solver
 		# mesh
 	 #    mesh = pickle.load(fo)
-		# # EqnSet
-	 #    EqnSet = pickle.load(fo)
+		# # physics
+	 #    physics = pickle.load(fo)
 		# # Params
 	 #    Params = pickle.load(fo)
 		# # Time
 	 #    Time = pickle.load(fo)
 
-	# return mesh, EqnSet, Params, Time
+	# return mesh, physics, Params, Time

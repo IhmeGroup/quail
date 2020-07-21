@@ -36,14 +36,14 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
-	if quad_type == general.QuadratureType.GaussLegendre:
-		qpts, qwts = get_quadrature_gauss_legendre(order)
-	elif quad_type == general.QuadratureType.GaussLobatto:
-		qpts, qwts = get_quadrature_gauss_lobatto(order, forced_pts)
-	else:
-		raise NotImplementedError
+    if quad_type == general.QuadratureType.GaussLegendre:
+        qpts, qwts = get_quadrature_gauss_legendre(order)
+    elif quad_type == general.QuadratureType.GaussLobatto:
+        qpts, qwts = get_quadrature_gauss_lobatto(order, forced_pts)
+    else:
+        raise NotImplementedError
 
-	return qpts, qwts
+    return qpts, qwts
 
 
 def get_quadrature_gauss_legendre(order):
@@ -59,18 +59,18 @@ def get_quadrature_gauss_legendre(order):
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
-	if order % 2 == 0: # if order is even, add 1
-		order += 1
+    if order % 2 == 0: # if order is even, add 1
+        order += 1
 
-	npts = (order + 1)//2
+    npts = (order + 1)//2
 
     # use built-in numpy Gauss Legendre functions
-	qpts, qwts = np.polynomial.legendre.leggauss(npts)
+    qpts, qwts = np.polynomial.legendre.leggauss(npts)
 
-	qpts.shape = -1,1
-	qwts.shape = -1,1
+    qpts.shape = -1,1
+    qwts.shape = -1,1
 
-	return qpts, qwts # [nq, 1] and [nq, 1]
+    return qpts, qwts # [nq, 1] and [nq, 1]
 
 
 def get_quadrature_gauss_lobatto(order, forced_pts=None):

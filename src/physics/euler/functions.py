@@ -639,7 +639,7 @@ class Roe1D(ConvNumFluxBase):
 
 		return U
 
-	def RoeAverageState(self, EqnSet, srho, velL, velR, uL, uR):
+	def RoeAverageState(self, physics, srho, velL, velR, uL, uR):
 		# rhoL_sqrt = self.rhoL_sqrt
 		# rhoR_sqrt = self.rhoR_sqrt
 		# HL = self.HL 
@@ -647,8 +647,8 @@ class Roe1D(ConvNumFluxBase):
 
 		rhoL_sqrt = np.sqrt(uL[:,srho])
 		rhoR_sqrt = np.sqrt(uR[:,srho])
-		HL = EqnSet.ComputeScalars("TotalEnthalpy", uL, flag_non_physical=True)
-		HR = EqnSet.ComputeScalars("TotalEnthalpy", uR, flag_non_physical=True)
+		HL = physics.ComputeScalars("TotalEnthalpy", uL, flag_non_physical=True)
+		HR = physics.ComputeScalars("TotalEnthalpy", uR, flag_non_physical=True)
 
 		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -660,15 +660,15 @@ class Roe1D(ConvNumFluxBase):
 
 		return rhoRoe, velRoe, HRoe
 
-	def GetDifferences(self, EqnSet, srho, velL, velR, uL, uR):
+	def GetDifferences(self, physics, srho, velL, velR, uL, uR):
 		# dvel = self.dvel
 		# drho = self.drho
 		# dp = self.dp 
 
 		dvel = velR - velL
 		drho = uR[:,srho] - uL[:,srho]
-		dp = EqnSet.ComputeScalars("Pressure", uR) - \
-			EqnSet.ComputeScalars("Pressure", uL)
+		dp = physics.ComputeScalars("Pressure", uR) - \
+			physics.ComputeScalars("Pressure", uL)
 
 		return dvel, drho, dp
 
@@ -713,7 +713,7 @@ class Roe1D(ConvNumFluxBase):
 		return R 
 
 
-	def compute_flux(self, EqnSet, UL_std, UR_std, n):
+	def compute_flux(self, physics, UL_std, UR_std, n):
 		'''
 		Function: ConvFluxLaxFriedrichs
 		-------------------
@@ -746,10 +746,10 @@ class Roe1D(ConvNumFluxBase):
 		# FR = self.FR 
 
 		# Indices
-		srho = EqnSet.get_state_slice("Density")
-		smom = EqnSet.GetMomentumSlice()
+		srho = physics.get_state_slice("Density")
+		smom = physics.GetMomentumSlice()
 
-		gamma = EqnSet.gamma
+		gamma = physics.gamma
 
 		NN = np.linalg.norm(n, axis=1, keepdims=True)
 		n1 = n/NN
@@ -766,14 +766,14 @@ class Roe1D(ConvNumFluxBase):
 		velL = UL[:, smom]/UL[:, srho]
 		velR = UR[:, smom]/UR[:, srho]
 
-		rhoRoe, velRoe, HRoe = self.RoeAverageState(EqnSet, srho, velL, velR, UL, UR)
+		rhoRoe, velRoe, HRoe = self.RoeAverageState(physics, srho, velL, velR, UL, UR)
 
 		# Speed of sound from Roe-averaged state
 		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
 		c = np.sqrt(c2)
 
 		# differences
-		dvel, drho, dp = self.GetDifferences(EqnSet, srho, velL, velR, UL, UR)
+		dvel, drho, dp = self.GetDifferences(physics, srho, velL, velR, UL, UR)
 
 		# alphas (left eigenvectors multipled by dU)
 		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
@@ -807,10 +807,10 @@ class Roe1D(ConvNumFluxBase):
 		FRoe = self.UndoRotateCoordSys(smom, FRoe, n1)
 
 		# Left flux
-		FL = EqnSet.ConvFluxProjected(UL_std, n1)
+		FL = physics.ConvFluxProjected(UL_std, n1)
 
 		# Right flux
-		FR = EqnSet.ConvFluxProjected(UR_std, n1)
+		FR = physics.ConvFluxProjected(UR_std, n1)
 		
 		return NN*(0.5*(FL+FR) - 0.5*FRoe)
 

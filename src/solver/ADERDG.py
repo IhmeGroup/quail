@@ -69,10 +69,10 @@ class ElemOperatorsADER(DG.ElemOperators):
 
 class IFaceOperatorsADER(DG.IFaceOperators):
 
-	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
+	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		
 		gbasis = mesh.gbasis
-		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh, order, physics=EqnSet)
+		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh, order, physics=physics)
 		self.quad_pts, self.quad_wts = basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
 		# self.quad_pts = basis.quad_pts
@@ -157,10 +157,10 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 				j += 1
 			i += 1
 
-	def alloc_other_arrays(self, EqnSet, basis, order):
+	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		ns = EqnSet.NUM_STATE_VARS
+		ns = physics.NUM_STATE_VARS
 
 		self.UqI = np.zeros([nq, ns])
 		self.UqB = np.zeros([nq, ns])
@@ -267,7 +267,7 @@ class ADEROperators(object):
 				# Store
 				self.x_elems[elem] = np.tile(x,(nnode,1))
 
-	def compute_operators(self, mesh, EqnSet, basis, basis_st, dt, order):
+	def compute_operators(self, mesh, physics, basis, basis_st, dt, order):
 		self.calc_ader_matrices(mesh, basis, basis_st, dt, order)
 		self.get_geom_data(mesh, basis_st, order)
 
@@ -278,7 +278,7 @@ class ADERDG(base.SolverBase):
 	--------------------------------------------------------------------------
 	Use the ADER-DG method to solve a given set of PDEs
 	'''
-	def __init__(self,Params,EqnSet,mesh):
+	def __init__(self,Params,physics,mesh):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -286,29 +286,29 @@ class ADERDG(base.SolverBase):
 
 		INPUTS:
 			Params: list of parameters for the solver
-			EqnSet: solver object (current implementation supports Scalar and Euler equations)
+			physics: solver object (current implementation supports Scalar and Euler equations)
 			mesh: mesh object
 		'''
 		self.Params = Params
-		self.EqnSet = EqnSet
+		self.physics = physics
 		self.mesh = mesh
 		self.DataSet = GenericData()
 
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
-		ns = EqnSet.NUM_STATE_VARS
+		ns = physics.NUM_STATE_VARS
 
 		TimeScheme = Params["TimeScheme"]
 		if StepperType[TimeScheme] != StepperType.ADER:
 			raise errors.IncompatibleError
-		self.Stepper = stepper_defs.ADER(EqnSet.U)
+		self.Stepper = stepper_defs.ADER(physics.U)
 		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
 		# Set the basis functions for the solver
 		basis_name  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(EqnSet.order, basis_name)
-		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, EqnSet.order, basis_name)
+		self.basis = basis_tools.set_basis(physics.order, basis_name)
+		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, physics.order, basis_name)
 
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
@@ -323,7 +323,7 @@ class ADERDG(base.SolverBase):
 
 
 		# Allocate array for predictor step in ADER-Scheme
-		EqnSet.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(EqnSet.order), EqnSet.NUM_STATE_VARS])
+		physics.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(physics.order), physics.NUM_STATE_VARS])
 
 		# Set predictor function
 		SourceTreatment = Params["SourceTreatment"]
@@ -331,7 +331,7 @@ class ADERDG(base.SolverBase):
 
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
-		self.Limiter = limiter_tools.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
+		self.Limiter = limiter_tools.set_limiter(limiterType, physics.PHYSICS_TYPE)
 
 		# Check validity of parameters
 		self.check_compatibility()
@@ -341,14 +341,14 @@ class ADERDG(base.SolverBase):
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
 
-		EqnSet.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators_st.quad_wts.shape[0], EqnSet.NUM_STATE_VARS]))
+		physics.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators_st.quad_wts.shape[0], physics.NUM_STATE_VARS]))
 
 		# Initialize state
 		if Params["RestartFile"] is None:
 			self.init_state_from_fcn()
 	
 	def __repr__(self):
-		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   Basis: {self.basis},\n   Basis_st: {self.basis_st},\n   Stepper: {self.Stepper})'.format(self=self)
+		return '{self.__class__.__name__}(Physics: {self.physics},\n   Basis: {self.basis},\n   Basis_st: {self.basis_st},\n   Stepper: {self.Stepper})'.format(self=self)
 	
 	def check_compatibility(self):
 		'''
@@ -366,7 +366,7 @@ class ADERDG(base.SolverBase):
 
 		# Params = self.Params
 		# mesh = self.mesh
-		# EqnSet = self.EqnSet
+		# physics = self.physics
 		# ### Check interp basis validity
 		# if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
 		#     if mesh.Dim != 1:
@@ -377,13 +377,13 @@ class ADERDG(base.SolverBase):
 
 		# ### Check limiter ###
 		# if Params["ApplyLimiter"] is 'PositivityPreserving' \
-		# 	and EqnSet.NUM_STATE_VARS == 1:
+		# 	and physics.NUM_STATE_VARS == 1:
 		# 		raise IncompatibleError
   
 
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
-		EqnSet = self.EqnSet
+		physics = self.physics
 
 		basis = self.basis
 		basis_st = self.basis_st
@@ -392,22 +392,22 @@ class ADERDG(base.SolverBase):
 
 
 		self.elem_operators = DG.ElemOperators()
-		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
+		self.elem_operators.compute_operators(mesh, physics, basis, physics.order)
 		self.iface_operators = DG.IFaceOperators()
-		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
+		self.iface_operators.compute_operators(mesh, physics, basis, physics.order)
 		self.bface_operators = DG.BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
+		self.bface_operators.compute_operators(mesh, physics, basis, physics.order)
 
 		# Calculate ADER specific space-time operators
 		self.elem_operators_st = ElemOperatorsADER()
-		self.elem_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.order)
+		self.elem_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
 		self.iface_operators_st = IFaceOperatorsADER()
-		self.iface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.order)
+		self.iface_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
 		self.bface_operators_st = BFaceOperatorsADER()
-		self.bface_operators_st.compute_operators(mesh, EqnSet, basis_st, EqnSet.order)
+		self.bface_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
 
 		self.ader_operators = ADEROperators()
-		self.ader_operators.compute_operators(mesh, EqnSet, basis, basis_st, dt, EqnSet.order)
+		self.ader_operators.compute_operators(mesh, physics, basis, basis_st, dt, physics.order)
 
 	def calculate_predictor_step(self, dt, W, Up):
 		'''
@@ -423,7 +423,7 @@ class ADERDG(base.SolverBase):
 			Up: predicted solution in space-time
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 
 		for elem in range(mesh.nElem):
 			Up[elem] = self.calculate_predictor_elem(self, elem, dt, W[elem], Up[elem])
@@ -443,10 +443,10 @@ class ADERDG(base.SolverBase):
 		OUTPUTS:
 		ER: calculated residiual array (for volume integral of specified element)
 		'''
-		EqnSet = self.EqnSet
+		physics = self.physics
 		mesh = self.mesh
-		ns = EqnSet.NUM_STATE_VARS
-		dim = EqnSet.dim
+		ns = physics.NUM_STATE_VARS
+		dim = physics.dim
 
 		elem_ops = self.elem_operators
 		elem_ops_st = self.elem_operators_st
@@ -469,7 +469,7 @@ class ADERDG(base.SolverBase):
 			'''
 			Evaluate the inviscid flux integral.
 			'''
-			Fq = EqnSet.ConvFluxInterior(Uq) # [nq,sr,dim]
+			Fq = physics.ConvFluxInterior(Uq) # [nq,sr,dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem_ops_st, elem, Fq)
 		
 		if self.Params["SourceSwitch"] == True:
@@ -482,7 +482,7 @@ class ADERDG(base.SolverBase):
 			
 			Sq = elem_ops_st.Sq
 			Sq[:] = 0.
-			Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
+			Sq = physics.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq)
 
@@ -507,7 +507,7 @@ class ADERDG(base.SolverBase):
 			RR: calculated residual array (right neighboring element contribution)
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		IFace = mesh.IFaces[iiface]
 		elemL = IFace.ElemL
 		elemR = IFace.ElemR
@@ -555,7 +555,7 @@ class ADERDG(base.SolverBase):
 
 		if self.Params["ConvFluxSwitch"] == True:
 
-			Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
+			Fq = physics.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
 			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts_st, Fq)
 			RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts_st, Fq)
 
@@ -582,8 +582,8 @@ class ADERDG(base.SolverBase):
 		'''
 		mesh = self.mesh
 		dim = mesh.Dim
-		EqnSet = self.EqnSet
-		ns = EqnSet.NUM_STATE_VARS
+		physics = self.physics
+		ns = physics.NUM_STATE_VARS
 		# BFG = mesh.BFaceGroups[ibfgrp]
 		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
@@ -630,13 +630,13 @@ class ADERDG(base.SolverBase):
 		x = x_bfgroups[ibfgrp][ibface]
 
 		# Get boundary state
-		BC = EqnSet.BCs[BFG.name]
-		# Fq = BC.get_boundary_flux(EqnSet, x, t, normals, UqI)
+		BC = physics.BCs[BFG.name]
+		# Fq = BC.get_boundary_flux(physics, x, t, normals, UqI)
 
 		if self.Params["ConvFluxSwitch"] == True:
 			# Loop over time to apply BC at each temporal quadrature point
 			for i in range(len(t)):	
-				Fq[i,:] = BC.get_boundary_flux(EqnSet, x, t[i], normals, UqI[i,:].reshape([1,ns]))
+				Fq[i,:] = BC.get_boundary_flux(physics, x, t[i], normals, UqI[i,:].reshape([1,ns]))
 
 			R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq)
 
@@ -661,10 +661,10 @@ class ADERDG(base.SolverBase):
 			F: polynomical coefficients of the flux function
 		'''
 
-		EqnSet = self.EqnSet
+		physics = self.physics
 		mesh = self.mesh
-		ns = EqnSet.NUM_STATE_VARS
-		dim = EqnSet.dim
+		ns = physics.NUM_STATE_VARS
+		dim = physics.dim
 		Params = self.Params
 
 		InterpolateFlux = Params["InterpolateFlux"]
@@ -679,7 +679,7 @@ class ADERDG(base.SolverBase):
 
 		if Params["InterpolateFlux"]:
 
-			Fq = EqnSet.ConvFluxInterior(Up)
+			Fq = physics.ConvFluxInterior(Up)
 			dg_tools.interpolate_to_nodes(Fq, F)
 		else:
 			ader_ops = self.ader_operators
@@ -694,7 +694,7 @@ class ADERDG(base.SolverBase):
 
 			Uq = np.matmul(basis_val_st,Up) # Brett
 
-			Fq = EqnSet.ConvFluxInterior(Uq)
+			Fq = physics.ConvFluxInterior(Uq)
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
 
 		return F*dt/2.0
@@ -716,8 +716,8 @@ class ADERDG(base.SolverBase):
 		'''
 		mesh = self.mesh
 		dim = mesh.Dim
-		EqnSet = self.EqnSet
-		ns = EqnSet.NUM_STATE_VARS
+		physics = self.physics
+		ns = physics.NUM_STATE_VARS
 		Params = self.Params
 
 		InterpolateFlux = Params["InterpolateFlux"]
@@ -743,7 +743,7 @@ class ADERDG(base.SolverBase):
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xnode, t, None)
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros_like(Sq)
-			Sq = EqnSet.SourceState(nb, x_ader, t, Up, Sq)
+			Sq = physics.SourceState(nb, x_ader, t, Up, Sq)
 			dg_tools.interpolate_to_nodes(Sq, S)
 		else:
 
@@ -762,7 +762,7 @@ class ADERDG(base.SolverBase):
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
 		
 			Sq = np.zeros([t.shape[0],ns])
-			Sq = EqnSet.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]		
+			Sq = physics.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]		
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Sq, S)
 
 		return S*dt/2.0

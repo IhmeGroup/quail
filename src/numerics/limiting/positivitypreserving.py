@@ -70,7 +70,7 @@ class PositivityPreserving(base.LimiterBase):
 		OUTPUTS:
 			U: solution array
 		'''
-		physics = solver.EqnSet
+		physics = solver.physics
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
 
@@ -183,7 +183,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		OUTPUTS:
 			U: solution array
 		'''
-		physics = solver.EqnSet
+		physics = solver.physics
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
 
@@ -310,7 +310,7 @@ class ScalarPositivityPreserving(base.LimiterBase):
 		OUTPUTS:
 			U: solution array
 		'''
-		physics = solver.EqnSet
+		physics = solver.physics
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
 

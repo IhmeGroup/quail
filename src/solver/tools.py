@@ -60,17 +60,9 @@ def calculate_dRdU(elem_ops, elem, jac):
 	ns = jac.shape[-1]
 	nb = basis_val.shape[1]
 	nq = quad_wts.shape[0]
-	# ER = np.zeros([nb,nb,ns])
-	# Calculate source term integral
-	# for ir in range(ns):
-	# 	for jn in range(nb):
-	# 		for iq in range(nq):
-	# 			Phi = basis_val[iq,jn]
-				# ER[jn,iq,ir] += Phi*jac[iq,ir,ir]*quad_wts[iq]*djac[iq]
-	# code.interact(local=locals())
+
 	test1 = quad_wts*djac
 	test = np.einsum('ijk,il->ijk',jac,test1)
-	# ER = np.matmul(basis_val.transpose(),test)
 	ER = np.einsum('bq,qts -> bts',basis_val.transpose(),test)
 
 	return ER
@@ -83,122 +75,23 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 
 	INPUTS:
 		mesh: mesh object
-		solver: type of solver (i.e. DG, ADER-DG, etc...)
+		solver: solver object (i.e. DG, ADER-DG, etc...)
 		dt: time step
 		R: residual array
 
 	OUTPUTS:
 		U: solution array
 	'''
-	EqnSet = solver.EqnSet
+	physics = solver.physics
 	DataSet = solver.DataSet
 	iMM_elems = solver.elem_operators.iMM_elems
-
-	# if MMinv is None:
-	# 	MMinv = GetInvMassMatrix(mesh, 0, 0, EqnSet.orders[0])
-
-	# try:
-	# 	MMinv_all = DataSet.MMinv_all
-	# except AttributeError:
-	# 	# not found; need to compute
-	# 	MMinv_all = basis_tools.get_inv_mass_matrices(mesh, EqnSet, solver.basis)
-	# 	DataSet.MMinv_all = MMinv_all
 
 	if dt is None:
 		c = 1.
 	else:
 		c = dt
-	# if not U:
-	# 	U = copy.deepcopy(R)
-
-	# for elem in range(mesh.nElem):
-	# 	Ue = U[elem]
-	# 	Ue[:,:] = c*np.matmul(iMM_elems[elem], R[elem])
-
-	# U[:,:,:] = c*np.einsum('ijk,ikl->ijl', MMinv_all, R)
 
 	return c*np.einsum('ijk,ikl->ijl', iMM_elems, R)
-
-
-# def project_state_to_new_basis(solver, mesh, EqnSet, basis_old, order_old):
-# 	''' Old state '''
-# 	U = EqnSet.U
-
-# 	basis = copy.copy(basis_old)
-# 	''' Allocate new state '''
-# 	# New basis, Order information stored in EqnSet
-# 	# ArrayDims = [[mesh.nElems[egrp],Basis.order_to_num_basis_coeff(EqnSet.Bases[egrp], EqnSet.orders[egrp]), EqnSet.NUM_STATE_VARS] \
-# 	# 				for egrp in range(mesh.nElemGroup)]
-# 	# U_new = Data.ArrayList(nArray=mesh.nElemGroup, ArrayDims=ArrayDims)
-# 	U_new = np.zeros([mesh.nElem, basis.get_num_basis_coeff(EqnSet.order), EqnSet.NUM_STATE_VARS])
-
-# 	''' Loop through elements '''
-# 	order = EqnSet.order
-# 	basis.order = order
-# 	basis.nb = basis.get_num_basis_coeff(EqnSet.order)
-
-# 	## New mass matrix inverse (in reference space)
-# 	iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order)
-# 	## Projection matrix
-# 	PM = basis_tools.get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM)
-# 	for elem in range(mesh.nElem):
-# 		Uc = U[elem]
-# 		Uc_new = U_new[elem]
-
-# 		# New coefficients
-# 		Uc_new[:] = np.matmul(PM, Uc)
-
-# 	''' Store in EqnSet '''
-# 	delattr(EqnSet, "U")
-# 	EqnSet.U = U_new
-
-
-# def eval_IC_at_pts(mesh, EqnSet, basis, eval_pts, time=0., fcn_data=None, order_old=-1, U_old=None):
-# 	if fcn_data is None and U_old is None:
-# 		raise ValueError
-# 	elif fcn_data is not None and U_old is not None:
-# 		raise ValueError
-
-# 	ns = EqnSet.NUM_STATE_VARS
-
-# 	if fcn_data is not None:
-# 		order = 2*np.amax([EqnSet.order, 1])
-# 		order = EqnSet.QuadOrder(order)
-# 	else:
-# 		order = 2*np.amax([EqnSet.order, order_old])
-
-# 	QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, order)
-
-# 	quadData = QuadData(mesh, mesh.gbasis, general.EntityType.Element, QuadOrder)
-
-# 	quad_pts = quadData.quad_pts
-# 	quad_wts = quadData.quad_wts
-
-# 	basis.get_basis_val_grads(quad_pts, get_val=True)
-
-
-
-
-
-# 	if basis.basis_val.shape[0] != eval_pts.shape[0]:
-# 		basis.get_basis_val_grads(eval_pts, get_val=True)
-
-# 	for elem in range(mesh.nElem):
-
-# 		if fcn_data is not None:
-# 			xphys, _ = ref_to_phys(mesh, elem, None, quad_pts)
-# 			f = EqnSet.CallFunction(fcn_data, x=xphys, t=time)
-# 			f.shape = quad_wts.shape[0],ns
-# 		else:
-# 			f = 
-
-
-# 		djac, _, _ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
-
-# 		rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
-
-# 		U[elem,:,:] = np.matmul(iMM_elems[elem],rhs)
-
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):

@@ -80,7 +80,7 @@ def get_dt_from_cfl(stepper, solver):
 	mesh = solver.mesh
 	dim = mesh.Dim
 
-	physics = solver.EqnSet
+	physics = solver.physics
 	Up = physics.U
 
 	time = solver.Time

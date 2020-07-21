@@ -38,11 +38,11 @@ class ElemOperators(object):
 		self.iMM_elems = np.zeros(0)
 		self.vol_elems = None
 
-	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
+	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 
-		# QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, EqnSet, None)
+		# QuadOrder, _ = get_gaussian_quadrature_elem(mesh, mesh.gbasis, order, physics, None)
 		gbasis = mesh.gbasis
-		quad_order = gbasis.get_quadrature_order(mesh, order, physics = EqnSet)
+		quad_order = gbasis.get_quadrature_order(mesh, order, physics = physics)
 		self.quad_pts, self.quad_wts = basis.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
@@ -89,22 +89,22 @@ class ElemOperators(object):
 		_, ElemVols = mesh_tools.element_volumes(mesh)
 		self.vol_elems = ElemVols
 
-	def alloc_other_arrays(self, EqnSet, basis, order):
+	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
-		ns = EqnSet.NUM_STATE_VARS
-		dim = EqnSet.dim
+		ns = physics.NUM_STATE_VARS
+		dim = physics.dim
 
 		self.Uq = np.zeros([nq, ns]) 
 		self.Fq = np.zeros([nq, ns, dim])
 		self.Sq = np.zeros([nq, ns])  
 
-	def compute_operators(self, mesh, EqnSet, basis, order):
-		self.get_gaussian_quadrature(mesh, EqnSet, basis, order)
+	def compute_operators(self, mesh, physics, basis, order):
+		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
-		self.alloc_other_arrays(EqnSet, basis, order)
-		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh, EqnSet, basis)
+		self.alloc_other_arrays(physics, basis, order)
+		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh, physics, basis)
 
 
 class IFaceOperators(ElemOperators):
@@ -118,10 +118,10 @@ class IFaceOperators(ElemOperators):
 		self.UqR = None 
 		self.Fq = None 
 
-	def get_gaussian_quadrature(self, mesh, EqnSet, basis, order):
+	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 
 		gbasis = mesh.gbasis
-		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh,order,physics=EqnSet)
+		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh,order,physics=physics)
 		self.quad_pts, self.quad_wts = basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
@@ -158,19 +158,19 @@ class IFaceOperators(ElemOperators):
 			self.normals_ifaces[i] = nvec
 			i += 1
 
-	def alloc_other_arrays(self, EqnSet, basis, order):
+	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		ns = EqnSet.NUM_STATE_VARS
+		ns = physics.NUM_STATE_VARS
 
 		self.UqL = np.zeros([nq, ns])
 		self.UqR = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
-	def compute_operators(self, mesh, EqnSet, basis, order):
-		self.get_gaussian_quadrature(mesh, EqnSet, basis, order)
+	def compute_operators(self, mesh, physics, basis, order):
+		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
-		self.alloc_other_arrays(EqnSet, basis, order)
+		self.alloc_other_arrays(physics, basis, order)
 
 
 class BFaceOperators(IFaceOperators):
@@ -233,19 +233,19 @@ class BFaceOperators(IFaceOperators):
 				j += 1
 			i += 1
 
-	def alloc_other_arrays(self, EqnSet, basis, order):
+	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
-		ns = EqnSet.NUM_STATE_VARS
+		ns = physics.NUM_STATE_VARS
 
 		self.UqI = np.zeros([nq, ns])
 		self.UqB = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
-	def compute_operators(self, mesh, EqnSet, basis, order):
-		self.get_gaussian_quadrature(mesh, EqnSet, basis, order)
+	def compute_operators(self, mesh, physics, basis, order):
+		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
-		self.alloc_other_arrays(EqnSet, basis, order)
+		self.alloc_other_arrays(physics, basis, order)
 
 
 class DG(base.SolverBase):
@@ -256,7 +256,7 @@ class DG(base.SolverBase):
 
 	ATTRIBUTES:
 		Params: list of parameters for the solver
-		EqnSet: solver object (current implementation supports Scalar and Euler equations)
+		physics: solver object (current implementation supports Scalar and Euler equations)
 		mesh: mesh object
 		DataSet: location to store generic data
 		Time: current time in the simulation
@@ -265,15 +265,15 @@ class DG(base.SolverBase):
 
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
-		EqnSet = self.EqnSet
+		physics = self.physics
 		basis = self.basis
 
 		self.elem_operators = ElemOperators()
-		self.elem_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
+		self.elem_operators.compute_operators(mesh, physics, basis, physics.order)
 		self.iface_operators = IFaceOperators()
-		self.iface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
+		self.iface_operators.compute_operators(mesh, physics, basis, physics.order)
 		self.bface_operators = BFaceOperators()
-		self.bface_operators.compute_operators(mesh, EqnSet, basis, EqnSet.order)
+		self.bface_operators.compute_operators(mesh, physics, basis, physics.order)
 
 	def calculate_residual_elem(self, elem, Up, ER):
 		'''
@@ -288,9 +288,9 @@ class DG(base.SolverBase):
 		OUTPUTS:
 			ER: calculated residiual array (for volume integral of specified element)
 		'''
-		EqnSet = self.EqnSet
-		ns = EqnSet.NUM_STATE_VARS
-		dim = EqnSet.dim
+		physics = self.physics
+		ns = physics.NUM_STATE_VARS
+		dim = physics.dim
 		elem_ops = self.elem_operators
 		basis_val = elem_ops.basis_val
 		quad_wts = elem_ops.quad_wts
@@ -308,7 +308,7 @@ class DG(base.SolverBase):
 			'''
 			Evaluate the inviscid flux integral
 			'''
-			Fq = EqnSet.ConvFluxInterior(Uq) # [nq, ns, dim]
+			Fq = physics.ConvFluxInterior(Uq) # [nq, ns, dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
 
 		if self.Params["SourceSwitch"] == True:
@@ -317,7 +317,7 @@ class DG(base.SolverBase):
 			'''
 			Sq = elem_ops.Sq
 			Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
-			Sq = EqnSet.SourceState(nq, x, self.Time, Uq, Sq) # [nq, ns]
+			Sq = physics.SourceState(nq, x, self.Time, Uq, Sq) # [nq, ns]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
 
@@ -342,7 +342,7 @@ class DG(base.SolverBase):
 			RR: calculated residual array (right neighboring element contribution)
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		IFace = mesh.IFaces[iiface]
 		elemL = IFace.ElemL
 		elemR = IFace.ElemR
@@ -373,7 +373,7 @@ class DG(base.SolverBase):
 		
 		if self.Params["ConvFluxSwitch"] == True:
 
-			Fq = EqnSet.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
+			Fq = physics.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
 
 			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_valL, quad_wts, Fq)
 			RR += solver_tools.calculate_inviscid_flux_boundary_integral(basis_valR, quad_wts, Fq)
@@ -400,7 +400,7 @@ class DG(base.SolverBase):
 			R: calculated residual array from boundary face
 		'''
 		mesh = self.mesh
-		EqnSet = self.EqnSet
+		physics = self.physics
 		# BFG = mesh.BFaceGroups[ibfgrp]
 		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
@@ -428,11 +428,11 @@ class DG(base.SolverBase):
 		x = x_bfgroups[ibfgrp][ibface]
 
 		# Get boundary state
-		BC = EqnSet.BCs[BFG.name]
+		BC = physics.BCs[BFG.name]
 
 		if self.Params["ConvFluxSwitch"] == True:
 
-			Fq = BC.get_boundary_flux(EqnSet, x, self.Time, normals, UqI)
+			Fq = BC.get_boundary_flux(physics, x, self.Time, normals, UqI)
 
 			R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq)
 

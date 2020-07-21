@@ -1,3 +1,15 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : numerics/timestepping/stepper.py
+#
+#       Contains class definitions for timestepping methods available 
+#		in the DG Python framework.
+#
+#       Authors: Eric Ching and Brett Bornhoft
+#
+#       Created: January 2020
+#      
+# ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import code
 import numpy as np 
@@ -14,25 +26,109 @@ import solver.tools as solver_tools
 
 
 class StepperBase(ABC):
+	'''
+	This is an abstract base class used to represent time stepping schemes
+	in the DG Python framework. The current build supports the following time
+	schemes:
+
+		Explicit Schemes
+		-----------------
+		- Forward Euler (FE)
+		- 4th-order Runge Kutta (RK4)
+		- Low storage 4th-order Runge Kutta (LSRK4)
+		- Strong-stability preserving 3rd-order Runge Kutta (SSPRK3)
+		- Arbitrary DERivatives in space and time (ADER) 
+			-> used in tandem with ADERDG solver
+		
+		Operator Splitting Type Schemes
+		-------------------------------
+		- Strang Splitting (Strang)
+		- Simpler Splitting (Simpler)
+
+		ODE Solvers for Splitting Schemes
+		---------------------------------
+		- Backward Difference (BDF1)
+		- Trapezoidal Scheme (Trapezoidal)
+
+
+	Attributes
+	-----------
+	R : numpy array of floats (shape : [nelem, nb, ns])
+		solution's residaul array
+	dt : float
+		time-step for the solution
+	numtimesteps : int
+		number of time steps for the given solution's endtime
+	get_time_step : method
+		method to obtain dt given input decks logic (CFL-based vs # of 
+		timesteps, etc...)
+	balance_const : numpy array of floats (shaped like R)
+		balancing constant array used only with the Simpler splitting scheme
+	
+	Abstract Methods:
+	------------------
+	TakeTimeStep
+		method that takes a given time step for the solver depending on the 
+		selected time-stepping scheme
+	'''
 	def __init__(self, U):
+		'''
+		Attributes
+		-----------
+		R : numpy array of floats (shape : [nelem, nb, ns])
+			solution's residaul array
+		dt : float
+			time-step for the solution
+		numtimesteps : int
+			number of time steps for the given solution's endtime
+		get_time_step : method
+			method to obtain dt given input decks logic (CFL-based vs # of 
+			timesteps, etc...)
+		balance_const : numpy array of floats (shaped like R)
+			balancing constant array used only with the Simpler splitting 
+			scheme
+		'''
 		self.R = np.zeros_like(U)
 		self.dt = 0.
 		self.numtimesteps = 0
 		self.get_time_step = None
-		self.balance_const = None
+		self.balance_const = None # kept as None unless set by Simpler scheme
+
 	def __repr__(self):
-		return '{self.__class__.__name__}(TimeStep={self.dt})'.format(self=self)
+		return '{self.__class__.__name__}(TimeStep={self.dt})'.format( \
+			self=self)
+	
 	@abstractmethod
 	def TakeTimeStep(self, solver):
+		'''
+		Method: TakeTimeStep
+		---------------------
+		Takes a time step using the specified time-stepping scheme for the
+		solution.
+
+		INPUTS:
+		    solver: solver object (i.e. DG, ADERDG, etc...)
+
+		OUTPUTS: 
+		    R : Updated residual vector [nelem, nb, ns]
+		    U : Updates the solution vector [nelem, nb, ns]
+		'''
 		pass
 
-class FE(StepperBase):
 
+class FE(StepperBase):
+	'''
+	Forward Euler (FE) method inherits attributes from StepperBase. See 
+	StepperBase for detailed comments of methods and attributes.
+
+	Additional methods and attributes are commented below.
+	''' 
 	def TakeTimeStep(self, solver):
-		EqnSet = solver.EqnSet
+
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh = solver.mesh
-		U = EqnSet.U
+		U = physics.U
 
 		R = self.R 
 		R = solver.calculate_residual(U, R)
@@ -47,10 +143,10 @@ class FE(StepperBase):
 class RK4(StepperBase):
 
 	def TakeTimeStep(self, solver):
-		EqnSet = solver.EqnSet
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh = solver.mesh
-		U = EqnSet.U
+		U = physics.U
 
 		R = self.R
 
@@ -108,10 +204,10 @@ class LSRK4(StepperBase):
 
 	def TakeTimeStep(self, solver):
 
-		EqnSet = solver.EqnSet
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh = solver.mesh
-		U = EqnSet.U
+		U = physics.U
 
 		R = self.R
 		dU = self.dU
@@ -146,10 +242,10 @@ class SSPRK3(StepperBase):
 		self.dU = np.zeros_like(U)
 
 	def TakeTimeStep(self, solver):
-		EqnSet = solver.EqnSet
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh = solver.mesh
-		U = EqnSet.U
+		U = physics.U
 
 		R = self.R
 		dU = self.dU
@@ -169,11 +265,11 @@ class SSPRK3(StepperBase):
 class ADER(StepperBase):
 	
 	def TakeTimeStep(self, solver):
-		EqnSet = solver.EqnSet
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh = solver.mesh
-		W = EqnSet.U
-		Up = EqnSet.Up
+		W = physics.U
+		Up = physics.Up
 
 		R = self.R
 
@@ -205,10 +301,10 @@ class Strang(StepperBase, ode.ODESolvers):
 
 	def TakeTimeStep(self, solver):
 
-		EqnSet = solver.EqnSet
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh  = solver.mesh
-		U = EqnSet.U
+		U = physics.U
 
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
@@ -236,10 +332,10 @@ class Simpler(Strang):
 
 	def TakeTimeStep(self, solver):
 
-		EqnSet = solver.EqnSet
+		physics = solver.physics
 		DataSet = solver.DataSet
 		mesh  = solver.mesh
-		U = EqnSet.U
+		U = physics.U
 
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
