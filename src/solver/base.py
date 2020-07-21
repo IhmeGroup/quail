@@ -14,6 +14,8 @@ import meshing.meshbase as mesh_defs
 
 import numerics.basis.tools as basis_tools
 
+import numerics.helpers.helpers as helpers
+
 import numerics.limiting.tools as limiter_tools
 
 import numerics.timestepping.tools as stepper_tools
@@ -24,8 +26,11 @@ import processing.post as post_defs
 import processing.readwritedatafiles as ReadWriteDataFiles
 
 import solver.tools as solver_tools
+
+
 global echeck
 echeck = -1
+
 
 class SolverBase(ABC):
 	def __init__(self, Params, EqnSet, mesh):
@@ -186,7 +191,8 @@ class SolverBase(ABC):
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
 		for elem in range(mesh.nElem):
-			Up_old = np.matmul(basis_old.basis_val, U_old[elem,:,:])
+			# Up_old = np.matmul(basis_old.basis_val, U_old[elem,:,:])
+			Up_old = helpers.evaluate_state(U_old[elem,:,:], basis_old.basis_val)
 
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])

@@ -8,6 +8,9 @@ import numpy as np
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
+import numerics.helpers.helpers as helpers
+
+
 def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['DejaVu Sans']},
 	linewidth=1.5, markersize=4.0, axis=None, cmap='viridis', EqualAR=False):
 	# font={'family':'serif', 'serif': ['computer modern roman']}
@@ -505,7 +508,8 @@ def get_numerical_solution(physics, U, x, basis, var_name, already_interpolated=
 	else:
 		var_numer = np.zeros([x.shape[0], x.shape[1], 1])
 		for elem in range(x.shape[0]):
-			Up = np.matmul(basis.basis_val, U[elem])
+			# Up = np.matmul(basis.basis_val, U[elem])
+			Up = helpers.evaluate_state(U[elem], basis.basis_val)
 			var_numer[elem,:,:] = physics.ComputeScalars(var_name, Up)
 
 	return var_numer

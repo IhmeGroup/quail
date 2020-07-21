@@ -463,7 +463,7 @@ class ADERDG(base.SolverBase):
 		nq_st = quad_wts_st.shape[0]
 
 		# interpolate state and gradient at quad points
-		Uq = np.matmul(basis_val_st, Up)
+		Uq = np.matmul(basis_val_st, Up) # Brett
 
 		if self.Params["ConvFluxSwitch"] == True:
 			'''
@@ -547,8 +547,8 @@ class ADERDG(base.SolverBase):
 		basis_valL_st = faces_to_basisL_st[faceL_st]
 		basis_valR_st = faces_to_basisR_st[faceR_st]
 
-		UqL = np.matmul(basis_valL_st, UpL)
-		UqR = np.matmul(basis_valR_st, UpR)
+		UqL = np.matmul(basis_valL_st, UpL) # Brett
+		UqR = np.matmul(basis_valR_st, UpR) # Brett
 
 		normals_ifaces = iface_ops.normals_ifaces
 		normals = normals_ifaces[iiface]
@@ -624,7 +624,7 @@ class ADERDG(base.SolverBase):
 		t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xref_st, t, None)
 
 		# interpolate state and gradient at quad points
-		UqI = np.matmul(basis_val_st, U)
+		UqI = np.matmul(basis_val_st, U) # Brett
 
 		normals = normals_bfgroups[ibfgrp][ibface]
 		x = x_bfgroups[ibfgrp][ibface]
@@ -692,7 +692,7 @@ class ADERDG(base.SolverBase):
 			nq = quad_wts.shape[0]
 			iMM = ader_ops.iMM_elems[elem]
 
-			Uq = np.matmul(basis_val_st,Up)
+			Uq = np.matmul(basis_val_st,Up) # Brett
 
 			Fq = EqnSet.ConvFluxInterior(Uq)
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
@@ -756,7 +756,7 @@ class ADERDG(base.SolverBase):
 			nq = quad_wts.shape[0]
 			iMM = ader_ops.iMM_elems[elem]
 
-			Uq = np.matmul(basis_val_st,Up)
+			Uq = np.matmul(basis_val_st,Up) # Brett
 
 			t = np.zeros([nq_st,dim])
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)

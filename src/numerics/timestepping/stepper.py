@@ -3,13 +3,15 @@ import code
 import numpy as np 
 from scipy.optimize import fsolve, root
 
-from data import ArrayList
 from general import StepperType, ODESolverType
-from solver.tools import mult_inv_mass_matrix
+
 import numerics.basis.tools as basis_tools
+import numerics.helpers.helpers as helpers
 import numerics.timestepping.tools as stepper_tools
 import numerics.timestepping.ode as ode
+
 import solver.tools as solver_tools
+
 
 class StepperBase(ABC):
 	def __init__(self, U):
@@ -34,7 +36,7 @@ class FE(StepperBase):
 
 		R = self.R 
 		R = solver.calculate_residual(U, R)
-		dU = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		U += dU
 
 		solver.apply_limiter(U)
@@ -54,27 +56,27 @@ class RK4(StepperBase):
 
 		# first stage
 		R = solver.calculate_residual(U, R)
-		dU1 = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		dU1 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU1
 		solver.apply_limiter(Utemp)
 
 		# second stage
 		solver.Time += self.dt/2.
 		R = solver.calculate_residual(Utemp, R)
-		dU2 = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU2
 		solver.apply_limiter(Utemp)
 
 		# third stage
 		R = solver.calculate_residual(Utemp, R)
-		dU3 = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		dU3 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + dU3
 		solver.apply_limiter(Utemp)
 
 		# fourth stage
 		solver.Time += self.dt/2.
 		R = solver.calculate_residual(Utemp, R)
-		dU4 = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
 		U += dU
 		solver.apply_limiter(U)
@@ -118,7 +120,7 @@ class LSRK4(StepperBase):
 		for INTRK in range(self.nstages):
 			solver.Time = Time + self.rk4c[INTRK]*self.dt
 			R = solver.calculate_residual(U, R)
-			dUtemp = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 			dU *= self.rk4a[INTRK]
 			dU += dUtemp
 			U += self.rk4b[INTRK]*dU
@@ -156,7 +158,7 @@ class SSPRK3(StepperBase):
 		for INTRK in range(self.nstages):
 			solver.Time = Time + self.dt
 			R = solver.calculate_residual(U, R)
-			dUtemp = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 			dU *= self.ssprk3a[INTRK]
 			dU += dUtemp
 			U += self.ssprk3b[INTRK]*dU
@@ -181,7 +183,7 @@ class ADER(StepperBase):
 		# Correction Step
 		R = solver.calculate_residual(Up, R)
 
-		dU = mult_inv_mass_matrix(mesh, solver, self.dt/2., R)
+		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt/2., R)
 
 		W += dU
 		solver.apply_limiter(W)
@@ -213,17 +215,17 @@ class Strang(StepperBase, ode.ODESolvers):
 		implicit = self.implicit
 		implicit.dt = self.dt
 
-		#First: take the half-step for the inviscid flux only
+		# First: take the half-step for the inviscid flux only
 		solver.Params["SourceSwitch"] = False
 		R1 = explicit.TakeTimeStep(solver)
 
-		#Second: take the implicit full step for the source term.
+		# Second: take the implicit full step for the source term.
 		solver.Params["SourceSwitch"] = True
 		solver.Params["ConvFluxSwitch"] = False
 
 		R2 = implicit.TakeTimeStep(solver)
 
-		#Third: take the second half-step for the inviscid flux only.
+		# Third: take the second half-step for the inviscid flux only.
 		solver.Params["SourceSwitch"] = False
 		solver.Params["ConvFluxSwitch"] = True
 		R3 = explicit.TakeTimeStep(solver)
@@ -251,12 +253,12 @@ class Simpler(Strang):
 		balance_const = -1.*solver.calculate_residual(U, R)
 		self.balance_const = -1.*balance_const
 
-		#Second: take the implicit full step for the source term.
+		# Second: take the implicit full step for the source term.
 		solver.Params["SourceSwitch"] = True
 		solver.Params["ConvFluxSwitch"] = False
 		R2 = implicit.TakeTimeStep(solver)
 
-		#Third: take the second half-step for the inviscid flux only.
+		# Third: take the second half-step for the inviscid flux only.
 		solver.Params["SourceSwitch"] = False
 		solver.Params["ConvFluxSwitch"] = True
 		self.balance_const = balance_const

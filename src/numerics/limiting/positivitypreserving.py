@@ -7,6 +7,7 @@ import general
 
 import meshing.tools as mesh_tools
 
+import numerics.helpers.helpers as helpers
 import numerics.limiting.base as base
 
 
@@ -42,10 +43,13 @@ class PositivityPreserving(base.LimiterBase):
 		_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
 
 		# basis values in element interior and on faces
-		basis_val_faces = iface_ops.faces_to_basisL.copy()
-		bshape = basis_val_faces.shape
-		basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-		self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
+		if not solver.basis.skip_interp:
+			basis_val_faces = iface_ops.faces_to_basisL.copy()
+			bshape = basis_val_faces.shape
+			basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
+			self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
+		else:
+			self.basis_val_elem_faces = elem_ops.basis_val
 
 		# Jacobian determinant
 		self.djac_elems = elem_ops.djac_elems
@@ -73,13 +77,17 @@ class PositivityPreserving(base.LimiterBase):
 		djac = self.djac_elems[elem]
 
 		# interpolate state and gradient at quad points over element and on faces
-		u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+		# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+		u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+				skip_interp=solver.basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
 		u_elem = u_elem_faces[:nq_elem, :]
 
 		# Average value of state
-		vol = self.elem_vols[elem]
-		u_bar = np.matmul(u_elem.transpose(), self.quad_wts_elem*djac).T/vol
+		# vol = self.elem_vols[elem]
+		# u_bar = np.matmul(u_elem.transpose(), self.quad_wts_elem*djac).T/vol
+		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac, 
+				self.elem_vols[elem])
 
 		# Density and pressure
 		rho_bar = physics.ComputeScalars(self.scalar1, u_bar)
@@ -102,7 +110,9 @@ class PositivityPreserving(base.LimiterBase):
 			U[:,irho] = theta1*U[:,irho] + (1. - theta1)*rho_bar
 
 			# Intermediate limited solution
-			u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+					skip_interp=solver.basis.skip_interp)
 
 		''' Limit pressure '''
 		p_elem_faces = physics.ComputeScalars(self.scalar2, u_elem_faces)
@@ -118,7 +128,8 @@ class PositivityPreserving(base.LimiterBase):
 
 		return U
 
-class PositivityPreservingChem(base.LimiterBase):
+
+class PositivityPreservingChem(PositivityPreserving):
 	'''
     Class: PPLimiter
     ------------------
@@ -134,30 +145,30 @@ class PositivityPreservingChem(base.LimiterBase):
 		Initializes PPLimiter object
 		'''
 		super().__init__(physics_type)
-		self.scalar1 = "Density"
-		self.scalar2 = "Pressure"
+		# self.scalar1 = "Density"
+		# self.scalar2 = "Pressure"
 		self.scalar3 = "Mixture"
-		self.elem_vols = np.zeros(0)
-		self.basis_val_elem_faces = None
-		self.quad_wts_elem = np.zeros(0)
-		self.djac_elems = np.zeros(0)
+		# self.elem_vols = np.zeros(0)
+		# self.basis_val_elem_faces = None
+		# self.quad_wts_elem = np.zeros(0)
+		# self.djac_elems = np.zeros(0)
 
-	def precompute_operators(self, solver):
-		elem_ops = solver.elem_operators
-		iface_ops = solver.iface_operators
-		_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
+	# def precompute_operators(self, solver):
+	# 	elem_ops = solver.elem_operators
+	# 	iface_ops = solver.iface_operators
+	# 	_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
 
-		# basis values in element interior and on faces
-		basis_val_faces = iface_ops.faces_to_basisL.copy()
-		bshape = basis_val_faces.shape
-		basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-		self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
+	# 	# basis values in element interior and on faces
+	# 	basis_val_faces = iface_ops.faces_to_basisL.copy()
+	# 	bshape = basis_val_faces.shape
+	# 	basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
+	# 	self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
 
-		# Jacobian determinant
-		self.djac_elems = elem_ops.djac_elems
+	# 	# Jacobian determinant
+	# 	self.djac_elems = elem_ops.djac_elems
 
-		# Element quadrature weights
-		self.quad_wts_elem = elem_ops.quad_wts
+	# 	# Element quadrature weights
+	# 	self.quad_wts_elem = elem_ops.quad_wts
 
 	def limit_element(self, solver, elem, U):
 		'''
@@ -179,13 +190,17 @@ class PositivityPreservingChem(base.LimiterBase):
 		djac = self.djac_elems[elem]
 
 		# interpolate state and gradient at quad points over element and on faces
-		u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+		# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+		u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+				skip_interp=solver.basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
 		u_elem = u_elem_faces[:nq_elem,:]
 
 		# Average value of state
 		vol = self.elem_vols[elem]
-		u_bar = np.matmul(u_elem.transpose(), self.quad_wts_elem*djac).T/vol
+		# u_bar = np.matmul(u_elem.transpose(), self.quad_wts_elem*djac).T/vol
+		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac, 
+				self.elem_vols[elem])
 
 		# Density and pressure
 		rho_bar = physics.ComputeScalars(self.scalar1, u_bar)
@@ -209,7 +224,9 @@ class PositivityPreservingChem(base.LimiterBase):
 			U[:,irho] = theta1*U[:,irho] + (1. - theta1)*rho_bar
 
 			# Intermediate limited solution
-			u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+					skip_interp=solver.basis.skip_interp)
 
 		''' Limit mass fraction '''
 		rhoY_elem_faces = physics.ComputeScalars(self.scalar3, u_elem_faces)
@@ -222,7 +239,9 @@ class PositivityPreservingChem(base.LimiterBase):
 			U[:,irhoY] = theta2*U[:,irhoY] + (1. - theta2)*rhoY_bar
 
 			# Intermediate limited solution
-			u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
+			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+					skip_interp=solver.basis.skip_interp)
 		# code.interact(local=locals())
 
 

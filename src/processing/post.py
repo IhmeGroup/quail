@@ -11,6 +11,7 @@ import meshing.meshbase as mesh_defs
 import meshing.tools as MeshTools
 
 import numerics.basis.tools as basis_tools
+import numerics.helpers.helpers as helpers
 
 import processing.plot as plot_defs
 
@@ -66,10 +67,11 @@ def L2_error(mesh, EqnSet, solver, VariableName, PrintError=True, NormalizeByVol
 		u_exact = EqnSet.CallFunction(EqnSet.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points
-		u = np.zeros([nq, sr])
-		for ir in range(sr):
-			u[:,ir] = np.matmul(basis.basis_val, U_[:,ir])
-		u[:] = np.matmul(basis.basis_val, U_)
+		# u = np.zeros([nq, sr])
+		# for ir in range(sr):
+		# 	u[:,ir] = np.matmul(basis.basis_val, U_[:,ir])
+		# u[:] = np.matmul(basis.basis_val, U_)
+		u = helpers.evaluate_state(U_, basis.basis_val)
 
 		# Computed requested quantity
 		s = EqnSet.ComputeScalars(VariableName, u)
@@ -150,7 +152,8 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 		basis_val = faces_to_basis[face]
 
 		# interpolate state and gradient at quad points
-		Uq = np.matmul(basis_val, physics.U[elem])
+		# Uq = np.matmul(basis_val, physics.U[elem])
+		Uq = helpers.evaluate_state(physics.U[elem], basis_val)
 
 		# Get requested variable
 		varq = physics.ComputeScalars(var_name, Uq) # [nq, 1]

@@ -10,11 +10,15 @@ import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
 import numerics.basis.tools as basis_tools
+import numerics.helpers.helpers as helpers
 
 import solver.base as base
 import solver.tools as solver_tools
+
+
 global echeck
 echeck = -1
+
 
 class ElemOperators(object):
 	def __init__(self):
@@ -296,7 +300,9 @@ class DG(base.SolverBase):
 		x = x_elems[elem]
 
 		# interpolate state and gradient at quad points
-		Uq = np.matmul(basis_val, Up)
+		# Uq = np.matmul(basis_val, Up)
+		Uq = helpers.evaluate_state(Up, basis_val, skip_interp=self.basis.skip_interp)
+
 		
 		if self.Params["ConvFluxSwitch"] == True:
 			'''
@@ -358,8 +364,10 @@ class DG(base.SolverBase):
 		basis_valR = faces_to_basisR[faceR]
 
 		# interpolate state and gradient at quad points
-		UqL = np.matmul(basis_valL, UpL)
-		UqR = np.matmul(basis_valR, UpR)
+		# UqL = np.matmul(basis_valL, UpL)
+		# UqR = np.matmul(basis_valR, UpR)
+		UqL = helpers.evaluate_state(UpL, basis_valL)
+		UqR = helpers.evaluate_state(UpR, basis_valR)
 
 		normals = normals_ifaces[iiface]
 		
@@ -413,7 +421,8 @@ class DG(base.SolverBase):
 		basis_val = faces_to_basis[face]
 
 		# interpolate state and gradient at quad points
-		UqI = np.matmul(basis_val, U)
+		# UqI = np.matmul(basis_val, U)
+		UqI = helpers.evaluate_state(U, basis_val)
 
 		normals = normals_bfgroups[ibfgrp][ibface]
 		x = x_bfgroups[ibfgrp][ibface]

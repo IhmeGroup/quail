@@ -645,10 +645,12 @@ class BasisBase(ABC):
             src/numerics/basis/tools.py]
         '''
         self.order = order
+        self.nb = 0
         self.basis_val = np.zeros(0)
         self.basis_ref_grad = np.zeros(0)
         self.basis_phys_grad = np.zeros(0)
-        self.nb = 0
+        self.skip_interp = False
+        self.quadrature_type = -1
         self.get_1d_nodes = basis_tools.set_1D_node_calc("Equidistant")
         self.calculate_normals = None
 

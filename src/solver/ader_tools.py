@@ -10,6 +10,7 @@ import general
 import meshing.tools as mesh_tools
 
 import numerics.basis.basis as basis_defs
+import numerics.helpers.helpers as helpers
 
 
 # Update default solver params.
@@ -150,10 +151,12 @@ def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 
 	vol_elems = elem_ops.vol_elems
 	W_bar = np.zeros([1,ns])
-	Wq = np.matmul(basis_val, W)
+	# Wq = np.matmul(basis_val, W)
+	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
 	vol = vol_elems[elem]
 
-	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 	U_pred[:] = W_bar
 
 	srcpoly = solver.source_coefficients(elem, dt, order, basis_st, U_pred)
@@ -218,11 +221,13 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 	K = ader_ops.K
 
 	vol_elems = elem_ops.vol_elems
-	W_bar = np.zeros([1,ns])
-	Wq = np.matmul(basis_val, W)
+	# W_bar = np.zeros([1,ns])
+	# Wq = np.matmul(basis_val, W)
+	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
 	vol = vol_elems[elem]
 
-	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 
 	# def F(u):
 	# 	S = 0.
@@ -303,10 +308,12 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	K = ader_ops.K
 	vol_elems = elem_ops.vol_elems
 
-	W_bar = np.zeros([1,ns])
-	Wq = np.matmul(basis_val, W)
+	# W_bar = np.zeros([1,ns])
+	# Wq = np.matmul(basis_val, W)
+	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
 	vol = vol_elems[elem]
-	W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
+	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 
 	jac_q = np.zeros([1,ns,ns])
 	# for Source in Sources:
