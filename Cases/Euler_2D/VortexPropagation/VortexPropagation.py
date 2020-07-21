@@ -53,40 +53,40 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 
 ### Physics
-EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
-EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
-EqnSet.set_conv_num_flux("LaxFriedrichs")
+physics = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
+physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
+physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions
-EqnSet.set_IC(IC_type="IsentropicVortex")
+physics.set_IC(IC_type="IsentropicVortex")
 # Exact solution
-EqnSet.set_exact(exact_type="IsentropicVortex")
-# EqnSet.ExactSoln.Set(Function=EqnSet.FcnIsentropicVortexPropagation)
+physics.set_exact(exact_type="IsentropicVortex")
+# physics.ExactSoln.Set(Function=physics.FcnIsentropicVortexPropagation)
 # Boundary conditions
-EqnSet.set_BC(bname="wall", BC_type="StateAll", fcn_type="IsentropicVortex")
-# EqnSet.SetBC("wall",Function=EqnSet.FcnIsentropicVortexPropagation, BCType=EqnSet.BCType["StateAll"])
+physics.set_BC(bname="wall", BC_type="StateAll", fcn_type="IsentropicVortex")
+# physics.SetBC("wall",Function=physics.FcnIsentropicVortexPropagation, BCType=physics.BCType["StateAll"])
 # raise Exception
 
 
 ### Solve
-solver = Solver.DG(Params,EqnSet,mesh)
+solver = Solver.DG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
 # Plot.PreparePlot(axis=axis, linewidth=0.5)
-# Plot.PlotSolution(mesh, EqnSet, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
+# Plot.PlotSolution(mesh, physics, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False, show_elem_IDs=True)
 # Plot.SaveFigure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
 # Plot.PreparePlot(close_all=False, linewidth=1.5)
-# Plot.plot_line_probe(mesh, EqnSet, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
+# Plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
 # Plot.SaveFigure(FileName=CurrentDir+'line', FileType='pdf', CropLevel=2)
 # Plot.ShowPlot()
 
-# U = EqnSet.U.Arrays[0]
+# U = physics.U.Arrays[0]
 # code.interact(local=locals())

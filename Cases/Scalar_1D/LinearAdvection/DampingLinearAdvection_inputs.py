@@ -30,17 +30,17 @@ import code
 
 # ### Physics
 # Velocity = 1.0 
-# EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# EqnSet.set_physical_params(ConstVelocity=Velocity)
-# EqnSet.set_physical_params(ConvFlux="LaxFriedrichs")
-# EqnSet.SetSource(Function=EqnSet.FcnSimpleSource, nu = nu)
+# physics = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# physics.set_physical_params(ConstVelocity=Velocity)
+# physics.set_physical_params(ConvFlux="LaxFriedrichs")
+# physics.SetSource(Function=physics.FcnSimpleSource, nu = nu)
 
 
 # Uinflow=[1.]
 # # Initial conditions
-# EqnSet.IC.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
+# physics.IC.Set(Function=physics.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # # Exact solution
-# EqnSet.ExactSoln.Set(Function=EqnSet.FcnDampingSine, omega = 2.*np.pi , nu = nu)
+# physics.ExactSoln.Set(Function=physics.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # # Boundary conditions
 # if Velocity >= 0.:
 # 	Inflow = "Left"; Outflow = "Right"
@@ -48,19 +48,19 @@ import code
 # 	Inflow = "Right"; Outflow = "Left"
 # if not Periodic:
 # 	for ibfgrp in range(mesh.nBFaceGroup):
-# 		BC = EqnSet.BCs[ibfgrp]
+# 		BC = physics.BCs[ibfgrp]
 # 		## Left
 # 		if BC.Name is Inflow:
-# 			BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["StateAll"], omega = 2.*np.pi, nu=nu)
+# 			BC.Set(Function=physics.FcnDampingSine, BCType=physics.BCType["StateAll"], omega = 2.*np.pi, nu=nu)
 # 		elif BC.Name is Outflow:
-# 			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-# 			#BC.Set(Function=EqnSet.FcnDampingSine, BCType=EqnSet.BCType["StateAll"], omega = 2*np.pi, nu=-2.0)
+# 			BC.Set(BCType=physics.BCType["Extrapolation"])
+# 			#BC.Set(Function=physics.FcnDampingSine, BCType=physics.BCType["StateAll"], omega = 2*np.pi, nu=-2.0)
 # 		else:
 # 			raise Exception("BC error")
 
 
 # ### Solve
-# solver = Solver.DG(Params,EqnSet,mesh)
+# solver = Solver.DG(Params,physics,mesh)
 # solver.solve()
 
 
@@ -126,16 +126,16 @@ SourceTerms = {
 }
 
 
-solver, EqnSet, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
+solver, physics, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
 		Physics, InitialCondition, BoundaryConditions, SourceTerms)
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
+Plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 Plot.ShowPlot()
 
 

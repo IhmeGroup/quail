@@ -54,36 +54,36 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 ### Physics
 x0 = np.array([-0.5,-0.2])
-EqnSet = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# EqnSet.set_physical_params(ConstXVelocity=1.,ConstYVelocity=0.5)
-EqnSet.set_physical_params(ConstXVelocity=1.,ConstYVelocity=0.5)
-EqnSet.set_conv_num_flux("LaxFriedrichs")
+physics = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=0.5)
+physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=0.5)
+physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions
-EqnSet.set_IC(IC_type="Gaussian", x0=x0)
-EqnSet.set_exact(exact_type="Gaussian",x0=x0)
+physics.set_IC(IC_type="Gaussian", x0=x0)
+physics.set_exact(exact_type="Gaussian",x0=x0)
 
 # Boundary conditions
-EqnSet.set_BC(bname="wall", BC_type="StateAll", fcn_type="Gaussian", x0=x0)
-# EqnSet.SetBC("wall",Function=EqnSet.FcnGaussian, x0=x0, BCType=EqnSet.BCType["StateAll"])
+physics.set_BC(bname="wall", BC_type="StateAll", fcn_type="Gaussian", x0=x0)
+# physics.SetBC("wall",Function=physics.FcnGaussian, x0=x0, BCType=physics.BCType["StateAll"])
 # raise Exception
 
 
 ### Solve
-solver = Solver.DG(Params,EqnSet,mesh)
+solver = Solver.DG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
 # Plot.PreparePlot(axis=axis, linewidth=0.5)
-# Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
+# Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False)
 # Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
 # Plot.ShowPlot()
 
-# U = EqnSet.U.Arrays[0]
+# U = physics.U.Arrays[0]
 # code.interact(local=locals())

@@ -50,10 +50,10 @@ def GetEigValues(MMinv, SM, PhiLeft, PhiRight, L, p, h, alpha, solver=None):
 	Omega_i = np.imag(Omega)
 
 	# if solver is not None:
-	# 	EqnSet = solver.EqnSet
-	# 	EqnSet.IC.Set(theta = 1.j*L*(p+1))
+	# 	physics = solver.physics
+	# 	physics.IC.Set(theta = 1.j*L*(p+1))
 	# 	solver.init_state()
-	# 	U = EqnSet.U.Arrays
+	# 	U = physics.U.Arrays
 	# 	Unorm = U/np.linalg.norm(U)
 
 	return Omega_r, Omega_i

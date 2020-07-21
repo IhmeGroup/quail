@@ -52,62 +52,62 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 
 ### Physics
-EqnSet = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
-EqnSet.set_conv_num_flux("Roe")
+physics = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
+physics.set_conv_num_flux("Roe")
 # Initial conditions
 Uinflow = np.array([1.0, 0.5916079783099616, 0.0, 2.675])
-# EqnSet.IC.Set(Function=EqnSet.FcnUniform, State=Uinflow)
-EqnSet.set_IC(IC_type="Uniform", state=Uinflow)
-EqnSet.set_exact(exact_type="Uniform", state=Uinflow)
+# physics.IC.Set(Function=physics.FcnUniform, State=Uinflow)
+physics.set_IC(IC_type="Uniform", state=Uinflow)
+physics.set_exact(exact_type="Uniform", state=Uinflow)
 # Boundary conditions
-# EqnSet.SetBC("inflow", Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["StateAll"], State=Uinflow)
-# EqnSet.SetBC("outflow", BCType=EqnSet.BCType["PressureOutflow"], p=1.)
-# EqnSet.SetBC("top", BCType=EqnSet.BCType["SlipWall"])
-# EqnSet.SetBC("bottom", BCType=EqnSet.BCType["SlipWall"])
+# physics.SetBC("inflow", Function=physics.FcnUniform, BCType=physics.BCType["StateAll"], State=Uinflow)
+# physics.SetBC("outflow", BCType=physics.BCType["PressureOutflow"], p=1.)
+# physics.SetBC("top", BCType=physics.BCType["SlipWall"])
+# physics.SetBC("bottom", BCType=physics.BCType["SlipWall"])
 # for ibfgrp in range(mesh.nBFaceGroup):
 # 	BFG = mesh.BFaceGroups[ibfgrp]
 # 	if BFG.Name == "inflow":
-# 		EqnSet.set_BC(BC_type="StateAll", fcn_type="Uniform", state=Uinflow)
+# 		physics.set_BC(BC_type="StateAll", fcn_type="Uniform", state=Uinflow)
 # 	elif BFG.Name == "outflow":
-# 		EqnSet.set_BC(BC_type="PressureOutlet", p=1.)
+# 		physics.set_BC(BC_type="PressureOutlet", p=1.)
 # 	elif BFG.Name == "top":
-# 		EqnSet.set_BC(BC_type="SlipWall")
+# 		physics.set_BC(BC_type="SlipWall")
 # 	elif BFG.Name == "bottom":
-# 		EqnSet.set_BC(BC_type="SlipWall")
+# 		physics.set_BC(BC_type="SlipWall")
 # 	else:
 # 		raise Exception
 
-EqnSet.set_BC(bname="inflow", BC_type="StateAll", fcn_type="Uniform", state=Uinflow)
-EqnSet.set_BC(bname="outflow", BC_type="PressureOutlet", p=1.)
-EqnSet.set_BC(bname="top", BC_type="SlipWall")
-EqnSet.set_BC(bname="bottom", BC_type="SlipWall")
+physics.set_BC(bname="inflow", BC_type="StateAll", fcn_type="Uniform", state=Uinflow)
+physics.set_BC(bname="outflow", BC_type="PressureOutlet", p=1.)
+physics.set_BC(bname="top", BC_type="SlipWall")
+physics.set_BC(bname="bottom", BC_type="SlipWall")
 # Exact solution
-# EqnSet.ExactSoln.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["StateAll"], State=Uinflow)
+# physics.ExactSoln.Set(Function=physics.FcnUniform, BCType=physics.BCType["StateAll"], State=Uinflow)
 
 
 ### Solve
-solver = Solver.DG(Params,EqnSet,mesh)
+solver = Solver.DG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Entropy", NormalizeByVolume=False)
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Entropy", NormalizeByVolume=False)
 # Plot
 axis = None
 EqualAR = False
 # axis = [-5., 5., -5., 5.]
 Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, EqnSet, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
+Plot.PlotSolution(mesh, physics, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
 	show_triangulation=False, EqualAR=EqualAR, show_elem_IDs=True)
 Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
-Plot.PlotSolution(mesh, EqnSet, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
+Plot.PlotSolution(mesh, physics, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
 	show_triangulation=False, EqualAR=EqualAR)
 Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
-Post.get_boundary_info(mesh, EqnSet, solver, "bottom", "Pressure", integrate=True, 
+Post.get_boundary_info(mesh, physics, solver, "bottom", "Pressure", integrate=True, 
 		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")
 Plot.ShowPlot()
 
-# U = EqnSet.U.Arrays[0]
+# U = physics.U.Arrays[0]
 # code.interact(local=locals())

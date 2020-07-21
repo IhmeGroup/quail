@@ -31,13 +31,13 @@ nu = -3.
 
 ### Physics
 Velocity = 1.0 
-EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.set_physical_params(ConstVelocity=Velocity)
-EqnSet.set_conv_num_flux("LaxFriedrichs")
+physics = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics.set_physical_params(ConstVelocity=Velocity)
+physics.set_conv_num_flux("LaxFriedrichs")
 
-EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
-EqnSet.set_exact(exact_type="DampingSine", omega = 2*np.pi, nu = nu)
-EqnSet.set_source(source_type="SimpleSource", nu = nu)
+physics.set_IC(IC_type="Sine", omega = 2*np.pi)
+physics.set_exact(exact_type="DampingSine", omega = 2*np.pi, nu = nu)
+physics.set_source(source_type="SimpleSource", nu = nu)
 
 # Boundary conditions
 if Velocity >= 0.:
@@ -49,26 +49,26 @@ else:
 # 	for ibfgrp in range(mesh.nBFaceGroup):
 # 		BFG = mesh.BFaceGroups[ibfgrp]
 # 		if BFG.Name is Inflow:
-# 			EqnSet.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+# 			physics.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
 # 		elif BFG.Name is Outflow:
-# 			EqnSet.set_BC(BC_type="Extrapolate")
+# 			physics.set_BC(BC_type="Extrapolate")
 
 if not Periodic:
-	EqnSet.set_BC(bname=Inflow, BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
-	EqnSet.set_BC(bname=Outflow, BC_type="Extrapolate")
+	physics.set_BC(bname=Inflow, BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)
+	physics.set_BC(bname=Outflow, BC_type="Extrapolate")
 
 
 ### Solve
-solver = Solver.ADERDG(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
+Plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
 Plot.ShowPlot()
 
 

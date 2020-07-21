@@ -23,36 +23,36 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 # nu = -1000.
 ### Physics
-EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.set_physical_params(GasConstant=1.,SpecificHeatRatio=3.)
-EqnSet.set_conv_num_flux("LaxFriedrichs")
+physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=3.)
+physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions
-EqnSet.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
-EqnSet.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
+physics.set_IC(IC_type="SmoothIsentropicFlow", a=0.9)
+physics.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 
 # Boundary conditions
 # if not Periodic:
 # 	for ibfgrp in range(mesh.nBFaceGroup):
 # 		BFG = mesh.BFaceGroups[ibfgrp]
 # 		if BFG.Name is "Left":
-# 			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+# 			physics.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 # 		elif BFG.Name is "Right":
-# 			EqnSet.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+# 			physics.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 if not Periodic:
-	EqnSet.set_BC(bname="Left", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
-	EqnSet.set_BC(bname="Right", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+	physics.set_BC(bname="Left", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+	physics.set_BC(bname="Right", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
-solver = Solver.ADERDG(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
 # Plot
 # Plot.PreparePlot()
-# Plot.PlotSolution(mesh, EqnSet, solver, "Energy", PlotExact=True, Equidistant=True)
+# Plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, Equidistant=True)
 # Plot.ShowPlot()
 
 

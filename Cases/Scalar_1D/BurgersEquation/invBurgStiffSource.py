@@ -33,10 +33,10 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 ### Physics
 Velocity = 1.0
-EqnSet = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.set_physical_params(ConstVelocity=Velocity)
-#EqnSet.set_physical_params(AdvectionOperator="Burgers")
-EqnSet.set_physical_params(ConvFlux="LaxFriedrichs")
+physics = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics.set_physical_params(ConstVelocity=Velocity)
+#physics.set_physical_params(AdvectionOperator="Burgers")
+physics.set_physical_params(ConvFlux="LaxFriedrichs")
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -48,12 +48,12 @@ EqnSet.set_physical_params(ConvFlux="LaxFriedrichs")
 # something lower, (i.e. 0.001) then you will observe a stable solution, but the location of the shock
 # will not be correct. It will have propogated at some other speed. (Note: RK4 cannot run stiff case)
 # -----------------------------------------------------------------------------------------------------
-EqnSet.SetSource(Function=EqnSet.FcnStiffSource,beta=0.5, stiffness = 1.)
+physics.SetSource(Function=physics.FcnStiffSource,beta=0.5, stiffness = 1.)
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
+physics.IC.Set(Function=physics.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 
 # Exact solution
-EqnSet.ExactSoln.Set(Function=EqnSet.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
+physics.ExactSoln.Set(Function=physics.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
@@ -61,29 +61,29 @@ else:
 	Inflow = "Right"; Outflow = "Left"
 if not Periodic:
 	for ibfgrp in range(mesh.nBFaceGroup):
-		BC = EqnSet.BCs[ibfgrp]
+		BC = physics.BCs[ibfgrp]
 		## Left
 		if BC.Name is Inflow:
-			BC.Set(Function=EqnSet.FcnScalarShock, BCType=EqnSet.BCType["StateAll"], uL = 1., uR = 0., xshock = 0.3)
-			#BC.Set(Function=EqnSet.FcnUniform, BCType=EqnSet.BCType["StateAll"], State = [1.])
+			BC.Set(Function=physics.FcnScalarShock, BCType=physics.BCType["StateAll"], uL = 1., uR = 0., xshock = 0.3)
+			#BC.Set(Function=physics.FcnUniform, BCType=physics.BCType["StateAll"], State = [1.])
 		elif BC.Name is Outflow:
-			BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-			# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["StateAll"], omega = 2*np.pi)
+			BC.Set(BCType=physics.BCType["Extrapolation"])
+			# BC.Set(Function=physics.FcnSine, BCType=physics.BCType["StateAll"], omega = 2*np.pi)
 		else:
 			raise Exception("BC error")
 
 
 ### Solve
-solver = Solver.ADERDG(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-#TotErr,_ = Post.L2_error(mesh, EqnSet, solver.Time, "Scalar")
+#TotErr,_ = Post.L2_error(mesh, physics, solver.Time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver.Time, "Scalar", PlotExact = True, PlotIC = True, Label="Q_h")
+Plot.PlotSolution(mesh, physics, solver.Time, "Scalar", PlotExact = True, PlotIC = True, Label="Q_h")
 Plot.ShowPlot()
 
 

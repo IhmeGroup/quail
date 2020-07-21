@@ -26,13 +26,13 @@ h = mesh.Coords[1,0] - mesh.Coords[0,0]
 
 ### Solver and physics
 Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
-EqnSet = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.set_physical_params(Velocity=1.)
+physics = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics.set_physical_params(Velocity=1.)
 # Initial conditions
-EqnSet.IC.Set(Function=EqnSet.FcnExponential)
-U = EqnSet.U.Arrays
+physics.IC.Set(Function=physics.FcnExponential)
+U = physics.U.Arrays
 U[0] = U[0].astype(complex)
-solver = Solver.DG(Params,EqnSet,mesh)
+solver = Solver.DG(Params,physics,mesh)
 
 
 ### Mass matrix, stiffness matrix, basis

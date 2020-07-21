@@ -31,16 +31,16 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 ### Physics
 Velocity = 1.
-EqnSet = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# EqnSet.set_physical_params(ConstVelocity=Velocity)
-EqnSet.set_physical_params(ConstVelocity=Velocity)
+physics = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# physics.set_physical_params(ConstVelocity=Velocity)
+physics.set_physical_params(ConstVelocity=Velocity)
 # Initial conditions
-# EqnSet.IC.Set(Function=EqnSet.FcnSine, omega = 2*np.pi)
-EqnSet.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
-EqnSet.set_IC(IC_type="Sine", omega = 2*np.pi)
+# physics.IC.Set(Function=physics.FcnSine, omega = 2*np.pi)
+physics.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
+physics.set_IC(IC_type="Sine", omega = 2*np.pi)
 # Exact solution
-# EqnSet.ExactSoln.Se”t(Function=EqnSet.FcnSine, omega = 2*np.pi)
-EqnSet.set_exact(exact_type="Sine", omega = 2*np.pi)
+# physics.ExactSoln.Se”t(Function=physics.FcnSine, omega = 2*np.pi)
+physics.set_exact(exact_type="Sine", omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "Left"; Outflow = "Right"
@@ -49,28 +49,28 @@ else:
 if not Periodic:
 	raise Exception
 	# for ibfgrp in range(mesh.nBFaceGroup):
-	# 	BC = EqnSet.BCs[ibfgrp]
+	# 	BC = physics.BCs[ibfgrp]
 	# 	## Left
 	# 	if BC.Name is Inflow:
-	# 		BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["StateAll"], omega = 2*np.pi)
+	# 		BC.Set(Function=physics.FcnSine, BCType=physics.BCType["StateAll"], omega = 2*np.pi)
 	# 	elif BC.Name is Outflow:
-	# 		BC.Set(BCType=EqnSet.BCType["Extrapolation"])
-	# 		# BC.Set(Function=EqnSet.FcnSine, BCType=EqnSet.BCType["StateAll"], omega = 2*np.pi)
+	# 		BC.Set(BCType=physics.BCType["Extrapolation"])
+	# 		# BC.Set(Function=physics.FcnSine, BCType=physics.BCType["StateAll"], omega = 2*np.pi)
 	# 	else:
 	# 		raise Exception("BC error")
 
 
 ### Solve
-solver = Solver.DG(Params,EqnSet,mesh)
+solver = Solver.DG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Scalar")
+TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 # Plot.PreparePlot()
-# Plot.PlotSolution(mesh, EqnSet, solver, "Scalar", PlotExact=True, Label="Q_h", include_mesh=True, EqualAR=True, show_elem_IDs=True)
+# Plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, Label="Q_h", include_mesh=True, EqualAR=True, show_elem_IDs=True)
 # Plot.ShowPlot()
 
 

@@ -27,26 +27,26 @@ Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTime
 
 
 ### Physics
-EqnSet = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
-EqnSet.set_physical_params(SpecificHeatRatio=1.4)
-EqnSet.set_conv_num_flux("Roe")
+physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics.set_physical_params(SpecificHeatRatio=1.4)
+physics.set_conv_num_flux("Roe")
 
 # Initial conditions
-EqnSet.set_IC(IC_type="DensityWave", p=1.0)
-EqnSet.set_source(source_type="StiffFriction",nu=nu)
+physics.set_IC(IC_type="DensityWave", p=1.0)
+physics.set_source(source_type="StiffFriction",nu=nu)
 
 ### Solve
-solver = Solver.ADERDG(Params,EqnSet,mesh)
+solver = Solver.ADERDG(Params,physics,mesh)
 solver.solve()
 
 
 ### Postprocess
 # Error
-# TotErr,_ = Post.L2_error(mesh, EqnSet, solver, "Density")
+# TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, EqnSet, solver, "Density", PlotIC=True, PlotExact=False, Equidistant=True)
-Plot.PlotSolution(mesh, EqnSet, solver, "XMomentum", PlotIC=True, PlotExact=False, Equidistant=True)
-Plot.PlotSolution(mesh, EqnSet, solver, "Energy", PlotIC=True, PlotExact=False, Equidistant=True)
+Plot.PlotSolution(mesh, physics, solver, "Density", PlotIC=True, PlotExact=False, Equidistant=True)
+Plot.PlotSolution(mesh, physics, solver, "XMomentum", PlotIC=True, PlotExact=False, Equidistant=True)
+Plot.PlotSolution(mesh, physics, solver, "Energy", PlotIC=True, PlotExact=False, Equidistant=True)
 
 Plot.ShowPlot()
