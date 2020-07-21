@@ -8,7 +8,7 @@ import warnings
 import errors
 from data import ArrayList, GenericData
 
-from general import ModalOrNodal, NodeType, ShapeType
+from general import ModalOrNodal, NodeType, ShapeType, QuadratureType
 
 import meshing.meshbase as mesh_defs
 
@@ -36,7 +36,7 @@ class SolverBase(ABC):
 	def __init__(self, Params, EqnSet, mesh):
 		'''
 		Method: __init__
-		--------------------------------------------------------------------------
+		-------------------------------------------------------------------
 		Initializes the DG object, verifies parameters, and initializes the state
 
 		INPUTS:
@@ -44,7 +44,6 @@ class SolverBase(ABC):
 			EqnSet: solver object (current implementation supports Scalar and Euler equations)
 			mesh: mesh object
 		'''
-
 		self.Params = Params
 		self.EqnSet = EqnSet
 		self.mesh = mesh
@@ -71,10 +70,6 @@ class SolverBase(ABC):
 
 		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
 
-		# check for compatibility
-		# if mesh.gbasis.SHAPE_TYPE != self.basis.SHAPE_TYPE:
-		# 	raise errors.IncompatibleError
-
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = limiter_tools.set_limiter(limiterType, EqnSet.PHYSICS_TYPE)
@@ -93,7 +88,8 @@ class SolverBase(ABC):
 			self.init_state_from_fcn()
 
 	def __repr__(self):
-		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
+		return '{self.__class__.__name__}(Physics: {self.EqnSet},\n   \
+		Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
 
 	def check_compatibility(self):
 		mesh = self.mesh 
@@ -104,17 +100,33 @@ class SolverBase(ABC):
 		if mesh.gbasis.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
-		if Params["InterpolateIC"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
+		if Params["InterpolateIC"] and basis.MODAL_OR_NODAL \
+			!= ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
+		# ----------------------------------------------------------------- #
+		# Gauss Lobatto Nodes Compatibility Checks
+		# ----------------------------------------------------------------- #
 		node_type = Params["NodeType"]
 		forcing_switch = Params["NodesEqualQuadpts"]
+		elem_quad = Params["ElementQuadrature"]
+		face_quad = Params["FaceQuadrature"]
 
-		if NodeType[node_type] == NodeType.GaussLobatto and basis.SHAPE_TYPE == ShapeType.Triangle:
+		# Compatibility check for GLL nodes with triangles
+		if NodeType[node_type] == NodeType.GaussLobatto and \
+			basis.SHAPE_TYPE == ShapeType.Triangle:
 			raise errors.IncompatibleError
 
-		if NodeType[node_type] == NodeType.Equidistant and forcing_switch == True:
-			warnings.warn("Forcing equal nodes and quad_pts not compatable with Equidistant nodes")
+		# Compatibility check for forcing nodes equal to quadrature points
+		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
+			raise errors.IncompatibleError
+		if QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
+			QuadratureType[face_quad] != QuadratureType.GaussLobatto \
+			and forcing_switch:
+			raise errors.IncompatibleError
+		
+		# ----------------------------------------------------------------- #
+
 
 	@abstractmethod
 	def precompute_matrix_operators(self):

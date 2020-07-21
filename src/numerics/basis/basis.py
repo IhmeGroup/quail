@@ -292,7 +292,7 @@ class ShapeBase(ABC):
             can only be used when GaussLobatto is specified for both the 
             quadrature and node type
         '''
-        if force_flag == True:
+        if force_flag:
             self.forced_pts = self.get_num_basis_coeff(self.order)
             self.skip_interp = True
 
@@ -378,13 +378,13 @@ class SegShape(ShapeBase):
 
     def get_quadrature_data(self, order):
 
-        # try:
-        #     fpts = self.forced_pts
-        # except:
-        #     fpts = None
+        try:
+            fpts = self.forced_pts
+        except:
+            fpts = None
 
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
-            self.quadrature_type)#, forced_pts=fpts)
+            self.quadrature_type, forced_pts=fpts)
 
         return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
