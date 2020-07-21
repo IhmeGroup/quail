@@ -14,11 +14,11 @@ import numerics.helpers.helpers as helpers
 
 
 # Update default solver params.
-general.SolverParams.update({
-	"TimeScheme": "ADER",
-	"InterpolateFlux": True,
-	"SourceTreatment": "Explicit",
-})
+# general.SolverParams.update({
+# 	"TimeScheme": "ADER",
+# 	"InterpolateFlux": True,
+# 	"SourceTreatment": "Explicit",
+# })
 
 def set_source_treatment(ns, SourceTreatment):
 	if SourceTreatment == "Explicit":
@@ -79,7 +79,7 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	
 	nb = basis_val.shape[1]
 	nq = quad_wts_st.shape[0]
-	# code.interact(local=locals())
+
 	R = np.matmul(np.tile(basis_val,(nq,1)).transpose(), Fq*quad_wts_st) # [nb, ns]
 
 	return R
@@ -309,8 +309,8 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	vol_elems = elem_ops.vol_elems
 
 	# W_bar = np.zeros([1,ns])
-	# Wq = np.matmul(basis_val, W)
-	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
+	Wq = np.matmul(basis_val, W)
+	# Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
 	vol = vol_elems[elem]
 	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
@@ -393,10 +393,6 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
     else:
         tphys[:] = time
     for ipoint in range(npoint):
-        #for n in range(nn):
-            #nodeNum = ElemNodes[n]
-            #val = Phi[ipoint][n]
-            #for d in range(dim):
         tphys[ipoint] = (time/2.)*(1-xref[ipoint,dim])+((time+dt)/2.0)*(1+xref[ipoint,dim])
 
     return tphys, gbasis

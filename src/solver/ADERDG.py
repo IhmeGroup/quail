@@ -13,6 +13,7 @@ import meshing.tools as mesh_tools
 import numerics.basis.tools as basis_tools
 import numerics.basis.ader_tools as basis_st_tools
 
+import numerics.helpers.helpers as helpers
 import numerics.limiting.tools as limiter_tools
 
 import numerics.timestepping.tools as stepper_tools
@@ -30,7 +31,6 @@ import solver.DG as DG
 class ElemOperatorsADER(DG.ElemOperators):
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
-		# separate these later
 
 		dim = mesh.Dim 
 		quad_pts = self.quad_pts 
@@ -50,9 +50,9 @@ class ElemOperatorsADER(DG.ElemOperators):
 		self.basis_ref_grad = basis.basis_ref_grad
 
 		for elem in range(mesh.nElem):
-			# Jacobian
+			# get jacobian data
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
-			# Store
+			# store the jacobian data
 			self.jac_elems[elem] = jac
 			self.ijac_elems[elem] = ijac
 			self.djac_elems[elem] = djac
@@ -73,30 +73,25 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh, order, physics=physics)
 		self.quad_pts, self.quad_wts = basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
-		# self.quad_pts = basis.quad_pts
-		# self.quad_wts = basis.quad_wts
-
 	def get_basis_and_geom_data(self, mesh, basis, order):
-		# separate these later
 
-		# Unpack
+		# unpack
 		dim = mesh.Dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
 		nfaces_per_elem = mesh.gbasis.NFACES + 2
 
-		# Allocate
+		# allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem,nq,nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem,nq,nb])
 		self.normals_ifaces = np.zeros([mesh.nIFace,nq,dim])
 
 		for f in range(nfaces_per_elem):
-			# Left
-			#get_basis_face_val_grads_ader(mesh, basis_st, face_stL, quad_pts_st, xelemLPhi, get_val=True)
+			# left
 			basis.get_basis_face_val_grads(mesh, f, quad_pts, basis, get_val=True)
 			self.faces_to_basisL[f] = basis.basis_val
-			# Right
+			# right
 			basis.get_basis_face_val_grads(mesh, f, quad_pts[::-1], basis, get_val=True)
 			self.faces_to_basisR[f] = basis.basis_val
 
@@ -203,13 +198,8 @@ class ADEROperators(object):
 			iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=True)
 			iMM_elems[elem] = iMM
 
-		iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem, PhysicalSpace=False)
-
-		# Get mass matrix in space-time
+		iMM =  basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
 		MM =  basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
-		# iMM =  get_elem_inv_mass_matrix_ader(mesh, basis_st, order, elem=-1, PhysicalSpace=False)
-
-		# _, ElemVols = mesh_tools.element_volumes(mesh)
 
 		self.FTL = FTL
 		self.FTR = FTR
@@ -362,23 +352,6 @@ class ADERDG(base.SolverBase):
 		if Params["InterpolateFlux"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
-		# Params = self.Params
-		# mesh = self.mesh
-		# physics = self.physics
-		# ### Check interp basis validity
-		# if BasisType[Params["InterpBasis"]] == BasisType.LagrangeEqSeg or BasisType[Params["InterpBasis"]] == BasisType.LegendreSeg:
-		#     if mesh.Dim != 1:
-		#         raise errors.IncompatibleError
-		# else:
-		#     if mesh.Dim != 2:
-		#         raise errors.IncompatibleError
-
-		# ### Check limiter ###
-		# if Params["ApplyLimiter"] is 'PositivityPreserving' \
-		# 	and physics.NUM_STATE_VARS == 1:
-		# 		raise IncompatibleError
-  
-
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
 		physics = self.physics
@@ -461,7 +434,9 @@ class ADERDG(base.SolverBase):
 		nq_st = quad_wts_st.shape[0]
 
 		# interpolate state and gradient at quad points
-		Uq = np.matmul(basis_val_st, Up) # Brett
+		# Uq = np.matmul(basis_val_st, Up)
+
+		Uq = helpers.evaluate_state(Up, basis_val_st)#, skip_interp=self.basis.skip_interp)
 
 		if self.Params["ConvFluxSwitch"] == True:
 			'''
@@ -545,8 +520,8 @@ class ADERDG(base.SolverBase):
 		basis_valL_st = faces_to_basisL_st[faceL_st]
 		basis_valR_st = faces_to_basisR_st[faceR_st]
 
-		UqL = np.matmul(basis_valL_st, UpL) # Brett
-		UqR = np.matmul(basis_valR_st, UpR) # Brett
+		UqL = helpers.evaluate_state(UpL, basis_valL_st)
+		UqR = helpers.evaluate_state(UpR, basis_valR_st)
 
 		normals_ifaces = iface_ops.normals_ifaces
 		normals = normals_ifaces[iiface]
@@ -622,7 +597,9 @@ class ADERDG(base.SolverBase):
 		t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xref_st, t, None)
 
 		# interpolate state and gradient at quad points
-		UqI = np.matmul(basis_val_st, U) # Brett
+		# UqI = np.matmul(basis_val_st, U) # 
+		UqI = helpers.evaluate_state(U, basis_val_st)#, skip_interp=self.basis.skip_interp)
+
 
 		normals = normals_bfgroups[ibfgrp][ibface]
 		x = x_bfgroups[ibfgrp][ibface]
@@ -690,7 +667,7 @@ class ADERDG(base.SolverBase):
 			nq = quad_wts.shape[0]
 			iMM = ader_ops.iMM_elems[elem]
 
-			Uq = np.matmul(basis_val_st,Up) # Brett
+			Uq = helpers.evaluate_state(Up, basis_val_st)#, skip_interp=self.basis.skip_interp)
 
 			Fq = physics.ConvFluxInterior(Uq)
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
@@ -747,6 +724,7 @@ class ADERDG(base.SolverBase):
 
 			ader_ops = self.ader_operators
 			basis_val_st = elem_ops_st.basis_val
+			nb_st = basis_val_st.shape[1]
 			quad_wts_st = elem_ops_st.quad_wts
 			quad_wts = elem_ops.quad_wts
 			quad_pts_st = elem_ops_st.quad_pts
@@ -754,12 +732,13 @@ class ADERDG(base.SolverBase):
 			nq = quad_wts.shape[0]
 			iMM = ader_ops.iMM_elems[elem]
 
-			Uq = np.matmul(basis_val_st,Up) # Brett
+			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			t = np.zeros([nq_st,dim])
 			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
 		
 			Sq = np.zeros([t.shape[0],ns])
+			S = np.zeros([nb_st, ns])
 			Sq = physics.SourceState(nq_st, x, t, Uq, Sq) # [nq,sr,dim]		
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, quad_wts_st, np.tile(djac,(nq,1)), Sq, S)
 
