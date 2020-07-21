@@ -11,7 +11,7 @@ print('Solution Final Time:', solver.Time)
 
 # Unpack
 mesh = solver.mesh
-physics = solver.EqnSet
+physics = solver.physics
 
 TotErr, _ = post.L2_error(mesh, physics, solver, "Pressure")
 # plot

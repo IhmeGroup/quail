@@ -23,7 +23,7 @@ import processing.readwritedatafiles as readwritedatafiles
 # 	solver = readwritedatafiles.read_data_file(fname)
 # 	# Unpack
 # 	mesh = solver.mesh
-# 	physics = solver.EqnSet
+# 	physics = solver.physics
 
 # 	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
 # 	# 		ignore_legend=True)
@@ -63,7 +63,7 @@ for i in range(62):
 	solver = readwritedatafiles.read_data_file(fname)
 	# Unpack
 	mesh = solver.mesh
-	physics = solver.EqnSet
+	physics = solver.physics
 
 	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
 	# 		ignore_legend=True)

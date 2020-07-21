@@ -11,7 +11,7 @@ print('Solution Final Time:', solver.Time)
 
 # Unpack
 mesh = solver.mesh
-physics = solver.EqnSet
+physics = solver.physics
 
 solver.Time = 0.
 TotErr,_ = post.L2_error(mesh, physics, solver, "Scalar")
@@ -32,6 +32,6 @@ plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.]
 		plot_IC=False, create_new_figure=False, fmt="k-", legend_label=None)
 plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=True, plot_exact=False,
 		plot_IC=False, create_new_figure=False, fmt="bo", legend_label=None)
-# Post.get_boundary_info(mesh, EqnSet, solver, "y1", "Scalar", integrate=True, 
+# Post.get_boundary_info(mesh, physics, solver, "y1", "Scalar", integrate=True, 
 # 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)
 plot.ShowPlot()

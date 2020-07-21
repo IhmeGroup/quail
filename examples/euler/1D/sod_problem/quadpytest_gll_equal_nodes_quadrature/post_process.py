@@ -11,7 +11,7 @@ print('Solution Final Time:', solver1.Time)
 
 # Unpack
 mesh1 = solver1.mesh
-physics1 = solver1.EqnSet
+physics1 = solver1.physics
 
 ### Postprocess
 # fname = "Data_Final.pkl"
@@ -20,7 +20,7 @@ physics1 = solver1.EqnSet
 
 # # Unpack
 # mesh2 = solver2.mesh
-# physics2 = solver2.EqnSet
+# physics2 = solver2.physics
 
 # Error
 # TotErr,_ = post.L2_error(mesh, physics, solver, "Density")

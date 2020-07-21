@@ -11,7 +11,7 @@ print('Solution Final Time:', solver1.Time)
 solver1.Time = 0.25
 # Unpack
 mesh1 = solver1.mesh
-physics1 = solver1.EqnSet
+physics1 = solver1.physics
 # code.interact(local=locals())
 # mesh1.Coords += 0.5
 
@@ -22,7 +22,7 @@ physics1 = solver1.EqnSet
 
 # # Unpack
 # mesh2 = solver2.mesh
-# physics2 = solver2.EqnSet
+# physics2 = solver2.physics
 
 # Error
 # TotErr,_ = post.L2_error(mesh, physics, solver, "Density")
@@ -41,7 +41,7 @@ plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, pl
 # print('Solution Final Time:', solver2.Time)
 # # Unpack
 # mesh2 = solver2.mesh
-# physics2 = solver2.EqnSet
+# physics2 = solver2.physics
 
 # plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='b-', legend_label="NoLimiter", equidistant_pts=True, 
@@ -52,7 +52,7 @@ solver2 = readwritedatafiles.read_data_file(fname)
 print('Solution Final Time:', solver2.Time)
 # Unpack
 mesh2 = solver2.mesh
-physics2 = solver2.EqnSet
+physics2 = solver2.physics
 
 plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='g-', legend_label="NoLimiter", equidistant_pts=True, 
@@ -64,7 +64,7 @@ plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plo
 # print('Solution Final Time:', solver2.Time)
 # # Unpack
 # mesh2 = solver2.mesh
-# physics2 = solver2.EqnSet
+# physics2 = solver2.physics
 
 # plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='b-', legend_label="CFL=0.1", equidistant_pts=True, 

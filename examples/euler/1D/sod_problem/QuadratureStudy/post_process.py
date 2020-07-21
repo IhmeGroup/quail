@@ -11,25 +11,25 @@ print('Solution Final Time:', solver1.Time)
 
 # Unpack
 mesh1 = solver1.mesh
-physics1 = solver1.EqnSet
+physics1 = solver1.physics
 
 fname = "Data_Exact_Sod.pkl"
 exact = readwritedatafiles.read_data_file(fname)
 mesh_ex = exact.mesh
-physics_ex = exact.EqnSet
+physics_ex = exact.physics
 ### Postprocess
 fname = "Data_GLL.pkl"
 solver2 = readwritedatafiles.read_data_file(fname)
 # print('Solution Final Time:', solver.Time)
 # # Unpack
 mesh2 = solver2.mesh
-physics2 = solver2.EqnSet
+physics2 = solver2.physics
 
 fname = "Data_GLL_ForcedNodes.pkl"
 solver3 = readwritedatafiles.read_data_file(fname)
 
 mesh3 = solver3.mesh
-physics3 = solver3.EqnSet
+physics3 = solver3.physics
 # Error
 
 # Plot

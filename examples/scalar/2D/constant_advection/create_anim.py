@@ -22,7 +22,7 @@ for i in range(51):
 	solver = readwritedatafiles.read_data_file(fname)
 	# Unpack
 	mesh = solver.mesh
-	physics = solver.EqnSet
+	physics = solver.physics
 
 	if j == 0:
 		ignore_colorbar = False

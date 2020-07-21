@@ -21,15 +21,15 @@ fname = "Data_Smooth_LF_w0p5.pkl"
 solver5 = readwritedatafiles.read_data_file(fname)
 # Unpack
 mesh1 = solver1.mesh
-physics1 = solver1.EqnSet
+physics1 = solver1.physics
 mesh2 = solver2.mesh
-physics2 = solver2.EqnSet
+physics2 = solver2.physics
 mesh3 = solver3.mesh
-physics3 = solver3.EqnSet
+physics3 = solver3.physics
 mesh4 = solver4.mesh
-physics4 = solver4.EqnSet
+physics4 = solver4.physics
 mesh5 = solver5.mesh
-physics5 = solver5.EqnSet
+physics5 = solver5.physics
 
 ### Postprocess
 # fname = "Data_Final.pkl"
@@ -38,7 +38,7 @@ physics5 = solver5.EqnSet
 
 # # Unpack
 # mesh2 = solver2.mesh
-# physics2 = solver2.EqnSet
+# physics2 = solver2.physics
 
 # Error
 # TotErr,_ = post.L2_error(mesh, physics, solver, "Density")
