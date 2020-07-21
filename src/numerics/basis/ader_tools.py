@@ -95,7 +95,7 @@ def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     iSM = np.linalg.inv(SM) 
 
     return iSM # [nb_st, nb_st]
-    
+
 
 def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     , PhysicalSpace=False):
@@ -149,12 +149,12 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
 
     if PhysicalSpace:
         basis_ref_grad = basis_st.basis_ref_grad
-        GPhi = np.transpose(np.matmul(ijac_st.transpose(0,2,1), \
-            basis_ref_grad.transpose(0,2,1)), (0,2,1))
+        GPhi = np.transpose(np.matmul(ijac_st.transpose(0, 2, 1), \
+            basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
     else:
         GPhi = basis_st.basis_ref_grad
 
-    SM = np.zeros([nb_st,nb_st])
+    SM = np.zeros([nb_st, nb_st])
     # ------------------------------------------------------------------- #
     # Example of ADER Stiffness Matrix calculation using for-loops
     # ------------------------------------------------------------------- # 
@@ -167,7 +167,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     #         SM[i,j] = t
     #
     # ------------------------------------------------------------------- #
-    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(), phi*quad_wts_st)
+    SM[:] = np.matmul(GPhi[:,:,gradDir].transpose(), phi * quad_wts_st)
 
     return SM # [nb_st, nb_st]
 
@@ -234,7 +234,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
     nb_st = PhiData.basis_val.shape[1]
     nb = PsiData.basis_val.shape[1]
 
-    FT = np.zeros([nb_st,nb])
+    FT = np.zeros([nb_st, nb])
     # ------------------------------------------------------------------- #
     # Example of ADER Flux Matrix calculation using for-loops
     # ------------------------------------------------------------------- # 
@@ -250,7 +250,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
     #         FT[i,j] = t
     #
     # ------------------------------------------------------------------- # 
-    FT[:] = np.matmul(PhiData.basis_val.transpose(),PsiData.basis_val * \
+    FT[:] = np.matmul(PhiData.basis_val.transpose(), PsiData.basis_val * \
         quad_wts) # [nb_st, nb] or [nb_st, nb_st]
 
     return FT # [nb_st, nb] or [nb_st, nb_st]
@@ -293,10 +293,10 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
     else:
-        djac = np.full(nq, 1.).reshape(nq,1)
+        djac = np.full(nq, 1.).reshape(nq, 1)
 
     nb_st = basis.basis_val.shape[1]
-    MM = np.zeros([nb_st,nb_st])
+    MM = np.zeros([nb_st, nb_st])
     # ------------------------------------------------------------------- #
     # Example of ADER Flux Matrix calculation using for-loops
     # ------------------------------------------------------------------- # 
