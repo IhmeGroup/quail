@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : basis.py
+#       File : numerics/basis/basis.py
 #
 #       Contains class definitions for each shape and basis function 
 #       available in the DG Python framework.
