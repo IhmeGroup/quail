@@ -52,7 +52,20 @@ def calculate_source_term_integral(elem_ops, elem, Sq):
 	return ER
 
 def calculate_dRdU(elem_ops, elem, jac):
+	'''
+	Method: calculate_dRdU
+	-----------------------
+	Helper function for ODE solvers that calculates the derivative of 
+
+		integral(basis_val*S(U))dVol
 	
+	with respect to the solution state 
+	
+	INPUTS: 
+		elem_ops: object containing precomputed element operations
+		elem: element index [int]
+		jac: element source term jacobian [nq, ns, ns]
+	'''
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
 	djac_elems = elem_ops.djac_elems 
@@ -65,7 +78,7 @@ def calculate_dRdU(elem_ops, elem, jac):
 	test = np.einsum('ijk,il->ijk',jac,test1)
 	ER = np.einsum('bq,qts -> bts',basis_val.transpose(),test)
 
-	return ER
+	return ER # [nb, ns, ns]
 
 def mult_inv_mass_matrix(mesh, solver, dt, R):
 	'''
