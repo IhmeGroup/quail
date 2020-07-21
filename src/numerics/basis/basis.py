@@ -575,6 +575,9 @@ class BasisBase(ABC):
         evaluated gradient of the basis function in reference space
     basis_phys_grad : numpy array
         evaluated gradient of the basis function in physical space
+    skip_interp : boolean
+        when forcing nodes to be the same as quadrature this flag is 
+        used to skip the interpolation routines as they are not needed
     nb : int
         number of polynomial coefficients
     get_1d_nodes : method
@@ -635,6 +638,9 @@ class BasisBase(ABC):
             evaluated gradient of the basis function in reference space
         basis_phys_grad : numpy array
             evaluated gradient of the basis function in physical space
+        skip_interp : boolean
+            when forcing nodes to be the same as quadrature this flag is 
+            used to skip the interpolation routines as they are not needed
         nb : int
             number of polynomial coefficients
         get_1d_nodes : method
