@@ -7,7 +7,7 @@
 #
 #       Authors: Eric Ching and Brett Bornhoft
 #
-#       Created: January, 2020
+#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 
@@ -38,46 +38,46 @@ class ShapeBase(ABC):
     quadrature_type : enum
         specifies the type of quadrature to be used on the element
 
-    Set Constant Methods:
+    Abstract Constants:
     ----------------------
-    SHAPE_TYPE()
+    SHAPE_TYPE
         defines an enum from ShapeType to identify the element's shape
-    FACE_SHAPE()
+    FACE_SHAPE
         defines an enum from ShapeType to identify the element's face shape 
-    NFACES()
+    NFACES
         defines the number of faces per element as an int
-    DIM()
+    DIM
         defines the dimension of the shape as an int
-    PRINCIPAL_NODE_COORDS()
+    PRINCIPAL_NODE_COORDS
         defines coordinates of the reference element for each shape type as
         a numpy array
-    CENTROID()
+    CENTROID
         defines a coordinate (as a numpy array) for the centroid of the 
         reference element
 
     Abstract Methods:
     ------------------
-    get_num_basis_coeff(p)
+    get_num_basis_coeff
         sets the number of basis coefficients given a polynomial order
-    get_equidistant_nodes(p)
+    get_equidistant_nodes
         takes nb nodes and places then in equidistant positions along the 
         reference element (as a numpy array)
-    get_quadrature_data(order)
+    get_quadrature_data
         gets arrays of quad_pts and quad_wts
     
     Methods:
     ---------
-    get_local_face_principal_node_nums(p, faceID)
+    get_local_face_principal_node_nums
         get index location of local faces 
-    get_elem_ref_from_face_ref(self, faceID, face_pts)
+    get_elem_ref_from_face_ref
         get coordinates of element in reference space
-    set_elem_quadrature_type(quadrature_name)
+    set_elem_quadrature_type
         sets the enum for the element's quadrature type given a str
-    set_face_quadrature_type(quadrature_name)
+    set_face_quadrature_type
         sets the enum for the element's face quadrature type given a str
-    get_quadrature_order(mesh, order, physics=None)
+    get_quadrature_order
         conducts logic to specify the quadrature order for an element
-    force_nodes_equal_quad_pts(force_flag)
+    force_nodes_equal_quad_pts
         if flag is True, method forces node pts equal to quadrature pts
     '''
 
@@ -95,7 +95,7 @@ class ShapeBase(ABC):
     def FACE_SHAPE(self):
         '''
         Stores the location of the ShapeType enum to define the element's
-        face shape. [type : enum]
+        face shape. [enum]
         '''
         pass
 
@@ -103,7 +103,7 @@ class ShapeBase(ABC):
     @abstractmethod
     def NFACES(self):
         '''
-        Stores the number of faces per element as an int [type : int]
+        Stores the number of faces per element as an int [int]
         '''        
         pass
 
@@ -111,7 +111,7 @@ class ShapeBase(ABC):
     @abstractmethod
     def DIM(self):
         '''
-        Stores the dimension of the element [type : int]
+        Stores the dimension of the element [int]
         '''
         pass
 
@@ -120,7 +120,7 @@ class ShapeBase(ABC):
     def PRINCIPAL_NODE_COORDS(self):
         '''
         Stores the node coordinates for the reference element 
-        [type : numpy array]
+        [numpy array]
         '''
         pass
 
@@ -129,7 +129,7 @@ class ShapeBase(ABC):
     def CENTROID(self):
         '''
         Stores the coordinate for the reference element's centroid
-        [type : numpy array]
+        [numpy array]
         '''
         pass
     
@@ -160,7 +160,7 @@ class ShapeBase(ABC):
             p: order of polynomial space [int]
 
         OUTPUTS: 
-            xn : array of nodes equidistantly spaced [type : numpy array] 
+            xn : array of nodes equidistantly spaced [numpy array] 
             [shape : [nb, dim]]
         '''
         pass
@@ -294,6 +294,7 @@ class ShapeBase(ABC):
         '''
         if force_flag == True:
             self.forced_pts = self.get_num_basis_coeff(self.order)
+            self.skip_interp = True
 
 
 class PointShape(ShapeBase):
@@ -377,13 +378,13 @@ class SegShape(ShapeBase):
 
     def get_quadrature_data(self, order):
 
-        try:
-            fpts = self.forced_pts
-        except:
-            fpts = None
+        # try:
+        #     fpts = self.forced_pts
+        # except:
+        #     fpts = None
 
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
-            self.quadrature_type, forced_pts=fpts)
+            self.quadrature_type)#, forced_pts=fpts)
 
         return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
@@ -563,7 +564,6 @@ class BasisBase(ABC):
             Element Methods" (Boca Raton, FL: Chapman and Hall/CRC). 2004. 
             pp. 55-60.
 
-    ...
 
     Attributes
     -----------
@@ -587,24 +587,23 @@ class BasisBase(ABC):
         method to obtain normals for element faces [options in 
         src/numerics/basis/tools.py]
 
-    Set Constant Methods:
-    ----------------------
-    BASIS_TYPE()
+    Abstract Constants:
+    ---------------------
+    BASIS_TYPE
         defines an enum from ShapeType to identify the element's shape
-    MODAL_OR_NODAL()
+    MODAL_OR_NODAL
         defines whether the basis function is a modal or nodal type
     
     Methods:
     ---------
-    get_physical_grad(self, ijac)
+    get_physical_grad
         calculates the physical gradient of the basis function
-    get_basis_val_grads(self, quad_pts, get_val=True, get_ref_grad=False
-        , get_phys_grad=False, ijac=None):
+    get_basis_val_grads
         function that gets the basis values and either the phys or ref 
         gradient for the basis depending on the optional arguments
-    get_values(quad_pts)
+    get_values
         calculates the basis values
-    get_grads(quad_pts)
+    get_grads
         calculates the gradient of the basis function in reference space    
     '''
     @property
@@ -612,7 +611,7 @@ class BasisBase(ABC):
     def BASIS_TYPE(self):
         '''
         Stores the BasisType enum to define the element's basis function.
-        [type : enum]
+        [enum]
         '''
         pass
 
@@ -621,7 +620,7 @@ class BasisBase(ABC):
     def MODAL_OR_NODAL(self):
         '''
         Stores the ModalOrNodal enum to define the basis function's behavior.
-        [type : enum]
+        [enum]
         '''
         pass
 

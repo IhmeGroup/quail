@@ -7,7 +7,7 @@
 #
 #       Authors: Brett Bornhoft and Eric Ching
 #
-#       Created: January, 2020
+#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
