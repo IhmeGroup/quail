@@ -306,9 +306,9 @@ class ADERDG(base.SolverBase):
 		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
 		# Set the basis functions for the solver
-		BasisFunction  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(EqnSet.order, BasisFunction)
-		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, EqnSet.order, BasisFunction)
+		basis_name  = Params["InterpBasis"]
+		self.basis = basis_tools.set_basis(EqnSet.order, basis_name)
+		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, EqnSet.order, basis_name)
 
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])

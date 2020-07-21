@@ -202,8 +202,6 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
-	# quad_pts = basis.quad_pts
-	# quad_wts = basis.quad_wts
 
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
