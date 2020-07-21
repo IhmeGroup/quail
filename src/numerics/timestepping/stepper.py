@@ -110,8 +110,8 @@ class StepperBase(ABC):
 		    solver: solver object (i.e. DG, ADERDG, etc...)
 
 		OUTPUTS: 
-		    R : Updated residual vector [nelem, nb, ns]
-		    U : Updates the solution vector [nelem, nb, ns]
+			R : Updated residual vector [nelem, nb, ns]
+			U : Updates the solution vector [nelem, nb, ns]
 		'''
 		pass
 
