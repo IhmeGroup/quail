@@ -43,7 +43,6 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 	quadData = None
 	# JData = JacobianData(mesh)
 	# ier = physics.VariableType[VariableName]
-	GeomPhiData = None
 
 	# ElemErr.Arrays[egrp][:] = 0.
 
@@ -59,11 +58,10 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 		nq = xq.shape[0]
 		
 		basis.get_basis_val_grads(xq, True, False, False, None)
-		xphys = np.zeros([nq, mesh.Dim])
 
 		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
-		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xq, xphys)
+		xphys = mesh_defs.ref_to_phys(mesh, elem, xq)
 		u_exact = physics.CallFunction(physics.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points

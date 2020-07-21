@@ -393,7 +393,8 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
     return djac, jac, ijac # [nq, 1], [nq, dim, dim], and [nq, dim, dim]
 
 
-def calculate_1D_normals(self, mesh, elem, face, quad_pts):
+def calculate_1D_normals(mesh, elem, face, quad_pts):
+
     '''
     Method: calculate_1D_normals
     -----------------------------
@@ -427,7 +428,7 @@ def calculate_1D_normals(self, mesh, elem, face, quad_pts):
     return nvec # [nq, dim]
 
     
-def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
+def calculate_2D_normals(mesh, elem, face, quad_pts):
     '''
     Method: calculate_2D_normals
     -----------------------------
@@ -446,7 +447,7 @@ def calculate_2D_normals(basis, mesh, elem, face, quad_pts):
     ElemNodes = mesh.Elem2Nodes[elem]
     elem_coords = mesh.elements[elem].node_coords
 
-    fnodes = basis.get_local_face_node_nums(gorder, face)
+    fnodes = gbasis.get_local_face_node_nums(gorder, face)
 
     basis_seg = basis_defs.LagrangeSeg(gorder)
     basis_ref_grad = basis_seg.get_grads(quad_pts)

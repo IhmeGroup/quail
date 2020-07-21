@@ -60,7 +60,7 @@ def element_volumes(mesh, solver=None):
 
 def get_element_centroid(mesh, elem):
     gbasis = mesh.gbasis
-    xcentroid, _ = mesh_defs.ref_to_phys(mesh, elem, None, mesh.gbasis.CENTROID)  
+    xcentroid = mesh_defs.ref_to_phys(mesh, elem, mesh.gbasis.CENTROID)  
 
     return xcentroid
 
@@ -115,13 +115,13 @@ def check_face_orientations(mesh):
         return
 
     for IFace in mesh.IFaces:
-        ielemL = IFace.ElemL
-        ielemR = IFace.ElemR
+        elemL_id = IFace.ElemL
+        elemR_id = IFace.ElemR
         faceL = IFace.faceL
         faceR = IFace.faceR
 
-        elemL_nodes = mesh.elements[ielemL].node_nums
-        elemR_nodes = mesh.elements[ielemR].node_nums
+        elemL_nodes = mesh.elements[elemL_id].node_nums
+        elemR_nodes = mesh.elements[elemR_id].node_nums
 
         # Get local q=1 nodes on face for left element
         lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceL)
@@ -137,8 +137,8 @@ def check_face_orientations(mesh):
 
         # Node Ordering should be reversed between the two elements
         if not np.all(gfnodesL == gfnodesR[::-1]):
-            raise Exception("Face orientation for ielemL = %d, ielemR = %d \\ is incorrect"
-                % (ielemL, ielemR))
+            raise Exception("Face orientation for elemL_id = %d, elemR_id = %d \\ is incorrect"
+                % (elemL_id, elemR_id))
 
 
 def RandomizeNodes(mesh, elem = -1, orient = -1):
@@ -183,7 +183,7 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
     gbasis = mesh.gbasis
     for BF in BFG.BFaces:
         # Extract info
-        ielem = BF.Elem
+        elem_id = BF.Elem
         face = BF.face
 
         ''' Get physical coordinates of face '''
@@ -191,11 +191,11 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
         lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, face)
 
         # Convert to global node numbering
-        # gfnodes = mesh.Elem2Nodes[ielem][lfnodes]
+        # gfnodes = mesh.Elem2Nodes[elem_id][lfnodes]
 
         # Physical coordinates of global nodes
         # coords = mesh.Coords[gfnodes]
-        elem_coords = mesh.elements[ielem].node_coords
+        elem_coords = mesh.elements[elem_id].node_coords
         coords = elem_coords[lfnodes]
         if np.isnan(coord):
             coord = coords[0, icoord]
@@ -291,7 +291,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     '''
     for BFace1 in BFG1.BFaces:
         # Extract info
-        ielem1 = BFace1.Elem
+        elem_id1 = BFace1.Elem
         face1 = BFace1.face
 
         ''' Get physical coordinates of face '''
@@ -301,7 +301,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
         nfnode = lfnodes1.shape[0]
 
         # Convert to global node numbering
-        gfnodes1 = mesh.Elem2Nodes[ielem1][lfnodes1]
+        gfnodes1 = mesh.Elem2Nodes[elem_id1][lfnodes1]
         nodesort1 = np.sort(gfnodes1)
 
         # Physical coordinates of global nodes
@@ -310,7 +310,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
         # Pair each node with corresponding one on other boundary
         for BFace2 in BFG2.BFaces:
             # Extract info
-            ielem2 = BFace2.Elem
+            elem_id2 = BFace2.Elem
             face2 = BFace2.face
 
             ''' Get physical coordinates of face '''
@@ -319,7 +319,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                 mesh.gorder, face2)
 
             # Convert to global node numbering
-            gfnodes2 = mesh.Elem2Nodes[ielem2][lfnodes2]
+            gfnodes2 = mesh.Elem2Nodes[elem_id2][lfnodes2]
 
             # Physical coordinates of global nodes
             coords2 = mesh.Coords[gfnodes2]
@@ -411,9 +411,9 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                 mesh.nIFace += 1
                 IFaces.append(mesh_defs.IFace())
                 IF = IFaces[-1]
-                IF.ElemL = ielem1
+                IF.ElemL = elem_id1
                 IF.faceL = face1
-                IF.ElemR = ielem2
+                IF.ElemR = elem_id2
                 IF.faceR = face2
 
                 BFG1.nBFace -= 1

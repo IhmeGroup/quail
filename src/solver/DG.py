@@ -62,7 +62,6 @@ class ElemOperators(object):
 		self.x_elems = np.zeros([nElem, nq, dim])
 		self.basis_phys_grad_elems = np.zeros([nElem, nq, nb, dim])
 
-		GeomPhiData = None
 
 		# basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True, get_ref_grad=True)
@@ -79,7 +78,7 @@ class ElemOperators(object):
 			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
-			x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
+			x = mesh_defs.ref_to_phys(mesh, elem, quad_pts)
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
@@ -154,8 +153,9 @@ class IFaceOperators(ElemOperators):
 		i = 0
 		for IFace in mesh.IFaces:
 			# Normals
-			nvec = mesh_defs.iface_normal(mesh, IFace, quad_pts)
-			self.normals_ifaces[i] = nvec
+			# normals = mesh_defs.iface_normal(mesh, IFace, quad_pts)
+			normals = mesh.gbasis.calculate_normals(mesh, IFace.ElemL, IFace.faceL, quad_pts)
+			self.normals_ifaces[i] = normals
 			i += 1
 
 	def alloc_other_arrays(self, physics, basis, order):
@@ -204,7 +204,6 @@ class BFaceOperators(IFaceOperators):
 
 		# basis data
 		# PhiData = BasisData(basis, order, mesh)
-		GeomPhiData = None
 
 		for f in range(nfaces_per_elem):
 			# Left
@@ -221,11 +220,12 @@ class BFaceOperators(IFaceOperators):
 			j = 0
 			for BFace in BFG.BFaces:
 				# Normals
-				nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
+				# nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
+				nvec = mesh.gbasis.calculate_normals(mesh, BFace.Elem, BFace.face, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None)
+				x = mesh_defs.ref_to_phys(mesh, BFace.Elem, self.faces_to_xref[BFace.face])
 				# Store
 				x_bfgroup[j] = x
 

@@ -463,12 +463,11 @@ def get_sample_points(mesh, physics, basis, equidistant):
 	x = np.zeros([mesh.nElem,npoint,dim])
 	# PhiData = Basis.BasisData(physics.Basis,Order,mesh)
 	basis.get_basis_val_grads(xpoint, True, False, False, None)
-	GeomPhiData = None
 	el = 0
 	for elem in range(mesh.nElem):
 		U_ = U[elem]
 
-		xphys, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xpoint)
+		xphys = mesh_defs.ref_to_phys(mesh, elem, xpoint)
 		x[el,:,:] = xphys
 		# u[el,:,:] = np.matmul(basis.basis_val, U_)
 
@@ -675,9 +674,9 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 		# boundaries
 		for e in range(2):
 			if e == 0:
-				ielem = IFace.ElemL; face = IFace.faceL
+				elem_id = IFace.ElemL; face = IFace.faceL
 			else:
-				ielem = IFace.ElemR; face = IFace.faceR
+				elem_id = IFace.ElemR; face = IFace.faceR
 
 			# Get local nodes on face
 			lfnodes = gbasis.get_local_face_node_nums(mesh.gorder, face)
@@ -688,7 +687,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			# # Physical coordinates of global nodes
 			# coords = mesh.Coords[fnodes]
 
-			elem = mesh.elements[ielem]
+			elem = mesh.elements[elem_id]
 			coords = elem.node_coords[lfnodes]
 			if dim == 1:
 				x = np.full(2, coords[:,0])
@@ -705,7 +704,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	for BFG in mesh.BFaceGroups.values():
 		for BFace in BFG.BFaces:
 			# Get adjacent element info
-			ielem = BFace.Elem; face = BFace.face
+			elem_id = BFace.Elem; face = BFace.face
 
 			# Get local nodes on face
 			lfnodes = gbasis.get_local_face_node_nums( 
@@ -717,7 +716,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			# Physical coordinates of global nodes
 			# coords = mesh.Coords[fnodes]
 
-			elem = mesh.elements[ielem]
+			elem = mesh.elements[elem_id]
 			coords = elem.node_coords[lfnodes]
 			if dim == 1:
 				x = np.full(2, coords[:,0])
@@ -731,13 +730,13 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	If requested, plot element IDs at element centroids
 	'''
 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
-		for ielem in range(mesh.nElem):
-			xc = mesh_tools.get_element_centroid(mesh, ielem)
+		for elem_id in range(mesh.nElem):
+			xc = mesh_tools.get_element_centroid(mesh, elem_id)
 			if dim == 1:
 				yc = np.mean(y)
 			else:
 				yc = xc[0,1]
-			plt.text(xc[0,0], yc, str(ielem))
+			plt.text(xc[0,0], yc, str(elem_id))
 
 
 	plt.xlabel("$x$")

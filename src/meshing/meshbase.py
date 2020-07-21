@@ -5,7 +5,8 @@ import numpy as np
 from general import ShapeType
 import numerics.basis.basis as basis_defs
 
-def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
+
+def ref_to_phys(mesh, elem_id, xref):
     '''
     Function: ref_to_phys
     -------------------
@@ -13,20 +14,19 @@ def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
     space coordinates
 
     INPUTS:
-        mesh: Mesh object
-        elem: element 
-        PhiData: basis data
+        mesh: mesh object
+        elem_id: element ID
         npoint: number of coordinates to convert
-        xref: coordinates in reference space
-        xphys: pre-allocated storage for physical coordinates (optional) 
+        xref: coordinates in reference space [type: numpy array]
+              [shape: [nq, dim]]
 
     OUTPUTS:
-        xphys: coordinates in physical space
+        xphys: coordinates in physical space [type: numpy array]
+               [shape: [nq, dim]]
     '''
     gbasis = mesh.gbasis
     gorder = mesh.gorder
     #PhiData = gbasis.basis_val
-    npoint = xref.shape[0]
 
     # if PhiData is None:
     #     PhiData = Basis.BasisData(QBasis,QOrder,mesh)
@@ -36,7 +36,7 @@ def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
 
     gbasis.get_basis_val_grads(xref, get_val=True)
 
-    Phi= gbasis.basis_val
+    # Phi= gbasis.basis_val
     dim = mesh.Dim
     Coords = mesh.Coords
     # Phi = PhiData.Phi
@@ -44,123 +44,114 @@ def ref_to_phys(mesh, elem, PhiData, xref, xphys=None):
     if nb != mesh.nNodePerElem:
         raise Exception("Wrong number of nodes per element")
 
-    ElemNodes = mesh.Elem2Nodes[elem]
+    # ElemNodes = mesh.Elem2Nodes[elem_id]
 
-    if xphys is None:
-        xphys = np.zeros([npoint,dim])
-    else:
-        xphys[:] = 0.
+    elem_coords = mesh.elements[elem_id].node_coords
+    # coords = elem_coords[lfnodes]
 
-    # for ipoint in range(npoint):
-    #     for n in range(nn):
-    #         nodeNum = ElemNodes[n]
-    #         val = Phi[ipoint][n]
-    #         for d in range(dim):
-    #             xphys[ipoint][d] += val*Coords[nodeNum][d]
+    xphys = np.matmul(gbasis.basis_val, elem_coords)
 
-    xphys[:] = np.matmul(Phi, Coords[ElemNodes])
+    return xphys
 
-    return xphys, PhiData
+# def iface_normal(mesh, IFace, quad_pts, NData=None):
+#     '''
+#     Function: iface_normal
+#     -------------------
+#     This function obtains the outward-pointing normals from the 
+#     perspective of element on the "left" of IFace
 
-def iface_normal(mesh, IFace, quad_pts, NData=None):
-    '''
-    Function: iface_normal
-    -------------------
-    This function obtains the outward-pointing normals from the 
-    perspective of element on the "left" of IFace
+#     INPUTS:
+#         mesh: Mesh object
+#         IFace: interior face object
+#         quad_pts: points in reference space at which to calculate normals
 
-    INPUTS:
-        mesh: Mesh object
-        IFace: interior face object
-        quad_pts: points in reference space at which to calculate normals
+#     OUTPUTS:
+#         NData: normal data object
+#     '''
+#     elemL = IFace.ElemL
+#     elemR = IFace.ElemR
+#     gorderL = mesh.gorder
+#     gorderR = mesh.gorder
 
-    OUTPUTS:
-        NData: normal data object
-    '''
-    elemL = IFace.ElemL
-    elemR = IFace.ElemR
-    gorderL = mesh.gorder
-    gorderR = mesh.gorder
+#     nq = quad_pts.shape[0]
 
-    nq = quad_pts.shape[0]
+#     gbasis = mesh.gbasis
+#     # if NData is None: 
+#         # NData = NormalData()
 
-    gbasis = mesh.gbasis
-    # if NData is None: 
-        # NData = NormalData()
+#     if gorderL <= gorderR:
+#         nvec = gbasis.calculate_normals(gbasis, mesh, elemL, IFace.faceL, quad_pts)
+#     else:
+#         nvec = gbasis.calculate_normals(gbasis, mesh, elemR, IFace.faceR, quad_pts)
+#         nvec *= -1.
 
-    if gorderL <= gorderR:
-        nvec = gbasis.calculate_normals(gbasis, mesh, elemL, IFace.faceL, quad_pts)
-    else:
-        nvec = gbasis.calculate_normals(gbasis, mesh, elemR, IFace.faceR, quad_pts)
-        nvec *= -1.
-
-    return nvec
+#     return nvec
 
 
-def bface_normal(mesh, BFace, quad_pts, NData=None):
-    '''
-    Function: bface_normal
-    -------------------
-    This function obtains the outward-pointing normals at a
-    boundary face
+# def bface_normal(mesh, BFace, quad_pts, NData=None):
+#     '''
+#     Function: bface_normal
+#     -------------------
+#     This function obtains the outward-pointing normals at a
+#     boundary face
 
-    INPUTS:
-        mesh: Mesh object
-        BFace: boundary face object
-        quad_pts: points in reference space at which to calculate normals
+#     INPUTS:
+#         mesh: Mesh object
+#         BFace: boundary face object
+#         quad_pts: points in reference space at which to calculate normals
 
-    OUTPUTS:
-        NData: normal data object
-    '''
-    elem = BFace.Elem
-    gorder = mesh.gorder
-    gbasis = mesh.gbasis
+#     OUTPUTS:
+#         NData: normal data object
+#     '''
+#     elem = BFace.Elem
+#     gorder = mesh.gorder
+#     gbasis = mesh.gbasis
 
-    nq = quad_pts.shape[0]
+#     nq = quad_pts.shape[0]
 
-    # if NData is None:
-    #     NData = NormalData()
+#     # if NData is None:
+#     #     NData = NormalData()
 
-    nvec = gbasis.calculate_normals(gbasis, mesh, elem, BFace.face, quad_pts)
+#     nvec = gbasis.calculate_normals(gbasis, mesh, elem, BFace.face, quad_pts)
 
-    return nvec
+#     return nvec
 
-class FaceType(Enum):
-    '''
-    Class: FaceType
-    -------------------
-    Enumeration of face types
+# class FaceType(Enum):
+#     '''
+#     Class: FaceType
+#     -------------------
+#     Enumeration of face types
 
-    ATTRIBUTES:
-        Interior: interior face
-        Boundary: boundary face
-    '''
-    Interior = auto()
-    Boundary = auto()
+#     ATTRIBUTES:
+#         Interior: interior face
+#         Boundary: boundary face
+#     '''
+#     Interior = auto()
+#     Boundary = auto()
 
 
-class Face(object):
-    '''
-    Class: Face
-    -------------------
-    This class provides information about a given face.
+# class Face(object):
+#     '''
+#     Class: Face
+#     -------------------
+#     This class provides information about a given face.
 
-    NOTES:
-        Not used for now
+#     NOTES:
+#         Not used for now
 
-    ATTRIBUTES:
-        Type: face type (interior or boundary)
-        Number: Global number of face of given type
-    '''
-    def __init__(self):
-        '''
-        Method: __init__
-        -------------------
-        This method initializes the object
-        '''
-        self.Type = FaceType.Interior
-        self.Group = -1
-        self.Number = 0 
+#     ATTRIBUTES:
+#         Type: face type (interior or boundary)
+#         Number: Global number of face of given type
+#     '''
+#     def __init__(self):
+#         '''
+#         Method: __init__
+#         -------------------
+#         This method initializes the object
+#         '''
+#         self.Type = FaceType.Interior
+#         self.Group = -1
+#         self.Number = 0 
 
 
 class IFace(object):
@@ -170,10 +161,10 @@ class IFace(object):
     This class provides information about a given interior face.
 
     ATTRIBUTES:
-        ElemL: left element
-        faceL: local face number from ElemL's perspective
-        ElemR: right element
-        faceR: local face number from ElemR's perspective
+        elemL_id: ID of "left" element
+        faceL_id: local ID of face from perspective of left element
+        elemR_id: ID of "right" element
+        faceR_id: local ID of face from perspective of right element
     '''
     def __init__(self):
         '''
@@ -424,27 +415,27 @@ class Mesh(object):
     def create_elements(self):
         self.elements = [Element() for i in range(self.nElem)]
 
-        for ielem in range(self.nElem):
-            elem = self.elements[ielem]
+        for elem_id in range(self.nElem):
+            elem = self.elements[elem_id]
 
-            elem.number = ielem
-            elem.node_nums = self.Elem2Nodes[ielem]
+            elem.number = elem_id
+            elem.node_nums = self.Elem2Nodes[elem_id]
             elem.node_coords = self.Coords[elem.node_nums]
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
         # neighbors
         for iif in range(self.nIFace):
             int_face = self.IFaces[iif]
-            ielemL = int_face.ElemL
-            ielemR = int_face.ElemR
+            elemL_id = int_face.ElemL
+            elemR_id = int_face.ElemR
             faceL = int_face.faceL
             faceR = int_face.faceR
 
-            elemL = self.elements[ielemL]
-            elemR = self.elements[ielemR]
+            elemL = self.elements[elemL_id]
+            elemR = self.elements[elemR_id]
 
-            elemL.face_to_neighbors[faceL] = ielemR
-            elemR.face_to_neighbors[faceR] = ielemL
+            elemL.face_to_neighbors[faceL] = elemR_id
+            elemR.face_to_neighbors[faceR] = elemL_id
 
 
 

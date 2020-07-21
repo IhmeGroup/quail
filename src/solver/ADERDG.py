@@ -44,8 +44,6 @@ class ElemOperatorsADER(DG.ElemOperators):
 		self.x_elems = np.zeros([nElem,nq,dim])
 		self.basis_phys_grad_elems = np.zeros([nElem,nq,nb,dim])
 
-		GeomPhiData = None
-
 		basis.get_basis_val_grads(quad_pts, get_val=True, get_ref_grad=True)
 
 		self.basis_val = basis.basis_val
@@ -60,7 +58,7 @@ class ElemOperatorsADER(DG.ElemOperators):
 			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
-			x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, quad_pts)
+			x = mesh_defs.ref_to_phys(mesh, elem, quad_pts)
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
@@ -105,8 +103,9 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 		i = 0
 		for IFace in mesh.IFaces:
 			# Normals
-			nvec = mesh_defs.iface_normal(mesh, IFace, quad_pts)
-			self.normals_ifaces[i] = nvec
+			# normals = mesh_defs.iface_normal(mesh, IFace, quad_pts)
+			normals = mesh.gbasis.calculate_normals(mesh, IFace.ElemL, IFace.faceL, quad_pts)
+			self.normals_ifaces[i] = normals
 			i += 1
 
 class BFaceOperatorsADER(IFaceOperatorsADER):
@@ -128,7 +127,6 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 		self.normals_bfgroups = []
 		self.x_bfgroups = []
 
-		GeomPhiData = None
 
 		for f in range(nfaces_per_elem):
 			# Left
@@ -145,11 +143,12 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 			j = 0
 			for BFace in BFG.BFaces:
 				# Normals
-				nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
+				# nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
+				nvec = mesh.gbasis.calculate_normals(mesh, BFace.Elem, BFace.face, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, BFace.Elem, GeomPhiData, self.faces_to_xref[BFace.face], None)
+				x = mesh_defs.ref_to_phys(mesh, BFace.Elem, self.faces_to_xref[BFace.face])
 				# Store
 				x_bfgroup[j] = x
 
@@ -241,7 +240,6 @@ class ADEROperators(object):
 		self.djac_elems = np.zeros([nElem,nb,1])
 		self.x_elems = np.zeros([nElem,nb,dim])
 
-		GeomPhiData = None
 
 		for elem in range(mesh.nElem):
 			# Jacobian
@@ -253,7 +251,7 @@ class ADEROperators(object):
 				self.djac_elems[elem] = np.tile(djac,(int(np.sqrt(nnode)),1))
 
 				# Physical coordinates of nodal points
-				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xnode)
+				x = mesh_defs.ref_to_phys(mesh, elem, xnode)
 				# Store
 				self.x_elems[elem] = np.tile(x,(int(np.sqrt(nnode)),1))
 
@@ -263,7 +261,7 @@ class ADEROperators(object):
 				self.djac_elems[elem] = np.tile(djac,(nnode,1))
 
 				# Physical coordinates of nodal points
-				x, GeomPhiData = mesh_defs.ref_to_phys(mesh, elem, GeomPhiData, xnode)
+				x = mesh_defs.ref_to_phys(mesh, elem, xnode)
 				# Store
 				self.x_elems[elem] = np.tile(x,(nnode,1))
 

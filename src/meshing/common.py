@@ -337,11 +337,11 @@ def split_quadrils_into_tris(mesh_old):
 
 	# Elems
 	mesh.allocate_elem_to_nodes()
-	for ielem in range(nElem_old):
+	for elem_id in range(nElem_old):
 		# First triangle
-		mesh.Elem2Nodes[ielem] = mesh_old.Elem2Nodes[ielem, tri1_nodes]
+		mesh.Elem2Nodes[elem_id] = mesh_old.Elem2Nodes[elem_id, tri1_nodes]
 		# Second triangle
-		mesh.Elem2Nodes[ielem+nElem_old] = mesh_old.Elem2Nodes[ielem, tri2_nodes]
+		mesh.Elem2Nodes[elem_id+nElem_old] = mesh_old.Elem2Nodes[elem_id, tri2_nodes]
 
 
 	old_to_new_face = np.array([2, 1, 2, 1])
@@ -371,11 +371,11 @@ def split_quadrils_into_tris(mesh_old):
 	# mesh.allocate_ifaces()
 	# mesh.IFaces[:nIFace_old] = IFaces_old
 	# for IF in mesh.IFaces[nIFace_old:]:
-	for ielem in range(nElem_old):
+	for elem_id in range(nElem_old):
 		IF = mesh_defs.IFace()
-		IF.ElemL = ielem
+		IF.ElemL = elem_id
 		IF.faceL = 0
-		IF.ElemR = ielem + nElem_old
+		IF.ElemR = elem_id + nElem_old
 		IF.faceR = 0
 		mesh.IFaces.append(IF)
 
