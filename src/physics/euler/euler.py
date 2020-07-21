@@ -127,9 +127,9 @@ class Euler(base.PhysicsBase):
 		# 	raise errors.NotPhysicalError
 		def get_pressure():
 			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
-			if flag_non_physical:
-				if np.any(scalar < 0.):
-					raise errors.NotPhysicalError
+			# if flag_non_physical:
+			# 	if np.any(scalar < 0.):
+			# 		raise errors.NotPhysicalError
 			return scalar
 		def get_temperature():
 			return get_pressure()/(rho*R)
