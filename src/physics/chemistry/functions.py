@@ -239,7 +239,62 @@ class Arrhenius(SourceBase):
 		return S
 
 	def get_jacobian(self, physics, FcnData, x, t):
-		pass
+		
+		# Note: This assumes b = 0 for now.
+
+		# Unpack source term constants
+		A = self.A
+		Tign = self.Tign
+		
+		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+
+		U = FcnData.U
+		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+
+		T = physics.ComputeScalars("Temperature", U)
+		K = A * np.exp(-Tign / T)
+
+		dTdU = get_temperature_jacobian(physics, U)
+
+		dKdrho =  (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irho].reshape([U.shape[0],1]))  / T**2 
+		dKdrhou = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhou].reshape([U.shape[0],1])) / T**2
+		dKdrhoE = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoE].reshape([U.shape[0],1])) / T**2
+		dKdrhoY = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoY].reshape([U.shape[0],1])) / T**2
+
+		jac[:, irhoY, irho] =  (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1])).reshape(-1)
+		jac[:, irhoY, irhou] = (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1])).reshape(-1)
+		jac[:, irhoY, irhoE] = (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1])).reshape(-1)
+		jac[:, irhoY, irhoY] = (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1]) - K ).reshape(-1)
+
+		# return jac.transpose(0,2,1)
+		return jac
+		
+def get_temperature_jacobian(physics, U):
+		
+		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+
+		gam = physics.gamma
+		qo = physics.qo
+		R = physics.R
+		
+		dTdU = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+
+		rho = U[:, irho]
+		rhou = U[:, irhou]
+		rhoE = U[:, irhoE]
+		rhoY = U[:, irhoY]
+
+		E = rhoE/rho
+		Y = rhoY/rho
+		u = rhou/rho
+
+		gamR = (gam - 1.) / R
+		dTdU[:, irhoY, irho] = (gamR / rho) * (-1.*E + u**2 - qo*Y)
+		dTdU[:, irhoY, irhou] = (gamR / rho) * (-1.*u)
+		dTdU[:, irhoY, irhoE] = gamR / rho
+		dTdU[:, irhoY, irhoY] = -1.*qo * (gamR / rho)
+
+		return dTdU # [nq, ns, ns]
 
 class Heaviside(SourceBase):
 	def __init__(self, Da=1000., Tign=15.):

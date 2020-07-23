@@ -139,7 +139,6 @@ class Chemistry(base.PhysicsBase):
 		def get_temperature():
 			return get_pressure()/(rho*R)
 
-
 		''' Get final scalars '''
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["Pressure"].name:
@@ -154,12 +153,8 @@ class Chemistry(base.PhysicsBase):
 		elif sname is self.AdditionalVariables["TotalEnthalpy"].name:
 			scalar = (rhoE + get_pressure())/rho
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
-			# Pressure
-			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
 			scalar = np.sqrt(gamma*get_pressure()/rho)
 		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			# Pressure
-			# P = GetPressure()
 			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
 		elif sname is self.AdditionalVariables["Velocity"].name:
 			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho
