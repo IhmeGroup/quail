@@ -8,6 +8,7 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBa
 class FcnType(Enum):
     DensityWave = auto()
     SimpleDetonation1 = auto()
+    SimpleDetonation2 = auto()
     SimpleDetonation3 = auto()
 
 # class BCType(Enum):
@@ -101,6 +102,52 @@ class SimpleDetonation1(FcnBase):
 		# MixtureFraction
 		Up[iright, srhoz] = rho_u*Y_u
 		Up[ileft, srhoz] = rho_b*Y_b
+
+		return Up
+
+class SimpleDetonation2(FcnBase):
+	def __init__(self, uL=np.array([2.,4.,40.,0.]), xshock=0.):
+		# These values represent the unburned state.
+		self.uL = uL
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+
+		uL = self.uL
+		xshock = self.xshock
+
+		rhoL = uL[0]
+		vL = uL[1]
+		pL = uL[2]
+		yL = uL[3]
+
+		# Unpack relevant constants from physics class.
+		srho, srhou, srhoE, srhoz = physics.get_state_slices()
+		gam = physics.gamma
+		qo = physics.qo
+		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])		
+
+		delta = np.sqrt((2.*(gam - 1.)) / (gam + 1.))
+
+		rhoR = gam / (1. + delta)
+		vR = -1.*delta
+		pR = 1. - gam * delta
+		yR = 1.
+
+		ileft = (x <= xshock).reshape(-1)
+		iright = (x > xshock).reshape(-1)
+		
+		Up[iright, srho] = rhoR
+		Up[ileft, srho] = rhoL
+		# Momentum
+		Up[iright, srhou] = rhoR*vR
+		Up[ileft, srhou] = rhoL*vL
+		# Energy
+		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
+		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
+		# MixtureFraction
+		Up[iright, srhoz] = rhoR*yR
+		Up[ileft, srhoz] = rhoL*yL
 
 		return Up
 

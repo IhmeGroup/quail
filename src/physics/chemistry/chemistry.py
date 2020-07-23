@@ -206,6 +206,7 @@ class Chemistry1D(Chemistry):
 			# euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			chemistry_fcn_type.DensityWave : chemistry_fcns.DensityWave,
 			chemistry_fcn_type.SimpleDetonation1 : chemistry_fcns.SimpleDetonation1,
+			chemistry_fcn_type.SimpleDetonation2 : chemistry_fcns.SimpleDetonation2,
 			chemistry_fcn_type.SimpleDetonation3 : chemistry_fcns.SimpleDetonation3,
 
 		}
