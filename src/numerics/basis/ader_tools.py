@@ -24,18 +24,16 @@ import numerics.basis.tools as basis_tools
 
 def set_basis_spacetime(mesh, order, basis_name):
     '''
-    Method: set_basis_spacetime
-    ----------------------------
     Sets the space-time basis class given the basis_name string argunemnt
 
     INPUTS: 
-        order: solution order [int]
+        order: solution order
         basis_name: name of the spacial basis function used to determine
                     the space-time basis function we wish to instantiate
-                    as a class [str]
+                    as a class 
 
     OUTPUTS:
-        basis_st: instantiated space-time basis class [basis object]
+        basis_st: instantiated space-time basis class
 
     RAISE:
         If the basis class is not defined returns a NotImplementedError
@@ -52,15 +50,13 @@ def set_basis_spacetime(mesh, order, basis_name):
 def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, 
     PhysicalSpace=False):
     '''
-    Method: get_elem_inv_mass_matrix_ader
-    --------------------------------------
     Calculate the inverse mass matrix for ADER-DG prediction step
 
     INPUTS:
         mesh: mesh object
         basis: basis object
-        order: solution order [int]
-        elem: element index [int]
+        order: solution order 
+        elem: element index 
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
                        reference space (default: False {reference space})
 
@@ -76,16 +72,14 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1,
 
 def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     '''
-    Method: get_inv_stiffness_matrix_ader
-    --------------------------------------
     Calculate the inverse stiffness matrix (Currently not used)
 
     INPUTS:
         mesh: mesh object
         basis: basis object
-        order: solution order [int]
-        elem: element index [int]
-        gradDir: direction to take the gradient in [int]
+        order: solution order
+        elem: element index
+        gradDir: direction to take the gradient in
 
     OUTPUTS: 
         iSM: inverse stiffness matrix [nb_st, nb_st]
@@ -100,19 +94,18 @@ def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
 def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     , PhysicalSpace=False):
     '''
-    Method: get_stiffness_matrix_ader
-    --------------------------------------
     Calculate the stiffness matrix for ADER-DG prediction step
+
     INPUTS:
         mesh: mesh object
         basis: basis object
         basis_st : space-time basis object
-        order: solution order [int]
-        dt: time step [float]
-        elem: element index [int]
-        gradDir: direction of gradient calc [int]
+        order: solution order 
+        dt: time step 
+        elem: element index
+        gradDir: direction of gradient calc
     OUTPUTS: 
-        SM: stiffness matrix for ADER-DG # [nb_st, nb_st]
+        SM: stiffness matrix for ADER-DG [nb_st, nb_st]
     '''
     dim = mesh.Dim
 
@@ -175,16 +168,14 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
 def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1, 
     PhysicalSpace=False):
     '''
-    Method: get_temporal_flux_ader
-    --------------------------------------
     Calculate the temporal flux matrix for ADER-DG prediction step
 
     INPUTS:
         mesh: mesh object
         basis1: basis object
         basis2: basis object 
-        order: solution order [int]
-        elem: [OPTIONAL] element index [int]
+        order: solution order
+        elem: [OPTIONAL] element index
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
                        reference space (default: False {reference space})
 
@@ -259,15 +250,13 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
 def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, 
     PhysicalSpace=False):
     '''
-    Method: get_elem_mass_matrix_ader
-    --------------------------------------
     Calculate the mass matrix for ADER-DG prediction step
 
     INPUTS:
         mesh: mesh object
         basis: basis object
-        order: solution order [int]
-        elem: [OPTIONAL] element index [int]
+        order: solution order 
+        elem: [OPTIONAL] element index
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
                        reference space (default: False {reference space})
 

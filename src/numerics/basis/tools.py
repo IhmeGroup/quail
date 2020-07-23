@@ -34,17 +34,15 @@ Basis2Shape = {
 
 def set_basis(order, basis_name):
     '''
-    Method: set_basis
-    -------------------
     Sets the basis class given the basis_name string argunemnt
 
     INPUTS: 
-        order: solution order [int]
+        order: solution order
         basis_name: name of the basis function we wish to instantiate 
-                    as a class [str]
+                    as a class
 
     OUTPUTS:
-        basis: instantiated basis class [basis object]
+        basis: instantiated basis class
 
     RAISE:
         If the basis class is not defined returns a NotImplementedError
@@ -68,16 +66,14 @@ def set_basis(order, basis_name):
 
 def set_1D_node_calc(node_type):
     '''
-    Method: set_1D_node_calc
-    -------------------------
     Sets the get_1d_nodes attribute from BasisBase in basis.py
 
     INPUTS: 
         node_type: name of the node type (available NodeType listed in 
-        src/general.py) [str]
+        src/general.py)
 
     OUTPUTS:
-        fcn: method to calculate 1D nodes [method]
+        fcn: method to calculate 1D nodes
     '''
     if NodeType[node_type] == NodeType.Equidistant:
         fcn = equidistant_nodes_1D_range
@@ -140,8 +136,6 @@ def gauss_lobatto_nodes_1D_range(start, stop, nnode):
 
 def get_inv_mass_matrices(mesh, physics, basis):
     '''
-    Method: get_inv_mass_matrices
-    -------------------------------
     Calculate the inverse mass matrices
 
     INPUTS:
@@ -172,8 +166,6 @@ def get_inv_mass_matrices(mesh, physics, basis):
 def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, 
         PhysicalSpace=False):
     '''
-    Method: get_elem_inv_mass_matrix
-    ---------------------------------
     Calculate the inverse mass matrix for a given element
 
     INPUTS:
@@ -196,8 +188,6 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1,
 
 def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
-    Method: get_elem_mass_matrix
-    ------------------------------
     Calculate the mass matrix for a given element
 
     INPUTS:
@@ -242,8 +232,6 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
 
 def get_stiffness_matrix(solver, mesh, order, elem):
     '''
-    Method: get_stiffness_matrix
-    --------------------------------------
     Calculate the stiffness_matrix
 
     INPUTS:
@@ -285,16 +273,14 @@ def get_stiffness_matrix(solver, mesh, order, elem):
 
 def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     '''
-    Method: get_projection_matrix
-    ------------------------------
     Calculate the projection matrix to increase order
 
     INPUTS:
         mesh: mesh object
         basis: basis function object
         basis_old: basis function from previous order
-        order: solution order [int]
-        order_old: previous solution order [int]
+        order: solution order
+        order_old: previous solution order
         iMM: inverse mass matrix [nb, nb]
 
     OUTPUTS: 
@@ -338,13 +324,11 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
 
 def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
     '''
-    Method: element_jacobian
-    ----------------------------
     Evaluate the geometric jacobian for a specified element
 
     INPUTS:
         mesh: mesh object 
-        elem: element index [int]
+        elem: element index
         quad_pts: coordinates of quadrature points
         get_djac: [OPTIONAL]flag to calculate jacobian determinant 
                   (Default: False)
@@ -396,14 +380,12 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
 def calculate_1D_normals(mesh, elem, face, quad_pts):
 
     '''
-    Method: calculate_1D_normals
-    -----------------------------
     Calculate the normals for a 1D face
 
     INPUTS:
         mesh: mesh object
-        elem: element index [int]
-        face: face index [int]
+        elem: element index
+        face: face index
         quad_pts: points in reference space at which to calculate normals
 
     OUTPUTS:
@@ -430,14 +412,12 @@ def calculate_1D_normals(mesh, elem, face, quad_pts):
     
 def calculate_2D_normals(mesh, elem, face, quad_pts):
     '''
-    Method: calculate_2D_normals
-    -----------------------------
     Calculate the normals for 2D shapes
 
     INPUTS:
         mesh: mesh object
-        elem: element index [int]
-        face: face index [int]
+        elem: element index 
+        face: face index
         quad_pts: points in reference space at which to calculate normals
     '''
     gbasis = mesh.gbasis
@@ -462,8 +442,6 @@ def calculate_2D_normals(mesh, elem, face, quad_pts):
 
 def get_lagrange_basis_1D(x, xnodes, phi=None, gphi=None):
     '''
-    Method: get_lagrange_basis_1D
-    ------------------------------
     Calculates the 1D Lagrange basis functions
 
     INPUTS:
@@ -508,8 +486,6 @@ def get_lagrange_basis_1D(x, xnodes, phi=None, gphi=None):
 
 def get_lagrange_basis_2D(x, xnodes, phi=None, gphi=None):
     '''
-    Method: get_lagrange_basis_2D
-    ------------------------------
     Calculates the 2D Lagrange basis functions
 
     INPUTS:
@@ -548,8 +524,6 @@ def get_lagrange_basis_2D(x, xnodes, phi=None, gphi=None):
 
 def get_lagrange_basis_tri(x, p, xn, phi):
     '''
-    Method: get_lagrange_basis_tri
-    ------------------------------
     Calculates the value for Lagrange triangle basis function
 
     INPUTS:
@@ -616,8 +590,6 @@ def get_grad_eta_function(p, alpha, l):
 
 def get_lagrange_grad_tri(x, p, xn, gphi):
     '''
-    Method: get_lagrange_grad_tri
-    ------------------------------
     Calculates the gradient of the triangular basis functions 
 
     INPUTS:
@@ -670,13 +642,11 @@ def get_tri_grad_area_coordinates(p, alpha, l):
 
 def get_legendre_basis_1D(x, p, phi=None, gphi=None):
     '''
-    Method: get_legendre_basis_1D
-    ------------------------------
     Calculates the 1D Legendre basis functions
 
     INPUTS:
         x: coordinate of current node [nq, dim]
-        p: order of polynomial space [int]
+        p: order of polynomial space
         
     OUTPUTS: 
         phi: evaluated basis [nq, nb]
@@ -704,13 +674,11 @@ def get_legendre_basis_1D(x, p, phi=None, gphi=None):
 
 def get_legendre_basis_2D(x, p, phi=None, gphi=None):
     '''
-    Method: get_legendre_basis_2D
-    ------------------------------
     Calculates the 2D Legendre basis functions
 
     INPUTS:
         x: coordinate of current node [nq, dim]
-        p: order of polynomial space [int]
+        p: order of polynomial space
         
     OUTPUTS: 
         phi: evaluated basis [nq, nb]
@@ -742,8 +710,6 @@ def get_legendre_basis_2D(x, p, phi=None, gphi=None):
 
 def get_modal_basis_tri(xi, p, xn, phi):
     '''
-    Method: get_modal_basis_tri
-    ------------------------------
     Calculates the value for Hierarchical triangle basis function
 
     INPUTS:
@@ -866,8 +832,6 @@ def get_kernel_function(p, x):
 
 def get_modal_grad_tri(xi, p, xn, gphi):
     '''
-    Method: get_modal_grad_tri
-    ------------------------------
     Calculates the gradient of the triangular basis functions 
 
     INPUTS:

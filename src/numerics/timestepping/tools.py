@@ -23,12 +23,10 @@ import solver.tools as solver_tools
 
 def set_stepper(Params, U):
 	'''
-	Method: set_stepper
-	---------------------
 	Given the timescheme parameter, set the stepper object
 
 	INPUTS:
-		Params: list of parameters for solver [list]
+		Params: list of parameters for solver
 		U: solution vector for instantiaing stepper class [nelem, nb, ns]
 
 	OUTPUTS: 
@@ -59,13 +57,11 @@ def set_stepper(Params, U):
 
 def set_time_stepping_approach(stepper, Params):
 	'''
-	Method: set_time_stepping_approach
-	-----------------------------------
 	Sets stepper.get_time_step method given input parameters
 
 	INPUTS:
 		stepper: stepper object (i.e. FE, RK4, etc...)
-		Params: list of parameters for solver [list]
+		Params: list of parameters for solver
 
 	OUTPUTS: 
 		get_time_step: method selected to calculate dt
@@ -91,8 +87,6 @@ def set_time_stepping_approach(stepper, Params):
 
 def get_dt_from_numtimesteps(stepper, solver):
 	'''
-	Method: get_dt_from_numtimesteps
-	-----------------------------------
 	Calculates dt from the specified number of time steps
 
 	INPUTS:
@@ -115,8 +109,6 @@ def get_dt_from_numtimesteps(stepper, solver):
 
 def get_dt_from_timestepsize(stepper, solver):
 	'''
-	Method: get_dt_from_timestepsize
-	-----------------------------------
 	Sets dt directly based on input deck specification of 
 	Params["TimeStepSize"].
 
@@ -140,8 +132,6 @@ def get_dt_from_timestepsize(stepper, solver):
 
 def get_dt_from_cfl(stepper, solver):
 	'''
-	Method: get_dt_from_cfl
-	-----------------------------------
 	Calculates dt using a specified CFL number. Updates at everytime step to 
 	ensure solution remains within the CFL bound.
 

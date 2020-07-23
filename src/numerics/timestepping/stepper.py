@@ -101,8 +101,6 @@ class StepperBase(ABC):
 	@abstractmethod
 	def TakeTimeStep(self, solver):
 		'''
-		Method: TakeTimeStep
-		---------------------
 		Takes a time step using the specified time-stepping scheme for the
 		solution.
 
@@ -201,7 +199,7 @@ class LSRK4(StepperBase):
 		rk4a : coefficients for LSRK4 scheme
 		rk4b : coefficients for LSRK4 scheme
 		rk4c : coefficients for LSRK4 scheme
-		nstages : number of stages in scheme [int]
+		nstages : number of stages in scheme
 		dU : change in solution array in each stage
 			(shape: [nelem, nb, ns])
 		'''
@@ -270,7 +268,7 @@ class SSPRK3(StepperBase):
 		----------------------
 		ssprk3a : coefficients for SSPRK3 scheme
 		ssprk3b : coefficients for SSPRK3 scheme
-		nstages : number of stages in scheme [int]
+		nstages : number of stages in scheme
 		dU : change in solution array in each stage
 			(shape: [nelem, nb, ns])
 		'''
@@ -371,8 +369,8 @@ class Strang(StepperBase, ode.ODESolvers):
 		operator splitting technique
 
 		INPUTS:
-		    explicit: name of chosen explicit scheme from Params [str]
-		    implicit: name of chosen implicit (ODE) solver from Params [str]
+		    explicit: name of chosen explicit scheme from Params
+		    implicit: name of chosen implicit (ODE) solver from Params
 		    U : solution state vector used to initialize solver 
 		    	[nelem, nb, ns]
 

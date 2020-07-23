@@ -21,16 +21,14 @@ import general
 
 def get_quadrature_points_weights(order, quad_type, forced_pts=None):
     '''
-    Method: get_quadrature_points_weights
-    --------------------------------------
     Depending on the QuadratureType enum calculate the appropriate 
     function to obtain quadrature points and weights
 
     INPUTS: 
-        order: solution order [int]
-        quad_type: Enum that points to the appropriate quadrature calc [enum]
+        order: solution order
+        quad_type: Enum that points to the appropriate quadrature calc
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
-                    equal to quad_pts is turned on [int]
+                    equal to quad_pts is turned on
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]
@@ -48,12 +46,10 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
 
 def get_quadrature_gauss_legendre(order):
     '''
-    Method: get_quadrature_gauss_legendre
-    --------------------------------------
     Calculate the quadrature points and weights using Gauss Legendre rules
 
     INPUTS: 
-        order: solution order [int]
+        order: solution order
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]
@@ -75,14 +71,12 @@ def get_quadrature_gauss_legendre(order):
 
 def get_quadrature_gauss_lobatto(order, forced_pts=None):
     '''
-    Method: get_quadrature_gauss_lobatto
-    --------------------------------------
     Calculate the quadrature points and weights using Gauss Lobatto rules
 
     INPUTS: 
-        order: solution order [int]
+        order: solution order 
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
-                    equal to quad_pts is turned on [int]
+                    equal to quad_pts is turned on
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]
@@ -108,12 +102,10 @@ def get_quadrature_gauss_lobatto(order, forced_pts=None):
 
 def gauss_lobatto(order):
     '''
-    Method: gauss_lobatto
-    -----------------------
     Evaluate quadrature with Gauss Lobatto rules
 
     INPUTS: 
-        order: solution order [int]
+        order: solution order
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq,]
@@ -131,8 +123,6 @@ def gauss_lobatto(order):
 
 def get_lobatto_pts_wts(alpha, beta, xl1, xl2):
     '''
-    Method: get_lobatto_pts_wts
-    ------------------------------
     Compute the Lobatto nodes and weights with the preassigned node xl1, xl2.
     Based on the section 7 of the paper
         Some modified matrix eigenvalue problems,
@@ -184,8 +174,6 @@ def scheme_from_rc(alpha, beta):
 
 def jacobi(n, alpha, beta):
     '''
-    Method: jacobi
-    ------------------
     Generate the recurrence coefficients a_k, b_k, c_k in
 
     P_{k+1}(x) = (a_k x - b_k)*P_{k}(x) - c_k P_{k-1}(x)

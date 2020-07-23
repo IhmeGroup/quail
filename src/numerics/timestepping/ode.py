@@ -118,8 +118,6 @@ class ODESolvers():
 
 		def get_jacobian_matrix(self, mesh, solver):
 			'''
-			Method: get_jacobian_matrix
-			----------------------------
 			Calculates the jacobian matrix of the source term and its inverse for all elements
 
 			INPUTS:
@@ -151,8 +149,6 @@ class ODESolvers():
 
 		def get_jacobian_matrix_elem(self, solver, elem, iMM, Up):
 			'''
-			Method: get_jacobian_matrix_elem
-			--------------------------------
 			Calculates the jacobian matrix of the source term and its 
 			inverse for each element. Definition of 'jacobian' matrix:
 
@@ -160,7 +156,7 @@ class ODESolvers():
 
 			INPUTS:
 				solver: solver object (i.e. DG, ADERDG, etc...)
-				elem: element index [int]
+				elem: element index
 			OUTPUTS: 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 

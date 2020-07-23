@@ -12,16 +12,14 @@ import numerics.quadrature.segment as qseg
 
 def get_quadrature_points_weights(order, quad_type, forced_pts=None):
     '''
-    Method: get_quadrature_points_weights
-    --------------------------------------
     Calls the segment quadrature function to obtain quadrature points and 
     weights and restructures them for quadrilateral shapes
 
     INPUTS: 
-        order: solution order [int]
-        quad_type: Enum that points to the appropriate quadrature calc [enum]
+        order: solution order
+        quad_type: Enum that points to the appropriate quadrature calc
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
-                    equal to quad_pts is turned on [int]
+                    equal to quad_pts is turned on
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]
