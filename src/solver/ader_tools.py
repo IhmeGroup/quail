@@ -348,6 +348,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 		flux = solver.flux_coefficients(elem, dt, order, basis_st, U_pred)
 		if i == ntest-1:
 			print('Sub-iterations not converging',i)
+			# code.interact(local=locals())
 
 	return U_pred
 

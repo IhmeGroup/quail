@@ -352,6 +352,13 @@ class ADERDG(base.SolverBase):
 		if Params["InterpolateFlux"] and basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
+		if Params["CFL"] != None:
+			print('Error Message')
+			print('---------------------------------------------------------')
+			print('CFL-based time-stepping not currently supported in ADERDG')
+			print('')
+			raise errors.IncompatibleError
+
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
 		physics = self.physics
@@ -359,7 +366,8 @@ class ADERDG(base.SolverBase):
 		basis = self.basis
 		basis_st = self.basis_st
 		
-		dt = self.Params['EndTime']/self.Params['NumTimeSteps']
+		Stepper = self.Stepper
+		# dt = self.Params['EndTime']/self.Params['NumTimeSteps']
 
 
 		self.elem_operators = DG.ElemOperators()
@@ -377,6 +385,8 @@ class ADERDG(base.SolverBase):
 		self.bface_operators_st = BFaceOperatorsADER()
 		self.bface_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
 
+		Stepper.dt = Stepper.get_time_step(Stepper, self)
+		dt = Stepper.dt
 		self.ader_operators = ADEROperators()
 		self.ader_operators.compute_operators(mesh, physics, basis, basis_st, dt, physics.order)
 
