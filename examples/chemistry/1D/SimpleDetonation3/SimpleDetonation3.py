@@ -1,7 +1,7 @@
 import numpy as np
 
 cfl = 0.25
-nElem = 150
+nElem = 360
 dx = float(1/nElem)
 u = 5.
 dt = cfl*dx/u
