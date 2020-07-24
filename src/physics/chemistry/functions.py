@@ -220,7 +220,7 @@ class Arrhenius(SourceBase):
 		Tign = self.Tign
 
 
-		irho, irhou, irhoE, irhoz = physics.GetStateIndices()
+		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
 		U = FcnData.U
 		T = physics.ComputeScalars("Temperature", U)
@@ -234,7 +234,7 @@ class Arrhenius(SourceBase):
 
 		S = np.zeros_like(U)
 
-		S[:,irhoz] = -K[:].reshape(-1) * U[:,irhoz]
+		S[:,irhoY] = -K[:].reshape(-1) * U[:,irhoY]
 		
 		return S
 
@@ -289,7 +289,7 @@ def get_temperature_jacobian(physics, U):
 		u = rhou/rho
 
 		gamR = (gam - 1.) / R
-		dTdU[:, irhoY, irho] = (gamR / rho) * (-1.*E + u**2 - qo*Y)
+		dTdU[:, irhoY, irho] = (gamR / rho) * (-1.*E + u**2 + qo*Y)
 		dTdU[:, irhoY, irhou] = (gamR / rho) * (-1.*u)
 		dTdU[:, irhoY, irhoE] = gamR / rho
 		dTdU[:, irhoY, irhoY] = -1.*qo * (gamR / rho)
