@@ -211,6 +211,7 @@ class Euler1D(Euler):
 
 		self.conv_num_flux_map.update({
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
+			euler_conv_num_flux_type.HLLC : euler_fcns.HLLC1D,
 		})
 
 	class StateVariables(Enum):

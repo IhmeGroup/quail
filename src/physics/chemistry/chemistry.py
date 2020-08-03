@@ -22,6 +22,7 @@ from physics.euler.functions import SourceType as euler_source_type
 import physics.chemistry.functions as chemistry_fcns
 from physics.chemistry.functions import FcnType as chemistry_fcn_type
 from physics.chemistry.functions import SourceType as chemistry_source_type
+from physics.chemistry.functions import ConvNumFluxType as chemistry_conv_num_flux_type
 
 
 class Chemistry(base.PhysicsBase):
@@ -218,6 +219,7 @@ class Chemistry1D(Chemistry):
 
 		self.conv_num_flux_map.update({
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
+			chemistry_conv_num_flux_type.HLLC : chemistry_fcns.HLLC1D,
 		})
 
 	class StateVariables(Enum):

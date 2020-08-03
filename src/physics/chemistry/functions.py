@@ -22,6 +22,7 @@ class SourceType(Enum):
 
 class ConvNumFluxType(Enum):
 	Roe = auto()
+	HLLC = auto()
 
 
 '''
@@ -351,3 +352,107 @@ class Heaviside(SourceBase):
 '''
 Numerical flux functions
 '''
+class HLLC1D(ConvNumFluxBase):
+	def __init__(self, Up=None):
+		if Up is not None:
+			n = Up.shape[0]
+			ns = Up.shape[1]
+			dim = ns - 2
+		else:
+			n = 0; ns = 0; dim = 0
+
+	def compute_flux(self, physics, UpL, UpR, n):
+
+		# Indices
+		srho = physics.get_state_slice("Density")
+		smom = physics.GetMomentumSlice()
+		srhoE = physics.get_state_slice("Energy")
+		srhoY = physics.get_state_slice("Mixture")
+
+
+		NN = np.linalg.norm(n, axis=1, keepdims=True)
+		n1 = n/NN
+
+		gam = physics.gamma
+
+		# unpack left hand state
+		rhoL = UpL[:, srho]
+		uL = UpL[:, smom]/rhoL
+		unL = uL * n1
+		pL = physics.ComputeScalars("Pressure", UpL)
+		cL = physics.ComputeScalars("SoundSpeed", UpL)
+		# unpack right hand state
+		rhoR = UpR[:, srho]
+		uR = UpR[:, smom]/rhoR
+		unR = uR * n1
+		pR = physics.ComputeScalars("Pressure", UpR)
+		cR = physics.ComputeScalars("SoundSpeed", UpR)	
+
+		# calculate averages
+		rho_avg = 0.5 * (rhoL + rhoR)
+		c_avg = 0.5 * (cL + cR)
+
+		# Step 1: Get pressure estimate in the star region
+		pvrs = 0.5 * ((pL + pR) - (unR - unL)*rho_avg*c_avg)
+		p_star = max(0., pvrs)
+
+		pspl = p_star / pL
+		pspr = p_star / pR
+
+		# Step 2: Get SL and SR
+		qL = 1.
+		if pspl > 1.:
+			qL = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspl - 1.)) 
+		SL = unL - cL*qL
+
+		qR = 1.
+		if pspr > 1.:
+			qR = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspr - 1.))
+		SR = unR + cR*qR
+
+		# Step 3: Get shear wave speed
+		raa1 = 1./(rho_avg*c_avg)
+		sss = 0.5*(unL+unR) + 0.5*(pL-pR)*raa1
+
+		# flux assembly 
+
+		# Left State
+		FL = physics.ConvFluxProjected(UpL, n1)
+		# Right State
+		FR = physics.ConvFluxProjected(UpR, n1)
+
+		Fhllc = np.zeros_like(FL)
+
+		if SL >= 0.:
+			Fhllc = FL
+		elif SR <= 0.:
+			Fhllc = FR
+		elif (SL <= 0.) and (sss >= 0.):
+			slul = SL - unL
+			cl = slul/(SL - sss)
+			sssul = sss - unL
+			sssel = pL / (rhoL*slul)
+			ssstl = sss+sssel
+			c1l = rhoL*cl*sssul
+			c2l = rhoL*cl*sssul*ssstl
+
+			Fhllc[:, srho] = FL[:, srho] + SL*(UpL[:, srho]*(cl-1.))
+			Fhllc[:, smom] = FL[:, smom] + SL*(UpL[:, smom]*(cl-1.)+c1l*n1)
+			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UpL[:, srhoE]*(cl-1.)+c2l)
+			Fhllc[:, srhoY] = FL[:, srhoY] + SL*(UpL[:, srhoY]*(cl-1.))
+
+		elif (sss <= 0.) and (SR >= 0.):
+			slur = SR - unR
+			cr = slur/(SR - sss)
+			sssur = sss - unR
+			ssser = pR / (rhoR*slur)
+			ssstr = sss+ssser
+			c1r = rhoR*cr*sssur
+			c2r = rhoR*cr*sssur*ssstr
+
+			Fhllc[:, srho] = FR[:, srho] + SR*(UpR[:, srho]*(cr-1.))
+			Fhllc[:, smom] = FR[:, smom] + SR*(UpR[:, smom]*(cr-1.)+c1r*n1)
+			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UpR[:, srhoE]*(cr-1.)+c2r)
+			Fhllc[:, srhoY] = FR[:, srhoY] + SR*(UpR[:, srhoY]*(cr-1.))
+							  
+		return Fhllc
