@@ -52,9 +52,6 @@ class SolverBase(ABC):
 		self.Time = Params["StartTime"]
 		self.nTimeStep = 0 # will be set later
 
-		self.Stepper = stepper_tools.set_stepper(Params, physics.U)
-		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
-
 		# Set the basis functions for the solver
 		basis_name  = Params["InterpBasis"]
 		self.basis = basis_tools.set_basis(physics.order, basis_name)
@@ -73,19 +70,6 @@ class SolverBase(ABC):
 		# Limiter
 		limiterType = Params["ApplyLimiter"]
 		self.Limiter = limiter_tools.set_limiter(limiterType, physics.PHYSICS_TYPE)
-
-		# Check validity of parameters
-		self.check_compatibility()
-
-		# Precompute operators
-		self.precompute_matrix_operators()
-		if self.Limiter is not None:
-			self.Limiter.precompute_operators(self)
-		physics.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators.quad_wts.shape[0], physics.NUM_STATE_VARS]))
-
-		# Initialize state
-		if Params["RestartFile"] is None:
-			self.init_state_from_fcn()
 
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \

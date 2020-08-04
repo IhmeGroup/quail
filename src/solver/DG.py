@@ -12,6 +12,9 @@ import meshing.tools as mesh_tools
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
 
+import numerics.timestepping.tools as stepper_tools
+import numerics.timestepping.stepper as stepper_defs
+
 import solver.base as base
 import solver.tools as solver_tools
 
@@ -61,7 +64,6 @@ class ElemOperators(object):
 		self.djac_elems = np.zeros([nElem, nq, 1])
 		self.x_elems = np.zeros([nElem, nq, dim])
 		self.basis_phys_grad_elems = np.zeros([nElem, nq, nb, dim])
-
 
 		# basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True, get_ref_grad=True)
@@ -262,7 +264,25 @@ class DG(base.SolverBase):
 		Time: current time in the simulation
 		nTimeStep: number of time steps
 	'''
+	def __init__(self, Params, physics, mesh):
+		super().__init__(Params, physics, mesh)
 
+		self.Stepper = stepper_tools.set_stepper(Params, physics.U)
+		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
+	
+		# Check validity of parameters
+		self.check_compatibility()
+		
+		# Precompute operators
+		self.precompute_matrix_operators()
+		if self.Limiter is not None:
+			self.Limiter.precompute_operators(self)
+
+		physics.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators.quad_wts.shape[0], physics.NUM_STATE_VARS]))
+
+		if Params["RestartFile"] is None:
+			self.init_state_from_fcn()
+		
 	def precompute_matrix_operators(self):
 		mesh = self.mesh 
 		physics = self.physics

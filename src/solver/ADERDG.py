@@ -267,6 +267,7 @@ class ADERDG(base.SolverBase):
 	Use the ADER-DG method to solve a given set of PDEs
 	'''
 	def __init__(self,Params,physics,mesh):
+		super().__init__(Params, physics, mesh)
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -277,38 +278,25 @@ class ADERDG(base.SolverBase):
 			physics: solver object (current implementation supports Scalar and Euler equations)
 			mesh: mesh object
 		'''
-		self.Params = Params
-		self.physics = physics
-		self.mesh = mesh
-		self.DataSet = GenericData()
-
-		self.Time = Params["StartTime"]
-		self.nTimeStep = 0 # will be set later
-
 		ns = physics.NUM_STATE_VARS
 
 		TimeScheme = Params["TimeScheme"]
 		if StepperType[TimeScheme] != StepperType.ADER:
 			raise errors.IncompatibleError
+
 		self.Stepper = stepper_defs.ADER(physics.U)
 		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
-		# Set the basis functions for the solver
+		# Set the space-time basis functions for the solver
 		basis_name  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(physics.order, basis_name)
 		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, physics.order, basis_name)
 
-		# Set quadrature
-		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
-		self.basis.set_face_quadrature_type(Params["FaceQuadrature"])
+		# Set quadrature for space-time basis
 		self.basis_st.set_elem_quadrature_type(Params["ElementQuadrature"])
 		self.basis_st.set_face_quadrature_type(Params["FaceQuadrature"])
-		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
-		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
 		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
 		self.basis_st.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
-
 
 		# Allocate array for predictor step in ADER-Scheme
 		physics.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(physics.order), physics.NUM_STATE_VARS])
@@ -317,15 +305,12 @@ class ADERDG(base.SolverBase):
 		SourceTreatment = Params["SourceTreatment"]
 		self.calculate_predictor_elem = solver_tools.set_source_treatment(ns, SourceTreatment)
 
-		# Limiter
-		limiterType = Params["ApplyLimiter"]
-		self.Limiter = limiter_tools.set_limiter(limiterType, physics.PHYSICS_TYPE)
-
 		# Check validity of parameters
 		self.check_compatibility()
 
 		# Precompute operators
 		self.precompute_matrix_operators()
+
 		if self.Limiter is not None:
 			self.Limiter.precompute_operators(self)
 
