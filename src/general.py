@@ -30,7 +30,6 @@ class BasisType(Enum):
 
 class LimiterType(Enum):
     PositivityPreserving = auto()
-    ScalarPositivityPreserving = auto()
     PositivityPreservingChem = auto()
 
 
