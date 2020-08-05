@@ -103,7 +103,7 @@ class ShapeBase(ABC):
     @abstractmethod
     def NFACES(self):
         '''
-        Stores the number of faces per element as an int [int]
+        Stores the number of faces per element as an int
         '''        
         pass
 
@@ -111,7 +111,7 @@ class ShapeBase(ABC):
     @abstractmethod
     def DIM(self):
         '''
-        Stores the dimension of the element [int]
+        Stores the dimension of the element
         '''
         pass
 
@@ -119,8 +119,7 @@ class ShapeBase(ABC):
     @abstractmethod
     def PRINCIPAL_NODE_COORDS(self):
         '''
-        Stores the node coordinates for the reference element 
-        [numpy array]
+        Stores the node coordinates for the reference element
         '''
         pass
 
@@ -129,7 +128,6 @@ class ShapeBase(ABC):
     def CENTROID(self):
         '''
         Stores the coordinate for the reference element's centroid
-        [numpy array]
         '''
         pass
     
@@ -141,26 +139,24 @@ class ShapeBase(ABC):
         Sets the number of basis coefficients given a polynomial order
 
         INPUTS:
-            p: order of polynomial space [int]
+            p: order of polynomial space
 
         OUTPUTS: 
-            nb : number of basis coefficients [int]
+            nb : number of basis coefficients
         '''
         pass
 
     @abstractmethod
     def equidistant_nodes(self, p):
         '''
-        Method: equidistant_nodes
-        ----------------------------
         Defines an array of equidistant points based on the number of
         basis coefficients
 
         INPUTS:
-            p: order of polynomial space [int]
+            p: order of polynomial space
 
         OUTPUTS: 
-            xn : array of nodes equidistantly spaced [numpy array] 
+            xn : array of nodes equidistantly spaced
             [shape : [nb, dim]]
         '''
         pass
@@ -528,7 +524,7 @@ class TriShape(ShapeBase):
         quad_pts, quad_wts = triangle.get_quadrature_points_weights(order, 
             self.quadrature_type)
 
-        return quad_pts, quad_wts
+        return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
 
 class BasisBase(ABC): 
