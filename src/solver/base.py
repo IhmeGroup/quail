@@ -17,6 +17,7 @@ from general import ModalOrNodal, NodeType, ShapeType, QuadratureType, \
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
+import meshing.adapt as mesh_adapt
 
 import numerics.basis.tools as basis_tools
 
