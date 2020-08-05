@@ -23,29 +23,6 @@ class FcnBase(ABC):
         U: solution array at the initial condition
         Data: generic data needed for specific initial conditions
     '''
-        # self.Function = None
-        # self.x = None
-        # self.Time = 0.
-        # self.U = None
-        # self.Data = GenericData()
-
-    # def __init__(self):
-    #     self.Up = np.zeros(0)
-
-    # def alloc_helpers(self, shape):
-    #     self.Up.resize(shape)
-
-
-    # def Set(self, **kwargs):
-    #     for key in kwargs:
-    #         # if key in self.__dict__.keys(): self.__dict__[key] = kwargs[key]
-    #             ## NOTE: __dict__ doesn't work this way for inherited classes
-    #         # if key in dir(self): 
-    #         if hasattr(self, key):
-    #             setattr(self, key, kwargs[key])
-    #         else: 
-    #             setattr(self.Data, key, kwargs[key])
-
     @abstractmethod
     def get_state(self, physics, x, t):
         pass

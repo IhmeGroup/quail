@@ -34,8 +34,8 @@ def WriteMeshToText(mesh, FileName):
 	fo.write("$IFaces\n")
 	fo.write("%d\n" % (mesh.nIFace))
 	for IFace in mesh.IFaces:
-		fo.write("%d %d %d %d\n" % (IFace.ElemL, IFace.faceL,
-			IFace.ElemR, IFace.faceR))
+		fo.write("%d %d %d %d\n" % (IFace.elemL_id, IFace.faceL_id,
+			IFace.elemR_id, IFace.faceR_id))
 
 	# Boundary groups
 	fo.write("$BFaceGroups\n")
@@ -44,7 +44,7 @@ def WriteMeshToText(mesh, FileName):
 		fo.write("%s\n" % (BFG.Name))
 		fo.write("%d\n" % (BFG.nBFace))
 		for BFace in BFG.BFaces:
-			fo.write("%d %d\n" % (BFace.Elem, BFace.face))
+			fo.write("%d %d\n" % (BFace.elem_id, BFace.face_id))
 
 	# Close file
 	fo.close()

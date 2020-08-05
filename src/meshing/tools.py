@@ -84,12 +84,12 @@ def neighbor_across_face(mesh, elem, face):
     # code.interact(local=locals())
     if Face.Type == mesh_defs.FaceType.Interior:
         iiface = Face.Number
-        eN  = mesh.IFaces[iiface].ElemR
-        faceN = mesh.IFaces[iiface].faceR
+        eN  = mesh.IFaces[iiface].elemR_id
+        faceN = mesh.IFaces[iiface].faceR_id
 
         if eN == elem:
-            eN  = mesh.IFaces[iiface].ElemL
-            faceN = mesh.IFaces[iiface].faceL
+            eN  = mesh.IFaces[iiface].elemL_id
+            faceN = mesh.IFaces[iiface].faceL_id
     else:
         eN    = -1
         faceN = -1
@@ -115,22 +115,22 @@ def check_face_orientations(mesh):
         return
 
     for IFace in mesh.IFaces:
-        elemL_id = IFace.ElemL
-        elemR_id = IFace.ElemR
-        faceL = IFace.faceL
-        faceR = IFace.faceR
+        elemL_id = IFace.elemL_id
+        elemR_id = IFace.elemR_id
+        faceL_id = IFace.faceL_id
+        faceR_id = IFace.faceR_id
 
-        elemL_nodes = mesh.elements[elemL_id].node_nums
-        elemR_nodes = mesh.elements[elemR_id].node_nums
+        elemL_nodes = mesh.elements[elemL_id].node_ids
+        elemR_nodes = mesh.elements[elemR_id].node_ids
 
         # Get local q=1 nodes on face for left element
-        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceL)
+        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceL_id)
         # Convert to global node numbering
         # gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
         gfnodesL = elemL_nodes[lfnodes]
 
         # Get local q=1 nodes on face for right element
-        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceR)
+        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceR_id)
         # Convert to global node numbering
         # gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
         gfnodesR = elemR_nodes[lfnodes]
@@ -183,8 +183,8 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
     gbasis = mesh.gbasis
     for BF in BFG.BFaces:
         # Extract info
-        elem_id = BF.Elem
-        face = BF.face
+        elem_id = BF.elem_id
+        face = BF.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
@@ -411,10 +411,10 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                 mesh.nIFace += 1
                 IFaces.append(mesh_defs.IFace())
                 IF = IFaces[-1]
-                IF.ElemL = elem_id1
-                IF.faceL = face1
-                IF.ElemR = elem_id2
-                IF.faceR = face2
+                IF.elemL_id = elem_id1
+                IF.faceL_id = face1
+                IF.elemR_id = elem_id2
+                IF.faceR_id = face2
 
                 BFG1.nBFace -= 1
                 BFG2.nBFace -= 1
@@ -513,8 +513,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     # Get b1 nodes
     for BFace in BFG1.BFaces:
         # Extract info
-        elem = BFace.Elem
-        face = BFace.face
+        elem = BFace.elem_id
+        face = BFace.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
@@ -543,8 +543,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
     for BFace in BFG2.BFaces:
         # Extract info
-        elem = BFace.Elem
-        face = BFace.face
+        elem = BFace.elem_id
+        face = BFace.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
@@ -692,23 +692,23 @@ def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
 def VerifyPeriodicMesh(mesh):
     # Loop through interior faces
     for IF in mesh.IFaces:
-        elemL = IF.ElemL
-        elemR = IF.ElemR
-        faceL = IF.faceL
-        faceR = IF.faceR
+        elemL = IF.elemL_id
+        elemR = IF.elemR_id
+        faceL_id = IF.faceL_id
+        faceR_id = IF.faceR_id
         gbasis = mesh.gbasis
         gorder = mesh.gorder
 
         ''' Get global face nodes - left '''
         fnodesL = gbasis.get_local_face_principal_node_nums( 
-            gorder, faceL)
+            gorder, faceL_id)
 
         # Convert to global node numbering
         fnodesL = mesh.Elem2Nodes[elemL][fnodesL[:]]
 
         ''' Get global face nodes - right '''
         fnodesR = gbasis.get_local_face_principal_node_nums( 
-            gorder, faceR)
+            gorder, faceR_id)
 
         # Convert to global node numbering
         fnodesR = mesh.Elem2Nodes[elemR][fnodesR[:]]

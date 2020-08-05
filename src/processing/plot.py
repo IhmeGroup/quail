@@ -674,9 +674,9 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 		# boundaries
 		for e in range(2):
 			if e == 0:
-				elem_id = IFace.ElemL; face = IFace.faceL
+				elem_id = IFace.elemL_id; face = IFace.faceL_id
 			else:
-				elem_id = IFace.ElemR; face = IFace.faceR
+				elem_id = IFace.elemR_id; face = IFace.faceR_id
 
 			# Get local nodes on face
 			lfnodes = gbasis.get_local_face_node_nums(mesh.gorder, face)
@@ -704,7 +704,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	for BFG in mesh.BFaceGroups.values():
 		for BFace in BFG.BFaces:
 			# Get adjacent element info
-			elem_id = BFace.Elem; face = BFace.face
+			elem_id = BFace.elem_id; face = BFace.face_id
 
 			# Get local nodes on face
 			lfnodes = gbasis.get_local_face_node_nums( 
@@ -758,7 +758,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 	'''
 # 	for IFace in mesh.IFaces:
 # 		# Choose left element
-# 		elem = IFace.ElemL; face = IFace.faceL
+# 		elem = IFace.elemL_id; face = IFace.faceL_id
 
 # 		# Get local nodes on face
 # 		fnodes, nfnode = gbasis.local_face_nodes( 
@@ -780,7 +780,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 	for BFG in mesh.BFaceGroups:
 # 		for BFace in BFG.BFaces:
 # 			# Get adjacent element info
-# 			elem = BFace.Elem; face = BFace.face
+# 			elem = BFace.elem_id; face = BFace.face_id
 
 # 			# Get local nodes on face
 # 			fnodes, nfnode = gbasis.local_face_nodes( 

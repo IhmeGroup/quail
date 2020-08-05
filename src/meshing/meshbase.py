@@ -16,13 +16,10 @@ def ref_to_phys(mesh, elem_id, xref):
     INPUTS:
         mesh: mesh object
         elem_id: element ID
-        npoint: number of coordinates to convert
-        xref: coordinates in reference space [type: numpy array]
-              [shape: [nq, dim]]
+        xref: coordinates in reference space [nq, dim]
 
     OUTPUTS:
-        xphys: coordinates in physical space [type: numpy array]
-               [shape: [nq, dim]]
+        xphys: coordinates in physical space [nq, dim]
     '''
     gbasis = mesh.gbasis
     gorder = mesh.gorder
@@ -37,12 +34,12 @@ def ref_to_phys(mesh, elem_id, xref):
     gbasis.get_basis_val_grads(xref, get_val=True)
 
     # Phi= gbasis.basis_val
-    dim = mesh.Dim
-    Coords = mesh.Coords
+    # dim = mesh.Dim
+    # Coords = mesh.Coords
     # Phi = PhiData.Phi
-    nb = gbasis.basis_val.shape[1]
-    if nb != mesh.nNodePerElem:
-        raise Exception("Wrong number of nodes per element")
+    # nb = gbasis.basis_val.shape[1]
+    # if nb != mesh.nNodePerElem:
+    #     raise Exception("Wrong number of nodes per element")
 
     # ElemNodes = mesh.Elem2Nodes[elem_id]
 
@@ -68,8 +65,8 @@ def ref_to_phys(mesh, elem_id, xref):
 #     OUTPUTS:
 #         NData: normal data object
 #     '''
-#     elemL = IFace.ElemL
-#     elemR = IFace.ElemR
+#     elemL = IFace.elemL_id
+#     elemR = IFace.elemR_id
 #     gorderL = mesh.gorder
 #     gorderR = mesh.gorder
 
@@ -82,7 +79,7 @@ def ref_to_phys(mesh, elem_id, xref):
 #     if gorderL <= gorderR:
 #         nvec = gbasis.calculate_normals(gbasis, mesh, elemL, IFace.faceL, quad_pts)
 #     else:
-#         nvec = gbasis.calculate_normals(gbasis, mesh, elemR, IFace.faceR, quad_pts)
+#         nvec = gbasis.calculate_normals(gbasis, mesh, elemR, IFace.faceR_id, quad_pts)
 #         nvec *= -1.
 
 #     return nvec
@@ -103,7 +100,7 @@ def ref_to_phys(mesh, elem_id, xref):
 #     OUTPUTS:
 #         NData: normal data object
 #     '''
-#     elem = BFace.Elem
+#     elem = BFace.elem_id
 #     gorder = mesh.gorder
 #     gbasis = mesh.gbasis
 
@@ -112,7 +109,7 @@ def ref_to_phys(mesh, elem_id, xref):
 #     # if NData is None:
 #     #     NData = NormalData()
 
-#     nvec = gbasis.calculate_normals(gbasis, mesh, elem, BFace.face, quad_pts)
+#     nvec = gbasis.calculate_normals(gbasis, mesh, elem, BFace.face_id, quad_pts)
 
 #     return nvec
 
@@ -156,7 +153,7 @@ def ref_to_phys(mesh, elem_id, xref):
 
 class IFace(object):
     '''
-    Class: IFace
+    Class: InteriorFace
     -------------------
     This class provides information about a given interior face.
 
@@ -172,15 +169,15 @@ class IFace(object):
         -------------------
         This method initializes the object
         '''
-        self.ElemL = 0 
-        self.faceL = 0 
-        self.ElemR = 0 
-        self.faceR = 0 
+        self.elemL_id = 0 
+        self.faceL_id = 0 
+        self.elemR_id = 0 
+        self.faceR_id = 0 
 
 
 class BFace(object):
     '''
-    Class: BFace
+    Class: BoundaryFace
     -------------------
     This class provides information about a given boundary face.
 
@@ -194,15 +191,15 @@ class BFace(object):
         -------------------
         This method initializes the object
         '''
-        self.Elem = 0 
+        self.elem_id = 0 
         self.face = 0 
 
 
 class BFaceGroup(object):
     '''
-    Class: BFaceGroup
+    Class: BoundaryGroup
     -------------------
-    This class stores BFace objects for a given boundary face group
+    This class stores boundary face objects for a given boundary group
 
     ATTRIBUTES:
         Name: name of boundary face group
@@ -241,61 +238,71 @@ for each shape type
 USAGE:
     Shape2nFace[shape] = number of faces per element of shape
 '''
-Shape2nFace = {
-    ShapeType.Point : 0, 
-    ShapeType.Segment : 2,
-    ShapeType.Triangle : 3,
-    ShapeType.Quadrilateral : 4
-}
+# Shape2nFace = {
+#     ShapeType.Point : 0, 
+#     ShapeType.Segment : 2,
+#     ShapeType.Triangle : 3,
+#     ShapeType.Quadrilateral : 4
+# }
 
 
-'''
-Dictionary: Shape2nNodeQ1
--------------------
-This dictionary stores the number of Q1 nodes per element
-for each shape type
+# '''
+# Dictionary: Shape2nNodeQ1
+# -------------------
+# This dictionary stores the number of Q1 nodes per element
+# for each shape type
 
-USAGE:
-    Shape2nFace[shape] = number of nodes per element of shape
-'''
-Shape2nNodeQ1 = {
-    ShapeType.Point : 1,
-    ShapeType.Segment : 2,
-    ShapeType.Triangle : 3,
-    ShapeType.Quadrilateral : 4
-}
+# USAGE:
+#     Shape2nFace[shape] = number of nodes per element of shape
+# '''
+# Shape2nNodeQ1 = {
+#     ShapeType.Point : 1,
+#     ShapeType.Segment : 2,
+#     ShapeType.Triangle : 3,
+#     ShapeType.Quadrilateral : 4
+# }
 
-class PeriodicGroup(object):
-    '''
-    Class: PeriodicGroup
-    -------------------
-    This class stores information about periodic groups
+# class PeriodicGroup(object):
+#     '''
+#     Class: PeriodicGroup
+#     -------------------
+#     This class stores information about periodic groups
 
-    NOTES:
-        Not used for now
+#     NOTES:
+#         Not used for now
 
-    ATTRIBUTES:
-        nPeriodicNode: number of periodic nodes in group
-        PeriodicNodes: periodic nodes
-    '''
-    def __init__(self):
-        '''
-        Method: __init__
-        -------------------
-        This method initializes the object
-        '''
-        self.nPeriodicNode = 0
-        self.PeriodicNodes = None
+#     ATTRIBUTES:
+#         nPeriodicNode: number of periodic nodes in group
+#         PeriodicNodes: periodic nodes
+#     '''
+#     def __init__(self):
+#         '''
+#         Method: __init__
+#         -------------------
+#         This method initializes the object
+#         '''
+#         self.nPeriodicNode = 0
+#         self.PeriodicNodes = None
 
 
 class Element(object):
-    def __init__(self, number=-1):
-        self.number = number
-        self.node_nums = np.zeros(0, dtype=int)
+    '''
+    Class: Element
+    -------------------
+    This class provides information about a given element.
+
+    ATTRIBUTES:
+        id: element ID
+        node_ids: global IDs of the element nodes
+        node_coords: coordinates of the element nodes [num_nodes, dim]
+        face_to_neighbors: maps local face ID to element IDs of 
+            neighbors [num_faces]
+    '''
+    def __init__(self, elem_id=-1):
+        self.id = elem_id
+        self.node_ids = np.zeros(0, dtype=int)
         self.node_coords = np.zeros(0)
         self.face_to_neighbors = np.zeros(0, dtype=int)
-
-
 
 
 class Mesh(object):
@@ -318,7 +325,7 @@ class Mesh(object):
         nPeriodicGroup: number of periodic groups
         PeriodicGroups: list of periodic groups
     '''
-    def __init__(self,dim=1,nNode=1,nElem=1,gbasis=None,gorder=1):
+    def __init__(self, dim=1, nNode=1, nElem=1, gbasis=None, gorder=1):
         '''
         Method: __init__
         -------------------
@@ -418,37 +425,37 @@ class Mesh(object):
         for elem_id in range(self.nElem):
             elem = self.elements[elem_id]
 
-            elem.number = elem_id
-            elem.node_nums = self.Elem2Nodes[elem_id]
-            elem.node_coords = self.Coords[elem.node_nums]
+            elem.id = elem_id
+            elem.node_ids = self.Elem2Nodes[elem_id]
+            elem.node_coords = self.Coords[elem.node_ids]
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
         # neighbors
         for iif in range(self.nIFace):
             int_face = self.IFaces[iif]
-            elemL_id = int_face.ElemL
-            elemR_id = int_face.ElemR
-            faceL = int_face.faceL
-            faceR = int_face.faceR
+            elemL_id = int_face.elemL_id
+            elemR_id = int_face.elemR_id
+            faceL_id = int_face.faceL_id
+            faceR_id = int_face.faceR_id
 
             elemL = self.elements[elemL_id]
             elemR = self.elements[elemR_id]
 
-            elemL.face_to_neighbors[faceL] = elemR_id
-            elemR.face_to_neighbors[faceR] = elemL_id
+            elemL.face_to_neighbors[faceL_id] = elemR_id
+            elemR.face_to_neighbors[faceR_id] = elemL_id
 
 
 
     # def fill_faces(self):
     #     for iiface in range(self.nIFace):
     #         IFace = self.IFaces[iiface]
-    #         elemL = IFace.ElemL
-    #         elemR = IFace.ElemR
+    #         elemL = IFace.elemL_id
+    #         elemR = IFace.elemR_id
     #         faceL = IFace.faceL
-    #         faceR = IFace.faceR
+    #         faceR_id = IFace.faceR_id
 
     #         FaceL = self.Faces[elemL][faceL]
-    #         FaceR = self.Faces[elemR][faceR]
+    #         FaceR = self.Faces[elemR][faceR_id]
 
     #         FaceL.Type = FaceType.Interior
     #         FaceR.Type = FaceType.Interior
@@ -463,8 +470,8 @@ class Mesh(object):
             
     #         for ibface in range(BFG.nBFace):
     #             BFace = BFG.BFaces[ibface]
-    #             elem = BFace.Elem
-    #             face = BFace.face
+    #             elem = BFace.elem_id
+    #             face = BFace.face_id
 
     #             Face = self.Faces[elem][face]
 

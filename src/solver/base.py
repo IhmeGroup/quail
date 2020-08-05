@@ -262,10 +262,10 @@ class SolverBase(ABC):
 
 		for iiface in range(mesh.nIFace):
 			IFace = mesh.IFaces[iiface]
-			elemL = IFace.ElemL
-			elemR = IFace.ElemR
-			faceL = IFace.faceL
-			faceR = IFace.faceR
+			elemL = IFace.elemL_id
+			elemR = IFace.elemR_id
+			faceL_id = IFace.faceL_id
+			faceR_id = IFace.faceR_id
 
 			UL = U[elemL]
 			UR = U[elemR]
@@ -296,8 +296,8 @@ class SolverBase(ABC):
 
 			for ibface in range(BFG.nBFace):
 				BFace = BFG.BFaces[ibface]
-				elem = BFace.Elem
-				face = BFace.face
+				elem = BFace.elem_id
+				face = BFace.face_id
 
 				R[elem] = self.calculate_residual_bface(BFG, ibface, U[elem], R[elem])
 

@@ -1051,7 +1051,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					# except:
 					# 	code.interact(local=locals())
 					BFace = BFG.BFaces[FInfo.Face]
-					BFace.Elem = elem; BFace.face = face
+					BFace.elem_id = elem; BFace.face_id = face
 					# Store in Face
 					# Face = mesh.Faces[elem][face]
 					# Face.Group = FInfo.Group
@@ -1060,10 +1060,10 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					# interior face
 					# Store in IFace
 					IFace = mesh.IFaces[mesh.nIFace]
-					IFace.ElemL = FInfo.Elem
-					IFace.faceL = FInfo.Face
-					IFace.ElemR = elem
-					IFace.faceR = face
+					IFace.elemL_id = FInfo.Elem
+					IFace.faceL_id = FInfo.Face
+					IFace.elemR_id = elem
+					IFace.faceR_id = face
 					# Store in left Face
 					# Face = mesh.Faces[FInfo.Elem][FInfo.Face]
 					# Face.Group = general.INTERIORFACE

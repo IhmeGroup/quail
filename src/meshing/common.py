@@ -47,23 +47,23 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 		mesh.allocate_ifaces()
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
-			IFace_.ElemL = i-1
-			IFace_.faceL = 1
-			IFace_.ElemR = i
-			IFace_.faceR = 0
+			IFace_.elemL_id = i-1
+			IFace_.faceL_id = 1
+			IFace_.elemR_id = i
+			IFace_.faceR_id = 0
 		# Leftmost face
-		mesh.IFaces[0].ElemL = nElem - 1
+		mesh.IFaces[0].elemL_id = nElem - 1
 	# Rightmost face
-	# mesh.IFaces[-1].ElemR = 0
+	# mesh.IFaces[-1].elemR_id = 0
 	else:
 		mesh.nIFace = nElem - 1
 		mesh.allocate_ifaces()
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
-			IFace_.ElemL = i
-			IFace_.faceL = 1
-			IFace_.ElemR = i+1
-			IFace_.faceR = 0
+			IFace_.elemL_id = i
+			IFace_.faceL_id = 1
+			IFace_.elemR_id = i+1
+			IFace_.faceR_id = 0
 		# Boundary groups
 		# mesh.nBFaceGroup = 2
 		# mesh.allocate_bface_groups()
@@ -74,26 +74,26 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 		# 	BF = BFG.BFaces[0]
 		# 	if i == 0:
 		# 		BFG.Name = "Left"
-		# 		BF.Elem = 0
-		# 		BF.face = 0
+		# 		BF.elem_id = 0
+		# 		BF.face_id = 0
 		# 	else:
 		# 		BFG.Name = "Right"
-		# 		BF.Elem = nElem - 1
-		# 		BF.face = 1
+		# 		BF.elem_id = nElem - 1
+		# 		BF.face_id = 1
 		# left
 		BFG = mesh.add_bface_group("Left")
 		BFG.nBFace = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
-		BF.Elem = 0
-		BF.face = 0
+		BF.elem_id = 0
+		BF.face_id = 0
 		# right
 		BFG = mesh.add_bface_group("Right")
 		BFG.nBFace = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
-		BF.Elem = nElem - 1
-		BF.face = 1
+		BF.elem_id = nElem - 1
+		BF.face_id = 1
 
 	mesh.SetParams(gbasis=basis_defs.LagrangeSeg(1), gorder=1, nElem=nElem)
 	# mesh.allocate_faces()
@@ -235,8 +235,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.Elem = nElem_x*n
-		BF.face = 3
+		BF.elem_id = nElem_x*n
+		BF.face_id = 3
 		n += 1
 	# x2
 	# BFG = mesh.BFaceGroups[1]
@@ -245,8 +245,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.Elem = nElem_x*(n + 1) - 1
-		BF.face = 1
+		BF.elem_id = nElem_x*(n + 1) - 1
+		BF.face_id = 1
 		n += 1
 	# y1
 	# BFG = mesh.BFaceGroups[2]
@@ -255,8 +255,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.Elem = n
-		BF.face = 0
+		BF.elem_id = n
+		BF.face_id = 0
 		n += 1
 	# y2
 	# BFG = mesh.BFaceGroups[3]
@@ -265,8 +265,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.Elem = mesh.nElem - nElem_x + n
-		BF.face = 2
+		BF.elem_id = mesh.nElem - nElem_x + n
+		BF.face_id = 2
 		n += 1
 
 
@@ -279,20 +279,20 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	for ny in range(nElem_y):
 		for nx in range(nElem_x-1):
 			IF = mesh.IFaces[n]
-			IF.ElemL = nElem_x*ny + nx
-			IF.faceL = 1
-			IF.ElemR = nElem_x*ny + nx + 1
-			IF.faceR = 3
+			IF.elemL_id = nElem_x*ny + nx
+			IF.faceL_id = 1
+			IF.elemR_id = nElem_x*ny + nx + 1
+			IF.faceR_id = 3
 			n += 1
 
 	# y direction
 	for nx in range(nElem_x):
 		for ny in range(nElem_y-1):
 			IF = mesh.IFaces[n]
-			IF.ElemL = nElem_x*ny + nx
-			IF.faceL = 2
-			IF.ElemR = nElem_x*(ny + 1) + nx
-			IF.faceR = 0
+			IF.elemL_id = nElem_x*ny + nx
+			IF.faceL_id = 2
+			IF.elemR_id = nElem_x*(ny + 1) + nx
+			IF.faceR_id = 0
 			n += 1
 
 	# mesh.fill_faces()
@@ -355,13 +355,13 @@ def split_quadrils_into_tris(mesh_old):
 	# BFGs
 	for BFG in mesh.BFaceGroups.values():
 		for BF in BFG.BFaces:
-			BF.Elem, BF.face = modify_face_info(BF.Elem, BF.face)
+			BF.elem_id, BF.face_id = modify_face_info(BF.elem_id, BF.face_id)
 
 
 	# Modify IFaces
 	for IF in mesh.IFaces:
-		IF.ElemL, IF.faceL = modify_face_info(IF.ElemL, IF.faceL)
-		IF.ElemR, IF.faceR = modify_face_info(IF.ElemR, IF.faceR)
+		IF.elemL_id, IF.faceL_id = modify_face_info(IF.elemL_id, IF.faceL_id)
+		IF.elemR_id, IF.faceR_id = modify_face_info(IF.elemR_id, IF.faceR_id)
 
 	# New IFaces
 	# code.interact(local=locals())
@@ -373,10 +373,10 @@ def split_quadrils_into_tris(mesh_old):
 	# for IF in mesh.IFaces[nIFace_old:]:
 	for elem_id in range(nElem_old):
 		IF = mesh_defs.IFace()
-		IF.ElemL = elem_id
-		IF.faceL = 0
-		IF.ElemR = elem_id + nElem_old
-		IF.faceR = 0
+		IF.elemL_id = elem_id
+		IF.faceL_id = 0
+		IF.elemR_id = elem_id + nElem_old
+		IF.faceR_id = 0
 		mesh.IFaces.append(IF)
 
 	# mesh.allocate_faces()
