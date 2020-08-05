@@ -32,7 +32,7 @@ class ElemOperatorsADER(DG.ElemOperators):
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 
-		dim = mesh.Dim 
+		dim = mesh.dim 
 		quad_pts = self.quad_pts 
 		nElem = mesh.nElem 
 		nq = quad_pts.shape[0]
@@ -76,7 +76,7 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 	def get_basis_and_geom_data(self, mesh, basis, order):
 
 		# unpack
-		dim = mesh.Dim
+		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
@@ -109,7 +109,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 		# separate these later
 
 		# Unpack
-		dim = mesh.Dim
+		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
@@ -179,7 +179,7 @@ class ADEROperators(object):
 
 	def calc_ader_matrices(self, mesh, basis, basis_st, dt, order):
 
-		dim = mesh.Dim
+		dim = mesh.dim
 		nb = basis_st.nb
 		SMS_elems = np.zeros([mesh.nElem,nb,nb,dim])
 		iMM_elems = np.zeros([mesh.nElem,nb,nb])
@@ -217,7 +217,7 @@ class ADEROperators(object):
 		# Unpack
 		shape_name = basis.__class__.__bases__[1].__name__
 
-		dim = mesh.Dim 
+		dim = mesh.dim 
 		nElem = mesh.nElem 
 		nb = basis.nb
 		gbasis = mesh.gbasis
@@ -549,7 +549,7 @@ class ADERDG(base.SolverBase):
 			R: calculated residual array (from boundary face)
 		'''
 		mesh = self.mesh
-		dim = mesh.Dim
+		dim = mesh.dim
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		# BFG = mesh.BFaceGroups[ibfgrp]
@@ -685,7 +685,7 @@ class ADERDG(base.SolverBase):
 			S: polynomical coefficients of the flux function
 		'''
 		mesh = self.mesh
-		dim = mesh.Dim
+		dim = mesh.dim
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		Params = self.Params

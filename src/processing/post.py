@@ -95,7 +95,7 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, vec=0., dot_normal_with_vec=False, 
 		plot_vs_x=False, plot_vs_y=False, ylabel=None, fmt='k-', legend_label=None, **kwargs):
 
-	if mesh.Dim != 2:
+	if mesh.dim != 2:
 		raise errors.IncompatibleError
 	# Find boundary face group
 	# found = False

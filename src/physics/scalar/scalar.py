@@ -92,11 +92,11 @@ class ConstAdvScalar(base.PhysicsBase):
 		#a = self.Params["Velocity"]
 		# if F is None:
 		# 	F = np.zeros(u.shape + (self.dim,))
-		# for d in range(self.Dim):
+		# for d in range(self.dim):
 		# 	F[:,:,d] = c*u
 		F = np.expand_dims(c*u, axis=1)
 		# F = a*u
-		# F.shape = u.shape + (self.Dim,) 
+		# F.shape = u.shape + (self.dim,) 
 		return F
 
 	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
@@ -396,11 +396,11 @@ class Burgers1D(base.PhysicsBase):
 		#a = self.Params["Velocity"]
 		# if F is None:
 		# 	F = np.zeros(u.shape + (self.dim,))
-		# for d in range(self.Dim):
+		# for d in range(self.dim):
 		# 	F[:,:,d] = c*u
 		F = np.expand_dims(u*u/2., axis=2)
 		# F = a*u
-		# F.shape = u.shape + (self.Dim,) 
+		# F.shape = u.shape + (self.dim,) 
 		return F
 
 	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):

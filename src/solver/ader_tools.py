@@ -385,7 +385,7 @@ def ref_to_phys_time(mesh, elem, time, dt, gbasis, xref, tphys=None, PointsChang
 
     gbasis.get_basis_val_grads(xref, get_val=True)
 
-    dim = mesh.Dim
+    dim = mesh.dim
     
     Phi = gbasis.basis_val
 

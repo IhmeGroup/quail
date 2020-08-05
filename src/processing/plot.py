@@ -439,7 +439,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, nPoint=101, plot_
 
 def get_sample_points(mesh, physics, basis, equidistant):
 	## Extract data
-	dim = mesh.Dim
+	dim = mesh.dim
 	U = physics.U
 	order = physics.order
 	sr = physics.NUM_STATE_VARS
@@ -536,7 +536,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 
 # 	## Extract params
 # 	EndTime = solver.Time
-# 	dim = mesh.Dim
+# 	dim = mesh.dim
 
 # 	# Get sample points
 # 	x, u = get_sample_points(mesh, physics, solver.basis, Equidistant)
@@ -607,7 +607,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exa
 
 	## Extract params
 	time = solver.Time
-	dim = mesh.Dim
+	dim = mesh.dim
 
 	# Get sample points
 	x = get_sample_points(mesh, physics, solver.basis, equidistant_pts)
@@ -661,7 +661,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exa
 def plot_mesh(mesh, EqualAR=False, **kwargs):
 
 	gbasis = mesh.gbasis
-	dim = mesh.Dim 
+	dim = mesh.dim 
 
 	if dim == 1:
 		y = plt.ylim()
@@ -750,7 +750,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	
 # 	gbasis = mesh.gbasis
 # 	# Sanity check
-# 	if mesh.Dim != 2:
+# 	if mesh.dim != 2:
 # 		raise ValueError
 
 # 	'''

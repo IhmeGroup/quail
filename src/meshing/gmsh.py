@@ -301,7 +301,7 @@ def CreateGmshElementDataBase():
 
 class PhysicalGroup(object):
 	def __init__(self):
-		self.Dim = 1
+		self.dim = 1
 		self.Group = -1
 		self.Number = -1
 		self.Name = ""
@@ -380,11 +380,11 @@ def ReadPhysicalGroups(fo, mesh):
 		PGroup = PGroups[i]
 		fl = fo.readline()
 		ls = fl.split()
-		PGroup.Dim = int(ls[0])
+		PGroup.dim = int(ls[0])
 		PGroup.Number = int(ls[1])
 		PGroup.Name = ls[2][1:-1]
 
-		if PGroup.Dim < mesh.Dim-1 or PGroup.Dim > mesh.Dim:
+		if PGroup.dim < mesh.dim-1 or PGroup.dim > mesh.dim:
 			raise Exception("Physical groups should be created only for " +
 					"elements and boundary faces")
 
@@ -396,7 +396,7 @@ def ReadPhysicalGroups(fo, mesh):
 	# Need at least one physical group to correspond to volume elements
 	match = False
 	for PGroup in PGroups:
-		if PGroup.Dim == mesh.Dim:
+		if PGroup.dim == mesh.dim:
 			match = True
 			break
 
@@ -506,7 +506,7 @@ def ReadNodes(fo, ver, mesh):
 	# Store in mesh
 	mesh.Coords = Nodes
 	mesh.nNode = Nodes.shape[0]
-	mesh.Dim = dim
+	mesh.dim = dim
 
 	return mesh, old_to_new_node_tags
 
@@ -525,7 +525,7 @@ def ReadMeshEntities(fo, ver, mesh, PGroups):
 	num_curves = ls[1]
 	num_surfaces = ls[2]
 
-	if mesh.Dim == 2:
+	if mesh.dim == 2:
 		# skip points
 		for _ in range(num_points):
 			fo.readline()
@@ -576,7 +576,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			raise errors.DoesNotExistError("All elements and boundary faces must " +
 					"be assigned to a physical group")
 
-		if PGroup.Dim == mesh.Dim:
+		if PGroup.dim == mesh.dim:
 			# Assume only one element type - need to check for this later
 			### Entity is an element
 # <<<<<<< Updated upstream
@@ -610,7 +610,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			# 	# Need new element group
 			# 	mesh.nElemGroup += 1
 			# 	mesh.ElemGroups.append(Mesh.ElemGroup(QBasis=QBasis,QOrder=QOrder))
-		elif PGroup.Dim == mesh.Dim - 1:
+		elif PGroup.dim == mesh.dim - 1:
 			### Boundary entity
 			# Check for existing boundary face group
 			# found = False
@@ -652,14 +652,14 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		# find physical boundary group
 		found = False
 		for PGroup in PGroups:
-			if entity_tag in PGroup.entity_tags and dim == PGroup.Dim:
+			if entity_tag in PGroup.entity_tags and dim == PGroup.dim:
 				found = True
 				break
 		if not found:
 			raise errors.DoesNotExistError("All elements and boundary faces must " +
 					"be assigned to a physical group")
 
-		if dim == mesh.Dim:
+		if dim == mesh.dim:
 			# Element
 			# Get element type data
 			gorder = gmsh_element_database[etype].gorder
@@ -676,7 +676,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 					if gorder != mesh.gorder or gbasis != mesh.gbasis:
 						raise ValueError(">1 element type not supported")
 				mesh.nElem += 1
-		elif dim == mesh.Dim - 1:
+		elif dim == mesh.dim - 1:
 
 			if PGroup.Group >= 0:
 				# BFG = mesh.BFaceGroups[PGroup.Group]
@@ -916,7 +916,7 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 		etype = lint[2]
 		num_in_block = lint[3]
 
-		if dim == mesh.Dim:
+		if dim == mesh.dim:
 			# Element
 			# Get element type data
 			gorder = gmsh_element_database[etype].gorder
@@ -935,11 +935,11 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 				mesh.Elem2Nodes[elem] = newnodes
 				# Increment elem counter
 				elem += 1
-		elif dim == mesh.Dim - 1:
+		elif dim == mesh.dim - 1:
 			# find physical boundary group
 			for PGroup in PGroups:
 				if entity_tag in PGroup.entity_tags:
-					if PGroup.Dim == dim:
+					if PGroup.dim == dim:
 						ibfgrp = PGroup.Group
 						break
 			BFG = mesh.BFaceGroups[PGroup.Name]

@@ -12,13 +12,13 @@ def WriteMeshToText(mesh, FileName):
 	fo = open(FileName, "w")
 
 	# Mesh dimension
-	fo.write("%d %d %d\n" % (mesh.Dim, EG.QOrder, EG.nNodePerElem))
+	fo.write("%d %d %d\n" % (mesh.dim, EG.QOrder, EG.nNodePerElem))
 
 	# Nodes
 	fo.write("$Nodes\n")
 	fo.write("%d\n" % (mesh.nNode))
 	for n in range(mesh.nNode):
-		for d in range(mesh.Dim):
+		for d in range(mesh.dim):
 			fo.write("%.15E " % (mesh.Coords[n][d]))
 		fo.write("\n")
 

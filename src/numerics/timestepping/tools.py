@@ -143,7 +143,7 @@ def get_dt_from_cfl(stepper, solver):
 		dt: time step for the solver
 	'''	
 	mesh = solver.mesh
-	dim = mesh.Dim
+	dim = mesh.dim
 
 	physics = solver.physics
 	Up = physics.U

@@ -52,7 +52,7 @@ class ElemOperators(object):
 		# separate these later
 
 		# Unpack
-		dim = mesh.Dim 
+		dim = mesh.dim 
 		nElem = mesh.nElem 
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
@@ -129,7 +129,7 @@ class IFaceOperators(ElemOperators):
 		# separate these later
 
 		# Unpack
-		dim = mesh.Dim
+		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
@@ -191,7 +191,7 @@ class BFaceOperators(IFaceOperators):
 		# separate these later
 
 		# Unpack
-		dim = mesh.Dim
+		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb

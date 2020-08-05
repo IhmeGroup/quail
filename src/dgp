@@ -28,7 +28,7 @@ import solver.ADERDG as ADERDG
 
 
 def set_physics(order, basis_type, mesh, physics_type):
-    dim = mesh.Dim 
+    dim = mesh.dim 
 
     if PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and dim == 1:
         physics_ref = scalar.ConstAdvScalar1D
@@ -165,14 +165,14 @@ def driver(deck):
 	for b in mesh_params["PeriodicBoundariesX"]:
 		pb[i] = b
 		i += 1
-	if mesh.Dim == 2:
+	if mesh.dim == 2:
 		i = 2
 		for b in mesh_params["PeriodicBoundariesY"]:
 			pb[i] = b
 			i += 1
-	if pb != [None]*4 and mesh.Dim !=1:
+	if pb != [None]*4 and mesh.dim !=1:
 		# need to check 1D first
-		if mesh.Dim == 1:
+		if mesh.dim == 1:
 			raise Exception
 		mesh_tools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], y1=pb[2], y2=pb[3])
 
@@ -183,17 +183,17 @@ def driver(deck):
 	order = numerics_params["InterpOrder"]
 	basis_type = numerics_params["InterpBasis"]
 	# if physics_params["Type"] is "ConstAdvScalar":
-	# 	if mesh.Dim == 1:
+	# 	if mesh.dim == 1:
 	# 		physics = scalar.ConstAdvScalar1D(order, basis, mesh)
 	# 	else:
 	# 		physics = scalar.ConstAdvScalar2D(order, basis, mesh)
 	# elif physics_params["Type"] is "Burgers":
-	# 	if mesh.Dim == 1:
+	# 	if mesh.dim == 1:
 	# 		physics = scalar.Burgers1D(order, basis, mesh)
 	# 	else:
 	# 		raise NotImplementedError
 	# elif physics_params["Type"] is "Euler":
-	# 	if mesh.Dim == 1:
+	# 	if mesh.dim == 1:
 	# 		physics = euler.Euler1D(order, basis, mesh)
 	# 	else:
 	# 		physics = euler.Euler2D(order, basis, mesh)

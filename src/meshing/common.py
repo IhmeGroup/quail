@@ -31,7 +31,7 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 	if Coords is None:
 		nNode = nElem + 1
 		mesh = mesh_defs.Mesh(dim=1, nNode=nNode)
-		mesh.Coords = np.zeros([mesh.nNode,mesh.Dim])
+		mesh.Coords = np.zeros([mesh.nNode,mesh.dim])
 		mesh.Coords[:,0] = np.linspace(xmin,xmax,mesh.nNode)
 	else:
 		Uniform = False

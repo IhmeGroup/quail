@@ -354,7 +354,7 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
 
     basis_phys_grad = basis.get_grads(quad_pts) # [nq, nb, dim]
     
-    if dim != mesh.Dim:
+    if dim != mesh.dim:
         raise Exception("Dimensions don't match")
 
     jac = np.zeros([nq,dim,dim])
@@ -397,7 +397,7 @@ def calculate_1D_normals(mesh, elem, face, quad_pts):
     if gorder == 1:
         nq = 1
 
-    nvec = np.zeros([nq,mesh.Dim])
+    nvec = np.zeros([nq,mesh.dim])
     
     #1D normals calculation
     if face == 0:

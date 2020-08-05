@@ -34,7 +34,7 @@ def ref_to_phys(mesh, elem_id, xref):
     gbasis.get_basis_val_grads(xref, get_val=True)
 
     # Phi= gbasis.basis_val
-    # dim = mesh.Dim
+    # dim = mesh.dim
     # Coords = mesh.Coords
     # Phi = PhiData.Phi
     # nb = gbasis.basis_val.shape[1]
@@ -192,7 +192,7 @@ class BFace(object):
         This method initializes the object
         '''
         self.elem_id = 0 
-        self.face = 0 
+        self.face_id = 0 
 
 
 class BFaceGroup(object):
@@ -338,7 +338,7 @@ class Mesh(object):
         if gbasis is None:
             gbasis = basis_defs.LagrangeSeg(1)
 
-        self.Dim = dim
+        self.dim = dim
         self.nNode = nNode
         self.Coords = None
         self.nIFace = 0

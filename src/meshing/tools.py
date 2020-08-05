@@ -110,7 +110,7 @@ def check_face_orientations(mesh):
         only returns a message if an error exists
     '''
     gbasis = mesh.gbasis
-    if mesh.Dim == 1:
+    if mesh.dim == 1:
         # don't need to check for 1D
         return
 
@@ -163,12 +163,12 @@ def RandomizeNodes(mesh, elem = -1, orient = -1):
 def RotateNodes(mesh, theta_x = 0., theta_y = 0., theta_z = 0.):
 
     # Construct rotation matrices
-    if mesh.Dim == 3:
+    if mesh.dim == 3:
         Rx = np.array([[1., 0., 0.], [0., np.cos(theta_x), -np.sin(theta_x)], [0., np.sin(theta_x), np.cos(theta_x)]])
         Ry = np.array([[np.cos(theta_y), 0., np.sin(theta_y)], [0., 1., 0.], [-np.sin(theta_y), 0., np.cos(theta_y)]])
         Rz = np.array([[np.cos(theta_z), -np.sin(theta_z), 0.], [np.sin(theta_z), np.cos(theta_z), 0.], [0., 0., 1.]])
         R = np.matmul(Rx, np.matmul(Ry, Rz))
-    elif mesh.Dim == 2:
+    elif mesh.dim == 2:
         R = np.array([[np.cos(theta_z), -np.sin(theta_z)], [np.sin(theta_z), np.cos(theta_z)]])
     else:
         raise NotImplementedError
@@ -249,7 +249,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     #     raise Exception("Duplicate boundaries")
 
     # icoord = which_dim
-    # if icoord < 0 or icoord >= mesh.Dim:
+    # if icoord < 0 or icoord >= mesh.dim:
     #     raise ValueError
 
     # ''' 
@@ -291,8 +291,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     '''
     for BFace1 in BFG1.BFaces:
         # Extract info
-        elem_id1 = BFace1.Elem
-        face1 = BFace1.face
+        elem_id1 = BFace1.elem_id
+        face1 = BFace1.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
@@ -310,8 +310,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
         # Pair each node with corresponding one on other boundary
         for BFace2 in BFG2.BFaces:
             # Extract info
-            elem_id2 = BFace2.Elem
-            face2 = BFace2.face
+            elem_id2 = BFace2.elem_id
+            face2 = BFace2.face_id
 
             ''' Get physical coordinates of face '''
             # Get local q = 1 nodes on face
@@ -348,7 +348,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
             #         if np.abs(norm-pdiff) < tol:
             #             match = True
             #             # Force nodes to match exactly
-            #             for d in range(mesh.Dim):
+            #             for d in range(mesh.dim):
             #                 if d == icoord: continue # skip periodic direction
             #                 # code.interact(local=locals())
             #                 coord2[d] = coord1[d]
@@ -489,7 +489,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     #     raise Exception("Duplicate boundaries")
 
     icoord = which_dim
-    if icoord < 0 or icoord >= mesh.Dim:
+    if icoord < 0 or icoord >= mesh.dim:
         raise ValueError
 
     ''' 
@@ -591,7 +591,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
                         NewNodeOrder[idx2] = node2
                         NextIdx = np.amax([NextIdx, idx2])
                         # Force nodes to match exactly
-                        for d in range(mesh.Dim):
+                        for d in range(mesh.dim):
                             if d == icoord: continue # skip periodic direction
                             # code.interact(local=locals())
                             coord2[d] = coord1[d]
@@ -624,7 +624,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
             #             NewNodeOrder[idx2] = node2
             #             NextIdx = np.amax([NextIdx, idx2])
             #             # Force nodes to match exactly
-            #             for d in range(mesh.Dim):
+            #             for d in range(mesh.dim):
             #                 if d == icoord: continue # skip periodic direction
             #                 # code.interact(local=locals())
             #                 coord2[d] = coord1[d]

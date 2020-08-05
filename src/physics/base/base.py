@@ -74,8 +74,8 @@ class PhysicsBase(object):
 		coefficients. The coefficients are selected to retain the exact 
 		enthalpies at the table points.
 		'''
-		# dim = mesh.Dim
-		# self.Dim = mesh.Dim
+		# dim = mesh.dim
+		# self.dim = mesh.dim
 		self.Params = {}
 		self.IC = None
 		self.ExactSoln = None
@@ -127,7 +127,7 @@ class PhysicsBase(object):
 		set_state_indices_slices(self)
 
 
-		if mesh.Dim != self.dim:
+		if mesh.dim != self.dim:
 			raise errors.IncompatibleError
 
 		self.set_maps()
@@ -326,7 +326,7 @@ class PhysicsBase(object):
 	# 		try:
 	# 			Fa = data.Fa
 	# 		except AttributeError:
-	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.Dim])
+	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.dim])
 	# 		# Fa = self.ConvFluxInterior(uB, Fa)
 	# 		# # Take dot product with n
 	# 		try: 

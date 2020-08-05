@@ -107,7 +107,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     OUTPUTS: 
         SM: stiffness matrix for ADER-DG [nb_st, nb_st]
     '''
-    dim = mesh.Dim
+    dim = mesh.dim
 
     quad_order_st = basis_st.get_quadrature_order(mesh, order*2)
     quad_order = quad_order_st
