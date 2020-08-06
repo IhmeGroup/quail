@@ -116,7 +116,7 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 
 	mesh.allocate_elem_to_nodes()
 	for elem in range(mesh.nElem):
-		for i in range(mesh.nNodePerElem):
+		for i in range(mesh.num_nodes_per_elem):
 			mesh.Elem2Nodes[elem][i] = elem + i
 
 	# mesh.fill_faces()
@@ -309,30 +309,30 @@ def split_quadrils_into_tris(mesh_old):
 
 	mesh.SetParams(nElem=nElem, gbasis=basis_defs.LagrangeTri(1))
 
-	def reorder_nodes(QOrder, nNodePerQuadril, nNodePerTri):
-		nNodePerFace = QOrder + 1
-		if nNodePerFace != np.sqrt(nNodePerQuadril):
+	def reorder_nodes(QOrder, num_nodes_per_quad, num_nodes_per_tri):
+		num_nodes_per_face = QOrder + 1
+		if num_nodes_per_face != np.sqrt(num_nodes_per_quad):
 			return ValueError
-		quadril_nodes = np.arange(nNodePerQuadril)
-		quadril_nodes.shape = nNodePerFace, nNodePerFace
+		quadril_nodes = np.arange(num_nodes_per_quad)
+		quadril_nodes.shape = num_nodes_per_face, num_nodes_per_face
 		# faces 0 and 3 become faces 0 and 2 of tri1
-		tri1_nodes = np.arange(nNodePerTri)
+		tri1_nodes = np.arange(num_nodes_per_tri)
 		# faces 1 and 2 become faces 2 and 0 of tri2
 		tri2_nodes = np.copy(tri1_nodes)
 
 		n = 0
-		for j in range(nNodePerFace):
-			tri1_nodes[n:n+nNodePerFace-j] = quadril_nodes[j,:nNodePerFace-j]
+		for j in range(num_nodes_per_face):
+			tri1_nodes[n:n+num_nodes_per_face-j] = quadril_nodes[j,:num_nodes_per_face-j]
 			if j == 0:
-				tri2_nodes[n:n+nNodePerFace-j] = quadril_nodes[nNodePerFace-1,::-1]
+				tri2_nodes[n:n+num_nodes_per_face-j] = quadril_nodes[num_nodes_per_face-1,::-1]
 			else:
-				tri2_nodes[n:n+nNodePerFace-j] = quadril_nodes[nNodePerFace-(j+1),
-						nNodePerFace-1:j-1:-1]
-			n += nNodePerFace-j
+				tri2_nodes[n:n+num_nodes_per_face-j] = quadril_nodes[num_nodes_per_face-(j+1),
+						num_nodes_per_face-1:j-1:-1]
+			n += num_nodes_per_face-j
 
 		return tri1_nodes, tri2_nodes
 
-	tri1_nodes, tri2_nodes = reorder_nodes(mesh.gorder, mesh_old.nNodePerElem, mesh.nNodePerElem)
+	tri1_nodes, tri2_nodes = reorder_nodes(mesh.gorder, mesh_old.num_nodes_per_elem, mesh.num_nodes_per_elem)
 
 
 	# Elems
