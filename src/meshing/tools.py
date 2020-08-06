@@ -126,13 +126,13 @@ def check_face_orientations(mesh):
         # Get local q=1 nodes on face for left element
         lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceL_id)
         # Convert to global node numbering
-        # gfnodesL = mesh.Elem2Nodes[elemL][lfnodes]
+        # gfnodesL = mesh.elem_to_node_ids[elemL][lfnodes]
         gfnodesL = elemL_nodes[lfnodes]
 
         # Get local q=1 nodes on face for right element
         lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceR_id)
         # Convert to global node numbering
-        # gfnodesR = mesh.Elem2Nodes[elemR][lfnodes]
+        # gfnodesR = mesh.elem_to_node_ids[elemR][lfnodes]
         gfnodesR = elemR_nodes[lfnodes]
 
         # Node Ordering should be reversed between the two elements
@@ -191,7 +191,7 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
         lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, face)
 
         # Convert to global node numbering
-        # gfnodes = mesh.Elem2Nodes[elem_id][lfnodes]
+        # gfnodes = mesh.elem_to_node_ids[elem_id][lfnodes]
 
         # Physical coordinates of global nodes
         # coords = mesh.node_coords[gfnodes]
@@ -301,7 +301,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
         nfnode = lfnodes1.shape[0]
 
         # Convert to global node numbering
-        gfnodes1 = mesh.Elem2Nodes[elem_id1][lfnodes1]
+        gfnodes1 = mesh.elem_to_node_ids[elem_id1][lfnodes1]
         nodesort1 = np.sort(gfnodes1)
 
         # Physical coordinates of global nodes
@@ -319,7 +319,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
                 mesh.gorder, face2)
 
             # Convert to global node numbering
-            gfnodes2 = mesh.Elem2Nodes[elem_id2][lfnodes2]
+            gfnodes2 = mesh.elem_to_node_ids[elem_id2][lfnodes2]
 
             # Physical coordinates of global nodes
             coords2 = mesh.node_coords[gfnodes2]
@@ -402,7 +402,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
                     NodesChanged = True
                     # remap elements
                     for elem in range(mesh.num_elems):
-                        mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
+                        mesh.elem_to_node_ids[elem, :] = NewNode2NewerNode[mesh.elem_to_node_ids[elem, :]]
                     # reset NewNode2NewerNode
                     NewNode2NewerNode = np.arange(mesh.num_nodes)
 
@@ -438,7 +438,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     #     mesh = mesh.ElemGroups[0]
     #     num_elems = mesh.num_elems
     #     for elem in range(num_elems):
-    #         mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
+    #         mesh.elem_to_node_ids[elem, :] = NewNode2NewerNode[mesh.elem_to_node_ids[elem, :]]
 
     # mesh.boundary_groups.remove(BFG1)
     # mesh.boundary_groups.remove(BFG2)
@@ -522,7 +522,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
                 mesh.gorder, face)
 
         # Convert to global node numbering
-        gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
+        gfnodes = mesh.elem_to_node_ids[elem][lfnodes[:]]
 
         for node in gfnodes:
             if OldNode2NewNode[node] == -1: # has not been ordered yet
@@ -552,7 +552,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
                 mesh.gorder, face)
 
         # Convert to global node numbering
-        gfnodes = mesh.Elem2Nodes[elem][lfnodes[:]]
+        gfnodes = mesh.elem_to_node_ids[elem][lfnodes[:]]
 
         for node2 in gfnodes:
             ''' Find match with boundary 1 '''
@@ -678,15 +678,15 @@ def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
     # NewCoords = mesh.node_coords[NewNodeOrder]
     mesh.node_coords[:] = mesh.node_coords[NewNodeOrder]
 
-    # New Elem2Nodes
-    NewElem2Nodes = np.zeros_like(mesh.Elem2Nodes, dtype=int) - 1
+    # New elem_to_node_ids
+    Newelem_to_node_ids = np.zeros_like(mesh.elem_to_node_ids, dtype=int) - 1
     num_elems = mesh.num_elems
     for elem in range(num_elems):
-        mesh.Elem2Nodes[elem,:] = OldNode2NewNode[mesh.Elem2Nodes[elem, :]]
+        mesh.elem_to_node_ids[elem,:] = OldNode2NewNode[mesh.elem_to_node_ids[elem, :]]
 
     # Store in mesh
     # mesh.node_coords = NewCoords
-    # mesh.Elem2Nodes = NewElem2Nodes
+    # mesh.elem_to_node_ids = Newelem_to_node_ids
 
 
 def VerifyPeriodicMesh(mesh):
@@ -704,14 +704,14 @@ def VerifyPeriodicMesh(mesh):
             gorder, faceL_id)
 
         # Convert to global node numbering
-        fnodesL = mesh.Elem2Nodes[elemL][fnodesL[:]]
+        fnodesL = mesh.elem_to_node_ids[elemL][fnodesL[:]]
 
         ''' Get global face nodes - right '''
         fnodesR = gbasis.get_local_face_principal_node_nums( 
             gorder, faceR_id)
 
         # Convert to global node numbering
-        fnodesR = mesh.Elem2Nodes[elemR][fnodesR[:]]
+        fnodesR = mesh.elem_to_node_ids[elemR][fnodesR[:]]
 
         ''' If exact same global nodes, then this is NOT a periodic face '''
         fnodesLsort = np.sort(fnodesL)

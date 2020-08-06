@@ -682,7 +682,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			lfnodes = gbasis.get_local_face_node_nums(mesh.gorder, face)
 
 			# Convert to global node numbering
-			# fnodes = mesh.Elem2Nodes[elem][fnodes]
+			# fnodes = mesh.elem_to_node_ids[elem][fnodes]
 
 			# # Physical coordinates of global nodes
 			# coords = mesh.node_coords[fnodes]
@@ -711,7 +711,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 				mesh.gorder, face)
 
 			# Convert to global node numbering
-			# fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+			# fnodes[:] = mesh.elem_to_node_ids[elem][fnodes[:]]
 
 			# Physical coordinates of global nodes
 			# coords = mesh.node_coords[fnodes]
@@ -765,7 +765,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 			mesh.gorder, face)
 
 # 		# Convert to global node numbering
-# 		fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+# 		fnodes[:] = mesh.elem_to_node_ids[elem][fnodes[:]]
 
 # 		# Physical coordinates of global nodes
 # 		coords = mesh.node_coords[fnodes]
@@ -787,7 +787,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 				mesh.gorder, face)
 
 # 			# Convert to global node numbering
-# 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
+# 			fnodes[:] = mesh.elem_to_node_ids[elem][fnodes[:]]
 
 # 			# Physical coordinates of global nodes
 # 			coords = mesh.node_coords[fnodes]

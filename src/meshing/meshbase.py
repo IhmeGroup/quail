@@ -41,7 +41,7 @@ def ref_to_phys(mesh, elem_id, xref):
     # if nb != mesh.num_nodes_per_elem:
     #     raise Exception("Wrong number of nodes per element")
 
-    # ElemNodes = mesh.Elem2Nodes[elem_id]
+    # ElemNodes = mesh.elem_to_node_ids[elem_id]
 
     elem_coords = mesh.elements[elem_id].node_coords
     # coords = elem_coords[lfnodes]
@@ -337,9 +337,9 @@ class Mesh(object):
         # self.nFacePerElem = gbasis.nfaceperelem 
         # self.Faces = None
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
-        self.Elem2Nodes = None
+        self.elem_to_node_ids = np.zeros(0, dtype=int)
         self.elements = []
-            # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,num_nodes_per_elem
+            # elem_to_node_ids[elem][i] = ith node of elem, where i = 1,2,...,num_nodes_per_elem
 
     def SetParams(self, gbasis, gorder=1, num_elems=1):
 
@@ -364,12 +364,12 @@ class Mesh(object):
         '''
         Method: allocate_elem_to_nodes
         -------------------
-        This method allocates Elem2Nodes
+        This method allocates elem_to_node_ids
 
         OUTPUTS:
-            self.Elem2Nodes
+            self.elem_to_node_ids
         '''
-        self.Elem2Nodes = np.zeros([self.num_elems,self.num_nodes_per_elem], dtype=int)
+        self.elem_to_node_ids = np.zeros([self.num_elems,self.num_nodes_per_elem], dtype=int)
 
 
     def allocate_ifaces(self):
@@ -412,7 +412,7 @@ class Mesh(object):
             elem = self.elements[elem_id]
 
             elem.id = elem_id
-            elem.node_ids = self.Elem2Nodes[elem_id]
+            elem.node_ids = self.elem_to_node_ids[elem_id]
             elem.node_coords = self.node_coords[elem.node_ids]
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 

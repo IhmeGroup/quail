@@ -424,7 +424,7 @@ def calculate_2D_normals(mesh, elem, face, quad_pts):
     gorder = mesh.gorder
 
     # Calculate 2D normals
-    ElemNodes = mesh.Elem2Nodes[elem]
+    ElemNodes = mesh.elem_to_node_ids[elem]
     elem_coords = mesh.elements[elem].node_coords
 
     fnodes = gbasis.get_local_face_node_nums(gorder, face)

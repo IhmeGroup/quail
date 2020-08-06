@@ -757,8 +757,8 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 				raise Exception("Check Gmsh entities")
 			# Convert node Ordering
 			newnodes = nodes[gmsh_element_database[etype].NodeOrder]
-			# Store in Elem2Nodes
-			mesh.Elem2Nodes[elem] = newnodes
+			# Store in elem_to_node_ids
+			mesh.elem_to_node_ids[elem] = newnodes
 			# Increment elem counter
 			elem += 1
 		else:
@@ -798,8 +798,8 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 				for n in range(len(nodes)):
 					nodes[n] = old_to_new_node_tags[nodes[n]]
 				newnodes = nodes[gmsh_element_database[etype].NodeOrder]
-				# Store in Elem2Nodes
-				mesh.Elem2Nodes[elem] = newnodes
+				# Store in elem_to_node_ids
+				mesh.elem_to_node_ids[elem] = newnodes
 				# Increment elem counter
 				elem += 1
 		elif dim == mesh.dim - 1:
@@ -888,7 +888,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 			nfnode = fnodes.shape[0]
 
 			# Convert to global nodes
-			fnodes = mesh.Elem2Nodes[elem][fnodes]
+			fnodes = mesh.elem_to_node_ids[elem][fnodes]
 
 			# Add to hash table
 			FInfo, Exists = AddFaceToHash(Node2FaceTable, nfnode, fnodes, False, 

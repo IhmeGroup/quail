@@ -117,7 +117,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 	mesh.allocate_elem_to_nodes()
 	for elem in range(mesh.num_elems):
 		for i in range(mesh.num_nodes_per_elem):
-			mesh.Elem2Nodes[elem][i] = elem + i
+			mesh.elem_to_node_ids[elem][i] = elem + i
 
 	# mesh.fill_faces()
 	mesh.create_elements()
@@ -201,10 +201,10 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	elem = 0
 	for ny in range(num_elems_y):
 		for nx in range(num_elems_x):
-			mesh.Elem2Nodes[elem][0] = num_nodes_x*ny + nx
-			mesh.Elem2Nodes[elem][1] = num_nodes_x*ny + nx + 1
-			mesh.Elem2Nodes[elem][2] = num_nodes_x*(ny+1) + nx
-			mesh.Elem2Nodes[elem][3] = num_nodes_x*(ny+1) + nx + 1
+			mesh.elem_to_node_ids[elem][0] = num_nodes_x*ny + nx
+			mesh.elem_to_node_ids[elem][1] = num_nodes_x*ny + nx + 1
+			mesh.elem_to_node_ids[elem][2] = num_nodes_x*(ny+1) + nx
+			mesh.elem_to_node_ids[elem][3] = num_nodes_x*(ny+1) + nx + 1
 			elem += 1
 
 	# mesh.allocate_faces()
@@ -339,9 +339,9 @@ def split_quadrils_into_tris(mesh_old):
 	mesh.allocate_elem_to_nodes()
 	for elem_id in range(num_elems_old):
 		# First triangle
-		mesh.Elem2Nodes[elem_id] = mesh_old.Elem2Nodes[elem_id, tri1_nodes]
+		mesh.elem_to_node_ids[elem_id] = mesh_old.elem_to_node_ids[elem_id, tri1_nodes]
 		# Second triangle
-		mesh.Elem2Nodes[elem_id+num_elems_old] = mesh_old.Elem2Nodes[elem_id, tri2_nodes]
+		mesh.elem_to_node_ids[elem_id+num_elems_old] = mesh_old.elem_to_node_ids[elem_id, tri2_nodes]
 
 
 	old_to_new_face = np.array([2, 1, 2, 1])
