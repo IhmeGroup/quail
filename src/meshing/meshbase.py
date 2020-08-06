@@ -186,29 +186,28 @@ class BoundaryGroup(object):
         boundary name
     number : int
         boundary number
-    number : int
-        boundary number
-    '''
-    '''
-    Class: BoundaryGroup
-    -------------------
-    This class stores boundary face objects for a given boundary group
-
-    ATTRIBUTES:
-        Name: name of boundary face group
-        num_boundary_faces: number of boundary faces within this group
-        boundary_faces: list of boundary_face objects
+    num_boundary_faces : int
+        number of faces in boundary group
+    boundary_faces : list
+        list of BoundaryFace objects
     '''
     def __init__(self):
         '''
-        Method: __init__
-        -------------------
-        This method initializes the object
+        Attributes:
+        -----------
+        name : str
+            boundary name
+        number : int
+            boundary number
+        num_boundary_faces : int
+            number of faces in boundary group
+        boundary_faces : list
+            list of BoundaryFace objects
         '''
         self.name = ""
         self.number = -1
         self.num_boundary_faces = 0 
-        self.boundary_faces = None
+        self.boundary_faces = []
 
     def allocate_bfaces(self):
         '''
@@ -219,49 +218,8 @@ class BoundaryGroup(object):
         OUTPUTS:
             self.boundary_faces
         '''
-        self.boundary_faces = [BoundaryFace() for i in range(self.num_boundary_faces)]
-
-
-'''
-Dictionary: Shape2nFace
--------------------
-This dictionary stores the number of faces per element
-for each shape type
-
-USAGE:
-    Shape2nFace[shape] = number of faces per element of shape
-'''
-# Shape2nFace = {
-#     ShapeType.Point : 0, 
-#     ShapeType.Segment : 2,
-#     ShapeType.Triangle : 3,
-#     ShapeType.Quadrilateral : 4
-# }
-
-
-# '''
-
-# class PeriodicGroup(object):
-#     '''
-#     Class: PeriodicGroup
-#     -------------------
-#     This class stores information about periodic groups
-
-#     NOTES:
-#         Not used for now
-
-#     ATTRIBUTES:
-#         nPeriodicNode: number of periodic nodes in group
-#         PeriodicNodes: periodic nodes
-#     '''
-#     def __init__(self):
-#         '''
-#         Method: __init__
-#         -------------------
-#         This method initializes the object
-#         '''
-#         self.nPeriodicNode = 0
-#         self.PeriodicNodes = None
+        self.boundary_faces = [BoundaryFace() for i in \
+                range(self.num_boundary_faces)]
 
 
 class Element(object):
@@ -389,7 +347,7 @@ class Mesh(object):
 
     def add_boundary_group(self, bname):
         if bname in self.boundary_groups:
-            raise ValueError
+            raise ValueError("Repeated boundary names")
         BFG = BoundaryGroup()
         self.boundary_groups[bname] = BFG
         BFG.name = bname
@@ -410,8 +368,8 @@ class Mesh(object):
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
         # neighbors
-        for iif in range(self.num_interior_faces):
-            int_face = self.interior_faces[iif]
+        for int_face in self.interior_faces:
+            # int_face = self.interior_faces[iif]
             elemL_id = int_face.elemL_id
             elemR_id = int_face.elemR_id
             faceL_id = int_face.faceL_id
