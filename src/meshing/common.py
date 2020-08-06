@@ -372,7 +372,7 @@ def split_quadrils_into_tris(mesh_old):
 	# mesh.IFaces[:num_interior_faces_old] = IFaces_old
 	# for IF in mesh.IFaces[num_interior_faces_old:]:
 	for elem_id in range(num_elems_old):
-		IF = mesh_defs.IFace()
+		IF = mesh_defs.InteriorFace()
 		IF.elemL_id = elem_id
 		IF.faceL_id = 0
 		IF.elemR_id = elem_id + num_elems_old

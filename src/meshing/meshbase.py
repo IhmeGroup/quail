@@ -151,7 +151,7 @@ def ref_to_phys(mesh, elem_id, xref):
 #         self.Number = 0 
 
 
-class IFace(object):
+class InteriorFace(object):
     '''
     Class: InteriorFace
     -------------------
@@ -381,7 +381,7 @@ class Mesh(object):
         OUTPUTS:
             self.IFaces
         '''
-        self.IFaces = [IFace() for i in range(self.num_interior_faces)]
+        self.IFaces = [InteriorFace() for i in range(self.num_interior_faces)]
 
     # def allocate_bface_groups(self):
     #     '''

@@ -409,7 +409,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
                     
                 # Create IFace between these two faces
                 mesh.num_interior_faces += 1
-                IFaces.append(mesh_defs.IFace())
+                IFaces.append(mesh_defs.InteriorFace())
                 IF = IFaces[-1]
                 IF.elemL_id = elem_id1
                 IF.faceL_id = face1
