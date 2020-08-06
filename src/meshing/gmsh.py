@@ -834,9 +834,9 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# Allocate additional mesh structures
 	# for ibfgrp in range(mesh.num_boundary_groups):
 	# 	BFG = mesh.boundary_groups[ibfgrp]
-	# 	BFG.allocate_bfaces()
+	# 	BFG.allocate_boundary_faces()
 	for BFG in mesh.boundary_groups.values():
-		BFG.allocate_bfaces()
+		BFG.allocate_boundary_faces()
 	# nFaceMax = 0
 	# for EG in mesh.ElemGroups:
 	# 	# also find maximum # faces per elem
