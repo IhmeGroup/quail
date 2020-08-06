@@ -11,6 +11,7 @@ from data import ArrayList, GenericData
 from general import ModalOrNodal, NodeType, ShapeType, QuadratureType
 
 import meshing.meshbase as mesh_defs
+import meshing.tools as mesh_tools
 
 import numerics.basis.tools as basis_tools
 
@@ -151,7 +152,7 @@ class SolverBase(ABC):
 		npts = eval_pts.shape[0]
 
 		for elem in range(mesh.num_elems):
-			xphys = mesh_defs.ref_to_phys(mesh, elem, eval_pts)
+			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
 			f = physics.CallFunction(physics.IC, x=xphys, t=self.Time)
 			# f.shape = npts,ns
 			if Params["InterpolateIC"]:

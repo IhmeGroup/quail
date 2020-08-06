@@ -58,7 +58,7 @@ class ElemOperatorsADER(DG.ElemOperators):
 			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
-			x = mesh_defs.ref_to_phys(mesh, elem, quad_pts)
+			x = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
@@ -143,7 +143,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x = mesh_defs.ref_to_phys(mesh, BFace.elem_id, self.faces_to_xref[BFace.face_id])
+				x = mesh_tools.ref_to_phys(mesh, BFace.elem_id, self.faces_to_xref[BFace.face_id])
 				# Store
 				x_bfgroup[j] = x
 
@@ -241,7 +241,7 @@ class ADEROperators(object):
 				self.djac_elems[elem] = np.tile(djac,(int(np.sqrt(nnode)),1))
 
 				# Physical coordinates of nodal points
-				x = mesh_defs.ref_to_phys(mesh, elem, xnode)
+				x = mesh_tools.ref_to_phys(mesh, elem, xnode)
 				# Store
 				self.x_elems[elem] = np.tile(x,(int(np.sqrt(nnode)),1))
 
@@ -251,7 +251,7 @@ class ADEROperators(object):
 				self.djac_elems[elem] = np.tile(djac,(nnode,1))
 
 				# Physical coordinates of nodal points
-				x = mesh_defs.ref_to_phys(mesh, elem, xnode)
+				x = mesh_tools.ref_to_phys(mesh, elem, xnode)
 				# Store
 				self.x_elems[elem] = np.tile(x,(nnode,1))
 

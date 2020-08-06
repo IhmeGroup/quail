@@ -8,7 +8,7 @@ from data import ArrayList
 import errors
 
 import meshing.meshbase as mesh_defs
-import meshing.tools as MeshTools
+import meshing.tools as mesh_tools
 
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
@@ -29,7 +29,7 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 
 	# Get elem volumes 
 	if NormalizeByVolume:
-		TotVol,_ = MeshTools.element_volumes(mesh)
+		TotVol,_ = mesh_tools.element_volumes(mesh)
 	else:
 		TotVol = 1.
 
@@ -61,7 +61,7 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 
 		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
-		xphys = mesh_defs.ref_to_phys(mesh, elem, xq)
+		xphys = mesh_tools.ref_to_phys(mesh, elem, xq)
 		u_exact = physics.CallFunction(physics.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points

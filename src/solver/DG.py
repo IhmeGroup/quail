@@ -80,7 +80,7 @@ class ElemOperators(object):
 			self.djac_elems[elem] = djac
 
 			# Physical coordinates of quadrature points
-			x = mesh_defs.ref_to_phys(mesh, elem, quad_pts)
+			x = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
 			# Store
 			self.x_elems[elem] = x
 			# Physical gradient
@@ -227,7 +227,7 @@ class BFaceOperators(IFaceOperators):
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x = mesh_defs.ref_to_phys(mesh, BFace.elem_id, self.faces_to_xref[BFace.face_id])
+				x = mesh_tools.ref_to_phys(mesh, BFace.elem_id, self.faces_to_xref[BFace.face_id])
 				# Store
 				x_bfgroup[j] = x
 

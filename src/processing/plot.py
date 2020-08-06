@@ -467,7 +467,7 @@ def get_sample_points(mesh, physics, basis, equidistant):
 	for elem in range(mesh.num_elems):
 		U_ = U[elem]
 
-		xphys = mesh_defs.ref_to_phys(mesh, elem, xpoint)
+		xphys = mesh_tools.ref_to_phys(mesh, elem, xpoint)
 		x[el,:,:] = xphys
 		# u[el,:,:] = np.matmul(basis.basis_val, U_)
 
