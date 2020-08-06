@@ -1,3 +1,16 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : meshing/meshbase.py
+#
+#       Contains class definitions for each shape and basis function 
+#       available in the DG Python framework.
+#
+#       Authors: Eric Ching and Brett Bornhoft
+#
+#       Created: January 2020
+#      
+# ------------------------------------------------------------------------ #
+
 import code
 from enum import Enum, auto
 import numpy as np
@@ -372,9 +385,9 @@ class Mesh(object):
         self.elem_to_node_ids = np.zeros([self.num_elems,self.num_nodes_per_elem], dtype=int)
 
 
-    def allocate_ifaces(self):
+    def allocate_interior_faces(self):
         '''
-        Method: allocate_ifaces
+        Method: allocate_interior_faces
         -------------------
         This method allocates interior_faces
 
@@ -394,7 +407,7 @@ class Mesh(object):
     #     '''
     #     self.boundary_groups = [BFaceGroup() for i in range(self.num_boundary_groups)]
 
-    def add_bface_group(self, bname):
+    def add_boundary_group(self, bname):
         if bname in self.boundary_groups:
             raise ValueError
         BFG = BoundaryGroup()

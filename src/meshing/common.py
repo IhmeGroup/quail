@@ -44,7 +44,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 	# interior_faces
 	if Periodic:
 		mesh.num_interior_faces = mesh.num_nodes - 1
-		mesh.allocate_ifaces()
+		mesh.allocate_interior_faces()
 		for i in range(mesh.num_interior_faces):
 			IFace_ = mesh.interior_faces[i]
 			IFace_.elemL_id = i-1
@@ -57,7 +57,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 	# mesh.interior_faces[-1].elemR_id = 0
 	else:
 		mesh.num_interior_faces = num_elems - 1
-		mesh.allocate_ifaces()
+		mesh.allocate_interior_faces()
 		for i in range(mesh.num_interior_faces):
 			IFace_ = mesh.interior_faces[i]
 			IFace_.elemL_id = i
@@ -81,14 +81,14 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		# 		BF.elem_id = num_elems - 1
 		# 		BF.face_id = 1
 		# left
-		BFG = mesh.add_bface_group("Left")
+		BFG = mesh.add_boundary_group("Left")
 		BFG.nBFace = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
 		BF.elem_id = 0
 		BF.face_id = 0
 		# right
-		BFG = mesh.add_bface_group("Right")
+		BFG = mesh.add_boundary_group("Right")
 		BFG.nBFace = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
@@ -230,7 +230,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 
 	# x1
 	# BFG = mesh.boundary_groups[0]
-	BFG = mesh.add_bface_group("x1")
+	BFG = mesh.add_boundary_group("x1")
 	BFG.nBFace = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
@@ -240,7 +240,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		n += 1
 	# x2
 	# BFG = mesh.boundary_groups[1]
-	BFG = mesh.add_bface_group("x2")
+	BFG = mesh.add_boundary_group("x2")
 	BFG.nBFace = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
@@ -250,7 +250,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		n += 1
 	# y1
 	# BFG = mesh.boundary_groups[2]
-	BFG = mesh.add_bface_group("y1")
+	BFG = mesh.add_boundary_group("y1")
 	BFG.nBFace = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
@@ -260,7 +260,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		n += 1
 	# y2
 	# BFG = mesh.boundary_groups[3]
-	BFG = mesh.add_bface_group("y2")
+	BFG = mesh.add_boundary_group("y2")
 	BFG.nBFace = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
@@ -272,7 +272,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 
 	### interior_faces
 	mesh.num_interior_faces = num_elems_y*(num_elems_x-1) + num_elems_x*(num_elems_y-1)
-	mesh.allocate_ifaces()
+	mesh.allocate_interior_faces()
 	
 	# x direction
 	n = 0
@@ -368,7 +368,7 @@ def split_quadrils_into_tris(mesh_old):
 	# num_interior_faces_old = mesh.num_interior_faces
 	# interior_faces_old = mesh.interior_faces
 	mesh.num_interior_faces += num_elems_old
-	# mesh.allocate_ifaces()
+	# mesh.allocate_interior_faces()
 	# mesh.interior_faces[:num_interior_faces_old] = interior_faces_old
 	# for IF in mesh.interior_faces[num_interior_faces_old:]:
 	for elem_id in range(num_elems_old):

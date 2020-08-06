@@ -495,7 +495,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.boundary_groups.append(BFG)
 				# BFG.Name = PGroup.Name
-				BFG = mesh.add_bface_group(PGroup.Name)
+				BFG = mesh.add_boundary_group(PGroup.Name)
 				PGroup.Group = BFG.number
 			BFG.nBFace += 1
 		# else:
@@ -554,7 +554,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.boundary_groups.append(BFG)
 				# BFG.Name = PGroup.Name
-				BFG = mesh.add_bface_group(PGroup.Name)
+				BFG = mesh.add_boundary_group(PGroup.Name)
 				PGroup.Group = BFG.number
 			# Loop and increment nBFace
 			for _ in range(num_in_block):
@@ -849,7 +849,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 
 	# Over-allocate interior_faces
 	mesh.num_interior_faces = mesh.num_elems*nFaceMax
-	mesh.allocate_ifaces()
+	mesh.allocate_interior_faces()
 
 	# reset num_interior_faces - use as a counter
 	mesh.num_interior_faces = 0
