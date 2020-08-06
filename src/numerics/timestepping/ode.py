@@ -138,10 +138,10 @@ class ODESolvers():
 
 			iMM_elems = solver.elem_operators.iMM_elems
 			
-			A = np.zeros([mesh.nElem, nb, nb, ns])
-			iA = np.zeros([mesh.nElem, nb, nb, ns])
+			A = np.zeros([mesh.num_elems, nb, nb, ns])
+			iA = np.zeros([mesh.num_elems, nb, nb, ns])
 
-			for elem in range(mesh.nElem):
+			for elem in range(mesh.num_elems):
 				A[elem], iA[elem] = self.get_jacobian_matrix_elem(solver, 
 					elem, iMM_elems[elem], Up[elem])
 

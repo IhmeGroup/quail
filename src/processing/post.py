@@ -36,8 +36,8 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 	# Get error
 	# ElemErr = copy.deepcopy(U)
 	# ElemErr = ArrayList(SimilarArray=physics.U).Arrays
-	# ElemErr = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[mesh.nElems])
-	ElemErr = np.zeros([mesh.nElem])
+	# ElemErr = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=[mesh.num_elemss])
+	ElemErr = np.zeros([mesh.num_elems])
 	TotErr = 0.
 	sr = physics.NUM_STATE_VARS
 	quadData = None
@@ -49,7 +49,7 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 	Order = physics.order
 	# basis = physics.Basis
 
-	for elem in range(mesh.nElem):
+	for elem in range(mesh.num_elems):
 		U_ = U[elem]
 
 		quad_order = basis.get_quadrature_order(mesh, 2*np.amax([Order,1]), physics=physics)

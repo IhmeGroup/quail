@@ -306,12 +306,12 @@ class Mesh(object):
         nBFaceGroup: number of boundary face groups
         BFaceGroups: list of boundary face groups
         BFGNames: list of BFaceGroup names (for easy access)
-        nElems: list of number of elements in each element group (for easy access)
+        num_elemss: list of number of elements in each element group (for easy access)
         num_elems_tot: total number of elements in mesh
         nPeriodicGroup: number of periodic groups
         PeriodicGroups: list of periodic groups
     '''
-    def __init__(self, dim=1, num_nodes=1, nElem=1, gbasis=None, gorder=1):
+    def __init__(self, dim=1, num_nodes=1, num_elems=1, gbasis=None, gorder=1):
         '''
         Method: __init__
         -------------------
@@ -333,7 +333,7 @@ class Mesh(object):
         self.BFaceGroups = {}
         self.gbasis = gbasis
         self.gorder = gorder
-        self.nElem = nElem
+        self.num_elems = num_elems
         # self.nFacePerElem = gbasis.nfaceperelem 
         # self.Faces = None
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
@@ -341,11 +341,11 @@ class Mesh(object):
         self.elements = []
             # Elem2Nodes[elem][i] = ith node of elem, where i = 1,2,...,num_nodes_per_elem
 
-    def SetParams(self, gbasis, gorder=1, nElem=1):
+    def SetParams(self, gbasis, gorder=1, num_elems=1):
 
         self.gbasis = gbasis
         self.gorder = gorder
-        self.nElem = nElem
+        self.num_elems = num_elems
         # self.nFacePerElem = gbasis.nfaceperelem
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
 
@@ -358,7 +358,7 @@ class Mesh(object):
     #     OUTPUTS:
     #         self.Faces
     #     '''
-    #     self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.nElem)]
+    #     self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.num_elems)]
 
     def allocate_elem_to_nodes(self):
         '''
@@ -369,7 +369,7 @@ class Mesh(object):
         OUTPUTS:
             self.Elem2Nodes
         '''
-        self.Elem2Nodes = np.zeros([self.nElem,self.num_nodes_per_elem], dtype=int)
+        self.Elem2Nodes = np.zeros([self.num_elems,self.num_nodes_per_elem], dtype=int)
 
 
     def allocate_ifaces(self):
@@ -406,9 +406,9 @@ class Mesh(object):
         return BFG
 
     def create_elements(self):
-        self.elements = [Element() for i in range(self.nElem)]
+        self.elements = [Element() for i in range(self.num_elems)]
 
-        for elem_id in range(self.nElem):
+        for elem_id in range(self.num_elems):
             elem = self.elements[elem_id]
 
             elem.id = elem_id

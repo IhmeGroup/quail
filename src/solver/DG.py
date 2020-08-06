@@ -53,17 +53,17 @@ class ElemOperators(object):
 
 		# Unpack
 		dim = mesh.dim 
-		nElem = mesh.nElem 
+		num_elems = mesh.num_elems 
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 
 		# Allocate
-		self.jac_elems = np.zeros([nElem, nq, dim, dim])
-		self.ijac_elems = np.zeros([nElem, nq, dim, dim])
-		self.djac_elems = np.zeros([nElem, nq, 1])
-		self.x_elems = np.zeros([nElem, nq, dim])
-		self.basis_phys_grad_elems = np.zeros([nElem, nq, nb, dim])
+		self.jac_elems = np.zeros([num_elems, nq, dim, dim])
+		self.ijac_elems = np.zeros([num_elems, nq, dim, dim])
+		self.djac_elems = np.zeros([num_elems, nq, 1])
+		self.x_elems = np.zeros([num_elems, nq, dim])
+		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, dim])
 
 		# basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True, get_ref_grad=True)
@@ -71,7 +71,7 @@ class ElemOperators(object):
 		self.basis_val = basis.basis_val 
 		self.basis_ref_grad = basis.basis_ref_grad 
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			# Jacobian
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
 			# Store

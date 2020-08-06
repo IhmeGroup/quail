@@ -11,10 +11,10 @@ import general
 ### Mesh
 Periodic = False
 # Uniform mesh
-mesh = MeshCommon.mesh_1D(Uniform=True, nElem=50, xmin=0., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=50, xmin=0., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
-# nElem = 25
-# node_coords = np.cos(np.linspace(np.pi,0.,nElem+1))
+# num_elems = 25
+# node_coords = np.cos(np.linspace(np.pi,0.,num_elems+1))
 # node_coords = MeshCommon.refine_uniform_1D(node_coords)
 # # node_coords = MeshCommon.refine_uniform_1D(node_coords)
 # mesh = MeshCommon.mesh_1D(node_coords=node_coords, Periodic=Periodic)

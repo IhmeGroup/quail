@@ -458,13 +458,13 @@ def get_sample_points(mesh, physics, basis, equidistant):
 		# xpoint = gbasis.quad_pts
 	npoint = xpoint.shape[0]
 
-	# u = np.zeros([mesh.nElem,npoint,sr])
+	# u = np.zeros([mesh.num_elems,npoint,sr])
 	# u_exact = np.copy(u)
-	x = np.zeros([mesh.nElem,npoint,dim])
+	x = np.zeros([mesh.num_elems,npoint,dim])
 	# PhiData = Basis.BasisData(physics.Basis,Order,mesh)
 	basis.get_basis_val_grads(xpoint, True, False, False, None)
 	el = 0
-	for elem in range(mesh.nElem):
+	for elem in range(mesh.num_elems):
 		U_ = U[elem]
 
 		xphys = mesh_defs.ref_to_phys(mesh, elem, xpoint)
@@ -730,7 +730,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	If requested, plot element IDs at element centroids
 	'''
 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
-		for elem_id in range(mesh.nElem):
+		for elem_id in range(mesh.num_elems):
 			xc = mesh_tools.get_element_centroid(mesh, elem_id)
 			if dim == 1:
 				yc = np.mean(y)
@@ -800,7 +800,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 	If requested, plot element IDs at element centroids
 # 	'''
 # 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
-# 		for elem in range(mesh.nElem):
+# 		for elem in range(mesh.num_elems):
 # 			xc = mesh_tools.get_element_centroid(mesh, elem)
 # 			plt.text(xc[0,0], xc[0,1], str(elem))
 

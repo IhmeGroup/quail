@@ -15,8 +15,8 @@ import meshing.tools as MeshTools
 CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 Periodic = False
-nElem_x = 8
-mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, nElem_x= nElem_x, nElem_y = nElem_x, Uniform=True, xmin=-5., xmax=5., 
+num_elems_x = 8
+mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, num_elems_x= num_elems_x, num_elems_y = num_elems_x, Uniform=True, xmin=-5., xmax=5., 
 	ymin=-5., ymax=5., Periodic=Periodic)
 
 ### Solver parameters

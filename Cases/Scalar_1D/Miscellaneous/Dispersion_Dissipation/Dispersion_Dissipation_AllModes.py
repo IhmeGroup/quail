@@ -20,7 +20,7 @@ alpha = 0. # 0 for upwind flux, 1 for central flux
 
 ### Mesh
 # Note: one element - same as reference element
-mesh = MeshCommon.mesh_1D(Uniform=True, nElem=1, xmin=0., xmax=1., Periodic=True)
+mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=1, xmin=0., xmax=1., Periodic=True)
 h = mesh.node_coords[1,0] - mesh.node_coords[0,0]
 
 

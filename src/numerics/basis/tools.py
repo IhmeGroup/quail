@@ -149,18 +149,18 @@ def get_inv_mass_matrices(mesh, physics, basis):
     order = physics.order
     nb = basis.nb
 
-    iMM_all = np.zeros([mesh.nElem, nb, nb])
+    iMM_all = np.zeros([mesh.num_elems, nb, nb])
 
     # TODO: Set logic to recalculate only if using non-uniform mesh
     recalc_mm = True
 
-    for elem in range(mesh.nElem):
+    for elem in range(mesh.num_elems):
         if elem == 0 or recalc_mm:
             # calculate the inv mass matrix in physical space
             iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
         iMM_all[elem] = iMM
 
-    return iMM_all # [mesh.nElem, nb, nb]
+    return iMM_all # [mesh.num_elems, nb, nb]
 
 
 def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, 

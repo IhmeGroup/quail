@@ -29,7 +29,7 @@ def element_volumes(mesh, solver=None):
             and hasattr(solver.DataSet, "ElemVolumes"):
                 return solver.DataSet.TotalVolume, solver.DataSet.ElemVolumes
 
-    ElemVolumes = np.zeros(mesh.nElem)
+    ElemVolumes = np.zeros(mesh.num_elems)
     TotalVolume = 0.
 
     gorder = mesh.gorder
@@ -42,7 +42,7 @@ def element_volumes(mesh, solver=None):
     # wq = gbasis.quad_wts
     nq = xq.shape[0]
 
-    for elem in range(mesh.nElem):
+    for elem in range(mesh.num_elems):
         djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
 
         # for iq in range(nq):
@@ -401,7 +401,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
 
                     NodesChanged = True
                     # remap elements
-                    for elem in range(mesh.nElem):
+                    for elem in range(mesh.num_elems):
                         mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
                     # reset NewNode2NewerNode
                     NewNode2NewerNode = np.arange(mesh.num_nodes)
@@ -436,8 +436,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     # if NodesChanged:
     #     # remap elements
     #     mesh = mesh.ElemGroups[0]
-    #     nElem = mesh.nElem
-    #     for elem in range(nElem):
+    #     num_elems = mesh.num_elems
+    #     for elem in range(num_elems):
     #         mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
 
     # mesh.BFaceGroups.remove(BFG1)
@@ -680,8 +680,8 @@ def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
 
     # New Elem2Nodes
     NewElem2Nodes = np.zeros_like(mesh.Elem2Nodes, dtype=int) - 1
-    nElem = mesh.nElem
-    for elem in range(nElem):
+    num_elems = mesh.num_elems
+    for elem in range(num_elems):
         mesh.Elem2Nodes[elem,:] = OldNode2NewNode[mesh.Elem2Nodes[elem, :]]
 
     # Store in mesh

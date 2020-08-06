@@ -7,7 +7,7 @@ import general
 import meshing.meshbase as mesh_defs
 import numerics.basis.basis as basis_defs
 
-def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
+def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
 	'''
 	Function: mesh_1D
 	-------------------
@@ -16,7 +16,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 	INPUTS:
 	    node_coords: x-coordinates
 	    Uniform: True for a uniform mesh (will be set to False if node_coords is not None)
-	    nElem: number of elements (only relevant for Uniform=True)
+	    num_elems: number of elements (only relevant for Uniform=True)
 	    xmin: minimum coordinate (only relevant for Uniform=True)
 	    xmax: maximum coordinate (only relevant for Uniform=True)
 	    Periodic: True for a periodic mesh
@@ -29,7 +29,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 
 	### Create mesh
 	if node_coords is None:
-		num_nodes = nElem + 1
+		num_nodes = num_elems + 1
 		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
 		mesh.node_coords = np.zeros([mesh.num_nodes,mesh.dim])
 		mesh.node_coords[:,0] = np.linspace(xmin,xmax,mesh.num_nodes)
@@ -37,7 +37,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 		Uniform = False
 		node_coords.shape = -1,1
 		num_nodes = node_coords.shape[0]
-		nElem = num_nodes - 1
+		num_elems = num_nodes - 1
 		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
 		mesh.node_coords = node_coords
 
@@ -52,11 +52,11 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 			IFace_.elemR_id = i
 			IFace_.faceR_id = 0
 		# Leftmost face
-		mesh.IFaces[0].elemL_id = nElem - 1
+		mesh.IFaces[0].elemL_id = num_elems - 1
 	# Rightmost face
 	# mesh.IFaces[-1].elemR_id = 0
 	else:
-		mesh.nIFace = nElem - 1
+		mesh.nIFace = num_elems - 1
 		mesh.allocate_ifaces()
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
@@ -78,7 +78,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 		# 		BF.face_id = 0
 		# 	else:
 		# 		BFG.Name = "Right"
-		# 		BF.elem_id = nElem - 1
+		# 		BF.elem_id = num_elems - 1
 		# 		BF.face_id = 1
 		# left
 		BFG = mesh.add_bface_group("Left")
@@ -92,13 +92,13 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 		BFG.nBFace = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
-		BF.elem_id = nElem - 1
+		BF.elem_id = num_elems - 1
 		BF.face_id = 1
 
-	mesh.SetParams(gbasis=basis_defs.LagrangeSeg(1), gorder=1, nElem=nElem)
+	mesh.SetParams(gbasis=basis_defs.LagrangeSeg(1), gorder=1, num_elems=num_elems)
 	# mesh.allocate_faces()
 	# interior elements
-	# for elem in range(mesh.nElem):
+	# for elem in range(mesh.num_elems):
 	# 	for i in range(mesh.nFacePerElem):
 	# 		Face_ = mesh.Faces[elem][i]
 	# 		Face_.Type = general.INTERIORFACE
@@ -107,7 +107,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 	# 			if elem == 0 and i == 0:
 	# 				Face_.Type = general.NULLFACE
 	# 				Face_.Number = 0
-	# 			elif elem == mesh.nElem-1 and i == 1:
+	# 			elif elem == mesh.num_elems-1 and i == 1:
 	# 				Face_.Type = general.NULLFACE
 	# 				Face_.Number = 1
 	# 			else:
@@ -115,7 +115,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 
 
 	mesh.allocate_elem_to_nodes()
-	for elem in range(mesh.nElem):
+	for elem in range(mesh.num_elems):
 		for i in range(mesh.num_nodes_per_elem):
 			mesh.Elem2Nodes[elem][i] = elem + i
 
@@ -138,10 +138,10 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 # 	    node_coords: refined coordinates
 # 	'''
 # 	num_nodes_old = len(node_coords_old)
-# 	nElem_old = num_nodes_old-1
+# 	num_elems_old = num_nodes_old-1
 
-# 	nElem = nElem_old*2
-# 	num_nodes = nElem+1
+# 	num_elems = num_elems_old*2
+# 	num_nodes = num_elems+1
 
 # 	node_coords = np.zeros([num_nodes,1])
 
@@ -153,7 +153,7 @@ def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodi
 # 	return node_coords
 
 
-def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, xmin=-1., xmax=1., 
+def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Uniform=True, xmin=-1., xmax=1., 
 	ymin=-1., ymax=1., Periodic=True):
 	'''
 	Function: mesh_2D
@@ -163,7 +163,7 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	INPUTS:
 	    node_coords: x-coordinates
 	    Uniform: True for a uniform mesh (will be set to False if node_coords is not None)
-	    nElem: number of elements (only relevant for Uniform=True)
+	    num_elems: number of elements (only relevant for Uniform=True)
 	    xmin: minimum coordinate (only relevant for Uniform=True)
 	    xmax: maximum coordinate (only relevant for Uniform=True)
 	    Periodic: True for a periodic mesh
@@ -175,23 +175,23 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	### Create mesh
 	if xcoords is None and ycoords is None:
 		# Uniform
-		num_nodes_x = nElem_x + 1
-		num_nodes_y = nElem_y + 1
+		num_nodes_x = num_elems_x + 1
+		num_nodes_y = num_elems_y + 1
 		xcoords = np.linspace(xmin, xmax, num_nodes_x)
 		ycoords = np.linspace(ymin, ymax, num_nodes_y)
 	elif xcoords is not None and ycoords is not None:
 		Uniform = False
 		num_nodes_x = len(xcoords)
 		num_nodes_y = len(ycoords)
-		nElem_x = num_nodes_x - 1
-		nElem_y = num_nodes_y - 1
+		num_elems_x = num_nodes_x - 1
+		num_elems_y = num_nodes_y - 1
 	else:
 		raise Exception("Input error")
 
 	X, Y = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
 
-	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=basis_defs.LagrangeQuad(1),
+	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], num_elems=num_elems_x*num_elems_y, gbasis=basis_defs.LagrangeQuad(1),
 		gorder=1)
 
 	mesh.node_coords = xp
@@ -199,8 +199,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	### Elems
 	mesh.allocate_elem_to_nodes()
 	elem = 0
-	for ny in range(nElem_y):
-		for nx in range(nElem_x):
+	for ny in range(num_elems_y):
+		for nx in range(num_elems_x):
 			mesh.Elem2Nodes[elem][0] = num_nodes_x*ny + nx
 			mesh.Elem2Nodes[elem][1] = num_nodes_x*ny + nx + 1
 			mesh.Elem2Nodes[elem][2] = num_nodes_x*(ny+1) + nx
@@ -216,42 +216,42 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	# 	BFG = mesh.BFaceGroups[i]
 	# 	if i == 0:
 	# 		BFG.Name = "x1"
-	# 		BFG.nBFace = nElem_y
+	# 		BFG.nBFace = num_elems_y
 	# 	if i == 1:
 	# 		BFG.Name = "x2"
-	# 		BFG.nBFace = nElem_y
+	# 		BFG.nBFace = num_elems_y
 	# 	if i == 2:
 	# 		BFG.Name = "y1"
-	# 		BFG.nBFace = nElem_x
+	# 		BFG.nBFace = num_elems_x
 	# 	if i == 3:
 	# 		BFG.Name = "y2"
-	# 		BFG.nBFace = nElem_x
+	# 		BFG.nBFace = num_elems_x
 	# 	BFG.allocate_bfaces()
 
 	# x1
 	# BFG = mesh.BFaceGroups[0]
 	BFG = mesh.add_bface_group("x1")
-	BFG.nBFace = nElem_y
+	BFG.nBFace = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.elem_id = nElem_x*n
+		BF.elem_id = num_elems_x*n
 		BF.face_id = 3
 		n += 1
 	# x2
 	# BFG = mesh.BFaceGroups[1]
 	BFG = mesh.add_bface_group("x2")
-	BFG.nBFace = nElem_y
+	BFG.nBFace = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.elem_id = nElem_x*(n + 1) - 1
+		BF.elem_id = num_elems_x*(n + 1) - 1
 		BF.face_id = 1
 		n += 1
 	# y1
 	# BFG = mesh.BFaceGroups[2]
 	BFG = mesh.add_bface_group("y1")
-	BFG.nBFace = nElem_x
+	BFG.nBFace = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
@@ -261,37 +261,37 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	# y2
 	# BFG = mesh.BFaceGroups[3]
 	BFG = mesh.add_bface_group("y2")
-	BFG.nBFace = nElem_x
+	BFG.nBFace = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
-		BF.elem_id = mesh.nElem - nElem_x + n
+		BF.elem_id = mesh.num_elems - num_elems_x + n
 		BF.face_id = 2
 		n += 1
 
 
 	### IFaces
-	mesh.nIFace = nElem_y*(nElem_x-1) + nElem_x*(nElem_y-1)
+	mesh.nIFace = num_elems_y*(num_elems_x-1) + num_elems_x*(num_elems_y-1)
 	mesh.allocate_ifaces()
 	
 	# x direction
 	n = 0
-	for ny in range(nElem_y):
-		for nx in range(nElem_x-1):
+	for ny in range(num_elems_y):
+		for nx in range(num_elems_x-1):
 			IF = mesh.IFaces[n]
-			IF.elemL_id = nElem_x*ny + nx
+			IF.elemL_id = num_elems_x*ny + nx
 			IF.faceL_id = 1
-			IF.elemR_id = nElem_x*ny + nx + 1
+			IF.elemR_id = num_elems_x*ny + nx + 1
 			IF.faceR_id = 3
 			n += 1
 
 	# y direction
-	for nx in range(nElem_x):
-		for ny in range(nElem_y-1):
+	for nx in range(num_elems_x):
+		for ny in range(num_elems_y-1):
 			IF = mesh.IFaces[n]
-			IF.elemL_id = nElem_x*ny + nx
+			IF.elemL_id = num_elems_x*ny + nx
 			IF.faceL_id = 2
-			IF.elemR_id = nElem_x*(ny + 1) + nx
+			IF.elemR_id = num_elems_x*(ny + 1) + nx
 			IF.faceR_id = 0
 			n += 1
 
@@ -302,12 +302,12 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 
 
 def split_quadrils_into_tris(mesh_old):
-	nElem_old = mesh_old.nElem 
-	nElem = nElem_old*2
+	num_elems_old = mesh_old.num_elems 
+	num_elems = num_elems_old*2
 
 	mesh = copy.deepcopy(mesh_old)
 
-	mesh.SetParams(nElem=nElem, gbasis=basis_defs.LagrangeTri(1))
+	mesh.SetParams(num_elems=num_elems, gbasis=basis_defs.LagrangeTri(1))
 
 	def reorder_nodes(QOrder, num_nodes_per_quad, num_nodes_per_tri):
 		num_nodes_per_face = QOrder + 1
@@ -337,18 +337,18 @@ def split_quadrils_into_tris(mesh_old):
 
 	# Elems
 	mesh.allocate_elem_to_nodes()
-	for elem_id in range(nElem_old):
+	for elem_id in range(num_elems_old):
 		# First triangle
 		mesh.Elem2Nodes[elem_id] = mesh_old.Elem2Nodes[elem_id, tri1_nodes]
 		# Second triangle
-		mesh.Elem2Nodes[elem_id+nElem_old] = mesh_old.Elem2Nodes[elem_id, tri2_nodes]
+		mesh.Elem2Nodes[elem_id+num_elems_old] = mesh_old.Elem2Nodes[elem_id, tri2_nodes]
 
 
 	old_to_new_face = np.array([2, 1, 2, 1])
 
 	def modify_face_info(elem, face):
 		if face == 1 or face == 2:
-			elem += nElem_old
+			elem += num_elems_old
 		face = old_to_new_face[face]
 		return elem, face
 
@@ -367,15 +367,15 @@ def split_quadrils_into_tris(mesh_old):
 	# code.interact(local=locals())
 	# nIFace_old = mesh.nIFace
 	# IFaces_old = mesh.IFaces
-	mesh.nIFace += nElem_old
+	mesh.nIFace += num_elems_old
 	# mesh.allocate_ifaces()
 	# mesh.IFaces[:nIFace_old] = IFaces_old
 	# for IF in mesh.IFaces[nIFace_old:]:
-	for elem_id in range(nElem_old):
+	for elem_id in range(num_elems_old):
 		IF = mesh_defs.IFace()
 		IF.elemL_id = elem_id
 		IF.faceL_id = 0
-		IF.elemR_id = elem_id + nElem_old
+		IF.elemR_id = elem_id + num_elems_old
 		IF.faceR_id = 0
 		mesh.IFaces.append(IF)
 

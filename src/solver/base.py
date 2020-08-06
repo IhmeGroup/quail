@@ -150,7 +150,7 @@ class SolverBase(ABC):
 			eval_pts = quad_pts
 		npts = eval_pts.shape[0]
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			xphys = mesh_defs.ref_to_phys(mesh, elem, eval_pts)
 			f = physics.CallFunction(physics.IC, x=xphys, t=self.Time)
 			# f.shape = npts,ns
@@ -186,7 +186,7 @@ class SolverBase(ABC):
 
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			# Up_old = np.matmul(basis_old.basis_val, U_old[elem,:,:])
 			Up_old = helpers.evaluate_state(U_old[elem,:,:], basis_old.basis_val)
 
@@ -242,7 +242,7 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			R[elem] = self.calculate_residual_elem(elem, U[elem], R[elem])
 
 	def calculate_residual_ifaces(self, U, R):

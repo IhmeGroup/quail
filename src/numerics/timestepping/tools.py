@@ -154,10 +154,10 @@ def get_dt_from_cfl(stepper, solver):
 	
 	elem_ops = solver.elem_operators
 	vol_elems = elem_ops.vol_elems
-	a = np.zeros([mesh.nElem,Up.shape[1],1])
+	a = np.zeros([mesh.num_elems,Up.shape[1],1])
 
 	# get the maximum wave speed per element
-	for i in range(mesh.nElem):
+	for i in range(mesh.num_elems):
 		a[i] = physics.ComputeScalars("MaxWaveSpeed", Up[i], 
 			flag_non_physical=True)
 

@@ -141,8 +141,8 @@ def driver(deck):
 		shape = mesh_params["ElementShape"]
 		xmin = mesh_params["xmin"]
 		xmax = mesh_params["xmax"]
-		nElem_x = mesh_params["NumElems_x"]
-		nElem_y = mesh_params["NumElems_y"]
+		num_elems_x = mesh_params["NumElems_x"]
+		num_elems_y = mesh_params["NumElems_y"]
 		ymin = mesh_params["ymin"]
 		ymax = mesh_params["ymax"]
 		if shape is "Segment":
@@ -150,10 +150,10 @@ def driver(deck):
 				periodic = True
 			else:
 				periodic = False
-			mesh = mesh_common.mesh_1D(Uniform=True, nElem=nElem_x, xmin=xmin, xmax=xmax, Periodic=periodic)
+			mesh = mesh_common.mesh_1D(Uniform=True, num_elems=num_elems_x, xmin=xmin, xmax=xmax, Periodic=periodic)
 		else:
 			# 2D - quads or tris
-			mesh = mesh_common.mesh_2D(nElem_x=nElem_x, nElem_y=nElem_y, Uniform=True, xmin=xmin, xmax=xmax, 
+			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x, num_elems_y=num_elems_y, Uniform=True, xmin=xmin, xmax=xmax, 
 					ymin=ymin, ymax=ymax)
 			periodic=True
 			if shape is "Triangle":

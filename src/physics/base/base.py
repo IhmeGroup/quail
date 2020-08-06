@@ -109,18 +109,18 @@ class PhysicsBase(object):
 			raise Exception("Input error")
 
 		basis = basis_tools.set_basis(self.order, basis_type)
-		self.U = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
-		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
+		self.U = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
+		self.S = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
 
 		# State 
-		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.num_elems_tot,nn,self.NUM_STATE_VARS])
-		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[[mesh.num_elems_tot,nn,self.NUM_STATE_VARS]])
-		# ArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.NUM_STATE_VARS] \
-		# 			for egrp in range(mesh.nElemGroup)]
-		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-		# self.S = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)
-		# self.U = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
-		# self.S = np.zeros([mesh.nElem, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
+		# self.U = ArrayList(nArray=mesh.num_elemsGroup,nEntriesPerArray=mesh.num_elemss,FullDim=[mesh.num_elems_tot,nn,self.NUM_STATE_VARS])
+		# self.U = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=[[mesh.num_elems_tot,nn,self.NUM_STATE_VARS]])
+		# ArrayDims = [[mesh.num_elemss[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.NUM_STATE_VARS] \
+		# 			for egrp in range(mesh.num_elemsGroup)]
+		# self.U = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=ArrayDims)
+		# self.S = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=ArrayDims)
+		# self.U = np.zeros([mesh.num_elems, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
+		# self.S = np.zeros([mesh.num_elems, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
 
 		# BC treatments
 		# self.SetBCTreatment()

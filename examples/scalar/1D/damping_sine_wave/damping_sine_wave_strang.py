@@ -1,7 +1,7 @@
 import numpy as np
 cfl = 0.002
-nElem = 128
-dx = float(1./nElem)
+num_elems = 128
+dx = float(1./num_elems)
 dt = cfl*dx
 EndTime = 0.5
 NumTimeSteps = int(EndTime/dt)
@@ -33,7 +33,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : nElem,
+    "NumElems_x" : num_elems,
     # "NumElems_y" : 2,
     "xmin" : -1.,
     "xmax" : 1.,

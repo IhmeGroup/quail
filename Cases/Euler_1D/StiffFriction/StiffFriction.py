@@ -12,7 +12,7 @@ import general
 
 ### Mesh
 Periodic = True
-mesh = MeshCommon.mesh_1D(Uniform=True, nElem=20, xmin=0., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=20, xmin=0., xmax=1., Periodic=Periodic)
 
 
 nu = -1000.

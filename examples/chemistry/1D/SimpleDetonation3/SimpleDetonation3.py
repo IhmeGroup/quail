@@ -1,8 +1,8 @@
 import numpy as np
 
 cfl = 0.25
-nElem = 360
-dx = float(1/nElem)
+num_elems = 360
+dx = float(1/num_elems)
 u = 5.
 dt = cfl*dx/u
 
@@ -42,7 +42,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : nElem,
+    "NumElems_x" : num_elems,
     "xmin" : 0.,
     "xmax" : 2.*np.pi,
     # "PeriodicBoundariesX" : ["x1", "x2"],

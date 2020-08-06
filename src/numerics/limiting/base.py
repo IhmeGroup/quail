@@ -67,5 +67,5 @@ class LimiterBase(ABC):
 		OUTPUTS:
 			U: solution array
 		'''
-		for elem in range(solver.mesh.nElem):
+		for elem in range(solver.mesh.num_elems):
 			U[elem] = self.limit_element(solver, elem, U[elem])

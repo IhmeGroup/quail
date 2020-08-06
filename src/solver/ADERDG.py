@@ -34,22 +34,22 @@ class ElemOperatorsADER(DG.ElemOperators):
 
 		dim = mesh.dim 
 		quad_pts = self.quad_pts 
-		nElem = mesh.nElem 
+		num_elems = mesh.num_elems 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 
-		self.jac_elems = np.zeros([nElem,nq,dim,dim])
-		self.ijac_elems = np.zeros([nElem,nq,dim,dim])
-		self.djac_elems = np.zeros([nElem,nq,1])
-		self.x_elems = np.zeros([nElem,nq,dim])
-		self.basis_phys_grad_elems = np.zeros([nElem,nq,nb,dim])
+		self.jac_elems = np.zeros([num_elems,nq,dim,dim])
+		self.ijac_elems = np.zeros([num_elems,nq,dim,dim])
+		self.djac_elems = np.zeros([num_elems,nq,1])
+		self.x_elems = np.zeros([num_elems,nq,dim])
+		self.basis_phys_grad_elems = np.zeros([num_elems,nq,nb,dim])
 
 		basis.get_basis_val_grads(quad_pts, get_val=True, get_ref_grad=True)
 
 		self.basis_val = basis.basis_val
 		self.basis_ref_grad = basis.basis_ref_grad
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			# get jacobian data
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True, get_jac=True, get_ijac=True)
 			# store the jacobian data
@@ -181,8 +181,8 @@ class ADEROperators(object):
 
 		dim = mesh.dim
 		nb = basis_st.nb
-		SMS_elems = np.zeros([mesh.nElem,nb,nb,dim])
-		iMM_elems = np.zeros([mesh.nElem,nb,nb])
+		SMS_elems = np.zeros([mesh.num_elems,nb,nb,dim])
+		iMM_elems = np.zeros([mesh.num_elems,nb,nb])
 		# Get flux matrices in time
 		FTL = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis_st, order, elem=0, PhysicalSpace=False)
 		FTR = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis, order, elem=0, PhysicalSpace=False)
@@ -191,7 +191,7 @@ class ADEROperators(object):
 		SMT = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem=0, gradDir=1,PhysicalSpace = False)
 
 		# Get stiffness matrix in space
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir=0,PhysicalSpace = True)
 			SMS_elems[elem,:,:,0] = SMS.transpose()
 
@@ -218,20 +218,20 @@ class ADEROperators(object):
 		shape_name = basis.__class__.__bases__[1].__name__
 
 		dim = mesh.dim 
-		nElem = mesh.nElem 
+		num_elems = mesh.num_elems 
 		nb = basis.nb
 		gbasis = mesh.gbasis
 		xnode = gbasis.get_nodes(order)
 		nnode = xnode.shape[0]
 
 		# Allocate
-		self.jac_elems = np.zeros([nElem,nb,dim,dim])
-		self.ijac_elems = np.zeros([nElem,nb,dim,dim])
-		self.djac_elems = np.zeros([nElem,nb,1])
-		self.x_elems = np.zeros([nElem,nb,dim])
+		self.jac_elems = np.zeros([num_elems,nb,dim,dim])
+		self.ijac_elems = np.zeros([num_elems,nb,dim,dim])
+		self.djac_elems = np.zeros([num_elems,nb,1])
+		self.x_elems = np.zeros([num_elems,nb,dim])
 
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			# Jacobian
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, xnode, get_djac=True, get_jac=True, get_ijac=True)
 
@@ -299,7 +299,7 @@ class ADERDG(base.SolverBase):
 		self.basis_st.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
 
 		# Allocate array for predictor step in ADER-Scheme
-		physics.Up = np.zeros([self.mesh.nElem, self.basis_st.get_num_basis_coeff(physics.order), physics.NUM_STATE_VARS])
+		physics.Up = np.zeros([self.mesh.num_elems, self.basis_st.get_num_basis_coeff(physics.order), physics.NUM_STATE_VARS])
 
 		# Set predictor function
 		SourceTreatment = Params["SourceTreatment"]
@@ -391,7 +391,7 @@ class ADERDG(base.SolverBase):
 		mesh = self.mesh
 		physics = self.physics
 
-		for elem in range(mesh.nElem):
+		for elem in range(mesh.num_elems):
 			Up[elem] = self.calculate_predictor_elem(self, elem, dt, W[elem], Up[elem])
 
 		return Up

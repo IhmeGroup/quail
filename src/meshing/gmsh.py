@@ -450,32 +450,32 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 # 			gorder = EntitiesInfo[etype].gorder
 # 			gbasis = EntitiesInfo[etype].gbasis
 
-# 			if mesh.nElem == 0:
-# 				mesh.SetParams(gbasis=gbasis, gorder=gorder, nElem=0)
+# 			if mesh.num_elems == 0:
+# 				mesh.SetParams(gbasis=gbasis, gorder=gorder, num_elems=0)
 # =======
 			gorder = gmsh_element_database[etype].gorder
 			gbasis = gmsh_element_database[etype].gbasis
 			# if gbasis == -1:
 			# 	raise NotImplementedError("Element type not supported")
-			if mesh.nElem == 0:
-				mesh.SetParams(gbasis=gbasis, gorder=gorder, nElem=0)
+			if mesh.num_elems == 0:
+				mesh.SetParams(gbasis=gbasis, gorder=gorder, num_elems=0)
 			else:
 				if gorder != mesh.gorder or gbasis != mesh.gbasis:
 					raise ValueError(">1 element type not supported")
 # >>>>>>> Stashed changes
-			mesh.nElem += 1
+			mesh.num_elems += 1
 			# # Check for existing element group
 			# found = False
-			# for egrp in range(mesh.nElemGroup):
+			# for egrp in range(mesh.num_elemsGroup):
 			# 	EG = mesh.ElemGroups[egrp]
 			# 	if QOrder == EG.QOrder and QBasis == EG.QBasis:
 			# 		found = True
 			# 		break
 			# if found:
-			# 	EG.nElem += 1
+			# 	EG.num_elems += 1
 			# else:
 			# 	# Need new element group
-			# 	mesh.nElemGroup += 1
+			# 	mesh.num_elemsGroup += 1
 			# 	mesh.ElemGroups.append(Mesh.ElemGroup(QBasis=QBasis,QOrder=QOrder))
 		elif PGroup.dim == mesh.dim - 1:
 			### Boundary entity
@@ -537,12 +537,12 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			# Loop
 			for _ in range(num_in_block):
 				fo.readline()
-				if mesh.nElem == 0:
-					mesh.SetParams(gbasis=gbasis, gorder=gorder, nElem=0)
+				if mesh.num_elems == 0:
+					mesh.SetParams(gbasis=gbasis, gorder=gorder, num_elems=0)
 				else:
 					if gorder != mesh.gorder or gbasis != mesh.gbasis:
 						raise ValueError(">1 element type not supported")
-				mesh.nElem += 1
+				mesh.num_elems += 1
 		elif dim == mesh.dim - 1:
 
 			if PGroup.Group >= 0:
@@ -848,7 +848,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	nFaceMax = mesh.gbasis.NFACES
 
 	# Over-allocate IFaces
-	mesh.nIFace = mesh.nElem*nFaceMax
+	mesh.nIFace = mesh.num_elems*nFaceMax
 	mesh.allocate_ifaces()
 
 	# reset nIFace - use as a counter
@@ -878,9 +878,9 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 		raise errors.FileReadError
 
 	# Fill boundary and interior face info
-	# for egrp in range(mesh.nElemGroup):
+	# for egrp in range(mesh.num_elemsGroup):
 	# 	EG = mesh.ElemGroups[egrp]
-	for elem in range(mesh.nElem):
+	for elem in range(mesh.num_elems):
 		for face in range(mesh.gbasis.NFACES):
 			# Local q = 1 nodes on face
 			gbasis = mesh.gbasis
@@ -959,7 +959,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 			"face(s) remain(s) in the hash")
 
 	# Resize IFace
-	if mesh.nIFace > mesh.nElem*nFaceMax:
+	if mesh.nIFace > mesh.num_elems*nFaceMax:
 		raise ValueError
 	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
 
@@ -980,7 +980,7 @@ def ReadGmshFile(FileName):
 	fo = open(FileName, "r")
 
 	# Mesh object
-	mesh = mesh_defs.Mesh(nElem=0)
+	mesh = mesh_defs.Mesh(num_elems=0)
 
 	# Object that stores Gmsh entity info
 	gmsh_element_database = CreateGmshElementDataBase()
@@ -997,7 +997,7 @@ def ReadGmshFile(FileName):
 	FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_node_tags)
 
 	# Print some stats
-	print("%d elements in the mesh" % (mesh.nElem))
+	print("%d elements in the mesh" % (mesh.num_elems))
 	
 	# Done with file
 	fo.close()
