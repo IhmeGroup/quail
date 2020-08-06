@@ -667,9 +667,9 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 		y = plt.ylim()
 
 	'''
-	Loop through IFaces and plot interior faces
+	Loop through interior_faces and plot interior faces
 	'''
-	for IFace in mesh.IFaces:
+	for IFace in mesh.interior_faces:
 		# Loop through both connected elements to account for periodic 
 		# boundaries
 		for e in range(2):
@@ -754,9 +754,9 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 		raise ValueError
 
 # 	'''
-# 	Loop through IFaces and plot interior faces
+# 	Loop through interior_faces and plot interior faces
 # 	'''
-# 	for IFace in mesh.IFaces:
+# 	for IFace in mesh.interior_faces:
 # 		# Choose left element
 # 		elem = IFace.elemL_id; face = IFace.faceL_id
 

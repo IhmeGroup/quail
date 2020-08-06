@@ -41,25 +41,25 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
 		mesh.node_coords = node_coords
 
-	# IFaces
+	# interior_faces
 	if Periodic:
 		mesh.num_interior_faces = mesh.num_nodes - 1
 		mesh.allocate_ifaces()
 		for i in range(mesh.num_interior_faces):
-			IFace_ = mesh.IFaces[i]
+			IFace_ = mesh.interior_faces[i]
 			IFace_.elemL_id = i-1
 			IFace_.faceL_id = 1
 			IFace_.elemR_id = i
 			IFace_.faceR_id = 0
 		# Leftmost face
-		mesh.IFaces[0].elemL_id = num_elems - 1
+		mesh.interior_faces[0].elemL_id = num_elems - 1
 	# Rightmost face
-	# mesh.IFaces[-1].elemR_id = 0
+	# mesh.interior_faces[-1].elemR_id = 0
 	else:
 		mesh.num_interior_faces = num_elems - 1
 		mesh.allocate_ifaces()
 		for i in range(mesh.num_interior_faces):
-			IFace_ = mesh.IFaces[i]
+			IFace_ = mesh.interior_faces[i]
 			IFace_.elemL_id = i
 			IFace_.faceL_id = 1
 			IFace_.elemR_id = i+1
@@ -270,7 +270,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		n += 1
 
 
-	### IFaces
+	### interior_faces
 	mesh.num_interior_faces = num_elems_y*(num_elems_x-1) + num_elems_x*(num_elems_y-1)
 	mesh.allocate_ifaces()
 	
@@ -278,7 +278,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	n = 0
 	for ny in range(num_elems_y):
 		for nx in range(num_elems_x-1):
-			IF = mesh.IFaces[n]
+			IF = mesh.interior_faces[n]
 			IF.elemL_id = num_elems_x*ny + nx
 			IF.faceL_id = 1
 			IF.elemR_id = num_elems_x*ny + nx + 1
@@ -288,7 +288,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# y direction
 	for nx in range(num_elems_x):
 		for ny in range(num_elems_y-1):
-			IF = mesh.IFaces[n]
+			IF = mesh.interior_faces[n]
 			IF.elemL_id = num_elems_x*ny + nx
 			IF.faceL_id = 2
 			IF.elemR_id = num_elems_x*(ny + 1) + nx
@@ -358,26 +358,26 @@ def split_quadrils_into_tris(mesh_old):
 			BF.elem_id, BF.face_id = modify_face_info(BF.elem_id, BF.face_id)
 
 
-	# Modify IFaces
-	for IF in mesh.IFaces:
+	# Modify interior_faces
+	for IF in mesh.interior_faces:
 		IF.elemL_id, IF.faceL_id = modify_face_info(IF.elemL_id, IF.faceL_id)
 		IF.elemR_id, IF.faceR_id = modify_face_info(IF.elemR_id, IF.faceR_id)
 
-	# New IFaces
+	# New interior_faces
 	# code.interact(local=locals())
 	# num_interior_faces_old = mesh.num_interior_faces
-	# IFaces_old = mesh.IFaces
+	# interior_faces_old = mesh.interior_faces
 	mesh.num_interior_faces += num_elems_old
 	# mesh.allocate_ifaces()
-	# mesh.IFaces[:num_interior_faces_old] = IFaces_old
-	# for IF in mesh.IFaces[num_interior_faces_old:]:
+	# mesh.interior_faces[:num_interior_faces_old] = interior_faces_old
+	# for IF in mesh.interior_faces[num_interior_faces_old:]:
 	for elem_id in range(num_elems_old):
 		IF = mesh_defs.InteriorFace()
 		IF.elemL_id = elem_id
 		IF.faceL_id = 0
 		IF.elemR_id = elem_id + num_elems_old
 		IF.faceR_id = 0
-		mesh.IFaces.append(IF)
+		mesh.interior_faces.append(IF)
 
 	# mesh.allocate_faces()
 	# mesh.fill_faces()

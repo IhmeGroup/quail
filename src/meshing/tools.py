@@ -84,12 +84,12 @@ def neighbor_across_face(mesh, elem, face):
     # code.interact(local=locals())
     if Face.Type == mesh_defs.FaceType.Interior:
         iiface = Face.Number
-        eN  = mesh.IFaces[iiface].elemR_id
-        faceN = mesh.IFaces[iiface].faceR_id
+        eN  = mesh.interior_faces[iiface].elemR_id
+        faceN = mesh.interior_faces[iiface].faceR_id
 
         if eN == elem:
-            eN  = mesh.IFaces[iiface].elemL_id
-            faceN = mesh.IFaces[iiface].faceL_id
+            eN  = mesh.interior_faces[iiface].elemL_id
+            faceN = mesh.interior_faces[iiface].faceL_id
     else:
         eN    = -1
         faceN = -1
@@ -114,7 +114,7 @@ def check_face_orientations(mesh):
         # don't need to check for 1D
         return
 
-    for IFace in mesh.IFaces:
+    for IFace in mesh.interior_faces:
         elemL_id = IFace.elemL_id
         elemR_id = IFace.elemR_id
         faceL_id = IFace.faceL_id
@@ -230,7 +230,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
         else:
             idx_in_node_pairsB = idx_in_node_pairsA.copy()
 
-    IFaces = mesh.IFaces
+    interior_faces = mesh.interior_faces
     icoord = which_dim
 
     # Extract relevant BFGs
@@ -287,7 +287,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
 
 
     ''' 
-    Identify and create periodic IFaces 
+    Identify and create periodic interior_faces 
     '''
     for BFace1 in BFG1.BFaces:
         # Extract info
@@ -409,8 +409,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
                     
                 # Create IFace between these two faces
                 mesh.num_interior_faces += 1
-                IFaces.append(mesh_defs.InteriorFace())
-                IF = IFaces[-1]
+                interior_faces.append(mesh_defs.InteriorFace())
+                IF = interior_faces[-1]
                 IF.elemL_id = elem_id1
                 IF.faceL_id = face1
                 IF.elemR_id = elem_id2
@@ -691,7 +691,7 @@ def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
 
 def VerifyPeriodicMesh(mesh):
     # Loop through interior faces
-    for IF in mesh.IFaces:
+    for IF in mesh.interior_faces:
         elemL = IF.elemL_id
         elemR = IF.elemR_id
         faceL_id = IF.faceL_id

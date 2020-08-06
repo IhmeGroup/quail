@@ -847,7 +847,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	mesh.allocate_elem_to_nodes()
 	nFaceMax = mesh.gbasis.NFACES
 
-	# Over-allocate IFaces
+	# Over-allocate interior_faces
 	mesh.num_interior_faces = mesh.num_elems*nFaceMax
 	mesh.allocate_ifaces()
 
@@ -926,7 +926,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 				else:
 					# interior face
 					# Store in IFace
-					IFace = mesh.IFaces[mesh.num_interior_faces]
+					IFace = mesh.interior_faces[mesh.num_interior_faces]
 					IFace.elemL_id = FInfo.Elem
 					IFace.faceL_id = FInfo.Face
 					IFace.elemR_id = elem
@@ -961,7 +961,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# Resize IFace
 	if mesh.num_interior_faces > mesh.num_elems*nFaceMax:
 		raise ValueError
-	mesh.IFaces = mesh.IFaces[:mesh.num_interior_faces]
+	mesh.interior_faces = mesh.interior_faces[:mesh.num_interior_faces]
 
 	# mesh.fill_faces()
 	mesh.create_elements()

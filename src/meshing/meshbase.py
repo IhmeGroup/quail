@@ -302,7 +302,7 @@ class Mesh(object):
         num_nodes: total number of nodes
         node_coords: coordinates of nodes
         num_interior_faces: number of interior faces
-        IFaces: list of interior face objects
+        interior_faces: list of interior face objects
         num_boundary_groups: number of boundary face groups
         boundary_groups: list of boundary face groups
         BFGNames: list of BFaceGroup names (for easy access)
@@ -328,7 +328,7 @@ class Mesh(object):
         self.num_nodes = num_nodes
         self.node_coords = None
         self.num_interior_faces = 0
-        self.IFaces = []
+        self.interior_faces = []
         self.num_boundary_groups = 0
         self.boundary_groups = {}
         self.gbasis = gbasis
@@ -376,12 +376,12 @@ class Mesh(object):
         '''
         Method: allocate_ifaces
         -------------------
-        This method allocates IFaces
+        This method allocates interior_faces
 
         OUTPUTS:
-            self.IFaces
+            self.interior_faces
         '''
-        self.IFaces = [InteriorFace() for i in range(self.num_interior_faces)]
+        self.interior_faces = [InteriorFace() for i in range(self.num_interior_faces)]
 
     # def allocate_bface_groups(self):
     #     '''
@@ -418,7 +418,7 @@ class Mesh(object):
 
         # neighbors
         for iif in range(self.num_interior_faces):
-            int_face = self.IFaces[iif]
+            int_face = self.interior_faces[iif]
             elemL_id = int_face.elemL_id
             elemR_id = int_face.elemR_id
             faceL_id = int_face.faceL_id
@@ -434,7 +434,7 @@ class Mesh(object):
 
     # def fill_faces(self):
     #     for iiface in range(self.num_interior_faces):
-    #         IFace = self.IFaces[iiface]
+    #         IFace = self.interior_faces[iiface]
     #         elemL = IFace.elemL_id
     #         elemR = IFace.elemR_id
     #         faceL = IFace.faceL

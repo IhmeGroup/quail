@@ -96,7 +96,7 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 			self.faces_to_basisR[f] = basis.basis_val
 
 		i = 0
-		for IFace in mesh.IFaces:
+		for IFace in mesh.interior_faces:
 			# Normals
 			# normals = mesh_defs.iface_normal(mesh, IFace, quad_pts)
 			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_id, IFace.faceL_id, quad_pts)
@@ -476,7 +476,7 @@ class ADERDG(base.SolverBase):
 		'''
 		mesh = self.mesh
 		physics = self.physics
-		IFace = mesh.IFaces[iiface]
+		IFace = mesh.interior_faces[iiface]
 		elemL = IFace.elemL_id
 		elemR = IFace.elemR_id
 		faceL_id = IFace.faceL_id

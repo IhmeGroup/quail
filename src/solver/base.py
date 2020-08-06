@@ -261,7 +261,7 @@ class SolverBase(ABC):
 		physics = self.physics
 
 		for iiface in range(mesh.num_interior_faces):
-			IFace = mesh.IFaces[iiface]
+			IFace = mesh.interior_faces[iiface]
 			elemL = IFace.elemL_id
 			elemR = IFace.elemR_id
 			faceL_id = IFace.faceL_id
