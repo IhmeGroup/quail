@@ -92,7 +92,7 @@ class PhysicsBase(object):
 		# 	self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
 		# 	# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
 		# self.BCs = [None]*mesh.num_boundary_groups
-		self.BCs = dict.fromkeys(mesh.BFaceGroups.keys())
+		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
 
 		# Basis, Order data for each element group
 		# For now, ssume uniform basis and Order for each element group 

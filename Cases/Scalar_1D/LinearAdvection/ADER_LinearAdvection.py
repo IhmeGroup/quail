@@ -48,7 +48,7 @@ else:
 	Inflow = "Right"; Outflow = "Left"
 # if not Periodic:
 # 	for ibfgrp in range(mesh.num_boundary_groups):
-# 		BFG = mesh.BFaceGroups[ibfgrp]
+# 		BFG = mesh.boundary_groups[ibfgrp]
 # 		if BFG.Name is Inflow:
 # 			physics.set_BC(BC_type="StateAll", fcn_type="Sine", omega = 2*np.pi)
 # 		elif BFG.Name is Outflow:

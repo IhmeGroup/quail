@@ -482,18 +482,18 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			# Check for existing boundary face group
 			# found = False
 			# for ibfgrp in range(mesh.num_boundary_groups):
-			# 	BFG = mesh.BFaceGroups[ibfgrp]
+			# 	BFG = mesh.boundary_groups[ibfgrp]
 			# 	if BFG.Name == PGroup.Name:
 			# 		found = True
 			# 		break
 			try:
-				BFG = mesh.BFaceGroups[PGroup.Name]
+				BFG = mesh.boundary_groups[PGroup.Name]
 			except KeyError:
-			# if PGroup.Name in mesh.BFaceGroups:
+			# if PGroup.Name in mesh.boundary_groups:
 				# Group has not been assigned yet
 				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
-				# mesh.BFaceGroups.append(BFG)
+				# mesh.boundary_groups.append(BFG)
 				# BFG.Name = PGroup.Name
 				BFG = mesh.add_bface_group(PGroup.Name)
 				PGroup.Group = BFG.number
@@ -546,13 +546,13 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		elif dim == mesh.dim - 1:
 
 			if PGroup.Group >= 0:
-				# BFG = mesh.BFaceGroups[PGroup.Group]
-				BFG = mesh.BFaceGroups[PGroup.Name]
+				# BFG = mesh.boundary_groups[PGroup.Group]
+				BFG = mesh.boundary_groups[PGroup.Name]
 			else:
 				# Group has not been assigned yet
 				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
-				# mesh.BFaceGroups.append(BFG)
+				# mesh.boundary_groups.append(BFG)
 				# BFG.Name = PGroup.Name
 				BFG = mesh.add_bface_group(PGroup.Name)
 				PGroup.Group = BFG.number
@@ -722,8 +722,8 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			gorder = gmsh_element_database[etype].gorder
 # >>>>>>> Stashed changes
 			ibfgrp = PGroup.Group
-			# BFG = mesh.BFaceGroups[ibfgrp]
-			BFG = mesh.BFaceGroups[PGroup.Name]
+			# BFG = mesh.boundary_groups[ibfgrp]
+			BFG = mesh.boundary_groups[PGroup.Name]
 			# Number of q = 1 face nodes
 			nfnode = gbasis.get_num_basis_coeff(1)
 
@@ -809,7 +809,7 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 					if PGroup.dim == dim:
 						ibfgrp = PGroup.Group
 						break
-			BFG = mesh.BFaceGroups[PGroup.Name]
+			BFG = mesh.boundary_groups[PGroup.Name]
 			gbasis = gmsh_element_database[etype].gbasis
 			nfnode = gbasis.get_num_basis_coeff(1) 
 			# Loop and increment nBFace
@@ -833,9 +833,9 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_node_tags):
 	# Allocate additional mesh structures
 	# for ibfgrp in range(mesh.num_boundary_groups):
-	# 	BFG = mesh.BFaceGroups[ibfgrp]
+	# 	BFG = mesh.boundary_groups[ibfgrp]
 	# 	BFG.allocate_bfaces()
-	for BFG in mesh.BFaceGroups.values():
+	for BFG in mesh.boundary_groups.values():
 		BFG.allocate_bfaces()
 	# nFaceMax = 0
 	# for EG in mesh.ElemGroups:
@@ -904,7 +904,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 				if FInfo.BFlag:
 					# boundary face
 					# Store in BFG
-					# BFG = mesh.BFaceGroups[FInfo.Group]
+					# BFG = mesh.boundary_groups[FInfo.Group]
 					found = False
 					# Make this cleaner later
 					for PGroup in PGroups:
@@ -912,7 +912,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 							found = True
 							break
 					if not found: raise Exception
-					BFG = mesh.BFaceGroups[PGroup.Name]
+					BFG = mesh.boundary_groups[PGroup.Name]
 					# try:
 					# 	BFace = BFG.BFaces[FInfo.Face]
 					# except:

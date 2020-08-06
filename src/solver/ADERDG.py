@@ -130,7 +130,7 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
-		for BFG in mesh.BFaceGroups.values():
+		for BFG in mesh.boundary_groups.values():
 			self.normals_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			self.x_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
@@ -552,7 +552,7 @@ class ADERDG(base.SolverBase):
 		dim = mesh.dim
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
-		# BFG = mesh.BFaceGroups[ibfgrp]
+		# BFG = mesh.boundary_groups[ibfgrp]
 		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.elem_id

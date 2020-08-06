@@ -68,7 +68,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		# mesh.num_boundary_groups = 2
 		# mesh.allocate_bface_groups()
 		# for i in range(mesh.num_boundary_groups):
-		# 	BFG = mesh.BFaceGroups[i]
+		# 	BFG = mesh.boundary_groups[i]
 		# 	BFG.nBFace = 1
 		# 	BFG.allocate_bfaces()
 		# 	BF = BFG.BFaces[0]
@@ -213,7 +213,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# mesh.num_boundary_groups = 4
 	# mesh.allocate_bface_groups()
 	# for i in range(mesh.num_boundary_groups):
-	# 	BFG = mesh.BFaceGroups[i]
+	# 	BFG = mesh.boundary_groups[i]
 	# 	if i == 0:
 	# 		BFG.Name = "x1"
 	# 		BFG.nBFace = num_elems_y
@@ -229,7 +229,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# 	BFG.allocate_bfaces()
 
 	# x1
-	# BFG = mesh.BFaceGroups[0]
+	# BFG = mesh.boundary_groups[0]
 	BFG = mesh.add_bface_group("x1")
 	BFG.nBFace = num_elems_y
 	BFG.allocate_bfaces()
@@ -239,7 +239,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		BF.face_id = 3
 		n += 1
 	# x2
-	# BFG = mesh.BFaceGroups[1]
+	# BFG = mesh.boundary_groups[1]
 	BFG = mesh.add_bface_group("x2")
 	BFG.nBFace = num_elems_y
 	BFG.allocate_bfaces()
@@ -249,7 +249,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		BF.face_id = 1
 		n += 1
 	# y1
-	# BFG = mesh.BFaceGroups[2]
+	# BFG = mesh.boundary_groups[2]
 	BFG = mesh.add_bface_group("y1")
 	BFG.nBFace = num_elems_x
 	BFG.allocate_bfaces()
@@ -259,7 +259,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 		BF.face_id = 0
 		n += 1
 	# y2
-	# BFG = mesh.BFaceGroups[3]
+	# BFG = mesh.boundary_groups[3]
 	BFG = mesh.add_bface_group("y2")
 	BFG.nBFace = num_elems_x
 	BFG.allocate_bfaces()
@@ -353,7 +353,7 @@ def split_quadrils_into_tris(mesh_old):
 		return elem, face
 
 	# BFGs
-	for BFG in mesh.BFaceGroups.values():
+	for BFG in mesh.boundary_groups.values():
 		for BF in BFG.BFaces:
 			BF.elem_id, BF.face_id = modify_face_info(BF.elem_id, BF.face_id)
 

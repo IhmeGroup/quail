@@ -100,7 +100,7 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 	# Find boundary face group
 	# found = False
 	# ibfgrp = 0
-	# for BFG in mesh.BFaceGroups:
+	# for BFG in mesh.boundary_groups:
 	# 	if BFG.Name == bname:
 	# 		found = True
 	# 		break
@@ -109,7 +109,7 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 	# if not found:
 	# 	raise errors.DoesNotExistError
 
-	BFG = mesh.BFaceGroups[bname]
+	BFG = mesh.boundary_groups[bname]
 	ibfgrp = BFG.number
 
 	bface_ops = solver.bface_operators

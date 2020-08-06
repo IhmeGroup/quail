@@ -700,8 +700,8 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 	'''
 	Loop through BFaces and plot boundary faces
 	'''
-	# for BFG in mesh.BFaceGroups:
-	for BFG in mesh.BFaceGroups.values():
+	# for BFG in mesh.boundary_groups:
+	for BFG in mesh.boundary_groups.values():
 		for BFace in BFG.BFaces:
 			# Get adjacent element info
 			elem_id = BFace.elem_id; face = BFace.face_id
@@ -777,7 +777,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 	'''
 # 	Loop through BFaces and plot boundary faces
 # 	'''
-# 	for BFG in mesh.BFaceGroups:
+# 	for BFG in mesh.boundary_groups:
 # 		for BFace in BFG.BFaces:
 # 			# Get adjacent element info
 # 			elem = BFace.elem_id; face = BFace.face_id

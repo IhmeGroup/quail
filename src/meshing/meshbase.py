@@ -304,7 +304,7 @@ class Mesh(object):
         nIFace: number of interior faces
         IFaces: list of interior face objects
         num_boundary_groups: number of boundary face groups
-        BFaceGroups: list of boundary face groups
+        boundary_groups: list of boundary face groups
         BFGNames: list of BFaceGroup names (for easy access)
         num_elemss: list of number of elements in each element group (for easy access)
         num_elems_tot: total number of elements in mesh
@@ -330,7 +330,7 @@ class Mesh(object):
         self.nIFace = 0
         self.IFaces = []
         self.num_boundary_groups = 0
-        self.BFaceGroups = {}
+        self.boundary_groups = {}
         self.gbasis = gbasis
         self.gorder = gorder
         self.num_elems = num_elems
@@ -387,20 +387,20 @@ class Mesh(object):
     #     '''
     #     Method: allocate_bface_groups
     #     -------------------
-    #     This method allocates BFaceGroups
+    #     This method allocates boundary_groups
 
     #     OUTPUTS:
-    #         self.BFaceGroups
+    #         self.boundary_groups
     #     '''
-    #     self.BFaceGroups = [BFaceGroup() for i in range(self.num_boundary_groups)]
+    #     self.boundary_groups = [BFaceGroup() for i in range(self.num_boundary_groups)]
 
     def add_bface_group(self, bname):
-        if bname in self.BFaceGroups:
+        if bname in self.boundary_groups:
             raise ValueError
         BFG = BoundaryGroup()
-        self.BFaceGroups[bname] = BFG
+        self.boundary_groups[bname] = BFG
         BFG.name = bname
-        self.num_boundary_groups = len(self.BFaceGroups)
+        self.num_boundary_groups = len(self.boundary_groups)
         BFG.number = self.num_boundary_groups - 1
 
         return BFG
@@ -450,9 +450,9 @@ class Mesh(object):
     #         FaceR.Number = iiface
 
     #     # for ibfgrp in range(self.num_boundary_groups):
-    #     #     BFG = self.BFaceGroups[ibfgrp]
+    #     #     BFG = self.boundary_groups[ibfgrp]
 
-    #     for BFG in self.BFaceGroups.values():
+    #     for BFG in self.boundary_groups.values():
             
     #         for ibface in range(BFG.nBFace):
     #             BFace = BFG.BFaces[ibface]

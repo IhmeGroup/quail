@@ -290,9 +290,9 @@ class SolverBase(ABC):
 		physics = self.physics
 
 		# for ibfgrp in range(mesh.num_boundary_groups):
-		# 	BFG = mesh.BFaceGroups[ibfgrp]
+		# 	BFG = mesh.boundary_groups[ibfgrp]
 
-		for BFG in mesh.BFaceGroups.values():
+		for BFG in mesh.boundary_groups.values():
 
 			for ibface in range(BFG.nBFace):
 				BFace = BFG.BFaces[ibface]

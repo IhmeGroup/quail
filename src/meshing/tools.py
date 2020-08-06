@@ -235,7 +235,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
 
     # Extract relevant BFGs
     # BFG1 = None; BFG2 = None;
-    # for BFG in mesh.BFaceGroups:
+    # for BFG in mesh.boundary_groups:
     #     if BFG.Name == b1:
     #         BFG1 = BFG
     #     if BFG.Name == b2:
@@ -440,10 +440,10 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     #     for elem in range(num_elems):
     #         mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
 
-    # mesh.BFaceGroups.remove(BFG1)
-    # mesh.BFaceGroups.remove(BFG2)
-    mesh.BFaceGroups.pop(BFG1.name)
-    mesh.BFaceGroups.pop(BFG2.name)
+    # mesh.boundary_groups.remove(BFG1)
+    # mesh.boundary_groups.remove(BFG2)
+    mesh.boundary_groups.pop(BFG1.name)
+    mesh.boundary_groups.pop(BFG2.name)
 
     # print
     if which_dim == 0:
@@ -471,14 +471,14 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
     # Extract relevant BFGs
     # BFG1 = None; BFG2 = None;
-    # for BFG in mesh.BFaceGroups:
+    # for BFG in mesh.boundary_groups:
     #     if BFG.Name == b1:
     #         BFG1 = BFG
     #     if BFG.Name == b2:
     #         BFG2 = BFG
     # BFG = None
-    BFG1 = mesh.BFaceGroups[b1]
-    BFG2 = mesh.BFaceGroups[b2]
+    BFG1 = mesh.boundary_groups[b1]
+    BFG2 = mesh.boundary_groups[b2]
 
     StartIdx = NextIdx
 
@@ -730,7 +730,7 @@ def VerifyPeriodicMesh(mesh):
 
 def update_boundary_group_nums(mesh):
     i = 0
-    for BFG in mesh.BFaceGroups.values():
+    for BFG in mesh.boundary_groups.values():
         BFG.number = i
         i += 1
 

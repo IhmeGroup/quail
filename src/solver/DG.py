@@ -214,7 +214,7 @@ class BFaceOperators(IFaceOperators):
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
-		for BFG in mesh.BFaceGroups.values():
+		for BFG in mesh.boundary_groups.values():
 			self.normals_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			self.x_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
@@ -421,7 +421,7 @@ class DG(base.SolverBase):
 		'''
 		mesh = self.mesh
 		physics = self.physics
-		# BFG = mesh.BFaceGroups[ibfgrp]
+		# BFG = mesh.boundary_groups[ibfgrp]
 		ibfgrp = BFG.number
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.elem_id

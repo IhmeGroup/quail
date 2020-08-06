@@ -228,7 +228,7 @@ def driver(deck):
 
 
 	# Boundary conditions
-	# for BFG in mesh.BFaceGroups:
+	# for BFG in mesh.boundary_groups:
 	for bname, bparams in BC_params.items():
 		# bname = BFG.Name
 		# bparams = BC_params[bname].copy()
