@@ -71,7 +71,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		# 	BFG = mesh.boundary_groups[i]
 		# 	BFG.num_boundary_faces = 1
 		# 	BFG.allocate_bfaces()
-		# 	BF = BFG.BFaces[0]
+		# 	BF = BFG.boundary_faces[0]
 		# 	if i == 0:
 		# 		BFG.Name = "Left"
 		# 		BF.elem_id = 0
@@ -84,14 +84,14 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		BFG = mesh.add_boundary_group("Left")
 		BFG.num_boundary_faces = 1
 		BFG.allocate_bfaces()
-		BF = BFG.BFaces[0]
+		BF = BFG.boundary_faces[0]
 		BF.elem_id = 0
 		BF.face_id = 0
 		# right
 		BFG = mesh.add_boundary_group("Right")
 		BFG.num_boundary_faces = 1
 		BFG.allocate_bfaces()
-		BF = BFG.BFaces[0]
+		BF = BFG.boundary_faces[0]
 		BF.elem_id = num_elems - 1
 		BF.face_id = 1
 
@@ -234,7 +234,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	BFG.num_boundary_faces = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
-	for BF in BFG.BFaces:
+	for BF in BFG.boundary_faces:
 		BF.elem_id = num_elems_x*n
 		BF.face_id = 3
 		n += 1
@@ -244,7 +244,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	BFG.num_boundary_faces = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
-	for BF in BFG.BFaces:
+	for BF in BFG.boundary_faces:
 		BF.elem_id = num_elems_x*(n + 1) - 1
 		BF.face_id = 1
 		n += 1
@@ -254,7 +254,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	BFG.num_boundary_faces = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
-	for BF in BFG.BFaces:
+	for BF in BFG.boundary_faces:
 		BF.elem_id = n
 		BF.face_id = 0
 		n += 1
@@ -264,7 +264,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	BFG.num_boundary_faces = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
-	for BF in BFG.BFaces:
+	for BF in BFG.boundary_faces:
 		BF.elem_id = mesh.num_elems - num_elems_x + n
 		BF.face_id = 2
 		n += 1
@@ -354,7 +354,7 @@ def split_quadrils_into_tris(mesh_old):
 
 	# BFGs
 	for BFG in mesh.boundary_groups.values():
-		for BF in BFG.BFaces:
+		for BF in BFG.boundary_faces:
 			BF.elem_id, BF.face_id = modify_face_info(BF.elem_id, BF.face_id)
 
 

@@ -698,13 +698,13 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			plt.plot(x, y, 'k-')
 
 	'''
-	Loop through BFaces and plot boundary faces
+	Loop through boundary_faces and plot boundary faces
 	'''
 	# for BFG in mesh.boundary_groups:
 	for BFG in mesh.boundary_groups.values():
-		for BFace in BFG.BFaces:
+		for boundary_face in BFG.boundary_faces:
 			# Get adjacent element info
-			elem_id = BFace.elem_id; face = BFace.face_id
+			elem_id = boundary_face.elem_id; face = boundary_face.face_id
 
 			# Get local nodes on face
 			lfnodes = gbasis.get_local_face_node_nums( 
@@ -775,12 +775,12 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 		plt.plot(x, y, 'k-')
 
 # 	'''
-# 	Loop through BFaces and plot boundary faces
+# 	Loop through boundary_faces and plot boundary faces
 # 	'''
 # 	for BFG in mesh.boundary_groups:
-# 		for BFace in BFG.BFaces:
+# 		for boundary_face in BFG.boundary_faces:
 # 			# Get adjacent element info
-# 			elem = BFace.elem_id; face = BFace.face_id
+# 			elem = boundary_face.elem_id; face = boundary_face.face_id
 
 # 			# Get local nodes on face
 # 			fnodes, nfnode = gbasis.local_face_nodes( 

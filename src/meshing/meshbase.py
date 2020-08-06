@@ -52,7 +52,7 @@ import numerics.basis.basis as basis_defs
 #     return nvec
 
 
-# def bface_normal(mesh, BFace, quad_pts, NData=None):
+# def bface_normal(mesh, boundary_face, quad_pts, NData=None):
 #     '''
 #     Function: bface_normal
 #     -------------------
@@ -61,13 +61,13 @@ import numerics.basis.basis as basis_defs
 
 #     INPUTS:
 #         mesh: Mesh object
-#         BFace: boundary face object
+#         boundary_face: boundary face object
 #         quad_pts: points in reference space at which to calculate normals
 
 #     OUTPUTS:
 #         NData: normal data object
 #     '''
-#     elem = BFace.elem_id
+#     elem = boundary_face.elem_id
 #     gorder = mesh.gorder
 #     gbasis = mesh.gbasis
 
@@ -76,7 +76,7 @@ import numerics.basis.basis as basis_defs
 #     # if NData is None:
 #     #     NData = NormalData()
 
-#     nvec = gbasis.calculate_normals(gbasis, mesh, elem, BFace.face_id, quad_pts)
+#     nvec = gbasis.calculate_normals(gbasis, mesh, elem, boundary_face.face_id, quad_pts)
 
 #     return nvec
 
@@ -197,7 +197,7 @@ class BoundaryGroup(object):
     ATTRIBUTES:
         Name: name of boundary face group
         num_boundary_faces: number of boundary faces within this group
-        BFaces: list of BFace objects
+        boundary_faces: list of boundary_face objects
     '''
     def __init__(self):
         '''
@@ -208,18 +208,18 @@ class BoundaryGroup(object):
         self.name = ""
         self.number = -1
         self.num_boundary_faces = 0 
-        self.BFaces = None
+        self.boundary_faces = None
 
     def allocate_bfaces(self):
         '''
         Method: allocate_bfaces
         ------------------------
-        This method allocates the list of BFace objects
+        This method allocates the list of boundary_face objects
 
         OUTPUTS:
-            self.BFaces
+            self.boundary_faces
         '''
-        self.BFaces = [BoundaryFace() for i in range(self.num_boundary_faces)]
+        self.boundary_faces = [BoundaryFace() for i in range(self.num_boundary_faces)]
 
 
 '''
@@ -448,9 +448,9 @@ class Mesh(object):
     #     for BFG in self.boundary_groups.values():
             
     #         for ibface in range(BFG.num_boundary_faces):
-    #             BFace = BFG.BFaces[ibface]
-    #             elem = BFace.elem_id
-    #             face = BFace.face_id
+    #             boundary_face = BFG.boundary_faces[ibface]
+    #             elem = boundary_face.elem_id
+    #             face = boundary_face.face_id
 
     #             Face = self.Faces[elem][face]
 

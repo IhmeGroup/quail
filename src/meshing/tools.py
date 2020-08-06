@@ -227,7 +227,7 @@ def RotateNodes(mesh, theta_x = 0., theta_y = 0., theta_z = 0.):
 def VerifyPeriodicBoundary(mesh, BFG, icoord):
     coord = np.nan
     gbasis = mesh.gbasis
-    for BF in BFG.BFaces:
+    for BF in BFG.boundary_faces:
         # Extract info
         elem_id = BF.elem_id
         face = BF.face_id
@@ -335,10 +335,10 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     ''' 
     Identify and create periodic interior_faces 
     '''
-    for BFace1 in BFG1.BFaces:
+    for boundary_face1 in BFG1.boundary_faces:
         # Extract info
-        elem_id1 = BFace1.elem_id
-        face1 = BFace1.face_id
+        elem_id1 = boundary_face1.elem_id
+        face1 = boundary_face1.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
@@ -354,10 +354,10 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
         coords1 = mesh.node_coords[gfnodes1]
 
         # Pair each node with corresponding one on other boundary
-        for BFace2 in BFG2.BFaces:
+        for boundary_face2 in BFG2.boundary_faces:
             # Extract info
-            elem_id2 = BFace2.elem_id
-            face2 = BFace2.face_id
+            elem_id2 = boundary_face2.elem_id
+            face2 = boundary_face2.face_id
 
             ''' Get physical coordinates of face '''
             # Get local q = 1 nodes on face
@@ -557,10 +557,10 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     '''
 
     # Get b1 nodes
-    for BFace in BFG1.BFaces:
+    for boundary_face in BFG1.boundary_faces:
         # Extract info
-        elem = BFace.elem_id
-        face = BFace.face_id
+        elem = boundary_face.elem_id
+        face = boundary_face.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face
@@ -587,10 +587,10 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     Deal with second boundary
     '''
 
-    for BFace in BFG2.BFaces:
+    for boundary_face in BFG2.boundary_faces:
         # Extract info
-        elem = BFace.elem_id
-        face = BFace.face_id
+        elem = boundary_face.elem_id
+        face = boundary_face.face_id
 
         ''' Get physical coordinates of face '''
         # Get local q = 1 nodes on face

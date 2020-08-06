@@ -862,7 +862,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# Go to entities section
 	FindLineAfterString(fo, "$Elements")
 
-	bf = [0 for i in range(mesh.num_boundary_groups)] # BFace counter
+	bf = [0 for i in range(mesh.num_boundary_groups)] # boundary_face counter
 
 	if ver == VERSION2:
 		fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database, 
@@ -900,7 +900,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					raise ValueError("More than two elements share a face " + 
 						"or a boundary face is referenced by more than one element")
 
-				# Link elem to BFace or IFace
+				# Link elem to boundary_face or IFace
 				if FInfo.BFlag:
 					# boundary face
 					# Store in BFG
@@ -914,11 +914,11 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					if not found: raise Exception
 					BFG = mesh.boundary_groups[PGroup.Name]
 					# try:
-					# 	BFace = BFG.BFaces[FInfo.Face]
+					# 	boundary_face = BFG.boundary_faces[FInfo.Face]
 					# except:
 					# 	code.interact(local=locals())
-					BFace = BFG.BFaces[FInfo.Face]
-					BFace.elem_id = elem; BFace.face_id = face
+					boundary_face = BFG.boundary_faces[FInfo.Face]
+					boundary_face.elem_id = elem; boundary_face.face_id = face
 					# Store in Face
 					# Face = mesh.Faces[elem][face]
 					# Face.Group = FInfo.Group

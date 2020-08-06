@@ -143,9 +143,9 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 		vec.shape = 1,2
 
 	for ibface in range(BFG.num_boundary_faces):
-		BFace = BFG.BFaces[ibface]
-		elem = BFace.elem_id
-		face = BFace.face_id
+		boundary_face = BFG.boundary_faces[ibface]
+		elem = boundary_face.elem_id
+		face = boundary_face.face_id
 
 		basis_val = faces_to_basis[face]
 

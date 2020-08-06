@@ -220,14 +220,14 @@ class BoundaryFaceOperators(InteriorFaceOperators):
 			normal_bfgroup = self.normals_bfgroups[i]
 			x_bfgroup = self.x_bfgroups[i]
 			j = 0
-			for BFace in BFG.BFaces:
+			for boundary_face in BFG.boundary_faces:
 				# Normals
-				# nvec = mesh_defs.bface_normal(mesh, BFace, quad_pts)
-				nvec = mesh.gbasis.calculate_normals(mesh, BFace.elem_id, BFace.face_id, quad_pts)
+				# nvec = mesh_defs.bface_normal(mesh, boundary_face, quad_pts)
+				nvec = mesh.gbasis.calculate_normals(mesh, boundary_face.elem_id, boundary_face.face_id, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# Physical coordinates of quadrature points
-				x = mesh_tools.ref_to_phys(mesh, BFace.elem_id, self.faces_to_xref[BFace.face_id])
+				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_id, self.faces_to_xref[boundary_face.face_id])
 				# Store
 				x_bfgroup[j] = x
 
@@ -423,9 +423,9 @@ class DG(base.SolverBase):
 		physics = self.physics
 		# BFG = mesh.boundary_groups[ibfgrp]
 		ibfgrp = BFG.number
-		BFace = BFG.BFaces[ibface]
-		elem = BFace.elem_id
-		face = BFace.face_id
+		boundary_face = BFG.boundary_faces[ibface]
+		elem = boundary_face.elem_id
+		face = boundary_face.face_id
 
 		bface_ops = self.bface_operators
 		quad_pts = bface_ops.quad_pts
