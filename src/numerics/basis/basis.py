@@ -694,8 +694,8 @@ class BasisBase(ABC):
 
         return basis_phys_grad # [nq, nb, dim]
 
-    def get_basis_val_grads(self, quad_pts, get_val=True, get_ref_grad=False
-        , get_phys_grad=False, ijac=None):
+    def get_basis_val_grads(self, quad_pts, get_val=True, get_ref_grad=False,
+            get_phys_grad=False, ijac=None):
         '''
         Method: get_basis_val_grads
         -----------------------------

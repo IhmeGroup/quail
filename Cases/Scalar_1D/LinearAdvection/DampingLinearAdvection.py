@@ -48,7 +48,7 @@ if Velocity >= 0.:
 else:
 	Inflow = "Right"; Outflow = "Left"
 # if not Periodic:
-# 	for ibfgrp in range(mesh.nBFaceGroup):
+# 	for ibfgrp in range(mesh.num_boundary_groups):
 # 		BFG = mesh.BFaceGroups[ibfgrp]
 # 		if BFG.Name is Inflow:
 # 			physics.set_BC(BC_type="StateAll", fcn_type="DampingSine", omega = 2*np.pi, nu=nu)

@@ -84,14 +84,14 @@ class PhysicsBase(object):
 		self.Sources = []
 		# Boundary conditions
 		# self.BCs = []
-		# for ibfgrp in range(mesh.nBFaceGroup):
+		# for ibfgrp in range(mesh.num_boundary_groups):
 		# 	self.BCs.append(BCData(Name=mesh.BFGNames[ibfgrp]))
-		self.nBC = mesh.nBFaceGroup
-		# self.BCs = [BCData() for ibfgrp in range(mesh.nBFaceGroup)]
-		# for ibfgrp in range(mesh.nBFaceGroup):
+		self.nBC = mesh.num_boundary_groups
+		# self.BCs = [BCData() for ibfgrp in range(mesh.num_boundary_groups)]
+		# for ibfgrp in range(mesh.num_boundary_groups):
 		# 	self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
 		# 	# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
-		# self.BCs = [None]*mesh.nBFaceGroup
+		# self.BCs = [None]*mesh.num_boundary_groups
 		self.BCs = dict.fromkeys(mesh.BFaceGroups.keys())
 
 		# Basis, Order data for each element group

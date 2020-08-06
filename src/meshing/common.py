@@ -65,9 +65,9 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 			IFace_.elemR_id = i+1
 			IFace_.faceR_id = 0
 		# Boundary groups
-		# mesh.nBFaceGroup = 2
+		# mesh.num_boundary_groups = 2
 		# mesh.allocate_bface_groups()
-		# for i in range(mesh.nBFaceGroup):
+		# for i in range(mesh.num_boundary_groups):
 		# 	BFG = mesh.BFaceGroups[i]
 		# 	BFG.nBFace = 1
 		# 	BFG.allocate_bfaces()
@@ -210,9 +210,9 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# mesh.allocate_faces()
 
 	### BFGs
-	# mesh.nBFaceGroup = 4
+	# mesh.num_boundary_groups = 4
 	# mesh.allocate_bface_groups()
-	# for i in range(mesh.nBFaceGroup):
+	# for i in range(mesh.num_boundary_groups):
 	# 	BFG = mesh.BFaceGroups[i]
 	# 	if i == 0:
 	# 		BFG.Name = "x1"

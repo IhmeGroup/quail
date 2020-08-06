@@ -481,7 +481,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			### Boundary entity
 			# Check for existing boundary face group
 			# found = False
-			# for ibfgrp in range(mesh.nBFaceGroup):
+			# for ibfgrp in range(mesh.num_boundary_groups):
 			# 	BFG = mesh.BFaceGroups[ibfgrp]
 			# 	if BFG.Name == PGroup.Name:
 			# 		found = True
@@ -491,7 +491,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			except KeyError:
 			# if PGroup.Name in mesh.BFaceGroups:
 				# Group has not been assigned yet
-				# mesh.nBFaceGroup += 1
+				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.BFaceGroups.append(BFG)
 				# BFG.Name = PGroup.Name
@@ -550,7 +550,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				BFG = mesh.BFaceGroups[PGroup.Name]
 			else:
 				# Group has not been assigned yet
-				# mesh.nBFaceGroup += 1
+				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.BFaceGroups.append(BFG)
 				# BFG.Name = PGroup.Name
@@ -832,7 +832,7 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 
 def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_node_tags):
 	# Allocate additional mesh structures
-	# for ibfgrp in range(mesh.nBFaceGroup):
+	# for ibfgrp in range(mesh.num_boundary_groups):
 	# 	BFG = mesh.BFaceGroups[ibfgrp]
 	# 	BFG.allocate_bfaces()
 	for BFG in mesh.BFaceGroups.values():
@@ -862,7 +862,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# Go to entities section
 	FindLineAfterString(fo, "$Elements")
 
-	bf = [0 for i in range(mesh.nBFaceGroup)] # BFace counter
+	bf = [0 for i in range(mesh.num_boundary_groups)] # BFace counter
 
 	if ver == VERSION2:
 		fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database, 

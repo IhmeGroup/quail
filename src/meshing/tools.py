@@ -430,7 +430,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     # Verification
     if BFG1.nBFace != 0 or BFG2.nBFace != 0:
         raise ValueError
-    mesh.nBFaceGroup -= 2
+    mesh.num_boundary_groups -= 2
 
 
     # if NodesChanged:

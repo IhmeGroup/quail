@@ -195,7 +195,7 @@ class BFace(object):
         self.face_id = 0 
 
 
-class BFaceGroup(object):
+class BoundaryGroup(object):
     '''
     Class: BoundaryGroup
     -------------------
@@ -303,7 +303,7 @@ class Mesh(object):
         node_coords: coordinates of nodes
         nIFace: number of interior faces
         IFaces: list of interior face objects
-        nBFaceGroup: number of boundary face groups
+        num_boundary_groups: number of boundary face groups
         BFaceGroups: list of boundary face groups
         BFGNames: list of BFaceGroup names (for easy access)
         num_elemss: list of number of elements in each element group (for easy access)
@@ -329,7 +329,7 @@ class Mesh(object):
         self.node_coords = None
         self.nIFace = 0
         self.IFaces = []
-        self.nBFaceGroup = 0
+        self.num_boundary_groups = 0
         self.BFaceGroups = {}
         self.gbasis = gbasis
         self.gorder = gorder
@@ -392,16 +392,16 @@ class Mesh(object):
     #     OUTPUTS:
     #         self.BFaceGroups
     #     '''
-    #     self.BFaceGroups = [BFaceGroup() for i in range(self.nBFaceGroup)]
+    #     self.BFaceGroups = [BFaceGroup() for i in range(self.num_boundary_groups)]
 
     def add_bface_group(self, bname):
         if bname in self.BFaceGroups:
             raise ValueError
-        BFG = BFaceGroup()
+        BFG = BoundaryGroup()
         self.BFaceGroups[bname] = BFG
         BFG.name = bname
-        self.nBFaceGroup = len(self.BFaceGroups)
-        BFG.number = self.nBFaceGroup - 1
+        self.num_boundary_groups = len(self.BFaceGroups)
+        BFG.number = self.num_boundary_groups - 1
 
         return BFG
 
@@ -449,7 +449,7 @@ class Mesh(object):
     #         FaceL.Number = iiface
     #         FaceR.Number = iiface
 
-    #     # for ibfgrp in range(self.nBFaceGroup):
+    #     # for ibfgrp in range(self.num_boundary_groups):
     #     #     BFG = self.BFaceGroups[ibfgrp]
 
     #     for BFG in self.BFaceGroups.values():
