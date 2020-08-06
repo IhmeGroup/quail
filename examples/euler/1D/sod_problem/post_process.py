@@ -13,7 +13,7 @@ solver1.Time = 0.25
 mesh1 = solver1.mesh
 physics1 = solver1.physics
 # code.interact(local=locals())
-# mesh1.Coords += 0.5
+# mesh1.node_coords += 0.5
 
 ### Postprocess
 # fname = "Data_Final.pkl"

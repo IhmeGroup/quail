@@ -35,7 +35,7 @@ def ref_to_phys(mesh, elem_id, xref):
 
     # Phi= gbasis.basis_val
     # dim = mesh.dim
-    # Coords = mesh.Coords
+    # node_coords = mesh.node_coords
     # Phi = PhiData.Phi
     # nb = gbasis.basis_val.shape[1]
     # if nb != mesh.num_nodes_per_elem:
@@ -247,20 +247,6 @@ USAGE:
 
 
 # '''
-# Dictionary: Shape2nNodeQ1
-# -------------------
-# This dictionary stores the number of Q1 nodes per element
-# for each shape type
-
-# USAGE:
-#     Shape2nFace[shape] = number of nodes per element of shape
-# '''
-# Shape2nNodeQ1 = {
-#     ShapeType.Point : 1,
-#     ShapeType.Segment : 2,
-#     ShapeType.Triangle : 3,
-#     ShapeType.Quadrilateral : 4
-# }
 
 # class PeriodicGroup(object):
 #     '''
@@ -313,8 +299,8 @@ class Mesh(object):
 
     ATTRIBUTES:
         Dim: dimension of mesh
-        nNode: total number of nodes
-        Coords: coordinates of nodes
+        num_nodes: total number of nodes
+        node_coords: coordinates of nodes
         nIFace: number of interior faces
         IFaces: list of interior face objects
         nBFaceGroup: number of boundary face groups
@@ -325,7 +311,7 @@ class Mesh(object):
         nPeriodicGroup: number of periodic groups
         PeriodicGroups: list of periodic groups
     '''
-    def __init__(self, dim=1, nNode=1, nElem=1, gbasis=None, gorder=1):
+    def __init__(self, dim=1, num_nodes=1, nElem=1, gbasis=None, gorder=1):
         '''
         Method: __init__
         -------------------
@@ -333,14 +319,14 @@ class Mesh(object):
 
         INPUTS:
             dim: dimension of mesh
-            nNode: total number of nodes
+            num_nodes: total number of nodes
         '''
         if gbasis is None:
             gbasis = basis_defs.LagrangeSeg(1)
 
         self.dim = dim
-        self.nNode = nNode
-        self.Coords = None
+        self.num_nodes = num_nodes
+        self.node_coords = None
         self.nIFace = 0
         self.IFaces = []
         self.nBFaceGroup = 0
@@ -427,7 +413,7 @@ class Mesh(object):
 
             elem.id = elem_id
             elem.node_ids = self.Elem2Nodes[elem_id]
-            elem.node_coords = self.Coords[elem.node_ids]
+            elem.node_coords = self.node_coords[elem.node_ids]
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
         # neighbors

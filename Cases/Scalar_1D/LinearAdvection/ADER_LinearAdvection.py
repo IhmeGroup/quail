@@ -15,15 +15,15 @@ Periodic = False
 mesh = MeshCommon.mesh_1D(Uniform=True, nElem=32, xmin=-1., xmax=1., Periodic=Periodic)
 # Non-uniform mesh
 # nElem = 25
-# Coords = np.cos(np.linspace(np.pi,0.,nElem+1))
-# Coords = MeshCommon.refine_uniform_1D(Coords)
-# # Coords = MeshCommon.refine_uniform_1D(Coords)
-# mesh = MeshCommon.mesh_1D(Coords=Coords, Periodic=Periodic)
+# node_coords = np.cos(np.linspace(np.pi,0.,nElem+1))
+# node_coords = MeshCommon.refine_uniform_1D(node_coords)
+# # node_coords = MeshCommon.refine_uniform_1D(node_coords)
+# mesh = MeshCommon.mesh_1D(node_coords=node_coords, Periodic=Periodic)
 
 
 ### Solver parameters
 EndTime = 0.1
-NumTimeSteps = np.amax([1,int(EndTime/((mesh.Coords[1,0] - mesh.Coords[0,0])*0.1))])
+NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[1,0] - mesh.node_coords[0,0])*0.1))])
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER")

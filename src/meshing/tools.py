@@ -142,17 +142,17 @@ def check_face_orientations(mesh):
 
 
 def RandomizeNodes(mesh, elem = -1, orient = -1):
-    OldNode2NewNode = np.arange(mesh.nNode)
+    OldNode2NewNode = np.arange(mesh.num_nodes)
     np.random.shuffle(OldNode2NewNode)
-    NewNodeOrder = np.zeros(mesh.nNode, dtype=int) - 1
-    NewNodeOrder[OldNode2NewNode] = np.arange(mesh.nNode)
+    NewNodeOrder = np.zeros(mesh.num_nodes, dtype=int) - 1
+    NewNodeOrder[OldNode2NewNode] = np.arange(mesh.num_nodes)
 
     if np.min(NewNodeOrder) == -1:
         raise ValueError
 
     RemapNodes(mesh, OldNode2NewNode, NewNodeOrder)
 
-    # for i in range(mesh.nNode):
+    # for i in range(mesh.num_nodes):
     #   n = OldNode2NewNode[i]
     #     NewNodeOrder[n] = i
     #         # NewNodeOrder[i] = the node number (pre-reordering) of the ith node (post-reordering)
@@ -173,7 +173,7 @@ def RotateNodes(mesh, theta_x = 0., theta_y = 0., theta_z = 0.):
     else:
         raise NotImplementedError
 
-    mesh.Coords = np.matmul(R, mesh.Coords.transpose()).transpose()
+    mesh.node_coords = np.matmul(R, mesh.node_coords.transpose()).transpose()
 
     print("Rotated nodes")
 
@@ -194,7 +194,7 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
         # gfnodes = mesh.Elem2Nodes[elem_id][lfnodes]
 
         # Physical coordinates of global nodes
-        # coords = mesh.Coords[gfnodes]
+        # coords = mesh.node_coords[gfnodes]
         elem_coords = mesh.elements[elem_id].node_coords
         coords = elem_coords[lfnodes]
         if np.isnan(coord):
@@ -210,8 +210,8 @@ def VerifyPeriodicBoundary(mesh, BFG, icoord):
     return coord
 
 
-def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, OldNode2NewNode, NewNodeOrder,
-    NodePairsA = None, IdxInNodePairsA = None):
+def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs, OldNode2NewNode, NewNodeOrder,
+    NodePairsA = None, idx_in_node_pairsA = None):
     '''
     NOTE: only q = 1 nodes are matched
     '''
@@ -220,15 +220,15 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
     if BFG1 is None and BFG2 is None:
         return
 
-    NewNode2NewerNode = np.arange(mesh.nNode)
+    NewNode2NewerNode = np.arange(mesh.num_nodes)
     NodesChanged = False
 
     if NodePairsA is not None:
         NodePairsB = NodePairsA.copy()
-        if IdxInNodePairsA is None:
+        if idx_in_node_pairsA is None:
             raise ValueError
         else:
-            IdxInNodePairsB = IdxInNodePairsA.copy()
+            idx_in_node_pairsB = idx_in_node_pairsA.copy()
 
     IFaces = mesh.IFaces
     icoord = which_dim
@@ -267,17 +267,17 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
 
 
     '''
-    Remap NodePairs and IdxInNodePairs
+    Remap NodePairs and idx_in_node_pairs
     '''
     NewNodePairs = np.zeros_like(NodePairs, dtype=int) - 1
-    IdxInNodePairs[:] = -1
+    idx_in_node_pairs[:] = -1
     for i in range(len(NodePairs)):
         NewNodePairs[i,:] = OldNode2NewNode[NodePairs[i,:]]
     for i in range(len(NodePairs)):
         n1 = NewNodePairs[i,0]
-        IdxInNodePairs[n1,0] = i; IdxInNodePairs[n1,1] = 0
+        idx_in_node_pairs[n1,0] = i; idx_in_node_pairs[n1,1] = 0
         n2 = NewNodePairs[i,1]
-        IdxInNodePairs[n2,0] = i; IdxInNodePairs[n2,1] = 1
+        idx_in_node_pairs[n2,0] = i; idx_in_node_pairs[n2,1] = 1
 
     NodePairs = NewNodePairs
 
@@ -305,7 +305,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
         nodesort1 = np.sort(gfnodes1)
 
         # Physical coordinates of global nodes
-        coords1 = mesh.Coords[gfnodes1]
+        coords1 = mesh.node_coords[gfnodes1]
 
         # Pair each node with corresponding one on other boundary
         for BFace2 in BFG2.BFaces:
@@ -322,12 +322,12 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
             gfnodes2 = mesh.Elem2Nodes[elem_id2][lfnodes2]
 
             # Physical coordinates of global nodes
-            coords2 = mesh.Coords[gfnodes2]
+            coords2 = mesh.node_coords[gfnodes2]
 
             ''' Check for complete match between all nodes '''
             nodesort2 = np.sort(gfnodes2)
             # Find nodes on boundary 2 paired with those in nodesort1
-            idx1 = IdxInNodePairs[nodesort1, 0]
+            idx1 = idx_in_node_pairs[nodesort1, 0]
             nodepairs2 = NodePairs[idx1,1]
             nodepairssort2 = np.sort(NodePairs[idx1,1])
             match = False
@@ -352,7 +352,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
             #                 if d == icoord: continue # skip periodic direction
             #                 # code.interact(local=locals())
             #                 coord2[d] = coord1[d]
-            #                 mesh.Coords[gfnodes2[m],d] = coord1[d]
+            #                 mesh.node_coords[gfnodes2[m],d] = coord1[d]
             #             break
             #         else:
             #             match = False
@@ -369,14 +369,14 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                         raise Exception
 
                     # node order doesn't match, so reorder
-                    mesh.Coords[nodepairssort2] = mesh.Coords[nodepairs2]
+                    mesh.node_coords[nodepairssort2] = mesh.node_coords[nodepairs2]
 
                     # store for remapping elements to nodes later
                     NewNode2NewerNode[nodepairs2] = nodepairssort2
 
                     # Modify pairing as necessary
                     NodePairs[idx1,1] = nodepairssort2
-                    IdxInNodePairs[nodepairssort2,0] = idx1
+                    idx_in_node_pairs[nodepairssort2,0] = idx1
 
                     # Modify other pairings
                     if NodePairsA is not None:
@@ -386,17 +386,17 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                             ns2 = nodepairssort2[n]
                             if n2 != ns2:
                                 # check if it exists in other pairing
-                                idxA = IdxInNodePairsA[n2,0]
+                                idxA = idx_in_node_pairsA[n2,0]
                                 if idxA != -1:
-                                    b = IdxInNodePairsA[n2,1]
+                                    b = idx_in_node_pairsA[n2,1]
                                     NodePairsA[idxA, b] = ns2
                                     # reset n2
-                                    IdxInNodePairsB[n2, :] = -1
-                                    IdxInNodePairsB[ns2, 0] = idxA
-                                    IdxInNodePairsB[ns2, 1] = b
+                                    idx_in_node_pairsB[n2, :] = -1
+                                    idx_in_node_pairsB[ns2, 0] = idxA
+                                    idx_in_node_pairsB[ns2, 1] = b
 
                         # Put back into A
-                        IdxInNodePairsA[:] = IdxInNodePairsB[:]
+                        idx_in_node_pairsA[:] = idx_in_node_pairsB[:]
 
 
                     NodesChanged = True
@@ -404,7 +404,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, IdxInNodePairs, Ol
                     for elem in range(mesh.nElem):
                         mesh.Elem2Nodes[elem, :] = NewNode2NewerNode[mesh.Elem2Nodes[elem, :]]
                     # reset NewNode2NewerNode
-                    NewNode2NewerNode = np.arange(mesh.nNode)
+                    NewNode2NewerNode = np.arange(mesh.num_nodes)
 
                     
                 # Create IFace between these two faces
@@ -464,10 +464,10 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     elif b1 == b2:
         raise ValueError("Duplicate boundaries")
 
-    NodePairs = np.zeros([mesh.nNode, 2], dtype=int) - 1
-    IdxInNodePairs = np.zeros([mesh.nNode, 2], dtype=int) - 1
-    nNodePair = 0
-    node2_matched = [False]*mesh.nNode
+    NodePairs = np.zeros([mesh.num_nodes, 2], dtype=int) - 1
+    idx_in_node_pairs = np.zeros([mesh.num_nodes, 2], dtype=int) - 1
+    num_node_pairs = 0
+    node2_matched = [False]*mesh.num_nodes
 
     # Extract relevant BFGs
     # BFG1 = None; BFG2 = None;
@@ -529,11 +529,11 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
                 OldNode2NewNode[node] = NextIdx
                 NewNodeOrder[NextIdx] = node
                 NextIdx += 1
-            if IdxInNodePairs[node,0] == -1:
-                NodePairs[nNodePair,0] = node
-                IdxInNodePairs[node,0] = nNodePair
-                IdxInNodePairs[node,1] = 0
-                nNodePair += 1
+            if idx_in_node_pairs[node,0] == -1:
+                NodePairs[num_node_pairs,0] = node
+                idx_in_node_pairs[node,0] = num_node_pairs
+                idx_in_node_pairs[node,1] = 0
+                num_node_pairs += 1
 
     StopIdx = NextIdx
 
@@ -568,16 +568,16 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
 
                 continue
 
-            coord2 = mesh.Coords[node2]
+            coord2 = mesh.node_coords[node2]
             
             match = False
-            for n in range(nNodePair):
+            for n in range(num_node_pairs):
                 if NodePairs[n,1] != -1:
                     # node1 already paired - skip
                     continue
                 node1 = NodePairs[n,0]
 
-                coord1 = mesh.Coords[node1]
+                coord1 = mesh.node_coords[node1]
                 # Find distance between the two nodes
                 norm = np.linalg.norm(coord1-coord2, ord=1)
                 # Check if distance is equal to pdiff
@@ -596,10 +596,10 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
                             # code.interact(local=locals())
                             coord2[d] = coord1[d]
                     # Store node pair
-                    idx1 = IdxInNodePairs[node1, 0]
+                    idx1 = idx_in_node_pairs[node1, 0]
                     NodePairs[idx1, 1] = node2
-                    IdxInNodePairs[node2, 0] = idx1
-                    IdxInNodePairs[node2, 1] = 1
+                    idx_in_node_pairs[node2, 0] = idx1
+                    idx_in_node_pairs[node2, 1] = 1
                     # Flag node2 as matched
                     node2_matched[node2] = True
                     break
@@ -609,9 +609,9 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
             # for idx in range(StopIdx-StartIdx):
             #     node1 = NewNodeOrder[StartIdx+idx]
             #     # If node1 already matched, skip
-            #     if IdxInNodePairs[node1] != -1:
+            #     if idx_in_node_pairs[node1] != -1:
             #         continue
-            #     coord1 = mesh.Coords[node1]
+            #     coord1 = mesh.node_coords[node1]
             #     # Find distance between the two nodes
             #     norm = np.linalg.norm(coord1-coord2, ord=1)
             #     # Check if distance is equal to pdiff
@@ -630,7 +630,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
             #                 coord2[d] = coord1[d]
             #         # Store node pair
             #         NodePairs[nNodePair] = np.array([node1, node2])
-            #         IdxInNodePairs[node1] = nNodePair
+            #         idx_in_node_pairs[node1] = nNodePair
             #         nNodePair += 1
             #         break
 
@@ -648,7 +648,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
         raise ValueError
 
     # resize NodePairs
-    NodePairs = NodePairs[:nNodePair,:]
+    NodePairs = NodePairs[:num_node_pairs,:]
 
     # print
     if which_dim == 0:
@@ -659,24 +659,24 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
         s = "z"
     print("Reordered periodic boundary in %s" % (s))
 
-    return BFG1, BFG2, NodePairs, IdxInNodePairs, NextIdx
+    return BFG1, BFG2, NodePairs, idx_in_node_pairs, NextIdx
 
 
 def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
     # nPeriodicNode = NextIdx
-    # NewCoords = np.zeros_like(mesh.Coords)
+    # NewCoords = np.zeros_like(mesh.node_coords)
 
     # Fill up OldNode2NewNode and NewNodeOrder with non-periodic nodes
     if NextIdx != -1:
-        for node in range(mesh.nNode):
+        for node in range(mesh.num_nodes):
             if OldNode2NewNode[node] == -1: # has not been ordered yet
                 OldNode2NewNode[node] = NextIdx
                 NewNodeOrder[NextIdx] = node
                 NextIdx += 1
 
     # New coordinate list
-    # NewCoords = mesh.Coords[NewNodeOrder]
-    mesh.Coords[:] = mesh.Coords[NewNodeOrder]
+    # NewCoords = mesh.node_coords[NewNodeOrder]
+    mesh.node_coords[:] = mesh.node_coords[NewNodeOrder]
 
     # New Elem2Nodes
     NewElem2Nodes = np.zeros_like(mesh.Elem2Nodes, dtype=int) - 1
@@ -685,7 +685,7 @@ def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
         mesh.Elem2Nodes[elem,:] = OldNode2NewNode[mesh.Elem2Nodes[elem, :]]
 
     # Store in mesh
-    # mesh.Coords = NewCoords
+    # mesh.node_coords = NewCoords
     # mesh.Elem2Nodes = NewElem2Nodes
 
 
@@ -721,8 +721,8 @@ def VerifyPeriodicMesh(mesh):
             continue
 
         ''' Compare distances '''
-        coordsL = mesh.Coords[fnodesLsort]
-        coordsR = mesh.Coords[fnodesRsort]
+        coordsL = mesh.node_coords[fnodesLsort]
+        coordsR = mesh.node_coords[fnodesRsort]
         dists = np.linalg.norm(coordsL-coordsR, axis=1)
         if np.abs(np.max(dists) - np.min(dists)) > tol:
             raise ValueError        
@@ -737,20 +737,20 @@ def update_boundary_group_nums(mesh):
 def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None):
 
     ''' Reorder nodes '''
-    OldNode2NewNode = np.zeros(mesh.nNode, dtype=int)-1  
+    OldNode2NewNode = np.zeros(mesh.num_nodes, dtype=int)-1  
         # OldNode2NewNode[n] = the new node number (post-reordering) of node n (pre-ordering)
-    NewNodeOrder = np.zeros(mesh.nNode, dtype=int)-1
+    NewNodeOrder = np.zeros(mesh.num_nodes, dtype=int)-1
         # NewNodeOrder[i] = the node number (pre-reordering) of the ith node (post-reordering)
     NextIdx = 0
 
     # x
-    BFGX1, BFGX2, NodePairsX, IdxInNodePairsX, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
+    BFGX1, BFGX2, NodePairsX, idx_in_node_pairsX, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
         x1, x2, 0, OldNode2NewNode, NewNodeOrder, NextIdx)
     # y
-    BFGY1, BFGY2, NodePairsY, IdxInNodePairsY, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
+    BFGY1, BFGY2, NodePairsY, idx_in_node_pairsY, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
         y1, y2, 1, OldNode2NewNode, NewNodeOrder, NextIdx)
     # z
-    BFGZ1, BFGZ2, NodePairsZ, IdxInNodePairsZ, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
+    BFGZ1, BFGZ2, NodePairsZ, idx_in_node_pairsZ, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
         z1, z2, 2, OldNode2NewNode, NewNodeOrder, NextIdx)
 
 
@@ -760,12 +760,12 @@ def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, z1=None,
 
     ''' Match pairs of periodic boundary faces '''
     # x
-    MatchBoundaryPair(mesh, 0, BFGX1, BFGX2, NodePairsX, IdxInNodePairsX, OldNode2NewNode, NewNodeOrder)
+    MatchBoundaryPair(mesh, 0, BFGX1, BFGX2, NodePairsX, idx_in_node_pairsX, OldNode2NewNode, NewNodeOrder)
     # y
-    MatchBoundaryPair(mesh, 1, BFGY1, BFGY2, NodePairsY, IdxInNodePairsY, OldNode2NewNode, NewNodeOrder, 
-        NodePairsZ, IdxInNodePairsZ)
+    MatchBoundaryPair(mesh, 1, BFGY1, BFGY2, NodePairsY, idx_in_node_pairsY, OldNode2NewNode, NewNodeOrder, 
+        NodePairsZ, idx_in_node_pairsZ)
     # z
-    MatchBoundaryPair(mesh, 2, BFGZ1, BFGZ2, NodePairsZ, IdxInNodePairsZ, OldNode2NewNode, NewNodeOrder)
+    MatchBoundaryPair(mesh, 2, BFGZ1, BFGZ2, NodePairsZ, idx_in_node_pairsZ, OldNode2NewNode, NewNodeOrder)
 
 
     ''' Update face orientations '''

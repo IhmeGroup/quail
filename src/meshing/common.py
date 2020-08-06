@@ -7,15 +7,15 @@ import general
 import meshing.meshbase as mesh_defs
 import numerics.basis.basis as basis_defs
 
-def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
+def mesh_1D(node_coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
 	'''
 	Function: mesh_1D
 	-------------------
 	This function creates a 1D mesh.
 
 	INPUTS:
-	    Coords: x-coordinates
-	    Uniform: True for a uniform mesh (will be set to False if Coords is not None)
+	    node_coords: x-coordinates
+	    Uniform: True for a uniform mesh (will be set to False if node_coords is not None)
 	    nElem: number of elements (only relevant for Uniform=True)
 	    xmin: minimum coordinate (only relevant for Uniform=True)
 	    xmax: maximum coordinate (only relevant for Uniform=True)
@@ -24,26 +24,26 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 	OUTPUTS:
 	    mesh: Mesh object that stores relevant mesh info
 	'''
-	if Coords is None and not Uniform:
+	if node_coords is None and not Uniform:
 		raise Exception("Input error")
 
 	### Create mesh
-	if Coords is None:
-		nNode = nElem + 1
-		mesh = mesh_defs.Mesh(dim=1, nNode=nNode)
-		mesh.Coords = np.zeros([mesh.nNode,mesh.dim])
-		mesh.Coords[:,0] = np.linspace(xmin,xmax,mesh.nNode)
+	if node_coords is None:
+		num_nodes = nElem + 1
+		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
+		mesh.node_coords = np.zeros([mesh.num_nodes,mesh.dim])
+		mesh.node_coords[:,0] = np.linspace(xmin,xmax,mesh.num_nodes)
 	else:
 		Uniform = False
-		Coords.shape = -1,1
-		nNode = Coords.shape[0]
-		nElem = nNode - 1
-		mesh = mesh_defs.Mesh(dim=1, nNode=nNode)
-		mesh.Coords = Coords
+		node_coords.shape = -1,1
+		num_nodes = node_coords.shape[0]
+		nElem = num_nodes - 1
+		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
+		mesh.node_coords = node_coords
 
 	# IFaces
 	if Periodic:
-		mesh.nIFace = mesh.nNode - 1
+		mesh.nIFace = mesh.num_nodes - 1
 		mesh.allocate_ifaces()
 		for i in range(mesh.nIFace):
 			IFace_ = mesh.IFaces[i]
@@ -125,32 +125,32 @@ def mesh_1D(Coords=None, nElem=10, Uniform=True, xmin=-1., xmax=1., Periodic=Tru
 	return mesh
 
 
-# def refine_uniform_1D(Coords_old):
+# def refine_uniform_1D(node_coords_old):
 # 	'''
 # 	Function: refine_uniform_1D
 # 	-------------------
 # 	This function uniformly refines a set of coordinates
 
 # 	INPUTS:
-# 	    Coords_old: coordinates to refine
+# 	    node_coords_old: coordinates to refine
 
 # 	OUTPUTS:
-# 	    Coords: refined coordinates
+# 	    node_coords: refined coordinates
 # 	'''
-# 	nNode_old = len(Coords_old)
-# 	nElem_old = nNode_old-1
+# 	num_nodes_old = len(node_coords_old)
+# 	nElem_old = num_nodes_old-1
 
 # 	nElem = nElem_old*2
-# 	nNode = nElem+1
+# 	num_nodes = nElem+1
 
-# 	Coords = np.zeros([nNode,1])
+# 	node_coords = np.zeros([num_nodes,1])
 
-# 	for n in range(nNode_old-1):
-# 		Coords[2*n] = Coords_old[n]
-# 		Coords[2*n+1] = np.mean(Coords_old[n:n+2])
-# 	Coords[-1] = Coords_old[-1]
+# 	for n in range(num_nodes_old-1):
+# 		node_coords[2*n] = node_coords_old[n]
+# 		node_coords[2*n+1] = np.mean(node_coords_old[n:n+2])
+# 	node_coords[-1] = node_coords_old[-1]
 
-# 	return Coords
+# 	return node_coords
 
 
 def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, xmin=-1., xmax=1., 
@@ -161,8 +161,8 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	This function creates a 2D mesh.
 
 	INPUTS:
-	    Coords: x-coordinates
-	    Uniform: True for a uniform mesh (will be set to False if Coords is not None)
+	    node_coords: x-coordinates
+	    Uniform: True for a uniform mesh (will be set to False if node_coords is not None)
 	    nElem: number of elements (only relevant for Uniform=True)
 	    xmin: minimum coordinate (only relevant for Uniform=True)
 	    xmax: maximum coordinate (only relevant for Uniform=True)
@@ -175,36 +175,36 @@ def mesh_2D(xcoords=None, ycoords=None, nElem_x=10, nElem_y = 10, Uniform=True, 
 	### Create mesh
 	if xcoords is None and ycoords is None:
 		# Uniform
-		nNode_x = nElem_x + 1
-		nNode_y = nElem_y + 1
-		xcoords = np.linspace(xmin, xmax, nNode_x)
-		ycoords = np.linspace(ymin, ymax, nNode_y)
+		num_nodes_x = nElem_x + 1
+		num_nodes_y = nElem_y + 1
+		xcoords = np.linspace(xmin, xmax, num_nodes_x)
+		ycoords = np.linspace(ymin, ymax, num_nodes_y)
 	elif xcoords is not None and ycoords is not None:
 		Uniform = False
-		nNode_x = len(xcoords)
-		nNode_y = len(ycoords)
-		nElem_x = nNode_x - 1
-		nElem_y = nNode_y - 1
+		num_nodes_x = len(xcoords)
+		num_nodes_y = len(ycoords)
+		nElem_x = num_nodes_x - 1
+		nElem_y = num_nodes_y - 1
 	else:
 		raise Exception("Input error")
 
 	X, Y = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
 
-	mesh = mesh_defs.Mesh(dim=2, nNode=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=basis_defs.LagrangeQuad(1),
+	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], nElem=nElem_x*nElem_y, gbasis=basis_defs.LagrangeQuad(1),
 		gorder=1)
 
-	mesh.Coords = xp
+	mesh.node_coords = xp
 
 	### Elems
 	mesh.allocate_elem_to_nodes()
 	elem = 0
 	for ny in range(nElem_y):
 		for nx in range(nElem_x):
-			mesh.Elem2Nodes[elem][0] = nNode_x*ny + nx
-			mesh.Elem2Nodes[elem][1] = nNode_x*ny + nx + 1
-			mesh.Elem2Nodes[elem][2] = nNode_x*(ny+1) + nx
-			mesh.Elem2Nodes[elem][3] = nNode_x*(ny+1) + nx + 1
+			mesh.Elem2Nodes[elem][0] = num_nodes_x*ny + nx
+			mesh.Elem2Nodes[elem][1] = num_nodes_x*ny + nx + 1
+			mesh.Elem2Nodes[elem][2] = num_nodes_x*(ny+1) + nx
+			mesh.Elem2Nodes[elem][3] = num_nodes_x*(ny+1) + nx + 1
 			elem += 1
 
 	# mesh.allocate_faces()

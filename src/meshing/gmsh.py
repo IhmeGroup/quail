@@ -19,15 +19,15 @@ MSH_MAX_NUM = 140 # number of element types
 
 class GmshElementData(object):
 	def __init__(self):
-		self.nNode = -1
+		self.num_nodes = -1
 		self.gorder = -1
 		self.gbasis = -1
 		self.NodeOrder = None
 
 
 def gmsh_node_order_seg(gorder):
-	nNode = gorder+1
-	nodes = np.arange(nNode)
+	num_nodes = gorder+1
+	nodes = np.arange(num_nodes)
 	nodes[1:-1] = nodes[2:]
 	nodes[-1] = 1
 
@@ -117,146 +117,13 @@ def CreateGmshElementDataBase():
 	Only fill in supported elements
 	'''
 
-# <<<<<<< Updated upstream
-# 	# Linear line segments
-# 	EntityInfo = EntitiesInfo[1]
-# 	EntityInfo.nNode = 2
-# 	EntityInfo.gorder = 1
-# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.SegShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 1])
-
-# 	# Linear triangle
-# 	EntityInfo = EntitiesInfo[2]
-# 	EntityInfo.nNode = 3
-# 	EntityInfo.gorder = 1
-# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.TriShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 1, 2])
-
-# 	# Linear quadrilateral
-# 	EntityInfo = EntitiesInfo[3]
-# 	EntityInfo.nNode = 4
-# 	EntityInfo.gorder = 1
-# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.QuadShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 1, 3, 2])
-
-# 	# Quadratic line segment
-# 	EntityInfo = EntitiesInfo[8]
-# 	EntityInfo.nNode = 3
-# 	EntityInfo.gorder = 2
-# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.SegShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 2, 1])
-
-# 	# Quadratic triangle
-# 	EntityInfo = EntitiesInfo[9]
-# 	EntityInfo.nNode = 6
-# 	EntityInfo.gorder = 2
-# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.TriShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 3, 1, 5, 4, 2])
-
-# 	# Quadratic quadrilateral
-# 	EntityInfo = EntitiesInfo[10]
-# 	EntityInfo.nNode = 9
-# 	EntityInfo.gorder = 2
-# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.QuadShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 4, 1, 7, 8, 5, 3, 6, 2])
-
-# 	# Point
-# 	EntityInfo = EntitiesInfo[15]
-# 	EntityInfo.nNode = 1
-# 	EntityInfo.gorder = 0
-# 	EntityInfo.shape = Basis.PointShape()
-# 	EntityInfo.Supported = True
-
-# 	# Cubic triangle
-# 	EntityInfo = EntitiesInfo[21]
-# 	EntityInfo.nNode = 10
-# 	EntityInfo.gorder = 3
-# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.TriShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 3, 4, 1, 8, 9, 5, 7, 6, 2])
-
-# 	# Quartic triangle
-# 	EntityInfo = EntitiesInfo[23]
-# 	EntityInfo.nNode = 15
-# 	EntityInfo.gorder = 4
-# 	EntityInfo.gbasis = Basis.LagrangeEqTri(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.TriShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 3, 4, 5, 1, 11, 12, 13, 6, 
-# 									10, 14, 7, 9, 8, 2])
-
-# 	# Cubic line segment
-# 	EntityInfo = EntitiesInfo[26]
-# 	EntityInfo.nNode = 4
-# 	EntityInfo.gorder = 3
-# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.SegShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 2, 3, 1])
-
-# 	# Quartic line segment
-# 	EntityInfo = EntitiesInfo[27]
-# 	EntityInfo.nNode = 5
-# 	EntityInfo.gorder = 4
-# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.SegShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 1])
-
-# 	# Quintic line segment
-# 	EntityInfo = EntitiesInfo[28]
-# 	EntityInfo.nNode = 6
-# 	EntityInfo.gorder = 5
-# 	EntityInfo.gbasis = Basis.LagrangeEqSeg(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.SegShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 2, 3, 4, 5, 1])
-
-# 	# Cubic quadrilateral
-# 	EntityInfo = EntitiesInfo[36]
-# 	EntityInfo.nNode = 16
-# 	EntityInfo.gorder = 3
-# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.QuadShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 4, 5, 1, 11, 12, 13, 6, 10, 15, 14, 
-# 									7, 3, 9, 8, 2])
-
-# 	# Quartic quadrilateral
-# 	EntityInfo = EntitiesInfo[37]
-# 	EntityInfo.nNode = 25
-# 	EntityInfo.gorder = 4
-# 	EntityInfo.gbasis = Basis.LagrangeEqQuad(EntityInfo.gorder)
-# 	EntityInfo.shape = Basis.QuadShape()
-# 	EntityInfo.Supported = True
-# 	EntityInfo.NodeOrder = np.array([0, 4, 5, 6, 1, 15, 16, 20, 17, 7,
-# 								    14, 23, 24, 21, 8, 13, 19, 22, 18, 9,
-# 								    3, 12, 11, 10, 2])
-
-# 	return EntitiesInfo
-# =======
-
-
 	# Point
 	etype_num = 15
 	elem_data = GmshElementData()
 	gmsh_element_database.update({etype_num : elem_data})
 	elem_data.gorder = 0
 	elem_data.gbasis = basis_defs.PointShape() # shape here instead of gbasis
-	elem_data.nNode = 1
+	elem_data.num_nodes = 1
 	elem_data.NodeOrder = np.array([0])
 
 	# Line segments (q = 1 to q = 11)
@@ -268,7 +135,7 @@ def CreateGmshElementDataBase():
 		gorder = i + 1
 		elem_data.gorder = gorder
 		elem_data.gbasis = basis_defs.LagrangeSeg(gorder)
-		elem_data.nNode = gorder + 1
+		elem_data.num_nodes = gorder + 1
 		elem_data.NodeOrder = gmsh_node_order_seg(gorder)
 
 	# Triangles (q = 1 to q = 10)
@@ -280,7 +147,7 @@ def CreateGmshElementDataBase():
 		gorder = i + 1
 		elem_data.gorder = gorder
 		elem_data.gbasis = basis_defs.LagrangeTri(gorder)
-		elem_data.nNode = (gorder + 1)*(gorder + 2)//2
+		elem_data.num_nodes = (gorder + 1)*(gorder + 2)//2
 		elem_data.NodeOrder = gmsh_node_order_tri(gorder)
 
 	# Quadrilaterals (q = 1 to q = 11)
@@ -292,7 +159,7 @@ def CreateGmshElementDataBase():
 		gorder = i + 1
 		elem_data.gorder = gorder
 		elem_data.gbasis = basis_defs.LagrangeQuad(gorder)
-		elem_data.nNode = (gorder + 1)**2
+		elem_data.num_nodes = (gorder + 1)**2
 		elem_data.NodeOrder = gmsh_node_order_quadril(gorder)
 
 	return gmsh_element_database
@@ -408,13 +275,13 @@ def ReadPhysicalGroups(fo, mesh):
 
 def get_nodes_ver2(fo):
 	# Number of nodes
-	nNode = int(fo.readline())
+	num_nodes = int(fo.readline())
 	old_to_new_node_tags = {}
 	# Allocate nodes - assume 3D first
-	Nodes = np.zeros([nNode,3])
+	Nodes = np.zeros([num_nodes,3])
 	# Extract nodes
 	new_node_tag = 0
-	for n in range(nNode):
+	for n in range(num_nodes):
 		fl = fo.readline()
 		ls = fl.split()
 		# Explicitly use for loop for compatibility with
@@ -424,7 +291,7 @@ def get_nodes_ver2(fo):
 		for d in range(3):
 			Nodes[new_node_tag,d] = float(ls[d+1])
 		# Sanity check
-		if int(ls[0]) > nNode:
+		if int(ls[0]) > num_nodes:
 			raise errors.FileReadError
 
 		new_node_tag += 1
@@ -436,16 +303,16 @@ def get_nodes_ver4(fo):
 	fl = fo.readline()
 	ls = [int(l) for l in fl.split()]
 	num_blocks = ls[0]
-	nNode = ls[1]
+	num_nodes = ls[1]
 	min_node_tag = ls[2]
 	max_node_tag = ls[3]
-	# Require continuous node tagging from 1 to nNode
+	# Require continuous node tagging from 1 to num_nodes
 	# Note: does not have to be ordered
 	old_to_new_node_tags = {}
-	# if min_node_tag != 1 or max_node_tag != nNode:
+	# if min_node_tag != 1 or max_node_tag != num_nodes:
 	# 	raise ValueError
 	# Allocate nodes - assume 3D first
-	Nodes = np.zeros([nNode,3])
+	Nodes = np.zeros([num_nodes,3])
 
 	new_node_tag = 0
 	for b in range(num_blocks):
@@ -504,8 +371,8 @@ def ReadNodes(fo, ver, mesh):
 		raise ValueError("3D meshes not supported")
 
 	# Store in mesh
-	mesh.Coords = Nodes
-	mesh.nNode = Nodes.shape[0]
+	mesh.node_coords = Nodes
+	mesh.num_nodes = Nodes.shape[0]
 	mesh.dim = dim
 
 	return mesh, old_to_new_node_tags
@@ -833,7 +700,7 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			# see http://www.manpagez.com/info/gmsh/gmsh-2.2.6/gmsh_63.php
 		offsetTag = 3 # 3 integers (including nTag) before tags start
 		iStart = nTag + offsetTag # starting index of node numbering
-		nn = gmsh_element_database[etype].nNode
+		nn = gmsh_element_database[etype].num_nodes
 		elist = ls[iStart:] # list of nodes (string format)
 		if len(elist) != nn: 
 			raise Exception("Wrong number of nodes")
@@ -886,7 +753,7 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			# Number of element nodes
 			nnode = gbasis.get_num_basis_coeff(gorder)
 			# Sanity check
-			if nnode != gmsh_element_database[etype].nNode:
+			if nnode != gmsh_element_database[etype].num_nodes:
 				raise Exception("Check Gmsh entities")
 			# Convert node Ordering
 			newnodes = nodes[gmsh_element_database[etype].NodeOrder]
@@ -988,9 +855,9 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	mesh.nIFace = 0
 
 	# Dictionary for hashing
-	# Node2FaceTable = {n:FaceInfo() for n in range(mesh.nNode)}
-	# Node2FaceTable = {n:[] for n in range(mesh.nNode)}
-	Node2FaceTable = [{} for n in range(mesh.nNode)] # list of dicts
+	# Node2FaceTable = {n:FaceInfo() for n in range(mesh.num_nodes)}
+	# Node2FaceTable = {n:[] for n in range(mesh.num_nodes)}
+	Node2FaceTable = [{} for n in range(mesh.num_nodes)] # list of dicts
 
 	# Go to entities section
 	FindLineAfterString(fo, "$Elements")
@@ -1079,7 +946,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 
 	# Make sure no faces left in hash
 	nleft = 0
-	for n in range(mesh.nNode):
+	for n in range(mesh.num_nodes):
 		FaceInfoDict = Node2FaceTable[n]
 		for snodes in FaceInfoDict.keys():
 			print(snodes)

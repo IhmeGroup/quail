@@ -685,7 +685,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			# fnodes = mesh.Elem2Nodes[elem][fnodes]
 
 			# # Physical coordinates of global nodes
-			# coords = mesh.Coords[fnodes]
+			# coords = mesh.node_coords[fnodes]
 
 			elem = mesh.elements[elem_id]
 			coords = elem.node_coords[lfnodes]
@@ -714,7 +714,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 			# fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
 			# Physical coordinates of global nodes
-			# coords = mesh.Coords[fnodes]
+			# coords = mesh.node_coords[fnodes]
 
 			elem = mesh.elements[elem_id]
 			coords = elem.node_coords[lfnodes]
@@ -768,7 +768,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 		fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
 # 		# Physical coordinates of global nodes
-# 		coords = mesh.Coords[fnodes]
+# 		coords = mesh.node_coords[fnodes]
 # 		x = coords[:,0]; y = coords[:,1]
 
 # 		# Plot face
@@ -790,7 +790,7 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 # 			fnodes[:] = mesh.Elem2Nodes[elem][fnodes[:]]
 
 # 			# Physical coordinates of global nodes
-# 			coords = mesh.Coords[fnodes]
+# 			coords = mesh.node_coords[fnodes]
 # 			x = coords[:,0]; y = coords[:,1]
 
 # 			# Plot face
