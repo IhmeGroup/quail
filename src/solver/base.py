@@ -651,31 +651,46 @@ class SolverBase(ABC):
 
 			itime += 1
 
-			# Let's try adding an element and see what happens
-			# Append to the end of U
-			self.physics.U = np.append(self.physics.U, [self.physics.U[-1,:,:]], axis=0)
-			Stepper.R = None
-			print("appended U:")
-			print(self.physics.U)
-			np.append(mesh.Coords, [-.5,0])
-			mesh.elements.append(mesh_defs.Element(4))
-			mesh.elements[4].node_nums = [0,1,6]
-			mesh.elements[4].node_coords = np.array([[-1. -1.], [ 0. -1.], [-.5, 0.]])
-			mesh.elements[4].face_to_neighbors = np.array([-1,-1,-1])
-			mesh.nElem += 1
+			if iStep == 1:
+				# Let's try adding an element and see what happens
+				# Append to the end of U
+				self.physics.U = np.append(self.physics.U, [self.physics.U[-1,:,:]], axis=0)\
+				# Delete residual
+				Stepper.R = None
+				print("appended U:")
+				print(self.physics.U)
+				# Add new mesh node
+				mesh.node_coords = np.append(mesh.node_coords, [[-.5,0]], axis=0)
+				# Add new element
+				mesh.elements.append(mesh_defs.Element(4))
+				# Set element's node ids, coords, and neighbors
+				mesh.elements[4].node_ids = np.array([0,1,6])
+				mesh.elements[4].node_coords = np.array([[-1., -1.], [ 0., -1.], [-.5, 0.]])
+				mesh.elements[4].face_to_neighbors = np.array([-1,-1,-1])
+				# Make the first element smaller to make space
+				mesh.elements[0].node_ids = np.array([0,6,3])
+				mesh.elements[0].node_coords = np.array([[-1., -1.], [ -.5, 0.], [-1., 1.]])
+				mesh.elements[0].face_to_neighbors = np.array([-1,-1,-1])
+				# Increment number of elements
+				mesh.num_elems += 1
+				print("num_elems: ", mesh.num_elems)
+				self.elem_operators.x_elems = np.append(self.elem_operators.x_elems, [self.elem_operators.x_elems[-1,:,:]], axis=0)
+				# Call compute operators
+				self.precompute_matrix_operators()
+				print(self.elem_operators.x_elems)
 
-			# Just printing random things to check them out
-			print(mesh.Coords)
-			print(mesh.IFaces[0].ElemL)
-			print(mesh.IFaces[0].ElemR)
-			print(mesh.IFaces[0].faceL)
-			print(mesh.IFaces[0].faceR)
-			print(mesh.BFaceGroups)
-			for i in range(mesh.nElem):
-				print(mesh.elements[i].number)
-				print(mesh.elements[i].node_nums)
-				print(mesh.elements[i].node_coords)
-				print(mesh.elements[i].face_to_neighbors)
+				# Just printing random things to check them out
+				print(mesh.node_coords)
+				print(mesh.IFaces[0].elemL_id)
+				print(mesh.IFaces[0].elemR_id)
+				print(mesh.IFaces[0].faceL_id)
+				print(mesh.IFaces[0].faceR_id)
+				print(mesh.BFaceGroups)
+				for i in range(mesh.num_elems):
+					print(mesh.elements[i].id)
+					print(mesh.elements[i].node_ids)
+					print(mesh.elements[i].node_coords)
+					print(mesh.elements[i].face_to_neighbors)
 
 
 		t1 = time.time()
