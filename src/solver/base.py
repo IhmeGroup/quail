@@ -651,6 +651,33 @@ class SolverBase(ABC):
 
 			itime += 1
 
+			# Let's try adding an element and see what happens
+			# Append to the end of U
+			self.physics.U = np.append(self.physics.U, [self.physics.U[-1,:,:]], axis=0)
+			Stepper.R = None
+			print("appended U:")
+			print(self.physics.U)
+			np.append(mesh.Coords, [-.5,0])
+			mesh.elements.append(mesh_defs.Element(4))
+			mesh.elements[4].node_nums = [0,1,6]
+			mesh.elements[4].node_coords = np.array([[-1. -1.], [ 0. -1.], [-.5, 0.]])
+			mesh.elements[4].face_to_neighbors = np.array([-1,-1,-1])
+			mesh.nElem += 1
+
+			# Just printing random things to check them out
+			print(mesh.Coords)
+			print(mesh.IFaces[0].ElemL)
+			print(mesh.IFaces[0].ElemR)
+			print(mesh.IFaces[0].faceL)
+			print(mesh.IFaces[0].faceR)
+			print(mesh.BFaceGroups)
+			for i in range(mesh.nElem):
+				print(mesh.elements[i].number)
+				print(mesh.elements[i].node_nums)
+				print(mesh.elements[i].node_coords)
+				print(mesh.elements[i].face_to_neighbors)
+
+
 		t1 = time.time()
 		print("\nWall clock time = %g seconds" % (t1 - t0))
 		print("--------------------------------------------------------" + \
