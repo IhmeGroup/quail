@@ -65,7 +65,7 @@ class ElemOperatorsADER(DG.ElemOperators):
 			# basis.get_basis_val_grads(quad_pts, get_phys_grad=True, ijac=ijac) # gPhi is [nq,nb,dim]
 			# self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
 
-class IFaceOperatorsADER(DG.IFaceOperators):
+class InteriorFaceOperatorsADER(DG.InteriorFaceOperators):
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		
@@ -103,7 +103,7 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 			self.normals_ifaces[i] = normals
 			i += 1
 
-class BFaceOperatorsADER(IFaceOperatorsADER):
+class BoundaryFaceOperatorsADER(InteriorFaceOperatorsADER):
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		# separate these later
@@ -357,17 +357,17 @@ class ADERDG(base.SolverBase):
 
 		self.elem_operators = DG.ElemOperators()
 		self.elem_operators.compute_operators(mesh, physics, basis, physics.order)
-		self.iface_operators = DG.IFaceOperators()
+		self.iface_operators = DG.InteriorFaceOperators()
 		self.iface_operators.compute_operators(mesh, physics, basis, physics.order)
-		self.bface_operators = DG.BFaceOperators()
+		self.bface_operators = DG.BoundaryFaceOperators()
 		self.bface_operators.compute_operators(mesh, physics, basis, physics.order)
 
 		# Calculate ADER specific space-time operators
 		self.elem_operators_st = ElemOperatorsADER()
 		self.elem_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
-		self.iface_operators_st = IFaceOperatorsADER()
+		self.iface_operators_st = InteriorFaceOperatorsADER()
 		self.iface_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
-		self.bface_operators_st = BFaceOperatorsADER()
+		self.bface_operators_st = BoundaryFaceOperatorsADER()
 		self.bface_operators_st.compute_operators(mesh, physics, basis_st, physics.order)
 
 		Stepper.dt = Stepper.get_time_step(Stepper, self)

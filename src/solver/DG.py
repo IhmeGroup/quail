@@ -108,7 +108,7 @@ class ElemOperators(object):
 		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh, physics, basis)
 
 
-class IFaceOperators(ElemOperators):
+class InteriorFaceOperators(ElemOperators):
 	def __init__(self):
 		self.quad_pts = None
 		self.quad_wts = None
@@ -175,7 +175,7 @@ class IFaceOperators(ElemOperators):
 		self.alloc_other_arrays(physics, basis, order)
 
 
-class BFaceOperators(IFaceOperators):
+class BoundaryFaceOperators(InteriorFaceOperators):
 	def __init__(self):
 		self.quad_pts = None
 		self.quad_wts = None
@@ -290,9 +290,9 @@ class DG(base.SolverBase):
 
 		self.elem_operators = ElemOperators()
 		self.elem_operators.compute_operators(mesh, physics, basis, physics.order)
-		self.iface_operators = IFaceOperators()
+		self.iface_operators = InteriorFaceOperators()
 		self.iface_operators.compute_operators(mesh, physics, basis, physics.order)
-		self.bface_operators = BFaceOperators()
+		self.bface_operators = BoundaryFaceOperators()
 		self.bface_operators.compute_operators(mesh, physics, basis, physics.order)
 
 	def calculate_residual_elem(self, elem, Up, ER):
