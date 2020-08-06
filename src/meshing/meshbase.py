@@ -338,10 +338,10 @@ class Mesh(object):
         # self.Faces = None
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
         self.elem_to_node_ids = np.zeros(0, dtype=int)
+            # elem_to_node_ids[elem_id][i] = ith node of elem_id, where i = 1,2,...,num_nodes_per_elem
         self.elements = []
-            # elem_to_node_ids[elem][i] = ith node of elem, where i = 1,2,...,num_nodes_per_elem
 
-    def SetParams(self, gbasis, gorder=1, num_elems=1):
+    def set_params(self, gbasis, gorder=1, num_elems=1):
 
         self.gbasis = gbasis
         self.gorder = gorder
@@ -360,9 +360,9 @@ class Mesh(object):
     #     '''
     #     self.Faces = [[Face() for j in range(self.nFacePerElem)] for i in range(self.num_elems)]
 
-    def allocate_elem_to_nodes(self):
+    def allocate_elem_to_node_ids_map(self):
         '''
-        Method: allocate_elem_to_nodes
+        Method: allocate_elem_to_node_ids_map
         -------------------
         This method allocates elem_to_node_ids
 

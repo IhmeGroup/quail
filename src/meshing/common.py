@@ -95,7 +95,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		BF.elem_id = num_elems - 1
 		BF.face_id = 1
 
-	mesh.SetParams(gbasis=basis_defs.LagrangeSeg(1), gorder=1, num_elems=num_elems)
+	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, num_elems=num_elems)
 	# mesh.allocate_faces()
 	# interior elements
 	# for elem in range(mesh.num_elems):
@@ -114,7 +114,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 	# 				Face_.Number = elem + i - 1
 
 
-	mesh.allocate_elem_to_nodes()
+	mesh.allocate_elem_to_node_ids_map()
 	for elem in range(mesh.num_elems):
 		for i in range(mesh.num_nodes_per_elem):
 			mesh.elem_to_node_ids[elem][i] = elem + i
@@ -197,7 +197,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	mesh.node_coords = xp
 
 	### Elems
-	mesh.allocate_elem_to_nodes()
+	mesh.allocate_elem_to_node_ids_map()
 	elem = 0
 	for ny in range(num_elems_y):
 		for nx in range(num_elems_x):
@@ -307,7 +307,7 @@ def split_quadrils_into_tris(mesh_old):
 
 	mesh = copy.deepcopy(mesh_old)
 
-	mesh.SetParams(num_elems=num_elems, gbasis=basis_defs.LagrangeTri(1))
+	mesh.set_params(num_elems=num_elems, gbasis=basis_defs.LagrangeTri(1))
 
 	def reorder_nodes(QOrder, num_nodes_per_quad, num_nodes_per_tri):
 		num_nodes_per_face = QOrder + 1
@@ -336,7 +336,7 @@ def split_quadrils_into_tris(mesh_old):
 
 
 	# Elems
-	mesh.allocate_elem_to_nodes()
+	mesh.allocate_elem_to_node_ids_map()
 	for elem_id in range(num_elems_old):
 		# First triangle
 		mesh.elem_to_node_ids[elem_id] = mesh_old.elem_to_node_ids[elem_id, tri1_nodes]

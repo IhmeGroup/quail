@@ -451,14 +451,14 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 # 			gbasis = EntitiesInfo[etype].gbasis
 
 # 			if mesh.num_elems == 0:
-# 				mesh.SetParams(gbasis=gbasis, gorder=gorder, num_elems=0)
+# 				mesh.set_params(gbasis=gbasis, gorder=gorder, num_elems=0)
 # =======
 			gorder = gmsh_element_database[etype].gorder
 			gbasis = gmsh_element_database[etype].gbasis
 			# if gbasis == -1:
 			# 	raise NotImplementedError("Element type not supported")
 			if mesh.num_elems == 0:
-				mesh.SetParams(gbasis=gbasis, gorder=gorder, num_elems=0)
+				mesh.set_params(gbasis=gbasis, gorder=gorder, num_elems=0)
 			else:
 				if gorder != mesh.gorder or gbasis != mesh.gbasis:
 					raise ValueError(">1 element type not supported")
@@ -538,7 +538,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			for _ in range(num_in_block):
 				fo.readline()
 				if mesh.num_elems == 0:
-					mesh.SetParams(gbasis=gbasis, gorder=gorder, num_elems=0)
+					mesh.set_params(gbasis=gbasis, gorder=gorder, num_elems=0)
 				else:
 					if gorder != mesh.gorder or gbasis != mesh.gbasis:
 						raise ValueError(">1 element type not supported")
@@ -841,10 +841,10 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	# for EG in mesh.ElemGroups:
 	# 	# also find maximum # faces per elem
 	# 	EG.allocate_faces()
-	# 	EG.allocate_elem_to_nodes()
+	# 	EG.allocate_elem_to_node_ids_map()
 	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
 	# mesh.allocate_faces()
-	mesh.allocate_elem_to_nodes()
+	mesh.allocate_elem_to_node_ids_map()
 	nFaceMax = mesh.gbasis.NFACES
 
 	# Over-allocate interior_faces
