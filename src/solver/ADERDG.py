@@ -85,7 +85,7 @@ class IFaceOperatorsADER(DG.IFaceOperators):
 		# allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem,nq,nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem,nq,nb])
-		self.normals_ifaces = np.zeros([mesh.nIFace,nq,dim])
+		self.normals_ifaces = np.zeros([mesh.num_interior_faces,nq,dim])
 
 		for f in range(nfaces_per_elem):
 			# left

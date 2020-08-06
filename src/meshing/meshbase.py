@@ -301,7 +301,7 @@ class Mesh(object):
         Dim: dimension of mesh
         num_nodes: total number of nodes
         node_coords: coordinates of nodes
-        nIFace: number of interior faces
+        num_interior_faces: number of interior faces
         IFaces: list of interior face objects
         num_boundary_groups: number of boundary face groups
         boundary_groups: list of boundary face groups
@@ -327,7 +327,7 @@ class Mesh(object):
         self.dim = dim
         self.num_nodes = num_nodes
         self.node_coords = None
-        self.nIFace = 0
+        self.num_interior_faces = 0
         self.IFaces = []
         self.num_boundary_groups = 0
         self.boundary_groups = {}
@@ -381,7 +381,7 @@ class Mesh(object):
         OUTPUTS:
             self.IFaces
         '''
-        self.IFaces = [IFace() for i in range(self.nIFace)]
+        self.IFaces = [IFace() for i in range(self.num_interior_faces)]
 
     # def allocate_bface_groups(self):
     #     '''
@@ -417,7 +417,7 @@ class Mesh(object):
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
         # neighbors
-        for iif in range(self.nIFace):
+        for iif in range(self.num_interior_faces):
             int_face = self.IFaces[iif]
             elemL_id = int_face.elemL_id
             elemR_id = int_face.elemR_id
@@ -433,7 +433,7 @@ class Mesh(object):
 
 
     # def fill_faces(self):
-    #     for iiface in range(self.nIFace):
+    #     for iiface in range(self.num_interior_faces):
     #         IFace = self.IFaces[iiface]
     #         elemL = IFace.elemL_id
     #         elemR = IFace.elemR_id

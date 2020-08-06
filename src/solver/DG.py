@@ -139,7 +139,7 @@ class IFaceOperators(ElemOperators):
 		# Allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
-		self.normals_ifaces = np.zeros([mesh.nIFace, nq, dim])
+		self.normals_ifaces = np.zeros([mesh.num_interior_faces, nq, dim])
 
 		# basis data
 		#PhiData = BasisData(basis, order, mesh)

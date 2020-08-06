@@ -43,9 +43,9 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 
 	# IFaces
 	if Periodic:
-		mesh.nIFace = mesh.num_nodes - 1
+		mesh.num_interior_faces = mesh.num_nodes - 1
 		mesh.allocate_ifaces()
-		for i in range(mesh.nIFace):
+		for i in range(mesh.num_interior_faces):
 			IFace_ = mesh.IFaces[i]
 			IFace_.elemL_id = i-1
 			IFace_.faceL_id = 1
@@ -56,9 +56,9 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 	# Rightmost face
 	# mesh.IFaces[-1].elemR_id = 0
 	else:
-		mesh.nIFace = num_elems - 1
+		mesh.num_interior_faces = num_elems - 1
 		mesh.allocate_ifaces()
-		for i in range(mesh.nIFace):
+		for i in range(mesh.num_interior_faces):
 			IFace_ = mesh.IFaces[i]
 			IFace_.elemL_id = i
 			IFace_.faceL_id = 1
@@ -271,7 +271,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 
 
 	### IFaces
-	mesh.nIFace = num_elems_y*(num_elems_x-1) + num_elems_x*(num_elems_y-1)
+	mesh.num_interior_faces = num_elems_y*(num_elems_x-1) + num_elems_x*(num_elems_y-1)
 	mesh.allocate_ifaces()
 	
 	# x direction
@@ -365,12 +365,12 @@ def split_quadrils_into_tris(mesh_old):
 
 	# New IFaces
 	# code.interact(local=locals())
-	# nIFace_old = mesh.nIFace
+	# num_interior_faces_old = mesh.num_interior_faces
 	# IFaces_old = mesh.IFaces
-	mesh.nIFace += num_elems_old
+	mesh.num_interior_faces += num_elems_old
 	# mesh.allocate_ifaces()
-	# mesh.IFaces[:nIFace_old] = IFaces_old
-	# for IF in mesh.IFaces[nIFace_old:]:
+	# mesh.IFaces[:num_interior_faces_old] = IFaces_old
+	# for IF in mesh.IFaces[num_interior_faces_old:]:
 	for elem_id in range(num_elems_old):
 		IF = mesh_defs.IFace()
 		IF.elemL_id = elem_id

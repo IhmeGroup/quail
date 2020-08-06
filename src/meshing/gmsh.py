@@ -848,11 +848,11 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	nFaceMax = mesh.gbasis.NFACES
 
 	# Over-allocate IFaces
-	mesh.nIFace = mesh.num_elems*nFaceMax
+	mesh.num_interior_faces = mesh.num_elems*nFaceMax
 	mesh.allocate_ifaces()
 
-	# reset nIFace - use as a counter
-	mesh.nIFace = 0
+	# reset num_interior_faces - use as a counter
+	mesh.num_interior_faces = 0
 
 	# Dictionary for hashing
 	# Node2FaceTable = {n:FaceInfo() for n in range(mesh.num_nodes)}
@@ -926,7 +926,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 				else:
 					# interior face
 					# Store in IFace
-					IFace = mesh.IFaces[mesh.nIFace]
+					IFace = mesh.IFaces[mesh.num_interior_faces]
 					IFace.elemL_id = FInfo.Elem
 					IFace.faceL_id = FInfo.Face
 					IFace.elemR_id = elem
@@ -934,13 +934,13 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					# Store in left Face
 					# Face = mesh.Faces[FInfo.Elem][FInfo.Face]
 					# Face.Group = general.INTERIORFACE
-					# Face.Number = mesh.nIFace
+					# Face.Number = mesh.num_interior_faces
 					# # Store in right face
 					# Face = mesh.Faces[elem][face]
 					# Face.Group = general.INTERIORFACE
-					# Face.Number = mesh.nIFace
+					# Face.Number = mesh.num_interior_faces
 					# Increment IFace counter
-					mesh.nIFace += 1
+					mesh.num_interior_faces += 1
 
 				DeleteFaceFromHash(Node2FaceTable, nfnode, fnodes)
 
@@ -959,9 +959,9 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 			"face(s) remain(s) in the hash")
 
 	# Resize IFace
-	if mesh.nIFace > mesh.num_elems*nFaceMax:
+	if mesh.num_interior_faces > mesh.num_elems*nFaceMax:
 		raise ValueError
-	mesh.IFaces = mesh.IFaces[:mesh.nIFace]
+	mesh.IFaces = mesh.IFaces[:mesh.num_interior_faces]
 
 	# mesh.fill_faces()
 	mesh.create_elements()
