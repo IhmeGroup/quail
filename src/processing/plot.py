@@ -190,10 +190,10 @@ def Plot2D_Regular(physics, x, var_plot, **kwargs):
 			the actual solution due to bias in the triangulation
 
 	INPUTS:
-	    x: (x,y) coordinates; 3D array of size [nElemTot x nPoint x 2], where
+	    x: (x,y) coordinates; 3D array of size [num_elems_tot x nPoint x 2], where
 	    	nPoint is the number of points per element
 	    u: values of solution at the points in x; 3D array of size
-	    	[nElemTot x nPoint x NUM_STATE_VARS]
+	    	[num_elems_tot x nPoint x NUM_STATE_VARS]
 
 	OUTPUTS:
 	    Plot is created
@@ -249,10 +249,10 @@ def Plot2D_General(physics, x, var_plot, **kwargs):
 			the actual solution due to bias in the triangulation
 
 	INPUTS:
-	    x: (x,y) coordinates; 3D array of size [nElemTot x nPoint x 2], where
+	    x: (x,y) coordinates; 3D array of size [num_elems_tot x nPoint x 2], where
 	    	nPoint is the number of points per element
 	    u: values of solution at the points in x; 3D array of size
-	    	[nElemTot x nPoint x NUM_STATE_VARS]
+	    	[num_elems_tot x nPoint x NUM_STATE_VARS]
 
 	OUTPUTS:
 	    Plot is created
@@ -280,10 +280,10 @@ def Plot2D_General(physics, x, var_plot, **kwargs):
 	else:
 		levels = kwargs["levels"]
 
-	nElemTot = x.shape[0]
+	num_elems_tot = x.shape[0]
 	nPoint = x.shape[1]
 	''' Loop through elements '''
-	for elem in range(nElemTot):
+	for elem in range(num_elems_tot):
 		# Extract x and y
 		# X = x[elem,:,0].flatten()
 		# Y = x[elem,:,1].flatten()

@@ -113,8 +113,8 @@ class PhysicsBase(object):
 		self.S = np.zeros([mesh.nElem, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
 
 		# State 
-		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.nElemTot,nn,self.NUM_STATE_VARS])
-		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[[mesh.nElemTot,nn,self.NUM_STATE_VARS]])
+		# self.U = ArrayList(nArray=mesh.nElemGroup,nEntriesPerArray=mesh.nElems,FullDim=[mesh.num_elems_tot,nn,self.NUM_STATE_VARS])
+		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=[[mesh.num_elems_tot,nn,self.NUM_STATE_VARS]])
 		# ArrayDims = [[mesh.nElems[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.NUM_STATE_VARS] \
 		# 			for egrp in range(mesh.nElemGroup)]
 		# self.U = ArrayList(nArray=mesh.nElemGroup,ArrayDims=ArrayDims)

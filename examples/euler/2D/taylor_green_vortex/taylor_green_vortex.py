@@ -25,8 +25,8 @@ Numerics = {
 Mesh = {
     "ElementShape" : "Quadrilateral",
      # "ElementShape" : "Triangle",
-    "nElem_x" : n_elem,
-    "nElem_y" : n_elem,
+    "NumElems_x" : n_elem,
+    "NumElems_y" : n_elem,
     "xmin" : 0.,
     "xmax" : 1.,
     "ymin" : 0.,

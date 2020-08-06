@@ -86,8 +86,8 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Triangle",
-    "nElem_x" : 2,
-    "nElem_y" : 2,
+    "NumElems_x" : 2,
+    "NumElems_y" : 2,
     "xmin" : -5.,
     "xmax" : 5.,
     "ymin" : -5.,

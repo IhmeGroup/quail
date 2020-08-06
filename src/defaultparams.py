@@ -34,8 +34,8 @@ Numerics = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 10,
-    "nElem_y" : 10,
+    "NumElems_x" : 10,
+    "NumElems_y" : 10,
     "xmin" : -1.,
     "xmax" : 1.,
     "ymin" : -1.,

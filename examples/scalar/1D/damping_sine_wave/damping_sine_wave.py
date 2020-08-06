@@ -20,8 +20,8 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 16,
-    "nElem_y" : 2,
+    "NumElems_x" : 16,
+    "NumElems_y" : 2,
     "xmin" : -1.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],

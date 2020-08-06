@@ -307,7 +307,7 @@ class Mesh(object):
         BFaceGroups: list of boundary face groups
         BFGNames: list of BFaceGroup names (for easy access)
         nElems: list of number of elements in each element group (for easy access)
-        nElemTot: total number of elements in mesh
+        num_elems_tot: total number of elements in mesh
         nPeriodicGroup: number of periodic groups
         PeriodicGroups: list of periodic groups
     '''

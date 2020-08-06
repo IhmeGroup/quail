@@ -36,7 +36,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 60,
+    "NumElems_x" : 60,
     "xmin" : 0.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],

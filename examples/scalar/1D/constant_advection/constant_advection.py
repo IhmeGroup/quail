@@ -18,7 +18,7 @@ Numerics = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 16,
+    "NumElems_x" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["xmin","xmax"]

@@ -141,8 +141,8 @@ def driver(deck):
 		shape = mesh_params["ElementShape"]
 		xmin = mesh_params["xmin"]
 		xmax = mesh_params["xmax"]
-		nElem_x = mesh_params["nElem_x"]
-		nElem_y = mesh_params["nElem_y"]
+		nElem_x = mesh_params["NumElems_x"]
+		nElem_y = mesh_params["NumElems_y"]
 		ymin = mesh_params["ymin"]
 		ymax = mesh_params["ymax"]
 		if shape is "Segment":
