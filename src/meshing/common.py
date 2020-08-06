@@ -69,7 +69,7 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		# mesh.allocate_bface_groups()
 		# for i in range(mesh.num_boundary_groups):
 		# 	BFG = mesh.boundary_groups[i]
-		# 	BFG.nBFace = 1
+		# 	BFG.num_boundary_faces = 1
 		# 	BFG.allocate_bfaces()
 		# 	BF = BFG.BFaces[0]
 		# 	if i == 0:
@@ -82,14 +82,14 @@ def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Per
 		# 		BF.face_id = 1
 		# left
 		BFG = mesh.add_boundary_group("Left")
-		BFG.nBFace = 1
+		BFG.num_boundary_faces = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
 		BF.elem_id = 0
 		BF.face_id = 0
 		# right
 		BFG = mesh.add_boundary_group("Right")
-		BFG.nBFace = 1
+		BFG.num_boundary_faces = 1
 		BFG.allocate_bfaces()
 		BF = BFG.BFaces[0]
 		BF.elem_id = num_elems - 1
@@ -216,22 +216,22 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# 	BFG = mesh.boundary_groups[i]
 	# 	if i == 0:
 	# 		BFG.Name = "x1"
-	# 		BFG.nBFace = num_elems_y
+	# 		BFG.num_boundary_faces = num_elems_y
 	# 	if i == 1:
 	# 		BFG.Name = "x2"
-	# 		BFG.nBFace = num_elems_y
+	# 		BFG.num_boundary_faces = num_elems_y
 	# 	if i == 2:
 	# 		BFG.Name = "y1"
-	# 		BFG.nBFace = num_elems_x
+	# 		BFG.num_boundary_faces = num_elems_x
 	# 	if i == 3:
 	# 		BFG.Name = "y2"
-	# 		BFG.nBFace = num_elems_x
+	# 		BFG.num_boundary_faces = num_elems_x
 	# 	BFG.allocate_bfaces()
 
 	# x1
 	# BFG = mesh.boundary_groups[0]
 	BFG = mesh.add_boundary_group("x1")
-	BFG.nBFace = num_elems_y
+	BFG.num_boundary_faces = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
@@ -241,7 +241,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# x2
 	# BFG = mesh.boundary_groups[1]
 	BFG = mesh.add_boundary_group("x2")
-	BFG.nBFace = num_elems_y
+	BFG.num_boundary_faces = num_elems_y
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
@@ -251,7 +251,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# y1
 	# BFG = mesh.boundary_groups[2]
 	BFG = mesh.add_boundary_group("y1")
-	BFG.nBFace = num_elems_x
+	BFG.num_boundary_faces = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:
@@ -261,7 +261,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 	# y2
 	# BFG = mesh.boundary_groups[3]
 	BFG = mesh.add_boundary_group("y2")
-	BFG.nBFace = num_elems_x
+	BFG.num_boundary_faces = num_elems_x
 	BFG.allocate_bfaces()
 	n = 0
 	for BF in BFG.BFaces:

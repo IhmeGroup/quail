@@ -131,8 +131,8 @@ class BFaceOperatorsADER(IFaceOperatorsADER):
 
 		i = 0
 		for BFG in mesh.boundary_groups.values():
-			self.normals_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
-			self.x_bfgroups.append(np.zeros([BFG.nBFace,nq,dim]))
+			self.normals_bfgroups.append(np.zeros([BFG.num_boundary_faces,nq,dim]))
+			self.x_bfgroups.append(np.zeros([BFG.num_boundary_faces,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
 			x_bfgroup = self.x_bfgroups[i]
 			j = 0

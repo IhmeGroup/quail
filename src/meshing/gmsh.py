@@ -497,7 +497,7 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				# BFG.Name = PGroup.Name
 				BFG = mesh.add_boundary_group(PGroup.Name)
 				PGroup.Group = BFG.number
-			BFG.nBFace += 1
+			BFG.num_boundary_faces += 1
 		# else:
 		# 	raise Exception("Mesh error")
 
@@ -556,10 +556,10 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				# BFG.Name = PGroup.Name
 				BFG = mesh.add_boundary_group(PGroup.Name)
 				PGroup.Group = BFG.number
-			# Loop and increment nBFace
+			# Loop and increment num_boundary_faces
 			for _ in range(num_in_block):
 				fo.readline()
-				BFG.nBFace += 1
+				BFG.num_boundary_faces += 1
 		else:
 			for _ in range(num_in_block):
 				fo.readline()
@@ -569,7 +569,7 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 
 
 
-def ReadMeshElemsBFaces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database):
+def read_mesh_elems_boundary_faces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database):
 	# First pass to get sizes
 	# Find beginning of section
 	FindLineAfterString(fo, "$Elements")
@@ -812,7 +812,7 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			BFG = mesh.boundary_groups[PGroup.Name]
 			gbasis = gmsh_element_database[etype].gbasis
 			nfnode = gbasis.get_num_basis_coeff(1) 
-			# Loop and increment nBFace
+			# Loop and increment num_boundary_faces
 			for _ in range(num_in_block):
 				fl = fo.readline()
 				lint = [int(l) for l in fl.split()]
@@ -990,7 +990,7 @@ def ReadGmshFile(FileName):
 	mesh, old_to_new_node_tags = ReadNodes(fo, ver, mesh)
 	PGroups, nPGroup = ReadPhysicalGroups(fo, mesh)
 	PGroups = ReadMeshEntities(fo, ver, mesh, PGroups)
-	mesh = ReadMeshElemsBFaces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database)
+	mesh = read_mesh_elems_boundary_faces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database)
 	# code.interact(local=locals())
 
 	# Create rest of mesh

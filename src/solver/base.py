@@ -295,7 +295,7 @@ class SolverBase(ABC):
 
 		for BFG in mesh.boundary_groups.values():
 
-			for ibface in range(BFG.nBFace):
+			for ibface in range(BFG.num_boundary_faces):
 				BFace = BFG.BFaces[ibface]
 				elem = BFace.elem_id
 				face = BFace.face_id

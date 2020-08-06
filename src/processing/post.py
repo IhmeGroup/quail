@@ -132,8 +132,8 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 	else:
 		plot = False
 	if plot:
-		bvalues = np.zeros([BFG.nBFace, nq]) # [nBFace, nq]
-		bpoints = x_bfgroups[ibfgrp][:,:,d].flatten() # [nBFace, nq, dim]
+		bvalues = np.zeros([BFG.num_boundary_faces, nq]) # [num_boundary_faces, nq]
+		bpoints = x_bfgroups[ibfgrp][:,:,d].flatten() # [num_boundary_faces, nq, dim]
 
 	integ_val = 0.
 
@@ -142,7 +142,7 @@ def get_boundary_info(mesh, physics, solver, bname, var_name, integrate=True, ve
 		vec = np.array(vec)
 		vec.shape = 1,2
 
-	for ibface in range(BFG.nBFace):
+	for ibface in range(BFG.num_boundary_faces):
 		BFace = BFG.BFaces[ibface]
 		elem = BFace.elem_id
 		face = BFace.face_id

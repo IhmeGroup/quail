@@ -120,21 +120,32 @@ import numerics.basis.basis as basis_defs
 
 class InteriorFace(object):
     '''
-    Class: InteriorFace
-    -------------------
     This class provides information about a given interior face.
 
-    ATTRIBUTES:
-        elemL_id: ID of "left" element
-        faceL_id: local ID of face from perspective of left element
-        elemR_id: ID of "right" element
-        faceR_id: local ID of face from perspective of right element
+
+    Attributes:
+    -----------
+    elemL_id : int
+        ID of "left" element
+    faceL_id : int
+        local ID of face from perspective of left element
+    elemR_id : int
+        ID of "right" element
+    faceR_id : int
+        local ID of face from perspective of right element
     '''
     def __init__(self):
         '''
-        Method: __init__
-        -------------------
-        This method initializes the object
+        Attributes:
+        -----------
+        elemL_id : int
+            ID of "left" element
+        faceL_id : int
+            local ID of face from perspective of left element
+        elemR_id : int
+            ID of "right" element
+        faceR_id : int
+            local ID of face from perspective of right element
         '''
         self.elemL_id = 0 
         self.faceL_id = 0 
@@ -142,15 +153,17 @@ class InteriorFace(object):
         self.faceR_id = 0 
 
 
-class BFace(object):
+class BoundaryFace(object):
     '''
-    Class: BoundaryFace
-    -------------------
     This class provides information about a given boundary face.
 
-    ATTRIBUTES:
-        Elem: adjacent element
-        face: local face number from Elem's perspective
+
+    Attributes:
+    -----------
+    elem_id : int
+        ID of adjacent element
+    face_id : int
+        local ID of face from perspective of adjacent element
     '''
     def __init__(self):
         '''
@@ -164,13 +177,26 @@ class BFace(object):
 
 class BoundaryGroup(object):
     '''
+    This class stores boundary face objects for a given boundary group.
+
+
+    Attributes:
+    -----------
+    name : str
+        boundary name
+    number : int
+        boundary number
+    number : int
+        boundary number
+    '''
+    '''
     Class: BoundaryGroup
     -------------------
     This class stores boundary face objects for a given boundary group
 
     ATTRIBUTES:
         Name: name of boundary face group
-        nBFace: number of boundary faces within this group
+        num_boundary_faces: number of boundary faces within this group
         BFaces: list of BFace objects
     '''
     def __init__(self):
@@ -181,7 +207,7 @@ class BoundaryGroup(object):
         '''
         self.name = ""
         self.number = -1
-        self.nBFace = 0 
+        self.num_boundary_faces = 0 
         self.BFaces = None
 
     def allocate_bfaces(self):
@@ -193,7 +219,7 @@ class BoundaryGroup(object):
         OUTPUTS:
             self.BFaces
         '''
-        self.BFaces = [BFace() for i in range(self.nBFace)]
+        self.BFaces = [BoundaryFace() for i in range(self.num_boundary_faces)]
 
 
 '''
@@ -421,7 +447,7 @@ class Mesh(object):
 
     #     for BFG in self.boundary_groups.values():
             
-    #         for ibface in range(BFG.nBFace):
+    #         for ibface in range(BFG.num_boundary_faces):
     #             BFace = BFG.BFaces[ibface]
     #             elem = BFace.elem_id
     #             face = BFace.face_id

@@ -31,7 +31,6 @@ class ShapeBase(ABC):
     This is a Mixin class used to represent a shape. Supported shapes 
     include point, segment, quadrilateral, and triangle.
 
-    ...
 
     Attributes
     -----------

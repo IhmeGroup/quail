@@ -303,7 +303,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     # Note: the boundary node coordinates may be slightly modified
     # to ensure same coordinate in periodic direction
     # '''
-    # if BFG1.nBFace != BFG2.nBFace:
+    # if BFG1.num_boundary_faces != BFG2.num_boundary_faces:
     #     raise ValueError
 
     # pcoord1 = VerifyPeriodicBoundary(mesh, BFG1, icoord)
@@ -462,8 +462,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
                 IF.elemR_id = elem_id2
                 IF.faceR_id = face2
 
-                BFG1.nBFace -= 1
-                BFG2.nBFace -= 1
+                BFG1.num_boundary_faces -= 1
+                BFG2.num_boundary_faces -= 1
                 break
 
 
@@ -474,7 +474,7 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
 
 
     # Verification
-    if BFG1.nBFace != 0 or BFG2.nBFace != 0:
+    if BFG1.num_boundary_faces != 0 or BFG2.num_boundary_faces != 0:
         raise ValueError
     mesh.num_boundary_groups -= 2
 
@@ -543,7 +543,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     Note: the boundary node coordinates may be slightly modified
     to ensure same coordinate in periodic direction
     '''
-    if BFG1.nBFace != BFG2.nBFace:
+    if BFG1.num_boundary_faces != BFG2.num_boundary_faces:
         raise ValueError
 
     pcoord1 = VerifyPeriodicBoundary(mesh, BFG1, icoord)
