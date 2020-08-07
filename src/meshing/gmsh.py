@@ -178,7 +178,7 @@ class PhysicalGroup(object):
 
 class FaceInfo(object):
 	def __init__(self):
-		self.nVisit = 1
+		self.num_adjacent_elems = 0
 		self.at_boundary = False
 		self.boundary_group_num = 0
 		self.elem_id = 0
@@ -606,13 +606,15 @@ def AddFaceToHash(Node2FaceTable, nfnode, nodes, at_boundary, Group, Elem, Face)
 	if snodes in FaceInfoDict:
 		Exists = True
 		FInfo = FaceInfoDict[snodes]
-		FInfo.nVisit += 1
+		FInfo.num_adjacent_elems += 1
 	else:
 		# If it doesn't exist, then add it
 		FInfo = FaceInfo()
 		FaceInfoDict.update({snodes : FInfo})
 		FInfo.set_info(at_boundary=at_boundary, boundary_group_num=Group, elem_id=Elem, 
 				face_id=Face, num_face_nodes=nfnode, snodes=snodes)
+		if not at_boundary:
+			FInfo.num_adjacent_elems = 1
 
 
 	# for FInfo in FaceInfoDict:
@@ -897,12 +899,15 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 
 			if Exists:
 				# Face already exists in hash table
-				if FInfo.nVisit != 2:
-					raise ValueError("More than two elements share a face " + 
-						"or a boundary face is referenced by more than one element")
+				# if FInfo.nVisit != 2:
+				# 	raise ValueError("More than two elements share a face " + 
+				# 		"or a boundary face is referenced by more than one element")
 
 				# Link elem to boundary_face or IFace
 				if FInfo.at_boundary:
+					if FInfo.num_adjacent_elems != 1:
+						raise ValueError("More than one element adjacent " +
+								"to boundary face")
 					# boundary face
 					# Store in BFG
 					# BFG = mesh.boundary_groups[FInfo.boundary_group_num]
@@ -926,6 +931,9 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					# Face.gmsh_phys_num = FInfo.face_id
 				else:
 					# interior face
+					if FInfo.num_adjacent_elems != 2:
+						raise ValueError("More than two elements adjacent " +
+								"to interior face")
 					# Store in IFace
 					IFace = mesh.interior_faces[mesh.num_interior_faces]
 					IFace.elemL_id = FInfo.elem_id
