@@ -179,11 +179,11 @@ class PhysicalGroup(object):
 class FaceInfo(object):
 	def __init__(self):
 		self.nVisit = 1
-		self.BFlag = 0
+		self.at_boundary = False
 		self.boundary_group_num = 0
 		self.elem_id = 0
 		self.face_id = 0
-		self.nfnode = 0
+		self.num_face_nodes = 0
 		self.snodes = None # should be a tuple (hashable)
 	def set_info(self, **kwargs):
 		for key in kwargs:
@@ -588,7 +588,7 @@ def read_mesh_elems_boundary_faces(fo, ver, mesh, PGroups, nPGroup, gmsh_element
 	return mesh
 
 
-def AddFaceToHash(Node2FaceTable, nfnode, nodes, BFlag, Group, Elem, Face):
+def AddFaceToHash(Node2FaceTable, nfnode, nodes, at_boundary, Group, Elem, Face):
 
 	if nfnode <= 0:
 		raise ValueError("Need nfnode > 1")
@@ -611,8 +611,8 @@ def AddFaceToHash(Node2FaceTable, nfnode, nodes, BFlag, Group, Elem, Face):
 		# If it doesn't exist, then add it
 		FInfo = FaceInfo()
 		FaceInfoDict.update({snodes : FInfo})
-		FInfo.set_info(BFlag=BFlag, boundary_group_num=Group, elem_id=Elem, 
-				face_id=Face, nfnode=nfnode, snodes=snodes)
+		FInfo.set_info(at_boundary=at_boundary, boundary_group_num=Group, elem_id=Elem, 
+				face_id=Face, num_face_nodes=nfnode, snodes=snodes)
 
 
 	# for FInfo in FaceInfoDict:
@@ -626,7 +626,7 @@ def AddFaceToHash(Node2FaceTable, nfnode, nodes, BFlag, Group, Elem, Face):
 	# 	# If it doesn't exist, then add it
 	# 	FInfo = FaceInfo()
 	# 	FaceInfoDict.append(FInfo)
-	# 	FInfo.Set(BFlag=BFlag, Group=Group, Elem=Elem, Face=Face,
+	# 	FInfo.Set(at_boundary=at_boundary, Group=Group, Elem=Elem, Face=Face,
 	# 			nfnode=nfnode, snodes=snodes)
 
 	return FInfo, Exists
@@ -902,7 +902,7 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 						"or a boundary face is referenced by more than one element")
 
 				# Link elem to boundary_face or IFace
-				if FInfo.BFlag:
+				if FInfo.at_boundary:
 					# boundary face
 					# Store in BFG
 					# BFG = mesh.boundary_groups[FInfo.boundary_group_num]
