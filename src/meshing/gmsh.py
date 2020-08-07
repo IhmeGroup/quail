@@ -185,6 +185,7 @@ class FaceInfo(object):
 		self.face_id = 0
 		self.num_face_nodes = 0
 		self.snodes = None # should be a tuple (hashable)
+
 	def set_info(self, **kwargs):
 		for key in kwargs:
 			if key is "snodes":
@@ -199,7 +200,7 @@ class FaceInfo(object):
 	# 	return hash(self.snodes)
 
 
-def FindLineAfterString(fo, string):
+def go_to_line_below_string(fo, string):
 	# Start from beginning
 	fo.seek(0)
 
@@ -217,9 +218,10 @@ def FindLineAfterString(fo, string):
 		raise errors.FileReadError
 
 
-def ReadMeshFormat(fo):
+def check_mesh_format(fo):
 	# Find beginning of section
-	FindLineAfterString(fo, "$MeshFormat")
+	go_to_line_below_string(fo, "$MeshFormat")
+
 	# Get Gmsh version
 	fl = fo.readline()
 	ver = fl.split()[0]
@@ -228,6 +230,7 @@ def ReadMeshFormat(fo):
 	file_type = int(fl.split()[1])
 	if file_type != 0:
 		raise errors.FileReadError("Only ASCII format supported")
+
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndMeshFormat"):
@@ -236,23 +239,26 @@ def ReadMeshFormat(fo):
 	return ver
 
 
-def ReadPhysicalGroups(fo, mesh):
+def read_physical_groups(fo, mesh):
 	# Find beginning of section
-	FindLineAfterString(fo, "$PhysicalNames")
+	go_to_line_below_string(fo, "$PhysicalNames")
+
 	# Number of physical names
-	nPGroup = int(fo.readline())
+	num_phys_groups = int(fo.readline())
+
 	# Allocate
-	PGroups = [PhysicalGroup() for i in range(nPGroup)]
+	phys_groups = [PhysicalGroup() for i in range(num_phys_groups)]
+	
 	# Loop over entities
-	for i in range(nPGroup):
-		PGroup = PGroups[i]
+	for i in range(num_phys_groups):
+		phys_group = phys_groups[i]
 		fl = fo.readline()
 		ls = fl.split()
-		PGroup.dim = int(ls[0])
-		PGroup.gmsh_phys_num = int(ls[1])
-		PGroup.name = ls[2][1:-1]
+		phys_group.dim = int(ls[0])
+		phys_group.gmsh_phys_num = int(ls[1])
+		phys_group.name = ls[2][1:-1]
 
-		if PGroup.dim < mesh.dim-1 or PGroup.dim > mesh.dim:
+		if phys_group.dim < mesh.dim-1 or phys_group.dim > mesh.dim:
 			raise Exception("Physical groups should be created only for " +
 					"elements and boundary faces")
 
@@ -263,15 +269,15 @@ def ReadPhysicalGroups(fo, mesh):
 
 	# Need at least one physical group to correspond to volume elements
 	match = False
-	for PGroup in PGroups:
-		if PGroup.dim == mesh.dim:
+	for phys_group in phys_groups:
+		if phys_group.dim == mesh.dim:
 			match = True
 			break
 
 	if not match:
 		raise Exception("No elements assigned to a physical group")
 
-	return PGroups, nPGroup
+	return phys_groups, num_phys_groups
 
 
 def get_nodes_ver2(fo):
@@ -342,7 +348,7 @@ def get_nodes_ver4(fo):
 
 def ReadNodes(fo, ver, mesh):
 	# Find beginning of section
-	FindLineAfterString(fo, "$Nodes")
+	go_to_line_below_string(fo, "$Nodes")
 
 
 	if ver == VERSION2:
@@ -379,13 +385,13 @@ def ReadNodes(fo, ver, mesh):
 	return mesh, old_to_new_node_tags
 
 
-def ReadMeshEntities(fo, ver, mesh, PGroups):
+def ReadMeshEntities(fo, ver, mesh, phys_groups):
 
 	if ver == VERSION2:
-		return PGroups
+		return phys_groups
 
 	# Find beginning of section
-	FindLineAfterString(fo, "$Entities")
+	go_to_line_below_string(fo, "$Entities")
 
 	fl = fo.readline()
 	ls = [int(l) for l in fl.split()]
@@ -405,10 +411,10 @@ def ReadMeshEntities(fo, ver, mesh, PGroups):
 			num_phys_tags = int(ls[7])
 			if num_phys_tags == 1:
 				phys_tag = int(ls[8])
-				for PGroup in PGroups:
-					if PGroup.gmsh_phys_num == phys_tag:
+				for phys_group in phys_groups:
+					if phys_group.gmsh_phys_num == phys_tag:
 						break
-				PGroup.entity_tags.add(entity_tag)
+				phys_group.entity_tags.add(entity_tag)
 			elif num_phys_tags > 1:
 				raise ValueError("Entity should not be assigned to >1 physical groups")
 
@@ -416,10 +422,10 @@ def ReadMeshEntities(fo, ver, mesh, PGroups):
 		# add dim = 1 later
 		raise NotImplementedError
 
-	return PGroups
+	return phys_groups
 
 
-def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
+def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database):
 	# Number of entities (cells, faces, edges)
 	nEntity = int(fo.readline())
 	# Loop over entities
@@ -435,16 +441,16 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 		# 	raise ValueError("All elements need to be assigned to a physical group")
 		
 		found = False
-		for PGidx in range(nPGroup):
-			PGroup = PGroups[PGidx]
-			if PGroup.gmsh_phys_num == PGnum:
+		for PGidx in range(num_phys_groups):
+			phys_group = phys_groups[PGidx]
+			if phys_group.gmsh_phys_num == PGnum:
 				found = True
 				break
 		if not found:
 			raise errors.DoesNotExistError("All elements and boundary faces must " +
 					"be assigned to a physical group")
 
-		if PGroup.dim == mesh.dim:
+		if phys_group.dim == mesh.dim:
 			# Assume only one element type - need to check for this later
 			### Entity is an element
 # <<<<<<< Updated upstream
@@ -478,32 +484,32 @@ def get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 			# 	# Need new element group
 			# 	mesh.num_elemsGroup += 1
 			# 	mesh.elem_idGroups.append(Mesh.elem_idGroup(QBasis=QBasis,QOrder=QOrder))
-		elif PGroup.dim == mesh.dim - 1:
+		elif phys_group.dim == mesh.dim - 1:
 			### Boundary entity
 			# Check for existing boundary face group
 			# found = False
 			# for ibfgrp in range(mesh.num_boundary_groups):
 			# 	BFG = mesh.boundary_groups[ibfgrp]
-			# 	if BFG.name == PGroup.name:
+			# 	if BFG.name == phys_group.name:
 			# 		found = True
 			# 		break
 			try:
-				BFG = mesh.boundary_groups[PGroup.name]
+				BFG = mesh.boundary_groups[phys_group.name]
 			except KeyError:
-			# if PGroup.name in mesh.boundary_groups:
+			# if phys_group.name in mesh.boundary_groups:
 				# Group has not been assigned yet
 				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.boundary_groups.append(BFG)
-				# BFG.name = PGroup.name
-				BFG = mesh.add_boundary_group(PGroup.name)
-				PGroup.boundary_group_num = BFG.number
+				# BFG.name = phys_group.name
+				BFG = mesh.add_boundary_group(phys_group.name)
+				phys_group.boundary_group_num = BFG.number
 			BFG.num_boundary_faces += 1
 		# else:
 		# 	raise Exception("Mesh error")
 
 
-def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
+def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database):
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]
 	num_entity_blocks = lint[0]
@@ -519,8 +525,8 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 
 		# find physical boundary group
 		found = False
-		for PGroup in PGroups:
-			if entity_tag in PGroup.entity_tags and dim == PGroup.dim:
+		for phys_group in phys_groups:
+			if entity_tag in phys_group.entity_tags and dim == phys_group.dim:
 				found = True
 				break
 		if not found:
@@ -546,17 +552,17 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 				mesh.num_elems += 1
 		elif dim == mesh.dim - 1:
 
-			if PGroup.boundary_group_num >= 0:
-				# BFG = mesh.boundary_groups[PGroup.boundary_group_num]
-				BFG = mesh.boundary_groups[PGroup.name]
+			if phys_group.boundary_group_num >= 0:
+				# BFG = mesh.boundary_groups[phys_group.boundary_group_num]
+				BFG = mesh.boundary_groups[phys_group.name]
 			else:
 				# Group has not been assigned yet
 				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.boundary_groups.append(BFG)
-				# BFG.name = PGroup.name
-				BFG = mesh.add_boundary_group(PGroup.name)
-				PGroup.boundary_group_num = BFG.number
+				# BFG.name = phys_group.name
+				BFG = mesh.add_boundary_group(phys_group.name)
+				phys_group.boundary_group_num = BFG.number
 			# Loop and increment num_boundary_faces
 			for _ in range(num_in_block):
 				fo.readline()
@@ -570,15 +576,15 @@ def get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database):
 
 
 
-def read_mesh_elems_boundary_faces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database):
+def read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database):
 	# First pass to get sizes
 	# Find beginning of section
-	FindLineAfterString(fo, "$Elements")
+	go_to_line_below_string(fo, "$Elements")
 
 	if ver == VERSION2:
-		get_elem_bface_info_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database)
+		get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database)
 	else:
-		get_elem_bface_info_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database)
+		get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database)
 
 	# Verify footer
 	fl = fo.readline()
@@ -671,7 +677,7 @@ def DeleteFaceFromHash(Node2FaceTable, nfnode, nodes):
 	# 	del FaceInfos[i]
 
 
-def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
+def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 		old_to_new_node_tags, bf, Node2FaceTable):
 	# Number of entities
 	nEntity = int(fo.readline())
@@ -686,9 +692,9 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 		PGnum = int(ls[3])
 		
 		found = False
-		for PGidx in range(nPGroup):
-			PGroup = PGroups[PGidx]
-			if PGroup.gmsh_phys_num == PGnum:
+		for PGidx in range(num_phys_groups):
+			phys_group = phys_groups[PGidx]
+			if phys_group.gmsh_phys_num == PGnum:
 				found = True
 				break
 		if not found:
@@ -714,7 +720,7 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			# Convert from old to new tags
 			nodes[i] = old_to_new_node_tags[int(elist[i])]
 
-		if PGroup.boundary_group_num >= 0:
+		if phys_group.boundary_group_num >= 0:
 			### Boundary
 			# Get basic info
 # <<<<<<< Updated upstream
@@ -724,9 +730,9 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			gbasis = gmsh_element_database[etype].gbasis
 			gorder = gmsh_element_database[etype].gorder
 # >>>>>>> Stashed changes
-			ibfgrp = PGroup.boundary_group_num
+			ibfgrp = phys_group.boundary_group_num
 			# BFG = mesh.boundary_groups[ibfgrp]
-			BFG = mesh.boundary_groups[PGroup.name]
+			BFG = mesh.boundary_groups[phys_group.name]
 			# Number of q = 1 face nodes
 			nfnode = gbasis.get_num_basis_coeff(1)
 
@@ -734,7 +740,7 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 			FInfo, Exists = AddFaceToHash(Node2FaceTable, nfnode, nodes, 
 					True, ibfgrp, -1, bf[ibfgrp])
 			bf[ibfgrp] += 1
-		elif PGroup.boundary_group_num == -1:
+		elif phys_group.boundary_group_num == -1:
 			### Interior element
 			# Get basic info
 # <<<<<<< Updated upstream
@@ -769,7 +775,7 @@ def fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 		 
 
 
-def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database, 
+def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database, 
 		old_to_new_node_tags, bf, Node2FaceTable):	
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]
@@ -807,12 +813,12 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 				elem += 1
 		elif dim == mesh.dim - 1:
 			# find physical boundary group
-			for PGroup in PGroups:
-				if entity_tag in PGroup.entity_tags:
-					if PGroup.dim == dim:
-						ibfgrp = PGroup.boundary_group_num
+			for phys_group in phys_groups:
+				if entity_tag in phys_group.entity_tags:
+					if phys_group.dim == dim:
+						ibfgrp = phys_group.boundary_group_num
 						break
-			BFG = mesh.boundary_groups[PGroup.name]
+			BFG = mesh.boundary_groups[phys_group.name]
 			gbasis = gmsh_element_database[etype].gbasis
 			nfnode = gbasis.get_num_basis_coeff(1) 
 			# Loop and increment num_boundary_faces
@@ -833,7 +839,7 @@ def fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database,
 
 	return mesh
 
-def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_node_tags):
+def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_tags):
 	# Allocate additional mesh structures
 	# for ibfgrp in range(mesh.num_boundary_groups):
 	# 	BFG = mesh.boundary_groups[ibfgrp]
@@ -863,15 +869,15 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 	Node2FaceTable = [{} for n in range(mesh.num_nodes)] # list of dicts
 
 	# Go to entities section
-	FindLineAfterString(fo, "$Elements")
+	go_to_line_below_string(fo, "$Elements")
 
 	bf = [0 for i in range(mesh.num_boundary_groups)] # boundary_face counter
 
 	if ver == VERSION2:
-		fill_elems_bfaces_ver2(fo, mesh, PGroups, nPGroup, gmsh_element_database, 
+		fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database, 
 				old_to_new_node_tags, bf, Node2FaceTable)
 	else:
-		fill_elems_bfaces_ver4(fo, mesh, PGroups, nPGroup, gmsh_element_database, 
+		fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database, 
 				old_to_new_node_tags, bf, Node2FaceTable)
 
 
@@ -913,12 +919,12 @@ def FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_
 					# BFG = mesh.boundary_groups[FInfo.boundary_group_num]
 					found = False
 					# Make this cleaner later
-					for PGroup in PGroups:
-						if PGroup.boundary_group_num == FInfo.boundary_group_num:
+					for phys_group in phys_groups:
+						if phys_group.boundary_group_num == FInfo.boundary_group_num:
 							found = True
 							break
 					if not found: raise Exception
-					BFG = mesh.boundary_groups[PGroup.name]
+					BFG = mesh.boundary_groups[phys_group.name]
 					# try:
 					# 	boundary_face = BFG.boundary_faces[FInfo.face_id]
 					# except:
@@ -995,15 +1001,15 @@ def ReadGmshFile(FileName):
 	gmsh_element_database = create_gmsh_element_database()
 
 	# Read sections one-by-one
-	ver = ReadMeshFormat(fo)
+	ver = check_mesh_format(fo)
 	mesh, old_to_new_node_tags = ReadNodes(fo, ver, mesh)
-	PGroups, nPGroup = ReadPhysicalGroups(fo, mesh)
-	PGroups = ReadMeshEntities(fo, ver, mesh, PGroups)
-	mesh = read_mesh_elems_boundary_faces(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database)
+	phys_groups, num_phys_groups = read_physical_groups(fo, mesh)
+	phys_groups = ReadMeshEntities(fo, ver, mesh, phys_groups)
+	mesh = read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database)
 	# code.interact(local=locals())
 
 	# Create rest of mesh
-	FillMesh(fo, ver, mesh, PGroups, nPGroup, gmsh_element_database, old_to_new_node_tags)
+	FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_tags)
 
 	# Print some stats
 	print("%d elements in the mesh" % (mesh.num_elems))
