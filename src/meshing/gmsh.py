@@ -248,7 +248,7 @@ def read_physical_groups(fo, mesh):
 
 	# Allocate
 	phys_groups = [PhysicalGroup() for i in range(num_phys_groups)]
-	
+
 	# Loop over entities
 	for i in range(num_phys_groups):
 		phys_group = phys_groups[i]
@@ -285,7 +285,7 @@ def get_nodes_ver2(fo):
 	num_nodes = int(fo.readline())
 	old_to_new_node_tags = {}
 	# Allocate nodes - assume 3D first
-	Nodes = np.zeros([num_nodes,3])
+	node_coords = np.zeros([num_nodes,3])
 	# Extract nodes
 	new_node_tag = 0
 	for n in range(num_nodes):
@@ -296,14 +296,14 @@ def get_nodes_ver2(fo):
 		old_node_tag = int(ls[0])
 		old_to_new_node_tags.update({old_node_tag : new_node_tag})
 		for d in range(3):
-			Nodes[new_node_tag,d] = float(ls[d+1])
+			node_coords[new_node_tag,d] = float(ls[d+1])
 		# Sanity check
 		if int(ls[0]) > num_nodes:
 			raise errors.FileReadError
 
 		new_node_tag += 1
 
-	return Nodes, old_to_new_node_tags
+	return node_coords, old_to_new_node_tags
 
 
 def get_nodes_ver4(fo):
@@ -319,7 +319,7 @@ def get_nodes_ver4(fo):
 	# if min_node_tag != 1 or max_node_tag != num_nodes:
 	# 	raise ValueError
 	# Allocate nodes - assume 3D first
-	Nodes = np.zeros([num_nodes,3])
+	node_coords = np.zeros([num_nodes,3])
 
 	new_node_tag = 0
 	for b in range(num_blocks):
@@ -341,20 +341,19 @@ def get_nodes_ver4(fo):
 		for n in range(num_nodes_in_block):
 			fl = fo.readline()
 			inode = new_node_tags[n]
-			Nodes[inode] = [float(l) for l in fl.split()[:3]]
+			node_coords[inode] = [float(l) for l in fl.split()[:3]]
 
-	return Nodes, old_to_new_node_tags
+	return node_coords, old_to_new_node_tags
 
 
-def ReadNodes(fo, ver, mesh):
+def read_nodes(fo, ver, mesh):
 	# Find beginning of section
 	go_to_line_below_string(fo, "$Nodes")
 
-
 	if ver == VERSION2:
-		Nodes, old_to_new_node_tags = get_nodes_ver2(fo)
+		node_coords, old_to_new_node_tags = get_nodes_ver2(fo)
 	else:
-		Nodes, old_to_new_node_tags = get_nodes_ver4(fo)
+		node_coords, old_to_new_node_tags = get_nodes_ver4(fo)
 
 	# Verify footer
 	fl = fo.readline()
@@ -365,27 +364,27 @@ def ReadNodes(fo, ver, mesh):
 	ds = [0,1,2]
 	for d in ds:
 		# Find max perturbation from zero
-		diff = np.amax(np.abs(Nodes[:,d]))
+		diff = np.amax(np.abs(node_coords[:,d]))
 		if diff <= general.eps:
 			# remove from ds
 			ds.remove(d)
 
 	# New dimension
 	dim = len(ds)
-	Nodes = Nodes[:,ds]
+	node_coords = node_coords[:,ds]
 
 	if dim == 3:
 		raise ValueError("3D meshes not supported")
 
 	# Store in mesh
-	mesh.node_coords = Nodes
-	mesh.num_nodes = Nodes.shape[0]
+	mesh.node_coords = node_coords
+	mesh.num_nodes = node_coords.shape[0]
 	mesh.dim = dim
 
 	return mesh, old_to_new_node_tags
 
 
-def ReadMeshEntities(fo, ver, mesh, phys_groups):
+def read_mesh_entities(fo, ver, mesh, phys_groups):
 
 	if ver == VERSION2:
 		return phys_groups
@@ -410,13 +409,14 @@ def ReadMeshEntities(fo, ver, mesh, phys_groups):
 			entity_tag = int(ls[0])
 			num_phys_tags = int(ls[7])
 			if num_phys_tags == 1:
-				phys_tag = int(ls[8])
+				phys_num = int(ls[8])
 				for phys_group in phys_groups:
-					if phys_group.gmsh_phys_num == phys_tag:
+					if phys_group.gmsh_phys_num == phys_num:
 						break
 				phys_group.entity_tags.add(entity_tag)
 			elif num_phys_tags > 1:
-				raise ValueError("Entity should not be assigned to >1 physical groups")
+				raise ValueError("Entity should not be assigned to more " +
+						"than one physical group")
 
 	else:
 		# add dim = 1 later
@@ -425,7 +425,8 @@ def ReadMeshEntities(fo, ver, mesh, phys_groups):
 	return phys_groups
 
 
-def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database):
+def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
+		gmsh_element_database):
 	# Number of entities (cells, faces, edges)
 	nEntity = int(fo.readline())
 	# Loop over entities
@@ -433,22 +434,22 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 		fl = fo.readline()
 		ls = fl.split()
 		# Parse line
-		enum = int(ls[0])
+		# enum = int(ls[0])
 		etype = int(ls[1])
-		PGnum = int(ls[3])
+		phys_num = int(ls[3])
 
-		# if PGnum == 0:
+		# if phys_num == 0:
 		# 	raise ValueError("All elements need to be assigned to a physical group")
 		
 		found = False
 		for PGidx in range(num_phys_groups):
 			phys_group = phys_groups[PGidx]
-			if phys_group.gmsh_phys_num == PGnum:
+			if phys_group.gmsh_phys_num == phys_num:
 				found = True
 				break
 		if not found:
-			raise errors.DoesNotExistError("All elements and boundary faces must " +
-					"be assigned to a physical group")
+			raise errors.DoesNotExistError("All elements and boundary" +
+					"faces must be assigned to a physical group")
 
 		if phys_group.dim == mesh.dim:
 			# Assume only one element type - need to check for this later
@@ -687,14 +688,14 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 		fl = fo.readline()
 		ls = fl.split()
 		# Parse line
-		enum = int(ls[0])
+		# enum = int(ls[0])
 		etype = int(ls[1])
-		PGnum = int(ls[3])
+		phys_num = int(ls[3])
 		
 		found = False
 		for PGidx in range(num_phys_groups):
 			phys_group = phys_groups[PGidx]
-			if phys_group.gmsh_phys_num == PGnum:
+			if phys_group.gmsh_phys_num == phys_num:
 				found = True
 				break
 		if not found:
@@ -1002,9 +1003,9 @@ def ReadGmshFile(FileName):
 
 	# Read sections one-by-one
 	ver = check_mesh_format(fo)
-	mesh, old_to_new_node_tags = ReadNodes(fo, ver, mesh)
+	mesh, old_to_new_node_tags = read_nodes(fo, ver, mesh)
 	phys_groups, num_phys_groups = read_physical_groups(fo, mesh)
-	phys_groups = ReadMeshEntities(fo, ver, mesh, phys_groups)
+	phys_groups = read_mesh_entities(fo, ver, mesh, phys_groups)
 	mesh = read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database)
 	# code.interact(local=locals())
 
