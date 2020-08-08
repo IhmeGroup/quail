@@ -49,11 +49,11 @@ def adapt(solver, physics, mesh, stepper):
 
     # Just printing random things to check them out
     print(mesh.node_coords)
-    print(mesh.IFaces[0].elemL_id)
-    print(mesh.IFaces[0].elemR_id)
-    print(mesh.IFaces[0].faceL_id)
-    print(mesh.IFaces[0].faceR_id)
-    print(mesh.BFaceGroups)
+    print(mesh.interior_faces[0].elemL_id)
+    print(mesh.interior_faces[0].elemR_id)
+    print(mesh.interior_faces[0].faceL_id)
+    print(mesh.interior_faces[0].faceR_id)
+    print(mesh.boundary_groups)
     for i in range(mesh.num_elems):
             print(mesh.elements[i].id)
             print(mesh.elements[i].node_ids)
