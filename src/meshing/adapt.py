@@ -30,21 +30,23 @@ def adapt(solver, physics, mesh, stepper):
 
             # Get element
             elem = mesh.elements[elem_id]
-            # Array for area of each face
+            # Arrays for area of each face and face nodes
             face_areas = np.empty(mesh.gbasis.NFACES)
+            face_nodes = np.empty((mesh.gbasis.NFACES, 2, mesh.dim))
             # Loop over each face
             for i in range(mesh.gbasis.NFACES):
                 # If it's a boundary, skip it
                 if elem.face_to_neighbors[i] == -1: continue
                 # Get the neighbor across the face
                 neighbor = mesh.elements[elem.face_to_neighbors[i]]
-                # Calculate the face area
-                face_areas[i] = face_area_between(elem, neighbor, mesh.node_coords)
+                # Calculate the face area and find face nodes
+                face_areas[i], face_nodes[i,:] = face_geometry_between(elem, neighbor, mesh.node_coords)
                 print("face nodes:")
                 print(face_areas[i])
             # Get face with highest area
             long_face = np.argmax(face_areas)
-
+            # Get the midpoint of this face
+            midpoint = np.mean(face_nodes[long_face,:,:], axis=0)
 
             # Add new mesh node
             mesh.node_coords = np.append(mesh.node_coords, [[-.5,0]], axis=0)
@@ -87,15 +89,15 @@ def adapt(solver, physics, mesh, stepper):
             print(mesh.elements[i].face_to_neighbors)
 
 # TODO: If elem1 and elem2 are not actually neighbors, bad things will happen!
-def face_area_between(elem1, elem2, node_coords):
-    """Find the area of the face shared by two elements.
+def face_geometry_between(elem1, elem2, node_coords):
+    """Find the area and nodes of the face shared by two elements.
 
     Arguments:
     elem1 - first element object (meshing/meshbase.py)
     elem2 - second element object (meshing/meshbase.py)
     node_coords - array of node coordinates, shape [num_nodes, dim]
     Returns:
-    (float) area of face between the two elements
+    (float, array[2,dim]) tuple of face area and node coordinates
     """
     # Find the node IDs of the face. This works by finding which two nodes
     # appear in both the current element and the neighbor across the face.
@@ -104,4 +106,4 @@ def face_area_between(elem1, elem2, node_coords):
     face_nodes = node_coords[face_node_ids,:]
     # Return the area of the face (which is just the distance since this is a 2D
     # code)
-    return np.linalg.norm(face_nodes[0,:] - face_nodes[1,:])
+    return (np.linalg.norm(face_nodes[0,:] - face_nodes[1,:]), face_nodes)
