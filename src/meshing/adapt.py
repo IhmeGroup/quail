@@ -18,14 +18,33 @@ def adapt(solver, physics, mesh, stepper):
     needs_refinement[0] = True
 
     # Loop over all elements
-    for elem in range(mesh.num_elems):
+    for elem_id in range(mesh.num_elems):
         # Only refine elements that need refinement
-        if needs_refinement[elem]:
+        if needs_refinement[elem_id]:
 
-            # Append to the end of U
-            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            # Delete residual
-            stepper.R = None
+            # TODO: Find the neighbors
+            # 1. create faces, and add them to mesh.interior_faces
+            # 2. assign elemL_id, elemR_id, faceL_id, faceR_id
+            # 3. set elemL.face_to_neighbors[faceL_id] = elemR_id
+            #    and elemR.face_to_neighbors[faceR_id] = elemL_id
+
+            # Get element
+            elem = mesh.elements[elem_id]
+            # Array for area of each face
+            face_areas = np.empty(mesh.gbasis.NFACES)
+            # Loop over each face
+            for i in range(mesh.gbasis.NFACES):
+                # If it's a boundary, skip it
+                if elem.face_to_neighbors[i] == -1: continue
+                # Get the neighbor across the face
+                neighbor = mesh.elements[elem.face_to_neighbors[i]]
+                # Calculate the face area
+                face_areas[i] = face_area_between(elem, neighbor, mesh.node_coords)
+                print("face nodes:")
+                print(face_areas[i])
+            # Get face with highest area
+            long_face = np.argmax(face_areas)
+
 
             # Add new mesh node
             mesh.node_coords = np.append(mesh.node_coords, [[-.5,0]], axis=0)
@@ -33,8 +52,8 @@ def adapt(solver, physics, mesh, stepper):
             mesh.elements.append(mesh_defs.Element(4))
             # Set element's node ids, coords, and neighbors
             mesh.elements[4].node_ids = np.array([0,1,6])
-            mesh.elements[4].node_coords = np.array([[-1., -1.], [ 0., -1.], [-.5, 0.]])
-            mesh.elements[4].face_to_neighbors = np.array([-1,-1,-1])
+            mesh.elements[4].node_coords = mesh.node_coords[mesh.elements[4].node_ids]
+            mesh.elements[4].face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
             # Make the first element smaller to make space
             mesh.elements[0].node_ids = np.array([0,6,3])
             mesh.elements[0].node_coords = np.array([[-1., -1.], [ -.5, 0.], [-1., 1.]])
@@ -46,6 +65,13 @@ def adapt(solver, physics, mesh, stepper):
             # Call compute operators
             solver.precompute_matrix_operators()
             print(solver.elem_operators.x_elems)
+
+            # -- Update solution -- #
+            # TODO: map solution from old elements to new split elements
+            # Append to the end of U
+            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            # Delete residual
+            stepper.R = None
 
     # Just printing random things to check them out
     print(mesh.node_coords)
@@ -59,3 +85,23 @@ def adapt(solver, physics, mesh, stepper):
             print(mesh.elements[i].node_ids)
             print(mesh.elements[i].node_coords)
             print(mesh.elements[i].face_to_neighbors)
+
+# TODO: If elem1 and elem2 are not actually neighbors, bad things will happen!
+def face_area_between(elem1, elem2, node_coords):
+    """Find the area of the face shared by two elements.
+
+    Arguments:
+    elem1 - first element object (meshing/meshbase.py)
+    elem2 - second element object (meshing/meshbase.py)
+    node_coords - array of node coordinates, shape [num_nodes, dim]
+    Returns:
+    (float) area of face between the two elements
+    """
+    # Find the node IDs of the face. This works by finding which two nodes
+    # appear in both the current element and the neighbor across the face.
+    face_node_ids = np.intersect1d(elem1.node_ids, elem2.node_ids)
+    # Get the coordinates of these nodes
+    face_nodes = node_coords[face_node_ids,:]
+    # Return the area of the face (which is just the distance since this is a 2D
+    # code)
+    return np.linalg.norm(face_nodes[0,:] - face_nodes[1,:])
