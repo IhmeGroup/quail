@@ -25,71 +25,42 @@ def adapt(solver, physics, mesh, stepper):
         if needs_refinement[elem_id]:
 
             # TODO: Find the neighbors
-            # 1. create faces, and add them to mesh.interior_faces
-            # 2. assign elemL_id, elemR_id, faceL_id, faceR_id
-            # 3. set elemL.face_to_neighbors[faceL_id] = elemR_id
-            #    and elemR.face_to_neighbors[faceR_id] = elemL_id
 
             # Get element
             elem = mesh.elements[elem_id]
-            # Arrays for area of each face and face nodes
-            face_areas = np.empty(mesh.gbasis.NFACES)
-            face_nodes = np.empty((mesh.gbasis.NFACES, 2, mesh.dim))
-            face_node_ids = np.empty((mesh.gbasis.NFACES, 2), dtype=int)
-            # Loop over each face
-            for i in range(mesh.gbasis.NFACES):
-                # If it's a boundary, skip it
-                if elem.face_to_neighbors[i] == -1: continue
-                # Get the neighbor across the face
-                face_neighbor = mesh.elements[elem.face_to_neighbors[i]]
-                # Calculate the face area and find face nodes
-                face_areas[i], face_nodes[i,:,:], face_node_ids[i,:] = \
-                        face_geometry_between(elem, face_neighbor,
-                        mesh.node_coords)
-                print("face nodes:")
-                print(face_areas[i], face_nodes[i,:], face_node_ids[i,:])
-            # Get face with highest area
-            long_face = np.argmax(face_areas)
+
+            # -- Figure out what face to split -- #
+            # Get info about the longest face of the element
+            long_face, long_face_node_ids = find_longest_face(elem, mesh)
             # Get neighbor across this face
             neighbor = mesh.elements[elem.face_to_neighbors[long_face]]
             # Get the midpoint of this face
-            midpoint = np.mean(face_nodes[long_face,:,:], axis=0)
+            midpoint = np.mean(mesh.node_coords[long_face_node_ids], axis=0)
             # Add the midpoint as a new mesh node
             mesh.node_coords = np.append(mesh.node_coords, [midpoint], axis=0)
             midpoint_id = np.size(mesh.node_coords, axis=0) - 1
             # Find which node on the long face is most counterclockwise (since
             # nodes must be ordered counterclockwise)
             ccwise_node_id, cwise_node_id = find_counterclockwise_node(elem.node_ids,
-                    face_node_ids[long_face,0], face_node_ids[long_face,1])
+                    long_face_node_ids[0], long_face_node_ids[1])
 
             # The two split elements generated must contain:
             # 1. this midpoint
             # 2. the node opposite the long face
             # 3. one of the nodes that compose the long face (one for each)
-            opposing_node_id = np.setdiff1d(elem.node_ids, face_node_ids[long_face,:], assume_unique=True)[0]
+            # and they must be in counterclockwise order.
+            opposing_node_id = np.setdiff1d(elem.node_ids, long_face_node_ids, assume_unique=True)[0]
+            neighbor_opposing_node_id = np.setdiff1d(neighbor.node_ids, long_face_node_ids, assume_unique=True)[0]
             new_nodes1 = np.array([opposing_node_id, midpoint_id, ccwise_node_id])
             new_nodes2 = np.array([opposing_node_id, cwise_node_id, midpoint_id])
-            print(new_nodes1)
-            print(new_nodes2)
+            new_nodes3 = np.array([midpoint_id, neighbor_opposing_node_id, ccwise_node_id])
+            new_nodes4 = np.array([midpoint_id, cwise_node_id, neighbor_opposing_node_id])
 
             # Create first element
-            mesh.elements.append(mesh_defs.Element())
-            new_elem1 = mesh.elements[-1]
-            # Set first element's id, node ids, coords, and neighbors
-            new_elem1.id = len(mesh.elements) - 1
-            new_elem1.node_ids = new_nodes1
-            new_elem1.node_coords = mesh.node_coords[new_elem1.node_ids]
-            new_elem1.face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
-            mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [new_elem1.node_ids], axis=0)
+            new_elem1 = append_element(mesh, new_nodes1)
             # Create second element
-            mesh.elements.append(mesh_defs.Element())
-            new_elem2 = mesh.elements[-1]
-            # Set first element's id, node ids, coords, and neighbors
-            new_elem2.id = len(mesh.elements) - 1
-            new_elem2.node_ids = new_nodes2
-            new_elem2.node_coords = mesh.node_coords[new_elem2.node_ids]
-            new_elem2.face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
-            mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [new_elem2.node_ids], axis=0)
+            new_elem2 = append_element(mesh, new_nodes2)
+
             # Create the face between the elements
             mesh.interior_faces.append(mesh_defs.InteriorFace())
             mesh.interior_faces[-1].elemL_id = new_elem1.id
@@ -98,6 +69,9 @@ def adapt(solver, physics, mesh, stepper):
             mesh.interior_faces[-1].faceL_id = 2
             # The node opposite this face on elem2 is at index 1
             mesh.interior_faces[-1].faceR_id = 1
+            # Set neighbors on either side of the face
+            new_elem1.face_to_neighbors[2] = new_elem2.id
+            new_elem2.face_to_neighbors[1] = new_elem1.id
             # Update number of faces
             mesh.num_interior_faces += 1
 
@@ -140,16 +114,64 @@ def adapt(solver, physics, mesh, stepper):
     #        print(mesh.elements[i].node_coords)
     #        print(mesh.elements[i].face_to_neighbors)
 
+def append_element(mesh, node_ids):
+    """Create a new element at specified nodes and append it to the mesh.
+
+    Arguments:
+    mesh - Mesh object (meshing/meshbase.py)
+    node_ids - array of new element's node IDs
+    Returns:
+    elem - Element object (meshing/meshbase.py)
+    """
+    # Create element
+    mesh.elements.append(mesh_defs.Element())
+    elem = mesh.elements[-1]
+    # Set first element's id, node ids, coords, and neighbors
+    elem.id = len(mesh.elements) - 1
+    elem.node_ids = node_ids
+    elem.node_coords = mesh.node_coords[elem.node_ids]
+    elem.face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
+    # Append to element nodes in mesh
+    mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [node_ids], axis=0)
+    return elem
+
+def find_longest_face(elem, mesh):
+    """Find the longest face in an element.
+
+    Arguments:
+    elem - Element object (meshing/meshbase.py)
+    mesh - Mesh object (meshing/meshbase.py)
+    Returns:
+    (int, array[2]) - tuple of longest face ID and array of node IDs
+    """
+    # Arrays for area of each face and face nodes
+    face_areas = np.empty(mesh.gbasis.NFACES)
+    face_node_ids = np.empty((mesh.gbasis.NFACES, 2), dtype=int)
+    # Loop over each face
+    for i in range(mesh.gbasis.NFACES):
+        # If it's a boundary, skip it
+        if elem.face_to_neighbors[i] == -1: continue
+        # Get the neighbor across the face
+        face_neighbor = mesh.elements[elem.face_to_neighbors[i]]
+        # Calculate the face area and find face nodes
+        face_areas[i], face_node_ids[i,:] = face_geometry_between(elem,
+                face_neighbor, mesh.node_coords)
+    # Get face with highest area
+    long_face = np.argmax(face_areas)
+    # Get node IDs of the longest face
+    long_face_node_ids = face_node_ids[long_face,:]
+    return (long_face, long_face_node_ids)
+
 # TODO: If elem1 and elem2 are not actually neighbors, bad things will happen!
 def face_geometry_between(elem1, elem2, node_coords):
     """Find the area and nodes of the face shared by two elements.
 
     Arguments:
-    elem1 - first element object (meshing/meshbase.py)
-    elem2 - second element object (meshing/meshbase.py)
+    elem1 - first Element object (meshing/meshbase.py)
+    elem2 - second Element object (meshing/meshbase.py)
     node_coords - array of node coordinates, shape [num_nodes, dim]
     Returns:
-    (float, array[2,dim], array[2]) tuple of face area, node coords, and IDs
+    (float, array[2]) tuple of face area and node IDs
     """
     # Find the node IDs of the face. This works by finding which two nodes
     # appear in both the current element and the neighbor across the face.
@@ -158,7 +180,7 @@ def face_geometry_between(elem1, elem2, node_coords):
     face_nodes = node_coords[face_node_ids,:]
     # Return the area of the face (which is just the distance since this is a 2D
     # code)
-    return (np.linalg.norm(face_nodes[0,:] - face_nodes[1,:]), face_nodes, face_node_ids)
+    return (np.linalg.norm(face_nodes[0,:] - face_nodes[1,:]), face_node_ids)
 
 def find_counterclockwise_node(nodes, a, b):
     """Find which of two neighboring nodes is more counterclockwise.
