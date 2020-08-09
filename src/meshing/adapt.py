@@ -1,5 +1,6 @@
 import numpy as np
 import meshing.meshbase as mesh_defs
+import meshing.tools as mesh_tools
 
 # TODO: This whole thing only works for triangles. Generalize this.
 def adapt(solver, physics, mesh, stepper):
@@ -56,30 +57,59 @@ def adapt(solver, physics, mesh, stepper):
             # Add the midpoint as a new mesh node
             mesh.node_coords = np.append(mesh.node_coords, [midpoint], axis=0)
             midpoint_id = np.size(mesh.node_coords, axis=0) - 1
+            # Find which node on the long face is most counterclockwise (since
+            # nodes must be ordered counterclockwise)
+            ccwise_node_id, cwise_node_id = find_counterclockwise_node(elem.node_ids,
+                    face_node_ids[long_face,0], face_node_ids[long_face,1])
 
             # The two split elements generated must contain:
             # 1. this midpoint
             # 2. the node opposite the long face
             # 3. one of the nodes that compose the long face (one for each)
-            opposing_node = np.setdiff1d(elem.node_ids, face_node_ids[long_face,:], assume_unique=True)[0]
-            new_nodes1 = np.array([midpoint_id, opposing_node, face_node_ids[long_face,0]])
-            new_nodes2 = np.array([midpoint_id, opposing_node, face_node_ids[long_face,1]])
-            # TODO: Does the ordering of the nodes matter?
+            opposing_node_id = np.setdiff1d(elem.node_ids, face_node_ids[long_face,:], assume_unique=True)[0]
+            new_nodes1 = np.array([opposing_node_id, midpoint_id, ccwise_node_id])
+            new_nodes2 = np.array([opposing_node_id, cwise_node_id, midpoint_id])
+            print(new_nodes1)
+            print(new_nodes2)
 
-            # Create new element
+            # Create first element
             mesh.elements.append(mesh_defs.Element())
             new_elem1 = mesh.elements[-1]
-            # Set element's id, node ids, coords, and neighbors
-            new_elem1.id = len(mesh.elements)
+            # Set first element's id, node ids, coords, and neighbors
+            new_elem1.id = len(mesh.elements) - 1
             new_elem1.node_ids = new_nodes1
-            new_elem1.node_coords = mesh.node_coords[mesh.elements[4].node_ids]
+            new_elem1.node_coords = mesh.node_coords[new_elem1.node_ids]
             new_elem1.face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
-            # Make the first element smaller to make space
-            mesh.elements[0].node_ids = np.array([0,6,3])
-            mesh.elements[0].node_coords = np.array([[-1., -1.], [ -.5, 0.], [-1., 1.]])
-            mesh.elements[0].face_to_neighbors = np.array([-1,-1,-1])
-            # Increment number of elements
-            mesh.num_elems += 1
+            mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [new_elem1.node_ids], axis=0)
+            # Create second element
+            mesh.elements.append(mesh_defs.Element())
+            new_elem2 = mesh.elements[-1]
+            # Set first element's id, node ids, coords, and neighbors
+            new_elem2.id = len(mesh.elements) - 1
+            new_elem2.node_ids = new_nodes2
+            new_elem2.node_coords = mesh.node_coords[new_elem2.node_ids]
+            new_elem2.face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
+            mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [new_elem2.node_ids], axis=0)
+            # Create the face between the elements
+            mesh.interior_faces.append(mesh_defs.InteriorFace())
+            mesh.interior_faces[-1].elemL_id = new_elem1.id
+            mesh.interior_faces[-1].elemR_id = new_elem2.id
+            # The node opposite this face on elem1 is at index 2
+            mesh.interior_faces[-1].faceL_id = 2
+            # The node opposite this face on elem2 is at index 1
+            mesh.interior_faces[-1].faceR_id = 1
+            # Update number of faces
+            mesh.num_interior_faces += 1
+
+            # "Deactivate" the first element
+            # TODO: figure out a better way to do this
+            elem.face_to_neighbors = np.array([-1,-1,-1])
+            #elem.node_ids = np.array([0,0,0])
+            centroid = (midpoint + mesh.node_coords[opposing_node_id])/2
+            elem.node_coords = np.array([centroid, centroid+[.001,0], centroid+[.001,.001]])
+
+            # Update number of elements
+            mesh.num_elems += 2
             print("num_elems: ", mesh.num_elems)
             # TODO: Update this correctly
             solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
@@ -91,15 +121,18 @@ def adapt(solver, physics, mesh, stepper):
             # TODO: map solution from old elements to new split elements
             # Append to the end of U
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             # Delete residual
             stepper.R = None
 
     # Just printing random things to check them out
     #print(mesh.node_coords)
-    #print(mesh.interior_faces[0].elemL_id)
-    #print(mesh.interior_faces[0].elemR_id)
-    #print(mesh.interior_faces[0].faceL_id)
-    #print(mesh.interior_faces[0].faceR_id)
+    #for i in range(mesh.num_interior_faces):
+    #    print("Face ", i)
+    #    print(mesh.interior_faces[i].elemL_id)
+    #    print(mesh.interior_faces[i].elemR_id)
+    #    print(mesh.interior_faces[i].faceL_id)
+    #    print(mesh.interior_faces[i].faceR_id)
     #print(mesh.boundary_groups)
     #for i in range(mesh.num_elems):
     #        print(mesh.elements[i].id)
@@ -126,3 +159,38 @@ def face_geometry_between(elem1, elem2, node_coords):
     # Return the area of the face (which is just the distance since this is a 2D
     # code)
     return (np.linalg.norm(face_nodes[0,:] - face_nodes[1,:]), face_nodes, face_node_ids)
+
+def find_counterclockwise_node(nodes, a, b):
+    """Find which of two neighboring nodes is more counterclockwise.
+    The function takes an array of nodes along with two neighboring nodes a and b, then
+    finds which of a and b are more counterclockwise. The nodes array is assumed
+    to be ordered counterclockwise, which means that whichever of a and b
+    appears later in the array (or appears at index 0) is the most counterclockwise.
+
+    Arguments:
+    nodes - array of node IDs
+    a - ID of the first node
+    b - ID of the second node
+    Returns
+    (int, int) tuple of counterclockwise node and clockwise node
+    """
+
+    # Find indices of a and b in the nodes array
+    a_index = np.argwhere(nodes == a)[0]
+    b_index = np.argwhere(nodes == b)[0]
+
+    # If a's index is higher and b is not zero, then a is ahead
+    if a_index > b_index and b_index != 0:
+        ccwise_node = a
+        cwise_node = b
+    # Otherwise, if a_index is 0, the b must be at the end of the array, which
+    # means a is ahead
+    elif a_index == 0:
+        ccwise_node = a
+        cwise_node = b
+    # Otherwise, a_index is lower than b_index and a_index is not index 0, so b
+    # must be ahead
+    else:
+        ccwise_node = b
+        cwise_node = a
+    return (ccwise_node, cwise_node)
