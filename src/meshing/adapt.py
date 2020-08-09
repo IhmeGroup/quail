@@ -44,7 +44,7 @@ def adapt(solver, physics, mesh, stepper):
             ccwise_node_id, cwise_node_id = find_counterclockwise_node(elem.node_ids,
                     long_face_node_ids[0], long_face_node_ids[1])
 
-            # The two split elements generated must contain:
+            # The four split elements generated must contain:
             # 1. this midpoint
             # 2. the node opposite the long face
             # 3. one of the nodes that compose the long face (one for each)
@@ -60,40 +60,42 @@ def adapt(solver, physics, mesh, stepper):
             new_elem1 = append_element(mesh, new_nodes1)
             # Create second element
             new_elem2 = append_element(mesh, new_nodes2)
+            # Create third element
+            new_elem3 = append_element(mesh, new_nodes3)
+            # Create fourth element
+            new_elem4 = append_element(mesh, new_nodes4)
 
-            # Create the face between the elements
-            mesh.interior_faces.append(mesh_defs.InteriorFace())
-            mesh.interior_faces[-1].elemL_id = new_elem1.id
-            mesh.interior_faces[-1].elemR_id = new_elem2.id
-            # The node opposite this face on elem1 is at index 2
-            mesh.interior_faces[-1].faceL_id = 2
-            # The node opposite this face on elem2 is at index 1
-            mesh.interior_faces[-1].faceR_id = 1
-            # Set neighbors on either side of the face
-            new_elem1.face_to_neighbors[2] = new_elem2.id
-            new_elem2.face_to_neighbors[1] = new_elem1.id
-            # Update number of faces
-            mesh.num_interior_faces += 1
+            # Create the faces between the elements
+            append_face(mesh, new_elem1, new_elem2, 2, 1)
+            append_face(mesh, new_elem3, new_elem4, 2, 1)
+            append_face(mesh, new_elem1, new_elem3, 0, 1)
+            append_face(mesh, new_elem2, new_elem4, 0, 2)
 
-            # "Deactivate" the first element
+            # TODO: Figure out how to remove long face after making new ones
+
+            # "Deactivate" the original element and its neighbor
             # TODO: figure out a better way to do this
             elem.face_to_neighbors = np.array([-1,-1,-1])
-            #elem.node_ids = np.array([0,0,0])
+            neighbor.face_to_neighbors = np.array([-1,-1,-1])
             centroid = (midpoint + mesh.node_coords[opposing_node_id])/2
+            neighbor_centroid = (midpoint + mesh.node_coords[neighbor_opposing_node_id])/2
             elem.node_coords = np.array([centroid, centroid+[.001,0], centroid+[.001,.001]])
+            neighbor.node_coords = np.array([neighbor_centroid, neighbor_centroid+[.001,0], neighbor_centroid+[.001,.001]])
 
-            # Update number of elements
-            mesh.num_elems += 2
-            print("num_elems: ", mesh.num_elems)
             # TODO: Update this correctly
             solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
-            #print(solver.elem_operators.x_elems)
+            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
+            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
+            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
+
             # Call compute operators
             solver.precompute_matrix_operators()
 
             # -- Update solution -- #
             # TODO: map solution from old elements to new split elements
             # Append to the end of U
+            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             # Delete residual
@@ -133,7 +135,31 @@ def append_element(mesh, node_ids):
     elem.face_to_neighbors = np.full(mesh.gbasis.NFACES, -1)
     # Append to element nodes in mesh
     mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [node_ids], axis=0)
+    # Update number of elements
+    mesh.num_elems += 1
     return elem
+
+def append_face(mesh, elem1, elem2, faceL_id, faceR_id):
+    """Create a new face between two elements and append it to the mesh.
+
+    Arguments:
+    mesh - Mesh object (meshing/meshbase.py)
+    elem1 - first Element object, left of face (meshing/meshbase.py)
+    elem2 - second Element object, right of face (meshing/meshbase.py)
+    faceL_id - index of node opposite the new face in elem1
+    faceR_id - index of node opposite the new face in elem2
+    """
+    # Create the face between the elements
+    mesh.interior_faces.append(mesh_defs.InteriorFace())
+    mesh.interior_faces[-1].elemL_id = elem1.id
+    mesh.interior_faces[-1].elemR_id = elem2.id
+    mesh.interior_faces[-1].faceL_id = faceL_id
+    mesh.interior_faces[-1].faceR_id = faceR_id
+    # Set neighbors on either side of the face
+    elem1.face_to_neighbors[faceL_id] = elem2.id
+    elem2.face_to_neighbors[faceR_id] = elem1.id
+    # Update number of faces
+    mesh.num_interior_faces += 1
 
 def find_longest_face(elem, mesh):
     """Find the longest face in an element.
