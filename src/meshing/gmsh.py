@@ -598,36 +598,39 @@ def read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups,
 	return mesh
 
 
-def AddFaceToHash(node0_to_faces_info, nfnode, nodes, at_boundary, Group, 
-		Elem, Face):
+def add_face_info_to_table(node0_to_faces_info, nfnode, nodes, at_boundary, 
+		group_num, elem_id, face_id):
 
-	if nfnode <= 0:
+	num_face_nodes = nfnode
+	if num_face_nodes <= 0:
 		raise ValueError("Need nfnode > 1")
 
 	# snodes = np.zeros(nfnode, dtype=int)
 	# snodes[:] = nodes[:nfnode]
 
 	# Sort nodes and convert to tuple (to make it hashable)
-	snodes = tuple(np.sort(nodes[:nfnode]))
+	snodes = tuple(np.sort(nodes[:num_face_nodes]))
 
 	# Check if face already exists in face hash
-	Exists = False
+	already_added = False
 	node0 = snodes[0]
 	faces_info = node0_to_faces_info[node0]
 	if snodes in faces_info:
-		Exists = True
+		already_added = True
 		face_info = faces_info[snodes]
 		face_info.num_adjacent_elems += 1
 	else:
 		# If it doesn't exist, then add it
 		face_info = FaceInfo()
 		faces_info.update({snodes : face_info})
-		face_info.set_info(at_boundary=at_boundary, boundary_group_num=Group, elem_id=Elem, 
-				face_id=Face, num_face_nodes=nfnode, snodes=snodes)
+		face_info.set_info(at_boundary=at_boundary, 
+				boundary_group_num=group_num, elem_id=elem_id, 
+				face_id=face_id, num_face_nodes=num_face_nodes, 
+				snodes=snodes)
 		if not at_boundary:
 			face_info.num_adjacent_elems = 1
 
-	return face_info, Exists
+	return face_info, already_added
 
 
 def DeleteFaceFromHash(node0_to_faces_info, nfnode, nodes):
@@ -712,7 +715,7 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 			nfnode = gbasis.get_num_basis_coeff(1)
 
 			# Add q = 1 nodes to hash table
-			face_info, Exists = AddFaceToHash(node0_to_faces_info, nfnode, nodes, 
+			face_info, Exists = add_face_info_to_table(node0_to_faces_info, nfnode, nodes, 
 					True, ibfgrp, -1, bf[ibfgrp])
 			bf[ibfgrp] += 1
 		elif phys_group.boundary_group_num == -1:
@@ -804,7 +807,7 @@ def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 				for n in range(len(nodes)):
 					nodes[n] = old_to_new_node_tags[nodes[n]]
 				# Add q = 1 nodes to hash table
-				face_info, Exists = AddFaceToHash(node0_to_faces_info, nfnode, nodes, True, 
+				face_info, Exists = add_face_info_to_table(node0_to_faces_info, nfnode, nodes, True, 
 					ibfgrp, -1, bf[ibfgrp])
 				bf[ibfgrp] += 1
 		else:
@@ -875,7 +878,7 @@ def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 			fnodes = mesh.elem_to_node_ids[elem][fnodes]
 
 			# Add to hash table
-			face_info, Exists = AddFaceToHash(node0_to_faces_info, nfnode, fnodes, False, 
+			face_info, Exists = add_face_info_to_table(node0_to_faces_info, nfnode, fnodes, False, 
 				-1, elem, face)
 
 			if Exists:
@@ -905,7 +908,8 @@ def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 					# except:
 					# 	code.interact(local=locals())
 					boundary_face = BFG.boundary_faces[face_info.face_id]
-					boundary_face.elem_id = elem; boundary_face.face_id = face
+					boundary_face.elem_id = elem
+					boundary_face.face_id = face
 					# Store in Face
 					# Face = mesh.face_ids[elem][face]
 					# Face.boundary_group_num = face_info.boundary_group_num
