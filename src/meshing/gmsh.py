@@ -428,9 +428,9 @@ def read_mesh_entities(fo, ver, mesh, phys_groups):
 def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 		gmsh_element_database):
 	# Number of entities (cells, faces, edges)
-	nEntity = int(fo.readline())
+	num_entities = int(fo.readline())
 	# Loop over entities
-	for n in range(nEntity):
+	for _ in range(num_entities):
 		fl = fo.readline()
 		ls = fl.split()
 		# Parse line
@@ -442,8 +442,9 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 		# 	raise ValueError("All elements need to be assigned to a physical group")
 		
 		found = False
-		for PGidx in range(num_phys_groups):
-			phys_group = phys_groups[PGidx]
+		# for PGidx in range(num_phys_groups):
+		# 	phys_group = phys_groups[PGidx]
+		for phys_group in phys_groups:
 			if phys_group.gmsh_phys_num == phys_num:
 				found = True
 				break
@@ -452,7 +453,6 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 					"faces must be assigned to a physical group")
 
 		if phys_group.dim == mesh.dim:
-			# Assume only one element type - need to check for this later
 			### Entity is an element
 # <<<<<<< Updated upstream
 # 			gorder = EntitiesInfo[etype].gorder
@@ -495,7 +495,7 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 			# 		found = True
 			# 		break
 			try:
-				BFG = mesh.boundary_groups[phys_group.name]
+				bgroup = mesh.boundary_groups[phys_group.name]
 			except KeyError:
 			# if phys_group.name in mesh.boundary_groups:
 				# Group has not been assigned yet
@@ -503,9 +503,9 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.boundary_groups.append(BFG)
 				# BFG.name = phys_group.name
-				BFG = mesh.add_boundary_group(phys_group.name)
-				phys_group.boundary_group_num = BFG.number
-			BFG.num_boundary_faces += 1
+				bgroup = mesh.add_boundary_group(phys_group.name)
+				phys_group.boundary_group_num = bgroup.number
+			bgroup.num_boundary_faces += 1
 		# else:
 		# 	raise Exception("Mesh error")
 
@@ -527,12 +527,13 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 		# find physical boundary group
 		found = False
 		for phys_group in phys_groups:
-			if entity_tag in phys_group.entity_tags and dim == phys_group.dim:
+			if entity_tag in phys_group.entity_tags and \
+					dim == phys_group.dim:
 				found = True
 				break
 		if not found:
-			raise errors.DoesNotExistError("All elements and boundary faces must " +
-					"be assigned to a physical group")
+			raise errors.DoesNotExistError("All elements and boundary " +
+					"faces must be assigned to a physical group")
 
 		if dim == mesh.dim:
 			# Element
@@ -546,7 +547,8 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 			for _ in range(num_in_block):
 				fo.readline()
 				if mesh.num_elems == 0:
-					mesh.set_params(gbasis=gbasis, gorder=gorder, num_elems=0)
+					mesh.set_params(gbasis=gbasis, gorder=gorder, 
+							num_elems=0)
 				else:
 					if gorder != mesh.gorder or gbasis != mesh.gbasis:
 						raise ValueError(">1 element type not supported")
@@ -555,19 +557,19 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 
 			if phys_group.boundary_group_num >= 0:
 				# BFG = mesh.boundary_groups[phys_group.boundary_group_num]
-				BFG = mesh.boundary_groups[phys_group.name]
+				bgroup = mesh.boundary_groups[phys_group.name]
 			else:
 				# Group has not been assigned yet
 				# mesh.num_boundary_groups += 1
 				# BFG = mesh_defs.BFaceGroup()
 				# mesh.boundary_groups.append(BFG)
 				# BFG.name = phys_group.name
-				BFG = mesh.add_boundary_group(phys_group.name)
-				phys_group.boundary_group_num = BFG.number
+				bgroup = mesh.add_boundary_group(phys_group.name)
+				phys_group.boundary_group_num = bgroup.number
 			# Loop and increment num_boundary_faces
 			for _ in range(num_in_block):
 				fo.readline()
-				BFG.num_boundary_faces += 1
+				bgroup.num_boundary_faces += 1
 		else:
 			for _ in range(num_in_block):
 				fo.readline()
@@ -577,7 +579,8 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 
 
 
-def read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database):
+def read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
+		num_phys_groups, gmsh_element_database):
 	# First pass to get sizes
 	# Find beginning of section
 	go_to_line_below_string(fo, "$Elements")
@@ -595,53 +598,39 @@ def read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, num_phys_groups, 
 	return mesh
 
 
-def AddFaceToHash(Node2FaceTable, nfnode, nodes, at_boundary, Group, Elem, Face):
+def AddFaceToHash(node0_to_faces_info, nfnode, nodes, at_boundary, Group, 
+		Elem, Face):
 
 	if nfnode <= 0:
 		raise ValueError("Need nfnode > 1")
 
-	snodes = np.zeros(nfnode, dtype=int)
-	snodes[:] = nodes[:nfnode]
+	# snodes = np.zeros(nfnode, dtype=int)
+	# snodes[:] = nodes[:nfnode]
 
 	# Sort nodes and convert to tuple (to make it hashable)
-	snodes = tuple(np.sort(snodes))
+	snodes = tuple(np.sort(nodes[:nfnode]))
 
 	# Check if face already exists in face hash
 	Exists = False
-	n0 = snodes[0]
-	FaceInfoDict = Node2FaceTable[n0]
-	if snodes in FaceInfoDict:
+	node0 = snodes[0]
+	faces_info = node0_to_faces_info[node0]
+	if snodes in faces_info:
 		Exists = True
-		FInfo = FaceInfoDict[snodes]
-		FInfo.num_adjacent_elems += 1
+		face_info = faces_info[snodes]
+		face_info.num_adjacent_elems += 1
 	else:
 		# If it doesn't exist, then add it
-		FInfo = FaceInfo()
-		FaceInfoDict.update({snodes : FInfo})
-		FInfo.set_info(at_boundary=at_boundary, boundary_group_num=Group, elem_id=Elem, 
+		face_info = FaceInfo()
+		faces_info.update({snodes : face_info})
+		face_info.set_info(at_boundary=at_boundary, boundary_group_num=Group, elem_id=Elem, 
 				face_id=Face, num_face_nodes=nfnode, snodes=snodes)
 		if not at_boundary:
-			FInfo.num_adjacent_elems = 1
+			face_info.num_adjacent_elems = 1
+
+	return face_info, Exists
 
 
-	# for FInfo in FaceInfoDict:
-	# 	if np.array_equal(snodes, FInfo.snodes):
-	# 		Exists = True
-	# 		# increment number of visits
-	# 		FInfo.nVisit += 1
-	# 		break
-
-	# if not Exists:
-	# 	# If it doesn't exist, then add it
-	# 	FInfo = FaceInfo()
-	# 	FaceInfoDict.append(FInfo)
-	# 	FInfo.Set(at_boundary=at_boundary, Group=Group, Elem=Elem, Face=Face,
-	# 			nfnode=nfnode, snodes=snodes)
-
-	return FInfo, Exists
-
-
-def DeleteFaceFromHash(Node2FaceTable, nfnode, nodes):
+def DeleteFaceFromHash(node0_to_faces_info, nfnode, nodes):
 
 	if nfnode <= 0:
 		raise ValueError("Need nfnode > 1")
@@ -654,37 +643,21 @@ def DeleteFaceFromHash(Node2FaceTable, nfnode, nodes):
 
 	# Check if face already exists in face hash
 	n0 = snodes[0]
-	FaceInfoDict = Node2FaceTable[n0]
+	faces_info = node0_to_faces_info[n0]
 	# if FaceInfos == []:
 	# 	raise LookupError
 
-	if snodes in FaceInfoDict:
-		del FaceInfoDict[snodes]
-
-
-	# DelIdx = [] # for storing which indices to delete
-	# for i in range(len(FaceInfos)):
-	# 	FInfo = FaceInfos[i]
-	# 	found = False
-	# 	if np.array_equal(snodes, FInfo.snodes):
-	# 		found = True
-
-	# 	# If found, store for deletion later
-	# 	if found:
-	# 		DelIdx.append(i)
-
-	# # Delete
-	# for i in DelIdx:
-	# 	del FaceInfos[i]
+	if snodes in faces_info:
+		del faces_info[snodes]
 
 
 def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database,
-		old_to_new_node_tags, bf, Node2FaceTable):
+		old_to_new_node_tags, bf, node0_to_faces_info):
 	# Number of entities
-	nEntity = int(fo.readline())
+	num_entities = int(fo.readline())
 	elem = 0 # elem counter
 	# Loop through entities
-	for e in range(nEntity):
+	for _ in range(num_entities):
 		fl = fo.readline()
 		ls = fl.split()
 		# Parse line
@@ -693,13 +666,14 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 		phys_num = int(ls[3])
 		
 		found = False
-		for PGidx in range(num_phys_groups):
-			phys_group = phys_groups[PGidx]
+		# for PGidx in range(num_phys_groups):
+		# 	phys_group = phys_groups[PGidx]
+		for phys_group in phys_groups:
 			if phys_group.gmsh_phys_num == phys_num:
 				found = True
 				break
 		if not found:
-			raise Exception("Physical group not found!")
+			raise errors.DoesNotExistError("Physical group not found!")
 
 		# Check if entity type is supported
 		# if not gmsh_element_database[etype].Supported:
@@ -738,7 +712,7 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 			nfnode = gbasis.get_num_basis_coeff(1)
 
 			# Add q = 1 nodes to hash table
-			FInfo, Exists = AddFaceToHash(Node2FaceTable, nfnode, nodes, 
+			face_info, Exists = AddFaceToHash(node0_to_faces_info, nfnode, nodes, 
 					True, ibfgrp, -1, bf[ibfgrp])
 			bf[ibfgrp] += 1
 		elif phys_group.boundary_group_num == -1:
@@ -777,7 +751,7 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 
 
 def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database, 
-		old_to_new_node_tags, bf, Node2FaceTable):	
+		old_to_new_node_tags, bf, node0_to_faces_info):	
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]
 	num_entity_blocks = lint[0]
@@ -830,7 +804,7 @@ def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_
 				for n in range(len(nodes)):
 					nodes[n] = old_to_new_node_tags[nodes[n]]
 				# Add q = 1 nodes to hash table
-				FInfo, Exists = AddFaceToHash(Node2FaceTable, nfnode, nodes, True, 
+				face_info, Exists = AddFaceToHash(node0_to_faces_info, nfnode, nodes, True, 
 					ibfgrp, -1, bf[ibfgrp])
 				bf[ibfgrp] += 1
 		else:
@@ -865,9 +839,9 @@ def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 	mesh.num_interior_faces = 0
 
 	# Dictionary for hashing
-	# Node2FaceTable = {n:FaceInfo() for n in range(mesh.num_nodes)}
-	# Node2FaceTable = {n:[] for n in range(mesh.num_nodes)}
-	Node2FaceTable = [{} for n in range(mesh.num_nodes)] # list of dicts
+	# node0_to_faces_info = {n:FaceInfo() for n in range(mesh.num_nodes)}
+	# node0_to_faces_info = {n:[] for n in range(mesh.num_nodes)}
+	node0_to_faces_info = [{} for n in range(mesh.num_nodes)] # list of dicts
 
 	# Go to entities section
 	go_to_line_below_string(fo, "$Elements")
@@ -876,10 +850,10 @@ def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 
 	if ver == VERSION2:
 		fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database, 
-				old_to_new_node_tags, bf, Node2FaceTable)
+				old_to_new_node_tags, bf, node0_to_faces_info)
 	else:
 		fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database, 
-				old_to_new_node_tags, bf, Node2FaceTable)
+				old_to_new_node_tags, bf, node0_to_faces_info)
 
 
 	# Verify footer
@@ -901,54 +875,54 @@ def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 			fnodes = mesh.elem_to_node_ids[elem][fnodes]
 
 			# Add to hash table
-			FInfo, Exists = AddFaceToHash(Node2FaceTable, nfnode, fnodes, False, 
+			face_info, Exists = AddFaceToHash(node0_to_faces_info, nfnode, fnodes, False, 
 				-1, elem, face)
 
 			if Exists:
 				# Face already exists in hash table
-				# if FInfo.nVisit != 2:
+				# if face_info.nVisit != 2:
 				# 	raise ValueError("More than two elements share a face " + 
 				# 		"or a boundary face is referenced by more than one element")
 
 				# Link elem to boundary_face or IFace
-				if FInfo.at_boundary:
-					if FInfo.num_adjacent_elems != 1:
+				if face_info.at_boundary:
+					if face_info.num_adjacent_elems != 1:
 						raise ValueError("More than one element adjacent " +
 								"to boundary face")
 					# boundary face
 					# Store in BFG
-					# BFG = mesh.boundary_groups[FInfo.boundary_group_num]
+					# BFG = mesh.boundary_groups[face_info.boundary_group_num]
 					found = False
 					# Make this cleaner later
 					for phys_group in phys_groups:
-						if phys_group.boundary_group_num == FInfo.boundary_group_num:
+						if phys_group.boundary_group_num == face_info.boundary_group_num:
 							found = True
 							break
 					if not found: raise Exception
 					BFG = mesh.boundary_groups[phys_group.name]
 					# try:
-					# 	boundary_face = BFG.boundary_faces[FInfo.face_id]
+					# 	boundary_face = BFG.boundary_faces[face_info.face_id]
 					# except:
 					# 	code.interact(local=locals())
-					boundary_face = BFG.boundary_faces[FInfo.face_id]
+					boundary_face = BFG.boundary_faces[face_info.face_id]
 					boundary_face.elem_id = elem; boundary_face.face_id = face
 					# Store in Face
 					# Face = mesh.face_ids[elem][face]
-					# Face.boundary_group_num = FInfo.boundary_group_num
-					# Face.gmsh_phys_num = FInfo.face_id
+					# Face.boundary_group_num = face_info.boundary_group_num
+					# Face.gmsh_phys_num = face_info.face_id
 				else:
 					# interior face
-					if FInfo.num_adjacent_elems != 2:
+					if face_info.num_adjacent_elems != 2:
 						raise ValueError("More than two elements adjacent " +
 								"to interior face")
 					# Store in IFace
 					IFace = mesh.interior_faces[mesh.num_interior_faces]
-					IFace.elemL_id = FInfo.elem_id
-					IFace.faceL_id = FInfo.face_id
+					IFace.elemL_id = face_info.elem_id
+					IFace.faceL_id = face_info.face_id
 					IFace.elemR_id = elem
 					IFace.faceR_id = face
 					# Store in left Face
-					# Face = mesh.face_ids[FInfo.elem_id][FInfo.face_id]
+					# Face = mesh.face_ids[face_info.elem_id][face_info.face_id]
 					# Face.boundary_group_num = general.INTERIORFACE
 					# Face.gmsh_phys_num = mesh.num_interior_faces
 					# # Store in right face
@@ -958,13 +932,13 @@ def FillMesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database,
 					# Increment IFace counter
 					mesh.num_interior_faces += 1
 
-				DeleteFaceFromHash(Node2FaceTable, nfnode, fnodes)
+				DeleteFaceFromHash(node0_to_faces_info, nfnode, fnodes)
 
 	# Make sure no faces left in hash
 	nleft = 0
 	for n in range(mesh.num_nodes):
-		FaceInfoDict = Node2FaceTable[n]
-		for snodes in FaceInfoDict.keys():
+		faces_info = node0_to_faces_info[n]
+		for snodes in faces_info.keys():
 			print(snodes)
 			# for node in snodes:
 			# 	print(int(node+1))
