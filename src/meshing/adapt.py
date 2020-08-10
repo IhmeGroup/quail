@@ -16,9 +16,10 @@ def adapt(solver, physics, mesh, stepper):
 
     # Array of flags for which elements to be split
     needs_refinement = np.zeros(mesh.num_elems, dtype=bool)
-    # Split element 0 and 1
-    needs_refinement[0] = True
-    needs_refinement[1] = True
+    # Split an element
+    if mesh.num_elems == 4: split_id = 0
+    if mesh.num_elems == 8: split_id = 7
+    needs_refinement[split_id] = True
 
     # Loop over all elements
     for elem_id in range(mesh.num_elems):
@@ -84,16 +85,9 @@ def adapt(solver, physics, mesh, stepper):
             # TODO: figure out a better way to do this
             elem.face_to_neighbors = np.array([-1,-1,-1])
             neighbor.face_to_neighbors = np.array([-1,-1,-1])
-            centroid = (midpoint + mesh.node_coords[opposing_node_id])/2
-            neighbor_centroid = (midpoint + mesh.node_coords[neighbor_opposing_node_id])/2
-            elem.node_coords = np.array([centroid, centroid+[.001,0], centroid+[.001,.001]])
-            neighbor.node_coords = np.array([neighbor_centroid, neighbor_centroid+[.001,0], neighbor_centroid+[.001,.001]])
-
-            # TODO: Update this correctly
-            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
-            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
-            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
-            solver.elem_operators.x_elems = np.append(solver.elem_operators.x_elems, [solver.elem_operators.x_elems[-1,:,:]], axis=0)
+            offset = .01
+            elem.node_coords = np.array([midpoint, midpoint+[0,-offset], midpoint+[offset,0]])
+            neighbor.node_coords = np.array([midpoint+[0,-offset], midpoint+[offset,-offset], midpoint+[offset,0]])
 
             # Call compute operators
             solver.precompute_matrix_operators()
@@ -105,6 +99,7 @@ def adapt(solver, physics, mesh, stepper):
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            print(physics.U)
             # Delete residual
             stepper.R = None
 
