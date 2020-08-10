@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/basis/basis.py
+#       File : src/numerics/basis/basis.py
 #
 #       Contains class definitions for each shape and basis function 
 #       available in the DG Python framework.
@@ -31,14 +31,13 @@ class ShapeBase(ABC):
     This is a Mixin class used to represent a shape. Supported shapes 
     include point, segment, quadrilateral, and triangle.
 
-
-    Attributes
+    Attributes:
     -----------
     quadrature_type : enum
         specifies the type of quadrature to be used on the element
 
     Abstract Constants:
-    ----------------------
+    -------------------
     SHAPE_TYPE
         defines an enum from ShapeType to identify the element's shape
     FACE_SHAPE
@@ -55,7 +54,7 @@ class ShapeBase(ABC):
         reference element
 
     Abstract Methods:
-    ------------------
+    -----------------
     get_num_basis_coeff
         sets the number of basis coefficients given a polynomial order
     get_equidistant_nodes
@@ -65,7 +64,7 @@ class ShapeBase(ABC):
         gets arrays of quad_pts and quad_wts
     
     Methods:
-    ---------
+    --------
     get_local_face_principal_node_nums
         get index location of local faces 
     get_elem_ref_from_face_ref
@@ -155,8 +154,8 @@ class ShapeBase(ABC):
             p: order of polynomial space
 
         OUTPUTS: 
-            xn : array of nodes equidistantly spaced
-            [shape : [nb, dim]]
+            xn: array of nodes equidistantly spaced
+            [shape: [nb, dim]]
         '''
         pass
 
@@ -264,7 +263,7 @@ class ShapeBase(ABC):
 
         OUTPUTS:
             self.forced_pts: set to nb if force_flag is True, left as None 
-                             otherwise
+                otherwise
         
         NOTES: 
             can only be used when GaussLobatto is specified for both the 
@@ -540,8 +539,7 @@ class BasisBase(ABC):
             Element Methods" (Boca Raton, FL: Chapman and Hall/CRC). 2004. 
             pp. 55-60.
 
-
-    Attributes
+    Attributes:
     -----------
     order : int
         specifies the polynomial or geometric order
@@ -564,14 +562,14 @@ class BasisBase(ABC):
         src/numerics/basis/tools.py]
 
     Abstract Constants:
-    ---------------------
+    -------------------
     BASIS_TYPE
         defines an enum from ShapeType to identify the element's shape
     MODAL_OR_NODAL
         defines whether the basis function is a modal or nodal type
     
     Methods:
-    ---------
+    --------
     get_physical_grad
         calculates the physical gradient of the basis function
     get_basis_val_grads
@@ -600,29 +598,6 @@ class BasisBase(ABC):
 
     @abstractmethod
     def __init__(self, order):
-        '''
-        Attributes
-        ----------
-        order : int
-            specifies the polynomial or geometric order
-        basis_val : numpy array
-            evaluated basis function
-        basis_ref_grad : numpy array
-            evaluated gradient of the basis function in reference space
-        basis_phys_grad : numpy array
-            evaluated gradient of the basis function in physical space
-        skip_interp : boolean
-            when forcing nodes to be the same as quadrature this flag is 
-            used to skip the interpolation routines as they are not needed
-        nb : int
-            number of polynomial coefficients
-        get_1d_nodes : method
-            method to obtain the 1d nodes [options in src/numerics/basis/
-            tools.py]
-        calculate_normals : method
-            method to obtain normals for element faces [options in 
-            src/numerics/basis/tools.py]
-        '''
         self.order = order
         self.nb = 0
         self.basis_val = np.zeros(0)
@@ -705,20 +680,20 @@ class BasisBase(ABC):
             quad_pts: coordinates of quadrature points
             get_val: [OPTIONAL] flag to calculate basis functions
             get_ref_grad: [OPTIONAL] flag to calculate gradient of basis 
-            functions in ref space
+                functions in ref space
             get_phys_grad: [OPTIONAL] flag to calculate gradient of basis 
-            functions in phys space
+                functions in phys space
             ijac: [OPTIONAL] inverse jacobian (needed if calculating 
-            physical gradients) [nq, dim, dim]
+                physical gradients) [nq, dim, dim]
         
         OUTPUTS:
             Sets the following attributes of the BasisBase class:
 
             basis_val: evaluated basis function [nq, nb]
             basis_ref_grad : evaluated gradient of the basis function in 
-            reference space [nq, nb, dim]
+                reference space [nq, nb, dim]
             basis_phys_grad : evaluated gradient of the basis function in 
-            physical space [nq, nb, dim]
+                physical space [nq, nb, dim]
         '''
         if get_val:
             self.basis_val = self.get_values(quad_pts)
@@ -745,11 +720,11 @@ class BasisBase(ABC):
             basis: basis object
             get_val: [OPTIONAL] flag to calculate basis functions
             get_ref_grad: [OPTIONAL] flag to calculate gradient of basis 
-            functions in ref space
+                functions in ref space
             get_phys_grad: [OPTIONAL] flag to calculate gradient of basis 
-            functions in phys space
+                functions in phys space
             ijac: [OPTIONAL] inverse jacobian (needed if calculating 
-            physical gradients) [nq, nq, dim]
+                physical gradients) [nq, nq, dim]
         
         OUTPUTS:
             
@@ -759,9 +734,9 @@ class BasisBase(ABC):
 
             basis_val: evaluated basis function [nq, nb]
             basis_ref_grad : evaluated gradient of the basis function in 
-            reference space [nq, nb, dim]
+                reference space [nq, nb, dim]
             basis_phys_grad : evaluated gradient of the basis function in 
-            physical space [nq, nb, dim]            
+                physical space [nq, nb, dim]            
         '''
         if basis is None:
             basis = self
