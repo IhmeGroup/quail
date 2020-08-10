@@ -18,6 +18,7 @@ def adapt(solver, physics, mesh, stepper):
     needs_refinement = np.zeros(mesh.num_elems, dtype=bool)
     # Just split element 0
     needs_refinement[0] = True
+    needs_refinement[1] = True
 
     # Loop over all elements
     for elem_id in range(mesh.num_elems):
@@ -51,19 +52,26 @@ def adapt(solver, physics, mesh, stepper):
             # and they must be in counterclockwise order.
             opposing_node_id = np.setdiff1d(elem.node_ids, long_face_node_ids, assume_unique=True)[0]
             neighbor_opposing_node_id = np.setdiff1d(neighbor.node_ids, long_face_node_ids, assume_unique=True)[0]
+            neighbor_long_face = np.argwhere(neighbor.node_ids == neighbor_opposing_node_id)[0,0]
             new_nodes1 = np.array([opposing_node_id, midpoint_id, ccwise_node_id])
             new_nodes2 = np.array([opposing_node_id, cwise_node_id, midpoint_id])
             new_nodes3 = np.array([midpoint_id, neighbor_opposing_node_id, ccwise_node_id])
             new_nodes4 = np.array([midpoint_id, cwise_node_id, neighbor_opposing_node_id])
 
+            # TODO: Make this less jank
             # Create first element
-            new_elem1 = append_element(mesh, new_nodes1)
+            new_elem1 = append_element(mesh, new_nodes1, 1, elem, long_face - 2)
             # Create second element
-            new_elem2 = append_element(mesh, new_nodes2)
+            new_elem2 = append_element(mesh, new_nodes2, 2, elem, long_face - 1)
             # Create third element
-            new_elem3 = append_element(mesh, new_nodes3)
+            new_elem3 = append_element(mesh, new_nodes3, 0, neighbor, neighbor_long_face - 1)
             # Create fourth element
-            new_elem4 = append_element(mesh, new_nodes4)
+            new_elem4 = append_element(mesh, new_nodes4, 0, neighbor, neighbor_long_face - 2)
+
+            print(new_elem1.face_to_neighbors)
+            print(new_elem2.face_to_neighbors)
+            print(new_elem3.face_to_neighbors)
+            print(new_elem4.face_to_neighbors)
 
             # Create the faces between the elements
             append_face(mesh, new_elem1, new_elem2, 2, 1)
@@ -116,14 +124,19 @@ def adapt(solver, physics, mesh, stepper):
     #        print(mesh.elements[i].node_coords)
     #        print(mesh.elements[i].face_to_neighbors)
 
-def append_element(mesh, node_ids):
+def append_element(mesh, node_ids, face_id, parent, parent_face_id):
     """Create a new element at specified nodes and append it to the mesh.
+    This function creates a new element and sets the neighbors of the element
+    and neighbor element across the face specified by face_id.
 
     Arguments:
     mesh - Mesh object (meshing/meshbase.py)
     node_ids - array of new element's node IDs
+    face_id - local ID of face in new element which needs new neighbors
+    parent - Element object (meshing/meshbase.py), parent of the new element
+    parent_face_id - local ID of face in parent element which needs new neighbors
     Returns:
-    elem - Element object (meshing/meshbase.py)
+    elem - Element object (meshing/meshbase.py), newly created element
     """
     # Create element
     mesh.elements.append(mesh_defs.Element())
@@ -137,6 +150,18 @@ def append_element(mesh, node_ids):
     mesh.elem_to_node_ids = np.append(mesh.elem_to_node_ids, [node_ids], axis=0)
     # Update number of elements
     mesh.num_elems += 1
+    # Get parent's neighbor across face
+    parent_neighbor_id = parent.face_to_neighbors[parent_face_id]
+    # Add parent's neighbor to new elements's neighbor
+    elem.face_to_neighbors[face_id] = parent_neighbor_id
+    # If the parent's neighbor is not a boundary, update it
+    if parent_neighbor_id != -1:
+        # Get parent's neighbor
+        parent_neighbor = mesh.elements[parent_neighbor_id]
+        # Get index of face in parent's neighbor
+        parent_neighbor_face_index = np.argwhere(parent_neighbor.face_to_neighbors == parent.id)[0]
+        # Set new element as parent neighbor's neighbor
+        parent_neighbor.face_to_neighbors[parent_neighbor_face_index] = elem.id
     return elem
 
 def append_face(mesh, elem1, elem2, faceL_id, faceR_id):
