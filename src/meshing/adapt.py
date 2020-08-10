@@ -16,7 +16,7 @@ def adapt(solver, physics, mesh, stepper):
 
     # Array of flags for which elements to be split
     needs_refinement = np.zeros(mesh.num_elems, dtype=bool)
-    # Just split element 0
+    # Split element 0 and 1
     needs_refinement[0] = True
     needs_refinement[1] = True
 
@@ -58,7 +58,6 @@ def adapt(solver, physics, mesh, stepper):
             new_nodes3 = np.array([midpoint_id, neighbor_opposing_node_id, ccwise_node_id])
             new_nodes4 = np.array([midpoint_id, cwise_node_id, neighbor_opposing_node_id])
 
-            # TODO: Make this less jank
             # Create first element
             new_elem1 = append_element(mesh, new_nodes1, 1, elem, long_face - 2)
             # Create second element
@@ -162,6 +161,16 @@ def append_element(mesh, node_ids, face_id, parent, parent_face_id):
         parent_neighbor_face_index = np.argwhere(parent_neighbor.face_to_neighbors == parent.id)[0]
         # Set new element as parent neighbor's neighbor
         parent_neighbor.face_to_neighbors[parent_neighbor_face_index] = elem.id
+        # Update old face neighbors by looking for the face between parent and parent_neighbor
+        for face in mesh.interior_faces:
+            if face.elemL_id == parent.id and face.elemR_id == parent_neighbor.id:
+                face.elemL_id = elem.id
+                face.faceL_id = face_id
+                break
+            if face.elemR_id == parent.id and face.elemL_id == parent_neighbor.id:
+                face.elemR_id = elem.id
+                face.faceR_id = face_id
+                break
     return elem
 
 def append_face(mesh, elem1, elem2, faceL_id, faceR_id):
