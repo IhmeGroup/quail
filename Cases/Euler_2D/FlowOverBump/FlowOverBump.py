@@ -32,7 +32,7 @@ InterpOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; EndTime = [40., 48., 
 #subfolder = "Triangles/"; InterpBasis = "LagrangeEqTri"
 #FileName = "bump0_tri.msh"
 MeshFile = CurrentDir + folder + subfolder + FileName
-mesh = MeshGmsh.ReadGmshFile(MeshFile)
+mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 
 # Plot.PreparePlot(axis=None, linewidth=0.5)
 # Plot.plot_mesh(mesh)

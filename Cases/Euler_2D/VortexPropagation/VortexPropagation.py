@@ -35,12 +35,12 @@ folder = "meshes/"
 subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
 # Structured
 subsubfolder = "Structured/"
-FileName = "box_5x5.msh"
+FileName = "box_5x5_v4.msh"
 # FileName = "box_10x10.msh"
 # FileName = "box_20x20.msh"
 # FileName = "box_40x40.msh"
 MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + FileName
-mesh = MeshGmsh.ReadGmshFile(MeshFile)
+mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 
 ### Solver parameters
 dt = 0.05

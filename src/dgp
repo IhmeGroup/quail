@@ -135,7 +135,7 @@ def driver(deck):
 	Mesh
 	'''
 	if mesh_params["File"] is not None:
-		mesh = mesh_gmsh.ReadGmshFile(mesh_params["File"])
+		mesh = mesh_gmsh.import_gmsh_mesh(mesh_params["File"])
 	else:
 		# Unpack
 		shape = mesh_params["ElementShape"]
