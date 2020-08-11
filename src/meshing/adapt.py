@@ -1,6 +1,7 @@
 import numpy as np
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
+import random
 
 # TODO: This whole thing only works for triangles. Generalize this.
 def adapt(solver, physics, mesh, stepper):
@@ -17,16 +18,29 @@ def adapt(solver, physics, mesh, stepper):
     # Array of flags for which elements to be split
     needs_refinement = np.zeros(mesh.num_elems, dtype=bool)
     # Split an element
-    if mesh.num_elems == 4: split_id = 0
-    if mesh.num_elems == 8: split_id = 7
+    #if mesh.num_elems == 4:  split_id = 0
+    #if mesh.num_elems == 8:  split_id = 7
+    #if mesh.num_elems == 12: split_id = 11
+    closest_distance = 9e99
+    ref_range = 2
+    point = np.array([0,0]) + np.array([random.random()*ref_range - ref_range/2, random.random()*ref_range - ref_range/2])
+    print(point)
+    for elem in mesh.elements:
+        distance = np.linalg.norm(np.mean(elem.node_coords, axis=0) - point)
+        if distance < closest_distance:
+            closest_distance = distance
+            closest_elem = elem
+    split_id = closest_elem.id
     needs_refinement[split_id] = True
+    # Figure out why this doesn't work (probably because of 'deactivated' cells)
+    #needs_refinement[:] = True
 
     # Loop over all elements
     for elem_id in range(mesh.num_elems):
         # Only refine elements that need refinement
         if needs_refinement[elem_id]:
 
-            # TODO: Find the neighbors
+            # TODO: What about boundary elements??
 
             # Get element
             elem = mesh.elements[elem_id]
@@ -68,11 +82,6 @@ def adapt(solver, physics, mesh, stepper):
             # Create fourth element
             new_elem4 = append_element(mesh, new_nodes4, 0, neighbor, neighbor_long_face - 2)
 
-            print(new_elem1.face_to_neighbors)
-            print(new_elem2.face_to_neighbors)
-            print(new_elem3.face_to_neighbors)
-            print(new_elem4.face_to_neighbors)
-
             # Create the faces between the elements
             append_face(mesh, new_elem1, new_elem2, 2, 1)
             append_face(mesh, new_elem3, new_elem4, 2, 1)
@@ -86,8 +95,9 @@ def adapt(solver, physics, mesh, stepper):
             elem.face_to_neighbors = np.array([-1,-1,-1])
             neighbor.face_to_neighbors = np.array([-1,-1,-1])
             offset = .01
-            elem.node_coords = np.array([midpoint, midpoint+[0,-offset], midpoint+[offset,0]])
-            neighbor.node_coords = np.array([midpoint+[0,-offset], midpoint+[offset,-offset], midpoint+[offset,0]])
+            corner = np.array([-2,-2])
+            elem.node_coords = np.array([corner, corner+[0,-offset], corner+[offset,0]])
+            neighbor.node_coords = np.array([corner+[0,-offset], corner+[offset,-offset], corner+[offset,0]])
 
             # Call compute operators
             solver.precompute_matrix_operators()
@@ -99,7 +109,6 @@ def adapt(solver, physics, mesh, stepper):
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            print(physics.U)
             # Delete residual
             stepper.R = None
 
@@ -256,18 +265,24 @@ def find_counterclockwise_node(nodes, a, b):
     a_index = np.argwhere(nodes == a)[0]
     b_index = np.argwhere(nodes == b)[0]
 
-    # If a's index is higher and b is not zero, then a is ahead
-    if a_index > b_index and b_index != 0:
-        ccwise_node = a
-        cwise_node = b
-    # Otherwise, if a_index is 0, the b must be at the end of the array, which
-    # means a is ahead
-    elif a_index == 0:
-        ccwise_node = a
-        cwise_node = b
-    # Otherwise, a_index is lower than b_index and a_index is not index 0, so b
-    # must be ahead
+    # If a's index is higher
+    if a_index > b_index:
+        # If a is at the end and b is at the beginning, then b is ahead
+        if a_index == nodes.size-1 and b_index == 0:
+            ccwise_node = b
+            cwise_node = a
+        # In every other case, if a's index is higher then a is ahead
+        else:
+            ccwise_node = a
+            cwise_node = b
+    # If b's index is higher
     else:
-        ccwise_node = b
-        cwise_node = a
+        # If b is at the end and a is at the beginning, then a is ahead
+        if b_index == nodes.size-1 and a_index == 0:
+            ccwise_node = a
+            cwise_node = b
+        # In every other case, if b's index is higher then b is ahead
+        else:
+            ccwise_node = b
+            cwise_node = a
     return (ccwise_node, cwise_node)
