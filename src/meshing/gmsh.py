@@ -239,7 +239,7 @@ def check_mesh_format(fo):
 	return ver
 
 
-def read_physical_groups(fo, mesh):
+def import_physical_groups(fo, mesh):
 	# Find beginning of section
 	go_to_line_below_string(fo, "$PhysicalNames")
 
@@ -346,7 +346,7 @@ def get_nodes_ver4(fo):
 	return node_coords, old_to_new_node_tags
 
 
-def read_nodes(fo, ver, mesh):
+def import_nodes(fo, ver, mesh):
 	# Find beginning of section
 	go_to_line_below_string(fo, "$Nodes")
 
@@ -384,7 +384,7 @@ def read_nodes(fo, ver, mesh):
 	return mesh, old_to_new_node_tags
 
 
-def read_mesh_entities(fo, ver, mesh, phys_groups):
+def import_mesh_entities(fo, ver, mesh, phys_groups):
 
 	if ver == VERSION2:
 		return phys_groups
@@ -579,7 +579,7 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 
 
 
-def read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
+def import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
 		num_phys_groups, gmsh_element_database):
 	# First pass to get sizes
 	# Find beginning of section
@@ -741,10 +741,10 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 			# if not found:
 			# 	raise Exception("Can't find element group")
 			# Number of element nodes
-			nnode = gbasis.get_num_basis_coeff(gorder)
+			num_nodes = gbasis.get_num_basis_coeff(gorder)
 			# Sanity check
-			if nnode != gmsh_element_database[etype].num_nodes:
-				raise Exception("Check Gmsh entities")
+			if num_nodes != gmsh_element_database[etype].num_nodes:
+				raise Exception("Number of nodes doesn't match up")
 			# Convert node Ordering
 			newnodes = nodes[gmsh_element_database[etype].node_order]
 			# Store in elem_to_node_ids
@@ -753,7 +753,6 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 			num_elems += 1
 		else:
 			raise ValueError
-		 
 
 
 def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
@@ -784,7 +783,7 @@ def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 			for _ in range(num_in_block):
 				fl = fo.readline()
 				lint = [int(l) for l in fl.split()]
-				# Convert node Ordering
+				# Convert node ordering
 				nodes = np.array(lint[1:])
 				for n in range(len(nodes)):
 					nodes[n] = old_to_new_node_tags[nodes[n]]
@@ -795,11 +794,15 @@ def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 				num_elems += 1
 		elif dim == mesh.dim - 1:
 			# find physical boundary group
+			found = False
 			for phys_group in phys_groups:
 				if entity_tag in phys_group.entity_tags:
 					if phys_group.dim == dim:
 						bgroup_num = phys_group.boundary_group_num
+						found = True
 						break
+			if not found:
+				raise ValueError("Physical boundary group not found")
 			bgroup = mesh.boundary_groups[phys_group.name]
 			gbasis = gmsh_element_database[etype].gbasis
 			num_face_nodes = gbasis.get_num_basis_coeff(1) 
@@ -812,8 +815,8 @@ def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 					nodes[n] = old_to_new_node_tags[nodes[n]]
 				# Add q = 1 nodes to hash table
 				face_info, _ = add_face_info_to_table(
-					node0_to_faces_info, num_face_nodes, nodes, True, 
-					bgroup_num, -1, num_bfaces_per_bgroup[bgroup_num])
+						node0_to_faces_info, num_face_nodes, nodes, True, 
+						bgroup_num, -1, num_bfaces_per_bgroup[bgroup_num])
 				num_bfaces_per_bgroup[bgroup_num] += 1
 		else:
 			for _ in range(num_in_block):
@@ -966,8 +969,8 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 			num_faces_left += 1
 
 	if num_faces_left != 0:
-		raise ValueError("%d faces not identified as a" % (num_faces_left) +
-			"boundary or interior face")
+		raise ValueError("Above %d faces not identified" % (num_faces_left) +
+			" as valid boundary or interior faces")
 
 	# Make sure number of interior faces makes sense
 	if mesh.num_interior_faces > mesh.num_elems*num_faces_per_elem:
@@ -977,9 +980,6 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 
 	# mesh.fill_faces()
 	mesh.create_elements()
-
-	# Check face orientations
-	mesh_tools.check_face_orientations(mesh)
 
 
 def import_gmsh_mesh(file_name):
@@ -998,14 +998,18 @@ def import_gmsh_mesh(file_name):
 
 	# Read sections one-by-one
 	ver = check_mesh_format(fo)
-	mesh, old_to_new_node_tags = read_nodes(fo, ver, mesh)
-	phys_groups, num_phys_groups = read_physical_groups(fo, mesh)
-	phys_groups = read_mesh_entities(fo, ver, mesh, phys_groups)
-	mesh = read_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database)
+	mesh, old_to_new_node_tags = import_nodes(fo, ver, mesh)
+	phys_groups, num_phys_groups = import_physical_groups(fo, mesh)
+	phys_groups = import_mesh_entities(fo, ver, mesh, phys_groups)
+	mesh = import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
+			num_phys_groups, gmsh_element_database)
 	# code.interact(local=locals())
 
 	# Create rest of mesh
 	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_tags)
+
+	# Ensure valid mesh
+	mesh_tools.check_face_orientations(mesh)
 
 	# Print some stats
 	print("%d elements in the mesh" % (mesh.num_elems))
