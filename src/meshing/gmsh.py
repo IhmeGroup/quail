@@ -14,6 +14,7 @@ import numerics.basis.basis as basis_defs
 VERSION2 = "2.2" 
 	# see http://www.manpagez.com/info/gmsh/gmsh-2.2.6/gmsh_63.php
 VERSION4 = "4.1"
+	# see https://gmsh.info/doc/texinfo/gmsh.html#MSH-file-format
 
 
 class GmshElementData(object):
@@ -23,13 +24,13 @@ class GmshElementData(object):
 	Attributes:
 	-----------
 	num_nodes: int
-	number of nodes
+		number of nodes
 	gorder: int
-	order of geometry interpolation
+		order of geometry interpolation
 	gbasis: int
-	object for geometry basis
+		object for geometry basis
 	node_order: numpy array (int)
-	maps dgp node ordering to gmsh node ordering
+		maps dgp node ordering to gmsh node ordering
 	'''
 	def __init__(self):
 		self.num_nodes = -1
@@ -330,7 +331,7 @@ def go_to_line_below_string(fo, string):
 
 	Outputs:
 	--------
-		fo: file object (modified)
+		fo: file object (current position is modified)
 	'''
 	# Start from beginning
 	fo.seek(0)
@@ -359,6 +360,7 @@ def check_mesh_format(fo):
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		ver: Gmsh file version
 	'''
 	# Find beginning of section
@@ -393,6 +395,7 @@ def import_physical_groups(fo, mesh):
 
 	Outputs:
 	-------
+		fo: file object (current position is modified)
 	    phys_groups: list of physical group objects
 	    num_phys_groups: number of physical groups
 	'''
@@ -446,6 +449,7 @@ def get_nodes_ver2(fo):
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		node_coords: node coordinates
 		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
 
@@ -457,6 +461,8 @@ def get_nodes_ver2(fo):
 	'''
 	# Number of nodes
 	num_nodes = int(fo.readline())
+	if num_nodes == 0:
+		raise ValueError("No nodes to import!")
 	old_to_new_node_ids = {}
 	# Allocate nodes - assume 3D first
 	node_coords = np.zeros([num_nodes, 3])
@@ -491,6 +497,7 @@ def get_nodes_ver4(fo):
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		node_coords: node coordinates
 		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
 
@@ -504,6 +511,8 @@ def get_nodes_ver4(fo):
 	ls = [int(l) for l in fl.split()]
 	num_blocks = ls[0]
 	num_nodes = ls[1]
+	if num_nodes == 0:
+		raise ValueError("No nodes to import!")
 
 	old_to_new_node_ids = {}
 	# Allocate nodes - assume 3D first
@@ -545,6 +554,7 @@ def import_nodes(fo, ver, mesh):
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
 
@@ -569,17 +579,18 @@ def import_nodes(fo, ver, mesh):
 		raise errors.FileReadError
 	
 	# Number of spatial dimensions
-	ds = [0,1,2]
-	for d in ds:
+	ds_all = [0, 1, 2]
+	ds = []
+	for d in ds_all:
 		# Find max perturbation from zero
 		diff = np.amax(np.abs(node_coords[:,d]))
-		if diff <= general.eps:
-			# remove from ds
-			ds.remove(d)
+		if diff > general.eps:
+			# keep this spatial dimension
+			ds.append(ds_all[d])
 
 	# New dimension
 	dim = len(ds)
-	node_coords = node_coords[:,ds]
+	node_coords = node_coords[:, ds]
 
 	if dim == 3:
 		raise ValueError("3D meshes not supported")
@@ -605,8 +616,40 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		phys_groups: list of physical group objects (modified)
 	'''
+	def get_entity_tag(fo, phys_groups, num_phys_tags_idx, phys_num_idx):
+		'''
+		This inner function obtains the tag of a given entity and stores it
+		in the corresponding physical group
+
+		Inputs:
+		-------
+		    fo: file object
+		    phys_groups: list of physical group objects
+		    num_phys_tags_idx: index to obtain number of physical tags
+		    phys_num_idx: index to obtain physical group number
+
+		Outputs:
+		--------
+			fo: file object (current position is modified)
+			phys_groups: list of physical group objects (modified)
+		'''
+		fl = fo.readline()
+		ls = fl.split()
+		entity_tag = int(ls[0])
+		num_phys_tags = int(ls[num_phys_tags_idx])
+		if num_phys_tags == 1:
+			phys_num = int(ls[phys_num_idx])
+			for phys_group in phys_groups:
+				if phys_group.gmsh_phys_num == phys_num:
+					break
+			phys_group.entity_tags.add(entity_tag)
+		elif num_phys_tags > 1:
+			raise ValueError("Entity should not be assigned to more " +
+					"than one physical group")
+
 	if ver == VERSION2:
 		return phys_groups
 
@@ -618,30 +661,35 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 	num_points = ls[0]
 	num_curves = ls[1]
 	num_surfaces = ls[2]
+	num_volumes = ls[3]
 
 	# Read entities
 	if mesh.dim == 2:
-		# skip points
+		# Skip points
 		for _ in range(num_points):
 			fo.readline()
-		# curves + surfaces
+		# Curves + surfaces
 		for _ in range(num_curves + num_surfaces):
-			fl = fo.readline()
-			ls = fl.split()
-			entity_tag = int(ls[0])
-			num_phys_tags = int(ls[7])
-			if num_phys_tags == 1:
-				phys_num = int(ls[8])
-				for phys_group in phys_groups:
-					if phys_group.gmsh_phys_num == phys_num:
-						break
-				phys_group.entity_tags.add(entity_tag)
-			elif num_phys_tags > 1:
-				raise ValueError("Entity should not be assigned to more " +
-						"than one physical group")
+			get_entity_tag(fo, phys_groups, 7, 8)
+		# Skip volumes
+		for _ in range(num_volumes):
+			fo.readline()
 	else:
-		# add dim = 1 later
-		raise NotImplementedError
+		# 1D
+		# Points
+		for _ in range(num_points):
+			get_entity_tag(fo, phys_groups, 4, 5)
+		# Curves
+		for _ in range(num_curves):
+			get_entity_tag(fo, phys_groups, 7, 8)
+		# Skip surfaces and volumes
+		for _ in range(num_surfaces + num_volumes):
+			fl = fo.readline()
+
+	# Verify footer
+	fl = fo.readline()
+	if not fl.startswith("$EndEntities"):
+		raise errors.FileReadError
 
 	return phys_groups
 
@@ -661,10 +709,13 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 	'''
 	# Number of elements and boundary faces
 	num_elems_bfaces = int(fo.readline())
+	if num_elems_bfaces == 0:
+		raise ValueError("No elements or boundary faces to import")
 
 	# Loop 
 	for _ in range(num_elems_bfaces):
@@ -727,12 +778,15 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups,
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 	'''
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]
 	num_entity_blocks = lint[0]
 	num_elems_bfaces = lint[1]
+	if num_elems_bfaces == 0:
+		raise ValueError("No elements or boundary faces to import")
 
 	for _ in range(num_entity_blocks):
 		fl = fo.readline()
@@ -811,6 +865,7 @@ def import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups,
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 	'''
 	# Find beginning of section
@@ -941,6 +996,7 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 	    node0_to_faces_info: see above description of add_face_info_to_table
 	    	(modified)
@@ -1037,6 +1093,7 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 	    node0_to_faces_info: see above description of add_face_info_to_table
 	    	(modified)
@@ -1138,6 +1195,7 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 
 	Outputs:
 	--------
+		fo: file object (current position is modified)
 		mesh: mesh object (modified)
 	'''
 	# Allocate boundary groups and faces
@@ -1160,7 +1218,7 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	# Go to Gmsh elements section
 	go_to_line_below_string(fo, "$Elements")
 
-	# boundary face counter
+	# Boundary face counter
 	num_bfaces_per_bgroup = [0 for i in range(mesh.num_boundary_groups)] 
 
 	# Process elements and boundary faces
