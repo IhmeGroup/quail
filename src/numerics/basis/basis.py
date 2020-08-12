@@ -26,6 +26,7 @@ import numerics.basis.basis as basis_defs
 
 from numerics.quadrature import segment, quadrilateral, triangle
 
+
 class ShapeBase(ABC):
     '''
     This is a Mixin class used to represent a shape. Supported shapes 

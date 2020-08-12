@@ -34,18 +34,6 @@ class InteriorFace(object):
         local ID of face from perspective of right element
     '''
     def __init__(self):
-        '''
-        Attributes:
-        -----------
-        elemL_id : int
-            ID of "left" element
-        faceL_id : int
-            local ID of face from perspective of left element
-        elemR_id : int
-            ID of "right" element
-        faceR_id : int
-            local ID of face from perspective of right element
-        '''
         self.elemL_id = 0 
         self.faceL_id = 0 
         self.elemR_id = 0 

@@ -34,7 +34,7 @@ Basis2Shape = {
 
 def set_basis(order, basis_name):
     '''
-    Sets the basis class given the basis_name string argunemnt
+    Sets the basis class given the basis_name string argument
 
     INPUTS: 
         order: solution order

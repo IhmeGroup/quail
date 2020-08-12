@@ -11,20 +11,43 @@ import meshing.tools as mesh_tools
 import numerics.basis.basis as basis_defs
 
 
-VERSION2 = "2.2"
+VERSION2 = "2.2" 
+	# see http://www.manpagez.com/info/gmsh/gmsh-2.2.6/gmsh_63.php
 VERSION4 = "4.1"
-MSH_MAX_NUM = 140 # number of element types
 
 
 class GmshElementData(object):
+	'''
+	This class provides information about a given Gmsh element.
+
+	Attributes:
+	-----------
+	num_nodes: int
+	number of nodes
+	gorder: int
+	order of geometry interpolation
+	gbasis: int
+	object for geometry basis
+	node_order: numpy array (int)
+	maps dgp node ordering to gmsh node ordering
+	'''
 	def __init__(self):
 		self.num_nodes = -1
 		self.gorder = -1
 		self.gbasis = -1
-		self.node_order = None
+		self.node_order = np.array(0, dtype=int)
 
 
 def gmsh_node_order_seg(gorder):
+	'''
+	This function maps dgp node ordering to gmsh node ordering for segments
+
+	INPUTS: 
+	    gorder: order of geometry interpolation
+
+	OUTPUTS:
+	    nodes: maps dgp node ordering to gmsh node ordering
+	'''
 	num_nodes = gorder + 1
 	nodes = np.arange(num_nodes)
 	nodes[1:-1] = nodes[2:]
@@ -34,6 +57,19 @@ def gmsh_node_order_seg(gorder):
 
 
 def populate_nodes_quadril(gorder, start, nodes):
+	'''
+	Helper function for mapping dgp node ordering to gmsh node ordering for
+	quadrilaterals. Recursion is employed.
+
+	INPUTS: 
+	    gorder: order of geometry interpolation
+	    start: starting node
+	    nodes: array for mapping node orders
+
+	OUTPUTS:
+	    nodes: maps dgp node ordering to gmsh node ordering
+	    	(modified)
+	'''
 	if gorder == 0:
 		return start
 	else:
@@ -58,20 +94,44 @@ def populate_nodes_quadril(gorder, start, nodes):
 		if gorder >= 2:
 			# recursively fill the interior nodes
 			start += gorder - 1
-			nodes[1:-1, 1:-1] = populate_nodes_quadril(gorder-2, start, nodes[1:-1, 1:-1])
+			nodes[1:-1, 1:-1] = populate_nodes_quadril(gorder-2, start, 
+				nodes[1:-1, 1:-1])
 
 	return nodes
 
 
 def gmsh_node_order_quadril(gorder):
+	'''
+	This function maps dgp node ordering to gmsh node ordering for 
+	quadrilaterals.
 
-	nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int))
+	INPUTS: 
+	    gorder: order of geometry interpolation
+
+	OUTPUTS:
+	    nodes: maps dgp node ordering to gmsh node ordering
+	'''
+	nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1], 
+			dtype=int))
 	nodes.shape = -1
 
 	return nodes
 
 
 def populate_nodes_tri(gorder, start, nodes):
+	'''
+	Helper function for mapping dgp node ordering to gmsh node ordering for
+	triangles. Recursion is employed.
+
+	INPUTS: 
+	    gorder: order of geometry interpolation
+	    start: starting node
+	    nodes: array for mapping node orders
+
+	OUTPUTS:
+	    nodes: maps dgp node ordering to gmsh node ordering
+	    	(modified)
+	'''
 	if gorder == 0:
 		return start
 	else:
@@ -94,24 +154,39 @@ def populate_nodes_tri(gorder, start, nodes):
 		if gorder >= 3:
 			# recursively fill the interior nodes
 			start += gorder-1
-			nodes[1:gorder-1,1:gorder-1] = populate_nodes_tri(gorder-3, start, 
-					nodes[1:gorder-1,1:gorder-1])
+			nodes[1:gorder-1,1:gorder-1] = populate_nodes_tri(gorder-3, 
+				start, nodes[1:gorder-1,1:gorder-1])
 
 	return nodes
 
 
 def gmsh_node_order_tri(gorder):
+	'''
+	This function maps dgp node ordering to gmsh node ordering for 
+	triangles.
 
-	# only lower triangular 
+	INPUTS: 
+	    gorder: order of geometry interpolation
+
+	OUTPUTS:
+	    nodes: maps dgp node ordering to gmsh node ordering
+	'''
 	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int)-1)
+	# only lower triangular 
 	nodes = nodes[nodes >= 0]
 
 	return nodes
 
 
 def create_gmsh_element_database():
-	# (NTYPES+1) objects due to 1-indexing
-	# gmsh_element_database = [GmshElementData() for n in range(MSH_MAX_NUM+1)]
+	'''
+	This function creates a database that holds information about all
+	supported Gmsh elements.
+
+	Outputs:
+	--------
+	    gmsh_element_database: Gmsh element database
+	'''
 	gmsh_element_database = {}
 
 	''' 
@@ -168,6 +243,22 @@ def create_gmsh_element_database():
 
 
 class PhysicalGroup(object):
+	'''
+	This class holds information about a given Gmsh physical group.
+
+	Attributes:
+	-----------
+	dim: int
+	    number of spatial dimensions
+	boundary_group_num: int
+	    boundary group number (in dgp)
+	gmsh_phys_num: int
+	    physical group number assigned by Gmsh
+	name: str
+	    name of physical group
+	entity_tags: set
+	    tags of entities associated with this physical group
+	'''
 	def __init__(self):
 		self.dim = 1
 		self.boundary_group_num = -1
@@ -177,6 +268,31 @@ class PhysicalGroup(object):
 
 
 class FaceInfo(object):
+	'''
+	This class holds information about a given interior or boundary face.
+
+	Attributes:
+	-----------
+	num_adjacent_elems: int
+	    number of elements adjacent to given face
+	at_boundary: bool
+	    True if boundary face, False if interior face
+	boundary_group_num: int
+	    boundary group number (in dgp)
+	elem_id: int
+	    ID of current adjacent element
+	face_id: int
+	    local ID of face from perspective of current adjacent element
+	num_face_nodes: int
+	    number of face nodes (q = 1)
+	node_ids_sort: tuple
+		global IDs of face nodes sorted in ascending order 
+    
+    Methods:
+    ---------
+    set_info
+        sets attributes
+	'''
 	def __init__(self):
 		self.num_adjacent_elems = 0
 		self.at_boundary = False
@@ -184,23 +300,38 @@ class FaceInfo(object):
 		self.elem_id = 0
 		self.face_id = 0
 		self.num_face_nodes = 0
-		self.snodes = None # should be a tuple (hashable)
+		self.node_ids_sort = tuple() # should be a tuple (hashable)
 
 	def set_info(self, **kwargs):
+		'''
+		This method is a wrapper for setting all of this class's attributes.
+		Note that node_ids_sort can be passed as a numpy array, list, etc.; 
+		it will be converted to a tuple, which is hashable and can therefore
+		be used as a dictionary key.
+		'''
 		for key in kwargs:
-			if key is "snodes":
-				self.snodes = tuple(kwargs[key]) # make it hashable
+			if key is "node_ids_sort":
+				self.node_ids_sort = tuple(kwargs[key]) # make it hashable
 			elif hasattr(self, key):
 				setattr(self, key, kwargs[key])
 			else: 
 				raise AttributeError
-	# def __eq__(self, other):
-	# 	return isinstance(other, FaceInfo) and self.snodes == other.snodes
-	# def __hash__(self):
-	# 	return hash(self.snodes)
 
 
 def go_to_line_below_string(fo, string):
+	'''
+	This function sets a given file's current position to the line after 
+	an input string.
+
+	Inputs:
+	-------
+	    fo: file object
+	    string: input string
+
+	Outputs:
+	--------
+		fo: file object (modified)
+	'''
 	# Start from beginning
 	fo.seek(0)
 
@@ -219,6 +350,17 @@ def go_to_line_below_string(fo, string):
 
 
 def check_mesh_format(fo):
+	'''
+	This function checks the Gmsh file format and version for compatibility.
+
+	Inputs:
+	-------
+	    fo: file object
+
+	Outputs:
+	--------
+		ver: Gmsh file version
+	'''
 	# Find beginning of section
 	go_to_line_below_string(fo, "$MeshFormat")
 
@@ -226,7 +368,8 @@ def check_mesh_format(fo):
 	fl = fo.readline()
 	ver = fl.split()[0]
 	if ver != VERSION2 and ver != VERSION4:
-		raise errors.FileReadError("Unsupported version")
+		raise errors.FileReadError("Unsupported version! " + 
+				"Only versions 2.2 and 4.1 are supported.")
 	file_type = int(fl.split()[1])
 	if file_type != 0:
 		raise errors.FileReadError("Only ASCII format supported")
@@ -240,6 +383,19 @@ def check_mesh_format(fo):
 
 
 def import_physical_groups(fo, mesh):
+	'''
+	This function imports information about Gmsh physical groups.
+
+	Inputs:
+	-------
+	    fo: file object
+	    mesh: mesh object
+
+	Outputs:
+	-------
+	    phys_groups: list of physical group objects
+	    num_phys_groups: number of physical groups
+	'''
 	# Find beginning of section
 	go_to_line_below_string(fo, "$PhysicalNames")
 
@@ -249,7 +405,7 @@ def import_physical_groups(fo, mesh):
 	# Allocate
 	phys_groups = [PhysicalGroup() for i in range(num_phys_groups)]
 
-	# Loop over entities
+	# Loop over physical groups
 	for i in range(num_phys_groups):
 		phys_group = phys_groups[i]
 		fl = fo.readline()
@@ -281,86 +437,138 @@ def import_physical_groups(fo, mesh):
 
 
 def get_nodes_ver2(fo):
+	'''
+	This function imports node information for Gmsh 2.2.
+
+	Inputs:
+	-------
+	    fo: file object
+
+	Outputs:
+	--------
+		node_coords: node coordinates
+		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+
+	Notes:
+	------
+		New IDs are assigned sequentially from 0 to num_nodes-1 in the order 
+		in which nodes are read. Gmsh does not necessarily follow this 
+		convention, especially with the newer versions.
+	'''
 	# Number of nodes
 	num_nodes = int(fo.readline())
-	old_to_new_node_tags = {}
+	old_to_new_node_ids = {}
 	# Allocate nodes - assume 3D first
-	node_coords = np.zeros([num_nodes,3])
+	node_coords = np.zeros([num_nodes, 3])
+
 	# Extract nodes
-	new_node_tag = 0
+	new_node_id = 0
 	for n in range(num_nodes):
 		fl = fo.readline()
 		ls = fl.split()
-		# Explicitly use for loop for compatibility with
-		# both Python 2 and Python 3
-		old_node_tag = int(ls[0])
-		old_to_new_node_tags.update({old_node_tag : new_node_tag})
+		# Node ID
+		old_node_id = int(ls[0])
+		old_to_new_node_ids.update({old_node_id : new_node_id})
+		# Node coordinates
 		for d in range(3):
-			node_coords[new_node_tag,d] = float(ls[d+1])
+			node_coords[new_node_id, d] = float(ls[d+1])
 		# Sanity check
 		if int(ls[0]) > num_nodes:
 			raise errors.FileReadError
 
-		new_node_tag += 1
+		new_node_id += 1
 
-	return node_coords, old_to_new_node_tags
+	return node_coords, old_to_new_node_ids
 
 
 def get_nodes_ver4(fo):
+	'''
+	This function imports node information for Gmsh 4.1.
+
+	Inputs:
+	-------
+	    fo: file object
+
+	Outputs:
+	--------
+		node_coords: node coordinates
+		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+
+	Notes:
+	------
+		New IDs are assigned sequentially from 0 to num_nodes-1 in the order 
+		in which nodes are read. Gmsh does not necessarily follow this 
+		convention, especially with the newer versions.
+	'''
 	fl = fo.readline()
 	ls = [int(l) for l in fl.split()]
 	num_blocks = ls[0]
 	num_nodes = ls[1]
-	min_node_tag = ls[2]
-	max_node_tag = ls[3]
-	# Require continuous node tagging from 1 to num_nodes
-	# Note: does not have to be ordered
-	old_to_new_node_tags = {}
-	# if min_node_tag != 1 or max_node_tag != num_nodes:
-	# 	raise ValueError
-	# Allocate nodes - assume 3D first
-	node_coords = np.zeros([num_nodes,3])
 
-	new_node_tag = 0
+	old_to_new_node_ids = {}
+	# Allocate nodes - assume 3D first
+	node_coords = np.zeros([num_nodes, 3])
+
+	# Extract nodes
+	new_node_id = 0
 	for b in range(num_blocks):
+		# One block at a time
 		fl = fo.readline()
-		# one block at a time
 		ls = [int(l) for l in fl.split()]
-		parametric = ls[2]
 		num_nodes_in_block = ls[3]
-		new_node_tags = np.zeros(num_nodes_in_block, dtype=int)
-		# read node tags
-		for n in range(num_nodes_in_block):
-			# node tag
-			fl = fo.readline()
-			old_node_tag = int(fl)
-			new_node_tags[n] = new_node_tag
-			old_to_new_node_tags.update({old_node_tag : new_node_tag})
-			new_node_tag += 1
-		# read node coordinates
+		new_node_ids = np.zeros(num_nodes_in_block, dtype=int)
+		# Node IDs
 		for n in range(num_nodes_in_block):
 			fl = fo.readline()
-			inode = new_node_tags[n]
+			old_node_id = int(fl)
+			new_node_ids[n] = new_node_id
+			old_to_new_node_ids.update({old_node_id : new_node_id})
+			new_node_id += 1
+		# Node coordinates
+		for n in range(num_nodes_in_block):
+			fl = fo.readline()
+			inode = new_node_ids[n]
 			node_coords[inode] = [float(l) for l in fl.split()[:3]]
 
-	return node_coords, old_to_new_node_tags
+	return node_coords, old_to_new_node_ids
 
 
 def import_nodes(fo, ver, mesh):
+	'''
+	This function imports and processes node information.
+
+	Inputs:
+	-------
+	    fo: file object
+	    ver: Gmsh file version
+	    mesh: mesh object
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+
+	Notes:
+	------
+		New IDs are assigned sequentially from 0 to num_nodes-1 in the order 
+		in which nodes are read. Gmsh does not necessarily follow this 
+		convention, especially with the newer versions.
+	'''
 	# Find beginning of section
 	go_to_line_below_string(fo, "$Nodes")
 
+	# Import nodes
 	if ver == VERSION2:
-		node_coords, old_to_new_node_tags = get_nodes_ver2(fo)
+		node_coords, old_to_new_node_ids = get_nodes_ver2(fo)
 	else:
-		node_coords, old_to_new_node_tags = get_nodes_ver4(fo)
+		node_coords, old_to_new_node_ids = get_nodes_ver4(fo)
 
 	# Verify footer
 	fl = fo.readline()
 	if not fl.startswith("$EndNodes"):
 		raise errors.FileReadError
 	
-	# Change dimension if needed
+	# Number of spatial dimensions
 	ds = [0,1,2]
 	for d in ds:
 		# Find max perturbation from zero
@@ -381,11 +589,24 @@ def import_nodes(fo, ver, mesh):
 	mesh.num_nodes = node_coords.shape[0]
 	mesh.dim = dim
 
-	return mesh, old_to_new_node_tags
+	return mesh, old_to_new_node_ids
 
 
 def import_mesh_entities(fo, ver, mesh, phys_groups):
+	'''
+	This function imports entity information for Gmsh 4.1.
 
+	Inputs:
+	-------
+	    fo: file object
+	    ver: Gmsh file version
+	    mesh: mesh object
+	    phys_groups: list of physical group objects
+
+	Outputs:
+	--------
+		phys_groups: list of physical group objects (modified)
+	'''
 	if ver == VERSION2:
 		return phys_groups
 
@@ -398,6 +619,7 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 	num_curves = ls[1]
 	num_surfaces = ls[2]
 
+	# Read entities
 	if mesh.dim == 2:
 		# skip points
 		for _ in range(num_points):
@@ -417,7 +639,6 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 			elif num_phys_tags > 1:
 				raise ValueError("Entity should not be assigned to more " +
 						"than one physical group")
-
 	else:
 		# add dim = 1 later
 		raise NotImplementedError
@@ -427,23 +648,33 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 
 def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 		gmsh_element_database):
-	# Number of entities (cells, faces, edges)
-	num_entities = int(fo.readline())
-	# Loop over entities
-	for _ in range(num_entities):
+	'''
+	This function imports element and boundary face info for Gmsh 2.2.
+
+	Inputs:
+	-------
+	    fo: file object
+	    mesh: mesh object
+	    phys_groups: list of physical group objects
+	    num_phys_groups: number of physical groups
+	    gmsh_element_database: database on Gmsh elements
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+	'''
+	# Number of elements and boundary faces
+	num_elems_bfaces = int(fo.readline())
+
+	# Loop 
+	for _ in range(num_elems_bfaces):
 		fl = fo.readline()
 		ls = fl.split()
-		# Parse line
-		# enum = int(ls[0])
-		etype = int(ls[1])
+		etype = int(ls[1]) # Gmsh element type
 		phys_num = int(ls[3])
-
-		# if phys_num == 0:
-		# 	raise ValueError("All elements need to be assigned to a physical group")
 		
+		# Extract physical group
 		found = False
-		# for PGidx in range(num_phys_groups):
-		# 	phys_group = phys_groups[PGidx]
 		for phys_group in phys_groups:
 			if phys_group.gmsh_phys_num == phys_num:
 				found = True
@@ -452,65 +683,52 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 			raise errors.DoesNotExistError("All elements and boundary" +
 					"faces must be assigned to a physical group")
 
+		# Process
 		if phys_group.dim == mesh.dim:
-			### Entity is an element
-# <<<<<<< Updated upstream
-# 			gorder = EntitiesInfo[etype].gorder
-# 			gbasis = EntitiesInfo[etype].gbasis
-
-# 			if mesh.num_elems == 0:
-# 				mesh.set_params(gbasis=gbasis, gorder=gorder, num_elems=0)
-# =======
+			# Element
+			# Make sure only one type of volume element in type
 			gorder = gmsh_element_database[etype].gorder
 			gbasis = gmsh_element_database[etype].gbasis
-			# if gbasis == -1:
-			# 	raise NotImplementedError("Element type not supported")
+
 			if mesh.num_elems == 0:
 				mesh.set_params(gbasis=gbasis, gorder=gorder, num_elems=0)
 			else:
 				if gorder != mesh.gorder or gbasis != mesh.gbasis:
 					raise ValueError(">1 element type not supported")
-# >>>>>>> Stashed changes
+
+			# Increment number of elements
 			mesh.num_elems += 1
-			# # Check for existing element group
-			# found = False
-			# for egrp in range(mesh.num_elemsGroup):
-			# 	EG = mesh.elem_idGroups[egrp]
-			# 	if QOrder == EG.QOrder and QBasis == EG.QBasis:
-			# 		found = True
-			# 		break
-			# if found:
-			# 	EG.num_elems += 1
-			# else:
-			# 	# Need new element group
-			# 	mesh.num_elemsGroup += 1
-			# 	mesh.elem_idGroups.append(Mesh.elem_idGroup(QBasis=QBasis,QOrder=QOrder))
+
 		elif phys_group.dim == mesh.dim - 1:
-			### Boundary entity
-			# Check for existing boundary face group
-			# found = False
-			# for ibfgrp in range(mesh.num_boundary_groups):
-			# 	BFG = mesh.boundary_groups[ibfgrp]
-			# 	if BFG.name == phys_group.name:
-			# 		found = True
-			# 		break
+			# Boundary face
 			try:
 				bgroup = mesh.boundary_groups[phys_group.name]
 			except KeyError:
-			# if phys_group.name in mesh.boundary_groups:
-				# Group has not been assigned yet
-				# mesh.num_boundary_groups += 1
-				# BFG = mesh_defs.BFaceGroup()
-				# mesh.boundary_groups.append(BFG)
-				# BFG.name = phys_group.name
+				# Add new boundary group
 				bgroup = mesh.add_boundary_group(phys_group.name)
 				phys_group.boundary_group_num = bgroup.number
+
+			# Increment number of boundary faces
 			bgroup.num_boundary_faces += 1
-		# else:
-		# 	raise Exception("Mesh error")
 
 
-def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database):
+def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, 
+		gmsh_element_database):
+	'''
+	This function imports element and boundary face info for Gmsh 4.1.
+
+	Inputs:
+	-------
+	    fo: file object
+	    mesh: mesh object
+	    phys_groups: list of physical group objects
+	    num_phys_groups: number of physical groups
+	    gmsh_element_database: database on Gmsh elements
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+	'''
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]
 	num_entity_blocks = lint[0]
@@ -521,10 +739,10 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 		lint = [int(l) for l in fl.split()]
 		dim = lint[0]
 		entity_tag = lint[1]
-		etype = lint[2]
+		etype = lint[2] # Gmsh element type
 		num_in_block = lint[3]
 
-		# find physical boundary group
+		# Find physical boundary group
 		found = False
 		for phys_group in phys_groups:
 			if entity_tag in phys_group.entity_tags and \
@@ -540,11 +758,10 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 			# Get element type data
 			gorder = gmsh_element_database[etype].gorder
 			gbasis = gmsh_element_database[etype].gbasis
-			# if QBasis == -1:
-			# 	raise NotImplementedError("Element type not supported")
 
 			# Loop
 			for _ in range(num_in_block):
+				# Make sure only one type of volume element in type
 				fo.readline()
 				if mesh.num_elems == 0:
 					mesh.set_params(gbasis=gbasis, gorder=gorder, 
@@ -552,43 +769,60 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_elemen
 				else:
 					if gorder != mesh.gorder or gbasis != mesh.gbasis:
 						raise ValueError(">1 element type not supported")
+
+				# Increment number of elements
 				mesh.num_elems += 1
+
 		elif dim == mesh.dim - 1:
+			# Boundary face
 
 			if phys_group.boundary_group_num >= 0:
-				# BFG = mesh.boundary_groups[phys_group.boundary_group_num]
 				bgroup = mesh.boundary_groups[phys_group.name]
 			else:
 				# Group has not been assigned yet
-				# mesh.num_boundary_groups += 1
-				# BFG = mesh_defs.BFaceGroup()
-				# mesh.boundary_groups.append(BFG)
-				# BFG.name = phys_group.name
 				bgroup = mesh.add_boundary_group(phys_group.name)
 				phys_group.boundary_group_num = bgroup.number
-			# Loop and increment num_boundary_faces
+
+			# Loop and increment number of boundary faces
 			for _ in range(num_in_block):
 				fo.readline()
 				bgroup.num_boundary_faces += 1
 		else:
+			# Skip
 			for _ in range(num_in_block):
 				fo.readline()
-
 
 	return mesh
 
 
-
 def import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
 		num_phys_groups, gmsh_element_database):
-	# First pass to get sizes
+	'''
+	This function imports element and boundary face info.
+
+	Inputs:
+	-------
+	    fo: file object
+	    ver: Gmsh file version
+	    mesh: mesh object
+	    phys_groups: list of physical group objects
+	    num_phys_groups: number of physical groups
+	    gmsh_element_database: database on Gmsh elements
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+	'''
 	# Find beginning of section
 	go_to_line_below_string(fo, "$Elements")
 
+	# Get element and boundary face info
 	if ver == VERSION2:
-		get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database)
+		get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups, 
+				gmsh_element_database)
 	else:
-		get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, gmsh_element_database)
+		get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups, 
+				gmsh_element_database)
 
 	# Verify footer
 	fl = fo.readline()
@@ -598,81 +832,131 @@ def import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups,
 	return mesh
 
 
-def add_face_info_to_table(node0_to_faces_info, num_face_nodes, nodes, 
+def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_ids, 
 	at_boundary, group_num, elem_id, face_id):
+	'''
+	This function adds face (boundary or interior) info to the 
+	node0_to_faces_info table.
 
-	# num_face_nodes = nfnode
+	Inputs:
+	-------
+	    node0_to_faces_info: list of dicts, where, for a given dict, each 
+	    	key is a tuple containing the global node IDs defining a face 
+	    	(in ascending order) and the corresponding value is an object
+	    	containing relevant info about the face; all the keys for a 
+	    	given dict have the same node0, which is the smallest global node ID of the keys (tuples); the list is indexed by node0;
+	    	this is used to connect faces to elements
+	    num_face_nodes: number of (q = 1) face nodes
+	    node_ids: global IDs of nodes defining the face
+	    at_boundary: True if boundary face; False if interior face
+	    group_num: number of physical group if boundary face; -1 if 
+	    	interior face
+	    elem_id: element ID of current adjacent element
+	    face_id: local face ID from perspective of current adjacent element
+
+	Outputs:
+	--------
+		face_info: object containing relevant face info
+		already_added: True if face has already been added to table; False
+			if otherwise
+		node0_to_faces_info: see above (modified)
+	'''
 	if num_face_nodes <= 0:
 		raise ValueError("Need num_face_nodes > 1")
 
-	# snodes = np.zeros(nfnode, dtype=int)
-	# snodes[:] = nodes[:nfnode]
-
 	# Sort nodes and convert to tuple (to make it hashable)
-	snodes = tuple(np.sort(nodes[:num_face_nodes]))
+	node_ids_sort = tuple(np.sort(node_ids[:num_face_nodes]))
 
-	# Check if face already exists in face hash
-	already_added = False
-	node0 = snodes[0]
+	# Extract correct faces_info dict
+	node0 = node_ids_sort[0]
 	faces_info = node0_to_faces_info[node0]
-	if snodes in faces_info:
+
+	# Check if face already exists in table
+	already_added = False
+	if node_ids_sort in faces_info:
 		already_added = True
-		face_info = faces_info[snodes]
+		face_info = faces_info[node_ids_sort]
 		face_info.num_adjacent_elems += 1
 	else:
-		# If it doesn't exist, then add it
+		# Not yet added, so add now
 		face_info = FaceInfo()
-		faces_info.update({snodes : face_info})
+		faces_info.update({node_ids_sort : face_info})
 		face_info.set_info(at_boundary=at_boundary, 
 				boundary_group_num=group_num, elem_id=elem_id, 
 				face_id=face_id, num_face_nodes=num_face_nodes, 
-				snodes=snodes)
+				node_ids_sort=node_ids_sort)
 		if not at_boundary:
 			face_info.num_adjacent_elems = 1
 
 	return face_info, already_added
 
 
-def delete_face_info_from_table(node0_to_faces_info, num_face_nodes, nodes):
+def delete_face_info_from_table(node0_to_faces_info, num_face_nodes, 
+		node_ids):
+	'''
+	This function deletes face (boundary or interior) info from the 
+	node0_to_faces_info table.
 
+	Inputs:
+	-------
+	    node0_to_faces_info: see above description of add_face_info_to_table
+	    num_face_nodes: number of (q = 1) face nodes
+	    node_ids: global IDs of nodes defining the face
+
+	Outputs:
+	--------
+		node0_to_faces_info: see above (modified)
+	'''
 	if num_face_nodes <= 0:
 		raise ValueError("Need num_face_nodes > 1")
 
-	# snodes = np.zeros(nfnode, dtype=int)
-	# snodes[:] = nodes[:nfnode]
+	# Sort nodes and convert to tuple (to make it hashable)
+	node_ids_sort = tuple(np.sort(node_ids[:num_face_nodes]))
 
-	# Sort nodes
-	# snodes = tuple(np.sort(snodes))
-	snodes = tuple(np.sort(nodes[:num_face_nodes]))
-
-	# Check if face already exists in face hash
-	n0 = snodes[0]
+	# Extract correct faces_info dict
+	n0 = node_ids_sort[0]
 	faces_info = node0_to_faces_info[n0]
-	# if FaceInfos == []:
-	# 	raise LookupError
 
-	if snodes in faces_info:
-		del faces_info[snodes]
+	# Delete
+	if node_ids_sort in faces_info:
+		del faces_info[node_ids_sort]
 
 
-def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, 
-		gmsh_element_database, old_to_new_node_tags, num_bfaces_per_bgroup, 
+def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, 
+		gmsh_element_database, old_to_new_node_ids, num_bfaces_per_bgroup, 
 		node0_to_faces_info):
-	# Number of entities
-	num_entities = int(fo.readline())
-	num_elems = 0 # elem counter
+	'''
+	This function processes element and boundary face info for Gmsh 2.2.
+
+	Inputs:
+	-------
+		fo: file object
+		mesh: mesh object
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
+		gmsh_element_database: Gmsh element database
+		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		num_bfaces_per_bgroup: number of boundary faces per boundary group
+	    node0_to_faces_info: see above description of add_face_info_to_table
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+	    node0_to_faces_info: see above description of add_face_info_to_table
+	    	(modified)
+	'''
+	num_elems_bfaces = int(fo.readline())
+	num_elems = 0 # counter for number of elements
+
 	# Loop through entities
-	for _ in range(num_entities):
+	for _ in range(num_elems_bfaces):
 		fl = fo.readline()
 		ls = fl.split()
-		# Parse line
-		# enum = int(ls[0])
-		etype = int(ls[1])
+		etype = int(ls[1]) # Gmsh element type
 		phys_num = int(ls[3])
 		
+		# Find physical group
 		found = False
-		# for PGidx in range(num_phys_groups):
-		# 	phys_group = phys_groups[PGidx]
 		for phys_group in phys_groups:
 			if phys_group.gmsh_phys_num == phys_num:
 				found = True
@@ -680,120 +964,123 @@ def fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 		if not found:
 			raise errors.DoesNotExistError("Physical group not found!")
 
-		# Check if entity type is supported
-		# if not gmsh_element_database[etype].Supported:
-		# 	raise Exception("Entity type not supported")
-
 		# Get nodes	
 		num_tags = int(ls[2]) # number of tags
-			# see http://www.manpagez.com/info/gmsh/gmsh-2.2.6/gmsh_63.php
 		tag_offset = 3 # 3 integers (including num_tags) before tags start
 		istart = num_tags + tag_offset # starting index of node numbering
 		num_nodes = gmsh_element_database[etype].num_nodes
 		elist = ls[istart:] # list of nodes (string format)
 		if len(elist) != num_nodes: 
 			raise Exception("Wrong number of nodes")
-		nodes = np.zeros(num_nodes, dtype=int)
+
+		# Convert nodes IDs
+		node_ids = np.zeros(num_nodes, dtype=int)
 		for i in range(num_nodes):
-			# # Convert to int one-by-one for compatibility with Python 2 and 3
-			# nodes[i] = int(elist[i]) - 1 # switch to zero index
-			# Convert from old to new tags
-			nodes[i] = old_to_new_node_tags[int(elist[i])]
+			node_ids[i] = old_to_new_node_ids[int(elist[i])]
 
 		if phys_group.boundary_group_num >= 0:
-			### Boundary
-			# Get basic info
-# <<<<<<< Updated upstream
-# 			gbasis = EntitiesInfo[etype].gbasis
-# 			gorder = EntitiesInfo[etype].gorder
-# =======
+			# This is a boundary face
+
+			# Get info
 			gbasis = gmsh_element_database[etype].gbasis
 			gorder = gmsh_element_database[etype].gorder
-# >>>>>>> Stashed changes
 			bgroup_num = phys_group.boundary_group_num
-			# BFG = mesh.boundary_groups[ibfgrp]
 			bgroup = mesh.boundary_groups[phys_group.name]
-			# Number of q = 1 face nodes
 			num_face_nodes = gbasis.get_num_basis_coeff(1)
 
-			# Add q = 1 nodes to hash table
-			face_info, _ = add_face_info_to_table(node0_to_faces_info, 
-					num_face_nodes, nodes, True, bgroup_num, -1, 
+			# Add face info to table
+			_, _ = add_face_info_to_table(node0_to_faces_info, 
+					num_face_nodes, node_ids, True, bgroup_num, -1, 
 					num_bfaces_per_bgroup[bgroup_num])
+
+			# Increment number of boundary faces
 			num_bfaces_per_bgroup[bgroup_num] += 1
+
 		elif phys_group.boundary_group_num == -1:
-			### Interior element
-			# Get basic info
-# <<<<<<< Updated upstream
-# 			gorder = EntitiesInfo[etype].gorder
-# 			gbasis = EntitiesInfo[etype].gbasis
-# =======
+			# This is a volume element
+
+			# Get info
 			gorder = gmsh_element_database[etype].gorder
 			gbasis = gmsh_element_database[etype].gbasis
-# >>>>>>> Stashed changes
-			# Check for existing element group
-			# found = False
-			# for EG in mesh.elem_idGroups:
-			# 	if QOrder == EG.QOrder and QBasis == EG.QBasis:
-			# 		found = True
-			# 		break
-			# # Sanity check
-			# if not found:
-			# 	raise Exception("Can't find element group")
-			# Number of element nodes
 			num_nodes = gbasis.get_num_basis_coeff(gorder)
 			# Sanity check
 			if num_nodes != gmsh_element_database[etype].num_nodes:
 				raise Exception("Number of nodes doesn't match up")
-			# Convert node Ordering
-			newnodes = nodes[gmsh_element_database[etype].node_order]
-			# Store in elem_to_node_ids
-			mesh.elem_to_node_ids[num_elems] = newnodes
+
+			# Convert from Gmsh node ordering to dgp node ordering and store
+			new_node_ids = node_ids[gmsh_element_database[etype].node_order]
+			mesh.elem_to_node_ids[num_elems] = new_node_ids
+
 			# Increment elem counter
 			num_elems += 1
+
 		else:
 			raise ValueError
 
 
-def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
-		gmsh_element_database, old_to_new_node_tags, num_bfaces_per_bgroup, 
-		node0_to_faces_info):	
+def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
+		gmsh_element_database, old_to_new_node_ids, num_bfaces_per_bgroup, 
+		node0_to_faces_info):
+	'''
+	This function processes element and boundary face info for Gmsh 4.1.
+
+	Inputs:
+	-------
+		fo: file object
+		mesh: mesh object
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
+		gmsh_element_database: Gmsh element database
+		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		num_bfaces_per_bgroup: number of boundary faces per boundary group
+	    node0_to_faces_info: see above description of add_face_info_to_table
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+	    node0_to_faces_info: see above description of add_face_info_to_table
+	    	(modified)
+	'''
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]
 	num_entity_blocks = lint[0]
 	num_elems_bfaces = lint[1]
-
-	num_elems = 0
+	num_elems = 0 # counter for number of elements
 
 	for _ in range(num_entity_blocks):
 		fl = fo.readline()
 		lint = [int(l) for l in fl.split()]
 		dim = lint[0]
 		entity_tag = lint[1]
-		etype = lint[2]
+		etype = lint[2] # Gmsh element type
 		num_in_block = lint[3]
 
 		if dim == mesh.dim:
-			# Element
-			# Get element type data
+			# Volume element
+
+			# Get info
 			gorder = gmsh_element_database[etype].gorder
 			gbasis = gmsh_element_database[etype].gbasis
 
-			# Loop
+			# Extract and process nodes
 			for _ in range(num_in_block):
 				fl = fo.readline()
 				lint = [int(l) for l in fl.split()]
-				# Convert node ordering
+
+				# Convert from Gmsh to dgp node ordering and store
 				nodes = np.array(lint[1:])
 				for n in range(len(nodes)):
-					nodes[n] = old_to_new_node_tags[nodes[n]]
-				newnodes = nodes[gmsh_element_database[etype].node_order]
-				# Store in elem_to_node_ids
-				mesh.elem_to_node_ids[num_elems] = newnodes
-				# Increment elem counter
+					nodes[n] = old_to_new_node_ids[nodes[n]]
+				new_node_ids = nodes[gmsh_element_database[etype].node_order]
+				mesh.elem_to_node_ids[num_elems] = new_node_ids
+
+				# Increment number of elements
 				num_elems += 1
+
 		elif dim == mesh.dim - 1:
-			# find physical boundary group
+			# Boundary face
+
+			# Find physical boundary group
 			found = False
 			for phys_group in phys_groups:
 				if entity_tag in phys_group.entity_tags:
@@ -802,58 +1089,72 @@ def fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 						found = True
 						break
 			if not found:
-				raise ValueError("Physical boundary group not found")
+				raise errors.DoesNotExistError("Physical boundary group " +
+						"not found")
 			bgroup = mesh.boundary_groups[phys_group.name]
+
+			# Get info
 			gbasis = gmsh_element_database[etype].gbasis
 			num_face_nodes = gbasis.get_num_basis_coeff(1) 
-			# Loop and increment num_boundary_faces
+
+			# Loop
 			for _ in range(num_in_block):
 				fl = fo.readline()
 				lint = [int(l) for l in fl.split()]
+
+				# Convert node IDs
 				nodes = np.array(lint[1:])
 				for n in range(len(nodes)):
-					nodes[n] = old_to_new_node_tags[nodes[n]]
-				# Add q = 1 nodes to hash table
-				face_info, _ = add_face_info_to_table(
-						node0_to_faces_info, num_face_nodes, nodes, True, 
-						bgroup_num, -1, num_bfaces_per_bgroup[bgroup_num])
+					nodes[n] = old_to_new_node_ids[nodes[n]]
+
+				# Add face info to table
+				_, _ = add_face_info_to_table(node0_to_faces_info,
+						num_face_nodes, nodes, True, bgroup_num, -1, 
+						num_bfaces_per_bgroup[bgroup_num])
+
+				# Increment number of boundary faces
 				num_bfaces_per_bgroup[bgroup_num] += 1
+
 		else:
+			# Skip
 			for _ in range(num_in_block):
 				fo.readline()
 
-	return mesh
-
 
 def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, 
-		gmsh_element_database, old_to_new_node_tags):
-	# Allocate additional mesh structures
-	# for ibfgrp in range(mesh.num_boundary_groups):
-	# 	BFG = mesh.boundary_groups[ibfgrp]
-	# 	BFG.allocate_boundary_faces()
+		gmsh_element_database, old_to_new_node_ids):
+	'''
+	This function fills the mesh.
+
+	Inputs:
+	-------
+		fo: file object
+		ver: Gmsh file version
+		mesh: mesh object
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
+		gmsh_element_database: Gmsh element database
+		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+
+	Outputs:
+	--------
+		mesh: mesh object (modified)
+	'''
+	# Allocate boundary groups and faces
 	for bgroup in mesh.boundary_groups.values():
 		bgroup.allocate_boundary_faces()
-	# nFaceMax = 0
-	# for EG in mesh.elem_idGroups:
-	# 	# also find maximum # faces per elem
-	# 	EG.allocate_faces()
-	# 	EG.allocate_elem_to_node_ids_map()
-	# 	if nFaceMax < EG.nFacePerElem: nFaceMax = EG.nFacePerElem
-	# mesh.allocate_faces()
+	# Allocate element-to-node_IDs map
 	mesh.allocate_elem_to_node_ids_map()
-	num_faces_per_elem = mesh.gbasis.NFACES
-
 	# Over-allocate interior_faces since we haven't distinguished
 	# between interior and boundary faces yet
+	num_faces_per_elem = mesh.gbasis.NFACES
 	mesh.num_interior_faces = mesh.num_elems*num_faces_per_elem
 	mesh.allocate_interior_faces()
 
 	# reset num_interior_faces - use as a counter
 	mesh.num_interior_faces = 0
 
-	# Dictionary for hashing
-	# node0_to_faces_info = {n:FaceInfo() for n in range(mesh.num_nodes)}
-	# node0_to_faces_info = {n:[] for n in range(mesh.num_nodes)}
+	# Table to store face info and connect elements to faces
 	node0_to_faces_info = [{} for n in range(mesh.num_nodes)] # list of dicts
 
 	# Go to Gmsh elements section
@@ -862,15 +1163,15 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	# boundary face counter
 	num_bfaces_per_bgroup = [0 for i in range(mesh.num_boundary_groups)] 
 
+	# Process elements and boundary faces
 	if ver == VERSION2:
-		fill_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, 
-				gmsh_element_database, old_to_new_node_tags, 
+		process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, 
+				gmsh_element_database, old_to_new_node_ids, 
 				num_bfaces_per_bgroup, node0_to_faces_info)
 	else:
-		fill_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
-				gmsh_element_database, old_to_new_node_tags, 
+		process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
+				gmsh_element_database, old_to_new_node_ids, 
 				num_bfaces_per_bgroup, node0_to_faces_info)
-
 
 	# Verify footer
 	fl = fo.readline()
@@ -878,81 +1179,66 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 		raise errors.FileReadError
 
 	# Fill boundary and interior face info
-	# for egrp in range(mesh.num_elemsGroup):
-	# 	EG = mesh.elem_idGroups[egrp]
 	for elem_id in range(mesh.num_elems):
 		for face_id in range(mesh.gbasis.NFACES):
-			# Local q = 1 nodes on face
+			# Get local q = 1 face nodes
 			gbasis = mesh.gbasis
 			local_node_nums = gbasis.get_local_face_principal_node_nums(
 					mesh.gorder, face_id)
 			num_face_nodes = local_node_nums.shape[0]
 
-			# Convert to global nodes
+			# Convert to global node IDs
 			global_node_nums = mesh.elem_to_node_ids[elem_id][
 					local_node_nums]
 
-			# Add to hash table
+			# Add to face info table
 			face_info, already_added = add_face_info_to_table(
 					node0_to_faces_info, num_face_nodes, global_node_nums, 
 					False, -1, elem_id, face_id)
 
 			if already_added:
-				# Face already exists in hash table
-				# if face_info.nVisit != 2:
-				# 	raise ValueError("More than two elements share a face " + 
-				# 		"or a boundary face is referenced by more than one element")
+				# Face was already added to table previously
 
-				# Link elem to boundary_face or IFace
+				# Identify element as either boundary face or interior face
 				if face_info.at_boundary:
+					# Boundary face
+
 					if face_info.num_adjacent_elems != 1:
 						raise ValueError("More than one element adjacent " +
 								"to boundary face")
-					# boundary face
-					# Store in BFG
-					# BFG = mesh.boundary_groups[face_info.boundary_group_num]
+
+					# Find physical group
 					found = False
-					# Make this cleaner later
 					for phys_group in phys_groups:
 						if phys_group.boundary_group_num == \
 								face_info.boundary_group_num:
 							found = True
 							break
 					if not found: 
-						raise ValueError
+						raise errors.DoesNotExistError("Physical boundary " +
+								"group not found")
 					boundary_group = mesh.boundary_groups[phys_group.name]
-					# try:
-					# 	boundary_face = BFG.boundary_faces[face_info.face_id]
-					# except:
-					# 	code.interact(local=locals())
+
+					# Fill in info
 					boundary_face = boundary_group.boundary_faces[
 							face_info.face_id]
 					boundary_face.elem_id = elem_id
 					boundary_face.face_id = face_id
-					# Store in Face
-					# Face = mesh.face_ids[elem][face]
-					# Face.boundary_group_num = face_info.boundary_group_num
-					# Face.gmsh_phys_num = face_info.face_id
 				else:
-					# interior face
+					# Interior face
+
 					if face_info.num_adjacent_elems != 2:
 						raise ValueError("More than two elements adjacent " +
 								"to interior face")
-					# Store in IFace
+					
+					# Fill in info
 					int_face = mesh.interior_faces[mesh.num_interior_faces]
 					int_face.elemL_id = face_info.elem_id
 					int_face.faceL_id = face_info.face_id
 					int_face.elemR_id = elem_id
 					int_face.faceR_id = face_id
-					# Store in left Face
-					# Face = mesh.face_ids[face_info.elem_id][face_info.face_id]
-					# Face.boundary_group_num = general.INTERIORFACE
-					# Face.gmsh_phys_num = mesh.num_interior_faces
-					# # Store in right face
-					# Face = mesh.face_ids[elem][face]
-					# Face.boundary_group_num = general.INTERIORFACE
-					# Face.gmsh_phys_num = mesh.num_interior_faces
-					# Increment IFace counter
+
+					# Increment number of interior faces
 					mesh.num_interior_faces += 1
 
 				delete_face_info_from_table(node0_to_faces_info, 
@@ -962,9 +1248,9 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	num_faces_left = 0
 	for n in range(mesh.num_nodes):
 		faces_info = node0_to_faces_info[n]
-		for snodes in faces_info.keys():
-			print(snodes)
-			# for node in snodes:
+		for node_ids_sort in faces_info.keys():
+			print(node_ids_sort)
+			# for node in node_ids_sort:
 			# 	print(int(node+1))
 			num_faces_left += 1
 
@@ -978,11 +1264,22 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	# Remove superfluous (empty) interior faces
 	mesh.interior_faces = mesh.interior_faces[:mesh.num_interior_faces]
 
-	# mesh.fill_faces()
+	# Create elements
 	mesh.create_elements()
 
 
 def import_gmsh_mesh(file_name):
+	'''
+	This function reads a Gmsh file to create a mesh.
+
+	Inputs:
+	-------
+		file_name: name of Gmsh file
+
+	Outputs:
+	--------
+		mesh: mesh object
+	'''
 	# Check file extension
 	if file_name[-4:] != ".msh":
 		raise errors.FileReadError("Wrong file type")
@@ -993,20 +1290,19 @@ def import_gmsh_mesh(file_name):
 	# Mesh object
 	mesh = mesh_defs.Mesh(num_elems=0)
 
-	# Object that stores Gmsh entity info
+	# Create Gmsh element database
 	gmsh_element_database = create_gmsh_element_database()
 
-	# Read sections one-by-one
+	# Read sections one-by-one and process
 	ver = check_mesh_format(fo)
-	mesh, old_to_new_node_tags = import_nodes(fo, ver, mesh)
+	mesh, old_to_new_node_ids = import_nodes(fo, ver, mesh)
 	phys_groups, num_phys_groups = import_physical_groups(fo, mesh)
 	phys_groups = import_mesh_entities(fo, ver, mesh, phys_groups)
 	mesh = import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
 			num_phys_groups, gmsh_element_database)
-	# code.interact(local=locals())
 
 	# Create rest of mesh
-	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_tags)
+	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_ids)
 
 	# Ensure valid mesh
 	mesh_tools.check_face_orientations(mesh)
