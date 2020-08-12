@@ -1,6 +1,7 @@
 import numpy as np
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
+import numerics.helpers.helpers as numerics_helpers
 import random
 
 # TODO: This whole thing only works for triangles. Generalize this.
@@ -17,14 +18,10 @@ def adapt(solver, physics, mesh, stepper):
 
     # Array of flags for which elements to be split
     needs_refinement = np.zeros(mesh.num_elems, dtype=bool)
-    # Split an element
-    #if mesh.num_elems == 4:  split_id = 0
-    #if mesh.num_elems == 8:  split_id = 7
-    #if mesh.num_elems == 12: split_id = 11
+    # Split a random element within a range
     closest_distance = 9e99
     ref_range = 2
     point = np.array([0,0]) + np.array([random.random()*ref_range - ref_range/2, random.random()*ref_range - ref_range/2])
-    print(point)
     for elem in mesh.elements:
         distance = np.linalg.norm(np.mean(elem.node_coords, axis=0) - point)
         if distance < closest_distance:
@@ -32,8 +29,6 @@ def adapt(solver, physics, mesh, stepper):
             closest_elem = elem
     split_id = closest_elem.id
     needs_refinement[split_id] = True
-    # Figure out why this doesn't work (probably because of 'deactivated' cells)
-    #needs_refinement[:] = True
 
     # Loop over all elements
     for elem_id in range(mesh.num_elems):
@@ -44,6 +39,10 @@ def adapt(solver, physics, mesh, stepper):
 
             # Get element
             elem = mesh.elements[elem_id]
+
+            # Skip deactivated elements
+            # TODO: add deactivated to constructor of Element?
+            if getattr(elem, 'deactivated', False): continue
 
             # -- Figure out what face to split -- #
             # Get info about the longest face of the element
@@ -94,7 +93,7 @@ def adapt(solver, physics, mesh, stepper):
             # TODO: figure out a better way to do this
             elem.face_to_neighbors = np.array([-1,-1,-1])
             neighbor.face_to_neighbors = np.array([-1,-1,-1])
-            offset = .01
+            offset = 1
             corner = np.array([-2,-2])
             elem.node_coords = np.array([corner, corner+[0,-offset], corner+[offset,0]])
             neighbor.node_coords = np.array([corner+[0,-offset], corner+[offset,-offset], corner+[offset,0]])
@@ -109,8 +108,18 @@ def adapt(solver, physics, mesh, stepper):
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            #print(physics.U)
             # Delete residual
             stepper.R = None
+
+            elem.deactivated = True
+            neighbor.deactivated = True
+
+            #basis_val = solver.basis.get_values(np.array([[-1,-1]]))
+            #print(basis_val)
+            #print(elem.quad_pts)
+
+            #Uq = numerics_helpers.evaluate_state(Up, basis_val)
 
     # Just printing random things to check them out
     #print(mesh.node_coords)
@@ -209,7 +218,7 @@ def find_longest_face(elem, mesh):
     (int, array[2]) - tuple of longest face ID and array of node IDs
     """
     # Arrays for area of each face and face nodes
-    face_areas = np.empty(mesh.gbasis.NFACES)
+    face_areas = np.zeros(mesh.gbasis.NFACES)
     face_node_ids = np.empty((mesh.gbasis.NFACES, 2), dtype=int)
     # Loop over each face
     for i in range(mesh.gbasis.NFACES):
