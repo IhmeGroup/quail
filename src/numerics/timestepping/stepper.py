@@ -180,7 +180,8 @@ class LSRK4(StepperBase):
 		'''
 		Additional Attributes:
 		----------------------
-		rk4a: coefficients for LSRK4 scheme
+		rk4a: numpy array
+			coefficients for LSRK4 scheme
 		rk4b: coefficients for LSRK4 scheme
 		rk4c: coefficients for LSRK4 scheme
 		nstages: number of stages in scheme
