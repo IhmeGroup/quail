@@ -7,8 +7,8 @@ import processing.readwritedatafiles as readwritedatafiles
 ### Postprocess
 fname = "exact.pkl"
 solver1 = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver1.Time)
-solver1.Time = 0.25
+print('Solution Final Time:', solver1.time)
+solver1.time = 0.25
 # Unpack
 mesh1 = solver1.mesh
 physics1 = solver1.physics
@@ -18,7 +18,7 @@ physics1 = solver1.physics
 ### Postprocess
 # fname = "Data_Final.pkl"
 # solver2 = readwritedatafiles.read_data_file(fname)
-# # print('Solution Final Time:', solver.Time)
+# # print('Solution Final Time:', solver.time)
 
 # # Unpack
 # mesh2 = solver2.mesh
@@ -38,7 +38,7 @@ plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, pl
 
 # fname = "nolimiter_cfl0p025.pkl"
 # solver2 = readwritedatafiles.read_data_file(fname)
-# print('Solution Final Time:', solver2.Time)
+# print('Solution Final Time:', solver2.time)
 # # Unpack
 # mesh2 = solver2.mesh
 # physics2 = solver2.physics
@@ -49,7 +49,7 @@ plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, pl
 
 fname = "Data_final.pkl"
 solver2 = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver2.Time)
+print('Solution Final Time:', solver2.time)
 # Unpack
 mesh2 = solver2.mesh
 physics2 = solver2.physics
@@ -61,7 +61,7 @@ plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plo
 
 # fname = "nolimiter_cfl0p1.pkl"
 # solver2 = readwritedatafiles.read_data_file(fname)
-# print('Solution Final Time:', solver2.Time)
+# print('Solution Final Time:', solver2.time)
 # # Unpack
 # mesh2 = solver2.mesh
 # physics2 = solver2.physics

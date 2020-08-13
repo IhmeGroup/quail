@@ -34,7 +34,7 @@ physics5 = solver5.physics
 ### Postprocess
 # fname = "Data_Final.pkl"
 # solver2 = readwritedatafiles.read_data_file(fname)
-# # print('Solution Final Time:', solver.Time)
+# # print('Solution Final Time:', solver.time)
 
 # # Unpack
 # mesh2 = solver2.mesh

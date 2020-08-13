@@ -7,13 +7,13 @@ import processing.readwritedatafiles as readwritedatafiles
 ### Postprocess
 fname = "Data_final.pkl"
 solver = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver.Time)
+print('Solution Final Time:', solver.time)
 
 # Unpack
 mesh = solver.mesh
 physics = solver.physics
 
-solver.Time = 0.
+solver.time = 0.
 TotErr,_ = post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 axis = None

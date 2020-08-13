@@ -123,7 +123,7 @@ class ICData(object):
     def __init__(self):
         self.Function = None
         self.x = None
-        self.Time = 0.
+        self.time = 0.
         self.U = None
         self.Data = GenericData()
 

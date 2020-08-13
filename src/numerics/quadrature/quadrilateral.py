@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/quadrature/quadrilateral.py
+#       File : src/numerics/quadrature/quadrilateral.py
 #
 #       Contains functions to evaluate quadrature for quadrilateral shapes
 #      
@@ -19,7 +19,7 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
         order: solution order
         quad_type: Enum that points to the appropriate quadrature calc
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
-                    equal to quad_pts is turned on
+            equal to quad_pts is turned on
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]

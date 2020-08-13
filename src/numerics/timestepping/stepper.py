@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/timestepping/stepper.py
+#       File : src/numerics/timestepping/stepper.py
 #
 #       Contains class definitions for timestepping methods available 
 #		in the DG Python framework.
@@ -31,7 +31,7 @@ class StepperBase(ABC):
 	in the DG Python framework. The current build supports the following time
 	schemes:
 
-		Explicit Schemes
+		Explicit Schemes:
 		-----------------
 		- Forward Euler (FE)
 		- 4th-order Runge Kutta (RK4)
@@ -40,54 +40,38 @@ class StepperBase(ABC):
 		- Arbitrary DERivatives in space and time (ADER) 
 			-> used in tandem with ADERDG solver
 		
-		Operator Splitting Type Schemes
-		-------------------------------
+		Operator Splitting Type Schemes:
+		--------------------------------
 		- Strang Splitting (Strang)
 		- Simpler Splitting (Simpler)
 
-		ODE Solvers for Splitting Schemes
-		---------------------------------
+		ODE Solvers for Splitting Schemes:
+		----------------------------------
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
 
 
-	Attributes
+	Attributes:
 	-----------
-	R : numpy array of floats (shape : [nelem, nb, ns])
+	R: numpy array of floats (shape : [nelem, nb, ns])
 		solution's residaul array
-	dt : float
+	dt: float
 		time-step for the solution
-	numtimesteps : int
+	numtimesteps: int
 		number of time steps for the given solution's endtime
-	get_time_step : method
+	get_time_step: method
 		method to obtain dt given input decks logic (CFL-based vs # of 
 		timesteps, etc...)
-	balance_const : numpy array of floats (shaped like R)
+	balance_const: numpy array of floats (shaped like R)
 		balancing constant array used only with the Simpler splitting scheme
 	
 	Abstract Methods:
-	------------------
+	-----------------
 	TakeTimeStep
 		method that takes a given time step for the solver depending on the 
 		selected time-stepping scheme
 	'''
 	def __init__(self, U):
-		'''
-		Attributes
-		-----------
-		R : numpy array of floats (shape : [nelem, nb, ns])
-			solution's residaul array
-		dt : float
-			time-step for the solution
-		numtimesteps : int
-			number of time steps for the given solution's endtime
-		get_time_step : method
-			method to obtain dt given input decks logic (CFL-based vs # of 
-			timesteps, etc...)
-		balance_const : numpy array of floats (shaped like R)
-			balancing constant array used only with the Simpler splitting 
-			scheme
-		'''
 		self.R = np.zeros_like(U)
 		self.dt = 0.
 		self.numtimesteps = 0
@@ -108,8 +92,8 @@ class StepperBase(ABC):
 		    solver: solver object (i.e. DG, ADERDG, etc...)
 
 		OUTPUTS: 
-			R : Updated residual vector [nelem, nb, ns]
-			U : Updates the solution vector [nelem, nb, ns]
+			R: Updated residual vector [nelem, nb, ns]
+			U: Updates the solution vector [nelem, nb, ns]
 		'''
 		pass
 
@@ -160,7 +144,7 @@ class RK4(StepperBase):
 		solver.apply_limiter(Utemp)
 
 		# second stage
-		solver.Time += self.dt/2.
+		solver.time += self.dt/2.
 		R = solver.calculate_residual(Utemp, R)
 		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU2
@@ -173,7 +157,7 @@ class RK4(StepperBase):
 		solver.apply_limiter(Utemp)
 
 		# fourth stage
-		solver.Time += self.dt/2.
+		solver.time += self.dt/2.
 		R = solver.calculate_residual(Utemp, R)
 		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
@@ -194,13 +178,13 @@ class LSRK4(StepperBase):
 	def __init__(self, U):
 		super().__init__(U)
 		'''
-		Additioanl Attributes
+		Additional Attributes:
 		----------------------
-		rk4a : coefficients for LSRK4 scheme
-		rk4b : coefficients for LSRK4 scheme
-		rk4c : coefficients for LSRK4 scheme
-		nstages : number of stages in scheme
-		dU : change in solution array in each stage
+		rk4a: coefficients for LSRK4 scheme
+		rk4b: coefficients for LSRK4 scheme
+		rk4c: coefficients for LSRK4 scheme
+		nstages: number of stages in scheme
+		dU: change in solution array in each stage
 			(shape: [nelem, nb, ns])
 		'''
 		self.rk4a = np.array([            0.0, \
@@ -231,10 +215,10 @@ class LSRK4(StepperBase):
 		R = self.R
 		dU = self.dU
 
-		Time = solver.Time
+		Time = solver.time
 		for INTRK in range(self.nstages):
 			dt = self.dt
-			solver.Time = Time + self.rk4c[INTRK]*dt
+			solver.time = Time + self.rk4c[INTRK]*dt
 			R = solver.calculate_residual(U, R)
 
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
@@ -264,12 +248,12 @@ class SSPRK3(StepperBase):
 	def __init__(self, U):
 		super().__init__(U)
 		'''
-		Additioanl Attributes
+		Additional Attributes:
 		----------------------
-		ssprk3a : coefficients for SSPRK3 scheme
-		ssprk3b : coefficients for SSPRK3 scheme
-		nstages : number of stages in scheme
-		dU : change in solution array in each stage
+		ssprk3a: coefficients for SSPRK3 scheme
+		ssprk3b: coefficients for SSPRK3 scheme
+		nstages: number of stages in scheme
+		dU: change in solution array in each stage
 			(shape: [nelem, nb, ns])
 		'''
 		self.ssprk3a = np.array([	0.0, \
@@ -294,10 +278,10 @@ class SSPRK3(StepperBase):
 		R = self.R
 		dU = self.dU
 
-		Time = solver.Time
+		Time = solver.time
 		for INTRK in range(self.nstages):
 			dt = self.dt
-			solver.Time = Time + dt
+			solver.time = Time + dt
 			R = solver.calculate_residual(U, R)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
 			dU *= self.ssprk3a[INTRK]
@@ -363,15 +347,13 @@ class Strang(StepperBase, ode.ODESolvers):
 	''' 	
 	def set_split_schemes(self, explicit, implicit, U):
 		'''
-		Method: set_split_schemes
-		-------------------------
 		Specifies the explicit and implicit schemes to be used in the
 		operator splitting technique
 
 		INPUTS:
 		    explicit: name of chosen explicit scheme from Params
 		    implicit: name of chosen implicit (ODE) solver from Params
-		    U : solution state vector used to initialize solver 
+		    U: solution state vector used to initialize solver 
 		    	[nelem, nb, ns]
 
 		OUTPUTS: 

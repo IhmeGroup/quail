@@ -13,6 +13,11 @@ Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeSeg",
     "Solver" : "DG",
+    "ElementQuadrature" : "GaussLobatto",
+    "FaceQuadrature" : "GaussLobatto",
+    "NodeType" : "GaussLobatto",
+    "NodesEqualQuadpts" : True,
+    "InterpolateFlux" : True,
 }
 
 Mesh = {

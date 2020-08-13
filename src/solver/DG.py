@@ -275,8 +275,8 @@ class DG(base.SolverBase):
 		
 		# Precompute operators
 		self.precompute_matrix_operators()
-		if self.Limiter is not None:
-			self.Limiter.precompute_operators(self)
+		if self.limiter is not None:
+			self.limiter.precompute_operators(self)
 
 		physics.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators.quad_wts.shape[0], physics.NUM_STATE_VARS]))
 
@@ -337,7 +337,7 @@ class DG(base.SolverBase):
 			'''
 			Sq = elem_ops.Sq
 			Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
-			Sq = physics.SourceState(nq, x, self.Time, Uq, Sq) # [nq, ns]
+			Sq = physics.SourceState(nq, x, self.time, Uq, Sq) # [nq, ns]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
 
@@ -452,7 +452,7 @@ class DG(base.SolverBase):
 
 		if self.Params["ConvFluxSwitch"] == True:
 
-			Fq = BC.get_boundary_flux(physics, x, self.Time, normals, UqI)
+			Fq = BC.get_boundary_flux(physics, x, self.time, normals, UqI)
 
 			R -= solver_tools.calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq)
 

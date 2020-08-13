@@ -155,7 +155,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 # 		BC.x = xglob
 # 		BC.nq = nq
-# 		BC.Time = Time
+# 		BC.time = Time
 # 		bctype = BC.BCType
 # 		if bctype == self.BCType.StateAll:
 # 			uB = self.CallFunction(BC)
@@ -202,7 +202,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 	# 	BC.x = xglob
 	# 	BC.nq = nq
-	# 	BC.Time = Time
+	# 	BC.time = Time
 	# 	bctype = BC.BCType
 	# 	if bctype == self.BCType.StateAll:
 	# 		uB = self.CallFunction(BC)

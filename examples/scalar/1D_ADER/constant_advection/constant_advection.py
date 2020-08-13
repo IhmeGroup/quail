@@ -8,15 +8,20 @@ TimeStepping = {
 }
 
 Numerics = {
-    "InterpOrder" : 2,
+    "InterpOrder" : 3,
     "InterpBasis" : "LagrangeSeg",
     "InterpolateIC" : True,
     "Solver" : "ADERDG",
+    "ElementQuadrature" : "GaussLobatto",
+    "FaceQuadrature" : "GaussLobatto",
+    "NodeType" : "GaussLobatto",
+    "NodesEqualQuadpts" : True,
+    "InterpolateFlux" : True,
 }
 
 Output = {
-    "WriteInterval" : 1,
-    "WriteInitialSolution" : True,
+    # "WriteInterval" : 1,
+    # "WriteInitialSolution" : True,
     "AutoProcess" : True,
 }
 

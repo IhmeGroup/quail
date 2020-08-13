@@ -311,8 +311,8 @@ class ADERDG(base.SolverBase):
 		# Precompute operators
 		self.precompute_matrix_operators()
 
-		if self.Limiter is not None:
-			self.Limiter.precompute_operators(self)
+		if self.limiter is not None:
+			self.limiter.precompute_operators(self)
 
 		physics.ConvFluxFcn.alloc_helpers(np.zeros([self.iface_operators_st.quad_wts.shape[0], physics.NUM_STATE_VARS]))
 
@@ -446,7 +446,7 @@ class ADERDG(base.SolverBase):
 			'''
 			t = np.zeros([nq_st,dim])
 			TimePhiData = None
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
+			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
 			
 			Sq = elem_ops_st.Sq
 			Sq[:] = 0.
@@ -589,7 +589,7 @@ class ADERDG(base.SolverBase):
 		TimePhiData = None
 
 		t = np.zeros([nq_st,dim])
-		t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xref_st, t, None)
+		t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.time, self.Stepper.dt, TimePhiData, xref_st, t, None)
 
 		# interpolate state and gradient at quad points
 		# UqI = np.matmul(basis_val_st, U) # 
@@ -710,7 +710,7 @@ class ADERDG(base.SolverBase):
 			xnode = basis.get_nodes(order)
 			nb = xnode.shape[0]
 			t = np.zeros([nb,dim])
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, xnode, t, None)
+			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.time, self.Stepper.dt, TimePhiData, xnode, t, None)
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros_like(Sq)
 			Sq = physics.SourceState(nb, x_ader, t, Up, Sq)
@@ -730,7 +730,7 @@ class ADERDG(base.SolverBase):
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			t = np.zeros([nq_st,dim])
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.Time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
+			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.time, self.Stepper.dt, TimePhiData, quad_pts_st, t, None)
 		
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros([nb_st, ns])

@@ -10,15 +10,15 @@ skip=0
 
 fname = "case_0.pkl"
 solver1 = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver1.Time)
-solver1.Time = 0.25
+print('Solution Final Time:', solver1.time)
+solver1.time = 0.25
 mesh1 = solver1.mesh
 physics1 = solver1.physics
 
 
 fname = "case_3.pkl"
 solver2 = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver2.Time)
+print('Solution Final Time:', solver2.time)
 mesh2 = solver2.mesh
 physics2 = solver2.physics
 

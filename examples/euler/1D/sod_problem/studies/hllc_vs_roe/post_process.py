@@ -8,15 +8,15 @@ import processing.readwritedatafiles as readwritedatafiles
 plot.PreparePlot()
 skip=0
 
-fname = "exact_shu.pkl"
+fname = "case_10.pkl"
 solver1 = readwritedatafiles.read_data_file(fname)
 print('Solution Final Time:', solver1.time)
-solver1.time = 2.0
+solver1.time = 0.25
 mesh1 = solver1.mesh
 physics1 = solver1.physics
 
 
-fname = "data_final.pkl"
+fname = "case_3.pkl"
 solver2 = readwritedatafiles.read_data_file(fname)
 print('Solution Final Time:', solver2.time)
 mesh2 = solver2.mesh
@@ -24,31 +24,31 @@ physics2 = solver2.physics
 
 
 # Density
-plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
-			ylabel=None, fmt='k-.', legend_label="Exact", equidistant_pts=True, 
+plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+			ylabel=None, fmt='g-', legend_label="HLLC", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=True)
 plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
-			ylabel=None, fmt='b-', legend_label="Case 4", equidistant_pts=True, 
+			ylabel=None, fmt='b-', legend_label="Roe", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=False)
 
 plot.SaveFigure(FileName='density', FileType='pdf', CropLevel=2)
 
 # Velocity 
-plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
-			ylabel=None, fmt='k-.', legend_label="Exact", equidistant_pts=True, 
+plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+			ylabel=None, fmt='g-', legend_label="HLLC", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=True)
 plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
-			ylabel=None, fmt='b-', legend_label="Case 4", equidistant_pts=True, 
+			ylabel=None, fmt='b-', legend_label="Roe", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=False)
 
 plot.SaveFigure(FileName='velocity', FileType='pdf', CropLevel=2)
 
 # Velocity 
-plot.plot_solution(mesh1, physics1, solver1, "Pressure", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
-			ylabel=None, fmt='k-.', legend_label="Exact", equidistant_pts=True, 
+plot.plot_solution(mesh1, physics1, solver1, "Pressure", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+			ylabel=None, fmt='g-', legend_label="HLLC", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=True)
 plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
-			ylabel=None, fmt='b-', legend_label="Case 4", equidistant_pts=True, 
+			ylabel=None, fmt='b-', legend_label="Roe", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=False)
 
 plot.SaveFigure(FileName='pressure', FileType='pdf', CropLevel=2)

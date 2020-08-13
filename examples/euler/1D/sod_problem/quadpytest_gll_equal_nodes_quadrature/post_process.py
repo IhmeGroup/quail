@@ -7,7 +7,7 @@ import processing.readwritedatafiles as readwritedatafiles
 ### Postprocess
 fname = "Data_Final.pkl"
 solver1 = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver1.Time)
+print('Solution Final Time:', solver1.time)
 
 # Unpack
 mesh1 = solver1.mesh
@@ -16,7 +16,7 @@ physics1 = solver1.physics
 ### Postprocess
 # fname = "Data_Final.pkl"
 # solver2 = readwritedatafiles.read_data_file(fname)
-# # print('Solution Final Time:', solver.Time)
+# # print('Solution Final Time:', solver.time)
 
 # # Unpack
 # mesh2 = solver2.mesh

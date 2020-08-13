@@ -19,7 +19,7 @@ import processing.plot as plot_defs
 
 def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVolume=True):
 
-	Time = solver.Time
+	Time = solver.time
 	U = physics.U
 	basis = solver.basis
 	# Check for exact solution

@@ -390,7 +390,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, nPoint=101, plot_
 		plt.figure()
 
 	# Analytical?
-	# u_exact, u_IC = get_analytical_solution(physics, xyline, solver.Time, PlotExact, PlotIC)
+	# u_exact, u_IC = get_analytical_solution(physics, xyline, solver.time, PlotExact, PlotIC)
 	# if u_exact is not None:
 	# 	u_exact = physics.ComputeScalars(VariableName, u_exact)
 	# 	# u_exact = interpolate_2D_soln_to_points(physics, x, u_exact, xyline, variable_name)
@@ -403,7 +403,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, nPoint=101, plot_
 		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
 		default_label = "Numerical"
 	elif plot_exact:
-		var_plot = get_analytical_solution(physics, physics.ExactSoln, xyline, solver.Time, var_name)
+		var_plot = get_analytical_solution(physics, physics.ExactSoln, xyline, solver.time, var_name)
 		default_label = "Exact"
 	elif plot_IC:
 		var_plot = get_analytical_solution(physics, physics.IC, xyline, 0., var_name)
@@ -535,7 +535,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 # 			raise Exception("No exact solution provided")
 
 # 	## Extract params
-# 	EndTime = solver.Time
+# 	EndTime = solver.time
 # 	dim = mesh.dim
 
 # 	# Get sample points
@@ -606,7 +606,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exa
 		raise ValueError("Need to plot a solution")
 
 	## Extract params
-	time = solver.Time
+	time = solver.time
 	dim = mesh.dim
 
 	# Get sample points

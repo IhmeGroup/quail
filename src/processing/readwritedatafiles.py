@@ -6,7 +6,7 @@ def write_data_file(solver, iwrite):
 	# mesh = solver.mesh
 	# physics = solver.physics
 	# Params = solver.Params
-	# Time = solver.Time
+	# Time = solver.time
 
 	prefix = solver.Params["Prefix"]
 	if iwrite >= 0:

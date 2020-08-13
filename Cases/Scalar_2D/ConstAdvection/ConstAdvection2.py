@@ -77,7 +77,7 @@ solver.solve()
 
 ### Postprocess
 # Error
-solver.Time = 0.
+solver.time = 0.
 TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 axis = None

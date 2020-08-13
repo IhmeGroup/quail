@@ -321,7 +321,7 @@ def driver(deck):
 			solver.physics.U = physics_old.U
 			# Time
 		if restart_params["StartFromFileTime"]:
-			solver.Time = solver_old.Time
+			solver.time = solver_old.time
 			solver.Stepper.dt = 0.
 			stepper_tools.set_time_stepping_approach(solver.Stepper, 
 					solver.Params)

@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/basis/ader_tools.py
+#       File : src/numerics/basis/ader_tools.py
 #
 #       Contains helper definitions for the shape and basis classes with
 #       specific application to the ADER-DG solver.
@@ -29,8 +29,8 @@ def set_basis_spacetime(mesh, order, basis_name):
     INPUTS: 
         order: solution order
         basis_name: name of the spacial basis function used to determine
-                    the space-time basis function we wish to instantiate
-                    as a class 
+            the space-time basis function we wish to instantiate
+            as a class 
 
     OUTPUTS:
         basis_st: instantiated space-time basis class
@@ -58,7 +58,7 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1,
         order: solution order 
         elem: element index 
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
-                       reference space (default: False {reference space})
+            reference space (default: False {reference space})
 
     OUTPUTS: 
         iMM: inverse mass matrix for ADER-DG predictor step [nb, nb]
@@ -99,11 +99,12 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     INPUTS:
         mesh: mesh object
         basis: basis object
-        basis_st : space-time basis object
+        basis_st: space-time basis object
         order: solution order 
         dt: time step 
         elem: element index
-        gradDir: direction of gradient calc
+        gradDir: direction of gradient calculation
+
     OUTPUTS: 
         SM: stiffness matrix for ADER-DG [nb_st, nb_st]
     '''
@@ -177,7 +178,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
         order: solution order
         elem: [OPTIONAL] element index
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
-                       reference space (default: False {reference space})
+            reference space (default: False {reference space})
 
     OUTPUTS: 
         FT: flux matrix for ADER-DG # [nb_st, nb] or [nb_st, nb_st]
@@ -258,7 +259,7 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
         order: solution order 
         elem: [OPTIONAL] element index
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
-                       reference space (default: False {reference space})
+            reference space (default: False {reference space})
 
     OUTPUTS: 
         MM: mass matrix for ADER-DG [nb_st, nb_st]

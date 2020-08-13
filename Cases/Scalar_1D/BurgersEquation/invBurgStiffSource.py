@@ -80,10 +80,10 @@ solver.solve()
 
 ### Postprocess
 # Error
-#TotErr,_ = Post.L2_error(mesh, physics, solver.Time, "Scalar")
+#TotErr,_ = Post.L2_error(mesh, physics, solver.time, "Scalar")
 # Plot
 Plot.PreparePlot()
-Plot.PlotSolution(mesh, physics, solver.Time, "Scalar", PlotExact = True, PlotIC = True, Label="Q_h")
+Plot.PlotSolution(mesh, physics, solver.time, "Scalar", PlotExact = True, PlotIC = True, Label="Q_h")
 Plot.ShowPlot()
 
 

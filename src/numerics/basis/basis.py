@@ -10,7 +10,6 @@
 #       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
-
 from abc import ABC, abstractmethod
 import code
 import numpy as np
@@ -34,7 +33,7 @@ class ShapeBase(ABC):
 
     Attributes:
     -----------
-    quadrature_type : enum
+    quadrature_type: enum
         specifies the type of quadrature to be used on the element
 
     Abstract Constants:
@@ -85,7 +84,7 @@ class ShapeBase(ABC):
     def SHAPE_TYPE(self):
         '''
         Stores the location of the ShapeType enum to define the element's
-        shape. [type : enum]
+        shape
         '''
         pass
 
@@ -94,7 +93,7 @@ class ShapeBase(ABC):
     def FACE_SHAPE(self):
         '''
         Stores the location of the ShapeType enum to define the element's
-        face shape. [enum]
+        face shape
         '''
         pass
 
@@ -133,15 +132,13 @@ class ShapeBase(ABC):
     @abstractmethod
     def get_num_basis_coeff(self, p):
         '''
-        Method: get_num_basis_coeff
-        ----------------------------
         Sets the number of basis coefficients given a polynomial order
 
         INPUTS:
             p: order of polynomial space
 
         OUTPUTS: 
-            nb : number of basis coefficients
+            nb: number of basis coefficients
         '''
         pass
 
@@ -156,7 +153,7 @@ class ShapeBase(ABC):
 
         OUTPUTS: 
             xn: array of nodes equidistantly spaced
-            [shape: [nb, dim]]
+                [shape: [nb, dim]]
         '''
         pass
 
@@ -169,7 +166,7 @@ class ShapeBase(ABC):
 
         INPUTS:
             order: quadrature order (typically obtained using 
-                   get_quadrature_order method)
+                get_quadrature_order method)
 
         OUTPUTS:
             quad_pts: quadrature point coordinates [nq, dim]
@@ -205,7 +202,7 @@ class ShapeBase(ABC):
     def set_elem_quadrature_type(self, quadrature_name):
         '''
         Sets the quadrature type based on the QuadratureType enum. Available 
-        quadrature types in general.py.
+        quadrature types in general.py
 
         INPUTS:
             quadrature_name: name of the quadrature type
@@ -517,7 +514,7 @@ class TriShape(ShapeBase):
     def get_quadrature_data(self, order):
         '''
         Additional Notes:
-        ------------------
+        -----------------
         Forced points cannot be used with triangles
         '''
         quad_pts, quad_wts = triangle.get_quadrature_points_weights(order, 
@@ -542,23 +539,23 @@ class BasisBase(ABC):
 
     Attributes:
     -----------
-    order : int
+    order: int
         specifies the polynomial or geometric order
-    basis_val : numpy array
+    basis_val: numpy array
         evaluated basis function
-    basis_ref_grad : numpy array
+    basis_ref_grad: numpy array
         evaluated gradient of the basis function in reference space
-    basis_phys_grad : numpy array
+    basis_phys_grad: numpy array
         evaluated gradient of the basis function in physical space
-    skip_interp : boolean
+    skip_interp: boolean
         when forcing nodes to be the same as quadrature this flag is 
         used to skip the interpolation routines as they are not needed
-    nb : int
+    nb: int
         number of polynomial coefficients
-    get_1d_nodes : method
+    get_1d_nodes: method
         method to obtain the 1d nodes [options in src/numerics/basis/
         tools.py]
-    calculate_normals : method
+    calculate_normals: method
         method to obtain normals for element faces [options in 
         src/numerics/basis/tools.py]
 
@@ -636,7 +633,7 @@ class BasisBase(ABC):
 
         OUTPUTS: 
             basis_ref_grad: evaluated gradient of basis function in 
-            reference space [nq, nb, dim]
+                reference space [nq, nb, dim]
         '''
         pass
 
@@ -649,7 +646,7 @@ class BasisBase(ABC):
 
         OUTPUTS:
             basis_phys_grad: evaluated gradient of the basis function in 
-            physical space [nq, nb, dim]
+                physical space [nq, nb, dim]
         '''
         dim = self.DIM
         nb = self.nb
@@ -672,8 +669,6 @@ class BasisBase(ABC):
     def get_basis_val_grads(self, quad_pts, get_val=True, get_ref_grad=False,
             get_phys_grad=False, ijac=None):
         '''
-        Method: get_basis_val_grads
-        -----------------------------
         Evaluates the basis function and if applicable evaluates the 
         gradient in reference and/or physical space 
 
@@ -691,9 +686,9 @@ class BasisBase(ABC):
             Sets the following attributes of the BasisBase class:
 
             basis_val: evaluated basis function [nq, nb]
-            basis_ref_grad : evaluated gradient of the basis function in 
+            basis_ref_grad: evaluated gradient of the basis function in 
                 reference space [nq, nb, dim]
-            basis_phys_grad : evaluated gradient of the basis function in 
+            basis_phys_grad: evaluated gradient of the basis function in 
                 physical space [nq, nb, dim]
         '''
         if get_val:
@@ -709,8 +704,6 @@ class BasisBase(ABC):
             get_val=True, get_ref_grad=False, get_phys_grad=False, 
             ijac=None):
         '''
-        Method: get_basis_face_val_grads
-        ---------------------------------
         Evaluates the basis function and if applicable evaluates the 
         gradient in reference and/or physical space on the element face 
 
@@ -734,9 +727,9 @@ class BasisBase(ABC):
             Sets the following attributes of the BasisBase class:
 
             basis_val: evaluated basis function [nq, nb]
-            basis_ref_grad : evaluated gradient of the basis function in 
+            basis_ref_grad: evaluated gradient of the basis function in 
                 reference space [nq, nb, dim]
-            basis_phys_grad : evaluated gradient of the basis function in 
+            basis_phys_grad: evaluated gradient of the basis function in 
                 physical space [nq, nb, dim]            
         '''
         if basis is None:

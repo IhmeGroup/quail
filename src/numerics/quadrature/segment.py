@@ -28,7 +28,7 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
         order: solution order
         quad_type: Enum that points to the appropriate quadrature calc
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
-                    equal to quad_pts is turned on
+            equal to quad_pts is turned on
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]
@@ -76,7 +76,7 @@ def get_quadrature_gauss_lobatto(order, forced_pts=None):
     INPUTS: 
         order: solution order 
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
-                    equal to quad_pts is turned on
+            equal to quad_pts is turned on
 
     OUTPUTS:
         qpts: quadrature point coordinates [nq, dim]
@@ -126,8 +126,8 @@ def get_lobatto_pts_wts(alpha, beta, xl1, xl2):
     Compute the Lobatto nodes and weights with the preassigned node xl1, xl2.
     Based on the section 7 of the paper
         Some modified matrix eigenvalue problems,
-        Gene Golub,
-        SIAM Review Vol 15, No. 2, April 1973, pp.318--334
+        Gene Golub, SIAM Review Vol 15, No. 2, 
+        April 1973, pp.318--334
 
     INPUTS:
         alpha: constant used to find recurrence coefficients

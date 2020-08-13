@@ -107,7 +107,7 @@ h = mesh.node_coords[1,0] - mesh.node_coords[0,0]
 
 ### Solver and physics
 # Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
-params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
+params = {**defaultparams.timeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
 # params["InterpOrder"] = order 
 params["RestartFile"] = params["File"]
 params["InterpBasis"] = "LagrangeSeg"

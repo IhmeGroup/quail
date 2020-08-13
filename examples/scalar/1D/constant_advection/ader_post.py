@@ -7,7 +7,7 @@ import processing.readwritedatafiles as readwritedatafiles
 ### Postprocess
 fname = "ader_final.pkl"
 solver = readwritedatafiles.read_data_file(fname)
-print('Solution Final Time:', solver.Time)
+print('Solution Final Time:', solver.time)
 
 # Unpack
 mesh = solver.mesh

@@ -295,9 +295,9 @@ class PhysicsBase(object):
 			#loop through available source terms
 			Source.x = xglob
 			Source.nq = nq
-			Source.Time = Time
+			Source.time = Time
 			Source.U = Up
-			s += self.CallSourceFunction(Source,Source.x,Source.Time)
+			s += self.CallSourceFunction(Source,Source.x,Source.time)
 
 		return s
 
@@ -306,9 +306,9 @@ class PhysicsBase(object):
 			#loop through available source terms
 			Source.x = xglob
 			Source.nq = nq
-			Source.Time = Time
+			Source.time = Time
 			Source.U = Up
-			jac += self.CallSourceJacobianFunction(Source,Source.x,Source.Time)
+			jac += self.CallSourceJacobianFunction(Source,Source.x,Source.time)
 
 		return jac
 		
@@ -388,7 +388,7 @@ class PhysicsBase(object):
 		# 		FcnData.x = kwargs[key]
 		# 		FcnData.nq = FcnData.x.shape[0]
 		# 	elif key is "Time":
-		# 		FcnData.Time = kwargs[key]
+		# 		FcnData.time = kwargs[key]
 		# 	else:
 		# 		raise Exception("Input error")
 
@@ -409,7 +409,7 @@ class PhysicsBase(object):
 		# 		FcnData.x = kwargs[key]
 		# 		FcnData.nq = FcnData.x.shape[0]
 		# 	elif key is "Time":
-		# 		FcnData.Time = kwargs[key]
+		# 		FcnData.time = kwargs[key]
 		# 	else:
 		# 		raise Exception("Input error")
 
@@ -428,7 +428,7 @@ class PhysicsBase(object):
 		# 		FcnData.x = kwargs[key]
 		# 		FcnData.nq = FcnData.x.shape[0]
 		# 	elif key is "Time":
-		# 		FcnData.Time = kwargs[key]
+		# 		FcnData.time = kwargs[key]
 		# 	else:
 		# 		raise Exception("Input error")
 

@@ -1,3 +1,15 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/numerics/solver/base.py
+#
+#       Contains class definitions for the solver base class
+#       available in the DG Python framework.
+#
+#       Authors: Eric Ching and Brett Bornhoft
+#
+#       Created: January 2020
+#      
+# ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import code
 import copy
@@ -28,37 +40,68 @@ import processing.readwritedatafiles as ReadWriteDataFiles
 
 import solver.tools as solver_tools
 
-
 global echeck
 echeck = -1
 
 
 class SolverBase(ABC):
-	def __init__(self, Params, physics, mesh):
-		'''
-		Method: __init__
-		-------------------------------------------------------------------
-		Initializes the DG object, verifies parameters, and initializes the state
+	'''
+	This is a base class for any solver used in the DG Python framework
 
-		INPUTS:
-			Params: list of parameters for the solver
-			physics: solver object (current implementation supports Scalar and Euler equations)
-			mesh: mesh object
-		'''
+    Attributes:
+    -----------
+    Params: dictionary
+        contains a list of parameters that can be accessed with kwargs
+    physics: object
+    	contains the set of equations to be solved
+    mesh: object
+		contains the geometric information for the solver's mesh
+	time: float
+		global time of the solution at the given time step
+	numtimesteps: int
+		number of time steps required to solve to the specified end time
+	basis: object
+		contains all the information and methods for the basis class
+	limiter: object
+		contains all the information and methods for the limiter class
+
+    Abstract Methods:
+    -----------------
+    precompute_matrix_operators
+    	precomputes a variety of functions and methods prior to running the
+    	simulation
+    calculate_residual_elem
+    	calculates the residual for a specific element
+    calculate_residual_iface
+    	calculates the residual for a specific face
+    calculate_residual_bface
+    	calculates the residual for a specific boundary face
+    
+    Methods:
+    --------
+    check_compatibility
+    	checks parameter compatibilities based on the given input deck
+    init_state_from_fcn
+    	initializes all objects and state when supplied a restart file
+	project_state_to_new_basis
+		takes a state from a restartfile and projects it onto a higher
+		order of accuracy
+	'''
+	def __init__(self, Params, physics, mesh):
 		self.Params = Params
 		self.physics = physics
 		self.mesh = mesh
 		self.DataSet = GenericData()
 
-		self.Time = Params["StartTime"]
-		self.nTimeStep = 0 # will be set later
+		self.time = Params["StartTime"]
+		self.numtimesteps = 0 # will be set later
 
 		# Set the basis functions for the solver
-		basis_name  = Params["InterpBasis"]
-		self.basis = basis_tools.set_basis(physics.order, basis_name)
+		BASIS_TYPE  = Params["InterpBasis"]
+		self.basis = basis_tools.set_basis(physics.order, BASIS_TYPE)
 
-		node_type = Params["NodeType"]
-		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(node_type)
+		NODE_TYPE = Params["NodeType"]
+		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(NODE_TYPE)
 
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
@@ -69,14 +112,18 @@ class SolverBase(ABC):
 		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
 
 		# Limiter
-		limiterType = Params["ApplyLimiter"]
-		self.Limiter = limiter_tools.set_limiter(limiterType, physics.PHYSICS_TYPE)
+		LIMITER_TYPE = Params["ApplyLimiter"]
+		self.limiter = limiter_tools.set_limiter(LIMITER_TYPE, physics.PHYSICS_TYPE)
 
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
 		Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
 
 	def check_compatibility(self):
+		'''
+		Checks a variety of parameter combinations to ensure compatibility
+		for the specified input deck and the following simulation
+		'''
 		mesh = self.mesh 
 		Params = self.Params
 		basis = self.basis
@@ -89,29 +136,24 @@ class SolverBase(ABC):
 			!= ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
-		# ----------------------------------------------------------------- #
-		# Gauss Lobatto Nodes Compatibility Checks
-		# ----------------------------------------------------------------- #
+		# Gauss Lobatto nodes compatibility checks
 		node_type = Params["NodeType"]
 		forcing_switch = Params["NodesEqualQuadpts"]
 		elem_quad = Params["ElementQuadrature"]
 		face_quad = Params["FaceQuadrature"]
 
-		# Compatibility check for GLL nodes with triangles
+		# compatibility check for GLL nodes with triangles
 		if NodeType[node_type] == NodeType.GaussLobatto and \
 			basis.SHAPE_TYPE == ShapeType.Triangle:
 			raise errors.IncompatibleError
 
-		# Compatibility check for forcing nodes equal to quadrature points
+		# compatibility check for forcing nodes equal to quadrature points
 		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
 			raise errors.IncompatibleError
 		if ( QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
 			QuadratureType[face_quad] != QuadratureType.GaussLobatto ) \
 			and forcing_switch:
 			raise errors.IncompatibleError
-		
-		# ----------------------------------------------------------------- #
-
 
 	@abstractmethod
 	def precompute_matrix_operators(self):
@@ -153,7 +195,7 @@ class SolverBase(ABC):
 
 		for elem in range(mesh.num_elems):
 			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
-			f = physics.CallFunction(physics.IC, x=xphys, t=self.Time)
+			f = physics.CallFunction(physics.IC, x=xphys, t=self.time)
 			# f.shape = npts,ns
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
@@ -314,7 +356,7 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		Order = self.Params["InterpOrder"]
 		Stepper = self.Stepper
-		Time = self.Time
+		Time = self.time
 
 		# Parameters
 		TrackOutput = self.Params["TrackOutput"]
@@ -336,16 +378,16 @@ class SolverBase(ABC):
 
 			Stepper.dt = Stepper.get_time_step(Stepper, self)
 			# Integrate in time
-			# self.Time is used for local time
+			# self.time is used for local time
 			R = Stepper.TakeTimeStep(self)
 
 			# Increment time
 			Time += Stepper.dt
-			self.Time = Time
+			self.time = Time
 
 			# Info to print
-			# PrintInfo = (iStep+1, self.Time, R.VectorNorm(ord=1))
-			PrintInfo = (iStep+1, self.Time, np.linalg.norm(np.reshape(R,-1), ord=1))
+			# PrintInfo = (iStep+1, self.time, R.VectorNorm(ord=1))
+			PrintInfo = (iStep+1, self.time, np.linalg.norm(np.reshape(R,-1), ord=1))
 			PrintString = "%d: Time = %g, Residual norm = %g" % (PrintInfo)
 
 			# Output
@@ -392,108 +434,28 @@ class SolverBase(ABC):
 
 		Notes: See Limiter.py for details
 		'''
-		if self.Limiter is not None:
-			self.Limiter.limit_solution(self, U)
+		if self.limiter is not None:
+			self.limiter.limit_solution(self, U)
 
 
 	def solve(self):
 		'''
-		Method: solve
-		-----------------------------
 		Performs the main solve of the DG method. Initializes the temporal loop. 
-
 		'''
 		mesh = self.mesh
 		physics = self.physics
 		basis = self.basis
 
 		InterpOrder = self.Params["InterpOrder"]
-		# numtimesteps = self.Params["NumTimeSteps"]
-		# EndTime = self.Params["EndTime"]
 		WriteTimeHistory = self.Params["WriteTimeHistory"]
+
 		if WriteTimeHistory:
 			fhistory = open("TimeHistory.txt", "w")
 		else:
-			fhistory = None
+			fhistory = None			
 
-
-		''' Convert to lists '''
-		# InterpOrder
-		# if np.issubdtype(type(InterpOrder), np.integer):
-		# 	InterpOrders = [InterpOrder]
-		# elif type(InterpOrder) is list:
-		# 	InterpOrders = InterpOrder 
-		# else:
-		# 	raise TypeError
-		# nOrder = len(InterpOrders)
-		# # nTimeStep
-		# if np.issubdtype(type(nTimeStep), np.integer):
-		# 	nTimeSteps = [nTimeStep]*nOrder
-		# elif type(nTimeStep) is list:
-		# 	nTimeSteps = nTimeStep 
-		# else:
-		# 	raise TypeError
-		# # EndTime
-		# if np.issubdtype(type(EndTime), np.floating):
-		# 	EndTimes = []
-		# 	for i in range(nOrder):
-		# 		EndTimes.append(EndTime*(i+1))
-		# elif type(EndTime) is list:
-		# 	EndTimes = EndTime 
-		# else:
-		# 	raise TypeError
-
-
-		# ''' Check compatibility '''
-		# if nOrder != len(nTimeSteps) or nOrder != len(EndTimes):
-		# 	raise ValueError
-
-		# if np.any(np.diff(EndTimes) < 0.):
-		# 	raise ValueError
-
-		# if not OrderSequencing:
-		# 	if len(InterpOrders) != 1:
-		# 		raise ValueError
-
-		''' Loop through Orders '''
-
-		''' Compute time step '''
-		# if nTimeStep != 0:
-		# 	self.Stepper.dt = (EndTime-Time)/nTimeStep
-		# self.numtimesteps = numtimesteps			
-
-		''' Apply time scheme '''
+		# apply time scheme
 		self.apply_time_scheme(fhistory)
-
-
-		# for iOrder in range(nOrder):
-		# 	Order = InterpOrders[iOrder]
-		# 	''' Compute time step '''
-		# 	if nTimeSteps[iOrder] != 0:
-		# 		self.Stepper.dt = (EndTimes[iOrder]-Time)/nTimeSteps[iOrder]
-		# 	self.nTimeStep = nTimeSteps[iOrder]
-
-		# 	''' After first iteration, project solution to next Order '''
-		# 	if iOrder > 0:
-		# 		# Clear DataSet
-		# 		delattr(self, "DataSet")
-		# 		self.DataSet = GenericData()
-		# 		# Increment Order
-		# 		Order_old = physics.order
-		# 		physics.order = Order
-		# 		# Project
-		# 		solver_tools.project_state_to_new_basis(self, mesh, physics, basis, Order_old)
-
-		# 		basis.order = Order
-		# 		basis.nb = basis.get_num_basis_coeff(Order)				
-
-		# 		self.precompute_matrix_operators()
-
-		# 	''' Apply time scheme '''
-		# 	self.apply_time_scheme(fhistory)
-
-		# 	Time = EndTimes[iOrder]
-
 
 		if WriteTimeHistory:
 			fhistory.close()		

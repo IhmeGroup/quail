@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/timestepping/ode.py
+#       File : src/numerics/timestepping/ode.py
 #
 #       Contains ODE solvers for operator splitting schemes in stepper.py
 #
@@ -34,44 +34,28 @@ class ODESolvers():
 		This is an abstract base class used to represent a specific ODE 
 		solver for operator splitting integration schemes.
 
-		Attributes
+		Attributes:
 		-----------
-		R : numpy array of floats (shape : [nelem, nb, ns])
+		R: numpy array of floats (shape : [nelem, nb, ns])
 			solution's residaul array
-		dt : float
+		dt: float
 			time-step for the solution
-		numtimesteps : int
+		numtimesteps: int
 			number of time steps for the given solution's endtime
-		get_time_step : method
+		get_time_step: method
 			method to obtain dt given input decks logic (CFL-based vs # of 
 			timesteps, etc...)
-		balance_const : numpy array of floats (shaped like R)
+		balance_const: numpy array of floats (shaped like R)
 			balancing constant array used only with the Simpler splitting 
 			scheme
 		
 		Abstract Methods:
-		------------------
+		-----------------
 		TakeTimeStep
 			method that takes a given time step for the solver depending on 
 			the selected time-stepping scheme
 		'''
 		def __init__(self, U):
-			'''
-			Attributes
-			-----------
-			R : numpy array of floats (shape : [nelem, nb, ns])
-				solution's residaul array
-			dt : float
-				time-step for the solution
-			numtimesteps : int
-				number of time steps for the given solution's endtime
-			get_time_step : method
-				method to obtain dt given input decks logic (CFL-based vs # 
-				of timesteps, etc...)
-			balance_const : numpy array of floats (shaped like R)
-				balancing constant array used only with the Simpler
-				splitting scheme
-			'''
 			self.R = np.zeros_like(U)
 			self.dt = 0.
 			self.numtimesteps = 0
@@ -157,6 +141,7 @@ class ODESolvers():
 			INPUTS:
 				solver: solver object (i.e. DG, ADERDG, etc...)
 				elem: element index
+
 			OUTPUTS: 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
@@ -179,7 +164,7 @@ class ODESolvers():
 
 			# evaluate the source term jacobian [nq, ns, ns]
 			jac = np.zeros([nq,ns,ns])
-			jac = physics.SourceJacobianState(nq, x, solver.Time, Uq, jac) 
+			jac = physics.SourceJacobianState(nq, x, solver.time, Uq, jac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
 			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)

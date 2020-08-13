@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/timestepping/tools.py
+#       File : src/numerics/timestepping/tools.py
 #
 #       Contains helper functions for the stepper class
 #
@@ -98,7 +98,7 @@ def get_dt_from_numtimesteps(stepper, solver):
 	'''
 	numtimesteps = stepper.numtimesteps
 	tfinal = solver.Params["EndTime"]
-	time = solver.Time
+	time = solver.time
 
 	# only needs to be set once per simulation
 	if stepper.dt == 0.0:
@@ -119,7 +119,7 @@ def get_dt_from_timestepsize(stepper, solver):
 	OUTPUTS: 
 		dt: time step for the solver
 	'''
-	time = solver.Time
+	time = solver.time
 	timestepsize = solver.Params["TimeStepSize"]
 	tfinal = solver.Params["EndTime"]
 
@@ -148,7 +148,7 @@ def get_dt_from_cfl(stepper, solver):
 	physics = solver.physics
 	Up = physics.U
 
-	time = solver.Time
+	time = solver.time
 	tfinal = solver.Params["EndTime"]
 	cfl = solver.Params["CFL"]
 	

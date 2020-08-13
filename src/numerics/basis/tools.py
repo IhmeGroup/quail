@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : numerics/basis/tools.py
+#       File : src/numerics/basis/tools.py
 #
 #       Contains helper definitions for the shape and basis classes.
 #
@@ -39,7 +39,7 @@ def set_basis(order, basis_name):
     INPUTS: 
         order: solution order
         basis_name: name of the basis function we wish to instantiate 
-                    as a class
+            as a class
 
     OUTPUTS:
         basis: instantiated basis class
@@ -70,7 +70,7 @@ def set_1D_node_calc(node_type):
 
     INPUTS: 
         node_type: name of the node type (available NodeType listed in 
-        src/general.py)
+            src/general.py)
 
     OUTPUTS:
         fcn: method to calculate 1D nodes
@@ -174,7 +174,7 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1,
         order: solution order
         elem: [OPTIONAL] element index
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
-                       reference space (default: False {reference space})
+            reference space (default: False {reference space})
 
     OUTPUTS: 
         iMM: inverse mass matrix [nb, nb]
@@ -196,7 +196,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
         order: solution order [int]
         elem: [OPTIONAL] element index [int]
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
-                       reference space (default: False {reference space}) 
+            reference space (default: False {reference space}) 
 
     OUTPUTS: 
         MM: mass matrix [nb, nb]
@@ -237,8 +237,8 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     INPUTS:
         solver: instance of solver object
         mesh: instance of mesh object
-        order: solution order [int]
-        elem: element index [int]
+        order: solution order
+        elem: element index
 
     OUTPUTS: 
         SM: stiffness matrix # [nb, nb]
@@ -331,10 +331,10 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
         elem: element index
         quad_pts: coordinates of quadrature points
         get_djac: [OPTIONAL]flag to calculate jacobian determinant 
-                  (Default: False)
+            (Default: False)
         get_jac: [OPTIONAL] flag to calculate jacobian (Default: False)
         get_ijac: [OPTIONAL] flag to calculate inverse of the jacobian 
-        (Default: False)
+            (Default: False)
 
     OUTPUTS:
         djac: determinant of the jacobian [nq, 1]
