@@ -28,7 +28,6 @@ def adapt(solver, physics, mesh, stepper):
             closest_distance = distance
             closest_elem = elem
     split_id = closest_elem.id
-    split_id = 0
     needs_refinement[split_id] = True
 
     # Loop over all elements
@@ -87,7 +86,6 @@ def adapt(solver, physics, mesh, stepper):
             append_face(mesh, new_elem2, new_elem4, 0, 2)
 
             # TODO: Figure out how to remove long face after making new ones
-
             # "Deactivate" the original element and its neighbor
             # TODO: figure out a better way to do this
             elem.face_to_neighbors = np.array([-1,-1,-1])
@@ -96,6 +94,12 @@ def adapt(solver, physics, mesh, stepper):
             corner = np.array([-2,-2])
             elem.node_coords = np.array([corner, corner+[0,-offset], corner+[offset,0]])
             neighbor.node_coords = np.array([corner+[0,-offset], corner+[offset,-offset], corner+[offset,0]])
+            #for iface in mesh.interior_faces:
+            #    if (iface.elemL_id == elem.id or iface.elemR_id == elem.id
+            #            or iface.elemL_id == neighbor.id or iface.elemR_id == neighbor.id):
+            #        print("found face:")
+            #        print(iface.elemL_id)
+            #        print(iface.elemR_id)
 
             # Call compute operators
             solver.precompute_matrix_operators()
@@ -107,9 +111,13 @@ def adapt(solver, physics, mesh, stepper):
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            #print(physics.U)
             # Delete residual
-            stepper.R = None
+            #print(physics.R.shape)
+            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
+            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
+            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
+            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
+            stepper.R = np.zeros_like(physics.U)
 
             elem.deactivated = True
             neighbor.deactivated = True
@@ -120,7 +128,7 @@ def adapt(solver, physics, mesh, stepper):
 
             #Uq = numerics_helpers.evaluate_state(Up, basis_val)
 
-    # Just printing random things to check them out
+    # Just printing things to check them out
     #print(mesh.node_coords)
     #for i in range(mesh.num_interior_faces):
     #    print("Face ", i)
@@ -134,6 +142,7 @@ def adapt(solver, physics, mesh, stepper):
     #        print(mesh.elements[i].node_ids)
     #        print(mesh.elements[i].node_coords)
     #        print(mesh.elements[i].face_to_neighbors)
+
 
 def append_element(mesh, node_ids, face_id, parent, parent_face_id):
     """Create a new element at specified nodes and append it to the mesh.
