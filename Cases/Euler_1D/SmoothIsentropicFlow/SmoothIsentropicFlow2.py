@@ -14,7 +14,15 @@ import meshing.gmsh as MeshGmsh
 Periodic = False
 # mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=2, xmin=-1., xmax=1., Periodic=Periodic)
 mesh = MeshGmsh.import_gmsh_mesh("mesh_v2.msh")
+# code.interact(local=locals())
 
+# Test "random" 1D mesh
+# mesh.elem_to_node_ids[1,:] = np.array([1,2])
+mesh.interior_faces[0].elemL_id = 1
+mesh.interior_faces[0].elemR_id = 0
+mesh.interior_faces[0].faceL_id = 0
+mesh.interior_faces[0].faceR_id = 1
+# code.interact(local=locals())
 
 ### Solver parameters
 EndTime = 0.1
