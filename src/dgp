@@ -9,7 +9,7 @@ import sys
 
 import defaultparams as default_deck
 import errors
-from general import SolverType, PhysicsType
+from general import ShapeType, SolverType, PhysicsType
 
 import meshing.common as mesh_common
 import meshing.gmsh as mesh_gmsh
@@ -127,54 +127,60 @@ def driver(deck):
 	'''
 	Input deck
 	'''
-	restart_params, stepper_params, numerics_params, mesh_params, physics_params, \
-			IC_params, exact_params, BC_params, source_params, output_params = read_inputs(deck)
+	restart_params, stepper_params, numerics_params, mesh_params, \
+			physics_params, IC_params, exact_params, BC_params, \
+			source_params, output_params = read_inputs(deck)
 
 
 	'''
 	Mesh
 	'''
 	if mesh_params["File"] is not None:
+		# Gmsh file
 		mesh = mesh_gmsh.import_gmsh_mesh(mesh_params["File"])
 	else:
+		# Create our own mesh
+
 		# Unpack
-		shape = mesh_params["ElementShape"]
+		shape = ShapeType[mesh_params["ElementShape"]]
 		xmin = mesh_params["xmin"]
 		xmax = mesh_params["xmax"]
 		num_elems_x = mesh_params["NumElems_x"]
 		num_elems_y = mesh_params["NumElems_y"]
 		ymin = mesh_params["ymin"]
 		ymax = mesh_params["ymax"]
-		if shape is "Segment":
-			if mesh_params["PeriodicBoundariesX"] != []:
-				periodic = True
-			else:
-				periodic = False
-			mesh = mesh_common.mesh_1D(Uniform=True, num_elems=num_elems_x, xmin=xmin, xmax=xmax, Periodic=periodic)
+
+		# Create mesh
+		if shape is ShapeType.Segment:
+			# 1D - segments
+			mesh = mesh_common.mesh_1D(Uniform=True, num_elems=num_elems_x, 
+					xmin=xmin, xmax=xmax, Periodic=False)
 		else:
 			# 2D - quads or tris
-			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x, num_elems_y=num_elems_y, Uniform=True, xmin=xmin, xmax=xmax, 
-					ymin=ymin, ymax=ymax)
-			periodic=True
-			if shape is "Triangle":
+
+			# First start with quads
+			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x, 
+					num_elems_y=num_elems_y, Uniform=True, xmin=xmin, 
+					xmax=xmax, ymin=ymin, ymax=ymax)
+			# Split into tris if required
+			if shape is ShapeType.Triangle:
 				mesh = mesh_common.split_quadrils_into_tris(mesh)
 
-	pb = [None]*4
+	''' Impose periodicity if requested '''
+	pb_x = mesh_params["PeriodicBoundariesX"]
+	pb_y = mesh_params["PeriodicBoundariesY"]
+
 	# Store periodic boundaries in pb
-	i = 0
-	for b in mesh_params["PeriodicBoundariesX"]:
-		pb[i] = b
-		i += 1
-	if mesh.dim == 2:
-		i = 2
-		for b in mesh_params["PeriodicBoundariesY"]:
-			pb[i] = b
-			i += 1
-	if pb != [None]*4 and mesh.dim !=1:
-		# need to check 1D first
-		if mesh.dim == 1:
-			raise Exception
-		mesh_tools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], y1=pb[2], y2=pb[3])
+	pb = [None]*4
+	if pb_x != []:
+		pb[:2] = pb_x
+	if pb_y != []:
+		pb[2:] = pb_y
+
+	# Make periodic	
+	if pb != [None]*4:
+		mesh_tools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], 
+				y1=pb[2], y2=pb[3])
 
 	'''
 	Physics
