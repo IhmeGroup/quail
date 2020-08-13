@@ -28,14 +28,13 @@ def adapt(solver, physics, mesh, stepper):
             closest_distance = distance
             closest_elem = elem
     split_id = closest_elem.id
+    split_id = 0
     needs_refinement[split_id] = True
 
     # Loop over all elements
     for elem_id in range(mesh.num_elems):
         # Only refine elements that need refinement
         if needs_refinement[elem_id]:
-
-            # TODO: What about boundary elements??
 
             # Get element
             elem = mesh.elements[elem_id]
@@ -150,6 +149,8 @@ def append_element(mesh, node_ids, face_id, parent, parent_face_id):
     Returns:
     elem - Element object (meshing/meshbase.py), newly created element
     """
+    # Wrap parent face ID index to be positive
+    parent_face_id = parent_face_id % mesh.gbasis.NFACES
     # Create element
     mesh.elements.append(mesh_defs.Element())
     elem = mesh.elements[-1]
@@ -184,6 +185,19 @@ def append_element(mesh, node_ids, face_id, parent, parent_face_id):
                 face.elemR_id = elem.id
                 face.faceR_id = face_id
                 break
+    # If the parent's neighbor is a boundary, update the boundary
+    if parent_neighbor_id == -1:
+        # Search for the correct boundary face
+        found = False
+        for bgroup in mesh.boundary_groups.values():
+            for bface in bgroup.boundary_faces:
+                # If found, change it to neighbor the new element
+                if bface.elem_id == parent.id and bface.face_id == parent_face_id:
+                    bface.elem_id = elem.id
+                    bface.face_id = face_id
+                    found = True
+                    break
+            if found: break
     return elem
 
 def append_face(mesh, elem1, elem2, faceL_id, faceR_id):
