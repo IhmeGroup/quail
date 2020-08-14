@@ -40,6 +40,7 @@ class ElemOperators(object):
 		self.Sq = None 
 		self.iMM_elems = np.zeros(0)
 		self.vol_elems = None
+		self.domain_vol = 0.
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 
@@ -87,8 +88,8 @@ class ElemOperators(object):
 			basis.get_basis_val_grads(quad_pts, get_phys_grad=True, ijac=ijac) # gPhi is [nq,nb,dim]
 			self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
 
-		_, ElemVols = mesh_tools.element_volumes(mesh)
-		self.vol_elems = ElemVols
+		# _, ElemVols = mesh_tools.element_volumes(mesh)
+		self.domain_vol, self.vol_elems = mesh_tools.element_volumes(mesh)
 
 	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts 

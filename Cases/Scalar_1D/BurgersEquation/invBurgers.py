@@ -24,7 +24,7 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=2, xmin=-1., xmax=1., Periodic
 #dt = 0.001
 #mu = 1.
 EndTime = 0.1
-NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[1,0] - mesh.node_coords[0,0])*0.01))])
+NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.01))])
 #NumTimeSteps = int(EndTime/dt)
 InterpOrder = 3
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,

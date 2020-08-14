@@ -29,7 +29,7 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 
 	# Get elem volumes 
 	if NormalizeByVolume:
-		TotVol,_ = mesh_tools.element_volumes(mesh)
+		TotVol, _ = mesh_tools.element_volumes(mesh, solver)
 	else:
 		TotVol = 1.
 

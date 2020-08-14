@@ -60,7 +60,7 @@ def set_time_stepping_approach(stepper, Params):
 	Sets stepper.get_time_step method given input parameters
 
 	INPUTS:
-		stepper: stepper object (i.e. FE, RK4, etc...)
+		stepper: stepper object (e.g., FE, RK4, etc...)
 		Params: list of parameters for solver
 
 	OUTPUTS: 
@@ -90,8 +90,8 @@ def get_dt_from_numtimesteps(stepper, solver):
 	Calculates dt from the specified number of time steps
 
 	INPUTS:
-		stepper: stepper object (i.e. FE, RK4, etc...)
-		solver: solver object (i.e. DG, ADERDG, etc...)
+		stepper: stepper object (e.g., FE, RK4, etc...)
+		solver: solver object (e.g., DG, ADERDG, etc...)
 
 	OUTPUTS: 
 		dt: time step for the solver
@@ -113,8 +113,8 @@ def get_dt_from_timestepsize(stepper, solver):
 	Params["TimeStepSize"].
 
 	INPUTS:
-		stepper: stepper object (i.e. FE, RK4, etc...)
-		solver: solver object (i.e. DG, ADERDG, etc...)
+		stepper: stepper object (e.g., FE, RK4, etc...)
+		solver: solver object (e.g., DG, ADERDG, etc...)
 
 	OUTPUTS: 
 		dt: time step for the solver
@@ -136,8 +136,8 @@ def get_dt_from_cfl(stepper, solver):
 	ensure solution remains within the CFL bound.
 
 	INPUTS:
-		stepper: stepper object (i.e. FE, RK4, etc...)
-		solver: solver object (i.e. DG, ADERDG, etc...)
+		stepper: stepper object (e.g., FE, RK4, etc...)
+		solver: solver object (e.g., DG, ADERDG, etc...)
 
 	OUTPUTS: 
 		dt: time step for the solver

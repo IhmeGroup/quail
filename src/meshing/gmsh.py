@@ -43,10 +43,12 @@ def gmsh_node_order_seg(gorder):
 	'''
 	This function maps dgp node ordering to gmsh node ordering for segments
 
-	INPUTS: 
+	Inputs:
+	------- 
 	    gorder: order of geometry interpolation
 
-	OUTPUTS:
+	Outputs:
+	--------
 	    nodes: maps dgp node ordering to gmsh node ordering
 	'''
 	num_nodes = gorder + 1
@@ -145,7 +147,7 @@ def populate_nodes_tri(gorder, start, nodes):
 		nodes[0,1:-1] = np.arange(start, start+gorder-1)
 		# hypotenuse
 		idx = np.arange(1, gorder), np.arange(gorder-1, 0, -1) 
-			# indices to access diagonal, excluding corner elements
+				# indices to access diagonal, excluding corner elements
 		start += gorder-1
 		nodes[idx] = np.arange(start, start+gorder-1)
 		# left face

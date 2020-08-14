@@ -16,8 +16,8 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 Periodic = False
 num_elems_x = 8
-mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, num_elems_x= num_elems_x, num_elems_y = num_elems_x, Uniform=True, xmin=-5., xmax=5., 
-	ymin=-5., ymax=5., Periodic=Periodic)
+mesh = MeshCommon.mesh_2D(num_elems_x= num_elems_x, num_elems_y = num_elems_x, xmin=-5., xmax=5., 
+	ymin=-5., ymax=5.)
 
 ### Solver parameters
 # InterpBasis = "LagrangeEqTri"
@@ -81,15 +81,15 @@ solver.time = 0.
 TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
 # Plot
 axis = None
-# axis = [-5., 5., -5., 5.]
-Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
-	Regular2D=True, show_triangulation=False)
-Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
-Plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
-# Post.get_boundary_info(mesh, physics, solver, "y1", "Scalar", integrate=True, 
-# 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)
-Plot.ShowPlot()
+# # axis = [-5., 5., -5., 5.]
+# Plot.PreparePlot(axis=axis, linewidth=0.5)
+# Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
+# 	Regular2D=True, show_triangulation=False)
+# Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+# Plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
+# # Post.get_boundary_info(mesh, physics, solver, "y1", "Scalar", integrate=True, 
+# # 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)
+# Plot.ShowPlot()
 
 # U = physics.U.Arrays[0]
 # code.interact(local=locals())

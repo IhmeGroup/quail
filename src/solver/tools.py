@@ -88,7 +88,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 
 	INPUTS:
 		mesh: mesh object
-		solver: solver object (i.e. DG, ADER-DG, etc...)
+		solver: solver object (e.g., DG, ADER-DG, etc...)
 		dt: time step
 		R: residual array
 
