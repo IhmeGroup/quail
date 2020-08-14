@@ -25,11 +25,13 @@ def set_stepper(Params, U):
 	'''
 	Given the timescheme parameter, set the stepper object
 
-	INPUTS:
+	Inputs:
+	-------
 		Params: list of parameters for solver
 		U: solution vector for instantiaing stepper class [nelem, nb, ns]
 
-	OUTPUTS: 
+	Outputs:
+	-------- 
 	    stepper: instantiated stepper object
 	'''
 	TimeScheme = Params["TimeScheme"]
@@ -59,50 +61,54 @@ def set_time_stepping_approach(stepper, Params):
 	'''
 	Sets stepper.get_time_step method given input parameters
 
-	INPUTS:
+	Inputs:
+	-------
 		stepper: stepper object (e.g., FE, RK4, etc...)
 		Params: list of parameters for solver
 
-	OUTPUTS: 
+	Outputs:
+	-------- 
 		get_time_step: method selected to calculate dt
-		numtimesteps: number of time steps for the solution
+		num_time_steps: number of time steps for the solution
 	'''
 
 	# unpack time stepping settings
 	cfl = Params["CFL"]
 	timestepsize = Params["TimeStepSize"]
-	numtimesteps = Params["NumTimeSteps"]
+	num_time_steps = Params["num_time_steps"]
 	endtime = Params["EndTime"]
 
-	if numtimesteps != None:
-		stepper.get_time_step = get_dt_from_numtimesteps
-		stepper.numtimesteps = numtimesteps
+	if num_time_steps != None:
+		stepper.get_time_step = get_dt_from_num_time_steps
+		stepper.num_time_steps = num_time_steps
 	elif timestepsize != None:
 		stepper.get_time_step = get_dt_from_timestepsize
-		stepper.numtimesteps = math.ceil(endtime/timestepsize)
+		stepper.num_time_steps = math.ceil(endtime/timestepsize)
 	elif cfl != None:
 		stepper.get_time_step = get_dt_from_cfl
-		stepper.numtimesteps = 1
+		stepper.num_time_steps = 1
 
 
-def get_dt_from_numtimesteps(stepper, solver):
+def get_dt_from_num_time_steps(stepper, solver):
 	'''
 	Calculates dt from the specified number of time steps
 
-	INPUTS:
+	Inputs:
+	-------
 		stepper: stepper object (e.g., FE, RK4, etc...)
 		solver: solver object (e.g., DG, ADERDG, etc...)
 
-	OUTPUTS: 
+	Outputs:
+	-------- 
 		dt: time step for the solver
 	'''
-	numtimesteps = stepper.numtimesteps
+	num_time_steps = stepper.num_time_steps
 	tfinal = solver.Params["EndTime"]
 	time = solver.time
 
 	# only needs to be set once per simulation
 	if stepper.dt == 0.0:
-		return (tfinal - time) / numtimesteps
+		return (tfinal - time) / num_time_steps
 	else:
 		return stepper.dt
 
@@ -112,11 +118,13 @@ def get_dt_from_timestepsize(stepper, solver):
 	Sets dt directly based on input deck specification of 
 	Params["TimeStepSize"].
 
-	INPUTS:
+	Inputs:
+	-------
 		stepper: stepper object (e.g., FE, RK4, etc...)
 		solver: solver object (e.g., DG, ADERDG, etc...)
 
-	OUTPUTS: 
+	Outputs:
+	-------- 
 		dt: time step for the solver
 	'''
 	time = solver.time
@@ -135,11 +143,13 @@ def get_dt_from_cfl(stepper, solver):
 	Calculates dt using a specified CFL number. Updates at everytime step to 
 	ensure solution remains within the CFL bound.
 
-	INPUTS:
+	Inputs:
+	-------
 		stepper: stepper object (e.g., FE, RK4, etc...)
 		solver: solver object (e.g., DG, ADERDG, etc...)
 
-	OUTPUTS: 
+	Outputs:
+	-------- 
 		dt: time step for the solver
 	'''	
 	mesh = solver.mesh
@@ -159,7 +169,7 @@ def get_dt_from_cfl(stepper, solver):
 	# get the maximum wave speed per element
 	for i in range(mesh.num_elems):
 		a[i] = physics.ComputeScalars("MaxWaveSpeed", Up[i], 
-			flag_non_physical=True)
+				flag_non_physical=True)
 
 	# calculate the dt for each element
 	dt_elems = cfl*vol_elems**(1./dim)/a
@@ -169,7 +179,7 @@ def get_dt_from_cfl(stepper, solver):
 
 	# logic to ensure final time step yields EndTime
 	if time + dt < tfinal:
-		stepper.numtimesteps += 1
+		stepper.num_time_steps += 1
 		return dt
 	else:
 		return tfinal - time

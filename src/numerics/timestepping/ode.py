@@ -40,7 +40,7 @@ class ODESolvers():
 			solution's residaul array
 		dt: float
 			time-step for the solution
-		numtimesteps: int
+		num_time_steps: int
 			number of time steps for the given solution's endtime
 		get_time_step: method
 			method to obtain dt given input decks logic (CFL-based vs # of 
@@ -58,13 +58,13 @@ class ODESolvers():
 		def __init__(self, U):
 			self.R = np.zeros_like(U)
 			self.dt = 0.
-			self.numtimesteps = 0
+			self.num_time_steps = 0
 			self.get_time_step = None
 			self.balance_const = None
 
 		def __repr__(self):
 			return '{self.__class__.__name__}(TimeStep={self.dt})'.format( \
-				self=self)
+					self=self)
 
 	class BDF1(ODEBase):
 		'''
@@ -104,11 +104,13 @@ class ODESolvers():
 			'''
 			Calculates the jacobian matrix of the source term and its inverse for all elements
 
-			INPUTS:
+			Inputs:
+			-------
 				mesh: mesh object
 				solver: solver object (e.g., DG, ADERDG, etc...)
 
-			OUTPUTS: 
+			Outputs:
+			-------- 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
 					[nelem, nb, nb, ns]
@@ -127,7 +129,7 @@ class ODESolvers():
 
 			for elem in range(mesh.num_elems):
 				A[elem], iA[elem] = self.get_jacobian_matrix_elem(solver, 
-					elem, iMM_elems[elem], Up[elem])
+						elem, iMM_elems[elem], Up[elem])
 
 			return A, iA # [nelem, nb, nb, ns]
 
@@ -138,11 +140,13 @@ class ODESolvers():
 
 			A = I - BETA*dt*iMM^{-1}*dRdU
 
-			INPUTS:
+			Inputs:
+			-------
 				solver: solver object (e.g., DG, ADERDG, etc...)
 				elem: element index
 
-			OUTPUTS: 
+			Outputs:
+			-------- 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
 					[nelem, nb, nb, ns]
@@ -170,7 +174,7 @@ class ODESolvers():
 			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
-				np.einsum('ij,jkl->ijl',iMM,dRdU)
+					np.einsum('ij,jkl->ijl',iMM,dRdU)
 			iA = np.zeros_like(A)
 
 			for s in range(ns):

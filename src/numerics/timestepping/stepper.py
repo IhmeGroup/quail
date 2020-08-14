@@ -57,7 +57,7 @@ class StepperBase(ABC):
 		solution's residaul array
 	dt: float
 		time-step for the solution
-	numtimesteps: int
+	num_time_steps: int
 		number of time steps for the given solution's endtime
 	get_time_step: method
 		method to obtain dt given input decks logic (CFL-based vs # of 
@@ -74,7 +74,7 @@ class StepperBase(ABC):
 	def __init__(self, U):
 		self.R = np.zeros_like(U)
 		self.dt = 0.
-		self.numtimesteps = 0
+		self.num_time_steps = 0
 		self.get_time_step = None
 		self.balance_const = None # kept as None unless set by Simpler scheme
 
@@ -88,10 +88,12 @@ class StepperBase(ABC):
 		Takes a time step using the specified time-stepping scheme for the
 		solution.
 
-		INPUTS:
+		Inputs:
+		-------
 		    solver: solver object (e.g., DG, ADERDG, etc...)
 
-		OUTPUTS: 
+		Outputs:
+		-------- 
 			R: Updated residual vector [nelem, nb, ns]
 			U: Updates the solution vector [nelem, nb, ns]
 		'''
@@ -182,11 +184,15 @@ class LSRK4(StepperBase):
 		----------------------
 		rk4a: numpy array
 			coefficients for LSRK4 scheme
-		rk4b: coefficients for LSRK4 scheme
-		rk4c: coefficients for LSRK4 scheme
-		nstages: number of stages in scheme
-		dU: change in solution array in each stage
-			(shape: [nelem, nb, ns])
+		rk4b: numpy array
+			coefficients for LSRK4 scheme
+		rk4c: numpy array
+			coefficients for LSRK4 scheme
+		nstages: int
+			number of stages in scheme
+		dU: numpy array
+			change in solution array in each stage
+				(shape: [nelem, nb, ns])
 		'''
 		self.rk4a = np.array([            0.0, \
 		    -567301805773.0/1357537059087.0, \
@@ -251,11 +257,15 @@ class SSPRK3(StepperBase):
 		'''
 		Additional Attributes:
 		----------------------
-		ssprk3a: coefficients for SSPRK3 scheme
-		ssprk3b: coefficients for SSPRK3 scheme
-		nstages: number of stages in scheme
-		dU: change in solution array in each stage
-			(shape: [nelem, nb, ns])
+		ssprk3a: numpy array
+			coefficients for SSPRK3 scheme
+		ssprk3b: numpy array 
+			coefficients for SSPRK3 scheme
+		nstages: int
+			number of stages in scheme
+		dU: numpy array
+			change in solution array in each stage
+				(shape: [nelem, nb, ns])
 		'''
 		self.ssprk3a = np.array([	0.0, \
 			-2.60810978953486, \
@@ -351,13 +361,15 @@ class Strang(StepperBase, ode.ODESolvers):
 		Specifies the explicit and implicit schemes to be used in the
 		operator splitting technique
 
-		INPUTS:
+		Inputs:
+		-------
 		    explicit: name of chosen explicit scheme from Params
 		    implicit: name of chosen implicit (ODE) solver from Params
 		    U: solution state vector used to initialize solver 
 		    	[nelem, nb, ns]
 
-		OUTPUTS: 
+		Outputs:
+		-------- 
 		    explicit: stepper object instantiation for explicit scheme
 		    implicit: stepper object instantiation for ODE solver
 		'''		
