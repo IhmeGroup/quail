@@ -15,13 +15,15 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
     Calls the segment quadrature function to obtain quadrature points and 
     weights and restructures them for quadrilateral shapes
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
         quad_type: Enum that points to the appropriate quadrature calc
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
             equal to quad_pts is turned on
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''

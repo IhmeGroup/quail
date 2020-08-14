@@ -24,13 +24,15 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
     Depending on the QuadratureType enum calculate the appropriate 
     function to obtain quadrature points and weights
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
         quad_type: Enum that points to the appropriate quadrature calc
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
             equal to quad_pts is turned on
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
@@ -48,10 +50,12 @@ def get_quadrature_gauss_legendre(order):
     '''
     Calculate the quadrature points and weights using Gauss Legendre rules
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
@@ -73,12 +77,14 @@ def get_quadrature_gauss_lobatto(order, forced_pts=None):
     '''
     Calculate the quadrature points and weights using Gauss Lobatto rules
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order 
         forced_pts: [OPTIONAL] number of points if forcing nodes to be 
             equal to quad_pts is turned on
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, dim]
     '''
@@ -104,10 +110,12 @@ def gauss_lobatto(order):
     '''
     Evaluate quadrature with Gauss Lobatto rules
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq,]
         qwts: quadrature weights [nq,]
     '''
@@ -129,13 +137,15 @@ def get_lobatto_pts_wts(alpha, beta, xl1, xl2):
         Gene Golub, SIAM Review Vol 15, No. 2, 
         April 1973, pp.318--334
 
-    INPUTS:
+    Inputs:
+    -------
         alpha: constant used to find recurrence coefficients
         beta: constant used to find recurrence coefficients
         xl1: end node [-1]
         xl2: end node [+1]
 
-    OUTPUTS:
+    Outputs:
+    --------
         x: quadrature points
         w: quadrature weights
     '''
@@ -220,10 +230,10 @@ class Monic:
 
         self.p0 = 1
         self.int_1 = (
-            2 ** (alpha + beta + 1)
-            * self.gamma(alpha + 1)
-            * self.gamma(beta + 1)
-            / self.gamma(alpha + beta + 2)
+                2 ** (alpha + beta + 1)
+                * self.gamma(alpha + 1)
+                * self.gamma(beta + 1)
+                / self.gamma(alpha + beta + 2)
         )
         self.n = 0
 
@@ -243,23 +253,23 @@ class Monic:
             b = frac(beta - alpha, alpha + beta + 2)
         else:
             b = frac(
-                beta ** 2 - alpha ** 2,
-                (2 * N + alpha + beta) * (2 * N + alpha + beta + 2),
+                    beta ** 2 - alpha ** 2,
+                    (2 * N + alpha + beta) * (2 * N + alpha + beta + 2),
             )
 
         if N == 0:
             c = self.int_1
         elif N == 1:
             c = frac(
-                4 * (1 + alpha) * (1 + beta),
-                (2 + alpha + beta) ** 2 * (3 + alpha + beta),
+                    4 * (1 + alpha) * (1 + beta),
+                    (2 + alpha + beta) ** 2 * (3 + alpha + beta),
             )
         else:
             c = frac(
-                4 * (N + alpha) * (N + beta) * N * (N + alpha + beta),
-                (2 * N + alpha + beta) ** 2
-                * (2 * N + alpha + beta + 1)
-                * (2 * N + alpha + beta - 1),
+                    4 * (N + alpha) * (N + beta) * N * (N + alpha + beta),
+                    (2 * N + alpha + beta) ** 2
+                    * (2 * N + alpha + beta + 1)
+                    * (2 * N + alpha + beta - 1),
             )
         self.n += 1
         return a, b, c

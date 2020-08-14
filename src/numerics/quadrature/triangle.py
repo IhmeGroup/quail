@@ -19,11 +19,13 @@ def get_quadrature_points_weights(order, quad_type):
     evaluation (as compared to GL quadrature). When using Dunavant, orders
     greater than 19 automatically switches to GL quadrature.
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
         quad_type: Enum that points to the appropriate quadrature calc
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
@@ -47,10 +49,12 @@ def get_quadrature_gauss_legendre(order):
     Calculate the quadrature points and weights using Gauss Legendre rules 
     for a triangle
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
@@ -73,10 +77,12 @@ def get_quadrature_dunavant(order):
     quadrature rules. These are hard coded up to order 19. If order > 19, we 
     automatically switch to Gauss Legendre quadrature.
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
 
-    OUTPUTS:
+    Outputs:
+    --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, 1]
     '''
