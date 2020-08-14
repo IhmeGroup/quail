@@ -8,13 +8,14 @@ import processing.post as Post
 import processing.plot as Plot
 import general
 import os
+import meshing.tools as MeshTools
 
 
 CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 ### Mesh
-mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=100, xmin=0., xmax=1., Periodic=False)
+mesh = MeshCommon.mesh_1D(num_elems=100, xmin=0., xmax=1.)
 
 
 ### Solver parameters

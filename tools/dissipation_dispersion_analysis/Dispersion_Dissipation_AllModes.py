@@ -101,13 +101,15 @@ alpha = 0. # 0 for upwind flux, 1 for central flux
 
 ### Mesh
 # Note: one element - same as reference element
-mesh = mesh_common.mesh_1D(Uniform=True, num_elems=1, xmin=0., xmax=1., Periodic=True)
-h = mesh.node_coords[1,0] - mesh.node_coords[0,0]
+mesh = mesh_common.mesh_1D(num_elems=1, xmin=0., xmax=1.)
+elem = mesh.elements[0]
+h = elem.node_coords[1, 0] - elem.node_coords[0, 0]
+# h = mesh.node_coords[-1,0] - mesh.node_coords[-2,0]
 
 
 ### Solver and physics
 # Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
-params = {**defaultparams.timeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
+params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
 # params["InterpOrder"] = order 
 params["RestartFile"] = params["File"]
 params["InterpBasis"] = "LagrangeSeg"

@@ -22,7 +22,7 @@ import code
 
 # ### Solver parameters
 # EndTime = 0.5
-# NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[1,0] - mesh.node_coords[0,0])*0.1))])
+# NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
 # InterpOrder = 2
 # Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
 # 								 InterpBasis="LagrangeEqSeg",TimeScheme="RK4",InterpolateFlux=True)

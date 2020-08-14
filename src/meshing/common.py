@@ -7,150 +7,63 @@ import general
 import meshing.meshbase as mesh_defs
 import numerics.basis.basis as basis_defs
 
-def mesh_1D(node_coords=None, num_elems=10, Uniform=True, xmin=-1., xmax=1., Periodic=True):
+
+def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	'''
-	Function: mesh_1D
-	-------------------
-	This function creates a 1D mesh.
+	This function creates a 1D uniform mesh.
 
 	INPUTS:
-	    node_coords: x-coordinates
-	    Uniform: True for a uniform mesh (will be set to False if node_coords is not None)
-	    num_elems: number of elements (only relevant for Uniform=True)
-	    xmin: minimum coordinate (only relevant for Uniform=True)
-	    xmax: maximum coordinate (only relevant for Uniform=True)
-	    Periodic: True for a periodic mesh
+	    num_elems: number of mesh elements
+	    xmin: minimum x-coordinate
+	    xmax: maximum x-coordinate
 
 	OUTPUTS:
-	    mesh: Mesh object that stores relevant mesh info
+	    mesh: mesh object
 	'''
-	if node_coords is None and not Uniform:
-		raise Exception("Input error")
-
-	### Create mesh
-	if node_coords is None:
-		num_nodes = num_elems + 1
-		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
-		mesh.node_coords = np.zeros([mesh.num_nodes,mesh.dim])
-		mesh.node_coords[:,0] = np.linspace(xmin,xmax,mesh.num_nodes)
-	else:
-		Uniform = False
-		node_coords.shape = -1,1
-		num_nodes = node_coords.shape[0]
-		num_elems = num_nodes - 1
-		mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
-		mesh.node_coords = node_coords
-
-	# interior_faces
-	if Periodic:
-		mesh.num_interior_faces = mesh.num_nodes - 1
-		mesh.allocate_interior_faces()
-		for i in range(mesh.num_interior_faces):
-			IFace_ = mesh.interior_faces[i]
-			IFace_.elemL_id = i-1
-			IFace_.faceL_id = 1
-			IFace_.elemR_id = i
-			IFace_.faceR_id = 0
-		# Leftmost face
-		mesh.interior_faces[0].elemL_id = num_elems - 1
-	# Rightmost face
-	# mesh.interior_faces[-1].elemR_id = 0
-	else:
-		mesh.num_interior_faces = num_elems - 1
-		mesh.allocate_interior_faces()
-		for i in range(mesh.num_interior_faces):
-			IFace_ = mesh.interior_faces[i]
-			IFace_.elemL_id = i
-			IFace_.faceL_id = 1
-			IFace_.elemR_id = i+1
-			IFace_.faceR_id = 0
-		# Boundary groups
-		# mesh.num_boundary_groups = 2
-		# mesh.allocate_bface_groups()
-		# for i in range(mesh.num_boundary_groups):
-		# 	BFG = mesh.boundary_groups[i]
-		# 	BFG.num_boundary_faces = 1
-		# 	BFG.allocate_boundary_faces()
-		# 	BF = BFG.boundary_faces[0]
-		# 	if i == 0:
-		# 		BFG.Name = "Left"
-		# 		BF.elem_id = 0
-		# 		BF.face_id = 0
-		# 	else:
-		# 		BFG.Name = "Right"
-		# 		BF.elem_id = num_elems - 1
-		# 		BF.face_id = 1
-		# left
-		BFG = mesh.add_boundary_group("Left")
-		BFG.num_boundary_faces = 1
-		BFG.allocate_boundary_faces()
-		BF = BFG.boundary_faces[0]
-		BF.elem_id = 0
-		BF.face_id = 0
-		# right
-		BFG = mesh.add_boundary_group("Right")
-		BFG.num_boundary_faces = 1
-		BFG.allocate_boundary_faces()
-		BF = BFG.boundary_faces[0]
-		BF.elem_id = num_elems - 1
-		BF.face_id = 1
-
+	''' Create mesh and set node coordinates '''
+	num_nodes = num_elems + 1
+	mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
+	mesh.node_coords = np.zeros([mesh.num_nodes, mesh.dim])
+	mesh.node_coords[:,0] = np.linspace(xmin, xmax, mesh.num_nodes)
+	# Set parameters
 	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, num_elems=num_elems)
-	# mesh.allocate_faces()
-	# interior elements
-	# for elem in range(mesh.num_elems):
-	# 	for i in range(mesh.nFacePerElem):
-	# 		Face_ = mesh.Faces[elem][i]
-	# 		Face_.Type = general.INTERIORFACE
-	# 		Face_.Number = elem + i
-	# 		if not Periodic:
-	# 			if elem == 0 and i == 0:
-	# 				Face_.Type = general.NULLFACE
-	# 				Face_.Number = 0
-	# 			elif elem == mesh.num_elems-1 and i == 1:
-	# 				Face_.Type = general.NULLFACE
-	# 				Face_.Number = 1
-	# 			else:
-	# 				Face_.Number = elem + i - 1
 
+	''' Interior faces '''
+	mesh.num_interior_faces = num_elems - 1
+	mesh.allocate_interior_faces()
+	for i in range(mesh.num_interior_faces):
+		interior_face = mesh.interior_faces[i]
+		interior_face.elemL_id = i
+		interior_face.faceL_id = 1
+		interior_face.elemR_id = i+1
+		interior_face.faceR_id = 0
 
+	''' Boundary groups and faces '''
+	# Left
+	boundary_group = mesh.add_boundary_group("Left")
+	boundary_group.num_boundary_faces = 1
+	boundary_group.allocate_boundary_faces()
+	boundary_face = boundary_group.boundary_faces[0]
+	boundary_face.elem_id = 0
+	boundary_face.face_id = 0
+	# Right
+	boundary_group = mesh.add_boundary_group("Right")
+	boundary_group.num_boundary_faces = 1
+	boundary_group.allocate_boundary_faces()
+	boundary_face = boundary_group.boundary_faces[0]
+	boundary_face.elem_id = num_elems - 1
+	boundary_face.face_id = 1
+
+	''' Create element-to-node-ID map '''
 	mesh.allocate_elem_to_node_ids_map()
-	for elem in range(mesh.num_elems):
-		for i in range(mesh.num_nodes_per_elem):
-			mesh.elem_to_node_ids[elem][i] = elem + i
+	for elem_id in range(mesh.num_elems):
+		for n in range(mesh.num_nodes_per_elem):
+			mesh.elem_to_node_ids[elem_id][n] = elem_id + n
 
-	# mesh.fill_faces()
+	''' Create element objects '''
 	mesh.create_elements()
 
 	return mesh
-
-
-# def refine_uniform_1D(node_coords_old):
-# 	'''
-# 	Function: refine_uniform_1D
-# 	-------------------
-# 	This function uniformly refines a set of coordinates
-
-# 	INPUTS:
-# 	    node_coords_old: coordinates to refine
-
-# 	OUTPUTS:
-# 	    node_coords: refined coordinates
-# 	'''
-# 	num_nodes_old = len(node_coords_old)
-# 	num_elems_old = num_nodes_old-1
-
-# 	num_elems = num_elems_old*2
-# 	num_nodes = num_elems+1
-
-# 	node_coords = np.zeros([num_nodes,1])
-
-# 	for n in range(num_nodes_old-1):
-# 		node_coords[2*n] = node_coords_old[n]
-# 		node_coords[2*n+1] = np.mean(node_coords_old[n:n+2])
-# 	node_coords[-1] = node_coords_old[-1]
-
-# 	return node_coords
 
 
 def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Uniform=True, xmin=-1., xmax=1., 

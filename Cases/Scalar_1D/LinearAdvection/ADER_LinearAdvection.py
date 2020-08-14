@@ -7,12 +7,15 @@ import meshing.common as MeshCommon
 import processing.post as Post
 import processing.plot as Plot
 import general
+import meshing.tools as MeshTools
 
 
 ### Mesh
 Periodic = False 
 # Uniform mesh
-mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=32, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(num_elems=32, xmin=-1., xmax=1.)
+if Periodic:
+	MeshTools.MakePeriodicTranslational(mesh, x1="Left", x2="Right")
 # Non-uniform mesh
 # num_elems = 25
 # node_coords = np.cos(np.linspace(np.pi,0.,num_elems+1))
@@ -23,7 +26,7 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=32, xmin=-1., xmax=1., Periodi
 
 ### Solver parameters
 EndTime = 0.1
-NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[1,0] - mesh.node_coords[0,0])*0.1))])
+NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER")

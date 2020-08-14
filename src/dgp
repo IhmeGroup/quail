@@ -209,8 +209,8 @@ def driver(deck):
 		# Create mesh
 		if shape is ShapeType.Segment:
 			# 1D - segments
-			mesh = mesh_common.mesh_1D(Uniform=True, num_elems=num_elems_x, 
-					xmin=xmin, xmax=xmax, Periodic=False)
+			mesh = mesh_common.mesh_1D(num_elems=num_elems_x, 
+					xmin=xmin, xmax=xmax)
 		else:
 			# 2D - quads or tris
 

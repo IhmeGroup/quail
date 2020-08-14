@@ -7,11 +7,12 @@ import meshing.common as MeshCommon
 import processing.post as Post
 import processing.plot as Plot
 import general
+import meshing.tools as MeshTools
 
 
 ### Mesh
 Periodic = False
-mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=25, xmin=-1., xmax=1., Periodic=Periodic)
+mesh = MeshCommon.mesh_1D(num_elems=25, xmin=-1., xmax=1.)
 
 
 ### Solver parameters
