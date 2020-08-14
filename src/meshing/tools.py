@@ -48,17 +48,18 @@ def element_volumes(mesh, solver=None):
 
     INPUTS:
         mesh: mesh object
-        solver: type of solver (i.e. DG, ADER-DG, etc...)
+        solver: solver object (e.g., DG, ADER-DG, etc.)
     
     OUTPUTS:
-        TotalVolume: total volume in the mesh
-        ElemVolumes: volume at each element
+        domain_vol: total volume of the domain
+        vol_elems: volume of each element [num_elems]
     '''
     # Check if already calculated
     if solver is not None:
-        if hasattr(solver.DataSet, "TotalVolume") \
-            and hasattr(solver.DataSet, "ElemVolumes"):
-                return solver.DataSet.TotalVolume, solver.DataSet.ElemVolumes
+        if hasattr(solver.elem_operators, "domain_vol") \
+                and hasattr(solver.elem_operators, "vol_elems"):
+            return solver.elem_operators.domain_vol, \
+                    solver.elem_operators.vol_elems
 
     ElemVolumes = np.zeros(mesh.num_elems)
     TotalVolume = 0.
