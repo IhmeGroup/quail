@@ -134,10 +134,12 @@ class ShapeBase(ABC):
         '''
         Sets the number of basis coefficients given a polynomial order
 
-        INPUTS:
+        Inputs:
+        -------
             p: order of polynomial space
 
-        OUTPUTS: 
+        Outputs:
+        -------- 
             nb: number of basis coefficients
         '''
         pass
@@ -148,10 +150,12 @@ class ShapeBase(ABC):
         Defines an array of equidistant points based on the number of
         basis coefficients
 
-        INPUTS:
+        Inputs:
+        -------
             p: order of polynomial space
 
-        OUTPUTS: 
+        Outputs:
+        -------- 
             xn: array of nodes equidistantly spaced
                 [shape: [nb, dim]]
         '''
@@ -164,11 +168,13 @@ class ShapeBase(ABC):
         and weights to the user. Details of quadrature calculations can be 
         found in src/numerics/quadrature.
 
-        INPUTS:
+        Inputs:
+        -------
             order: quadrature order (typically obtained using 
                 get_quadrature_order method)
 
-        OUTPUTS:
+        Outputs:
+        --------
             quad_pts: quadrature point coordinates [nq, dim]
             quad_wts: quadrature weights [nq, 1]
         '''        
@@ -178,11 +184,13 @@ class ShapeBase(ABC):
         '''
         Constructs the map for face nodes
 
-        INPUTS:
+        Inputs:
+        -------
             p: order of polynomial space
             faceID: reference element face value
 
-        OUTPUTS: 
+        Outputs:
+        -------- 
             fnode_nums: index of face nodes
         '''
         pass
@@ -191,11 +199,13 @@ class ShapeBase(ABC):
         '''
         Defines element reference nodes
 
-        INPUTS:
+        Inputs:
+        -------
             faceID: face value
             face_pts: coordinates for face pts
 
-        OUTPUTS:
+        Outputs:
+        --------
             elem_pts: coordinates in element reference space
         '''
 
@@ -204,10 +214,12 @@ class ShapeBase(ABC):
         Sets the quadrature type based on the QuadratureType enum. Available 
         quadrature types in general.py
 
-        INPUTS:
+        Inputs:
+        -------
             quadrature_name: name of the quadrature type
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.quadrature_type: set based on name
         '''
         self.quadrature_type = QuadratureType[quadrature_name]
@@ -217,10 +229,12 @@ class ShapeBase(ABC):
         Sets the quadrature type for the element face based on the 
         QuadratureType enum. Available quadrature types in general.py.
 
-        INPUTS:
+        Inputs:
+        -------
             quadrature_name: name of the quadrature type
         
-        OUTPUTS:
+        Outputs:
+        --------
             self.FACE_SHAPE.quadrature_type: set based on name
         '''
         self.FACE_SHAPE.quadrature_type = QuadratureType[quadrature_name]
@@ -230,12 +244,14 @@ class ShapeBase(ABC):
         Given the inputs, this function returns the quadrature order, 
         which is used to obtain quadrature points and weights.
 
-        INPUTS:
+        Inputs:
+        -------
             mesh: mesh for the solution domain
             order: solution order
             physics: [OPTIONAL] instance of physics class
 
-        OUTPUTS:
+        Outputs:
+        --------
             qorder: quadrature order
         '''
         dim = self.DIM
@@ -256,14 +272,17 @@ class ShapeBase(ABC):
         eliminates aliasing by removing any interpolation of quadrature
         points to nodes. 
 
-        INPUTS:
+        Inputs:
+        -------
             force_flag: Flag used to determine if the method is activated
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.forced_pts: set to nb if force_flag is True, left as None 
                 otherwise
         
-        NOTES: 
+        Notes:
+        ------ 
             can only be used when GaussLobatto is specified for both the 
             quadrature and node type
         '''
@@ -325,7 +344,7 @@ class SegShape(ShapeBase):
             xn = np.zeros([nb, 1])
         else:
             xn = basis_tools.equidistant_nodes_1D_range(-1., 1., nb) \
-            .reshape(-1, 1)
+                    .reshape(-1, 1)
         return xn  # [nb, dim]
 
     def get_local_face_principal_node_nums(self, p, faceID):
@@ -358,7 +377,7 @@ class SegShape(ShapeBase):
             fpts = None
 
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
-            self.quadrature_type, forced_pts=fpts)
+                self.quadrature_type, forced_pts=fpts)
 
         return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
@@ -441,7 +460,7 @@ class QuadShape(ShapeBase):
             fpts = None
 
         quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(
-            order, self.quadrature_type, forced_pts=fpts)
+                order, self.quadrature_type, forced_pts=fpts)
 
         return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
@@ -615,10 +634,12 @@ class BasisBase(ABC):
         '''
         Calculates Lagrange basis
 
-        INPUTS:
+        Inputs:
+        -------
             quad_pts: coordinates of quadrature points [nb, dim]
 
-        OUTPUTS: 
+        Outputs:
+        -------- 
             basis_val: evaluated basis function [nq, nb] 
         '''
         pass
@@ -628,10 +649,12 @@ class BasisBase(ABC):
         '''
         Calculates gradient of Lagrange basis for a segment shape
 
-        INPUTS:
+        Inputs:
+        -------
             quad_pts: coordinates of quadrature points [nb, dim]
 
-        OUTPUTS: 
+        Outputs:
+        -------- 
             basis_ref_grad: evaluated gradient of basis function in 
                 reference space [nq, nb, dim]
         '''
@@ -641,10 +664,12 @@ class BasisBase(ABC):
         '''
         Calculates the physical gradient of the basis function
 
-        INPUTS:
+        Inputs:
+        -------
             ijac: inverse of the jacobian [nq, dim, dim]
 
-        OUTPUTS:
+        Outputs:
+        --------
             basis_phys_grad: evaluated gradient of the basis function in 
                 physical space [nq, nb, dim]
         '''
@@ -672,7 +697,8 @@ class BasisBase(ABC):
         Evaluates the basis function and if applicable evaluates the 
         gradient in reference and/or physical space 
 
-        INPUTS:
+        Inputs:
+        -------
             quad_pts: coordinates of quadrature points
             get_val: [OPTIONAL] flag to calculate basis functions
             get_ref_grad: [OPTIONAL] flag to calculate gradient of basis 
@@ -682,7 +708,8 @@ class BasisBase(ABC):
             ijac: [OPTIONAL] inverse jacobian (needed if calculating 
                 physical gradients) [nq, dim, dim]
         
-        OUTPUTS:
+        Outputs:
+        --------
             Sets the following attributes of the BasisBase class:
 
             basis_val: evaluated basis function [nq, nb]
@@ -707,7 +734,8 @@ class BasisBase(ABC):
         Evaluates the basis function and if applicable evaluates the 
         gradient in reference and/or physical space on the element face 
 
-        INPUTS:
+        Inputs:
+        -------
             mesh: mesh object
             faceID: index of face in reference element
             face_pts: coordinates of quadrature points on the face
@@ -720,8 +748,8 @@ class BasisBase(ABC):
             ijac: [OPTIONAL] inverse jacobian (needed if calculating 
                 physical gradients) [nq, nq, dim]
         
-        OUTPUTS:
-            
+        Outputs:
+        --------
             elem_pts: element reference coordinates [nq, dim]
 
             Sets the following attributes of the BasisBase class:
@@ -738,7 +766,7 @@ class BasisBase(ABC):
         elem_pts = basis.get_elem_ref_from_face_ref(faceID, face_pts)
 
         self.get_basis_val_grads(elem_pts, get_val, get_ref_grad, 
-            get_phys_grad, ijac)
+                get_phys_grad, ijac)
 
         return elem_pts
 
@@ -763,13 +791,16 @@ class LagrangeSeg(BasisBase, SegShape):
         '''
         Calculate the coordinates in ref space for a Lagrange segment
 
-        INPUTS:
+        Inputs:
+        -------
             p: order of polynomial space
             
-        OUTPUTS: 
+        Outputs:
+        -------- 
             xn: coordinates of nodes in ref space [nb, dim]
 
-        NOTES:
+        Notes:
+        ------
             this function differs from get_equidistant_nodes by also allowing
             for other NodeTypes (such as GaussLobatto nodes)
         '''
@@ -811,7 +842,7 @@ class LagrangeSeg(BasisBase, SegShape):
             xnodes = self.get_1d_nodes(-1., 1., p+1)
 
             basis_tools.get_lagrange_basis_1D(quad_pts, xnodes, 
-                gphi=basis_ref_grad)
+                    gphi=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -819,11 +850,13 @@ class LagrangeSeg(BasisBase, SegShape):
         '''
         Returns the local face node mapping
 
-        INPUTS: 
+        Inputs:
+        ------- 
             p: order of polynomial space
             faceID: reference element face value
 
-        OUTPUTS:
+        Outputs:
+        --------
             fnode_nums: index of nodes from reference element 
         '''
         fnode_nums = self.get_local_face_principal_node_nums(p, faceID)
@@ -853,13 +886,16 @@ class LagrangeQuad(BasisBase, QuadShape):
         --------------------
         Calculate the coordinates in ref space for a Lagrange segment
 
-        INPUTS:
+        Inputs:
+        -------
             p: order of polynomial space
             
-        OUTPUTS: 
+        Outputs:
+        -------- 
             xn: coordinates of nodes in ref space [nb, dim]
 
-        NOTES:
+        Notes:
+        ------
             this function differs from get_equidistant_nodes by also allowing
             for other NodeTypes (such as GaussLobatto nodes)
         '''
@@ -906,7 +942,7 @@ class LagrangeQuad(BasisBase, QuadShape):
             xnode = self.get_1d_nodes(-1., 1., p + 1)
 
             basis_tools.get_lagrange_basis_2D(quad_pts, xnode, 
-                gphi=basis_ref_grad)
+                    gphi=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -914,11 +950,13 @@ class LagrangeQuad(BasisBase, QuadShape):
         '''
         Returns the local face node mapping
 
-        INPUTS: 
+        Inputs:
+        ------- 
             p: order of polynomial space
             faceID: reference element face value
 
-        OUTPUTS:
+        Outputs:
+        --------
             fnode_nums: index of nodes from reference element 
         '''
         if p < 1:
@@ -986,7 +1024,7 @@ class LagrangeTri(BasisBase, TriShape):
         if p > 0:
             xn = self.equidistant_nodes(p)
             basis_tools.get_lagrange_grad_tri(quad_pts, p, xn, 
-                basis_ref_grad)
+                    basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -994,11 +1032,13 @@ class LagrangeTri(BasisBase, TriShape):
         '''
         Returns the local face node mapping
 
-        INPUTS: 
+        Inputs:
+        ------- 
             p: order of polynomial space
             faceID: reference element face value
 
-        OUTPUTS:
+        Outputs:
+        --------
             fnode_nums: index of nodes from reference element 
         '''
         if p < 1:
@@ -1072,7 +1112,7 @@ class LegendreSeg(BasisBase, SegShape):
         if p > 0:
 
             basis_tools.get_legendre_basis_1D(quad_pts, p, 
-                gphi=basis_ref_grad)
+                    gphi=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -1119,7 +1159,7 @@ class LegendreQuad(BasisBase, QuadShape):
         if p > 0:
 
             basis_tools.get_legendre_basis_2D(quad_pts, p, 
-                gphi=basis_ref_grad)
+                    gphi=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
