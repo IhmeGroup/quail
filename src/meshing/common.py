@@ -198,7 +198,8 @@ def split_quadrils_into_tris(mesh_old):
 	'''
 	def convert_nodes(gorder, num_nodes_per_quad, num_nodes_per_tri):
 		'''
-		This nested function converts the local node IDs of a quadrilateral element	into two sets of local node IDs for the resulting two
+		This nested function converts the local node IDs of a quadrilateral 
+		element	into two sets of local node IDs for the resulting two
 		triangular elements.
 
 		Inputs:
@@ -287,7 +288,7 @@ def split_quadrils_into_tris(mesh_old):
 		int_face.elemR_id, int_face.faceR_id = modify_element_face_info(
 				int_face.elemR_id, int_face.faceR_id)
 
-	# Create new interior_faces
+	# Create new interior_faces ("diagonal" faces)
 	mesh.num_interior_faces += num_elems_old
 	for elem_id in range(num_elems_old):
 		int_face = mesh_defs.InteriorFace()

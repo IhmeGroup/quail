@@ -27,29 +27,14 @@ def ref_to_phys(mesh, elem_id, xref):
     '''
     gbasis = mesh.gbasis
     gorder = mesh.gorder
-    #PhiData = gbasis.basis_val
 
-    # if PhiData is None:
-    #     PhiData = Basis.BasisData(QBasis,QOrder,mesh)
-    #     PointsChanged = True
-    # if PointsChanged or PhiData.basis != QBasis or PhiData.order != QOrder:
-    #     PhiData.get_basis_val_grads(xref, get_val=True)
-
+    # Get basis values
     gbasis.get_basis_val_grads(xref, get_val=True)
 
-    # Phi= gbasis.basis_val
-    # dim = mesh.dim
-    # node_coords = mesh.node_coords
-    # Phi = PhiData.Phi
-    # nb = gbasis.basis_val.shape[1]
-    # if nb != mesh.num_nodes_per_elem:
-    #     raise Exception("Wrong number of nodes per element")
-
-    # ElemNodes = mesh.elem_to_node_ids[elem_id]
-
+    # Element node coordinates
     elem_coords = mesh.elements[elem_id].node_coords
-    # coords = elem_coords[lfnodes]
 
+    # Convert to physical space
     xphys = np.matmul(gbasis.basis_val, elem_coords)
 
     return xphys
