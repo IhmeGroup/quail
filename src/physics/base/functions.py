@@ -97,7 +97,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 		    normals: Normal vector (assumed left to right)
 
 		OUTPUTS:
-		    F: Numerical flux dotted with the normal, i.e. F_hat dot n
+		    F: Numerical flux dotted with the normal, i.e., F_hat dot n
 		'''
 
 		# Extract helper arrays

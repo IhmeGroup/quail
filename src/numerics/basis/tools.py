@@ -140,7 +140,7 @@ def get_inv_mass_matrices(mesh, physics, basis):
 
     INPUTS:
         mesh: mesh object
-        physics: type of physics set (i.e. scalar, euler, etc...)
+        physics: type of physics set (e.g., scalar, euler, etc...)
         basis: instantiation of the basis
 
     OUTPUTS: 

@@ -62,7 +62,7 @@ class LimiterBase(ABC):
 		------------------------
 		Calls the limiter function for each element
 		INPUTS:
-			solver: type of solver (i.e. DG, ADER-DG, etc...)
+			solver: type of solver (e.g., DG, ADER-DG, etc...)
 
 		OUTPUTS:
 			U: solution array

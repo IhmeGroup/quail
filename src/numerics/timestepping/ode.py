@@ -106,7 +106,7 @@ class ODESolvers():
 
 			INPUTS:
 				mesh: mesh object
-				solver: solver object (i.e. DG, ADERDG, etc...)
+				solver: solver object (e.g., DG, ADERDG, etc...)
 
 			OUTPUTS: 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
@@ -139,7 +139,7 @@ class ODESolvers():
 			A = I - BETA*dt*iMM^{-1}*dRdU
 
 			INPUTS:
-				solver: solver object (i.e. DG, ADERDG, etc...)
+				solver: solver object (e.g., DG, ADERDG, etc...)
 				elem: element index
 
 			OUTPUTS: 

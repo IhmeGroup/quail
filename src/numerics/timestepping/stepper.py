@@ -89,7 +89,7 @@ class StepperBase(ABC):
 		solution.
 
 		INPUTS:
-		    solver: solver object (i.e. DG, ADERDG, etc...)
+		    solver: solver object (e.g., DG, ADERDG, etc...)
 
 		OUTPUTS: 
 			R: Updated residual vector [nelem, nb, ns]

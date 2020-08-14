@@ -64,7 +64,7 @@ class PositivityPreserving(base.LimiterBase):
 		Limits the solution on each element
 
 		INPUTS:
-			solver: type of solver (i.e. DG, ADER-DG, etc...)
+			solver: type of solver (e.g., DG, ADER-DG, etc...)
 			elem: element index
 
 		OUTPUTS:
@@ -177,7 +177,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		Limits the solution on each element
 
 		INPUTS:
-			solver: type of solver (i.e. DG, ADER-DG, etc...)
+			solver: type of solver (e.g., DG, ADER-DG, etc...)
 			elem: element index
 
 		OUTPUTS:

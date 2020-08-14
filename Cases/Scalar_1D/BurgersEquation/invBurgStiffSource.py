@@ -45,7 +45,7 @@ physics.set_physical_params(ConvFlux="LaxFriedrichs")
 # zero, increases the amount of stiffness in the solution.
 #
 # For Example: If stiffness is set to 0.1, then the equation is not very stiff. But, if it is set to 
-# something lower, (i.e. 0.001) then you will observe a stable solution, but the location of the shock
+# something lower, (e.g., 0.001) then you will observe a stable solution, but the location of the shock
 # will not be correct. It will have propogated at some other speed. (Note: RK4 cannot run stiff case)
 # -----------------------------------------------------------------------------------------------------
 physics.SetSource(Function=physics.FcnStiffSource,beta=0.5, stiffness = 1.)
