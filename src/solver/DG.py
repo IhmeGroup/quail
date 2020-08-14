@@ -89,7 +89,7 @@ class ElemOperators(object):
 			self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
 
 		# _, ElemVols = mesh_tools.element_volumes(mesh)
-		self.domain_vol, self.vol_elems = mesh_tools.element_volumes(mesh)
+		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)
 
 	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts 

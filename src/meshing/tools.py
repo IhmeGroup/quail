@@ -58,36 +58,39 @@ def element_volumes(mesh, solver=None):
     if solver is not None:
         if hasattr(solver.elem_operators, "domain_vol") \
                 and hasattr(solver.elem_operators, "vol_elems"):
-            return solver.elem_operators.domain_vol, \
-                    solver.elem_operators.vol_elems
+            return solver.elem_operators.vol_elems, \
+                    solver.elem_operators.domain_vol
 
-    ElemVolumes = np.zeros(mesh.num_elems)
-    TotalVolume = 0.
+    vol_elems = np.zeros(mesh.num_elems)
+    # domain_vol = 0.
 
     gorder = mesh.gorder
     gbasis = mesh.gbasis
 
     quad_order = gbasis.get_quadrature_order(mesh,gorder)
-    xq, wq = gbasis.get_quadrature_data(quad_order)
+    quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
 
-    # xq = gbasis.quad_pts
-    # wq = gbasis.quad_wts
-    nq = xq.shape[0]
+    # quad_pts = gbasis.quad_pts
+    # quad_wts = gbasis.quad_wts
+    nq = quad_pts.shape[0]
 
     for elem in range(mesh.num_elems):
-        djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
+        djac, _, _ = basis_tools.element_jacobian(mesh, elem, quad_pts, 
+                get_djac=True)
 
         # for iq in range(nq):
-        #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
-        ElemVolumes[elem] = np.sum(wq*djac)
+        #     vol_elems[elem] += quad_wts[iq] * JData.djac[iq*(JData.nq != 1)]
+        vol_elems[elem] = np.sum(quad_wts*djac)
 
-        TotalVolume += ElemVolumes[elem]
+        # domain_vol += vol_elems[elem]
 
-    if solver is not None:
-        solver.DataSet.TotalVolume = TotalVolume
-        solver.DataSet.ElemVolumes = ElemVolumes
+    # if solver is not None:
+    #     solver.DataSet.domain_vol = domain_vol
+    #     solver.DataSet.vol_elems = vol_elems
 
-    return TotalVolume, ElemVolumes
+    domain_vol = np.sum(vol_elems)
+
+    return vol_elems, domain_vol
 
 
 def get_element_centroid(mesh, elem):
