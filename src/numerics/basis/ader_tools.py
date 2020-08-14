@@ -26,16 +26,19 @@ def set_basis_spacetime(mesh, order, basis_name):
     '''
     Sets the space-time basis class given the basis_name string argunemnt
 
-    INPUTS: 
+    Inputs:
+    ------- 
         order: solution order
         basis_name: name of the spacial basis function used to determine
             the space-time basis function we wish to instantiate
             as a class 
 
-    OUTPUTS:
+    Outputs:
+    --------
         basis_st: instantiated space-time basis class
 
-    RAISE:
+    Raise:
+    ------
         If the basis class is not defined returns a NotImplementedError
     '''
     if BasisType[basis_name] == BasisType.LagrangeSeg:
@@ -52,7 +55,8 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1,
     '''
     Calculate the inverse mass matrix for ADER-DG prediction step
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         basis: basis object
         order: solution order 
@@ -60,7 +64,8 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1,
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space})
 
-    OUTPUTS: 
+    Outputs:
+    -------- 
         iMM: inverse mass matrix for ADER-DG predictor step [nb, nb]
     '''
     MM = get_elem_mass_matrix_ader(mesh, basis, order, elem, PhysicalSpace)
@@ -74,14 +79,16 @@ def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
     '''
     Calculate the inverse stiffness matrix (Currently not used)
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         basis: basis object
         order: solution order
         elem: element index
         gradDir: direction to take the gradient in
 
-    OUTPUTS: 
+    Outputs:
+    -------- 
         iSM: inverse stiffness matrix [nb_st, nb_st]
     '''
     SM = get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir)
@@ -96,7 +103,8 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     '''
     Calculate the stiffness matrix for ADER-DG prediction step
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         basis: basis object
         basis_st: space-time basis object
@@ -105,7 +113,8 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
         elem: element index
         gradDir: direction of gradient calculation
 
-    OUTPUTS: 
+    Outputs:
+    -------- 
         SM: stiffness matrix for ADER-DG [nb_st, nb_st]
     '''
     dim = mesh.dim
@@ -121,7 +130,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     
     if PhysicalSpace:
         djac, _, ijac = basis_tools.element_jacobian(mesh, elem, quad_pts_st,
-            get_djac=True, get_ijac=True)
+                get_djac=True, get_ijac=True)
         
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
@@ -136,7 +145,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
         djac = np.full(nq, 1.)
 
     basis_st.get_basis_val_grads(quad_pts_st, get_val=True, 
-        get_ref_grad=True)
+            get_ref_grad=True)
     
     nb_st = basis_st.basis_val.shape[1]
     phi = basis_st.basis_val
@@ -144,7 +153,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
     if PhysicalSpace:
         basis_ref_grad = basis_st.basis_ref_grad
         GPhi = np.transpose(np.matmul(ijac_st.transpose(0, 2, 1), \
-            basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
+                basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
     else:
         GPhi = basis_st.basis_ref_grad
 
@@ -171,7 +180,8 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
     '''
     Calculate the temporal flux matrix for ADER-DG prediction step
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         basis1: basis object
         basis2: basis object 
@@ -180,11 +190,13 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space})
 
-    OUTPUTS: 
+    Outputs:
+    -------- 
         FT: flux matrix for ADER-DG # [nb_st, nb] or [nb_st, nb_st]
             (Shape depends on basis objects passed in)
 
-    NOTES:
+    Notes:
+    ------
         Can work at tau_n and tau_n+1 depending on basis combinations
     '''
     if basis1 == basis2:
@@ -208,9 +220,9 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
         PsiData = basis1
 
         PhiData.get_basis_face_val_grads(mesh, face, quad_pts, basis1, 
-            get_val=True)
+                get_val=True)
         PsiData.get_basis_face_val_grads(mesh, face, quad_pts, basis1, 
-            get_val=True)
+                get_val=True)
     else:
         # evaluate basis at tau_{n}
         face = 0
@@ -219,9 +231,9 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
         PsiData = basis2
 
         PhiData.get_basis_face_val_grads(mesh, face, quad_pts, basis1, 
-            get_val=True)
+                get_val=True)
         PsiData.get_basis_val_grads(quad_pts, get_val=True, 
-            get_ref_grad=False)
+                get_ref_grad=False)
 
     nb_st = PhiData.basis_val.shape[1]
     nb = PsiData.basis_val.shape[1]
@@ -243,17 +255,18 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order, elem=-1,
     #
     # ------------------------------------------------------------------- # 
     FT[:] = np.matmul(PhiData.basis_val.transpose(), PsiData.basis_val * \
-        quad_wts) # [nb_st, nb] or [nb_st, nb_st]
+            quad_wts) # [nb_st, nb] or [nb_st, nb_st]
 
     return FT # [nb_st, nb] or [nb_st, nb_st]
 
 
 def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1, 
-    PhysicalSpace=False):
+        PhysicalSpace=False):
     '''
     Calculate the mass matrix for ADER-DG prediction step
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         basis: basis object
         order: solution order 
@@ -261,7 +274,8 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
         PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space})
 
-    OUTPUTS: 
+    Outputs:
+    -------- 
         MM: mass matrix for ADER-DG [nb_st, nb_st]
     '''
     if PhysicalSpace:
@@ -278,7 +292,7 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
 
     if PhysicalSpace:
         djac,_,_=basis_tools.element_jacobian(mesh, elem, quad_pts,
-            get_djac=True)
+                get_djac=True)
         
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
@@ -302,6 +316,6 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
     #
     # ------------------------------------------------------------------- # 
     MM[:] = np.matmul(basis.basis_val.transpose(), basis.basis_val * \
-            quad_wts * djac) # [nb_st,nb_st]
+                quad_wts * djac) # [nb_st,nb_st]
 
     return MM # [nb_st, nb_st]
