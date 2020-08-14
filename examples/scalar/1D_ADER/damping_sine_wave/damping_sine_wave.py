@@ -5,11 +5,11 @@ num_elems = 16
 dx = float(1./num_elems)
 dt = cfl*dx
 EndTime = 0.5
-NumTimeSteps = int(EndTime/dt)
+num_time_steps = int(EndTime/dt)
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "num_time_steps" : num_time_steps,
     "TimeScheme" : "ADER",
 }
 

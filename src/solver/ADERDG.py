@@ -352,7 +352,7 @@ class ADERDG(base.SolverBase):
 		basis_st = self.basis_st
 		
 		Stepper = self.Stepper
-		# dt = self.Params['EndTime']/self.Params['NumTimeSteps']
+		# dt = self.Params['EndTime']/self.Params['num_time_steps']
 
 
 		self.elem_operators = DG.ElemOperators()

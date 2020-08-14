@@ -17,9 +17,9 @@ mesh = MeshCommon.mesh_1D(num_elems=25, xmin=-1., xmax=1.)
 
 ### Solver parameters
 EndTime = 0.1
-NumTimeSteps = 100
+num_time_steps = 100
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",TimeScheme="ADER",InterpolateIC=True,ApplyLimiter=None)
 
 # nu = -1000.

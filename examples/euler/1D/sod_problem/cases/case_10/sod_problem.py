@@ -3,12 +3,12 @@ import copy
 
 #EndTime = 0.25
 EndTime = 1e-6
-NumTimeSteps = 1
+num_time_steps = 1
 
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "num_time_steps" : num_time_steps,
     # "CFL" : 0.2,
     "TimeScheme" : "RK4",
 }

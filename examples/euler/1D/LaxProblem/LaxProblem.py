@@ -8,11 +8,11 @@ dt = cfl*dx/u
 EndTime = 1.3
 nTimeSteps =int(EndTime/dt)
 print(nTimeSteps)
-NumTimeSteps = 4000
+num_time_steps = 4000
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "num_time_steps" : num_time_steps,
     "TimeScheme" : "RK4",
 }
 

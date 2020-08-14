@@ -58,7 +58,7 @@ class SolverBase(ABC):
 		contains the geometric information for the solver's mesh
 	time: float
 		global time of the solution at the given time step
-	numtimesteps: int
+	num_time_steps: int
 		number of time steps required to solve to the specified end time
 	basis: object
 		contains all the information and methods for the basis class
@@ -94,7 +94,7 @@ class SolverBase(ABC):
 		self.DataSet = GenericData()
 
 		self.time = Params["StartTime"]
-		self.numtimesteps = 0 # will be set later
+		self.num_time_steps = 0 # will be set later
 
 		# Set the basis functions for the solver
 		BASIS_TYPE  = Params["InterpBasis"]
@@ -372,9 +372,9 @@ class SolverBase(ABC):
 		t0 = time.time()
 		iwrite = 1
 
-		# for iStep in range(Stepper.numtimesteps):
+		# for iStep in range(Stepper.num_time_steps):
 		iStep = 0
-		while iStep < Stepper.numtimesteps:
+		while iStep < Stepper.num_time_steps:
 
 			Stepper.dt = Stepper.get_time_step(Stepper, self)
 			# Integrate in time

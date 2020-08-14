@@ -6,7 +6,7 @@ Restart = {
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 1.,
-    "NumTimeSteps" : None,
+    "num_time_steps" : None,
     "TimeStepSize" : None,
     "CFL" : None,
     "TimeScheme" : "RK4",

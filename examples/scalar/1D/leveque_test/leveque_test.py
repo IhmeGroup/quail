@@ -2,12 +2,12 @@ import code
 cfl = 0.1
 tfinal = 0.3
 dt = cfl*0.01
-NumTimeSteps = int(tfinal/dt)
+num_time_steps = int(tfinal/dt)
 
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : tfinal,
-    "NumTimeSteps" : NumTimeSteps,
+    "num_time_steps" : num_time_steps,
     "TimeScheme" : "Strang",
 }
 

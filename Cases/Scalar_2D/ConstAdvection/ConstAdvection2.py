@@ -30,9 +30,9 @@ if Periodic:
 
 dt = 0.025
 EndTime = .5
-NumTimeSteps = int(EndTime/dt + 10.*general.eps)
+num_time_steps = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 6
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 								 ApplyLimiter=None,WriteInterval=50)
 

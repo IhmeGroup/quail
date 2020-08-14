@@ -2,12 +2,12 @@ import numpy as np
 import copy
 
 EndTime = 0.
-NumTimeSteps = 0  
+num_time_steps = 0  
 
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "NumTimeSteps" :NumTimeSteps,
+    "num_time_steps" :num_time_steps,
     # "CFL" : 0.2,
     "TimeScheme" : "RK4",
 }

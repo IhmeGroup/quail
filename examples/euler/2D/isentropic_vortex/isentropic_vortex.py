@@ -4,7 +4,7 @@ nt = int(tfinal/dt + 1.e-12)
 
 TimeStepping = {
     "EndTime" : tfinal,
-    "NumTimeSteps" : nt,
+    "num_time_steps" : nt,
     "TimeScheme" : "LSRK4",
 }
 

@@ -4,7 +4,7 @@ TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 0.1,
     # "CFL" : 0.05,
-    "NumTimeSteps" : 100,
+    "num_time_steps" : 100,
     "TimeScheme" : "RK4",
 }
 

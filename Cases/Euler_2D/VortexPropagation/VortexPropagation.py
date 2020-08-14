@@ -45,9 +45,9 @@ mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 ### Solver parameters
 dt = 0.05
 EndTime = 1.0
-NumTimeSteps = int(EndTime/dt + 10.*general.eps)
+num_time_steps = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 								 ElementQuadrature="Dunavant")
 

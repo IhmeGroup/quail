@@ -3,7 +3,7 @@ import numpy as np
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 0.5,
-    "NumTimeSteps" : 40,
+    "num_time_steps" : 40,
     "TimeScheme" : "RK4",
 }
 

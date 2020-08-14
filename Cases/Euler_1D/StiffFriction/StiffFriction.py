@@ -19,10 +19,10 @@ nu = -1000.
 
 ### Solver parameters
 EndTime = 0.5
-NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.075))])
-# NumTimeSteps = 100
+num_time_steps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.075))])
+# num_time_steps = 100
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",SourceTreatment="Implicit")
 
 

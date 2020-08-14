@@ -23,9 +23,9 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=16, xmin=-1., xmax=1., Periodi
 
 ### Solver parameters
 EndTime = 0.5
-NumTimeSteps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
+num_time_steps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
 InterpOrder = 3
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",InterpolateFlux=True,SourceTreatment="Implicit")
 nu = -3.
 

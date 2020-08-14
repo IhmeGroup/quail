@@ -7,7 +7,7 @@ Restart = {
 
 TimeStepping.update({
     "EndTime" : 1.,
-    "NumTimeSteps" : 40,
+    "num_time_steps" : 40,
     "TimeScheme" : "ADER",
 })
 

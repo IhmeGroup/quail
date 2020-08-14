@@ -8,7 +8,7 @@ nTimeSteps = 4000
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : EndTime,
-    "NumTimeSteps" : nTimeSteps,
+    "num_time_steps" : nTimeSteps,
     #"CFL" : 0.025,
     "TimeScheme" : "RK4",
 }

@@ -26,9 +26,9 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 # dt = 0.05
 # EndTime = 10.0
-# NumTimeSteps = int(EndTime/dt + 10.*general.eps)
+# num_time_steps = int(EndTime/dt + 10.*general.eps)
 # InterpOrder = 10
-# Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,NumTimeSteps=NumTimeSteps,
+# Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
 # 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 # 								 ApplyLimiter=None,WriteInterval=50)
 
@@ -59,7 +59,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 TimeStepping = {
     "StartTime" : 0.,
     "EndTime" : 10.,
-    "NumTimeSteps" : 200,
+    "num_time_steps" : 200,
     "TimeScheme" : "RK4",
 }
 
