@@ -216,8 +216,8 @@ def driver(deck):
 
 			# First start with quads
 			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x, 
-					num_elems_y=num_elems_y, Uniform=True, xmin=xmin, 
-					xmax=xmax, ymin=ymin, ymax=ymax)
+					num_elems_y=num_elems_y, xmin=xmin, xmax=xmax, 
+					ymin=ymin, ymax=ymax)
 			# Split into tris if required
 			if shape is ShapeType.Triangle:
 				mesh = mesh_common.split_quadrils_into_tris(mesh)

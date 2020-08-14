@@ -12,12 +12,14 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	'''
 	This function creates a 1D uniform mesh.
 
-	INPUTS:
+	Inputs:
+	-------
 	    num_elems: number of mesh elements
 	    xmin: minimum x-coordinate
 	    xmax: maximum x-coordinate
 
-	OUTPUTS:
+	Outputs:
+	--------
 	    mesh: mesh object
 	'''
 	''' Create mesh and set node coordinates '''
@@ -66,48 +68,104 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	return mesh
 
 
-def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Uniform=True, xmin=-1., xmax=1., 
-	ymin=-1., ymax=1., Periodic=True):
+def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1., 
+		ymin=-1., ymax=1.):
 	'''
-	Function: mesh_2D
-	-------------------
-	This function creates a 2D mesh.
+	This function creates a uniform 2D quadrilateral mesh.
 
-	INPUTS:
-	    node_coords: x-coordinates
-	    Uniform: True for a uniform mesh (will be set to False if node_coords is not None)
-	    num_elems: number of elements (only relevant for Uniform=True)
-	    xmin: minimum coordinate (only relevant for Uniform=True)
-	    xmax: maximum coordinate (only relevant for Uniform=True)
-	    Periodic: True for a periodic mesh
+	Inputs:
+	-------
+	    num_elems_x: number of elements in x-direction
+	    num_elems_y: number of elements in y-direction
+	    xmin: minimum x-coordinate
+	    xmax: maximum x-coordinate
+	    ymin: minimum y-coordinate
+	    ymax: maximum y-coordinate
 
-	OUTPUTS:
-	    mesh: Mesh object that stores relevant mesh info
+	Outputs:
+	--------
+	    mesh: mesh object
 	'''
-
-	### Create mesh
-	if xcoords is None and ycoords is None:
-		# Uniform
-		num_nodes_x = num_elems_x + 1
-		num_nodes_y = num_elems_y + 1
-		xcoords = np.linspace(xmin, xmax, num_nodes_x)
-		ycoords = np.linspace(ymin, ymax, num_nodes_y)
-	elif xcoords is not None and ycoords is not None:
-		Uniform = False
-		num_nodes_x = len(xcoords)
-		num_nodes_y = len(ycoords)
-		num_elems_x = num_nodes_x - 1
-		num_elems_y = num_nodes_y - 1
-	else:
-		raise Exception("Input error")
-
-	X, Y = np.meshgrid(xcoords, ycoords)
-	xp = np.array([np.reshape(X,-1),np.reshape(Y,-1)]).transpose()
-
-	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], num_elems=num_elems_x*num_elems_y, gbasis=basis_defs.LagrangeQuad(1),
-		gorder=1)
-
+	''' Create mesh and set node coordinates '''
+	# Number of nodes
+	num_nodes_x = num_elems_x + 1
+	num_nodes_y = num_elems_y + 1
+	# xy-coordinates
+	xcoords = np.linspace(xmin, xmax, num_nodes_x)
+	ycoords = np.linspace(ymin, ymax, num_nodes_y)
+	xgrid, ygrid = np.meshgrid(xcoords, ycoords)
+	xp = np.array([np.reshape(xgrid,-1),np.reshape(ygrid,-1)]).transpose()
+	# Create mesh
+	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], 
+			num_elems=num_elems_x*num_elems_y, 
+			gbasis=basis_defs.LagrangeQuad(1),
+			gorder=1)
+	# Store coordinates
 	mesh.node_coords = xp
+
+	''' Interior faces '''
+	# Number of interior faces
+	mesh.num_interior_faces = num_elems_y*(num_elems_x-1) + \
+			num_elems_x*(num_elems_y-1)
+	mesh.allocate_interior_faces()
+	# x-direction
+	n = 0
+	for ny in range(num_elems_y):
+		for nx in range(num_elems_x-1):
+			interior_face = mesh.interior_faces[n]
+			interior_face.elemL_id = num_elems_x*ny + nx
+			interior_face.faceL_id = 1
+			interior_face.elemR_id = num_elems_x*ny + nx + 1
+			interior_face.faceR_id = 3
+			n += 1
+	# y-direction
+	for nx in range(num_elems_x):
+		for ny in range(num_elems_y-1):
+			interior_face = mesh.interior_faces[n]
+			interior_face.elemL_id = num_elems_x*ny + nx
+			interior_face.faceL_id = 2
+			interior_face.elemR_id = num_elems_x*(ny + 1) + nx
+			interior_face.faceR_id = 0
+			n += 1
+
+	''' Boundary groups and faces '''
+	# x1
+	boundary_group = mesh.add_boundary_group("x1")
+	boundary_group.num_boundary_faces = num_elems_y
+	boundary_group.allocate_boundary_faces()
+	n = 0
+	for boundary_face in boundary_group.boundary_faces:
+		boundary_face.elem_id = num_elems_x*n
+		boundary_face.face_id = 3
+		n += 1
+	# x2
+	boundary_group = mesh.add_boundary_group("x2")
+	boundary_group.num_boundary_faces = num_elems_y
+	boundary_group.allocate_boundary_faces()
+	n = 0
+	for boundary_face in boundary_group.boundary_faces:
+		boundary_face.elem_id = num_elems_x*(n + 1) - 1
+		boundary_face.face_id = 1
+		n += 1
+	# y1
+	boundary_group = mesh.add_boundary_group("y1")
+	boundary_group.num_boundary_faces = num_elems_x
+	boundary_group.allocate_boundary_faces()
+	n = 0
+	for boundary_face in boundary_group.boundary_faces:
+		boundary_face.elem_id = n
+		boundary_face.face_id = 0
+		n += 1
+	# y2
+	boundary_group = mesh.add_boundary_group("y2")
+	boundary_group.num_boundary_faces = num_elems_x
+	boundary_group.allocate_boundary_faces()
+	n = 0
+	for boundary_face in boundary_group.boundary_faces:
+		boundary_face.elem_id = mesh.num_elems - num_elems_x + n
+		boundary_face.face_id = 2
+		n += 1
+
 
 	### Elems
 	mesh.allocate_elem_to_node_ids_map()
@@ -120,95 +178,7 @@ def mesh_2D(xcoords=None, ycoords=None, num_elems_x=10, num_elems_y = 10, Unifor
 			mesh.elem_to_node_ids[elem][3] = num_nodes_x*(ny+1) + nx + 1
 			elem += 1
 
-	# mesh.allocate_faces()
-
-	### BFGs
-	# mesh.num_boundary_groups = 4
-	# mesh.allocate_bface_groups()
-	# for i in range(mesh.num_boundary_groups):
-	# 	BFG = mesh.boundary_groups[i]
-	# 	if i == 0:
-	# 		BFG.Name = "x1"
-	# 		BFG.num_boundary_faces = num_elems_y
-	# 	if i == 1:
-	# 		BFG.Name = "x2"
-	# 		BFG.num_boundary_faces = num_elems_y
-	# 	if i == 2:
-	# 		BFG.Name = "y1"
-	# 		BFG.num_boundary_faces = num_elems_x
-	# 	if i == 3:
-	# 		BFG.Name = "y2"
-	# 		BFG.num_boundary_faces = num_elems_x
-	# 	BFG.allocate_boundary_faces()
-
-	# x1
-	# BFG = mesh.boundary_groups[0]
-	BFG = mesh.add_boundary_group("x1")
-	BFG.num_boundary_faces = num_elems_y
-	BFG.allocate_boundary_faces()
-	n = 0
-	for BF in BFG.boundary_faces:
-		BF.elem_id = num_elems_x*n
-		BF.face_id = 3
-		n += 1
-	# x2
-	# BFG = mesh.boundary_groups[1]
-	BFG = mesh.add_boundary_group("x2")
-	BFG.num_boundary_faces = num_elems_y
-	BFG.allocate_boundary_faces()
-	n = 0
-	for BF in BFG.boundary_faces:
-		BF.elem_id = num_elems_x*(n + 1) - 1
-		BF.face_id = 1
-		n += 1
-	# y1
-	# BFG = mesh.boundary_groups[2]
-	BFG = mesh.add_boundary_group("y1")
-	BFG.num_boundary_faces = num_elems_x
-	BFG.allocate_boundary_faces()
-	n = 0
-	for BF in BFG.boundary_faces:
-		BF.elem_id = n
-		BF.face_id = 0
-		n += 1
-	# y2
-	# BFG = mesh.boundary_groups[3]
-	BFG = mesh.add_boundary_group("y2")
-	BFG.num_boundary_faces = num_elems_x
-	BFG.allocate_boundary_faces()
-	n = 0
-	for BF in BFG.boundary_faces:
-		BF.elem_id = mesh.num_elems - num_elems_x + n
-		BF.face_id = 2
-		n += 1
-
-
-	### interior_faces
-	mesh.num_interior_faces = num_elems_y*(num_elems_x-1) + num_elems_x*(num_elems_y-1)
-	mesh.allocate_interior_faces()
-	
-	# x direction
-	n = 0
-	for ny in range(num_elems_y):
-		for nx in range(num_elems_x-1):
-			IF = mesh.interior_faces[n]
-			IF.elemL_id = num_elems_x*ny + nx
-			IF.faceL_id = 1
-			IF.elemR_id = num_elems_x*ny + nx + 1
-			IF.faceR_id = 3
-			n += 1
-
-	# y direction
-	for nx in range(num_elems_x):
-		for ny in range(num_elems_y-1):
-			IF = mesh.interior_faces[n]
-			IF.elemL_id = num_elems_x*ny + nx
-			IF.faceL_id = 2
-			IF.elemR_id = num_elems_x*(ny + 1) + nx
-			IF.faceR_id = 0
-			n += 1
-
-	# mesh.fill_faces()
+	''' Create element objects '''
 	mesh.create_elements()
 
 	return mesh
