@@ -166,8 +166,7 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 		boundary_face.face_id = 2
 		n += 1
 
-
-	### Elems
+	''' Create element-to-node-ID map '''
 	mesh.allocate_elem_to_node_ids_map()
 	elem = 0
 	for ny in range(num_elems_y):
@@ -185,97 +184,130 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 
 
 def split_quadrils_into_tris(mesh_old):
-	num_elems_old = mesh_old.num_elems 
-	num_elems = num_elems_old*2
+	'''
+	This function splits each quadrilateral element of a mesh into two
+	triangular elements.
 
-	mesh = copy.deepcopy(mesh_old)
+	Inputs:
+	-------
+	    mesh_old: quadrilateral mesh object to modify
 
-	mesh.set_params(num_elems=num_elems, gbasis=basis_defs.LagrangeTri(1))
+	Outputs:
+	--------
+	    mesh: new triangular mesh object
+	'''
+	def convert_nodes(gorder, num_nodes_per_quad, num_nodes_per_tri):
+		'''
+		This nested function converts the local node IDs of a quadrilateral element	into two sets of local node IDs for the resulting two
+		triangular elements.
 
-	def reorder_nodes(QOrder, num_nodes_per_quad, num_nodes_per_tri):
-		num_nodes_per_face = QOrder + 1
+		Inputs:
+		-------
+		    gorder: order of geometry interpolation
+		    num_nodes_per_quad: number of nodes per quadrilateral
+		    num_nodes_per_tri: number of nodes per triangle
+
+		Outputs:
+		--------
+		    tri1_node_ids: local node IDs of first triangle
+		    tri2_node_ids: local node IDs of second triangle
+		'''
+		# Number of nodes per face
+		num_nodes_per_face = gorder + 1
 		if num_nodes_per_face != np.sqrt(num_nodes_per_quad):
 			return ValueError
-		quadril_nodes = np.arange(num_nodes_per_quad)
-		quadril_nodes.shape = num_nodes_per_face, num_nodes_per_face
+
+		# Local quadrilateral node IDs
+		quad_node_ids = np.arange(num_nodes_per_quad)
+		quad_node_ids.shape = num_nodes_per_face, num_nodes_per_face
+
+		''' Local triangle node IDs '''
 		# faces 0 and 3 become faces 0 and 2 of tri1
-		tri1_nodes = np.arange(num_nodes_per_tri)
+		tri1_node_ids = np.arange(num_nodes_per_tri)
 		# faces 1 and 2 become faces 2 and 0 of tri2
-		tri2_nodes = np.copy(tri1_nodes)
+		tri2_node_ids = np.copy(tri1_node_ids)
 
 		n = 0
 		for j in range(num_nodes_per_face):
-			tri1_nodes[n:n+num_nodes_per_face-j] = quadril_nodes[j,:num_nodes_per_face-j]
+			tri1_node_ids[n:n+num_nodes_per_face-j] = quad_node_ids[j,:num_nodes_per_face-j]
 			if j == 0:
-				tri2_nodes[n:n+num_nodes_per_face-j] = quadril_nodes[num_nodes_per_face-1,::-1]
+				tri2_node_ids[n:n+num_nodes_per_face-j] = quad_node_ids[num_nodes_per_face-1,::-1]
 			else:
-				tri2_nodes[n:n+num_nodes_per_face-j] = quadril_nodes[num_nodes_per_face-(j+1),
+				tri2_node_ids[n:n+num_nodes_per_face-j] = quad_node_ids[num_nodes_per_face-(j+1),
 						num_nodes_per_face-1:j-1:-1]
 			n += num_nodes_per_face-j
 
-		return tri1_nodes, tri2_nodes
+		return tri1_node_ids, tri2_node_ids
 
-	tri1_nodes, tri2_nodes = reorder_nodes(mesh.gorder, mesh_old.num_nodes_per_elem, mesh.num_nodes_per_elem)
+	def modify_element_face_info(elem_id, face_id):
+		'''
+		This nested function modifies element and local face IDs.
 
+		Inputs:
+		-------
+		    elem_id: element ID
+		    face_id: local face ID
 
-	# Elems
+		Outputs:
+		--------
+		    elem_id: element ID (modified)
+		    face_id: local face ID (modified)
+		'''
+		if face_id == 1 or face_id == 2:
+			elem_id += num_elems_old
+		face_id = old_to_new_face[face_id]
+		return elem_id, face_id
+
+	# New number of elements
+	num_elems_old = mesh_old.num_elems 
+	num_elems = num_elems_old*2
+
+	# Create deep copy of mesh
+	mesh = copy.deepcopy(mesh_old)
+	mesh.set_params(num_elems=num_elems, gbasis=basis_defs.LagrangeTri(1))
+
+	# Convert local quadrilateral node IDs to triangle node IDs
+	tri1_node_ids, tri2_node_ids = convert_nodes(mesh.gorder, 
+			mesh_old.num_nodes_per_elem, mesh.num_nodes_per_elem)
+
+	# Array to maps old (quadrilateral) local face ID to new (triangle) 
+	# local face ID
+	old_to_new_face = np.array([2, 1, 2, 1])
+
+	# Boundary groups
+	for bgroup in mesh.boundary_groups.values():
+		for bface in bgroup.boundary_faces:
+			bface.elem_id, bface.face_id = modify_element_face_info(
+					bface.elem_id, bface.face_id)
+
+	# Modify existing interior faces
+	for int_face in mesh.interior_faces:
+		int_face.elemL_id, int_face.faceL_id = modify_element_face_info(
+				int_face.elemL_id, int_face.faceL_id)
+		int_face.elemR_id, int_face.faceR_id = modify_element_face_info(
+				int_face.elemR_id, int_face.faceR_id)
+
+	# Create new interior_faces
+	mesh.num_interior_faces += num_elems_old
+	for elem_id in range(num_elems_old):
+		int_face = mesh_defs.InteriorFace()
+		int_face.elemL_id = elem_id
+		int_face.faceL_id = 0
+		int_face.elemR_id = elem_id + num_elems_old
+		int_face.faceR_id = 0
+		mesh.interior_faces.append(int_face)
+
+	# Element-to-node-ID map
 	mesh.allocate_elem_to_node_ids_map()
 	for elem_id in range(num_elems_old):
 		# First triangle
-		mesh.elem_to_node_ids[elem_id] = mesh_old.elem_to_node_ids[elem_id, tri1_nodes]
+		mesh.elem_to_node_ids[elem_id] = mesh_old.elem_to_node_ids[elem_id, 
+				tri1_node_ids]
 		# Second triangle
-		mesh.elem_to_node_ids[elem_id+num_elems_old] = mesh_old.elem_to_node_ids[elem_id, tri2_nodes]
+		mesh.elem_to_node_ids[elem_id+num_elems_old] = \
+				mesh_old.elem_to_node_ids[elem_id, tri2_node_ids]
 
-
-	old_to_new_face = np.array([2, 1, 2, 1])
-
-	def modify_face_info(elem, face):
-		if face == 1 or face == 2:
-			elem += num_elems_old
-		face = old_to_new_face[face]
-		return elem, face
-
-	# BFGs
-	for BFG in mesh.boundary_groups.values():
-		for BF in BFG.boundary_faces:
-			BF.elem_id, BF.face_id = modify_face_info(BF.elem_id, BF.face_id)
-
-
-	# Modify interior_faces
-	for IF in mesh.interior_faces:
-		IF.elemL_id, IF.faceL_id = modify_face_info(IF.elemL_id, IF.faceL_id)
-		IF.elemR_id, IF.faceR_id = modify_face_info(IF.elemR_id, IF.faceR_id)
-
-	# New interior_faces
-	# code.interact(local=locals())
-	# num_interior_faces_old = mesh.num_interior_faces
-	# interior_faces_old = mesh.interior_faces
-	mesh.num_interior_faces += num_elems_old
-	# mesh.allocate_interior_faces()
-	# mesh.interior_faces[:num_interior_faces_old] = interior_faces_old
-	# for IF in mesh.interior_faces[num_interior_faces_old:]:
-	for elem_id in range(num_elems_old):
-		IF = mesh_defs.InteriorFace()
-		IF.elemL_id = elem_id
-		IF.faceL_id = 0
-		IF.elemR_id = elem_id + num_elems_old
-		IF.faceR_id = 0
-		mesh.interior_faces.append(IF)
-
-	# mesh.allocate_faces()
-	# mesh.fill_faces()
+	# Create element objects
 	mesh.create_elements()
 
 	return mesh
-
-
-
-
-
-
-
-
-
-
-
-
