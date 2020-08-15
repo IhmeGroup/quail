@@ -282,12 +282,12 @@ class ADERHelpers(object):
 
 
 class ADERDG(base.SolverBase):
-    '''
+	'''
     ADERDG inherits attributes and methods from the SolverBase class.
     See SolverBase for detailed comments of attributes and methods.
 
     Additional methods and attributes are commented below.
-    '''
+	'''
 	def __init__(self,Params,physics,mesh):
 		super().__init__(Params, physics, mesh)
 
@@ -349,7 +349,7 @@ class ADERDG(base.SolverBase):
 		basis = self.basis
 		Params = self.Params
 
-		if Params["InterpolateFlux"] and 
+		if Params["InterpolateFlux"] and \
 				basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
@@ -369,11 +369,11 @@ class ADERDG(base.SolverBase):
 		Stepper = self.Stepper
 
 		self.elem_operators = DG.ElemHelpers()
-		self.elem_operators.compute_operators(mesh, physics, basis, physics,
-				order)
+		self.elem_operators.compute_operators(mesh, physics, basis, 
+				physics.order)
 		self.iface_operators = DG.InteriorFaceHelpers()
-		self.iface_operators.compute_operators(mesh, physics, basis, physics,
-				order)
+		self.iface_operators.compute_operators(mesh, physics, basis, 
+				physics.order)
 		self.bface_operators = DG.BoundaryFaceHelpers()
 		self.bface_operators.compute_operators(mesh, physics, basis,
 				physics.order)

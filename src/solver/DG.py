@@ -252,12 +252,12 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 
 class DG(base.SolverBase):
-    '''
+	'''
     DG inherits attributes and methods from the SolverBase class.
     See SolverBase for detailed comments of attributes and methods.
 
     Additional methods and attributes are commented below.
-    '''
+	'''
 	def __init__(self, Params, physics, mesh):
 		super().__init__(Params, physics, mesh)
 
