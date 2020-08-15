@@ -145,43 +145,6 @@ def check_face_orientations(mesh):
                 % (elemL_id, elemR_id))
 
 
-def RandomizeNodes(mesh, elem = -1, orient = -1):
-    OldNode2NewNode = np.arange(mesh.num_nodes)
-    np.random.shuffle(OldNode2NewNode)
-    NewNodeOrder = np.zeros(mesh.num_nodes, dtype=int) - 1
-    NewNodeOrder[OldNode2NewNode] = np.arange(mesh.num_nodes)
-
-    if np.min(NewNodeOrder) == -1:
-        raise ValueError
-
-    RemapNodes(mesh, OldNode2NewNode, NewNodeOrder)
-
-    # for i in range(mesh.num_nodes):
-    #   n = OldNode2NewNode[i]
-    #     NewNodeOrder[n] = i
-    #         # NewNodeOrder[i] = the node number (pre-reordering) of the ith node (post-reordering)
-
-    print("Randomized nodes")
-
-
-def RotateNodes(mesh, theta_x = 0., theta_y = 0., theta_z = 0.):
-
-    # Construct rotation matrices
-    if mesh.dim == 3:
-        Rx = np.array([[1., 0., 0.], [0., np.cos(theta_x), -np.sin(theta_x)], [0., np.sin(theta_x), np.cos(theta_x)]])
-        Ry = np.array([[np.cos(theta_y), 0., np.sin(theta_y)], [0., 1., 0.], [-np.sin(theta_y), 0., np.cos(theta_y)]])
-        Rz = np.array([[np.cos(theta_z), -np.sin(theta_z), 0.], [np.sin(theta_z), np.cos(theta_z), 0.], [0., 0., 1.]])
-        R = np.matmul(Rx, np.matmul(Ry, Rz))
-    elif mesh.dim == 2:
-        R = np.array([[np.cos(theta_z), -np.sin(theta_z)], [np.sin(theta_z), np.cos(theta_z)]])
-    else:
-        raise NotImplementedError
-
-    mesh.node_coords = np.matmul(R, mesh.node_coords.transpose()).transpose()
-
-    print("Rotated nodes")
-
-
 def VerifyPeriodicBoundary(mesh, BFG, icoord):
     coord = np.nan
     gbasis = mesh.gbasis
