@@ -12,17 +12,17 @@ tol = 1.e-10
 
 def ref_to_phys(mesh, elem_id, xref):
     '''
-    Function: ref_to_phys
-    -------------------
     This function converts reference space coordinates to physical
     space coordinates
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         elem_id: element ID
         xref: coordinates in reference space [nq, dim]
 
-    OUTPUTS:
+    Outputs:
+    --------
         xphys: coordinates in physical space [nq, dim]
     '''
     gbasis = mesh.gbasis
@@ -42,91 +42,63 @@ def ref_to_phys(mesh, elem_id, xref):
 
 def element_volumes(mesh, solver=None):
     '''
-    Method: element_volumes
-    --------------------------
-    Calculates total and per element volumes
+    This function calculates total and per-element volumes
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
         solver: solver object (e.g., DG, ADER-DG, etc.)
     
-    OUTPUTS:
-        domain_vol: total volume of the domain
+    Outputs:
+    --------
         vol_elems: volume of each element [num_elems]
+        domain_vol: total volume of the domain
     '''
     # Check if already calculated
     if solver is not None:
         if hasattr(solver.elem_operators, "domain_vol") \
                 and hasattr(solver.elem_operators, "vol_elems"):
-            return solver.elem_operators.domain_vol, \
-                    solver.elem_operators.vol_elems
+            return solver.elem_operators.vol_elems, \
+                    solver.elem_operators.domain_vol
 
-    ElemVolumes = np.zeros(mesh.num_elems)
-    TotalVolume = 0.
-
+    # Allocate, unpack
+    vol_elems = np.zeros(mesh.num_elems)
     gorder = mesh.gorder
     gbasis = mesh.gbasis
 
-    quad_order = gbasis.get_quadrature_order(mesh,gorder)
-    xq, wq = gbasis.get_quadrature_data(quad_order)
+    # Get quadrature data
+    quad_order = gbasis.get_quadrature_order(mesh, gorder)
+    quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
 
-    # xq = gbasis.quad_pts
-    # wq = gbasis.quad_wts
-    nq = xq.shape[0]
+    # Get element volumes
+    for elem_id in range(mesh.num_elems):
+        djac, _, _ = basis_tools.element_jacobian(mesh, elem_id, quad_pts, 
+                get_djac=True)
+        vol_elems[elem_id] = np.sum(quad_wts*djac)
 
-    for elem in range(mesh.num_elems):
-        djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
+    # Get domain volume
+    domain_vol = np.sum(vol_elems)
 
-        # for iq in range(nq):
-        #     ElemVolumes[elem] += wq[iq] * JData.djac[iq*(JData.nq != 1)]
-        ElemVolumes[elem] = np.sum(wq*djac)
-
-        TotalVolume += ElemVolumes[elem]
-
-    if solver is not None:
-        solver.DataSet.TotalVolume = TotalVolume
-        solver.DataSet.ElemVolumes = ElemVolumes
-
-    return TotalVolume, ElemVolumes
+    return vol_elems, domain_vol
 
 
-def get_element_centroid(mesh, elem):
+def get_element_centroid(mesh, elem_id):
+    '''
+    This function obtains the centroid of an element in physical space.
+
+    Inputs:
+    -------
+        mesh: mesh object
+        elem_ID: element ID
+    
+    Outputs:
+    --------
+        xcentroid: element centroid in physical space [1, dim]
+    '''
     gbasis = mesh.gbasis
-    xcentroid = ref_to_phys(mesh, elem, mesh.gbasis.CENTROID)  
+    xcentroid = ref_to_phys(mesh, elem_id, mesh.gbasis.CENTROID)  
 
     return xcentroid
-
-
-def neighbor_across_face(mesh, elem, face):
-    '''
-    Method: neighbor_across_face
-    ------------------------------
-    Identifies neighbor elements across each face
-
-    INPUTS:
-        mesh: mesh object
-        elem: element index
-        face: face index w.r.t. the element in ref space
-    
-    OUTPUTS:
-        eN: element index of the neighboring face
-        faceN: face index w.r.t. the neighboring element in ref space
-    '''
-    Face = mesh.Faces[elem][face]
-    # code.interact(local=locals())
-    if Face.Type == mesh_defs.FaceType.Interior:
-        iiface = Face.Number
-        eN  = mesh.interior_faces[iiface].elemR_id
-        faceN = mesh.interior_faces[iiface].faceR_id
-
-        if eN == elem:
-            eN  = mesh.interior_faces[iiface].elemL_id
-            faceN = mesh.interior_faces[iiface].faceL_id
-    else:
-        eN    = -1
-        faceN = -1
-
-    return eN, faceN
 
 
 def check_face_orientations(mesh):

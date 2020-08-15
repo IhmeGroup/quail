@@ -8,6 +8,7 @@ import processing.post as Post
 import processing.plot as Plot
 import general
 import meshing.gmsh as MeshGmsh
+import meshing.tools as MeshTools
 
 
 ### Mesh
@@ -18,6 +19,7 @@ mesh = MeshGmsh.import_gmsh_mesh("mesh_v2.msh")
 
 # Test "random" 1D mesh
 # mesh.elem_to_node_ids[1,:] = np.array([1,2])
+# MeshTools.RandomizeNodes(mesh)
 mesh.interior_faces[0].elemL_id = 1
 mesh.interior_faces[0].elemR_id = 0
 mesh.interior_faces[0].faceL_id = 0

@@ -29,7 +29,7 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 
 	# Get elem volumes 
 	if NormalizeByVolume:
-		TotVol, _ = mesh_tools.element_volumes(mesh, solver)
+		_, TotVol = mesh_tools.element_volumes(mesh, solver)
 	else:
 		TotVol = 1.
 
@@ -54,14 +54,14 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 
 		quad_order = basis.get_quadrature_order(mesh, 2*np.amax([Order,1]), physics=physics)
 		gbasis = mesh.gbasis
-		xq, wq = gbasis.get_quadrature_data(quad_order)
-		nq = xq.shape[0]
+		quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
+		nq = quad_pts.shape[0]
 		
-		basis.get_basis_val_grads(xq, True, False, False, None)
+		basis.get_basis_val_grads(quad_pts, True, False, False, None)
 
-		djac,_,_ = basis_tools.element_jacobian(mesh,elem,xq,get_djac=True)
+		djac,_,_ = basis_tools.element_jacobian(mesh,elem,quad_pts,get_djac=True)
 
-		xphys = mesh_tools.ref_to_phys(mesh, elem, xq)
+		xphys = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
 		u_exact = physics.CallFunction(physics.ExactSoln, x=xphys, t=Time)
 
 		# interpolate state at quad points
@@ -77,8 +77,8 @@ def L2_error(mesh, physics, solver, VariableName, PrintError=True, NormalizeByVo
 
 		# err = 0.
 		# for iq in range(nq):
-		# 	err += (s[iq] - s_exact[iq])**2.*wq[iq] * JData.djac[iq*(JData.nq != 1)]
-		err = np.sum((s - s_exact)**2.*wq*djac)
+		# 	err += (s[iq] - s_exact[iq])**2.*quad_wts[iq] * JData.djac[iq*(JData.nq != 1)]
+		err = np.sum((s - s_exact)**2.*quad_wts*djac)
 		ElemErr[elem] = err
 		TotErr += ElemErr[elem]
 

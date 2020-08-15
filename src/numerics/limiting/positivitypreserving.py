@@ -40,7 +40,7 @@ class PositivityPreserving(base.LimiterBase):
 	def precompute_operators(self, solver):
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
-		_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
+		self.elem_vols, _ = mesh_tools.element_volumes(solver.mesh, solver)
 
 		# basis values in element interior and on faces
 		if not solver.basis.skip_interp:
