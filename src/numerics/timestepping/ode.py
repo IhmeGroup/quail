@@ -87,7 +87,7 @@ class ODESolvers():
 
 			R = self.R
 
-			R = solver.calculate_residual(U, R)
+			R = solver.get_residual(U, R)
 			dU = mult_inv_mass_matrix(mesh, solver, self.dt, R)
 
 			A, iA = self.get_jacobian_matrix(mesh, solver)

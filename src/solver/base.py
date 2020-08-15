@@ -70,11 +70,11 @@ class SolverBase(ABC):
     precompute_matrix_operators
     	precomputes a variety of functions and methods prior to running the
     	simulation
-    calculate_residual_elem
+    get_element_residual
     	calculates the residual for a specific element
-    calculate_residual_iface
+    get_interior_face_residual
     	calculates the residual for a specific face
-    calculate_residual_bface
+    get_boundary_face_residual
     	calculates the residual for a specific boundary face
     
     Methods:
@@ -82,7 +82,7 @@ class SolverBase(ABC):
     check_compatibility
     	checks parameter compatibilities based on the given input deck
     init_state_from_fcn
-    	initializes all objects and state when supplied a restart file
+    	initializes state from a specified function in the input deck
 	project_state_to_new_basis
 		takes a state from a restartfile and projects it onto a higher
 		order of accuracy
@@ -157,20 +157,68 @@ class SolverBase(ABC):
 
 	@abstractmethod
 	def precompute_matrix_operators(self):
+		'''
+		Precomputes element and face helper functions that only need to be
+		computed at the beginning of the simulation.
+		'''
 		pass
 	@abstractmethod
-	def calculate_residual_elem(self, elem, Up, ER):
+	def get_element_residual(self, elem, Up, ER):
+		'''
+		Calculates the residual from the volume integral for each element
+		
+		Inputs:
+		-------
+			elem: element index
+			Up: solution state
+
+		Outputs:
+		--------
+			ER: calculated residiual array (for volume integral of specified element)
+		'''
 		pass
 
 	@abstractmethod
-	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR):
+	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
+		'''
+		Calculates the surface integral for the internal faces
+		
+		Inputs:
+		-------
+			iiface: internal face index
+			UpL: solution array from left neighboring element
+			UpR: solution array from right neighboring element
+			
+		Outputs:
+		--------
+			RL: calculated residual array (left neighboring element contribution)
+			RR: calculated residual array (right neighboring element contribution)
+		'''
 		pass
 
 	@abstractmethod
-	def calculate_residual_bface(self, ibfgrp, ibface, U, R):
+	def get_boundary_face_residual(self, ibfgrp, ibface, U, R):
+		'''
+		Calculates the residual from the surface integral for each boundary face
+
+		Inputs:
+		-------
+			ibfgrp: index of BC group
+			ibface: index of boundary face
+			U: solution array from internal element
+			
+		Outputs:
+		--------
+			R: calculated residual array (from boundary face)
+		'''
 		pass
 
 	def init_state_from_fcn(self):
+		'''
+		Initializes the state (initial condition) from the specified function in
+		the input deck. Either interpolates the state to the nodes or uses an L2 
+		projection to initialize the state.
+		'''
 		mesh = self.mesh
 		physics = self.physics
 		basis = self.basis
@@ -203,6 +251,15 @@ class SolverBase(ABC):
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, f, U[elem,:,:])
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
+		'''
+		Projects the state of a restartfile onto a new basis/order of accuracy
+
+		Inputs:
+		-------
+			U_old: restart files old solution array
+			basis_old: previous basis function
+			order_old: previous polynomial order			
+		'''
 		mesh = self.mesh
 		physics = self.physics
 		basis = self.basis
@@ -238,19 +295,18 @@ class SolverBase(ABC):
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, Up_old, U[elem,:,:])
 	
-	def calculate_residual(self, U, R):
+	def get_residual(self, U, R):
 		'''
-		Method: calculate_residual
-		-----------------------------------
-		Calculates the boundary + volume integral for the DG formulation
+		Calculates the surface + volume integral for the DG formulation
 		
-		INPUTS:
+		Inputs:
+		-------
 			U: solution array
 			
-		OUTPUTS:
+		Outputs:
+		--------
 			R: residual array
 		'''
-
 		mesh = self.mesh
 		physics = self.physics
 		stepper = self.Stepper
@@ -264,40 +320,42 @@ class SolverBase(ABC):
 		else:
 			R[:] = stepper.balance_const
 
-		self.calculate_residual_bfaces(U, R)
-		self.calculate_residual_elems(U, R)
-		self.calculate_residual_ifaces(U, R)
+		self.get_boundary_face_residuals(U, R)
+		self.get_element_residuals(U, R)
+		self.get_interior_face_residuals(U, R)
 
 		return R
 
-	def calculate_residual_elems(self, U, R):
+	def get_element_residuals(self, U, R):
 		'''
-		Method: calculate_residual_elems
-		---------------------------------
-		Calculates the volume integral across the entire domain
-		
-		INPUTS:
+		Loops over the elements and calls the get_element_residual 
+		function for each element
+
+		Inputs:
+		-------
 			U: solution array
 			
-		OUTPUTS:
+		Outputs:
+		--------
 			R: calculated residiual array
 		'''
 		mesh = self.mesh
 		physics = self.physics
 
 		for elem in range(mesh.num_elems):
-			R[elem] = self.calculate_residual_elem(elem, U[elem], R[elem])
+			R[elem] = self.get_element_residual(elem, U[elem], R[elem])
 
-	def calculate_residual_ifaces(self, U, R):
+	def get_interior_face_residuals(self, U, R):
 		'''
-		Method: calculate_residual_ifaces
-		-----------------------------------
-		Calculates the boundary integral for all internal faces
+		Loops over the interior faces and calls the get_interior_face_residual 
+		function for each face
 		
-		INPUTS:
+		Inputs:
+		-------
 			U: solution array
 			
-		OUTPUTS:
+		Outputs:
+		--------
 			R: calculated residual array (includes all face contributions)
 		'''
 		mesh = self.mesh
@@ -315,25 +373,23 @@ class SolverBase(ABC):
 			RL = R[elemL]
 			RR = R[elemR]
 
-			RL, RR = self.calculate_residual_iface(iiface, UL, UR, RL, RR)
+			RL, RR = self.get_interior_face_residual(iiface, UL, UR, RL, RR)
 
-	def calculate_residual_bfaces(self, U, R):
+	def get_boundary_face_residuals(self, U, R):
 		'''
-		Method: calculate_residual_bfaces
-		-----------------------------------
-		Calculates the boundary integral for all the boundary faces
+		Loops over the boundary faces and calls the get_boundary_face_residual 
+		function for each face
 		
-		INPUTS:
-			U: solution array from internal cell
+		Inputs:
+		-------
+			U: solution array
 			
-		OUTPUTS:
-			R: calculated residual array from boundary face
+		Outputs:
+		--------
+			R: calculated residual array (includes all face contributions)
 		'''
 		mesh = self.mesh
 		physics = self.physics
-
-		# for ibfgrp in range(mesh.num_boundary_groups):
-		# 	BFG = mesh.boundary_groups[ibfgrp]
 
 		for BFG in mesh.boundary_groups.values():
 
@@ -342,15 +398,12 @@ class SolverBase(ABC):
 				elem = boundary_face.elem_id
 				face = boundary_face.face_id
 
-				R[elem] = self.calculate_residual_bface(BFG, ibface, U[elem], R[elem])
+				R[elem] = self.get_boundary_face_residual(BFG, ibface, U[elem], R[elem])
 
 
 	def apply_time_scheme(self, fhistory=None):
 		'''
-		Method: apply_time_scheme
-		-----------------------------
 		Applies the specified time scheme to update the solution
-
 		'''
 		physics = self.physics
 		mesh = self.mesh
@@ -377,8 +430,7 @@ class SolverBase(ABC):
 		while iStep < Stepper.num_time_steps:
 
 			Stepper.dt = Stepper.get_time_step(Stepper, self)
-			# Integrate in time
-			# self.time is used for local time
+			# integrate in time
 			R = Stepper.TakeTimeStep(self)
 
 			# Increment time
@@ -386,7 +438,6 @@ class SolverBase(ABC):
 			self.time = Time
 
 			# Info to print
-			# PrintInfo = (iStep+1, self.time, R.VectorNorm(ord=1))
 			PrintInfo = (iStep+1, self.time, np.linalg.norm(np.reshape(R,-1), ord=1))
 			PrintString = "%d: Time = %g, Residual norm = %g" % (PrintInfo)
 
@@ -422,17 +473,15 @@ class SolverBase(ABC):
 
 	def apply_limiter(self, U):
 		'''
-		Method: apply_limiter
-		-------------------------
 		Applies the limiter to the solution array, U.
 		
-		INPUTS:
+		Inputs:
+		-------
 			U: solution array
 
-		OUTPUTS:
+		Outputs:
+		--------
 			U: limited solution array
-
-		Notes: See Limiter.py for details
 		'''
 		if self.limiter is not None:
 			self.limiter.limit_solution(self, U)

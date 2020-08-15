@@ -23,7 +23,7 @@ global echeck
 echeck = -1
 
 
-class ElemOperators(object):
+class ElemHelpers(object):
 	def __init__(self):
 		self.quad_pts = None
 		self.quad_wts = None
@@ -109,7 +109,7 @@ class ElemOperators(object):
 		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh, physics, basis)
 
 
-class InteriorFaceOperators(ElemOperators):
+class InteriorFaceHelpers(ElemHelpers):
 	def __init__(self):
 		self.quad_pts = None
 		self.quad_wts = None
@@ -176,7 +176,7 @@ class InteriorFaceOperators(ElemOperators):
 		self.alloc_other_arrays(physics, basis, order)
 
 
-class BoundaryFaceOperators(InteriorFaceOperators):
+class BoundaryFaceHelpers(InteriorFaceHelpers):
 	def __init__(self):
 		self.quad_pts = None
 		self.quad_wts = None
@@ -252,29 +252,22 @@ class BoundaryFaceOperators(InteriorFaceOperators):
 
 
 class DG(base.SolverBase):
-	'''
-	Class: DG
-	--------------------------------------------------------------------------
-	Discontinuous Galerkin method designed to solve a given set of PDEs
+    '''
+    DG inherits attributes and methods from the SolverBase class.
+    See SolverBase for detailed comments of attributes and methods.
 
-	ATTRIBUTES:
-		Params: list of parameters for the solver
-		physics: solver object (current implementation supports Scalar and Euler equations)
-		mesh: mesh object
-		DataSet: location to store generic data
-		Time: current time in the simulation
-		nTimeStep: number of time steps
-	'''
+    Additional methods and attributes are commented below.
+    '''
 	def __init__(self, Params, physics, mesh):
 		super().__init__(Params, physics, mesh)
 
 		self.Stepper = stepper_tools.set_stepper(Params, physics.U)
 		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 	
-		# Check validity of parameters
+		# check validity of parameters
 		self.check_compatibility()
 		
-		# Precompute operators
+		# precompute operators
 		self.precompute_matrix_operators()
 		if self.limiter is not None:
 			self.limiter.precompute_operators(self)
@@ -285,30 +278,20 @@ class DG(base.SolverBase):
 			self.init_state_from_fcn()
 		
 	def precompute_matrix_operators(self):
+
 		mesh = self.mesh 
 		physics = self.physics
 		basis = self.basis
 
-		self.elem_operators = ElemOperators()
+		self.elem_operators = ElemHelpers()
 		self.elem_operators.compute_operators(mesh, physics, basis, physics.order)
-		self.iface_operators = InteriorFaceOperators()
+		self.iface_operators = InteriorFaceHelpers()
 		self.iface_operators.compute_operators(mesh, physics, basis, physics.order)
-		self.bface_operators = BoundaryFaceOperators()
+		self.bface_operators = BoundaryFaceHelpers()
 		self.bface_operators.compute_operators(mesh, physics, basis, physics.order)
 
-	def calculate_residual_elem(self, elem, Up, ER):
-		'''
-		Method: calculate_residual_elem
-		---------------------------------
-		Calculates the volume integral for a specified element
-		
-		INPUTS:
-			elem: element index
-			U: solution array
-			
-		OUTPUTS:
-			ER: calculated residiual array (for volume integral of specified element)
-		'''
+	def get_element_residual(self, elem, Up, ER):
+
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		dim = physics.dim
@@ -321,23 +304,20 @@ class DG(base.SolverBase):
 		x = x_elems[elem]
 
 		# interpolate state and gradient at quad points
-		# Uq = np.matmul(basis_val, Up)
 		Uq = helpers.evaluate_state(Up, basis_val, skip_interp=self.basis.skip_interp)
 
 		
 		if self.Params["ConvFluxSwitch"] == True:
-			'''
-			Evaluate the inviscid flux integral
-			'''
+			# evaluate the inviscid flux integral
 			Fq = physics.ConvFluxInterior(Uq) # [nq, ns, dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, elem_ops, elem, Fq)
 
 		if self.Params["SourceSwitch"] == True:
-			'''
-			Evaluate the source term integral
-			'''
+			# evaluate the source term integral
 			Sq = elem_ops.Sq
-			Sq[:] = 0. # SourceState is an additive function so source needs to be initialized to zero for each time step
+			# SourceState is an additive function so source needs to be 
+			#	initialized to zero for each time step
+			Sq[:] = 0.
 			Sq = physics.SourceState(nq, x, self.time, Uq, Sq) # [nq, ns]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, elem, Sq)
@@ -347,21 +327,8 @@ class DG(base.SolverBase):
 
 		return ER
 
-	def calculate_residual_iface(self, iiface, UpL, UpR, RL, RR):
-		'''
-		Method: calculate_residual_iface
-		---------------------------------
-		Calculates the boundary integral for the internal faces
-		
-		INPUTS:
-			iiface: internal face index
-			UL: solution array from left neighboring element
-			UR: solution array from right neighboring element
-			
-		OUTPUTS:
-			RL: calculated residual array (left neighboring element contribution)
-			RR: calculated residual array (right neighboring element contribution)
-		'''
+	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
+
 		mesh = self.mesh
 		physics = self.physics
 		IFace = mesh.interior_faces[iiface]
@@ -385,8 +352,6 @@ class DG(base.SolverBase):
 		basis_valR = faces_to_basisR[faceR_id]
 
 		# interpolate state and gradient at quad points
-		# UqL = np.matmul(basis_valL, UpL)
-		# UqR = np.matmul(basis_valR, UpR)
 		UqL = helpers.evaluate_state(UpL, basis_valL)
 		UqR = helpers.evaluate_state(UpR, basis_valR)
 
@@ -406,23 +371,10 @@ class DG(base.SolverBase):
 
 		return RL, RR
 
-	def calculate_residual_bface(self, BFG, ibface, U, R):
-		'''
-		Method: calculate_residual_bface
-		---------------------------------
-		Calculates the boundary integral for the boundary faces
-		
-		INPUTS:
-			ibfgrp: index of boundary face groups (groups indicate different boundary conditions)
-			ibface: boundary face index
-			U: solution array from internal cell
-			
-		OUTPUTS:
-			R: calculated residual array from boundary face
-		'''
+	def get_boundary_face_residual(self, BFG, ibface, U, R):
+
 		mesh = self.mesh
 		physics = self.physics
-		# BFG = mesh.boundary_groups[ibfgrp]
 		ibfgrp = BFG.number
 		boundary_face = BFG.boundary_faces[ibface]
 		elem = boundary_face.elem_id
@@ -442,7 +394,6 @@ class DG(base.SolverBase):
 		basis_val = faces_to_basis[face]
 
 		# interpolate state and gradient at quad points
-		# UqI = np.matmul(basis_val, U)
 		UqI = helpers.evaluate_state(U, basis_val)
 
 		normals = normals_bfgroups[ibfgrp][ibface]

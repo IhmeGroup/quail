@@ -115,7 +115,7 @@ class FE(StepperBase):
 		U = physics.U
 
 		R = self.R 
-		R = solver.calculate_residual(U, R)
+		R = solver.get_residual(U, R)
 		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		U += dU
 
@@ -140,27 +140,27 @@ class RK4(StepperBase):
 		R = self.R
 
 		# first stage
-		R = solver.calculate_residual(U, R)
+		R = solver.get_residual(U, R)
 		dU1 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU1
 		solver.apply_limiter(Utemp)
 
 		# second stage
 		solver.time += self.dt/2.
-		R = solver.calculate_residual(Utemp, R)
+		R = solver.get_residual(Utemp, R)
 		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU2
 		solver.apply_limiter(Utemp)
 
 		# third stage
-		R = solver.calculate_residual(Utemp, R)
+		R = solver.get_residual(Utemp, R)
 		dU3 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + dU3
 		solver.apply_limiter(Utemp)
 
 		# fourth stage
 		solver.time += self.dt/2.
-		R = solver.calculate_residual(Utemp, R)
+		R = solver.get_residual(Utemp, R)
 		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
 		U += dU
@@ -226,7 +226,7 @@ class LSRK4(StepperBase):
 		for INTRK in range(self.nstages):
 			dt = self.dt
 			solver.time = Time + self.rk4c[INTRK]*dt
-			R = solver.calculate_residual(U, R)
+			R = solver.get_residual(U, R)
 
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
 			dU *= self.rk4a[INTRK]
@@ -293,7 +293,7 @@ class SSPRK3(StepperBase):
 		for INTRK in range(self.nstages):
 			dt = self.dt
 			solver.time = Time + dt
-			R = solver.calculate_residual(U, R)
+			R = solver.get_residual(U, R)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
 			dU *= self.ssprk3a[INTRK]
 			dU += dUtemp
@@ -334,7 +334,7 @@ class ADER(StepperBase):
 		Up = solver.calculate_predictor_step(self.dt, W, Up)
 
 		# Correction Step
-		R = solver.calculate_residual(Up, R)
+		R = solver.get_residual(Up, R)
 
 		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt/2., R)
 
@@ -445,7 +445,7 @@ class Simpler(Strang):
 		# Note: we skip the first explicit step as it is in equillibrium by 
 		# 		definition
 		self.balance_const = None
-		balance_const = -1.*solver.calculate_residual(U, R)
+		balance_const = -1.*solver.get_residual(U, R)
 		self.balance_const = -1.*balance_const
 
 		# Second: take the implicit full step for the source term.
