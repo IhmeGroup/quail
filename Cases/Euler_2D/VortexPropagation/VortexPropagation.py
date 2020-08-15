@@ -9,6 +9,7 @@ import processing.plot as Plot
 import general
 import meshing.gmsh as MeshGmsh
 import os
+# import meshing.tools as MeshTools
 
 
 CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
@@ -41,6 +42,8 @@ FileName = "box_5x5_v4.msh"
 # FileName = "box_40x40.msh"
 MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + FileName
 mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
+
+# MeshTools.RandomizeNodes(mesh)
 
 ### Solver parameters
 dt = 0.05
