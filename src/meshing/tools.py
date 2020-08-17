@@ -103,75 +103,90 @@ def get_element_centroid(mesh, elem_id):
 
 def check_face_orientations(mesh):
     '''
-    Method: check_face_orientations
-    --------------------------------
-    Checks the face orientations for 2D meshes
+    This function checks the face orientations for 2D meshes.
 
-    INPUTS:
+    Inputs:
+    -------
         mesh: mesh object
-    
-    NOTES:
-        only returns a message if an error exists
+
+    Notes:
+    ------
+        An error is raised if face orientations don't match up.
     '''
     gbasis = mesh.gbasis
     if mesh.dim == 1:
         # don't need to check for 1D
         return
 
-    for IFace in mesh.interior_faces:
-        elemL_id = IFace.elemL_id
-        elemR_id = IFace.elemR_id
-        faceL_id = IFace.faceL_id
-        faceR_id = IFace.faceR_id
+    for interior_face in mesh.interior_faces:
+        elemL_id = interior_face.elemL_id
+        elemR_id = interior_face.elemR_id
+        faceL_id = interior_face.faceL_id
+        faceR_id = interior_face.faceR_id
 
-        elemL_nodes = mesh.elements[elemL_id].node_ids
-        elemR_nodes = mesh.elements[elemR_id].node_ids
+        # Get local IDs of element nodes
+        elemL_node_ids = mesh.elements[elemL_id].node_ids
+        elemR_node_ids = mesh.elements[elemR_id].node_ids
 
-        # Get local q=1 nodes on face for left element
-        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceL_id)
-        # Convert to global node numbering
-        # gfnodesL = mesh.elem_to_node_ids[elemL][lfnodes]
-        gfnodesL = elemL_nodes[lfnodes]
+        ''' Get global IDs of face nodes '''
+        # Local IDs - left
+        face_node_ids = gbasis.get_local_face_principal_node_nums(
+                mesh.gorder, faceL_id)
+        # Global IDs - left
+        global_node_ids_L = elemL_node_ids[face_node_ids]
+        # Local IDs - right
+        face_node_ids = gbasis.get_local_face_principal_node_nums(
+                mesh.gorder, faceR_id)
+        # Global IDs - right
+        global_node_ids_R = elemR_node_ids[face_node_ids]
 
-        # Get local q=1 nodes on face for right element
-        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, faceR_id)
-        # Convert to global node numbering
-        # gfnodesR = mesh.elem_to_node_ids[elemR][lfnodes]
-        gfnodesR = elemR_nodes[lfnodes]
-
-        # Node Ordering should be reversed between the two elements
-        if not np.all(gfnodesL == gfnodesR[::-1]):
-            raise Exception("Face orientation for elemL_id = %d, elemR_id = %d \\ is incorrect"
-                % (elemL_id, elemR_id))
+        # Node ordering should be reversed between the two elements
+        if not np.all(global_node_ids_L == global_node_ids_R[::-1]):
+            raise Exception("Face orientation for elemL_id = %d, elemR_id " +
+                "= %d \\ is incorrect" % (elemL_id, elemR_id))
 
 
-def VerifyPeriodicBoundary(mesh, BFG, icoord):
+def verify_periodic_compatibility(mesh, boundary_group, icoord):
+    '''
+    This function checks whether a boundary is compatible with periodicity.
+    Specifically, it verifies that all boundary nodes are located on the same
+    plane, up to a given tolerance. It then potentially slightly modifies the
+    node coordinates to ensure the exact same value.
+
+    Inputs:
+    -------
+        mesh: mesh object
+        boundary_group: boundary group object
+        icoord: which spatial dimension to check (0 for x, 1 for y)
+    
+    Outputs:
+    --------
+        mesh: mesh object (coordinates potentially modified)
+        coord: position of boundary in the icoord direction
+    '''
     coord = np.nan
     gbasis = mesh.gbasis
-    for BF in BFG.boundary_faces:
+    for boundary_face in boundary_group.boundary_faces:
         # Extract info
-        elem_id = BF.elem_id
-        face = BF.face_id
+        elem_id = boundary_face.elem_id
+        face_id = boundary_face.face_id
 
-        ''' Get physical coordinates of face '''
-        # Get local q = 1 nodes on face
-        lfnodes = gbasis.get_local_face_principal_node_nums(mesh.gorder, face)
+        # Get local IDs of principal nodes on face
+        local_node_ids = gbasis.get_local_face_principal_node_nums(
+                mesh.gorder, face_id)
 
-        # Convert to global node numbering
-        # gfnodes = mesh.elem_to_node_ids[elem_id][lfnodes]
-
-        # Physical coordinates of global nodes
-        # coords = mesh.node_coords[gfnodes]
+        # Physical coordinates of nodes
         elem_coords = mesh.elements[elem_id].node_coords
-        coords = elem_coords[lfnodes]
+        coords = elem_coords[local_node_ids]
+
+        # Make sure all nodes have same icoord-position (within tol)
         if np.isnan(coord):
             coord = coords[0, icoord]
-
-        # Make sure coord1 matches for all nodes
         if np.any(np.abs(coords[:,icoord] - coord) > tol):
-            raise ValueError
+            raise ValueError("Boundary %s not compatible with periodicity" % 
+                    (boundary_group.name))
 
-        # Now force each node to have the same exact coord1 
+        # Now force each node to have the same exact icoord-position
         coords[:,icoord] = coord
 
     return coord
@@ -227,8 +242,8 @@ def MatchBoundaryPair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs,
     # if BFG1.num_boundary_faces != BFG2.num_boundary_faces:
     #     raise ValueError
 
-    # pcoord1 = VerifyPeriodicBoundary(mesh, BFG1, icoord)
-    # pcoord2 = VerifyPeriodicBoundary(mesh, BFG2, icoord)
+    # pcoord1 = verify_periodic_compatibility(mesh, BFG1, icoord)
+    # pcoord2 = verify_periodic_compatibility(mesh, BFG2, icoord)
     # # distance between the two boundaries
     # pdiff = np.abs(pcoord1-pcoord2)
 
@@ -467,8 +482,8 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     if BFG1.num_boundary_faces != BFG2.num_boundary_faces:
         raise ValueError
 
-    pcoord1 = VerifyPeriodicBoundary(mesh, BFG1, icoord)
-    pcoord2 = VerifyPeriodicBoundary(mesh, BFG2, icoord)
+    pcoord1 = verify_periodic_compatibility(mesh, BFG1, icoord)
+    pcoord2 = verify_periodic_compatibility(mesh, BFG2, icoord)
     # distance between the two boundaries
     pdiff = np.abs(pcoord1-pcoord2)
 
