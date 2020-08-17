@@ -28,6 +28,9 @@ def adapt(solver, physics, mesh, stepper):
             closest_distance = distance
             closest_elem = elem
     split_id = closest_elem.id
+    if mesh.num_elems == 50: split_id = [37,17,13,18]
+    #elif mesh.num_elems == 54: split_id = [50,51,52,53]
+    else: split_id = 37
     needs_refinement[split_id] = True
 
     # Loop over all elements
@@ -56,34 +59,22 @@ def adapt(solver, physics, mesh, stepper):
             # nodes must be ordered counterclockwise)
             ccwise_node_id, cwise_node_id = find_counterclockwise_node(elem.node_ids,
                     long_face_node_ids[0], long_face_node_ids[1])
-
-            # The four split elements generated must contain:
-            # 1. this midpoint
-            # 2. the node opposite the long face
-            # 3. one of the nodes that compose the long face (one for each)
-            # and they must be in counterclockwise order.
-            opposing_node_id = np.setdiff1d(elem.node_ids, long_face_node_ids, assume_unique=True)[0]
+            # Find the local ID of the long face on the neighbor
             neighbor_opposing_node_id = np.setdiff1d(neighbor.node_ids, long_face_node_ids, assume_unique=True)[0]
             neighbor_long_face = np.argwhere(neighbor.node_ids == neighbor_opposing_node_id)[0,0]
-            new_nodes1 = np.array([opposing_node_id, midpoint_id, ccwise_node_id])
-            new_nodes2 = np.array([opposing_node_id, cwise_node_id, midpoint_id])
-            new_nodes3 = np.array([midpoint_id, neighbor_opposing_node_id, ccwise_node_id])
-            new_nodes4 = np.array([midpoint_id, cwise_node_id, neighbor_opposing_node_id])
 
-            # Create first element
-            new_elem1 = append_element(mesh, new_nodes1, 1, elem, long_face - 2)
-            # Create second element
-            new_elem2 = append_element(mesh, new_nodes2, 2, elem, long_face - 1)
-            # Create third element
-            new_elem3 = append_element(mesh, new_nodes3, 0, neighbor, neighbor_long_face - 1)
-            # Create fourth element
-            new_elem4 = append_element(mesh, new_nodes4, 0, neighbor, neighbor_long_face - 2)
+            # Split this element
+            new_elem1, new_elem2 = split_element(mesh, physics, solver.basis, elem, long_face,
+                    midpoint_id, ccwise_node_id, cwise_node_id)
+            # Split the neighbor, making sure to flip clockwise/counterclockwise
+            new_elem3, new_elem4 = split_element(mesh, physics, solver.basis, neighbor, neighbor_long_face,
+                    midpoint_id, cwise_node_id, ccwise_node_id)
 
             # Create the faces between the elements
-            append_face(mesh, new_elem1, new_elem2, 2, 1)
-            append_face(mesh, new_elem3, new_elem4, 2, 1)
-            append_face(mesh, new_elem1, new_elem3, 0, 1)
-            append_face(mesh, new_elem2, new_elem4, 0, 2)
+            append_face(mesh, new_elem2, new_elem1)
+            append_face(mesh, new_elem3, new_elem2)
+            append_face(mesh, new_elem4, new_elem3)
+            append_face(mesh, new_elem1, new_elem4)
 
             # TODO: Figure out how to remove long face after making new ones
             # "Deactivate" the original element and its neighbor
@@ -91,7 +82,7 @@ def adapt(solver, physics, mesh, stepper):
             elem.face_to_neighbors = np.array([-1,-1,-1])
             neighbor.face_to_neighbors = np.array([-1,-1,-1])
             offset = 1
-            corner = np.array([-2,-2])
+            corner = np.array([-10,-10])
             elem.node_coords = np.array([corner, corner+[0,-offset], corner+[offset,0]])
             neighbor.node_coords = np.array([corner+[0,-offset], corner+[offset,-offset], corner+[offset,0]])
             #for iface in mesh.interior_faces:
@@ -107,16 +98,11 @@ def adapt(solver, physics, mesh, stepper):
             # -- Update solution -- #
             # TODO: map solution from old elements to new split elements
             # Append to the end of U
-            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
+            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             # Delete residual
-            #print(physics.R.shape)
-            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
-            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
-            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
-            #physics.R = np.append(physics.R, [physics.R[-1,:,:]], axis=0)
             stepper.R = np.zeros_like(physics.U)
 
             elem.deactivated = True
@@ -144,20 +130,66 @@ def adapt(solver, physics, mesh, stepper):
     #        print(mesh.elements[i].face_to_neighbors)
 
 
-def append_element(mesh, node_ids, face_id, parent, parent_face_id):
-    """Create a new element at specified nodes and append it to the mesh.
-    This function creates a new element and sets the neighbors of the element
-    and neighbor element across the face specified by face_id.
+def split_element(mesh, physics, basis, elem, split_face, midpoint_id, ccwise_node_id, cwise_node_id):
+    """Split an element into two smaller elements.
 
     Arguments:
     mesh - Mesh object (meshing/meshbase.py)
+    physics - PhysicsBase object (physics/base/base.py)
+    basis - BasisBase object (numerics/basis/basis.py)
+    elem - Element object (meshing/meshbase.py) that needs to be split
+    split_face - local ID of face along which to split
+    midpoint_id - global ID of the node which is the midpoint of the split face
+    Returns:
+    (new_elem1, new_elem2) - tuple of newly created Element objects
+    """
+
+    # Node coords of ref element
+    ref_nodes = mesh.gbasis.get_nodes(mesh.gbasis.order)
+    # Nodes of new elements in reference element
+    ref_ccwise_node_id = (split_face - 1) % mesh.gbasis.nb
+    ref_cwise_node_id  = (split_face + 1) % mesh.gbasis.nb
+    ref_midpoint = np.mean(ref_nodes[[ref_ccwise_node_id, ref_cwise_node_id],:], axis=0)
+    # Nodes of new elements in parent reference
+    # TODO: Write a more general way to get high-order split elements in parent
+    # reference space - this assumes P2 elements!
+    ref_nodes_1 = p2_nodes(ref_midpoint, ref_nodes[ref_ccwise_node_id], ref_nodes[split_face])
+    ref_nodes_2 = p2_nodes(ref_midpoint, ref_nodes[split_face], ref_nodes[ref_cwise_node_id])
+    # Global node IDs of new elements
+    node_ids_1 = np.array([midpoint_id, ccwise_node_id, elem.node_ids[split_face]])
+    node_ids_2 = np.array([midpoint_id, elem.node_ids[split_face], cwise_node_id])
+
+    # Create first element
+    new_elem1 = append_element(mesh, physics, basis, node_ids_1, ref_nodes_1,
+            elem, split_face - 2, split_face)
+    # Create second element
+    new_elem2 = append_element(mesh, physics, basis, node_ids_2, ref_nodes_2,
+            elem, split_face - 1, split_face)
+    return new_elem1, new_elem2
+
+def append_element(mesh, physics, basis, node_ids, ref_nodes, parent, parent_face_id, split_face_id):
+    """Create a new element at specified nodes and append it to the mesh.
+    This function creates a new element and sets the neighbors of the element
+    and neighbor element across the face specified by face_id. The solution
+    array is interpolated from the parent element to the two new elements.
+
+    Arguments:
+    mesh - Mesh object (meshing/meshbase.py)
+    physics - PhysicsBase object (physics/base/base.py)
+    basis - BasisBase object (numerics/basis/basis.py)
     node_ids - array of new element's node IDs
-    face_id - local ID of face in new element which needs new neighbors
     parent - Element object (meshing/meshbase.py), parent of the new element
     parent_face_id - local ID of face in parent element which needs new neighbors
+    split_face_id - local ID of face in parent element which has been split
     Returns:
     elem - Element object (meshing/meshbase.py), newly created element
     """
+    # The index of node_ids which contains the midpoint of the split face is
+    # always 0
+    midpoint_index = 0
+    # Local ID of face in new element which needs new neighbors is always 0,
+    # since this face always opposes the midpoint, which is node 0
+    face_id = 0
     # Wrap parent face ID index to be positive
     parent_face_id = parent_face_id % mesh.gbasis.NFACES
     # Create element
@@ -207,27 +239,32 @@ def append_element(mesh, node_ids, face_id, parent, parent_face_id):
                     found = True
                     break
             if found: break
+    # -- Set nodal solution values of new element -- #
+    # Evaluate basis functions at new nodes on parent reference element
+    basis_vals = basis.get_values(ref_nodes)
+    # Evaluate the state at these new nodes, and append to global solution
+    U_elem = numerics_helpers.evaluate_state(physics.U[parent.id,:,:], basis_vals)
+    physics.U = np.append(physics.U, [U_elem], axis=0)
     return elem
 
-def append_face(mesh, elem1, elem2, faceL_id, faceR_id):
+def append_face(mesh, elemL, elemR):
     """Create a new face between two elements and append it to the mesh.
 
     Arguments:
     mesh - Mesh object (meshing/meshbase.py)
-    elem1 - first Element object, left of face (meshing/meshbase.py)
-    elem2 - second Element object, right of face (meshing/meshbase.py)
-    faceL_id - index of node opposite the new face in elem1
-    faceR_id - index of node opposite the new face in elem2
+    elemL - Element object, left of face (meshing/meshbase.py)
+    elemR - Element object, right of face (meshing/meshbase.py)
     """
     # Create the face between the elements
     mesh.interior_faces.append(mesh_defs.InteriorFace())
-    mesh.interior_faces[-1].elemL_id = elem1.id
-    mesh.interior_faces[-1].elemR_id = elem2.id
-    mesh.interior_faces[-1].faceL_id = faceL_id
-    mesh.interior_faces[-1].faceR_id = faceR_id
+    mesh.interior_faces[-1].elemL_id = elemL.id
+    mesh.interior_faces[-1].elemR_id = elemR.id
+    # This assumes midpoint is node 0
+    mesh.interior_faces[-1].faceL_id = 2
+    mesh.interior_faces[-1].faceR_id = 1
     # Set neighbors on either side of the face
-    elem1.face_to_neighbors[faceL_id] = elem2.id
-    elem2.face_to_neighbors[faceR_id] = elem1.id
+    elemL.face_to_neighbors[2] = elemR.id
+    elemR.face_to_neighbors[1] = elemL.id
     # Update number of faces
     mesh.num_interior_faces += 1
 
@@ -318,3 +355,22 @@ def find_counterclockwise_node(nodes, a, b):
             ccwise_node = b
             cwise_node = a
     return (ccwise_node, cwise_node)
+
+def p2_nodes(a, b, c):
+    """Find nodes of a P2 element.
+
+    Arguments:
+    a - coordinates of first corner
+    b - coordinates of second corner
+    c - coordinates of third corner
+    Returns:
+    nodes - array, shape(6,2), containing P2 node coordinates
+    """
+    nodes = np.empty((6,2))
+    nodes[0,:] = a
+    nodes[1,:] = np.mean([a,b],axis=0)
+    nodes[2,:] = b
+    nodes[3,:] = np.mean([b,c],axis=0)
+    nodes[4,:] = c
+    nodes[5,:] = np.mean([c,a],axis=0)
+    return nodes
