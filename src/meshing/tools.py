@@ -712,11 +712,12 @@ def VerifyPeriodicMesh(mesh):
 
 def update_boundary_group_nums(mesh):
     i = 0
-    for BFG in mesh.boundary_groups.values():
-        BFG.number = i
+    for boundary_group in mesh.boundary_groups.values():
+        boundary_group.number = i
         i += 1
 
-def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, z1=None, z2=None):
+def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None, 
+        z1=None, z2=None):
 
     ''' Reorder nodes '''
     OldNode2NewNode = np.zeros(mesh.num_nodes, dtype=int)-1  
