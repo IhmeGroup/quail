@@ -235,7 +235,7 @@ def driver(deck):
 
 	# Make periodic	
 	if pb != [None]*4:
-		mesh_tools.MakePeriodicTranslational(mesh, x1=pb[0], x2=pb[1], 
+		mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1], 
 				y1=pb[2], y2=pb[3])
 
 

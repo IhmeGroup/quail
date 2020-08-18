@@ -17,7 +17,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # mesh = MeshCommon.mesh_2D(xcoords=None, ycoords=None, num_elems_x= num_elems_x, num_elems_y = num_elems_x, Uniform=True, xmin=-5., xmax=5., 
 # 	ymin=-5., ymax=5., Periodic=Periodic)
 # if Periodic:
-# 	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
+# 	MeshTools.make_periodic_translational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
 # ### Solver parameters
 # # InterpBasis = "LagrangeEqTri"

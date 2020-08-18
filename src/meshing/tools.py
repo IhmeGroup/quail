@@ -7,7 +7,7 @@ import meshing.meshbase as mesh_defs
 
 import numerics.basis.tools as basis_tools
 
-tol = 1.e-10
+TOL = 1.e-10
 
 
 def ref_to_phys(mesh, elem_id, xref):
@@ -172,40 +172,43 @@ def verify_periodic_compatibility(mesh, boundary_group, icoord):
         face_id = boundary_face.face_id
 
         # Get local IDs of principal nodes on face
-        local_node_ids = gbasis.get_local_face_principal_node_nums(
+        # local_node_ids = gbasis.get_local_face_principal_node_nums(
+        #         mesh.gorder, face_id)
+        local_node_ids = gbasis.get_local_face_node_nums(
                 mesh.gorder, face_id)
 
         # Physical coordinates of nodes
         elem_coords = mesh.elements[elem_id].node_coords
         coords = elem_coords[local_node_ids]
 
-        # Make sure all nodes have same icoord-position (within tol)
+        # Make sure all nodes have same icoord-position (within TOL)
         if np.isnan(coord):
             coord = coords[0, icoord]
-        if np.any(np.abs(coords[:,icoord] - coord) > tol):
+        if np.any(np.abs(coords[:, icoord] - coord) > TOL):
             raise ValueError("Boundary %s not compatible with periodicity" % 
                     (boundary_group.name))
 
         # Now force each node to have the same exact icoord-position
-        coords[:,icoord] = coord
+        coords[:, icoord] = coord
 
     return coord
 
 
-def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs, 
-        idx_in_node_pairs, OldNode2NewNode, NewNodeOrder):
+def match_boundary_pair(mesh, icoord, boundary_group1, boundary_group2, 
+        node_pairs, idx_in_node_pairs, old_to_new_node_map, 
+        new_to_old_node_map):
     '''
     NOTE: only q = 1 nodes are matched
     '''
     gbasis = mesh.gbasis
 
-    if BFG1 is None and BFG2 is None:
+    if boundary_group1 is None and boundary_group2 is None:
         return
-    elif BFG1 is None or BFG2 is None:
+    elif boundary_group1 is None or boundary_group2 is None:
         raise ValueError("Only one boundary group provided")
 
-    NewNode2NewerNode = np.arange(mesh.num_nodes)
-    NodesChanged = False
+    new_to_newer_node_map = np.arange(mesh.num_nodes)
+    # NodesChanged = False
 
     # if NodePairsA is not None:
     #     NodePairsB = NodePairsA.copy()
@@ -215,108 +218,78 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
     #         idx_in_node_pairsB = idx_in_node_pairsA.copy()
 
     interior_faces = mesh.interior_faces
-    icoord = icoord
-
-    # Extract relevant BFGs
-    # BFG1 = None; BFG2 = None;
-    # for BFG in mesh.boundary_groups:
-    #     if BFG.Name == b1:
-    #         BFG1 = BFG
-    #     if BFG.Name == b2:
-    #         BFG2 = BFG
-    # BFG = None
-
-    # # Sanity check
-    # if BFG1 is None or BFG2 is None:
-    #     raise Exception("One or both boundaries not found")
-    # elif BFG1 == BFG2:
-    #     raise Exception("Duplicate boundaries")
-
-    # icoord = which_dim
-    # if icoord < 0 or icoord >= mesh.dim:
-    #     raise ValueError
-
-    # ''' 
-    # Make sure each boundary is compatible with periodicity 
-    # Note: the boundary node coordinates may be slightly modified
-    # to ensure same coordinate in periodic direction
-    # '''
-    # if BFG1.num_boundary_faces != BFG2.num_boundary_faces:
-    #     raise ValueError
-
-    # pcoord1 = verify_periodic_compatibility(mesh, BFG1, icoord)
-    # pcoord2 = verify_periodic_compatibility(mesh, BFG2, icoord)
-    # # distance between the two boundaries
-    # pdiff = np.abs(pcoord1-pcoord2)
-
+    # icoord = icoord
 
     '''
-    Remap NodePairs and idx_in_node_pairs
+    Remap node_pairs and idx_in_node_pairs
     '''
-    NewNodePairs = np.zeros_like(NodePairs, dtype=int) - 1
+    new_node_pairs = np.zeros_like(node_pairs, dtype=int) - 1
     idx_in_node_pairs[:] = -1
-    for i in range(len(NodePairs)):
-        NewNodePairs[i,:] = OldNode2NewNode[NodePairs[i,:]]
-    for i in range(len(NodePairs)):
-        n1 = NewNodePairs[i,0]
-        idx_in_node_pairs[n1,0] = i; idx_in_node_pairs[n1,1] = 0
-        n2 = NewNodePairs[i,1]
-        idx_in_node_pairs[n2,0] = i; idx_in_node_pairs[n2,1] = 1
+    # for i in range(len(node_pairs)):
+    #     new_node_pairs[i,:] = old_to_new_node_map[node_pairs[i,:]]
+    new_node_pairs = old_to_new_node_map[node_pairs]
+    # for i in range(len(node_pairs)):
+    #     n1 = new_node_pairs[i,0]
+    #     idx_in_node_pairs[n1,0] = i; idx_in_node_pairs[n1,1] = 0
+    #     n2 = new_node_pairs[i,1]
+    #     idx_in_node_pairs[n2,0] = i; idx_in_node_pairs[n2,1] = 1
+    n1 = new_node_pairs[:,0]
+    idx_in_node_pairs[n1,0] = np.arange(n1.shape[0])
+    idx_in_node_pairs[n1,1] = 0
+    n2 = new_node_pairs[:,1]
+    idx_in_node_pairs[n2,0] = np.arange(n2.shape[0])
+    idx_in_node_pairs[n2,1] = 1
 
-    NodePairs = NewNodePairs
+    node_pairs = new_node_pairs
 
     # sanity check
-    if np.amin(NewNodePairs) == -1:
+    if np.amin(new_node_pairs) == -1:
         raise ValueError
 
 
     ''' 
     Identify and create periodic interior_faces 
     '''
-    for boundary_face1 in BFG1.boundary_faces:
+    for boundary_face1 in boundary_group1.boundary_faces:
         # Extract info
         elem_id1 = boundary_face1.elem_id
         face1 = boundary_face1.face_id
 
-        ''' Get physical coordinates of face '''
-        # Get local q = 1 nodes on face
-        lfnodes1 = gbasis.get_local_face_principal_node_nums( 
+        # Local IDs of face nodes
+        local_node_ids = gbasis.get_local_face_principal_node_nums(
             mesh.gorder, face1)
-        nfnode = lfnodes1.shape[0]
-
-        # Convert to global node numbering
-        gfnodes1 = mesh.elem_to_node_ids[elem_id1][lfnodes1]
-        nodesort1 = np.sort(gfnodes1)
+        # Global IDs of face nodes
+        global_node_ids = mesh.elem_to_node_ids[elem_id1][local_node_ids]
+        # Sort for easy comparison later
+        global_node_ids_1 = np.sort(global_node_ids)
 
         # Physical coordinates of global nodes
-        coords1 = mesh.node_coords[gfnodes1]
+        # coords1 = mesh.node_coords[gfnodes1]
 
         # Pair each node with corresponding one on other boundary
-        for boundary_face2 in BFG2.boundary_faces:
+        for boundary_face2 in boundary_group2.boundary_faces:
             # Extract info
             elem_id2 = boundary_face2.elem_id
             face2 = boundary_face2.face_id
 
-            ''' Get physical coordinates of face '''
-            # Get local q = 1 nodes on face
-            lfnodes2 = gbasis.get_local_face_principal_node_nums(
+            # Local IDs of face nodes
+            local_node_ids = gbasis.get_local_face_principal_node_nums(
                 mesh.gorder, face2)
-
-            # Convert to global node numbering
-            gfnodes2 = mesh.elem_to_node_ids[elem_id2][lfnodes2]
+            # Global IDs of face nodes
+            global_node_ids = mesh.elem_to_node_ids[elem_id2][local_node_ids]
 
             # Physical coordinates of global nodes
-            coords2 = mesh.node_coords[gfnodes2]
+            # coords2 = mesh.node_coords[gfnodes2]
 
             ''' Check for complete match between all nodes '''
-            nodesort2 = np.sort(gfnodes2)
+            global_node_ids_2 = np.sort(global_node_ids)
             # Find nodes on boundary 2 paired with those in nodesort1
-            idx1 = idx_in_node_pairs[nodesort1, 0]
-            nodepairs2 = NodePairs[idx1,1]
-            nodepairssort2 = np.sort(NodePairs[idx1,1])
+            idx1 = idx_in_node_pairs[global_node_ids_1, 0]
+            nodepairs2 = node_pairs[idx1,1]
+            nodepairssort2 = np.sort(node_pairs[idx1,1])
             match = False
             # if which_dim == 2: code.interact(local=locals())
-            if np.all(nodesort2 == nodepairssort2):
+            if np.all(global_node_ids_2 == nodepairssort2):
                 # this means the nodes match, but the order may not necessarily be the same
                 match = True
 
@@ -329,7 +302,7 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
             #         # Find distance between the two nodes
             #         norm = np.linalg.norm(coord1-coord2, ord=1)
             #         # Check if distance is equal to pdiff
-            #         if np.abs(norm-pdiff) < tol:
+            #         if np.abs(norm-pdiff) < TOL:
             #             match = True
             #             # Force nodes to match exactly
             #             for d in range(mesh.dim):
@@ -347,7 +320,7 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
 
             # # If match is true, then we have matching faces
             # if match:
-                if not np.all(nodesort2 == nodepairs2):
+                if not np.all(global_node_ids_2 == nodepairs2):
 
                     if icoord == 0:
                         raise Exception
@@ -356,10 +329,10 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
                     mesh.node_coords[nodepairssort2] = mesh.node_coords[nodepairs2]
 
                     # store for remapping elements to nodes later
-                    NewNode2NewerNode[nodepairs2] = nodepairssort2
+                    new_to_newer_node_map[nodepairs2] = nodepairssort2
 
                     # Modify pairing as necessary
-                    NodePairs[idx1,1] = nodepairssort2
+                    node_pairs[idx1,1] = nodepairssort2
                     idx_in_node_pairs[nodepairssort2,0] = idx1
 
                     # Modify other pairings
@@ -383,36 +356,36 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
                     #     idx_in_node_pairsA[:] = idx_in_node_pairsB[:]
 
 
-                    NodesChanged = True
+                    # NodesChanged = True
                     # remap elements
                     for elem in range(mesh.num_elems):
-                        mesh.elem_to_node_ids[elem, :] = NewNode2NewerNode[mesh.elem_to_node_ids[elem, :]]
-                    # reset NewNode2NewerNode
-                    NewNode2NewerNode = np.arange(mesh.num_nodes)
+                        mesh.elem_to_node_ids[elem, :] = new_to_newer_node_map[mesh.elem_to_node_ids[elem, :]]
+                    # reset new_to_newer_node_map
+                    new_to_newer_node_map = np.arange(mesh.num_nodes)
 
                     
                 # Create IFace between these two faces
                 mesh.num_interior_faces += 1
                 interior_faces.append(mesh_defs.InteriorFace())
-                IF = interior_faces[-1]
-                IF.elemL_id = elem_id1
-                IF.faceL_id = face1
-                IF.elemR_id = elem_id2
-                IF.faceR_id = face2
+                interior_face = interior_faces[-1]
+                interior_face.elemL_id = elem_id1
+                interior_face.faceL_id = face1
+                interior_face.elemR_id = elem_id2
+                interior_face.faceR_id = face2
 
-                BFG1.num_boundary_faces -= 1
-                BFG2.num_boundary_faces -= 1
+                boundary_group1.num_boundary_faces -= 1
+                boundary_group2.num_boundary_faces -= 1
                 break
 
 
 
 
         if not match:
-            raise Exception("Could not find matching boundary face")
+            raise ValueError("Could not find matching boundary face")
 
 
     # Verification
-    if BFG1.num_boundary_faces != 0 or BFG2.num_boundary_faces != 0:
+    if boundary_group1.num_boundary_faces != 0 or boundary_group2.num_boundary_faces != 0:
         raise ValueError
     mesh.num_boundary_groups -= 2
 
@@ -422,12 +395,12 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
     #     mesh = mesh.ElemGroups[0]
     #     num_elems = mesh.num_elems
     #     for elem in range(num_elems):
-    #         mesh.elem_to_node_ids[elem, :] = NewNode2NewerNode[mesh.elem_to_node_ids[elem, :]]
+    #         mesh.elem_to_node_ids[elem, :] = new_to_newer_node_map[mesh.elem_to_node_ids[elem, :]]
 
-    # mesh.boundary_groups.remove(BFG1)
-    # mesh.boundary_groups.remove(BFG2)
-    mesh.boundary_groups.pop(BFG1.name)
-    mesh.boundary_groups.pop(BFG2.name)
+    # mesh.boundary_groups.remove(boundary_group1)
+    # mesh.boundary_groups.remove(boundary_group2)
+    mesh.boundary_groups.pop(boundary_group1.name)
+    mesh.boundary_groups.pop(boundary_group2.name)
 
     # print
     if icoord == 0:
@@ -439,40 +412,35 @@ def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs,
     print("Matched periodic boundaries in %s" % (s))
 
 
-def ReorderPeriodicBoundaryNodes(mesh, b1, b2, icoord, OldNode2NewNode, NewNodeOrder, NextIdx):
+def reorder_periodic_boundary_nodes(mesh, b1, b2, icoord, 
+        old_to_new_node_map, new_to_old_node_map, next_node_id):
 
     gbasis = mesh.gbasis
 
     if b1 is None and b2 is None:
-        return None, None, None, None, NextIdx
+        return None, None, None, None, next_node_id
     elif b1 == b2:
         raise ValueError("Duplicate boundaries")
 
-    NodePairs = np.zeros([mesh.num_nodes, 2], dtype=int) - 1
+    node_pairs = np.zeros([mesh.num_nodes, 2], dtype=int) - 1
     idx_in_node_pairs = np.zeros([mesh.num_nodes, 2], dtype=int) - 1
     num_node_pairs = 0
-    node2_matched = [False]*mesh.num_nodes
+    # node2_matched = [False]*mesh.num_nodes
+    node2_matched = np.zeros(mesh.num_nodes, dtype=bool)
 
-    # Extract relevant BFGs
-    # BFG1 = None; BFG2 = None;
-    # for BFG in mesh.boundary_groups:
-    #     if BFG.Name == b1:
-    #         BFG1 = BFG
-    #     if BFG.Name == b2:
-    #         BFG2 = BFG
-    # BFG = None
-    BFG1 = mesh.boundary_groups[b1]
-    BFG2 = mesh.boundary_groups[b2]
+    # Extract the two boundary_groups
+    boundary_group1 = mesh.boundary_groups[b1]
+    boundary_group2 = mesh.boundary_groups[b2]
 
-    StartIdx = NextIdx
+    start_node_id = next_node_id
 
     # Sanity check
-    # if BFG1 is None or BFG2 is None:
+    # if boundary_group1 is None or boundary_group2 is None:
     #     raise Exception("One or both boundaries not found")
-    # elif BFG1 == BFG2:
+    # elif boundary_group1 == boundary_group2:
     #     raise Exception("Duplicate boundaries")
 
-    icoord = icoord
+    # icoord = icoord
     if icoord < 0 or icoord >= mesh.dim:
         raise ValueError
 
@@ -481,234 +449,211 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, icoord, OldNode2NewNode, NewNodeO
     Note: the boundary node coordinates may be slightly modified
     to ensure same coordinate in periodic direction
     '''
-    if BFG1.num_boundary_faces != BFG2.num_boundary_faces:
+    if boundary_group1.num_boundary_faces != \
+            boundary_group2.num_boundary_faces:
         raise ValueError
-
-    pcoord1 = verify_periodic_compatibility(mesh, BFG1, icoord)
-    pcoord2 = verify_periodic_compatibility(mesh, BFG2, icoord)
+    pcoord1 = verify_periodic_compatibility(mesh, boundary_group1, icoord)
+    pcoord2 = verify_periodic_compatibility(mesh, boundary_group2, icoord)
     # distance between the two boundaries
     pdiff = np.abs(pcoord1-pcoord2)
-
 
     '''
     Deal with first boundary
     '''
-
-    # Get b1 nodes
-    for boundary_face in BFG1.boundary_faces:
+    # Populate node maps for first boundary
+    for boundary_face in boundary_group1.boundary_faces:
         # Extract info
-        elem = boundary_face.elem_id
-        face = boundary_face.face_id
+        elem_id = boundary_face.elem_id
+        face_id = boundary_face.face_id
 
-        ''' Get physical coordinates of face '''
-        # Get local q = 1 nodes on face
-        lfnodes = gbasis.get_local_face_principal_node_nums( 
-                mesh.gorder, face)
+        # Local IDs of face nodes
+        local_node_ids = gbasis.get_local_face_principal_node_nums( 
+                mesh.gorder, face_id)
+        # Global IDs of face nodes
+        global_node_ids = mesh.elem_to_node_ids[elem_id][local_node_ids]
 
-        # Convert to global node numbering
-        gfnodes = mesh.elem_to_node_ids[elem][lfnodes[:]]
-
-        for node in gfnodes:
-            if OldNode2NewNode[node] == -1: # has not been ordered yet
-                OldNode2NewNode[node] = NextIdx
-                NewNodeOrder[NextIdx] = node
-                NextIdx += 1
-            if idx_in_node_pairs[node,0] == -1:
-                NodePairs[num_node_pairs,0] = node
-                idx_in_node_pairs[node,0] = num_node_pairs
-                idx_in_node_pairs[node,1] = 0
+        # Populate node maps
+        for node_id in global_node_ids:
+            if old_to_new_node_map[node_id] == -1: 
+                # has not been ordered yet
+                old_to_new_node_map[node_id] = next_node_id
+                new_to_old_node_map[next_node_id] = node_id
+                next_node_id += 1
+            if idx_in_node_pairs[node_id, 0] == -1:
+                node_pairs[num_node_pairs, 0] = node_id
+                idx_in_node_pairs[node_id, 0] = num_node_pairs
+                idx_in_node_pairs[node_id, 1] = 0
                 num_node_pairs += 1
 
-    StopIdx = NextIdx
+    stop_node_id = next_node_id
 
     '''
     Deal with second boundary
     '''
-
-    for boundary_face in BFG2.boundary_faces:
+    # Populate node maps for second boundary
+    for boundary_face in boundary_group2.boundary_faces:
         # Extract info
-        elem = boundary_face.elem_id
-        face = boundary_face.face_id
+        elem_id = boundary_face.elem_id
+        face_id = boundary_face.face_id
 
-        ''' Get physical coordinates of face '''
-        # Get local q = 1 nodes on face
-        lfnodes = gbasis.get_local_face_principal_node_nums( 
-                mesh.gorder, face)
+        # Local IDs of face nodes
+        local_node_ids = gbasis.get_local_face_principal_node_nums( 
+                mesh.gorder, face_id)
+        # Global IDs of face nodes
+        global_node_ids = mesh.elem_to_node_ids[elem_id][local_node_ids]
 
-        # Convert to global node numbering
-        gfnodes = mesh.elem_to_node_ids[elem][lfnodes[:]]
-
-        for node2 in gfnodes:
-            ''' Find match with boundary 1 '''
+        for node2_id in global_node_ids:
+            ''' Find match with boundary group 1 '''
             # Unless already ordered 
-            # if OldNode2NewNode[node2] == -1: # has not been ordered yet
+            # if old_to_new_node_map[node_id] == -1: # has not been ordered yet
 
-            if node2_matched[node2]: 
+            if node2_matched[node2_id]: 
                 # this node already matched - skip
-
                 # sanity check
-                if OldNode2NewNode[node2] == -1:
-                    raise Exception
-
+                if old_to_new_node_map[node2_id] == -1:
+                    raise ValueError("Node %d already matched" % node2_id)
                 continue
 
-            coord2 = mesh.node_coords[node2]
+            # Physical coordinates of node
+            coord2 = mesh.node_coords[node2_id]
             
             match = False
+            # Match with a node on boundary 1
             for n in range(num_node_pairs):
-                if NodePairs[n,1] != -1:
+                if node_pairs[n, 1] != -1:
                     # node1 already paired - skip
                     continue
-                node1 = NodePairs[n,0]
 
-                coord1 = mesh.node_coords[node1]
+                node1_id = node_pairs[n, 0]
+                coord1 = mesh.node_coords[node1_id]
+
                 # Find distance between the two nodes
                 norm = np.linalg.norm(coord1-coord2, ord=1)
-                # Check if distance is equal to pdiff
-                if np.abs(norm-pdiff) < tol:
+
+                # Check if distance is equal to pdiff (within TOL)
+                if np.abs(norm-pdiff) < TOL:
                     match = True
-                    if OldNode2NewNode[node2] == -1:
+                    if old_to_new_node_map[node2_id] == -1:
                         # node2 not reordered yet
-                        # Now order node2 corresponding to node1
-                        idx2 = OldNode2NewNode[node1] + StopIdx - StartIdx
-                        OldNode2NewNode[node2] = idx2
-                        NewNodeOrder[idx2] = node2
-                        NextIdx = np.amax([NextIdx, idx2])
+
+                        # Populate maps
+                        node2_id_new = old_to_new_node_map[node1_id] + \
+                                stop_node_id - start_node_id
+                        old_to_new_node_map[node2_id] = node2_id_new
+                        new_to_old_node_map[node2_id_new] = node2_id
+                        next_node_id = np.amax([next_node_id, node2_id_new])
+
                         # Force nodes to match exactly
                         for d in range(mesh.dim):
-                            if d == icoord: continue # skip periodic direction
-                            # code.interact(local=locals())
+                            if d == icoord: 
+                                # Skip periodic direction
+                                continue 
                             coord2[d] = coord1[d]
+
                     # Store node pair
-                    idx1 = idx_in_node_pairs[node1, 0]
-                    NodePairs[idx1, 1] = node2
-                    idx_in_node_pairs[node2, 0] = idx1
-                    idx_in_node_pairs[node2, 1] = 1
+                    idx1 = idx_in_node_pairs[node1_id, 0]
+                    node_pairs[idx1, 1] = node2_id
+                    idx_in_node_pairs[node2_id, 0] = idx1
+                    idx_in_node_pairs[node2_id, 1] = 1
+
                     # Flag node2 as matched
-                    node2_matched[node2] = True
+                    node2_matched[node2_id] = True
                     break
 
-            # # Loop through the newly ordered periodic nodes on boundary 1
-            # match = False
-            # for idx in range(StopIdx-StartIdx):
-            #     node1 = NewNodeOrder[StartIdx+idx]
-            #     # If node1 already matched, skip
-            #     if idx_in_node_pairs[node1] != -1:
-            #         continue
-            #     coord1 = mesh.node_coords[node1]
-            #     # Find distance between the two nodes
-            #     norm = np.linalg.norm(coord1-coord2, ord=1)
-            #     # Check if distance is equal to pdiff
-            #     if np.abs(norm-pdiff) < tol:
-            #         match = True
-            #         if OldNode2NewNode[node2] == -1:
-            #             # Now order node2 corresponding to node1
-            #             idx2 = StopIdx + idx
-            #             OldNode2NewNode[node2] = idx2
-            #             NewNodeOrder[idx2] = node2
-            #             NextIdx = np.amax([NextIdx, idx2])
-            #             # Force nodes to match exactly
-            #             for d in range(mesh.dim):
-            #                 if d == icoord: continue # skip periodic direction
-            #                 # code.interact(local=locals())
-            #                 coord2[d] = coord1[d]
-            #         # Store node pair
-            #         NodePairs[nNodePair] = np.array([node1, node2])
-            #         idx_in_node_pairs[node1] = nNodePair
-            #         nNodePair += 1
-            #         break
-
             if not match:
-                print("node2 = %d"  % (node2))
-                print(coord2)
-                raise Exception("Could not find matching boundary face")
+                raise ValueError("Could not find matching boundary node " +
+                        "for Node %d" % (node2_id))
 
-    # sanity check
-    if StartIdx != StopIdx:
+    # Modify next node ID
+    if start_node_id != stop_node_id:
         # This means at least one pair of nodes was matched
-        NextIdx += 1
-    if NextIdx != 2*StopIdx - StartIdx:
-        code.interact(local=locals())
+        next_node_id += 1
+    # Sanity check
+    if next_node_id != 2*stop_node_id - start_node_id:
         raise ValueError
 
-    # resize NodePairs
-    NodePairs = NodePairs[:num_node_pairs,:]
+    # Resize node_pairs
+    node_pairs = node_pairs[:num_node_pairs,:]
 
-    # print
+    # Print info
     if icoord == 0:
         s = "x"
     elif icoord == 1:
         s = "y"
     else:
         s = "z"
-    print("Reordered periodic boundary in %s" % (s))
+    print("Reordered periodic boundary in %s-direction" % (s))
 
-    return BFG1, BFG2, NodePairs, idx_in_node_pairs, NextIdx
+    return boundary_group1, boundary_group2, node_pairs, idx_in_node_pairs, \
+            next_node_id
 
 
-def RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx=-1):
-    # nPeriodicNode = NextIdx
+def remap_nodes(mesh, old_to_new_node_map, new_to_old_node_map, 
+        next_node_id=-1):
+    # nPeriodicNode = next_node_id
     # NewCoords = np.zeros_like(mesh.node_coords)
 
-    # Fill up OldNode2NewNode and NewNodeOrder with non-periodic nodes
-    if NextIdx != -1:
-        for node in range(mesh.num_nodes):
-            if OldNode2NewNode[node] == -1: # has not been ordered yet
-                OldNode2NewNode[node] = NextIdx
-                NewNodeOrder[NextIdx] = node
-                NextIdx += 1
+    # Fill up node maps with non-periodic nodes
+    # Note: non-periodic nodes come after the periodic nodes
+    if next_node_id != -1:
+        for node_id in range(mesh.num_nodes):
+            if old_to_new_node_map[node_id] == -1: 
+                # has not been re-ordered yet
+                old_to_new_node_map[node_id] = next_node_id
+                new_to_old_node_map[next_node_id] = node_id
+                next_node_id += 1
 
-    # New coordinate list
-    # NewCoords = mesh.node_coords[NewNodeOrder]
-    mesh.node_coords[:] = mesh.node_coords[NewNodeOrder]
+    # Assign new node IDs
+    mesh.node_coords = mesh.node_coords[new_to_old_node_map]
 
     # New elem_to_node_ids
-    Newelem_to_node_ids = np.zeros_like(mesh.elem_to_node_ids, dtype=int) - 1
+    # Newelem_to_node_ids = np.zeros_like(mesh.elem_to_node_ids, dtype=int) - 1
     num_elems = mesh.num_elems
-    for elem in range(num_elems):
-        mesh.elem_to_node_ids[elem,:] = OldNode2NewNode[mesh.elem_to_node_ids[elem, :]]
+    for elem_id in range(num_elems):
+        mesh.elem_to_node_ids[elem_id,:] = old_to_new_node_map[
+                mesh.elem_to_node_ids[elem_id, :]]
 
     # Store in mesh
     # mesh.node_coords = NewCoords
     # mesh.elem_to_node_ids = Newelem_to_node_ids
 
 
-def VerifyPeriodicMesh(mesh):
+def verify_periodic_mesh(mesh):
     # Loop through interior faces
-    for IF in mesh.interior_faces:
-        elemL = IF.elemL_id
-        elemR = IF.elemR_id
-        faceL_id = IF.faceL_id
-        faceR_id = IF.faceR_id
+    for interior_face in mesh.interior_faces:
+        # Extract info
+        elemL_id = interior_face.elemL_id
+        elemR_id = interior_face.elemR_id
+        faceL_id = interior_face.faceL_id
+        faceR_id = interior_face.faceR_id
         gbasis = mesh.gbasis
         gorder = mesh.gorder
 
-        ''' Get global face nodes - left '''
-        fnodesL = gbasis.get_local_face_principal_node_nums( 
-            gorder, faceL_id)
-
-        # Convert to global node numbering
-        fnodesL = mesh.elem_to_node_ids[elemL][fnodesL[:]]
-
-        ''' Get global face nodes - right '''
-        fnodesR = gbasis.get_local_face_principal_node_nums( 
+        ''' Get global IDs of face nodes '''
+        # Local IDs - left
+        local_node_ids = gbasis.get_local_face_principal_node_nums( 
+                gorder, faceL_id)
+        # Global IDs - left
+        global_node_ids_L = mesh.elem_to_node_ids[elemL_id][local_node_ids]
+        # Local IDs - right
+        local_node_ids = gbasis.get_local_face_principal_node_nums( 
             gorder, faceR_id)
-
-        # Convert to global node numbering
-        fnodesR = mesh.elem_to_node_ids[elemR][fnodesR[:]]
+        # Global IDs - right
+        global_node_ids_R = mesh.elem_to_node_ids[elemR_id][local_node_ids]
 
         ''' If exact same global nodes, then this is NOT a periodic face '''
-        fnodesLsort = np.sort(fnodesL)
-        fnodesRsort = np.sort(fnodesR)
-        if np.all(fnodesLsort == fnodesRsort):
-            # skip non-periodic face
+        # Sort for easy comparison
+        global_node_ids_L = np.sort(global_node_ids_L)
+        global_node_ids_R = np.sort(global_node_ids_R)
+        if np.all(global_node_ids_L == global_node_ids_R):
+            # Skip non-periodic faces
             continue
 
         ''' Compare distances '''
-        coordsL = mesh.node_coords[fnodesLsort]
-        coordsR = mesh.node_coords[fnodesRsort]
+        coordsL = mesh.node_coords[global_node_ids_L]
+        coordsR = mesh.node_coords[global_node_ids_R]
         dists = np.linalg.norm(coordsL-coordsR, axis=1)
-        if np.abs(np.max(dists) - np.min(dists)) > tol:
+        if np.abs(np.max(dists) - np.min(dists)) > TOL:
             raise ValueError        
 
 
@@ -718,38 +663,43 @@ def update_boundary_group_nums(mesh):
         boundary_group.number = i
         i += 1
 
-def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None):
+
+def make_periodic_translational(mesh, x1=None, x2=None, y1=None, y2=None):
 
     ''' Reorder nodes '''
-    OldNode2NewNode = np.zeros(mesh.num_nodes, dtype=int)-1  
-        # OldNode2NewNode[n] = the new node number (post-reordering) of node n (pre-ordering)
-    NewNodeOrder = np.zeros(mesh.num_nodes, dtype=int)-1
-        # NewNodeOrder[i] = the node number (pre-reordering) of the ith node (post-reordering)
-    NextIdx = 0
+    old_to_new_node_map = np.zeros(mesh.num_nodes, dtype=int) - 1  
+        # old_to_new_node_map[n] = the new node number (post-reordering) of node n (pre-ordering)
+    new_to_old_node_map = np.zeros(mesh.num_nodes, dtype=int) - 1
+        # new_to_old_node_map[i] = the node number (pre-reordering) of the ith node (post-reordering)
+    next_node_id = 0
 
     # x
-    BFGX1, BFGX2, NodePairsX, idx_in_node_pairsX, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
-        x1, x2, 0, OldNode2NewNode, NewNodeOrder, NextIdx)
+    boundary_group_x1, boundary_group_x2, node_pairs_x, \
+            idx_in_node_pairs_x, next_node_id = \
+            reorder_periodic_boundary_nodes(mesh, x1, x2, 0, 
+            old_to_new_node_map, new_to_old_node_map, next_node_id)
     # y
-    BFGY1, BFGY2, NodePairsY, idx_in_node_pairsY, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
-        y1, y2, 1, OldNode2NewNode, NewNodeOrder, NextIdx)
+    boundary_group_y1, boundary_group_y2, node_pairs_y, \
+            idx_in_node_pairs_y, next_node_id = \
+            reorder_periodic_boundary_nodes(mesh, y1, y2, 1, 
+            old_to_new_node_map, new_to_old_node_map, next_node_id)
     # z
-    # BFGZ1, BFGZ2, NodePairsZ, idx_in_node_pairsZ, NextIdx = ReorderPeriodicBoundaryNodes(mesh, 
-    #     z1, z2, 2, OldNode2NewNode, NewNodeOrder, NextIdx)
+    # boundary_groupZ1, boundary_groupZ2, NodePairsZ, idx_in_node_pairsZ, next_node_id = reorder_periodic_boundary_nodes(mesh, 
+    #     z1, z2, 2, old_to_new_node_map, new_to_old_node_map, next_node_id)
 
 
     ''' Remap nodes '''
-    RemapNodes(mesh, OldNode2NewNode, NewNodeOrder, NextIdx)
+    remap_nodes(mesh, old_to_new_node_map, new_to_old_node_map, next_node_id)
 
 
     ''' Match pairs of periodic boundary faces '''
     # x
-    match_boundary_pair(mesh, 0, BFGX1, BFGX2, NodePairsX, idx_in_node_pairsX, OldNode2NewNode, NewNodeOrder)
+    match_boundary_pair(mesh, 0, boundary_group_x1, boundary_group_x2, node_pairs_x, idx_in_node_pairs_x, old_to_new_node_map, new_to_old_node_map)
     # y
-    match_boundary_pair(mesh, 1, BFGY1, BFGY2, NodePairsY, idx_in_node_pairsY, OldNode2NewNode, NewNodeOrder) #, 
+    match_boundary_pair(mesh, 1, boundary_group_y1, boundary_group_y2, node_pairs_y, idx_in_node_pairs_y, old_to_new_node_map, new_to_old_node_map) #, 
         # NodePairsZ, idx_in_node_pairsZ)
     # z
-    # match_boundary_pair(mesh, 2, BFGZ1, BFGZ2, NodePairsZ, idx_in_node_pairsZ, OldNode2NewNode, NewNodeOrder)
+    # match_boundary_pair(mesh, 2, boundary_groupZ1, boundary_groupZ2, NodePairsZ, idx_in_node_pairsZ, old_to_new_node_map, new_to_old_node_map)
 
 
     ''' Update face orientations '''
@@ -760,7 +710,7 @@ def MakePeriodicTranslational(mesh, x1=None, x2=None, y1=None, y2=None):
     update_boundary_group_nums(mesh)
 
     ''' Verify valid mesh '''
-    VerifyPeriodicMesh(mesh)
+    verify_periodic_mesh(mesh)
 
     ''' Update elements '''
     mesh.create_elements()

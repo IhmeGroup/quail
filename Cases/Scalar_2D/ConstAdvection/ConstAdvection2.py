@@ -26,7 +26,7 @@ InterpBasis = "HierarchicH1Tri"
 if InterpBasis == "LagrangeEqTri" or InterpBasis == "HierarchicH1Tri":
 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 if Periodic:
-	MeshTools.MakePeriodicTranslational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
+	MeshTools.make_periodic_translational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
 dt = 0.025
 EndTime = .5
