@@ -113,7 +113,8 @@ class SolverBase(ABC):
 
 		# Limiter
 		LIMITER_TYPE = Params["ApplyLimiter"]
-		self.limiter = limiter_tools.set_limiter(LIMITER_TYPE, physics.PHYSICS_TYPE)
+		self.limiter = limiter_tools.set_limiter(LIMITER_TYPE, 
+				physics.PHYSICS_TYPE)
 
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
@@ -174,7 +175,8 @@ class SolverBase(ABC):
 
 		Outputs:
 		--------
-			ER: calculated residiual array (for volume integral of specified element)
+			ER: calculated residiual array (for volume integral of specified 
+			element)
 		'''
 		pass
 
@@ -191,15 +193,18 @@ class SolverBase(ABC):
 			
 		Outputs:
 		--------
-			RL: calculated residual array (left neighboring element contribution)
-			RR: calculated residual array (right neighboring element contribution)
+			RL: calculated residual array (left neighboring element 
+			contribution)
+			RR: calculated residual array (right neighboring element 
+			contribution)
 		'''
 		pass
 
 	@abstractmethod
 	def get_boundary_face_residual(self, ibfgrp, ibface, U, R):
 		'''
-		Calculates the residual from the surface integral for each boundary face
+		Calculates the residual from the surface integral for each boundary 
+		face
 
 		Inputs:
 		-------
@@ -215,9 +220,9 @@ class SolverBase(ABC):
 
 	def init_state_from_fcn(self):
 		'''
-		Initializes the state (initial condition) from the specified function in
-		the input deck. Either interpolates the state to the nodes or uses an L2 
-		projection to initialize the state.
+		Initializes the state (initial condition) from the specified 
+		function in the input deck. Either interpolates the state to the 
+		nodes or uses an L2 projection to initialize the state.
 		'''
 		mesh = self.mesh
 		physics = self.physics
@@ -237,14 +242,14 @@ class SolverBase(ABC):
 
 			quad_order = basis.get_quadrature_order(mesh, order)
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
-			# quad_pts, quad_wts = segment.get_quadrature_gauss_legendre(quad_order)
+
 			eval_pts = quad_pts
 		npts = eval_pts.shape[0]
 
 		for elem in range(mesh.num_elems):
 			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
 			f = physics.CallFunction(physics.IC, x=xphys, t=self.time)
-			# f.shape = npts,ns
+
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
 			else:
@@ -252,7 +257,8 @@ class SolverBase(ABC):
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		'''
-		Projects the state of a restartfile onto a new basis/order of accuracy
+		Projects the state of a restartfile onto a new basis/order of 
+		accuracy
 
 		Inputs:
 		-------
@@ -269,7 +275,6 @@ class SolverBase(ABC):
 		U = physics.U
 		ns = physics.NUM_STATE_VARS
 
-		# basis_old = basis_tools.set_basis(mesh, order_old, basis_name_old)
 		if basis_old.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
@@ -287,13 +292,15 @@ class SolverBase(ABC):
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
 		for elem in range(mesh.num_elems):
-			# Up_old = np.matmul(basis_old.basis_val, U_old[elem,:,:])
-			Up_old = helpers.evaluate_state(U_old[elem,:,:], basis_old.basis_val)
+
+			Up_old = helpers.evaluate_state(U_old[elem,:,:], 
+					basis_old.basis_val)
 
 			if Params["InterpolateIC"]:
 				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, Up_old, U[elem,:,:])
+				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, 
+						quad_pts, quad_wts, elem, Up_old, U[elem,:,:])
 	
 	def get_residual(self, U, R):
 		'''
@@ -347,8 +354,8 @@ class SolverBase(ABC):
 
 	def get_interior_face_residuals(self, U, R):
 		'''
-		Loops over the interior faces and calls the get_interior_face_residual 
-		function for each face
+		Loops over the interior faces and calls the 
+		get_interior_face_residual function for each face
 		
 		Inputs:
 		-------
@@ -377,8 +384,8 @@ class SolverBase(ABC):
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
-		Loops over the boundary faces and calls the get_boundary_face_residual 
-		function for each face
+		Loops over the boundary faces and calls the 
+		get_boundary_face_residual function for each face
 		
 		Inputs:
 		-------
@@ -398,7 +405,8 @@ class SolverBase(ABC):
 				elem = boundary_face.elem_id
 				face = boundary_face.face_id
 
-				R[elem] = self.get_boundary_face_residual(BFG, ibface, U[elem], R[elem])
+				R[elem] = self.get_boundary_face_residual(BFG, ibface,
+						U[elem], R[elem])
 
 
 	def apply_time_scheme(self, fhistory=None):
@@ -425,7 +433,6 @@ class SolverBase(ABC):
 		t0 = time.time()
 		iwrite = 1
 
-		# for iStep in range(Stepper.num_time_steps):
 		iStep = 0
 		while iStep < Stepper.num_time_steps:
 
@@ -438,12 +445,14 @@ class SolverBase(ABC):
 			self.time = Time
 
 			# Info to print
-			PrintInfo = (iStep+1, self.time, np.linalg.norm(np.reshape(R,-1), ord=1))
+			PrintInfo = (iStep+1, self.time, \
+					np.linalg.norm(np.reshape(R,-1), ord=1))
 			PrintString = "%d: Time = %g, Residual norm = %g" % (PrintInfo)
 
 			# Output
 			if TrackOutput:
-				output,_ = post_defs.L2_error(mesh,physics,Time,"Entropy",False)
+				output,_ = post_defs.L2_error(mesh,physics,Time,
+						"Entropy",False)
 				OutputString = ", Output = %g" % (output)
 				PrintString += OutputString
 
@@ -489,7 +498,8 @@ class SolverBase(ABC):
 
 	def solve(self):
 		'''
-		Performs the main solve of the DG method. Initializes the temporal loop. 
+		Performs the main solve of the DG method. Initializes the temporal
+		loop. 
 		'''
 		mesh = self.mesh
 		physics = self.physics

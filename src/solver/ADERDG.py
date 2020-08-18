@@ -1,3 +1,15 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/numerics/solver/ADERDG.py
+#
+#       Contains class definitions for the DG solver available in the 
+#		DG Python framework.
+#
+#       Authors: Brett Bornhoft and Eric Ching
+#
+#       Created: January 2020
+#      
+# ------------------------------------------------------------------------ #
 import code
 import numpy as np
 from scipy.linalg import solve_sylvester
@@ -29,7 +41,13 @@ import solver.DG as DG
 
 
 class ElemHelpersADER(DG.ElemHelpers):
+	'''
+    ElemHelpersADER inherits attributes and methods from the DG.ElemHelpers 
+    class. See DG.ElemHelpers for detailed comments of attributes and 
+    methods.
 
+    Additional methods and attributes are commented below.
+	'''
 	def get_basis_and_geom_data(self, mesh, basis, order):
 
 		dim = mesh.dim 
@@ -58,17 +76,20 @@ class ElemHelpersADER(DG.ElemHelpers):
 			self.ijac_elems[elem] = ijac
 			self.djac_elems[elem] = djac
 
-			# Physical coordinates of quadrature points
+			# physical coordinates of quadrature points
 			x = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
-			# Store
+			# store
 			self.x_elems[elem] = x
-			# Physical gradient
-			# basis.get_basis_val_grads(quad_pts, get_phys_grad=True, 
-			#		ijac=ijac) # gPhi is [nq,nb,dim]
-			# self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
+
 
 class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
+	'''
+    InteriorHelpersADER inherits attributes and methods from the
+    DG.InteriorFaceHelpers class. See DG.InteriorFaceHelpers for detailed
+    comments of attributes and methods.
 
+    Additional methods and attributes are commented below.
+	'''
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		
 		gbasis = mesh.gbasis
@@ -79,11 +100,13 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 
-		# unpack
 		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
+
+		# primary difference is that their are two additional faces 
+		# per element for the ADER-DG approach
 		nfaces_per_elem = mesh.gbasis.NFACES + 2
 
 		# allocate
@@ -101,26 +124,31 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 					basis, get_val=True)
 			self.faces_to_basisR[f] = basis.basis_val
 
+		# normals
 		i = 0
 		for IFace in mesh.interior_faces:
-			# Normals
-			# normals = mesh_defs.iface_normal(mesh, IFace, quad_pts)
 			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_id, 
 				IFace.faceL_id, quad_pts)
 			self.normals_ifaces[i] = normals
 			i += 1
 
 class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
+	'''
+    BoundaryHelpersADER inherits attributes and methods from the
+    InteriorFaceHelpersADER class. See InteriorFaceHelpersADER for detailed
+    comments of attributes and methods.
 
+    Additional methods and attributes are commented below.
+	'''
 	def get_basis_and_geom_data(self, mesh, basis, order):
-		# separate these later
 
-		# Unpack
 		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
-		# nFacePerElem = mesh.nFacePerElem + 2
+
+		# primary difference is that their are two additional faces 
+		# per element for the ADER-DG approach
 		nfaces_per_elem = mesh.gbasis.NFACES + 2
 
 		# Allocate
@@ -145,21 +173,22 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 			self.x_bfgroups.append(np.zeros([BFG.num_boundary_faces,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
 			x_bfgroup = self.x_bfgroups[i]
+
+			# normals
 			j = 0
 			for boundary_face in BFG.boundary_faces:
-				# normals
 				nvec = mesh.gbasis.calculate_normals(mesh, 
 						boundary_face.elem_id, boundary_face.face_id, 
 						quad_pts)
 				normal_bfgroup[j] = nvec
 
-				# Physical coordinates of quadrature points
+				# physical coordinates of quadrature points
 				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_id, 
 						self.faces_to_xref[boundary_face.face_id])
-				# Store
+				# store
 				x_bfgroup[j] = x
 
-				# Increment
+				# increment
 				j += 1
 			i += 1
 
@@ -174,6 +203,43 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 
 
 class ADERHelpers(object):
+	'''
+	The ADERHelpers class contains the methods and attributes that are 
+	required prior to the main solver temporal loop for the ADER scheme. 
+	They are used to precompute the attributes pertaining to the space-time
+	element in both physical and reference space
+
+	Attributes:
+	-----------
+	MM: numpy array
+		space-time mass matrix evaluated on the reference element
+	iMM: numpy array
+		space-time inverse mass matrix evaluated on the reference element
+	iMM_elems: numpy array
+		space-time inverse mass matrix evaluated on the physical element
+	K: numpy array
+		space-time matrix defined as st-flux matrix minus the stiffness 
+		matrix whose gradient is taken in the temporal direction
+	iK: numpy array
+		inverse of space-time matrix K
+	FTL: numpy array
+		flux matrix in space-time reference space (evaluated at tau=1)
+	FTR: numpy array
+		flux matrix in reference space (evaulated at tau=-1)
+	SMT: numpy array
+		stiffness matrix in time (gradient taken in temporal "direction")
+	SMS_elems: numpy array
+		stiffness matrix in spatial direction evaluated for each element in 
+		physical space
+	jac_elems: numpy array
+		jacobian evaluated at the element nodes
+	ijac_elems: numpy array
+		inverse jacobian evaluated at the element nodes
+	djac_elems: numpy array
+		determinant of the jacobian evaluated at the element nodes
+	x_elems: numpy array
+		physical coordinates of nodal points
+	'''
 	def __init__(self):
 		self.MM = None
 		self.iMM = None
@@ -190,7 +256,34 @@ class ADERHelpers(object):
 		self.x_elems = None
 
 	def calc_ader_matrices(self, mesh, basis, basis_st, dt, order):
+		'''
+		Precomputes the matries for the ADER-DG scheme
 
+		Inputs:
+		-------
+			mesh: mesh object
+			basis: basis object
+			basis_st: space-time basis object
+			dt: time step
+			order: solution order
+
+		Outputs:
+		--------
+			self.FTL: flux matrix in space-time reference space 
+				[nb_st, nb_st]
+			self.FTR: flux matrix in reference space [nb_st, nb]
+			self.SMT: stiffness matrix in time [nb_st, nb_st]
+			self.SMS_elems: stiffness matrix in space for each 
+				element [num_elems, nb_st, nb_st]
+			self.MM: space-time mass matrix in reference space
+				[nb_st, nb_st]
+			self.iMM: space-time inverse mass matrix in ref space
+				[nb_st, nb_st]
+			self.iMM_elems: space-time inverse mass matrix in physical
+				space [num_elems, nb_st, nb_st]
+			self.K: space-time matrix FTL - SMT [nb_st, nb_st]
+			self.iK: inverse of space-time matrix K [nb_st, nb_st]
+		'''		
 		dim = mesh.dim
 		nb = basis_st.nb
 		SMS_elems = np.zeros([mesh.num_elems,nb,nb,dim])
@@ -232,8 +325,26 @@ class ADERHelpers(object):
 
 
 	def get_geom_data(self, mesh, basis, order):
+		'''
+		Precomputes the geometric data for the ADER-DG scheme
 
-		# Unpack
+		Inputs:
+		-------
+			mesh: mesh object
+			basis: basis object
+			order: solution order
+
+		Outputs:
+		--------
+			self.jac_elems: precomputed jacobian for each element 
+				[num_elems, nb, dim, dim]
+			self.ijac_elems: precomputed inverse jacobian for each element
+				[num_elems, nb, dim, dim]
+			self.djac_elems: precomputed determinant of the jacobian for each
+				element [num_elems, nb, 1]
+			self.x_elems: precomputed coordinates of the nodal points
+				in physical space [num_elems, nb, dim]
+		'''
 		shape_name = basis.__class__.__bases__[1].__name__
 
 		dim = mesh.dim 
@@ -243,7 +354,7 @@ class ADERHelpers(object):
 		xnode = gbasis.get_nodes(order)
 		nnode = xnode.shape[0]
 
-		# Allocate
+		# allocate
 		self.jac_elems = np.zeros([num_elems,nb,dim,dim])
 		self.ijac_elems = np.zeros([num_elems,nb,dim,dim])
 		self.djac_elems = np.zeros([num_elems,nb,1])
@@ -402,11 +513,11 @@ class ADERDG(base.SolverBase):
 		Inputs:
 		-------
 			dt: time step 
-			W: previous time step solution in space only
+			W: previous time step solution in space only [num_elems, nb, ns]
 
 		Outputs:
 		--------
-			Up: predicted solution in space-time
+			Up: predicted solution in space-time [num_elems, nb_st, ns]
 		'''
 		mesh = self.mesh
 		physics = self.physics
@@ -611,11 +722,11 @@ class ADERDG(base.SolverBase):
 			dt: time step size
 			order: solution order
 			basis: basis object
-			Up: solution array
+			Up: solution array [nb_st, ns]
 			
 		Outputs:
 		--------
-			F: polynomical coefficients of the flux function
+			F: polynomical coefficients of the flux function [nb_st, ns, dim]
 		'''
 		physics = self.physics
 		mesh = self.mesh
@@ -655,7 +766,7 @@ class ADERDG(base.SolverBase):
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, 
 					quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
 
-		return F*dt/2.0
+		return F*dt/2.0 # [nb_st, ns, dim]
 
 	def source_coefficients(self, elem, dt, order, basis, Up):
 		'''
@@ -668,11 +779,11 @@ class ADERDG(base.SolverBase):
 			dt: time step size
 			order: solution order
 			basis: basis object
-			Up: solution array
+			Up: solution array [nb_st, ns]
 			
 		Outputs:
 		--------
-			S: polynomical coefficients of the flux function
+			S: polynomical coefficients of the flux function [nb_st, ns]
 		'''
 		mesh = self.mesh
 		dim = mesh.dim
@@ -706,8 +817,8 @@ class ADERDG(base.SolverBase):
 			S = np.zeros_like(Sq)
 			Sq = physics.SourceState(nb, x_ader, t, Up, Sq)
 			dg_tools.interpolate_to_nodes(Sq, S)
-		else:
 
+		else:
 			ader_ops = self.ader_operators
 			basis_val_st = elem_ops_st.basis_val
 			nb_st = basis_val_st.shape[1]
@@ -731,4 +842,4 @@ class ADERDG(base.SolverBase):
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, 
 					quad_wts_st, np.tile(djac,(nq,1)), Sq, S)
 
-		return S*dt/2.0
+		return S*dt/2.0 # [nb_st, ns]
