@@ -192,8 +192,8 @@ def verify_periodic_compatibility(mesh, boundary_group, icoord):
     return coord
 
 
-def match_boundary_pair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pairs, OldNode2NewNode, NewNodeOrder,
-    NodePairsA = None, idx_in_node_pairsA = None):
+def match_boundary_pair(mesh, icoord, BFG1, BFG2, NodePairs, 
+        idx_in_node_pairs, OldNode2NewNode, NewNodeOrder):
     '''
     NOTE: only q = 1 nodes are matched
     '''
@@ -201,6 +201,8 @@ def match_boundary_pair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pair
 
     if BFG1 is None and BFG2 is None:
         return
+    elif BFG1 is None or BFG2 is None:
+        raise ValueError("Only one boundary group provided")
 
     NewNode2NewerNode = np.arange(mesh.num_nodes)
     NodesChanged = False
@@ -213,7 +215,7 @@ def match_boundary_pair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pair
     #         idx_in_node_pairsB = idx_in_node_pairsA.copy()
 
     interior_faces = mesh.interior_faces
-    icoord = which_dim
+    icoord = icoord
 
     # Extract relevant BFGs
     # BFG1 = None; BFG2 = None;
@@ -347,7 +349,7 @@ def match_boundary_pair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pair
             # if match:
                 if not np.all(nodesort2 == nodepairs2):
 
-                    if which_dim == 0:
+                    if icoord == 0:
                         raise Exception
 
                     # node order doesn't match, so reorder
@@ -428,16 +430,16 @@ def match_boundary_pair(mesh, which_dim, BFG1, BFG2, NodePairs, idx_in_node_pair
     mesh.boundary_groups.pop(BFG2.name)
 
     # print
-    if which_dim == 0:
+    if icoord == 0:
         s = "x"
-    elif which_dim == 1:
+    elif icoord == 1:
         s = "y"
     else:
         s = "z"
     print("Matched periodic boundaries in %s" % (s))
 
 
-def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNodeOrder, NextIdx):
+def ReorderPeriodicBoundaryNodes(mesh, b1, b2, icoord, OldNode2NewNode, NewNodeOrder, NextIdx):
 
     gbasis = mesh.gbasis
 
@@ -470,7 +472,7 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     # elif BFG1 == BFG2:
     #     raise Exception("Duplicate boundaries")
 
-    icoord = which_dim
+    icoord = icoord
     if icoord < 0 or icoord >= mesh.dim:
         raise ValueError
 
@@ -633,9 +635,9 @@ def ReorderPeriodicBoundaryNodes(mesh, b1, b2, which_dim, OldNode2NewNode, NewNo
     NodePairs = NodePairs[:num_node_pairs,:]
 
     # print
-    if which_dim == 0:
+    if icoord == 0:
         s = "x"
-    elif which_dim == 1:
+    elif icoord == 1:
         s = "y"
     else:
         s = "z"
