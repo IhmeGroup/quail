@@ -187,7 +187,6 @@ def driver(deck):
 			physics_params, IC_params, exact_params, BC_params, \
 			source_params, output_params = read_inputs(deck)
 
-
 	'''
 	Mesh
 	'''
@@ -312,8 +311,8 @@ def driver(deck):
 		physics_old = solver_old.physics
 		params_old = solver_old.Params
 		# Project if different basis and/or order
-		if order != physics_old.order or solver.basis.basis_type != \
-				solver_old.basis.basis_type:
+		if order != physics_old.order or solver.basis.BASIS_TYPE != \
+				solver_old.basis.BASIS_TYPE:
 			print("Projecting to a different solution basis and/or order")
 			solver.project_state_to_new_basis(physics_old.U, 
 					solver_old.basis, physics_old.order)
@@ -333,26 +332,6 @@ def driver(deck):
 	solver.solve()
 
 	return solver, physics, mesh
-
-
-def process_restart_file(restart_file, deck):
-	'''
-	This function processes the restart file.
-
-	Inputs:
-	-------
-		restart_file: name of post-processing file
-		deck: input deck
-
-	Outputs:
-	--------
-		deck: input deck (modified)
-	'''
-	if restart_file != None:
-		try:
-			deck.Restart["File"] = restart_file
-		except KeyError:
-			deck.Restart = {"File": restart_file}
 
 
 def process_post_file(post_file, auto_process):
@@ -394,48 +373,47 @@ def main(argv):
 
 	''' Command-line arguments '''
 	# Input file
-	my_parser.add_argument("inputdeck", metavar="inputdeck:", type=str,
+	my_parser.add_argument("inputdeck", type=str,
 			help="this file contains all requested parameters for " +
-			"the solver")
+			"the solver", nargs='?')
 	# Post-processing script (optional)
-	my_parser.add_argument("-p", "--post", metavar="", type=str,
-			help="this file executes post-processing when included in CLI")	
-	# Restart file (optional)
-	my_parser.add_argument("-r", "--restart", metavar="", type=str,
-			help="name of restart file")
-	# File type - either input deck or post-processing script (optional)
-	my_parser.add_argument("-t", "--type", choices=["solve", "post"],
-			help="if \"post\" is selected, read in the post-processing " +
-			"file without \"-p\" instead of the inputdeck (solve " +
-			"executes by default)")
+	my_parser.add_argument("-p", "--post", type=str,
+			help="post-processing script to execute")
 
 	''' Process arguments '''
 	args = my_parser.parse_args()
 
 	input_deck = args.inputdeck
 	post_file = args.post
-	restart_file = args.restart
 
-	# Set current directory
-	current_dir = os.path.dirname(os.path.abspath(input_deck)) + "/"
+	if input_deck is None and post_file is None:
+		raise Exception("At least one of the input deck and the " +
+				"post-processing script is required")
+
+	''' Set current directory '''
+	if input_deck is not None:
+		file = input_deck
+	else:
+		file = post_file
+
+	current_dir = os.path.dirname(os.path.abspath(file)) + "/"
 	sys.path.append(current_dir)
 
 	''' Run	'''
-	# Run dgp solver
-	if args.type == None or args.type == "solve":
-		input_deck=input_deck.replace(".py", "")
-		deck = importlib.import_module(input_deck)
+	if input_deck is not None:
+		# Run solver
 
-		process_restart_file(restart_file, deck)
+		# Process deck
+		input_deck = input_deck.replace(".py", "")
+		deck = importlib.import_module(input_deck)
+		# Run
 		solver, physics, mesh = driver(deck)
+		# Process post-processing script
 		auto_process = solver.Params["AutoProcess"]
 		process_post_file(post_file, auto_process)
-	# Run only post-processing script
-	# Requires the [-t post] option
-	if args.type == "post":
-		post_file = input_deck
-		auto_process = True
-		process_post_file(post_file, auto_process)
+	else:
+		# Post-process only
+		process_post_file(post_file, True)
 
 
 if __name__ == "__main__":
