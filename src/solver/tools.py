@@ -1,3 +1,14 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/numerics/solver/tools.py
+#
+#       Contains additional methods (tools) for the DG solver class
+#
+#       Authors: Eric Ching and Brett Bornhoft
+#
+#       Created: January 2020
+#      
+# ------------------------------------------------------------------------ #
 import code
 import copy
 import numpy as np
@@ -8,7 +19,21 @@ import general
 import numerics.basis.tools as basis_tools
 
 def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
-	
+	'''
+	Calculates the inviscid flux volume integral for the DG scheme
+
+	Inputs:
+	-------
+		solver: solver object
+		elem_ops: helper operators defined in ElemHelpers
+		elem: element index
+		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+
+	Outputs:
+	--------
+		ER: calculated residual array (for volume integral of specified 
+		element) [nb, ns]
+	'''	
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
 	basis_phys_grad_elems = elem_ops.basis_phys_grad_elems
@@ -18,43 +43,54 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
 	djac = djac_elems[elem]
 	nq = quad_wts.shape[0]
 
-	# for ir in range(ns):
-	# 	for jn in range(nb):
-	# 		for iq in range(nq):
-	# 			gPhi = PhiData.gPhi[iq,jn] # dim
-	# 			ER[jn,ir] += np.dot(gPhi, F[iq,ir,:])*wq[iq]*JData.djac[iq*(JData.nq!=1)]
-
 	ER = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
 
-	return ER
+	return ER # [nb, ns]
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
+	'''
+	Calculates the inviscid flux boundary integral for the DG scheme
 
-	R = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb,sr]
+	Inputs:
+	-------
+		basis_val: basis function for the interior element [nq, nb]
+		quad_wts_st: space-time quadrature weights [nq, 1]
+		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
 
-	return R
+	Outputs:
+	--------
+		R: calculated residual array (from boundary face) [nb, ns]
+	'''
+	R = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb, ns]
+
+	return R # [nb, ns]
 
 def calculate_source_term_integral(elem_ops, elem, Sq):
-	
+	'''
+	Calculates the source term volume integral for the DG scheme
+
+	Inputs:
+	-------
+		elem_ops: helper operators defined in ElemHelpers
+		elem: element index
+		Sq: source term array evaluated at the quadrature points [nq, ns]
+
+	Outputs:
+	--------
+		ER: calculated residual array (for volume integral of specified 
+		element) [nb, ns]
+	'''
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
 	djac_elems = elem_ops.djac_elems 
 	djac = djac_elems[elem]
 
-	# Calculate source term integral
-	# for ir in range(sr):
-	# 	for jn in range(nn):
-	# 		for iq in range(nq):
-	# 			Phi = PhiData.Phi[iq,jn]
-	# 			ER[jn,ir] += Phi*s[iq,ir]*wq[iq]*JData.djac[iq*(JData.nq!=1)]
 	ER = np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
 
-	return ER
+	return ER # [nb, ns]
 
 def calculate_dRdU(elem_ops, elem, jac):
 	'''
-	Method: calculate_dRdU
-	-----------------------
 	Helper function for ODE solvers that calculates the derivative of 
 
 		integral(basis_val*S(U))dVol
@@ -63,7 +99,7 @@ def calculate_dRdU(elem_ops, elem, jac):
 	
 	INPUTS: 
 		elem_ops: object containing precomputed element operations
-		elem: element index [int]
+		elem: element index
 		jac: element source term jacobian [nq, ns, ns]
 	'''
 	quad_wts = elem_ops.quad_wts
@@ -82,8 +118,6 @@ def calculate_dRdU(elem_ops, elem, jac):
 
 def mult_inv_mass_matrix(mesh, solver, dt, R):
 	'''
-	Method: mult_inv_mass_matrix
-	-------------------------------
 	Multiplies the residual array with the inverse mass matrix
 
 	INPUTS:
@@ -108,7 +142,23 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
+	'''
+	Performs an L2 projection
 
+	Inputs:
+	-------
+		mesh: mesh object
+		iMM: space-time inverse mass matrix
+		basis: basis object
+		quad_pts: quadrature coordinates in reference space
+		quad_wts: quadrature weights
+		elem: element index
+		f: array of values to be projected from
+
+	Outputs:
+	--------
+		U: array of values to be projected too
+	'''
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
@@ -120,4 +170,15 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
 
 
 def interpolate_to_nodes(f, U):
+	'''
+	Interpolates directly to the nodes of the element
+
+	Inputs:
+	-------
+		f: array of values to be interpolated from
+
+	Outputs:
+	--------
+		U: array of values to be interpolated onto
+	'''
 	U[:,:] = f
