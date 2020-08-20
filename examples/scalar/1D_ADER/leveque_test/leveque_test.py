@@ -5,8 +5,8 @@ dt = cfl*0.01
 num_time_steps = int(tfinal/dt)
 
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : tfinal,
+    "InitialTime" : 0.,
+    "FinalTime" : tfinal,
     "num_time_steps" : num_time_steps,
     "TimeScheme" : "ADER",
 }

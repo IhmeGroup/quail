@@ -535,7 +535,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 # 			raise Exception("No exact solution provided")
 
 # 	## Extract params
-# 	EndTime = solver.time
+# 	FinalTime = solver.time
 # 	dim = mesh.dim
 
 # 	# Get sample points
@@ -543,7 +543,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 
 # 	# # Exact solution?
 # 	# if PlotExact:
-# 	# 	u_exact = physics.CallFunction(physics.ExactSoln, x=np.reshape(x, (-1,dim)), Time=EndTime)
+# 	# 	u_exact = physics.CallFunction(physics.ExactSoln, x=np.reshape(x, (-1,dim)), Time=FinalTime)
 # 	# 	u_exact.shape = u.shape
 # 	# else:
 # 	# 	u_exact = None
@@ -555,7 +555,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 # 	# 	u_IC = None
 # 	# Solution label
 
-# 	u_exact, u_IC = get_analytical_solution(physics, x, EndTime, PlotExact, PlotIC, u)
+# 	u_exact, u_IC = get_analytical_solution(physics, x, FinalTime, PlotExact, PlotIC, u)
 
 # 	# if Label is None:
 # 	# 	try:

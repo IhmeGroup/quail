@@ -27,10 +27,11 @@ mesh.interior_faces[0].faceR_id = 1
 # code.interact(local=locals())
 
 ### Solver parameters
-EndTime = 0.1
+FinalTime = 0.1
 num_time_steps = 100
 InterpOrder = 5
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",TimeScheme="RK4",L2InitialCondition=False)
 
 

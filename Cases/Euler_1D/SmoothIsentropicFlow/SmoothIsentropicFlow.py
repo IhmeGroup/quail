@@ -16,12 +16,11 @@ mesh = MeshCommon.mesh_1D(num_elems=25, xmin=-1., xmax=1.)
 
 
 ### Solver parameters
-EndTime = 0.1
+FinalTime = 0.1
 num_time_steps = 100
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",TimeScheme="RK4",L2InitialCondition=False)
-
 
 ### Physics
 physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)

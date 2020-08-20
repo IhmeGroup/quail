@@ -1,12 +1,12 @@
 import numpy as np
 
 Mesh = {
-	"File" : None,
-	"ElementShape" : "Segment", 
-	"nElem_x" : 16, 
-	"xmin" : -1.,
-	"xmax" : 1.,
-	"PerodicBoundariesX" : ["xmin", "xmax"],
+    "File" : None,
+    "ElementShape" : "Segment",
+    "NumElems_x" : 16,
+    "xmin" : -1.,
+    "xmax" : 1.,
+    "PeriodicBoundariesX" : ["xmin","xmax"]
 }
 
 Physics = {
@@ -29,8 +29,28 @@ Numerics = {
 }
 
 TimeStepping = {
-	"StartTime" : 0.,
-	"EndTime" : 0.5,
+	"InitialTime" : 0.,
+	"FinalTime" : 0.5,
 	"CFL" : 0.1,
 	"TimeScheme" : "RK4"
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

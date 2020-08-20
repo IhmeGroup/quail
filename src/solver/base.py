@@ -93,7 +93,7 @@ class SolverBase(ABC):
 		self.mesh = mesh
 		self.DataSet = GenericData()
 
-		self.time = Params["StartTime"]
+		self.time = Params["InitialTime"]
 		self.num_time_steps = 0 # will be set later
 
 		# Set the basis functions for the solver

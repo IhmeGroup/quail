@@ -79,8 +79,8 @@ NULLFACE = -2
 
 # Default solver parameters
 # SolverParams = {
-# 	"StartTime" : 0.,
-# 	"EndTime" : 1.,
+# 	"InitialTime" : 0.,
+# 	"FinalTime" : 1.,
 # 	"nTimeStep" : 100.,
 #     "InterpOrder" : 1,
 #     "InterpBasis" : BasisType.LagrangeEqSeg,

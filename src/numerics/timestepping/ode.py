@@ -41,7 +41,7 @@ class ODESolvers():
 		dt: float
 			time-step for the solution
 		num_time_steps: int
-			number of time steps for the given solution's endtime
+			number of time steps for the given solution's FinalTime
 		get_time_step: method
 			method to obtain dt given input decks logic (CFL-based vs # of 
 			timesteps, etc...)

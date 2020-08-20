@@ -4,11 +4,11 @@ cfl = 0.1
 num_elems = 16
 dx = float(1./num_elems)
 dt = cfl*dx
-EndTime = 0.5
-num_time_steps = int(EndTime/dt)
+FinalTime = 0.5
+num_time_steps = int(FinalTime/dt)
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : EndTime,
+    "InitialTime" : 0.,
+    "FinalTime" : FinalTime,
     "num_time_steps" : num_time_steps,
     "TimeScheme" : "ADER",
 }

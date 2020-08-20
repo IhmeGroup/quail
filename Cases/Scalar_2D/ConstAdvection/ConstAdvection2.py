@@ -29,10 +29,11 @@ if Periodic:
 	MeshTools.make_periodic_translational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
 dt = 0.025
-EndTime = .5
-num_time_steps = int(EndTime/dt + 10.*general.eps)
+FinalTime = .5
+num_time_steps = int(FinalTime/dt + 10.*general.eps)
 InterpOrder = 6
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
 								 ApplyLimiter=None,WriteInterval=50)
 

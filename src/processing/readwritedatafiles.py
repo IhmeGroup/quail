@@ -16,7 +16,7 @@ def write_data_file(solver, iwrite):
 
 	with open(fname, 'wb') as fo:
 		# solver.Params["RestartFile"] = fo.name
-		# solver.Params["StartTime"] = Time
+		# solver.Params["InitialTime"] = Time
 
 		pickle.dump(solver, fo, pickle.HIGHEST_PROTOCOL)
 		# mesh

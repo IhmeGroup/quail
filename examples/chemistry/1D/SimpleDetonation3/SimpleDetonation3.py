@@ -6,12 +6,12 @@ dx = float(1/num_elems)
 u = 5.
 dt = cfl*dx/u
 
-EndTime = np.pi/10.
-num_time_stepss =  int(EndTime/dt)
+FinalTime = np.pi/10.
+num_time_stepss =  int(FinalTime/dt)
 print(num_time_stepss)
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : EndTime,
+    "InitialTime" : 0.,
+    "FinalTime" : FinalTime,
     "num_time_steps" : num_time_stepss,
     "TimeScheme" : "Simpler",
     "OperatorSplitting_Imp" : "Trapezoidal",

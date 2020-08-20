@@ -1,8 +1,8 @@
 import numpy as np
 
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : 40.,
+    "InitialTime" : 0.,
+    "FinalTime" : 40.,
     "num_time_steps" : 500,
     "TimeScheme" : "FE",
 }

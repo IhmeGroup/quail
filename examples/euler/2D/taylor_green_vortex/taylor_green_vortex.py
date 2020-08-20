@@ -8,7 +8,7 @@ tfinal = 0.4
 nt = int(tfinal/dt + 1.e-12)
 
 TimeStepping = {
-    "EndTime" : tfinal,
+    "FinalTime" : tfinal,
     "num_time_steps" : nt,
     "TimeScheme" : "FE",
 }

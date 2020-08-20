@@ -27,11 +27,11 @@ if Periodic:
 ### Solver parameters
 #dt = 0.001
 #mu = 1.
-EndTime = 0.1
-num_time_steps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
-#num_time_steps = int(EndTime/dt)
+FinalTime = 0.1
+num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
+#num_time_steps = int(FinalTime/dt)
 InterpOrder = 3
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",TimeScheme="RK4")
 ### Physics
 ConstVelocity = 1.

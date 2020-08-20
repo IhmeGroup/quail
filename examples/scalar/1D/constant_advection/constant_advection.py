@@ -1,8 +1,8 @@
 import numpy as np
 
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : 0.5,
+    "InitialTime" : 0.,
+    "FinalTime" : 0.5,
     "CFL" : 0.1,
     # "TimeStepSize" : 0.0125,
     # "num_time_steps" : 40,
@@ -26,7 +26,7 @@ Mesh = {
     "NumElemsX" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
-    # "PeriodicBoundariesX" : ["xmin","xmax"]
+    # "PeriodicBoundariesX" : ["Left","Right"]
 }
 
 Physics = {

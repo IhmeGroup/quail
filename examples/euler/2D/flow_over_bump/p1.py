@@ -6,7 +6,7 @@ Restart = {
 }
 
 TimeStepping.update({
-    "EndTime" : 48.,
+    "FinalTime" : 48.,
     "num_time_steps" : 1000,
 })
 

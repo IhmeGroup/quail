@@ -2,11 +2,11 @@ import numpy as np
 
 cfl = 0.1
 dx = 0.05
-EndTime = 0.2
-nTimeStep = int(EndTime/(cfl*dx))
+FinalTime = 0.2
+nTimeStep = int(FinalTime/(cfl*dx))
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : EndTime,
+    "InitialTime" : 0.,
+    "FinalTime" : FinalTime,
     "nTimeStep" : nTimeStep,
     "TimeScheme" : "ADER",
     # "OperatorSplitting_Exp" : "SSPRK3",

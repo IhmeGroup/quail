@@ -1,8 +1,8 @@
 import numpy as np
 
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : 0.1,
+    "InitialTime" : 0.,
+    "FinalTime" : 0.1,
     # "CFL" : 0.05,
     "num_time_steps" : 100,
     "TimeScheme" : "RK4",

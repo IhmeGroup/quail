@@ -19,11 +19,11 @@ mesh = MeshCommon.mesh_1D(num_elems=100, xmin=0., xmax=1.)
 
 
 ### Solver parameters
-EndTime = 4.e-5
+FinalTime = 4.e-5
 num_time_steps = 100
 InterpOrder = 1
 
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",L2InitialCondition=True,
 								 ApplyLimiter="PositivityPreserving")
 

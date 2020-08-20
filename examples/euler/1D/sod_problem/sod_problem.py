@@ -1,13 +1,13 @@
 import numpy as np
 import copy
 
-EndTime = 0.25
+FinalTime = 0.25
 nTimeSteps = 4000
 #nTimeSteps = 0
 
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : EndTime,
+    "InitialTime" : 0.,
+    "FinalTime" : FinalTime,
     "num_time_steps" : nTimeSteps,
     #"CFL" : 0.025,
     "TimeScheme" : "RK4",

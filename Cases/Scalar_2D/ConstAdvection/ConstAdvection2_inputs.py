@@ -25,10 +25,10 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
 # 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 # dt = 0.05
-# EndTime = 10.0
-# num_time_steps = int(EndTime/dt + 10.*general.eps)
+# FinalTime = 10.0
+# num_time_steps = int(FinalTime/dt + 10.*general.eps)
 # InterpOrder = 10
-# Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+# Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 # 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
 # 								 ApplyLimiter=None,WriteInterval=50)
 
@@ -57,8 +57,8 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 
 
 TimeStepping = {
-    "StartTime" : 0.,
-    "EndTime" : 10.,
+    "InitialTime" : 0.,
+    "FinalTime" : 10.,
     "num_time_steps" : 200,
     "TimeScheme" : "RK4",
 }

@@ -76,14 +76,14 @@ def set_time_stepping_approach(stepper, Params):
 	cfl = Params["CFL"]
 	timestepsize = Params["TimeStepSize"]
 	num_time_steps = Params["num_time_steps"]
-	endtime = Params["EndTime"]
+	FinalTime = Params["FinalTime"]
 
 	if num_time_steps != None:
 		stepper.get_time_step = get_dt_from_num_time_steps
 		stepper.num_time_steps = num_time_steps
 	elif timestepsize != None:
 		stepper.get_time_step = get_dt_from_timestepsize
-		stepper.num_time_steps = math.ceil(endtime/timestepsize)
+		stepper.num_time_steps = math.ceil(FinalTime/timestepsize)
 	elif cfl != None:
 		stepper.get_time_step = get_dt_from_cfl
 		stepper.num_time_steps = 1
@@ -103,7 +103,7 @@ def get_dt_from_num_time_steps(stepper, solver):
 		dt: time step for the solver
 	'''
 	num_time_steps = stepper.num_time_steps
-	tfinal = solver.Params["EndTime"]
+	tfinal = solver.Params["FinalTime"]
 	time = solver.time
 
 	# only needs to be set once per simulation
@@ -129,9 +129,9 @@ def get_dt_from_timestepsize(stepper, solver):
 	'''
 	time = solver.time
 	timestepsize = solver.Params["TimeStepSize"]
-	tfinal = solver.Params["EndTime"]
+	tfinal = solver.Params["FinalTime"]
 
-	# logic to ensure final time step yields EndTime
+	# logic to ensure final time step yields FinalTime
 	if time + timestepsize < tfinal:
 		return timestepsize
 	else:
@@ -159,7 +159,7 @@ def get_dt_from_cfl(stepper, solver):
 	Up = physics.U
 
 	time = solver.time
-	tfinal = solver.Params["EndTime"]
+	tfinal = solver.Params["FinalTime"]
 	cfl = solver.Params["CFL"]
 	
 	elem_ops = solver.elem_operators
@@ -177,7 +177,7 @@ def get_dt_from_cfl(stepper, solver):
 	# take minimum to set appropriate dt
 	dt = np.min(dt_elems)
 
-	# logic to ensure final time step yields EndTime
+	# logic to ensure final time step yields FinalTime
 	if time + dt < tfinal:
 		stepper.num_time_steps += 1
 		return dt

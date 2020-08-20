@@ -18,11 +18,11 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=20, xmin=0., xmax=1., Periodic
 nu = -1000.
 
 ### Solver parameters
-EndTime = 0.5
-num_time_steps = np.amax([1,int(EndTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.075))])
+FinalTime = 0.5
+num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.075))])
 # num_time_steps = 100
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis="LagrangeSeg",SourceTreatment="Implicit")
 
 

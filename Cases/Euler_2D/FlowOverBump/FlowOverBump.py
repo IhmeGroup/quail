@@ -19,15 +19,15 @@ folder = "meshes/"
 subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
 #FileName = "bump0_q1.msh"; 
 FileName = "bump0.msh"; 
-#InterpOrder = 0; num_time_steps = 500; EndTime = 40.
+#InterpOrder = 0; num_time_steps = 500; FinalTime = 40.
 
-InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; EndTime = [40., 48., 54.]
+InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; FinalTime = [40., 48., 54.]
 # FileName = "bump1_q1.msh"
 # FileName = "bump1.msh"
-# InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; EndTime = [20., 24., 27.]
+# InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; FinalTime = [20., 24., 27.]
 # # FileName = "bump2_q1.msh"
 # FileName = "bump2.msh"
-# InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; EndTime = [10., 12., 13.5]
+# InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; FinalTime = [10., 12., 13.5]
 # Triangles
 #subfolder = "Triangles/"; InterpBasis = "LagrangeEqTri"
 #FileName = "bump0_tri.msh"
@@ -41,12 +41,12 @@ mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 
 ### Solver parameters
 # InterpOrder = 1
-# EndTime = 1.
+# FinalTime = 1.
 # num_time_steps = 500
-# InterpOrder = [0]; num_time_steps = [500]; EndTime = [40.]
+# InterpOrder = [0]; num_time_steps = [500]; FinalTime = [40.]
 # dt = 0.05
 # num_time_steps = int(EndTime/dt + 10.*general.eps)
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis=InterpBasis,TimeScheme="FE",L2InitialCondition=True,
 								 TrackOutput=False,WriteTimeHistory=False,OrderSequencing=True)
 

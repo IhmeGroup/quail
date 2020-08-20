@@ -4,8 +4,8 @@ Restart = {
 }
 
 TimeStepping = {
-    "StartTime" : 0., # InitialTime
-    "EndTime" : 1., # FinalTime
+    "InitialTime" : 0.,
+    "FinalTime" : 1.
     "num_time_steps" : None, # NumTimeSteps
     "TimeStepSize" : None, 
     "CFL" : None,

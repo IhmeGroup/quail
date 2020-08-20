@@ -26,11 +26,11 @@ mesh, physics, Params, _ = ReadWriteDataFiles.read_data_file(fname)
 # InterpBasis = "LagrangeEqTri"
 InterpBasis = "HierarchicH1Tri"
 dt = 0.05
-StartTime = 2.5
-EndTime = 10.0
-num_time_steps = int((EndTime-StartTime)/dt + 10.*general.eps)
+InitialTime = 2.5
+FinalTime = 10.0
+num_time_steps = int((FinalTime-InitialTime)/dt + 10.*general.eps)
 InterpOrder = 10
-Params = general.SetSolverParams(Params, InterpOrder=InterpOrder,StartTime=StartTime,EndTime=EndTime,
+Params = general.SetSolverParams(Params, InterpOrder=InterpOrder,InitialTime=InitialTime,FinalTime=FinalTime,
 								 num_time_steps=num_time_steps,InterpBasis=InterpBasis,TimeScheme="RK4",
 								 L2InitialCondition=True,ApplyLimiter=None,WriteInterval=50,
 								 RestartFile=fname)

@@ -115,10 +115,10 @@ MeshTools.make_periodic_translational(mesh, x1=bnames_x[ax[0]], x2=bnames_x[ax[1
 
 ### Solver parameters
 dt = 0.05
-EndTime = 1.0
-num_time_steps = int(EndTime/dt + 10.*general.eps)
+FinalTime = 1.0
+num_time_steps = int(FinalTime/dt + 10.*general.eps)
 InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
+Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
 								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
 								 ElementQuadrature="Dunavant")
 
