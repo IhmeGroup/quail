@@ -121,7 +121,7 @@ if args.test_2D is True:
 	# Vortex propagation
 	sys.path.append('Cases/Euler_2D/VortexPropagation')
 	import VortexPropagation
-	assert_almost_equal(VortexPropagation.TotErr, 0.009663006404448, decimal=decimal)
+	assert_almost_equal(VortexPropagation.TotErr, 0.006499518117962, decimal=decimal)
 	print('Pass 2D Vortex Propagation')
 
 

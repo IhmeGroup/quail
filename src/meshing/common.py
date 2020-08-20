@@ -21,6 +21,12 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	Outputs:
 	--------
 	    mesh: mesh object
+
+	Notes:
+	------
+		Two boundary groups are created:
+		x1: located at x = xmin
+		x2: located at x = xmax
 	'''
 	''' Create mesh and set node coordinates '''
 	num_nodes = num_elems + 1
@@ -71,7 +77,7 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1., 
 		ymin=-1., ymax=1.):
 	'''
-	This function creates a uniform 2D quadrilateral mesh.
+	This function creates a uniform 2D quadrilateral mesh. 
 
 	Inputs:
 	-------
@@ -85,6 +91,14 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 	Outputs:
 	--------
 	    mesh: mesh object
+
+	Notes:
+	------
+		Four boundary groups are created:
+		x1: located along the line x = xmin
+		x2: located along the line x = xmax
+		y1: located along the line y = ymin
+		y2: located along the line y = ymax
 	'''
 	''' Create mesh and set node coordinates '''
 	# Number of nodes
