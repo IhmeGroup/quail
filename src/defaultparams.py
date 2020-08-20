@@ -5,7 +5,7 @@ Restart = {
 
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : 1.
+    "FinalTime" : 1.,
     "num_time_steps" : None, # NumTimeSteps
     "TimeStepSize" : None, 
     "CFL" : None,
