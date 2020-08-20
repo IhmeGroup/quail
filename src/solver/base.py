@@ -133,7 +133,7 @@ class SolverBase(ABC):
 		if mesh.gbasis.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
-		if Params["InterpolateIC"] and basis.MODAL_OR_NODAL \
+		if not Params["L2InitialCondition"] and basis.MODAL_OR_NODAL \
 			!= ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
@@ -234,7 +234,7 @@ class SolverBase(ABC):
 		ns = physics.NUM_STATE_VARS
 		order = physics.order
 
-		if Params["InterpolateIC"]:
+		if not Params["L2InitialCondition"]:
 			eval_pts = basis.get_nodes(order)
 		else:
 			order = 2*np.amax([physics.order, 1])
@@ -250,7 +250,7 @@ class SolverBase(ABC):
 			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
 			f = physics.CallFunction(physics.IC, x=xphys, t=self.time)
 
-			if Params["InterpolateIC"]:
+			if not Params["L2InitialCondition"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, f, U[elem,:,:])
@@ -278,7 +278,7 @@ class SolverBase(ABC):
 		if basis_old.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
-		if Params["InterpolateIC"]:
+		if not Params["L2InitialCondition"]:
 			eval_pts = basis.get_nodes(physics.order)
 		else:
 			order = 2*np.amax([physics.order, order_old])
@@ -296,7 +296,7 @@ class SolverBase(ABC):
 			Up_old = helpers.evaluate_state(U_old[elem,:,:], 
 					basis_old.basis_val)
 
-			if Params["InterpolateIC"]:
+			if not Params["L2InitialCondition"]:
 				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, 
@@ -409,7 +409,7 @@ class SolverBase(ABC):
 						U[elem], R[elem])
 
 
-	def apply_time_scheme(self, fhistory=None):
+	def apply_time_scheme(self):
 		'''
 		Applies the specified time scheme to update the solution
 		'''
@@ -420,7 +420,6 @@ class SolverBase(ABC):
 		Time = self.time
 
 		# Parameters
-		TrackOutput = self.Params["TrackOutput"]
 		WriteInterval = self.Params["WriteInterval"]
 		if WriteInterval == -1:
 			WriteInterval = np.NAN
@@ -449,22 +448,8 @@ class SolverBase(ABC):
 					np.linalg.norm(np.reshape(R,-1), ord=1))
 			PrintString = "%d: Time = %g, Residual norm = %g" % (PrintInfo)
 
-			# Output
-			if TrackOutput:
-				output,_ = post_defs.L2_error(mesh,physics,Time,
-						"Entropy",False)
-				OutputString = ", Output = %g" % (output)
-				PrintString += OutputString
-
 			# Print info
 			print(PrintString)
-
-			# Write to file if requested
-			if fhistory is not None:
-				fhistory.write("%d %g %g" % (PrintInfo))
-				if TrackOutput:
-					fhistory.write(" %g" % (output))
-				fhistory.write("\n")
 
 			# Write data file
 			if (iStep + 1) % WriteInterval == 0:
@@ -500,21 +485,7 @@ class SolverBase(ABC):
 		'''
 		Performs the main solve of the DG method. Initializes the temporal
 		loop. 
-		'''
-		mesh = self.mesh
-		physics = self.physics
-		basis = self.basis
-
-		InterpOrder = self.Params["InterpOrder"]
-		WriteTimeHistory = self.Params["WriteTimeHistory"]
-
-		if WriteTimeHistory:
-			fhistory = open("TimeHistory.txt", "w")
-		else:
-			fhistory = None			
+		'''	
 
 		# apply time scheme
-		self.apply_time_scheme(fhistory)
-
-		if WriteTimeHistory:
-			fhistory.close()		
+		self.apply_time_scheme()	

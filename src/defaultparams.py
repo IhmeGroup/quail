@@ -22,8 +22,7 @@ Numerics = {
     "FaceQuadrature" : "GaussLegendre",
     "NodeType" : "Equidistant",
     "NodesEqualQuadpts" : False, # CollocatedPoints
-    "InterpolateIC" : False, # L2InitialCondition, True - eric
-    "OrderSequencing" : False, # remove - eric
+    "L2InitialCondition" : True,
     "ApplyLimiter" : None, 
     "SourceTreatment" : "Explicit", # SourceTreatmentADER
     "InterpolateFlux" : True, # InterpolateFluxADER, True
@@ -34,8 +33,8 @@ Numerics = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : 10, # NumElemsX
-    "NumElems_y" : 10, # NumElemsY
+    "NumElemsX" : 10,
+    "NumElemsY" : 10,
     "xmin" : -1.,
     "xmax" : 1.,
     "ymin" : -1.,
@@ -46,13 +45,11 @@ Mesh = {
 
 Physics = {
     "Type" : "ConstAdvScalar",
-    "ConvFlux" : "LaxFriedrichs", # ConvFluxNumerical
+    "ConvFluxNumerical" : "LaxFriedrichs", 
 }
 
 InitialCondition = {
     "Function" : "Uniform",
-    # "State" : [1.0],
-    # "SetAsExact" : False,
 }
 
 ExactSolution = {}
@@ -62,11 +59,9 @@ BoundaryConditions = {}
 SourceTerms = {}
 
 Output = {
-    "TrackOutput" : None, # remove
-    "WriteTimeHistory" : False, # remove
     "Prefix" : "Data",
     "WriteInterval" : -1,
     "WriteInitialSolution" : False,
     "WriteFinalSolution" : True,
-    "AutoProcess" : True, # AutoPostProcess
+    "AutoPostProcess" : True,
 }

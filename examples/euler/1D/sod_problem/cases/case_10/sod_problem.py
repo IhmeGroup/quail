@@ -18,7 +18,7 @@ Numerics = {
     "InterpBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
-    "InterpolateIC" : False,
+    "L2InitialCondition" : True,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
@@ -29,7 +29,7 @@ Numerics = {
 Output = {
     # "WriteInterval" : 2,
     # "WriteInitialSolution" : True,
-    "AutoProcess" : False,
+    "AutoPostProcess" : False,
     "Prefix" : "exact",
 }
 
@@ -44,7 +44,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "HLLC",
+    "ConvFluxNumerical" : "HLLC",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
 }

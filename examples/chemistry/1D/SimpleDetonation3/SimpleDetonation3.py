@@ -21,7 +21,7 @@ TimeStepping = {
 Numerics = {
     "InterpOrder" : 2,
     "InterpBasis" : "LagrangeSeg",
-    "InterpolateIC" : True,
+    "L2InitialCondition" : False,
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreservingChem",
     "SourceTreatment" : "Implicit",
@@ -34,7 +34,7 @@ Numerics = {
 Output = {
     # "WriteInterval" : 10,
     # "WriteInitialSolution" : True,
-    "AutoProcess" : False,
+    "AutoPostProcess" : False,
     "Prefix" : "TestSimpler",
 
 }
@@ -42,7 +42,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : num_elems,
+    "NumElemsX" : num_elems,
     "xmin" : 0.,
     "xmax" : 2.*np.pi,
     # "PeriodicBoundariesX" : ["x1", "x2"],
@@ -50,7 +50,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Chemistry",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.2,
     "HeatRelease": 50.,

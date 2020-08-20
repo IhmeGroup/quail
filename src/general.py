@@ -99,7 +99,7 @@ NULLFACE = -2
 #     "WriteInitialSolution" : False,
 #     "WriteFinalSolution" : False,
 #     "RestartFile" : None,
-#     "AutoProcess" : False,
+#     "AutoPostProcess" : False,
 # }
 
 SolverParams = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}

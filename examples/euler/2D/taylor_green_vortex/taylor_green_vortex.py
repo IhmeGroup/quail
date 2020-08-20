@@ -25,8 +25,8 @@ Numerics = {
 Mesh = {
     "ElementShape" : "Quadrilateral",
      # "ElementShape" : "Triangle",
-    "NumElems_x" : n_elem,
-    "NumElems_y" : n_elem,
+    "NumElemsX" : n_elem,
+    "NumElemsY" : n_elem,
     "xmin" : 0.,
     "xmax" : 1.,
     "ymin" : 0.,
@@ -37,7 +37,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "Roe",
+    "ConvFluxNumerical" : "Roe",
     # "GasConstant" : 1.,
 }
 
@@ -56,5 +56,5 @@ SourceTerms = {
 }
 
 Output = {
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }

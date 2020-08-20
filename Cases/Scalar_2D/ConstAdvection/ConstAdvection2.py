@@ -33,7 +33,7 @@ EndTime = .5
 num_time_steps = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 6
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
+								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
 								 ApplyLimiter=None,WriteInterval=50)
 
 

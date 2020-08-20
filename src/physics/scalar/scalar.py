@@ -142,7 +142,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 	self.ConvFluxFcn.AllocHelperArrays(uL)
 	# 	F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
 		
-	# 	# ConvFlux = self.Params["ConvFlux"] 
+	# 	# ConvFlux = self.Params["ConvFluxNumerical"] 
 	# 	# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
 	# 	# 	F = self.ConvFluxLaxFriedrichs(uL, uR, NData.nvec, F)
 		

@@ -12,4 +12,4 @@ TimeStepping.update({
 
 Numerics["InterpOrder"] = 2
 Output["Prefix"] = "p2"
-Output["AutoProcess"] = False
+Output["AutoPostProcess"] = False

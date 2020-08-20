@@ -20,7 +20,7 @@ EndTime = 0.1
 num_time_steps = 100
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",TimeScheme="RK4",InterpolateIC=True)
+								 InterpBasis="LagrangeSeg",TimeScheme="RK4",L2InitialCondition=False)
 
 
 ### Physics

@@ -11,7 +11,7 @@ Mesh = {
 
 Physics = {
 	"Type" : "ConstAdvScalar",
-	"ConvFlux" : "LaxFriedrichs", 
+	"ConvFluxNumerical" : "LaxFriedrichs", 
 	"ConstVelocity" : 1.,
 }
 

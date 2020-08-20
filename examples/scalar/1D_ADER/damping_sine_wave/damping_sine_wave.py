@@ -23,14 +23,14 @@ Numerics = {
 Output = {
     "WriteInterval" : 2,
     "WriteInitialSolution" : True,
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : num_elems,
-    # "NumElems_y" : 2,
+    "NumElemsX" : num_elems,
+    # "NumElemsY" : 2,
     "xmin" : -1.,
     "xmax" : 1.,
     "PeriodicBoundariesX" : ["x1", "x2"],
@@ -38,7 +38,7 @@ Mesh = {
 
 Physics = {
     "Type" : "ConstAdvScalar",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "ConstVelocity" : 1.,
 }
 

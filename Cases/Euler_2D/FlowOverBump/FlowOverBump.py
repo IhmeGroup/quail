@@ -47,7 +47,7 @@ mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 # dt = 0.05
 # num_time_steps = int(EndTime/dt + 10.*general.eps)
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="FE",InterpolateIC=False,
+								 InterpBasis=InterpBasis,TimeScheme="FE",L2InitialCondition=True,
 								 TrackOutput=False,WriteTimeHistory=False,OrderSequencing=True)
 
 

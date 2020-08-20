@@ -32,7 +32,7 @@ num_time_steps = int((EndTime-StartTime)/dt + 10.*general.eps)
 InterpOrder = 10
 Params = general.SetSolverParams(Params, InterpOrder=InterpOrder,StartTime=StartTime,EndTime=EndTime,
 								 num_time_steps=num_time_steps,InterpBasis=InterpBasis,TimeScheme="RK4",
-								 InterpolateIC=False,ApplyLimiter=None,WriteInterval=50,
+								 L2InitialCondition=True,ApplyLimiter=None,WriteInterval=50,
 								 RestartFile=fname)
 
 ### Solve

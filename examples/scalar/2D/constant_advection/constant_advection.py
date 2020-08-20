@@ -12,27 +12,23 @@ Numerics = {
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-    "InterpolateIC" : False,
     "InterpolateFlux" : False,
-    "OrderSequencing" : False,
     "ApplyLimiter" : None, 
 }
 
 Output = {
-    "TrackOutput" : None,
-    "WriteTimeHistory" : False,
     "Prefix" : "Data",
     "WriteInterval" : 4,
     "WriteInitialSolution" : True,
     "WriteFinalSolution" : True,
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Triangle",
-    "NumElems_x" : 2,
-    "NumElems_y" : 2,
+    "NumElemsX" : 2,
+    "NumElemsY" : 2,
     "xmin" : -5.,
     "xmax" : 5.,
     "ymin" : -5.,
@@ -43,7 +39,7 @@ Mesh = {
 
 Physics = {
     "Type" : "ConstAdvScalar",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "ConstXVelocity" : 1.,
     "ConstYVelocity" : 1.,
 }

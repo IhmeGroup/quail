@@ -24,7 +24,7 @@ num_time_steps = 100
 InterpOrder = 1
 
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",InterpolateIC=False,
+								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",L2InitialCondition=True,
 								 ApplyLimiter="PositivityPreserving")
 
 

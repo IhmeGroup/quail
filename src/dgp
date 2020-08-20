@@ -200,8 +200,8 @@ def driver(deck):
 		shape = ShapeType[mesh_params["ElementShape"]]
 		xmin = mesh_params["xmin"]
 		xmax = mesh_params["xmax"]
-		num_elems_x = mesh_params["NumElems_x"]
-		num_elems_y = mesh_params["NumElems_y"]
+		num_elems_x = mesh_params["NumElemsX"]
+		num_elems_y = mesh_params["NumElemsY"]
 		ymin = mesh_params["ymin"]
 		ymax = mesh_params["ymax"]
 
@@ -251,7 +251,7 @@ def driver(deck):
 	# Set parameters
 	pparams = physics_params.copy()
 	pparams.pop("Type") # don't pass this key
-	conv_flux_type = pparams.pop("ConvFlux")
+	conv_flux_type = pparams.pop("ConvFluxNumerical")
 	physics.set_conv_num_flux(conv_flux_type)
 	physics.set_physical_params(**pparams)
 
@@ -409,7 +409,7 @@ def main(argv):
 		# Run
 		solver, physics, mesh = driver(deck)
 		# Process post-processing script
-		auto_process = solver.Params["AutoProcess"]
+		auto_process = solver.Params["AutoPostProcess"]
 		process_post_file(post_file, auto_process)
 	else:
 		# Post-process only

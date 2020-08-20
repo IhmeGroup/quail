@@ -171,7 +171,7 @@ class PhysicsBase(object):
 		for key in kwargs:
 			Params[key] = kwargs[key]
 			# if key not in Params.keys(): raise Exception("Input error")
-			# if key is "ConvFlux":
+			# if key is "ConvFluxNumerical":
 			# 	Params[key] = self.ConvFluxType[kwargs[key]]
 			# else:
 			# 	Params[key] = kwargs[key]

@@ -119,7 +119,7 @@ EndTime = 1.0
 num_time_steps = int(EndTime/dt + 10.*general.eps)
 InterpOrder = 2
 Params = general.SetSolverParams(InterpOrder=InterpOrder,EndTime=EndTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
+								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
 								 ElementQuadrature="Dunavant")
 
 

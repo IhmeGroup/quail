@@ -19,7 +19,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "Roe",
+    "ConvFluxNumerical" : "Roe",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
 }
@@ -53,5 +53,5 @@ BoundaryConditions = {
 Output = {
     "Prefix" : "p0",
     "WriteInitialSolution" : True,
-    "AutoProcess": False,
+    "AutoPostProcess": False,
 }

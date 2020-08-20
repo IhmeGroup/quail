@@ -83,8 +83,8 @@ Output = {}
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : 16,
-    "NumElems_y" : 2,
+    "NumElemsX" : 16,
+    "NumElemsY" : 2,
     "xmin" : -1.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
@@ -93,7 +93,7 @@ Mesh = {
 
 Physics = {
     "Type" : "ConstAdvScalar",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "ConstVelocity" : 1.,
 }
 

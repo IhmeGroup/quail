@@ -15,13 +15,13 @@ Numerics = {
 }
 
 Output = {
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : 25,
+    "NumElemsX" : 25,
     "xmin" : -1.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
@@ -29,7 +29,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 3.,
 }

@@ -10,7 +10,7 @@ TimeStepping = {
 Numerics = {
     "InterpOrder" : 3,
     "InterpBasis" : "LagrangeSeg",
-    "InterpolateIC" : True,
+    "L2InitialCondition" : False,
     "Solver" : "ADERDG",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
@@ -22,13 +22,13 @@ Numerics = {
 Output = {
     # "WriteInterval" : 1,
     # "WriteInitialSolution" : True,
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : 16,
+    "NumElemsX" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
     # "PeriodicBoundariesX" : ["xmin","xmax"]
@@ -36,7 +36,7 @@ Mesh = {
 
 Physics = {
     "Type" : "ConstAdvScalar",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "ConstVelocity" : 1.,
 }
 

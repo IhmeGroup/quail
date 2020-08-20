@@ -20,8 +20,8 @@ Mesh = {
     # "File" : "meshes/box_5x5.msh",
     "ElementShape" : "Triangle",
     #"ElementShape" : "Quadrilateral",
-    "NumElems_x" : 5,
-    "NumElems_y" : 5,
+    "NumElemsX" : 5,
+    "NumElemsY" : 5,
     "xmin" : -5.,
     "xmax" : 5.,
     "ymin" : -5.,
@@ -32,7 +32,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Euler",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "GasConstant" : 1.,
 }
 
@@ -57,5 +57,5 @@ BoundaryConditions = {
 }
 
 Output = {
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }
