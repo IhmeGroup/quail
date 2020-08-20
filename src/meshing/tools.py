@@ -388,7 +388,7 @@ def reorder_periodic_boundary_nodes(mesh, b1, b2, icoord,
         s = "y"
     else:
         s = "z"
-    print("Reordered periodic boundary in %s-direction" % (s))
+    print("Reordered periodic boundaries in %s-direction" % (s))
 
     return boundary_group1, boundary_group2, node_pairs, next_node_id  
 
