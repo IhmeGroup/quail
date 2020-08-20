@@ -467,7 +467,7 @@ class ADERDG(base.SolverBase):
 		if Params["CFL"] != None:
 			print('Error Message')
 			print('-------------------------------------------------------')
-			print('CFL-based time-stepping not supported in ADERDG')
+			print('CFL-based time-stepping not currently supported in ADERDG')
 			print('')
 			raise errors.IncompatibleError
 
