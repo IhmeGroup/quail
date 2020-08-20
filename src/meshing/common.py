@@ -48,14 +48,14 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 
 	''' Boundary groups and faces '''
 	# Left
-	boundary_group = mesh.add_boundary_group("Left")
+	boundary_group = mesh.add_boundary_group("x1")
 	boundary_group.num_boundary_faces = 1
 	boundary_group.allocate_boundary_faces()
 	boundary_face = boundary_group.boundary_faces[0]
 	boundary_face.elem_id = 0
 	boundary_face.face_id = 0
 	# Right
-	boundary_group = mesh.add_boundary_group("Right")
+	boundary_group = mesh.add_boundary_group("x2")
 	boundary_group.num_boundary_faces = 1
 	boundary_group.allocate_boundary_faces()
 	boundary_face = boundary_group.boundary_faces[0]

@@ -41,9 +41,9 @@ physics.set_source(source_type="SimpleSource", nu = nu)
 
 # Boundary conditions
 if Velocity >= 0.:
-	Inflow = "Left"; Outflow = "Right"
+	Inflow = "x1"; Outflow = "x2"
 else:
-	Inflow = "Right"; Outflow = "Left"
+	Inflow = "x2"; Outflow = "x1"
 
 # if not Periodic:
 # 	for ibfgrp in range(mesh.num_boundary_groups):

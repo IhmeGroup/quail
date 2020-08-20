@@ -35,13 +35,13 @@ physics.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 # if not Periodic:
 # 	for ibfgrp in range(mesh.num_boundary_groups):
 # 		BFG = mesh.boundary_groups[ibfgrp]
-# 		if BFG.Name is "Left":
+# 		if BFG.Name is "x1":
 # 			physics.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
-# 		elif BFG.Name is "Right":
+# 		elif BFG.Name is "x2":
 # 			physics.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 if not Periodic:
-	physics.set_BC(bname="Left", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
-	physics.set_BC(bname="Right", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+	physics.set_BC(bname="x1", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
+	physics.set_BC(bname="x2", BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 
 ### Solve
 solver = Solver.ADERDG(Params,physics,mesh)

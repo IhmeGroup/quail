@@ -75,10 +75,10 @@ ExactSolution = state_exact
 # ExactSolution = state_exact
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
         "BCType" : "SlipWall"
         },
-    "Right" : { 
+    "x2" : { 
         "BCType" : "SlipWall"
         }
 }

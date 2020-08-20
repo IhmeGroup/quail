@@ -51,14 +51,14 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
         "Function" : "ShockBurgers",
         "uL" : 1.,
         "uR" : 0.,
         "xshock" : xshock,
         "BCType" : "StateAll",
     },
-    "Right" : {
+    "x2" : {
         "BCType" : "Extrapolate",
     },
 }

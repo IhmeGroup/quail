@@ -43,12 +43,12 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
 	    "Function" : "Sine",
 	    "omega" : 2*np.pi,
     	"BCType" : "StateAll",
     },
-    "Right" : {
+    "x2" : {
     	"BCType" : "Extrapolate",
     },
 }

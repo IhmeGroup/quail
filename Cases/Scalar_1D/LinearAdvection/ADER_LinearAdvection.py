@@ -15,7 +15,7 @@ Periodic = False
 # Uniform mesh
 mesh = MeshCommon.mesh_1D(num_elems=32, xmin=-1., xmax=1.)
 if Periodic:
-	MeshTools.make_periodic_translational(mesh, x1="Left", x2="Right")
+	MeshTools.make_periodic_translational(mesh, x1="x1", x2="x2")
 # Non-uniform mesh
 # num_elems = 25
 # node_coords = np.cos(np.linspace(np.pi,0.,num_elems+1))
@@ -46,9 +46,9 @@ physics.set_IC(IC_type="Sine", omega = 2*np.pi)
 physics.set_exact(exact_type="Sine", omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:
-	Inflow = "Left"; Outflow = "Right"
+	Inflow = "x1"; Outflow = "x2"
 else:
-	Inflow = "Right"; Outflow = "Left"
+	Inflow = "x2"; Outflow = "x1"
 # if not Periodic:
 # 	for ibfgrp in range(mesh.num_boundary_groups):
 # 		BFG = mesh.boundary_groups[ibfgrp]

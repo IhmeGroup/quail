@@ -69,6 +69,6 @@ state2.update({"BCType":"StateAll"})
 ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
-    "Left" : state2,
-    "Right" : state2,
+    "x1" : state2,
+    "x2" : state2,
 }

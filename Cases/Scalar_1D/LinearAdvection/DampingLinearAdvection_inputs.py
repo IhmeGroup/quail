@@ -43,9 +43,9 @@ import code
 # physics.ExactSoln.Set(Function=physics.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # # Boundary conditions
 # if Velocity >= 0.:
-# 	Inflow = "Left"; Outflow = "Right"
+# 	Inflow = "x1"; Outflow = "x2"
 # else:
-# 	Inflow = "Right"; Outflow = "Left"
+# 	Inflow = "x2"; Outflow = "x1"
 # if not Periodic:
 # 	for ibfgrp in range(mesh.num_boundary_groups):
 # 		BC = physics.BCs[ibfgrp]
@@ -106,13 +106,13 @@ InitialCondition = {
 }
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
 	    "Function" : "DampingSine",
 	    "omega" : 2*np.pi,
 	    "nu" : nu,
     	"BCType" : "StateAll",
     },
-    "Right" : {
+    "x2" : {
     	"Function" : None,
     	"BCType" : "Extrapolation",
     },

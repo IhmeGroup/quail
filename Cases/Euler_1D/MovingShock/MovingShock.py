@@ -43,16 +43,16 @@ physics.set_exact(exact_type="MovingShock", M=M, xshock = xshock)
 # Boundary conditions
 # for ibfgrp in range(mesh.num_boundary_groups):
 # 	BFG = mesh.boundary_groups[ibfgrp]
-# 	if BFG.Name is "Left":
+# 	if BFG.Name is "x1":
 # 		physics.set_BC(BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
-# 	elif BFG.Name is "Right":
+# 	elif BFG.Name is "x2":
 # 		physics.set_BC(BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
 
-physics.set_BC(bname="Left", BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
-physics.set_BC(bname="Right", BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
+physics.set_BC(bname="x1", BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
+physics.set_BC(bname="x2", BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
 
 # physics.set_BC(BC_type="StateAll", fcn_type="MovingShock")
-# physics.SetBC("Right",Function=physics.FcnMovingShock, BCType=physics.BCType["StateAll"], M=M, xshock=xshock)
+# physics.SetBC("x2",Function=physics.FcnMovingShock, BCType=physics.BCType["StateAll"], M=M, xshock=xshock)
 
 
 ### Solve
