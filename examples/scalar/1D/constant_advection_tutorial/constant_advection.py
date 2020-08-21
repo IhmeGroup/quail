@@ -3,10 +3,10 @@ import numpy as np
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElems_x" : 16,
+    "NumElemsX" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
-    "PeriodicBoundariesX" : ["xmin","xmax"]
+    "PeriodicBoundariesX" : ["x1","x2"]
 }
 
 Physics = {
@@ -35,7 +35,9 @@ TimeStepping = {
 	"TimeStepper" : "RK4"
 }
 
-
+Output = {
+	"AutoPostProcess" : False,
+}
 
 
 

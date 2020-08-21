@@ -76,32 +76,6 @@ class NodeType(Enum):
 INTERIORFACE = -1
 NULLFACE = -2
 
-
-# Default solver parameters
-# SolverParams = {
-# 	"InitialTime" : 0.,
-# 	"FinalTime" : 1.,
-# 	"nTimeStep" : 100.,
-#     "SolutionOrder" : 1,
-#     "SolutionBasis" : BasisType.LagrangeEqSeg,
-#     "TimeStepper" : "RK4",
-#     "InterpolateIC" : False,
-#     "InterpolateFluxADER": True,
-#     "LinearGeomMapping" : False,
-#     "UniformMesh" : False,
-#     "UseNumba" : False,
-#     "OrderSequencing" : False,
-#     "TrackOutput" : None,
-#     "WriteTimeHistory" : False,
-#     "ApplyLimiter" : None, 
-#     "Prefix" : "Data",
-#     "WriteInterval" : -1,
-#     "WriteInitialSolution" : False,
-#     "WriteFinalSolution" : False,
-#     "RestartFile" : None,
-#     "AutoPostProcess" : False,
-# }
-
 SolverParams = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
 
 

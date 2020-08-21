@@ -78,6 +78,12 @@ def set_time_stepping_approach(stepper, Params):
 	num_time_steps = Params["NumTimeSteps"]
 	FinalTime = Params["FinalTime"]
 
+	'''
+	Hierarchy for cases goes:
+		1. number of time steps
+		2. time step size
+		3. CFL number
+	'''
 	if num_time_steps != None:
 		stepper.get_time_step = get_dt_from_num_time_steps
 		stepper.num_time_steps = num_time_steps
