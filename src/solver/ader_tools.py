@@ -42,7 +42,7 @@ def set_source_treatment(ns, SourceTreatmentADER):
 	if SourceTreatmentADER == "Explicit":
 		fcn = predictor_elem_explicit
 	elif SourceTreatmentADER == "Implicit":
-		if ns is 1:
+		if ns == 1:
 			fcn = predictor_elem_implicit
 		else:
 			fcn = predictor_elem_sylvester

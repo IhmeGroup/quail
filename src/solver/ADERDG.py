@@ -366,7 +366,7 @@ class ADERHelpers(object):
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, xnode,
 				 	get_djac=True, get_jac=True, get_ijac=True)
 
-			if shape_name is 'HexShape':
+			if shape_name == 'HexShape':
 				self.jac_elems[elem] = np.tile(jac,(int(np.sqrt(nnode)),1,1))
 				self.ijac_elems[elem] = np.tile(ijac,
 						(int(np.sqrt(nnode)),1,1))
@@ -377,7 +377,7 @@ class ADERHelpers(object):
 				# Store
 				self.x_elems[elem] = np.tile(x,(int(np.sqrt(nnode)),1))
 
-			elif shape_name is 'QuadShape':
+			elif shape_name == 'QuadShape':
 				self.jac_elems[elem] = np.tile(jac,(nnode,1,1))
 				self.ijac_elems[elem] = np.tile(ijac,(nnode,1,1))
 				self.djac_elems[elem] = np.tile(djac,(nnode,1))
