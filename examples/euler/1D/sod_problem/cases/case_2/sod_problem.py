@@ -2,26 +2,26 @@ import numpy as np
 import copy
 
 FinalTime = 2.0
-num_time_steps = 4000
+NumTimeSteps = 4000
 
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_steps,
+    "NumTimeSteps" : NumTimeSteps,
     # "CFL" : 0.2,
-    "TimeScheme" : "SSPRK3",
+    "TimeStepper" : "SSPRK3",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     # "ApplyLimiter" : "PositivityPreserving",
     "L2InitialCondition" : True,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-    "NodesEqualQuadpts" : False,
+    "CollocatedPoints" : False,
 
 }
 

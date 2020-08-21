@@ -6,30 +6,30 @@ Restart = {
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 1.,
-    "num_time_steps" : None, # NumTimeSteps
+    "NumTimeSteps" : None,
     "TimeStepSize" : None, 
     "CFL" : None,
-    "TimeScheme" : "RK4", # TimeStepper
-    "OperatorSplitting_Exp" : "SSPRK3", # OperatorSplittingExplicit
-    "OperatorSplitting_Imp" : "BDF1", # OperatorSplittingImplicit
+    "TimeStepper" : "RK4",
+    "OperatorSplittingExplicit" : "SSPRK3",
+    "OperatorSplittingImplicit" : "BDF1",
 }
 
 Numerics = {
-    "InterpOrder" : 1, # SolutionOrder
-    "InterpBasis" : "LagrangeSeg", # SolutionBasis
+    "SolutionOrder" : 1, 
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
     "NodeType" : "Equidistant",
-    "NodesEqualQuadpts" : False, # CollocatedPoints
+    "CollocatedPoints" : False,
     "L2InitialCondition" : True,
     "ApplyLimiter" : None, 
-    "SourceTreatment" : "Explicit", # SourceTreatmentADER
-    "InterpolateFlux" : True, # InterpolateFluxADER, True
+    "SourceTreatmentADER" : "Explicit",
+    "InterpolateFluxADER" : True,
     "ConvFluxSwitch" : True,
     "SourceSwitch" : True,
 }
-# eric 
+
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",

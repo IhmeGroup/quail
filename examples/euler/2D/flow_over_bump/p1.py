@@ -7,9 +7,9 @@ Restart = {
 
 TimeStepping.update({
     "FinalTime" : 48.,
-    "num_time_steps" : 1000,
+    "NumTimeSteps" : 1000,
 })
 
-Numerics["InterpOrder"] = 1
-Numerics["InterpBasis"] = "LegendreQuad"
+Numerics["SolutionOrder"] = 1
+Numerics["SolutionBasis"] = "LegendreQuad"
 Output["Prefix"] = "p1"

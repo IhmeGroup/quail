@@ -73,7 +73,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 ### Mesh
 folder = "meshes/"
 # Quadrilaterals
-#subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeEqQuad"
+#subfolder = "Quadrilaterals/"; SolutionBasis = "LagrangeEqQuad"
 # # # Structured
 #subsubfolder = "Structured/"
 #FileName = "box_5x5.msh"
@@ -88,7 +88,7 @@ folder = "meshes/"
 # FileName = "box_400_elem.msh"
 # FileName = "box_1600_elem.msh"
 ## Triangles
-subfolder = "Triangles/"; InterpBasis = "LagrangeTri"
+subfolder = "Triangles/"; SolutionBasis = "LagrangeTri"
 # Structured
 # subsubfolder = "Structured/"
 # FileName = "box_5x5_v4.msh"
@@ -116,15 +116,15 @@ MeshTools.make_periodic_translational(mesh, x1=bnames_x[ax[0]], x2=bnames_x[ax[1
 ### Solver parameters
 dt = 0.05
 FinalTime = 1.0
-num_time_steps = int(FinalTime/dt + 10.*general.eps)
-InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
+NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
+SolutionOrder = 2
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis=SolutionBasis,TimeStepper="RK4",L2InitialCondition=True,
 								 ElementQuadrature="Dunavant")
 
 
 ### Physics
-physics = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Euler.Euler2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 # physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
 physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
 physics.set_conv_num_flux("LaxFriedrichs")

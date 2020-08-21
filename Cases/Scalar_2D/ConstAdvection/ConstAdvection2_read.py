@@ -23,15 +23,15 @@ fname = "Data1.pkl"
 mesh, physics, Params, _ = ReadWriteDataFiles.read_data_file(fname)
 
 ### Solver parameters
-# InterpBasis = "LagrangeEqTri"
-InterpBasis = "HierarchicH1Tri"
+# SolutionBasis = "LagrangeEqTri"
+SolutionBasis = "HierarchicH1Tri"
 dt = 0.05
 InitialTime = 2.5
 FinalTime = 10.0
-num_time_steps = int((FinalTime-InitialTime)/dt + 10.*general.eps)
-InterpOrder = 10
-Params = general.SetSolverParams(Params, InterpOrder=InterpOrder,InitialTime=InitialTime,FinalTime=FinalTime,
-								 num_time_steps=num_time_steps,InterpBasis=InterpBasis,TimeScheme="RK4",
+NumTimeSteps = int((FinalTime-InitialTime)/dt + 10.*general.eps)
+SolutionOrder = 10
+Params = general.SetSolverParams(Params, SolutionOrder=SolutionOrder,InitialTime=InitialTime,FinalTime=FinalTime,
+								 NumTimeSteps=NumTimeSteps,SolutionBasis=SolutionBasis,TimeStepper="RK4",
 								 L2InitialCondition=True,ApplyLimiter=None,WriteInterval=50,
 								 RestartFile=fname)
 

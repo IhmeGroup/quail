@@ -242,8 +242,8 @@ def driver(deck):
 	Physics
 	'''
 	# Get order and basis type
-	order = numerics_params["InterpOrder"]
-	basis_type = numerics_params["InterpBasis"]
+	order = numerics_params["SolutionOrder"]
+	basis_type = numerics_params["SolutionBasis"]
 
 	# Create physics object
 	physics = set_physics(order, basis_type, mesh, physics_params["Type"])

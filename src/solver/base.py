@@ -97,7 +97,7 @@ class SolverBase(ABC):
 		self.num_time_steps = 0 # will be set later
 
 		# Set the basis functions for the solver
-		BASIS_TYPE  = Params["InterpBasis"]
+		BASIS_TYPE  = Params["SolutionBasis"]
 		self.basis = basis_tools.set_basis(physics.order, BASIS_TYPE)
 
 		NODE_TYPE = Params["NodeType"]
@@ -109,7 +109,7 @@ class SolverBase(ABC):
 		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
+		self.basis.force_nodes_equal_quad_pts(Params["CollocatedPoints"])
 
 		# Limiter
 		LIMITER_TYPE = Params["ApplyLimiter"]
@@ -139,7 +139,7 @@ class SolverBase(ABC):
 
 		# Gauss Lobatto nodes compatibility checks
 		node_type = Params["NodeType"]
-		forcing_switch = Params["NodesEqualQuadpts"]
+		forcing_switch = Params["CollocatedPoints"]
 		elem_quad = Params["ElementQuadrature"]
 		face_quad = Params["FaceQuadrature"]
 
@@ -415,7 +415,7 @@ class SolverBase(ABC):
 		'''
 		physics = self.physics
 		mesh = self.mesh
-		Order = self.Params["InterpOrder"]
+		Order = self.Params["SolutionOrder"]
 		Stepper = self.Stepper
 		Time = self.time
 

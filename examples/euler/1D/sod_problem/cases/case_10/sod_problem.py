@@ -3,26 +3,26 @@ import copy
 
 #FinalTime = 0.25
 FinalTime = 1e-6
-num_time_steps = 1
+NumTimeSteps = 1
 
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_steps,
+    "NumTimeSteps" : NumTimeSteps,
     # "CFL" : 0.2,
-    "TimeScheme" : "RK4",
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     "L2InitialCondition" : True,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-    "NodesEqualQuadpts" : False,
+    "CollocatedPoints" : False,
 
 }
 

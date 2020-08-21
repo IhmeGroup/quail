@@ -23,7 +23,7 @@ import solver.tools as solver_tools
 
 def set_stepper(Params, U):
 	'''
-	Given the timescheme parameter, set the stepper object
+	Given the TimeStepper parameter, set the stepper object
 
 	Inputs:
 	-------
@@ -34,24 +34,24 @@ def set_stepper(Params, U):
 	-------- 
 	    stepper: instantiated stepper object
 	'''
-	TimeScheme = Params["TimeScheme"]
-	if StepperType[TimeScheme] == StepperType.FE:
+	TimeStepper = Params["TimeStepper"]
+	if StepperType[TimeStepper] == StepperType.FE:
 		stepper = stepper_defs.FE(U)
-	elif StepperType[TimeScheme] == StepperType.RK4:
+	elif StepperType[TimeStepper] == StepperType.RK4:
 		stepper = stepper_defs.RK4(U)
-	elif StepperType[TimeScheme] == StepperType.LSRK4:
+	elif StepperType[TimeStepper] == StepperType.LSRK4:
 		stepper = stepper_defs.LSRK4(U)
-	elif StepperType[TimeScheme] == StepperType.SSPRK3:
+	elif StepperType[TimeStepper] == StepperType.SSPRK3:
 		stepper = stepper_defs.SSPRK3(U)
 	# if setting a splitting scheme select solvers for the splits
-	elif StepperType[TimeScheme] == StepperType.Strang:
+	elif StepperType[TimeStepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
-		stepper.set_split_schemes(Params["OperatorSplitting_Exp"], 
-			Params["OperatorSplitting_Imp"], U)
-	elif StepperType[TimeScheme] == StepperType.Simpler:
+		stepper.set_split_schemes(Params["OperatorSplittingExplicit"], 
+			Params["OperatorSplittingImplicit"], U)
+	elif StepperType[TimeStepper] == StepperType.Simpler:
 		stepper = stepper_defs.Simpler(U)
-		stepper.set_split_schemes(Params["OperatorSplitting_Exp"], 
-			Params["OperatorSplitting_Imp"], U)
+		stepper.set_split_schemes(Params["OperatorSplittingExplicit"], 
+			Params["OperatorSplittingImplicit"], U)
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
@@ -75,7 +75,7 @@ def set_time_stepping_approach(stepper, Params):
 	# unpack time stepping settings
 	cfl = Params["CFL"]
 	timestepsize = Params["TimeStepSize"]
-	num_time_steps = Params["num_time_steps"]
+	num_time_steps = Params["NumTimeSteps"]
 	FinalTime = Params["FinalTime"]
 
 	if num_time_steps != None:

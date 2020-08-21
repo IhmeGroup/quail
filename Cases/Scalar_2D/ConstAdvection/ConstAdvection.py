@@ -17,7 +17,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 ### Mesh
 folder = "meshes/"
 # Quadrilaterals
-# subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeEqQuad"
+# subfolder = "Quadrilaterals/"; SolutionBasis = "LagrangeEqQuad"
 # # # Structured
 # subsubfolder = "Structured/"
 # FileName = "box_5x5.msh"
@@ -32,7 +32,7 @@ folder = "meshes/"
 # FileName = "box_400_elem.msh"
 # FileName = "box_1600_elem.msh"
 ## Triangles
-subfolder = "Triangles/"; InterpBasis = "HierarchicH1Tri"
+subfolder = "Triangles/"; SolutionBasis = "HierarchicH1Tri"
 # Structured
 subsubfolder = "Structured/"
 FileName = "box_5x5.msh"
@@ -45,16 +45,16 @@ mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 ### Solver parameters
 dt = 0.05
 FinalTime = 2.0
-num_time_steps = int(FinalTime/dt + 10.*general.eps)
-InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
+NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
+SolutionOrder = 2
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis=SolutionBasis,TimeStepper="RK4",L2InitialCondition=True,
 								 ElementQuadrature="Dunavant",ApplyLimiter=None)
 
 
 ### Physics
 x0 = np.array([-0.5,-0.2])
-physics = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Scalar.ConstAdvScalar2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 # physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=0.5)
 physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=0.5)
 physics.set_conv_num_flux("LaxFriedrichs")

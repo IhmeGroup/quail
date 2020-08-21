@@ -24,14 +24,14 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=2, xmin=-1., xmax=1., Periodic
 #dt = 0.001
 #mu = 1.
 FinalTime = 0.1
-num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.01))])
-#num_time_steps = int(FinalTime/dt)
-InterpOrder = 3
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",TimeScheme="ADER")
+NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.01))])
+#NumTimeSteps = int(FinalTime/dt)
+SolutionOrder = 3
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LagrangeSeg",TimeStepper="ADER")
 ### Physics
 ConstVelocity = 1.
-physics = Scalar.Burgers(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Scalar.Burgers(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 # physics.set_physical_params(AdvectionOperator="Burgers")
 physics.set_physical_params(ConstVelocity=ConstVelocity, ConvFlux="LaxFriedrichs")
 

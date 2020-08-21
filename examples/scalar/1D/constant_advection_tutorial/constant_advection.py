@@ -23,8 +23,8 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 Numerics = {
-	"InterpOrder" : 2,
-	"InterpBasis" : "LagrangeSeg",
+	"SolutionOrder" : 2,
+	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
 }
 
@@ -32,7 +32,7 @@ TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : 0.5,
 	"CFL" : 0.1,
-	"TimeScheme" : "RK4"
+	"TimeStepper" : "RK4"
 }
 
 

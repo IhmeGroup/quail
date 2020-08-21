@@ -3,16 +3,16 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 10.,
     "CFL" : 0.01,
-    "TimeScheme" : "RK4",
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 10,
-    "InterpBasis" : "HierarchicH1Tri",
+    "SolutionOrder" : 10,
+    "SolutionBasis" : "HierarchicH1Tri",
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-    "InterpolateFlux" : False,
+    "InterpolateFluxADER" : False,
     "ApplyLimiter" : None, 
 }
 

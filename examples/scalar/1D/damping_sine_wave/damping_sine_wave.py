@@ -3,13 +3,13 @@ import numpy as np
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.5,
-    "num_time_steps" : 40,
-    "TimeScheme" : "RK4",
+    "NumTimeSteps" : 40,
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LegendreSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LegendreSeg",
     "Solver" : "DG",
 }
 

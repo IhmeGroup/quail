@@ -7,9 +7,9 @@ Restart = {
 
 TimeStepping.update({
     "FinalTime" : 54.,
-    "num_time_steps" : 1500,
+    "NumTimeSteps" : 1500,
 })
 
-Numerics["InterpOrder"] = 2
+Numerics["SolutionOrder"] = 2
 Output["Prefix"] = "p2"
 Output["AutoPostProcess"] = False

@@ -23,15 +23,15 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=16, xmin=-1., xmax=1., Periodi
 
 ### Solver parameters
 FinalTime = 0.5
-num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
-InterpOrder = 3
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",InterpolateFlux=True,SourceTreatment="Implicit")
+NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
+SolutionOrder = 3
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LagrangeSeg",InterpolateFluxADER=True,SourceTreatmentADER="Implicit")
 nu = -3.
 
 ### Physics
 Velocity = 1.0 
-physics = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Scalar.ConstAdvScalar1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(ConstVelocity=Velocity)
 physics.set_conv_num_flux("LaxFriedrichs")
 

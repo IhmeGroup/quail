@@ -4,13 +4,13 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.1,
     # "CFL" : 0.05,
-    "num_time_steps" : 100,
-    "TimeScheme" : "RK4",
+    "NumTimeSteps" : 100,
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
 }
 

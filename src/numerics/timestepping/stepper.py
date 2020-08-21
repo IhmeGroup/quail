@@ -373,7 +373,7 @@ class Strang(StepperBase, ode.ODESolvers):
 		    explicit: stepper object instantiation for explicit scheme
 		    implicit: stepper object instantiation for ODE solver
 		'''		
-		param = {"TimeScheme":explicit}
+		param = {"TimeStepper":explicit}
 		# call set_stepper from stepper tools for the explicit scheme
 		self.explicit = stepper_tools.set_stepper(param, U)
 

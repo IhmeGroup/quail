@@ -8,24 +8,24 @@ dt = cfl*dx/u
 FinalTime = 1.3
 nTimeSteps =int(FinalTime/dt)
 print(nTimeSteps)
-num_time_steps = 4000
+NumTimeSteps = 4000
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_steps,
-    "TimeScheme" : "RK4",
+    "NumTimeSteps" : NumTimeSteps,
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     "L2InitialCondition" : False,
     "NodeType" : "Equidistant",
 #    "ElementQuadrature" : "GaussLobatto",
 #    "FaceQuadrature" : "GaussLobatto",
-#    "NodesEqualQuadpts" : True,
+#    "CollocatedPoints" : True,
 
 }
 

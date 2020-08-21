@@ -8,20 +8,20 @@ nTimeSteps = 4000
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : nTimeSteps,
+    "NumTimeSteps" : nTimeSteps,
     #"CFL" : 0.025,
-    "TimeScheme" : "RK4",
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     #"NodeType" : "GaussLobatto",
     #"ElementQuadrature" : "GaussLobatto",
     #"FaceQuadrature" : "GaussLobatto",
-    #"NodesEqualQuadpts" : True,
+    #"CollocatedPoints" : True,
 
 }
 

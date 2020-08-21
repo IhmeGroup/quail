@@ -19,15 +19,15 @@ nu = -1000.
 
 ### Solver parameters
 FinalTime = 0.5
-num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.075))])
-# num_time_steps = 100
-InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",SourceTreatment="Implicit")
+NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.075))])
+# NumTimeSteps = 100
+SolutionOrder = 2
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LagrangeSeg",SourceTreatmentADER="Implicit")
 
 
 ### Physics
-physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Euler.Euler1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(SpecificHeatRatio=1.4)
 physics.set_conv_num_flux("Roe")
 

@@ -12,7 +12,7 @@ import solver.DG as Solver
 
 
 ### Parameters
-InterpOrder = p = 5
+SolutionOrder = p = 5
 basis = General.BasisType["LagrangeEqSeg"]
 nL = 51 # number of wavenumbers
 alpha = 0. # 0 for upwind flux, 1 for central flux
@@ -25,8 +25,8 @@ h = mesh.node_coords[-1,0] - mesh.node_coords[-2,0]
 
 
 ### Solver and physics
-Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
-physics = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,SolutionBasis="LagrangeEqSeg")
+physics = Scalar.Scalar(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(Velocity=1.)
 # Initial conditions
 physics.IC.Set(Function=physics.FcnExponential)
@@ -36,7 +36,7 @@ solver = Solver.DG(Params,physics,mesh)
 
 
 ### Mass matrix, stiffness matrix, basis
-MMinv, SM, PhiLeft, PhiRight, nn = CalculateBasisAndMatrices(mesh, basis, InterpOrder)
+MMinv, SM, PhiLeft, PhiRight, nn = CalculateBasisAndMatrices(mesh, basis, SolutionOrder)
 
 
 ### Allocate

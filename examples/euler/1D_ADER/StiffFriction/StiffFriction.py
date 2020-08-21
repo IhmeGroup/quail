@@ -8,16 +8,16 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
     "nTimeStep" : nTimeStep,
-    "TimeScheme" : "ADER",
-    # "OperatorSplitting_Exp" : "SSPRK3",
-    # "OperatorSplitting_Imp" : "BDF1",
+    "TimeStepper" : "ADER",
+    # "OperatorSplittingExplicit" : "SSPRK3",
+    # "OperatorSplittingImplicit" : "BDF1",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeEqSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeEqSeg",
     "Solver" : "ADERDG",
-    "SourceTreatment" : "Implicit"
+    "SourceTreatmentADER" : "Implicit"
 }
 
 Output = {

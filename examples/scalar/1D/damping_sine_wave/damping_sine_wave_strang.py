@@ -4,23 +4,23 @@ num_elems = 128
 dx = float(1./num_elems)
 dt = cfl*dx
 FinalTime = 0.5
-num_time_steps = int(FinalTime/dt)
-print(num_time_steps)
+NumTimeSteps = int(FinalTime/dt)
+print(NumTimeSteps)
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_steps,
-    "TimeScheme" : "Strang",
-    "OperatorSplitting_Imp" : "Trapezoidal",
+    "NumTimeSteps" : NumTimeSteps,
+    "TimeStepper" : "Strang",
+    "OperatorSplittingImplicit" : "Trapezoidal",
 
 }
 
 Numerics = {
-    "InterpOrder" : 3,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 3,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ConvFluxSwitch" : True,
-    # "SourceTreatment" : "Implicit"
+    # "SourceTreatmentADER" : "Implicit"
 }
 
 Output = {

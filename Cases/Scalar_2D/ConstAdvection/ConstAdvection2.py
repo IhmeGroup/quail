@@ -20,27 +20,27 @@ mesh = MeshCommon.mesh_2D(num_elems_x= num_elems_x, num_elems_y = num_elems_x, x
 	ymin=-5., ymax=5.)
 
 ### Solver parameters
-# InterpBasis = "LagrangeEqTri"
-InterpBasis = "HierarchicH1Tri"
-# InterpBasis = "LagrangeEqQuad"
-if InterpBasis == "LagrangeEqTri" or InterpBasis == "HierarchicH1Tri":
+# SolutionBasis = "LagrangeEqTri"
+SolutionBasis = "HierarchicH1Tri"
+# SolutionBasis = "LagrangeEqQuad"
+if SolutionBasis == "LagrangeEqTri" or SolutionBasis == "HierarchicH1Tri":
 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 if Periodic:
 	MeshTools.make_periodic_translational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
 dt = 0.025
 FinalTime = .5
-num_time_steps = int(FinalTime/dt + 10.*general.eps)
-InterpOrder = 6
+NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
+SolutionOrder = 6
 
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="RK4",L2InitialCondition=True,
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis=SolutionBasis,TimeStepper="RK4",L2InitialCondition=True,
 								 ApplyLimiter=None,WriteInterval=50)
 
 
 ### Physics
 x0 = np.array([0., 0.])
-physics = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Scalar.ConstAdvScalar2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=1.)
 physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions

@@ -9,15 +9,15 @@ nt = int(tfinal/dt + 1.e-12)
 
 TimeStepping = {
     "FinalTime" : tfinal,
-    "num_time_steps" : nt,
-    "TimeScheme" : "FE",
+    "NumTimeSteps" : nt,
+    "TimeStepper" : "FE",
 }
 
 Numerics = {
-    "InterpOrder" : 8,
-    # "InterpBasis" : "LagrangeEqQuad",
-    "InterpBasis" : "LegendreQuad",
-    # "InterpBasis" : "LagrangeEqTri",
+    "SolutionOrder" : 8,
+    # "SolutionBasis" : "LagrangeEqQuad",
+    "SolutionBasis" : "LegendreQuad",
+    # "SolutionBasis" : "LagrangeEqTri",
     # "ElementQuadrature" : "Dunavant",
     # "FaceQuadrature" : "GaussLegendre",
 }

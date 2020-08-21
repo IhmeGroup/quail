@@ -7,8 +7,8 @@ Restart = {
 
 TimeStepping.update({
     "FinalTime" : 1.,
-    "num_time_steps" : 40,
-    "TimeScheme" : "RK4",
+    "NumTimeSteps" : 40,
+    "TimeStepper" : "RK4",
 })
 
 Output = {

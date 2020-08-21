@@ -17,14 +17,14 @@ mesh = MeshCommon.mesh_1D(num_elems=25, xmin=-1., xmax=1.)
 
 ### Solver parameters
 FinalTime = 0.1
-num_time_steps = 100
-InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",TimeScheme="ADER",L2InitialCondition=False,ApplyLimiter=None)
+NumTimeSteps = 100
+SolutionOrder = 2
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LagrangeSeg",TimeStepper="ADER",L2InitialCondition=False,ApplyLimiter=None)
 
 # nu = -1000.
 ### Physics
-physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Euler.Euler1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=3.)
 physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions

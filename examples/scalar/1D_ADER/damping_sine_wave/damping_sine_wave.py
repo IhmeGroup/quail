@@ -5,19 +5,19 @@ num_elems = 16
 dx = float(1./num_elems)
 dt = cfl*dx
 FinalTime = 0.5
-num_time_steps = int(FinalTime/dt)
+NumTimeSteps = int(FinalTime/dt)
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_steps,
-    "TimeScheme" : "ADER",
+    "NumTimeSteps" : NumTimeSteps,
+    "TimeStepper" : "ADER",
 }
 
 Numerics = {
-    "InterpOrder" : 3,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 3,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
-    "SourceTreatment" : "Implicit",
+    "SourceTreatmentADER" : "Implicit",
 }
 
 Output = {

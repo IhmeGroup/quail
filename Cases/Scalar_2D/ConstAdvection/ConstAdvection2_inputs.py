@@ -20,22 +20,22 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # 	MeshTools.make_periodic_translational(mesh, x1="x1", x2="x2", y1="y1", y2="y2")
 
 # ### Solver parameters
-# # InterpBasis = "LagrangeEqTri"
-# InterpBasis = "HierarchicH1Tri"
-# if InterpBasis is "LagrangeEqTri" or "HierarchicH1Tri":
+# # SolutionBasis = "LagrangeEqTri"
+# SolutionBasis = "HierarchicH1Tri"
+# if SolutionBasis is "LagrangeEqTri" or "HierarchicH1Tri":
 # 	mesh = MeshCommon.split_quadrils_into_tris(mesh)
 # dt = 0.05
 # FinalTime = 10.0
-# num_time_steps = int(FinalTime/dt + 10.*general.eps)
-# InterpOrder = 10
-# Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-# 								 InterpBasis=InterpBasis,TimeScheme="RK4",InterpolateIC=False,
+# NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
+# SolutionOrder = 10
+# Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+# 								 SolutionBasis=SolutionBasis,TimeStepper="RK4",InterpolateIC=False,
 # 								 ApplyLimiter=None,WriteInterval=50)
 
 
 # ### Physics
 # x0 = np.array([0., 0.])
-# physics = Scalar.ConstAdvScalar2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# physics = Scalar.ConstAdvScalar2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 # physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=1.,ConvFlux="LaxFriedrichs")
 # # Initial conditions
 # physics.IC.Set(Function=physics.FcnGaussian, x0=x0)
@@ -59,16 +59,16 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 10.,
-    "num_time_steps" : 200,
-    "TimeScheme" : "RK4",
+    "NumTimeSteps" : 200,
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 10,
-    "InterpBasis" : "HierarchicH1Tri",
+    "SolutionOrder" : 10,
+    "SolutionBasis" : "HierarchicH1Tri",
     "Solver" : "DG",
     "L2InitialCondition" : True,
-    "InterpolateFlux" : False,
+    "InterpolateFluxADER" : False,
     "ApplyLimiter" : None, 
 }
 

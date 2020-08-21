@@ -20,16 +20,16 @@ mesh = MeshCommon.mesh_1D(num_elems=100, xmin=0., xmax=1.)
 
 ### Solver parameters
 FinalTime = 4.e-5
-num_time_steps = 100
-InterpOrder = 1
+NumTimeSteps = 100
+SolutionOrder = 1
 
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",TimeScheme="SSPRK3",L2InitialCondition=True,
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LagrangeSeg",TimeStepper="SSPRK3",L2InitialCondition=True,
 								 ApplyLimiter="PositivityPreserving")
 
 
 ### Physics
-physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Euler.Euler1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(GasConstant=287.,SpecificHeatRatio=1.4)
 physics.set_conv_num_flux("Roe")
 # Parameters

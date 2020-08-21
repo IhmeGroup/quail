@@ -16,20 +16,20 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 ### Mesh
 folder = "meshes/"
 ## Quadrilaterals
-subfolder = "Quadrilaterals/"; InterpBasis = "LagrangeQuad"
+subfolder = "Quadrilaterals/"; SolutionBasis = "LagrangeQuad"
 #FileName = "bump0_q1.msh"; 
 FileName = "bump0.msh"; 
-#InterpOrder = 0; num_time_steps = 500; FinalTime = 40.
+#SolutionOrder = 0; NumTimeSteps = 500; FinalTime = 40.
 
-InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; FinalTime = [40., 48., 54.]
+SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [40., 48., 54.]
 # FileName = "bump1_q1.msh"
 # FileName = "bump1.msh"
-# InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; FinalTime = [20., 24., 27.]
+# SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [20., 24., 27.]
 # # FileName = "bump2_q1.msh"
 # FileName = "bump2.msh"
-# InterpOrder = [0, 1, 2]; num_time_steps = [500, 1000, 1500]; FinalTime = [10., 12., 13.5]
+# SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [10., 12., 13.5]
 # Triangles
-#subfolder = "Triangles/"; InterpBasis = "LagrangeEqTri"
+#subfolder = "Triangles/"; SolutionBasis = "LagrangeEqTri"
 #FileName = "bump0_tri.msh"
 MeshFile = CurrentDir + folder + subfolder + FileName
 mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
@@ -40,19 +40,19 @@ mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 # exit()
 
 ### Solver parameters
-# InterpOrder = 1
+# SolutionOrder = 1
 # FinalTime = 1.
-# num_time_steps = 500
-# InterpOrder = [0]; num_time_steps = [500]; FinalTime = [40.]
+# NumTimeSteps = 500
+# SolutionOrder = [0]; NumTimeSteps = [500]; FinalTime = [40.]
 # dt = 0.05
-# num_time_steps = int(EndTime/dt + 10.*general.eps)
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis=InterpBasis,TimeScheme="FE",L2InitialCondition=True,
+# NumTimeSteps = int(EndTime/dt + 10.*general.eps)
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis=SolutionBasis,TimeStepper="FE",L2InitialCondition=True,
 								 TrackOutput=False,WriteTimeHistory=False,OrderSequencing=True)
 
 
 ### Physics
-physics = Euler.Euler2D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Euler.Euler2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
 physics.set_conv_num_flux("Roe")
 # Initial conditions

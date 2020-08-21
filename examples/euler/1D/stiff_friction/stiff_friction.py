@@ -3,21 +3,21 @@ import numpy as np
 cfl = 0.1
 dx = 0.05
 FinalTime = 0.2
-num_time_steps = int(FinalTime/(cfl*dx))
+NumTimeSteps = int(FinalTime/(cfl*dx))
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_steps,
-    "TimeScheme" : "Strang",
-    # "OperatorSplitting_Exp" : "SSPRK3",
-    # "OperatorSplitting_Imp" : "BDF1",
+    "NumTimeSteps" : NumTimeSteps,
+    "TimeStepper" : "Strang",
+    # "OperatorSplittingExplicit" : "SSPRK3",
+    # "OperatorSplittingImplicit" : "BDF1",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "SourceTreatment" : "Implicit"
+    "SourceTreatmentADER" : "Implicit"
 }
 
 Output = {

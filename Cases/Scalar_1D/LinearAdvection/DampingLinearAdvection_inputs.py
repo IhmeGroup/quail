@@ -22,15 +22,15 @@ import code
 
 # ### Solver parameters
 # FinalTime = 0.5
-# num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
-# InterpOrder = 2
-# Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-# 								 InterpBasis="LagrangeEqSeg",TimeScheme="RK4",InterpolateFlux=True)
+# NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
+# SolutionOrder = 2
+# Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+# 								 SolutionBasis="LagrangeEqSeg",TimeStepper="RK4",InterpolateFluxADER=True)
 # nu = -3.
 
 # ### Physics
 # Velocity = 1.0 
-# physics = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+# physics = Scalar.ConstAdvScalar1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 # physics.set_physical_params(ConstVelocity=Velocity)
 # physics.set_physical_params(ConvFlux="LaxFriedrichs")
 # physics.SetSource(Function=physics.FcnSimpleSource, nu = nu)
@@ -68,13 +68,13 @@ import code
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.5,
-    "num_time_steps" : 40,
-    "TimeScheme" : "RK4",
+    "NumTimeSteps" : 40,
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeEqSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeEqSeg",
     "Solver" : "DG",
 }
 

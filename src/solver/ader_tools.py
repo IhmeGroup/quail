@@ -24,7 +24,7 @@ import numerics.basis.basis as basis_defs
 import numerics.helpers.helpers as helpers
 
 
-def set_source_treatment(ns, SourceTreatment):
+def set_source_treatment(ns, SourceTreatmentADER):
 	'''
 	This method sets the appropriate predictor function for the ADER-DG
 	scheme given the input deck parameters
@@ -32,16 +32,16 @@ def set_source_treatment(ns, SourceTreatment):
 	Inputs:
 	-------
 		ns: number of state variables
-		SourceTreatment: string from input deck to determine if the source
+		SourceTreatmentADER: string from input deck to determine if the source
 			term should be taken implicitly or explicitly
 
 	Outputs:
 	--------
 		fcn: the name of the function chosen for the calculate_predictor_elem
 	'''
-	if SourceTreatment == "Explicit":
+	if SourceTreatmentADER == "Explicit":
 		fcn = predictor_elem_explicit
-	elif SourceTreatment == "Implicit":
+	elif SourceTreatmentADER == "Implicit":
 		if ns is 1:
 			fcn = predictor_elem_implicit
 		else:

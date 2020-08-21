@@ -28,15 +28,15 @@ mesh.interior_faces[0].faceR_id = 1
 
 ### Solver parameters
 FinalTime = 0.1
-num_time_steps = 100
-InterpOrder = 5
+NumTimeSteps = 100
+SolutionOrder = 5
 
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LagrangeSeg",TimeScheme="RK4",L2InitialCondition=False)
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LagrangeSeg",TimeStepper="RK4",L2InitialCondition=False)
 
 
 ### Physics
-physics = Euler.Euler1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Euler.Euler1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=3.)
 physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions

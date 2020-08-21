@@ -3,20 +3,20 @@ import numpy as np
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.5,
-    "num_time_steps" : 40,
-    "TimeScheme" : "ADER",
+    "NumTimeSteps" : 40,
+    "TimeStepper" : "ADER",
 }
 
 Numerics = {
-    "InterpOrder" : 3,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 3,
+    "SolutionBasis" : "LagrangeSeg",
     "L2InitialCondition" : False,
     "Solver" : "ADERDG",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
     "NodeType" : "GaussLobatto",
-    "NodesEqualQuadpts" : True,
-    "InterpolateFlux" : True,
+    "CollocatedPoints" : True,
+    "InterpolateFluxADER" : True,
 }
 
 Output = {

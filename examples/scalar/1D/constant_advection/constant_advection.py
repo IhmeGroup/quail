@@ -5,19 +5,19 @@ TimeStepping = {
     "FinalTime" : 0.5,
     "CFL" : 0.1,
     # "TimeStepSize" : 0.0125,
-    # "num_time_steps" : 40,
-    "TimeScheme" : "RK4",
+    # "NumTimeSteps" : 40,
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
     "NodeType" : "GaussLobatto",
-    "NodesEqualQuadpts" : True,
-    "InterpolateFlux" : True,
+    "CollocatedPoints" : True,
+    "InterpolateFluxADER" : True,
 }
 
 Mesh = {

@@ -2,25 +2,25 @@ import numpy as np
 import copy
 
 FinalTime = 0.
-num_time_steps = 0  
+NumTimeSteps = 0  
 
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" :num_time_steps,
+    "NumTimeSteps" :NumTimeSteps,
     # "CFL" : 0.2,
-    "TimeScheme" : "RK4",
+    "TimeStepper" : "RK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreserving",
     "NodeType" : "GaussLobatto",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
-    "NodesEqualQuadpts" : True,
+    "CollocatedPoints" : True,
 
 }
 

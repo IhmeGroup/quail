@@ -7,28 +7,28 @@ u = 5.
 dt = cfl*dx/u
 
 FinalTime = np.pi/10.
-num_time_stepss =  int(FinalTime/dt)
-print(num_time_stepss)
+NumTimeStepss =  int(FinalTime/dt)
+print(NumTimeStepss)
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "num_time_steps" : num_time_stepss,
-    "TimeScheme" : "Simpler",
-    "OperatorSplitting_Imp" : "Trapezoidal",
+    "NumTimeSteps" : NumTimeStepss,
+    "TimeStepper" : "Simpler",
+    "OperatorSplittingImplicit" : "Trapezoidal",
 
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "L2InitialCondition" : False,
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreservingChem",
-    "SourceTreatment" : "Implicit",
+    "SourceTreatmentADER" : "Implicit",
 #     "NodeType" : "GaussLobatto",
 #     "ElementQuadrature" : "GaussLobatto",
 #     "FaceQuadrature" : "GaussLobatto",
-#     "NodesEqualQuadpts" : True,
+#     "CollocatedPoints" : True,
 }
 
 Output = {

@@ -26,15 +26,15 @@ Periodic = True
 
 ### Solver parameters
 FinalTime = 0.5
-num_time_steps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
-InterpOrder = 2
-Params = general.SetSolverParams(InterpOrder=InterpOrder,FinalTime=FinalTime,num_time_steps=num_time_steps,
-								 InterpBasis="LegendreSeg",TimeScheme="LSRK4")
+NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
+SolutionOrder = 2
+Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+								 SolutionBasis="LegendreSeg",TimeStepper="LSRK4")
 
 
 ### Physics
 Velocity = 1.
-physics = Scalar.ConstAdvScalar1D(Params["InterpOrder"], Params["InterpBasis"], mesh)
+physics = Scalar.ConstAdvScalar1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 # physics.set_physical_params(ConstVelocity=Velocity)
 physics.set_physical_params(ConstVelocity=Velocity)
 # Initial conditions

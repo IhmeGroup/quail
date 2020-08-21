@@ -16,9 +16,9 @@ import numerics.basis.basis as basis_defs
 
 
 def get_physical_modes(mesh, params, order, nL):
-	params["InterpOrder"] = order 
-	# physics = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
-	physics = scalar.ConstAdvScalar1D(order, params["InterpBasis"], mesh)
+	params["SolutionOrder"] = order 
+	# physics = Scalar.Scalar(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+	physics = scalar.ConstAdvScalar1D(order, params["SolutionBasis"], mesh)
 	# physics.set_physical_params(Velocity=1.)
 
 	# Initial conditions
@@ -108,20 +108,20 @@ h = elem.node_coords[1, 0] - elem.node_coords[0, 0]
 
 
 ### Solver and physics
-# Params = general.SetSolverParams(InterpOrder=InterpOrder,InterpBasis="LagrangeEqSeg")
+# Params = general.SetSolverParams(SolutionOrder=SolutionOrder,SolutionBasis="LagrangeEqSeg")
 params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
-# params["InterpOrder"] = order 
+# params["SolutionOrder"] = order 
 params["RestartFile"] = params["File"]
-params["InterpBasis"] = "LagrangeSeg"
+params["SolutionBasis"] = "LagrangeSeg"
 # params["ElementQuadrature"] = "GaussLobatto"
 # params["FaceQuadrature"] = "GaussLobatto"
 # params["NodeType"] = "GaussLobatto"
 params["ElementQuadrature"] = "GaussLegendre"
 params["FaceQuadrature"] = "GaussLegendre"
 params["NodeType"] = "Equidistant"
-params["NodesEqualQuadpts"] = False
-# # physics = Scalar.Scalar(Params["InterpOrder"], Params["InterpBasis"], mesh)
-# physics = scalar.ConstAdvScalar1D(order, params["InterpBasis"], mesh)
+params["CollocatedPoints"] = False
+# # physics = Scalar.Scalar(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+# physics = scalar.ConstAdvScalar1D(order, params["SolutionBasis"], mesh)
 # # physics.set_physical_params(Velocity=1.)
 
 # # Initial conditions

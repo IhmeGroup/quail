@@ -4,14 +4,14 @@ nt = int(tfinal/dt + 1.e-12)
 
 TimeStepping = {
     "FinalTime" : tfinal,
-    "num_time_steps" : nt,
-    "TimeScheme" : "LSRK4",
+    "NumTimeSteps" : nt,
+    "TimeStepper" : "LSRK4",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeTri",
-    #"InterpBasis" : "LagrangeQuad",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeTri",
+    #"SolutionBasis" : "LagrangeQuad",
     "ElementQuadrature" : "Dunavant",
     "FaceQuadrature" : "GaussLegendre",
 }

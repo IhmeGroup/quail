@@ -2,21 +2,21 @@ import code
 cfl = 0.05
 tfinal = 0.15
 dt = cfl*0.01
-num_time_steps = int(tfinal/dt)
+NumTimeSteps = int(tfinal/dt)
 
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : tfinal,
-    "num_time_steps" : num_time_steps,
-    "TimeScheme" : "ADER",
+    "NumTimeSteps" : NumTimeSteps,
+    "TimeStepper" : "ADER",
 }
 
 Numerics = {
-    "InterpOrder" : 2,
-    "InterpBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
     # "ApplyLimiter" : "ScalarPositivityPreserving", 
-    "SourceTreatment" : "Implicit",
+    "SourceTreatmentADER" : "Implicit",
 
 }
 

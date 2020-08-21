@@ -404,15 +404,15 @@ class ADERDG(base.SolverBase):
 
 		ns = physics.NUM_STATE_VARS
 
-		TimeScheme = Params["TimeScheme"]
-		if StepperType[TimeScheme] != StepperType.ADER:
+		TimeStepper = Params["TimeStepper"]
+		if StepperType[TimeStepper] != StepperType.ADER:
 			raise errors.IncompatibleError
 
 		self.Stepper = stepper_defs.ADER(physics.U)
 		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
 
 		# Set the space-time basis functions for the solver
-		basis_name  = Params["InterpBasis"]
+		basis_name  = Params["SolutionBasis"]
 		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, 
 				physics.order, basis_name)
 
@@ -420,8 +420,8 @@ class ADERDG(base.SolverBase):
 		self.basis_st.set_elem_quadrature_type(Params["ElementQuadrature"])
 		self.basis_st.set_face_quadrature_type(Params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
-		self.basis_st.force_nodes_equal_quad_pts(Params["NodesEqualQuadpts"])
+		self.basis.force_nodes_equal_quad_pts(Params["CollocatedPoints"])
+		self.basis_st.force_nodes_equal_quad_pts(Params["CollocatedPoints"])
 
 		# Allocate array for predictor step in ADER-Scheme
 		physics.Up = np.zeros([self.mesh.num_elems, 
@@ -429,9 +429,9 @@ class ADERDG(base.SolverBase):
 				physics.NUM_STATE_VARS])
 
 		# Set predictor function
-		SourceTreatment = Params["SourceTreatment"]
+		SourceTreatmentADER = Params["SourceTreatmentADER"]
 		self.calculate_predictor_elem = solver_tools.set_source_treatment(ns,
-				SourceTreatment)
+				SourceTreatmentADER)
 
 		# Check validity of parameters
 		self.check_compatibility()
@@ -460,7 +460,7 @@ class ADERDG(base.SolverBase):
 		basis = self.basis
 		Params = self.Params
 
-		if Params["InterpolateFlux"] and \
+		if Params["InterpolateFluxADER"] and \
 				basis.MODAL_OR_NODAL != ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
@@ -734,7 +734,7 @@ class ADERDG(base.SolverBase):
 		dim = physics.dim
 		Params = self.Params
 
-		InterpolateFlux = Params["InterpolateFlux"]
+		InterpolateFluxADER = Params["InterpolateFluxADER"]
 
 		elem_ops = self.elem_operators
 		elem_ops_st = self.elem_operators_st
@@ -745,7 +745,7 @@ class ADERDG(base.SolverBase):
 				dtype=Up.dtype)
 		F = np.zeros_like(rhs)
 
-		if Params["InterpolateFlux"]:
+		if Params["InterpolateFluxADER"]:
 
 			Fq = physics.ConvFluxInterior(Up)
 			dg_tools.interpolate_to_nodes(Fq, F)
@@ -791,7 +791,7 @@ class ADERDG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		Params = self.Params
 
-		InterpolateFlux = Params["InterpolateFlux"]
+		InterpolateFluxADER = Params["InterpolateFluxADER"]
 
 		elem_ops = self.elem_operators
 		elem_ops_st = self.elem_operators_st
@@ -807,7 +807,7 @@ class ADERDG(base.SolverBase):
 
 		TimePhiData = None
 
-		if Params["InterpolateFlux"]:
+		if Params["InterpolateFluxADER"]:
 			xnode = basis.get_nodes(order)
 			nb = xnode.shape[0]
 			t = np.zeros([nb,dim])
