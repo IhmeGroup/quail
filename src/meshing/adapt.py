@@ -28,9 +28,17 @@ def adapt(solver, physics, mesh, stepper):
             closest_distance = distance
             closest_elem = elem
     split_id = closest_elem.id
-    if mesh.num_elems == 50: split_id = [37,17,13,18]
-    #elif mesh.num_elems == 54: split_id = [50,51,52,53]
-    else: split_id = 37
+    print(mesh.num_elems)
+    # For wedge case
+    #if mesh.num_elems == 3: split_id = 0
+    #elif mesh.num_elems == 7: split_id = 2
+    #elif mesh.num_elems == 11: split_id = 5
+    #else: split_id = 0
+    # For box test
+    #split_id = 0
+    # For isentropic vortex
+    if mesh.num_elems == 50: split_id = [12,17,18,13]
+    else: split_id = 12
     needs_refinement[split_id] = True
 
     # Loop over all elements
@@ -374,3 +382,19 @@ def p2_nodes(a, b, c):
     nodes[4,:] = c
     nodes[5,:] = np.mean([c,a],axis=0)
     return nodes
+
+def evaluate_gradient_norm(basis_val_grad, Uc):
+    """Evaluate the norm of the gradient at a set of points within an element.
+
+    Arguments:
+    basis_val_grad - array[nq,nb,dim] of basis gradients for each basis
+    Uc - array[nb,ns] of element solution at each node
+    Returns:
+    array[nq,ns] of norm of gradient of each state variable at each point
+    """
+    gradU = np.empty_like(basis_val_grad)
+    # Loop over each dimension
+    for i in range(basis_val_grad.shape[2]):
+        gradU[:,:,i] = np.matmul(basis_val_grad[:,:,i], Uc)
+    # Return norm of gradient
+    return np.linalg.norm(gradU, axis=2)
