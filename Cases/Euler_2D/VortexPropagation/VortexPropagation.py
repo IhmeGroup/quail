@@ -76,30 +76,30 @@ folder = "meshes/"
 #subfolder = "Quadrilaterals/"; SolutionBasis = "LagrangeEqQuad"
 # # # Structured
 #subsubfolder = "Structured/"
-#FileName = "box_5x5.msh"
-# FileName = "box_10x10.msh"
-# FileName = "box_20x20.msh"
-# FileName = "box_40x40.msh"
-# FileName = "box_80x80.msh"
+#file_name = "box_5x5.msh"
+# file_name = "box_10x10.msh"
+# file_name = "box_20x20.msh"
+# file_name = "box_40x40.msh"
+# file_name = "box_80x80.msh"
 # Unstructured
 #subsubfolder = "Unstructured/"
-#FileName = "box_25_elem.msh"
-# FileName = "box_100_elem.msh"
-# FileName = "box_400_elem.msh"
-# FileName = "box_1600_elem.msh"
+#file_name = "box_25_elem.msh"
+# file_name = "box_100_elem.msh"
+# file_name = "box_400_elem.msh"
+# file_name = "box_1600_elem.msh"
 ## Triangles
 subfolder = "Triangles/"; SolutionBasis = "LagrangeTri"
 # Structured
 # subsubfolder = "Structured/"
-# FileName = "box_5x5_v4.msh"
-# FileName = "box_5x5_v4_q3_periodic.msh"
-# FileName = "box_10x10.msh"
-# FileName = "box_20x20.msh"
-# FileName = "box_40x40.msh"
+# file_name = "box_5x5_v4.msh"
+# file_name = "box_5x5_v4_q3_periodic.msh"
+# file_name = "box_10x10.msh"
+# file_name = "box_20x20.msh"
+# file_name = "box_40x40.msh"
 subsubfolder = "Unstructured/"
-# FileName = "box_5x5_v4.msh"
-FileName = "box_5x5_v4_q3_periodic.msh"
-MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + FileName
+# file_name = "box_5x5_v4.msh"
+file_name = "box_5x5_v4_q3_periodic.msh"
+MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + file_name
 mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 RandomizeNodes(mesh)
 RandomizeElements(mesh)
@@ -157,10 +157,10 @@ axis = None
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False, show_elem_IDs=True)
-# Plot.save_figure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
 # Plot.prepare_plot(close_all=False, linewidth=1.5)
 # Plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
-# Plot.save_figure(FileName=CurrentDir+'line', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'line', FileType='pdf', CropLevel=2)
 # Plot.show_plot()
 
 # U = physics.U.Arrays[0]

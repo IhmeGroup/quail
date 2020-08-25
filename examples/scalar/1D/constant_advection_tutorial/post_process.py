@@ -29,6 +29,6 @@ plot.plot_solution(mesh, physics, solver, "Scalar", plot_exact=True, plot_numeri
 # Plots the initial condition
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
 
-plot.save_figure(FileName='constant_advection', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='constant_advection', FileType='pdf', CropLevel=2)
 
 plot.show_plot()

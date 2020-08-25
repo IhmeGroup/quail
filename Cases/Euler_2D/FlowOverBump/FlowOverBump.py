@@ -17,21 +17,21 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 folder = "meshes/"
 ## Quadrilaterals
 subfolder = "Quadrilaterals/"; SolutionBasis = "LagrangeQuad"
-#FileName = "bump0_q1.msh"; 
-FileName = "bump0.msh"; 
+#file_name = "bump0_q1.msh"; 
+file_name = "bump0.msh"; 
 #SolutionOrder = 0; NumTimeSteps = 500; FinalTime = 40.
 
 SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [40., 48., 54.]
-# FileName = "bump1_q1.msh"
-# FileName = "bump1.msh"
+# file_name = "bump1_q1.msh"
+# file_name = "bump1.msh"
 # SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [20., 24., 27.]
-# # FileName = "bump2_q1.msh"
-# FileName = "bump2.msh"
+# # file_name = "bump2_q1.msh"
+# file_name = "bump2.msh"
 # SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [10., 12., 13.5]
 # Triangles
 #subfolder = "Triangles/"; SolutionBasis = "LagrangeEqTri"
-#FileName = "bump0_tri.msh"
-MeshFile = CurrentDir + folder + subfolder + FileName
+#file_name = "bump0_tri.msh"
+MeshFile = CurrentDir + folder + subfolder + file_name
 mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 
 # Plot.prepare_plot(axis=None, linewidth=0.5)
@@ -101,10 +101,10 @@ equal_AR = False
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	show_triangulation=False, equal_AR=equal_AR, show_elem_IDs=True)
-# Plot.save_figure(FileName='Pressure', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name='Pressure', FileType='pdf', CropLevel=2)
 # Plot.PlotSolution(mesh, physics, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	show_triangulation=False, equal_AR=equal_AR)
-# Plot.save_figure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
 # Post.get_boundary_info(mesh, physics, solver, "bottom", "Pressure", integrate=True, 
 # 		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")
 # Plot.show_plot()

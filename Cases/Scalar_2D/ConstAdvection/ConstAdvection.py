@@ -20,26 +20,26 @@ folder = "meshes/"
 # subfolder = "Quadrilaterals/"; SolutionBasis = "LagrangeEqQuad"
 # # # Structured
 # subsubfolder = "Structured/"
-# FileName = "box_5x5.msh"
-# FileName = "box_10x10.msh"
-# FileName = "box_20x20.msh"
-# FileName = "box_40x40.msh"
-# FileName = "box_80x80.msh"
+# file_name = "box_5x5.msh"
+# file_name = "box_10x10.msh"
+# file_name = "box_20x20.msh"
+# file_name = "box_40x40.msh"
+# file_name = "box_80x80.msh"
 # Unstructured
 # subsubfolder = "Unstructured/"
-# FileName = "box_25_elem.msh"
-# FileName = "box_100_elem.msh"
-# FileName = "box_400_elem.msh"
-# FileName = "box_1600_elem.msh"
+# file_name = "box_25_elem.msh"
+# file_name = "box_100_elem.msh"
+# file_name = "box_400_elem.msh"
+# file_name = "box_1600_elem.msh"
 ## Triangles
 subfolder = "Triangles/"; SolutionBasis = "HierarchicH1Tri"
 # Structured
 subsubfolder = "Structured/"
-FileName = "box_5x5.msh"
-# FileName = "box_10x10.msh"
-# FileName = "box_20x20.msh"
-# FileName = "box_40x40.msh"
-MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + FileName
+file_name = "box_5x5.msh"
+# file_name = "box_10x10.msh"
+# file_name = "box_20x20.msh"
+# file_name = "box_40x40.msh"
+MeshFile = os.path.dirname(os.path.abspath(__file__)) + "/" + folder + subfolder + subsubfolder + file_name
 mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 
 ### Solver parameters
@@ -82,7 +82,7 @@ axis = None
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False)
-# Plot.save_figure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
 # Plot.show_plot()
 
 # U = physics.U.Arrays[0]

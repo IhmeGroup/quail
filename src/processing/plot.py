@@ -39,17 +39,17 @@ def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12.,
 		plt.gca().set_aspect('equal', adjustable='box')
 
 
-def save_figure(FileName='fig', FileType='pdf', CropLevel=1, **kwargs):
-	FileName = FileName + '.' + FileType
-	if CropLevel == 0:
+def save_figure(file_name='fig', file_type='pdf', crop_level=1, **kwargs):
+	file_name = file_name + '.' + file_type
+	if crop_level == 0:
 		# Don't crop
-		plt.savefig(FileName)
-	elif CropLevel == 1:
+		plt.savefig(file_name)
+	elif crop_level == 1:
 		# Crop a little
-		plt.savefig(FileName, bbox_inches='tight')
-	elif CropLevel == 2:
+		plt.savefig(file_name, bbox_inches='tight')
+	elif crop_level == 2:
 		# Crop a lot
-		plt.savefig(FileName, bbox_inches='tight', pad_inches=0.0)
+		plt.savefig(file_name, bbox_inches='tight', pad_inches=0.0)
 	else:
 		raise ValueError
 
@@ -63,52 +63,52 @@ def show_plot(interactive=False):
 		plt.show()
 
 
-def Plot1D(physics, x, u, SolnLabel, VariableName=None, u_exact=None, 
-	u_IC=None, u_var_calculated=False, **kwargs):
-	### reshape
-	# uplot = u[:,:,iplot]
-	# uplot = np.reshape(uplot, (-1,))
-	# u_exact = np.reshape(u_exact, (-1,1))
-	x = np.reshape(x, (-1,))
-	nplot = x.shape[0]
-	u.shape = nplot,-1
-	if not u_var_calculated:
-		uplot = physics.ComputeScalars(VariableName, u)
-	else:
-		# assume desired variable already calculated
-		uplot = u
+# def Plot1D(physics, x, u, SolnLabel, VariableName=None, u_exact=None, 
+# 	u_IC=None, u_var_calculated=False, **kwargs):
+# 	### reshape
+# 	# uplot = u[:,:,iplot]
+# 	# uplot = np.reshape(uplot, (-1,))
+# 	# u_exact = np.reshape(u_exact, (-1,1))
+# 	x = np.reshape(x, (-1,))
+# 	nplot = x.shape[0]
+# 	u.shape = nplot,-1
+# 	if not u_var_calculated:
+# 		uplot = physics.ComputeScalars(VariableName, u)
+# 	else:
+# 		# assume desired variable already calculated
+# 		uplot = u
 
-	### sort
-	idx = np.argsort(x)
-	idx.flatten()
-	uplot = uplot[idx]
-	# u_exact = u_exact[idx]
-	x = x[idx]
+# 	### sort
+# 	idx = np.argsort(x)
+# 	idx.flatten()
+# 	uplot = uplot[idx]
+# 	# u_exact = u_exact[idx]
+# 	x = x[idx]
 
-	if u_exact is not None: 
-		# u_ex = u_exact[:,:,iplot]
-		# u_ex.shape = -1,
-		u_exact.shape = nplot,-1
-		u_ex = physics.ComputeScalars(VariableName, u_exact)
-		plt.plot(x,u_ex,'k-',label="Exact")
+# 	if u_exact is not None: 
+# 		# u_ex = u_exact[:,:,iplot]
+# 		# u_ex.shape = -1,
+# 		u_exact.shape = nplot,-1
+# 		u_ex = physics.ComputeScalars(VariableName, u_exact)
+# 		plt.plot(x,u_ex,'k-',label="Exact")
 
-	if u_IC is not None: 
-		# u_ex = u_exact[:,:,iplot]
-		# u_ex.shape = -1,
-		u_IC.shape = nplot,-1
-		u_i = physics.ComputeScalars(VariableName, u_IC)
-		plt.plot(x,u_i,'k--',label="Initial")
+# 	if u_IC is not None: 
+# 		# u_ex = u_exact[:,:,iplot]
+# 		# u_ex.shape = -1,
+# 		u_IC.shape = nplot,-1
+# 		u_i = physics.ComputeScalars(VariableName, u_IC)
+# 		plt.plot(x,u_i,'k--',label="Initial")
 
-	if "legend_label" in kwargs:
-		legend_label = kwargs["legend_label"]
-	else:
-		legend_label = "DG"
-	plt.plot(x,uplot,'bo',label=legend_label) 
-	plt.ylabel(SolnLabel)
+# 	if "legend_label" in kwargs:
+# 		legend_label = kwargs["legend_label"]
+# 	else:
+# 		legend_label = "DG"
+# 	plt.plot(x,uplot,'bo',label=legend_label) 
+# 	plt.ylabel(SolnLabel)
 
 
 def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=0, 
-	**kwargs):
+		**kwargs):
 	### reshape
 	# uplot = u[:,:,iplot]
 	# uplot = np.reshape(uplot, (-1,))
