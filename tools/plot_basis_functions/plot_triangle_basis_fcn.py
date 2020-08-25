@@ -34,7 +34,7 @@ phi = basis.basis_val[:, b]
 '''
 Plot
 '''
-plot.PreparePlot(linewidth=0.5)
+plot.prepare_plot(linewidth=0.5)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
 ax.plot_trisurf(xp[:, 0], xp[:, 1], phi, cmap='plasma')

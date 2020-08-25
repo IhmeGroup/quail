@@ -62,12 +62,12 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
+TotErr,_ = Post.get_error(mesh, physics, solver, "Density")
 # Plot
-# Plot.PreparePlot()
+# Plot.prepare_plot()
 # Plot.PlotSolution(mesh, physics, solver, "Pressure", PlotExact=True, Equidistant=True)
-# Plot.SaveFigure(FileName=CurrentDir+'Pressure', FileType='pdf', CropLevel=2)
-# Plot.ShowPlot()
+# Plot.save_figure(FileName=CurrentDir+'Pressure', FileType='pdf', CropLevel=2)
+# Plot.show_plot()
 
 
 # code.interact(local=locals())

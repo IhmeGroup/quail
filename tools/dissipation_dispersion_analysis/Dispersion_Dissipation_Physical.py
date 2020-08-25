@@ -30,7 +30,7 @@ Omega_i_all = np.zeros_like(Omega_r_all)
 
 
 ### Prepare plotting
-Plot.PreparePlot()
+Plot.prepare_plot()
 figR = plt.figure(0)
 figI = plt.figure(1)
 

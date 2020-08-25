@@ -130,18 +130,18 @@ solver, physics, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
 ### Postprocess
 # Error
 solver.time = 0.
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
+TotErr,_ = Post.get_error(mesh, physics, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
-Plot.PreparePlot(axis=axis, linewidth=0.5)
+Plot.prepare_plot(axis=axis, linewidth=0.5)
 Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 	Regular2D=True, show_triangulation=False)
-Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+Plot.save_figure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
 Plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
 # Post.get_boundary_info(mesh, physics, solver, "y1", "Scalar", integrate=True, 
 # 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)
-Plot.ShowPlot()
+Plot.show_plot()
 
 # U = physics.U.Arrays[0]
 # code.interact(local=locals())

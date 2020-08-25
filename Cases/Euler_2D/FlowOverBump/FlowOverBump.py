@@ -34,9 +34,9 @@ SolutionOrder = [0, 1, 2]; NumTimeSteps = [500, 1000, 1500]; FinalTime = [40., 4
 MeshFile = CurrentDir + folder + subfolder + FileName
 mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 
-# Plot.PreparePlot(axis=None, linewidth=0.5)
+# Plot.prepare_plot(axis=None, linewidth=0.5)
 # Plot.plot_mesh(mesh)
-# Plot.ShowPlot()
+# Plot.show_plot()
 # exit()
 
 ### Solver parameters
@@ -93,21 +93,21 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Entropy", NormalizeByVolume=False)
+TotErr,_ = Post.get_error(mesh, physics, solver, "Entropy", NormalizeByVolume=False)
 # Plot
 axis = None
-EqualAR = False
+equal_AR = False
 # axis = [-5., 5., -5., 5.]
-Plot.PreparePlot(axis=axis, linewidth=0.5)
-Plot.PlotSolution(mesh, physics, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
-	show_triangulation=False, EqualAR=EqualAR, show_elem_IDs=True)
-Plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
-Plot.PlotSolution(mesh, physics, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
-	show_triangulation=False, EqualAR=EqualAR)
-Plot.SaveFigure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
-Post.get_boundary_info(mesh, physics, solver, "bottom", "Pressure", integrate=True, 
-		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")
-Plot.ShowPlot()
+# Plot.prepare_plot(axis=axis, linewidth=0.5)
+# Plot.PlotSolution(mesh, physics, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
+# 	show_triangulation=False, equal_AR=equal_AR, show_elem_IDs=True)
+# Plot.save_figure(FileName='Pressure', FileType='pdf', CropLevel=2)
+# Plot.PlotSolution(mesh, physics, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
+# 	show_triangulation=False, equal_AR=equal_AR)
+# Plot.save_figure(FileName=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
+# Post.get_boundary_info(mesh, physics, solver, "bottom", "Pressure", integrate=True, 
+# 		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")
+# Plot.show_plot()
 
 # U = physics.U.Arrays[0]
 # code.interact(local=locals())

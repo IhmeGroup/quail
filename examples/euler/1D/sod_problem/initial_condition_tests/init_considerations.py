@@ -41,9 +41,9 @@ physics5 = solver5.physics
 # physics2 = solver2.physics
 
 # Error
-# TotErr,_ = post.L2_error(mesh, physics, solver, "Density")
+# TotErr,_ = post.get_error(mesh, physics, solver, "Density")
 # Plot
-plot.PreparePlot()
+plot.prepare_plot()
 
 skip = 7
 
@@ -63,7 +63,7 @@ plot.plot_solution(mesh1, physics3, solver3, "Density", plot_numerical=True, plo
 # plot.plot_solution(mesh1, physics5, solver5, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='r', legend_label="$w=0.5$", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
-plot.SaveFigure(FileName='SodProblem_IC_comparison_Density_1point', FileType='pdf', CropLevel=2)
+plot.save_figure(FileName='SodProblem_IC_comparison_Density_1point', FileType='pdf', CropLevel=2)
 
 # Plot Velocity of all cases
 plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
@@ -81,7 +81,7 @@ plot.plot_solution(mesh1, physics3, solver3, "Velocity", plot_numerical=True, pl
 # plot.plot_solution(mesh1, physics5, solver5, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='r', legend_label="$w=0.5$", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
-plot.SaveFigure(FileName='SodProblem_IC_comparison_Velocity_1point', FileType='pdf', CropLevel=2)
+plot.save_figure(FileName='SodProblem_IC_comparison_Velocity_1point', FileType='pdf', CropLevel=2)
 
 # plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
@@ -96,7 +96,7 @@ plot.SaveFigure(FileName='SodProblem_IC_comparison_Velocity_1point', FileType='p
 
 # # plot.plot_solution(mesh, physics, solver, "Energy", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 # # plot.plot_solution(mesh, physics, solver, "Energy", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
-# # plot.SaveFigure(FileName='Velocity', FileType='pdf', CropLevel=2)
+# # plot.save_figure(FileName='Velocity', FileType='pdf', CropLevel=2)
 
 # plot.plot_solution(mesh1, physics1, solver1, "Pressure", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
@@ -107,10 +107,10 @@ plot.SaveFigure(FileName='SodProblem_IC_comparison_Velocity_1point', FileType='p
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=7)
 # plot.plot_solution(mesh, physics, solver, "Pressure", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 # plot.plot_solution(mesh, physics, solver, "Pressure", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
-# plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
+# plot.save_figure(FileName='Pressure', FileType='pdf', CropLevel=2)
 # plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, PlotIC=True, legend_label="$p=2$")
 # plot.PlotSolution(mesh, physics, solver, "Pressure", create_new_figure=False, legend_label="$p=2$")
 
-# plot.SaveFigure(FileName='SmoothIsentropicFlow', FileType='pdf', CropLevel=2)
+# plot.save_figure(FileName='SmoothIsentropicFlow', FileType='pdf', CropLevel=2)
 
-plot.ShowPlot()
+plot.show_plot()

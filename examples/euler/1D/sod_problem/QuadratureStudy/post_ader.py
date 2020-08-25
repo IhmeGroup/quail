@@ -33,7 +33,7 @@ physics3 = solver3.physics
 # Error
 
 # Plot
-plot.PreparePlot()
+plot.prepare_plot()
 skip=7
 
 plot.plot_solution(mesh_ex, physics_ex, exact, "Velocity", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
@@ -49,8 +49,8 @@ plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=True, pl
 plot.plot_solution(mesh3, physics3, solver3, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='kx', legend_label="GLL EqualNodes", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
-plot.SaveFigure(FileName='Quad_ADER_Velocity', FileType='pdf', CropLevel=2)
-# plot.SaveFigure(FileName='GL_only_density', FileType='pdf', CropLevel=2)
+plot.save_figure(FileName='Quad_ADER_Velocity', FileType='pdf', CropLevel=2)
+# plot.save_figure(FileName='GL_only_density', FileType='pdf', CropLevel=2)
 
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bx-', legend_label="DG", equidistant_pts=True, 
@@ -62,7 +62,7 @@ plot.SaveFigure(FileName='Quad_ADER_Velocity', FileType='pdf', CropLevel=2)
 
 # plot.plot_solution(mesh, physics, solver, "Energy", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 # plot.plot_solution(mesh, physics, solver, "Energy", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
-# plot.SaveFigure(FileName='Velocity', FileType='pdf', CropLevel=2)
+# plot.save_figure(FileName='Velocity', FileType='pdf', CropLevel=2)
 
 # plot.plot_solution(mesh1, physics1, solver1, "Pressure", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bx', legend_label="DG", equidistant_pts=True, 
@@ -73,10 +73,10 @@ plot.SaveFigure(FileName='Quad_ADER_Velocity', FileType='pdf', CropLevel=2)
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=7)
 # plot.plot_solution(mesh, physics, solver, "Pressure", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 # plot.plot_solution(mesh, physics, solver, "Pressure", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
-# plot.SaveFigure(FileName='Pressure', FileType='pdf', CropLevel=2)
+# plot.save_figure(FileName='Pressure', FileType='pdf', CropLevel=2)
 # plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, PlotIC=True, legend_label="$p=2$")
 # plot.PlotSolution(mesh, physics, solver, "Pressure", create_new_figure=False, legend_label="$p=2$")
 
-# plot.SaveFigure(FileName='SmoothIsentropicFlow', FileType='pdf', CropLevel=2)
+# plot.save_figure(FileName='SmoothIsentropicFlow', FileType='pdf', CropLevel=2)
 
-plot.ShowPlot()
+plot.show_plot()

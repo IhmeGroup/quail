@@ -75,15 +75,15 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
+TotErr,_ = Post.get_error(mesh, physics, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
-# Plot.PreparePlot(axis=axis, linewidth=0.5)
+# Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False)
-# Plot.SaveFigure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
-# Plot.ShowPlot()
+# Plot.save_figure(FileName=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+# Plot.show_plot()
 
 # U = physics.U.Arrays[0]
 # code.interact(local=locals())

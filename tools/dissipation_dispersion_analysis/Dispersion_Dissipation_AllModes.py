@@ -196,7 +196,7 @@ for i in range(norders):
 
 
 ## Plot
-plot.PreparePlot()
+plot.prepare_plot()
 
 ## Plot dispersion relation
 plt.figure()
@@ -208,7 +208,7 @@ plt.plot(np.array([Lplot[0], Lplot[-1]])/np.pi, np.array([Lplot[0], Lplot[-1]]),
 plt.xlabel("$\\Lambda/\\pi$")
 plt.ylabel("$\\Omega_r/N_p$")
 plt.legend(loc="best")
-plot.SaveFigure(FileName='Dispersion', FileType='pdf', CropLevel=2)
+plot.save_figure(FileName='Dispersion', FileType='pdf', CropLevel=2)
 
 # ## Plot dissipation relation
 plt.figure()
@@ -220,7 +220,7 @@ plt.plot(np.array([Lplot[0], Lplot[-1]])/np.pi, np.array([0., 0.]), 'k:', label=
 plt.xlabel("$\\Lambda/\\pi$")
 plt.ylabel("$\\Omega_i/N_p$")
 plt.legend(loc="best")
-plot.SaveFigure(FileName='Dissipation', FileType='pdf', CropLevel=2)
+plot.save_figure(FileName='Dissipation', FileType='pdf', CropLevel=2)
 # fig1 = plt.figure(1)
 # for n in range(nn):
 # 	plt.plot(L/np.pi, Omega_i_all[:,n]/nn, 'o', label="%d" % (n))

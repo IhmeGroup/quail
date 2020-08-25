@@ -40,7 +40,7 @@ basis.get_basis_val_grads(xp, get_val=True)
 '''
 Plot
 '''
-plot.PreparePlot(linewidth=1.)
+plot.prepare_plot(linewidth=1.)
 fig = plt.figure()
 for i in range(p+1):
 	if plot_all or (not plot_all and i == b):

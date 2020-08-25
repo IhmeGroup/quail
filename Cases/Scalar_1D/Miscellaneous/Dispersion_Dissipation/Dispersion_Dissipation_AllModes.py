@@ -54,7 +54,7 @@ for i in range(nL):
 
 
 ### Plot
-Plot.PreparePlot()
+Plot.prepare_plot()
 
 ## Plot dispersion relation
 fig0 = plt.figure(0)

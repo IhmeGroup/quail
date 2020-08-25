@@ -39,9 +39,9 @@ print('Solution Final Time:', solver.time)
 # Unpack
 mesh4= solver4.mesh
 physics4 = solver4.physics
-# TotErr,_ = post.L2_error(mesh, physics, solver, "Density")
+# TotErr,_ = post.get_error(mesh, physics, solver, "Density")
 # Plot
-plot.PreparePlot()
+plot.prepare_plot()
 
 
 plot.plot_solution(mesh, physics, solver, "MassFraction", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
@@ -62,4 +62,4 @@ plot.plot_solution(mesh4, physics4, solver4, "MassFraction", plot_numerical=True
 plot.plot_solution(mesh, physics, solver, "MassFraction", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 plot.plot_solution(mesh, physics, solver, "MassFraction", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
 
-plot.ShowPlot()
+plot.show_plot()

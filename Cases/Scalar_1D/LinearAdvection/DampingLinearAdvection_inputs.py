@@ -132,11 +132,11 @@ solver, physics, mesh = driver.driver(TimeStepping, Numerics, Output, Mesh,
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Scalar")
+TotErr,_ = Post.get_error(mesh, physics, solver, "Scalar")
 # Plot
-Plot.PreparePlot()
+Plot.prepare_plot()
 Plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
-Plot.ShowPlot()
+Plot.show_plot()
 
 
 # code.interact(local=locals())

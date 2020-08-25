@@ -14,10 +14,10 @@ mesh = solver.mesh
 physics = solver.physics
 
 # Error
-TotErr, _ = post.L2_error(mesh, physics, solver, "Scalar")
+TotErr, _ = post.get_error(mesh, physics, solver, "Scalar")
 
 # Plot numerical solution
-plot.PreparePlot()
+plot.prepare_plot()
 
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
@@ -29,6 +29,6 @@ plot.plot_solution(mesh, physics, solver, "Scalar", plot_exact=True, plot_numeri
 # Plots the initial condition
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
 
-plot.SaveFigure(FileName='constant_advection', FileType='pdf', CropLevel=2)
+plot.save_figure(FileName='constant_advection', FileType='pdf', CropLevel=2)
 
-plot.ShowPlot()
+plot.show_plot()

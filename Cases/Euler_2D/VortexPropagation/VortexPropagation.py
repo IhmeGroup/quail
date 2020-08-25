@@ -150,18 +150,18 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
+TotErr,_ = Post.get_error(mesh, physics, solver, "Density")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
-# Plot.PreparePlot(axis=axis, linewidth=0.5)
+# Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False, show_elem_IDs=True)
-# Plot.SaveFigure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
-# Plot.PreparePlot(close_all=False, linewidth=1.5)
+# Plot.save_figure(FileName=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
+# Plot.prepare_plot(close_all=False, linewidth=1.5)
 # Plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
-# Plot.SaveFigure(FileName=CurrentDir+'line', FileType='pdf', CropLevel=2)
-# Plot.ShowPlot()
+# Plot.save_figure(FileName=CurrentDir+'line', FileType='pdf', CropLevel=2)
+# Plot.show_plot()
 
 # U = physics.U.Arrays[0]
 # code.interact(local=locals())

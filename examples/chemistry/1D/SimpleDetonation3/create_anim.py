@@ -9,7 +9,7 @@ import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
 
-# plot.PreparePlot(linewidth=0.5)
+# plot.prepare_plot(linewidth=0.5)
 # fig = plt.figure()
 # ax = plt.gca()
 
@@ -50,7 +50,7 @@ import processing.readwritedatafiles as readwritedatafiles
 
 # anim = animation.ArtistAnimation(fig, imgs_all, interval=50, blit=False,
 #                                 repeat_delay=None)
-plot.PreparePlot(linewidth=0.5)
+plot.prepare_plot(linewidth=0.5)
 fig = plt.figure()
 ax = plt.gca()
 imgs_all = []

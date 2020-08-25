@@ -62,11 +62,11 @@ solver.solve()
 
 ### Postprocess
 # Error
-TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
+TotErr,_ = Post.get_error(mesh, physics, solver, "Density")
 # Plot
-# Plot.PreparePlot()
-# Plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, Equidistant=True, include_mesh=True, EqualAR=True, show_elem_IDs=True)
-# Plot.ShowPlot()
+# Plot.prepare_plot()
+# Plot.PlotSolution(mesh, physics, solver, "Energy", PlotExact=True, Equidistant=True, include_mesh=True, equal_AR=True, show_elem_IDs=True)
+# Plot.show_plot()
 
 
 # code.interact(local=locals())

@@ -11,8 +11,9 @@ import meshing.tools as mesh_tools
 import numerics.helpers.helpers as helpers
 
 
-def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font={'family':'serif', 'serif': ['DejaVu Sans']},
-	linewidth=1.5, markersize=4.0, axis=None, cmap='viridis', EqualAR=False):
+def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12., 
+		font={'family':'serif', 'serif': ['DejaVu Sans']}, linewidth=1.5, 
+		markersize=4.0, axis=None, cmap='viridis', equal_AR=False):
 	# font={'family':'serif', 'serif': ['computer modern roman']}
 	# Note: matplotlib.rcdefaults() returns to default settings
 
@@ -21,8 +22,8 @@ def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font=
 		if defaults:
 			return
 
-	# For now, always use tex syntax
-	plt.rc('text',usetex=True)
+	# Use tex syntax
+	plt.rc('text', usetex=True)
 
 	if close_all:
 		plt.close("all")
@@ -34,11 +35,11 @@ def PreparePlot(reset=False, defaults=False, close_all=True, fontsize=12., font=
 
 	if axis is not None:
 		plt.axis(axis)
-	if EqualAR:
+	if equal_AR:
 		plt.gca().set_aspect('equal', adjustable='box')
 
 
-def SaveFigure(FileName='fig', FileType='pdf', CropLevel=1, **kwargs):
+def save_figure(FileName='fig', FileType='pdf', CropLevel=1, **kwargs):
 	FileName = FileName + '.' + FileType
 	if CropLevel == 0:
 		# Don't crop
@@ -53,8 +54,8 @@ def SaveFigure(FileName='fig', FileType='pdf', CropLevel=1, **kwargs):
 		raise ValueError
 
 
-def ShowPlot(Interactive=False):
-	if Interactive:
+def show_plot(interactive=False):
+	if interactive:
 		# doesn't work for now
 		plt.ion()
 		plt.show()
@@ -62,8 +63,8 @@ def ShowPlot(Interactive=False):
 		plt.show()
 
 
-def Plot1D(physics, x, u, SolnLabel, VariableName=None, u_exact=None, u_IC=None, 
-		u_var_calculated=False, **kwargs):
+def Plot1D(physics, x, u, SolnLabel, VariableName=None, u_exact=None, 
+	u_IC=None, u_var_calculated=False, **kwargs):
 	### reshape
 	# uplot = u[:,:,iplot]
 	# uplot = np.reshape(uplot, (-1,))
@@ -106,7 +107,8 @@ def Plot1D(physics, x, u, SolnLabel, VariableName=None, u_exact=None, u_IC=None,
 	plt.ylabel(SolnLabel)
 
 
-def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=0, **kwargs):
+def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=0, 
+	**kwargs):
 	### reshape
 	# uplot = u[:,:,iplot]
 	# uplot = np.reshape(uplot, (-1,))
@@ -150,7 +152,8 @@ def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=0, **kwargs):
 	# else:
 	# 	legend_label = "DG"
 	if skip !=0:
-		plt.plot(x[idx[0]:idx[-1]:skip], var_plot[idx[0]:idx[-1]:skip], fmt, label=legend_label) 
+		plt.plot(x[idx[0]:idx[-1]:skip], var_plot[idx[0]:idx[-1]:skip], fmt, 
+				label=legend_label) 
 	else:
 		plt.plot(x, var_plot, fmt, label=legend_label) 
 	plt.ylabel(ylabel)
@@ -275,7 +278,7 @@ def Plot2D_General(physics, x, var_plot, **kwargs):
 		figtmp = plt.figure()
 		levels = Plot2D_Regular(physics, np.copy(x), np.copy(var_plot), **kwargs)
 		# plt.colorbar()
-		# ShowPlot()
+		# show_plot()
 		plt.close(figtmp)
 	else:
 		levels = kwargs["levels"]
@@ -307,11 +310,11 @@ def Plot2D_General(physics, x, var_plot, **kwargs):
 				plt.triplot(triang, lw=0.5, color='white')
 
 
-# def Plot2D(physics, x, u, VariableName, SolnLabel, Regular2D, EqualAR=False, **kwargs):
+# def Plot2D(physics, x, u, VariableName, SolnLabel, Regular2D, equal_AR=False, **kwargs):
 # 	if Regular2D:
-# 		Plot2D_Regular(physics, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
+# 		Plot2D_Regular(physics, x, u, VariableName, SolnLabel, equal_AR, **kwargs)
 # 	else:
-# 		Plot2D_General(physics, x, u, VariableName, SolnLabel, EqualAR, **kwargs)
+# 		Plot2D_General(physics, x, u, VariableName, SolnLabel, equal_AR, **kwargs)
 
 # 	''' Label plot '''
 # 	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
@@ -321,7 +324,7 @@ def Plot2D_General(physics, x, var_plot, **kwargs):
 # 		cb = plt.colorbar()
 # 		cb.ax.set_title(SolnLabel)
 # 	plt.ylabel("$y$")
-# 	if EqualAR:
+# 	if equal_AR:
 # 		plt.gca().set_aspect('equal', adjustable='box')
 # 	# plt.axis("equal")
 
@@ -526,7 +529,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 
 
 # def PlotSolution(mesh, physics, solver, VariableName, create_new_figure=True, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
-# 	include_mesh=False, Regular2D=False, EqualAR=False, **kwargs):
+# 	include_mesh=False, Regular2D=False, equal_AR=False, **kwargs):
 
 # 	# iplot_sr = physics.VariableType[VariableName]
 # 	if PlotExact:
@@ -574,7 +577,7 @@ def get_ylabel(physics, variable_name, ylabel=None):
 # 		Plot1D(physics, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
 # 	else:
 # 		if PlotExact: u = u_exact # plot either only numerical or only exact
-# 		Plot2D(physics, x, u, VariableName, SolnLabel, Regular2D, EqualAR, **kwargs)
+# 		Plot2D(physics, x, u, VariableName, SolnLabel, Regular2D, equal_AR, **kwargs)
 
 # 	### Finalize plot
 # 	finalize_plot(**kwargs)
@@ -658,7 +661,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, plot_exa
 	finalize_plot(**kwargs)
 
 
-def plot_mesh(mesh, EqualAR=False, **kwargs):
+def plot_mesh(mesh, equal_AR=False, **kwargs):
 
 	gbasis = mesh.gbasis
 	dim = mesh.dim 
@@ -741,12 +744,12 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 
 	plt.xlabel("$x$")
 	if dim == 2: plt.ylabel("$y$")
-	if EqualAR:
+	if equal_AR:
 		plt.gca().set_aspect('equal', adjustable='box')
 	# plt.axis("equal")
 
 
-# def PlotMesh2D(mesh, EqualAR=False, **kwargs):
+# def PlotMesh2D(mesh, equal_AR=False, **kwargs):
 	
 # 	gbasis = mesh.gbasis
 # 	# Sanity check
@@ -808,6 +811,6 @@ def plot_mesh(mesh, EqualAR=False, **kwargs):
 
 # 	plt.xlabel("$x$")
 # 	plt.ylabel("$y$")
-# 	if EqualAR:
+# 	if equal_AR:
 # 		plt.gca().set_aspect('equal', adjustable='box')
 # 	# plt.axis("equal")

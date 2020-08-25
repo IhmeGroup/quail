@@ -43,7 +43,7 @@ Z = basis.basis_val[:, b].reshape(n, -1)
 '''
 Plot
 '''
-plot.PreparePlot(linewidth=0.5)
+plot.prepare_plot(linewidth=0.5)
 fig = plt.figure()
 ax = fig.add_subplot(111, projection="3d")
 ax.plot_surface(X, Y, Z, cmap='plasma', rstride=1, cstride=1) # cmap=autumn_r

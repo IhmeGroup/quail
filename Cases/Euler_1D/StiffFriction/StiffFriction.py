@@ -42,11 +42,11 @@ solver.solve()
 
 ### Postprocess
 # Error
-# TotErr,_ = Post.L2_error(mesh, physics, solver, "Density")
+# TotErr,_ = Post.get_error(mesh, physics, solver, "Density")
 # Plot
-Plot.PreparePlot()
+Plot.prepare_plot()
 Plot.PlotSolution(mesh, physics, solver, "Density", PlotIC=True, PlotExact=False, Equidistant=True)
 Plot.PlotSolution(mesh, physics, solver, "XMomentum", PlotIC=True, PlotExact=False, Equidistant=True)
 Plot.PlotSolution(mesh, physics, solver, "Energy", PlotIC=True, PlotExact=False, Equidistant=True)
 
-Plot.ShowPlot()
+Plot.show_plot()
