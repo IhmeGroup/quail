@@ -16,6 +16,25 @@ def adapt(solver, physics, mesh, stepper):
     stepper - Stepper object (timestepping/stepper.py)
     """
 
+    # Calculate adaption criterion for each element
+    e = np.empty(mesh.num_elems)
+    for elem in mesh.elements:
+        # Get norm of gradient of each state variable at each quadrature point
+        gU = evaluate_gradient_norm(
+                solver.elem_operators.basis_phys_grad_elems[elem.id],
+                physics.U[elem.id,:,:])
+        # Get maximum density gradient
+        grho = np.max(gU[:,0])
+        # Multiply by mesh area
+        e[elem.id] = solver.elem_operators.vol_elems[elem.id] * grho
+    # Normalize the adaption criterion so it ranges from 0 to 1
+    e /= np.max(e)
+
+    # Print elements with high adaption criterion
+    for elem in mesh.elements:
+        if getattr(elem, 'deactivated', False): continue
+        if e[elem.id] > .4 : print(elem.id, e[elem.id])
+
     # Array of flags for which elements to be split
     needs_refinement = np.zeros(mesh.num_elems, dtype=bool)
     # Split a random element within a range
@@ -37,8 +56,9 @@ def adapt(solver, physics, mesh, stepper):
     # For box test
     #split_id = 0
     # For isentropic vortex
-    if mesh.num_elems == 50: split_id = [12,17,18,13]
-    else: split_id = 12
+    #if mesh.num_elems == 50: split_id = [12,17,18,13]
+    #else: split_id = 12
+    split_id = np.argwhere(e > .8)
     needs_refinement[split_id] = True
 
     # Loop over all elements
@@ -387,12 +407,13 @@ def evaluate_gradient_norm(basis_val_grad, Uc):
     """Evaluate the norm of the gradient at a set of points within an element.
 
     Arguments:
-    basis_val_grad - array[nq,nb,dim] of basis gradients for each basis
+    basis_val_grad - array[nq,nb,dim] of basis gradients at each point for each
+            basis for each dimension
     Uc - array[nb,ns] of element solution at each node
     Returns:
     array[nq,ns] of norm of gradient of each state variable at each point
     """
-    gradU = np.empty_like(basis_val_grad)
+    gradU = np.empty((basis_val_grad.shape[0], Uc.shape[1], basis_val_grad.shape[2]))
     # Loop over each dimension
     for i in range(basis_val_grad.shape[2]):
         gradU[:,:,i] = np.matmul(basis_val_grad[:,:,i], Uc)
