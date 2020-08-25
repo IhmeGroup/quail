@@ -66,7 +66,7 @@ TotErr,_ = Post.get_error(mesh, physics, solver, "Density")
 # Plot
 # Plot.prepare_plot()
 # Plot.PlotSolution(mesh, physics, solver, "Pressure", PlotExact=True, Equidistant=True)
-# Plot.save_figure(file_name=CurrentDir+'Pressure', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'Pressure', file_type='pdf', crop_level=2)
 # Plot.show_plot()
 
 

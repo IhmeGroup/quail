@@ -82,7 +82,7 @@ axis = None
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False)
-# Plot.save_figure(file_name=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'Gaussian', file_type='pdf', crop_level=2)
 # Plot.show_plot()
 
 # U = physics.U.Arrays[0]

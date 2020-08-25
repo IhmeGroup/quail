@@ -208,7 +208,7 @@ plt.plot(np.array([Lplot[0], Lplot[-1]])/np.pi, np.array([Lplot[0], Lplot[-1]]),
 plt.xlabel("$\\Lambda/\\pi$")
 plt.ylabel("$\\Omega_r/N_p$")
 plt.legend(loc="best")
-plot.save_figure(file_name='Dispersion', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='Dispersion', file_type='pdf', crop_level=2)
 
 # ## Plot dissipation relation
 plt.figure()
@@ -220,7 +220,7 @@ plt.plot(np.array([Lplot[0], Lplot[-1]])/np.pi, np.array([0., 0.]), 'k:', label=
 plt.xlabel("$\\Lambda/\\pi$")
 plt.ylabel("$\\Omega_i/N_p$")
 plt.legend(loc="best")
-plot.save_figure(file_name='Dissipation', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='Dissipation', file_type='pdf', crop_level=2)
 # fig1 = plt.figure(1)
 # for n in range(nn):
 # 	plt.plot(L/np.pi, Omega_i_all[:,n]/nn, 'o', label="%d" % (n))

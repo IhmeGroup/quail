@@ -23,7 +23,7 @@ plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=True, plot_
 			include_mesh=True, regular_2D=True, equal_AR=False, show_elem_IDs=True)
 # # plot.PlotSolution(mesh, physics, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 # # 	Regular2D=True, show_triangulation=False, show_elem_IDs=True)
-plot.save_figure(file_name='Pressure', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='Pressure', file_type='pdf', crop_level=2)
 #plot.prepare_plot(close_all=False, linewidth=1.5)
 # plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
 # plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, plot_numerical=False, plot_exact=False,
@@ -32,5 +32,5 @@ plot.save_figure(file_name='Pressure', FileType='pdf', CropLevel=2)
 # 		plot_IC=False, create_new_figure=False, fmt="k-", legend_label=None)
 # plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, plot_numerical=True, plot_exact=False,
 # 		plot_IC=False, create_new_figure=False, fmt="bo", legend_label=None)
-# plot.save_figure(file_name='line', FileType='pdf', CropLevel=2)
+# plot.save_figure(file_name='line', file_type='pdf', crop_level=2)
 plot.show_plot()

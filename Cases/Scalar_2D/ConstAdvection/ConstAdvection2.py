@@ -86,7 +86,7 @@ axis = None
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Scalar", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False)
-# Plot.save_figure(file_name=CurrentDir+'Gaussian', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'Gaussian', file_type='pdf', crop_level=2)
 # Plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
 # # Post.get_boundary_info(mesh, physics, solver, "y1", "Scalar", integrate=True, 
 # # 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)

@@ -23,12 +23,12 @@ plot.prepare_plot(axis=axis, linewidth=0.5)
 # 	show_triangulation=False, equal_AR=equal_AR, show_elem_IDs=True)
 plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=True, create_new_figure=True, 
 			include_mesh=True, regular_2D=False, equal_AR=False, show_elem_IDs=True)
-plot.save_figure(file_name='Pressure', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='Pressure', file_type='pdf', crop_level=2)
 # plot.PlotSolution(mesh, physics, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	show_triangulation=False, equal_AR=equal_AR)
 plot.plot_solution(mesh, physics, solver, "Entropy", plot_numerical=True, create_new_figure=True, 
 			include_mesh=True, regular_2D=False)
-plot.save_figure(file_name='Entropy', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='Entropy', file_type='pdf', crop_level=2)
 
 post.get_boundary_info(solver, mesh, physics, "bottom", "Pressure", dot_normal_with_vec=True, vec=[1.,0.], 
 		integrate=True, plot_vs_x=True, plot_vs_y=False, fmt="bo", ylabel="$F_x$")

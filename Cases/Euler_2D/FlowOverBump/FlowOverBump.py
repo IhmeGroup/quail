@@ -101,10 +101,10 @@ equal_AR = False
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Pressure", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	show_triangulation=False, equal_AR=equal_AR, show_elem_IDs=True)
-# Plot.save_figure(file_name='Pressure', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name='Pressure', file_type='pdf', crop_level=2)
 # Plot.PlotSolution(mesh, physics, solver, "Entropy", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	show_triangulation=False, equal_AR=equal_AR)
-# Plot.save_figure(file_name=CurrentDir+'Entropy', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'Entropy', file_type='pdf', crop_level=2)
 # Post.get_boundary_info(mesh, physics, solver, "bottom", "Pressure", integrate=True, 
 # 		vec=[1.,0.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False, Label="F_x")
 # Plot.show_plot()

@@ -157,10 +157,10 @@ axis = None
 # Plot.prepare_plot(axis=axis, linewidth=0.5)
 # Plot.PlotSolution(mesh, physics, solver, "Density", Equidistant=True, PlotExact=False, include_mesh=True, 
 # 	Regular2D=True, show_triangulation=False, show_elem_IDs=True)
-# Plot.save_figure(file_name=CurrentDir+'vortex', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'vortex', file_type='pdf', crop_level=2)
 # Plot.prepare_plot(close_all=False, linewidth=1.5)
 # Plot.plot_line_probe(mesh, physics, solver, "Density", xy1=[-5.,1.], xy2=[5.,1.], nPoint=101, PlotExact=True, PlotIC=True)
-# Plot.save_figure(file_name=CurrentDir+'line', FileType='pdf', CropLevel=2)
+# Plot.save_figure(file_name=CurrentDir+'line', file_type='pdf', crop_level=2)
 # Plot.show_plot()
 
 # U = physics.U.Arrays[0]

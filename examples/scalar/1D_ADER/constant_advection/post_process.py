@@ -24,6 +24,6 @@ plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, plot_ex
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
 
-plot.save_figure(file_name='constant_advection_ader', FileType='pdf', CropLevel=2)
+plot.save_figure(file_name='constant_advection_ader', file_type='pdf', crop_level=2)
 
 plot.show_plot()

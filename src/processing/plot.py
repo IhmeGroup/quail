@@ -13,21 +13,38 @@ import numerics.helpers.helpers as helpers
 def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12., 
 		font={'family':'serif', 'serif': ['DejaVu Sans']}, linewidth=1.5, 
 		markersize=4.0, axis=None, cmap='viridis', equal_AR=False):
-	# font={'family':'serif', 'serif': ['computer modern roman']}
-	# Note: matplotlib.rcdefaults() returns to default settings
+	'''
+	This function sets parameters for plotting.
 
+	Inputs:
+	-------
+	    reset: if True, will reset to default parameters before setting
+	    	input arguments
+	    defaults: if True, will reset to default parameters and then
+	    	immediately return (input arguments not set)
+    	close_all: if True, will close all current figures
+    	fontsize: font size
+    	font: font
+    	linewidth: line width
+    	markersize: size of markers
+    	axis: axis limits [2*dim]
+    	cmap: colormap
+    	equal_AR: if True, will set equal aspect ratio (only affects 2D)
+	'''
 	if reset or defaults:
-		mpl.rcdefaults()
+		mpl.rcdefaults() # return to default settings
 		if defaults:
 			return
 
 	# Use tex syntax
 	plt.rc('text', usetex=True)
 
+	# Set parameters
 	if close_all:
 		plt.close("all")
-	mpl.rcParams['font.size']=fontsize
+	mpl.rcParams['font.size'] = fontsize
 	plt.rc('font',**font)
+	# font={'family':'serif', 'serif': ['computer modern roman']}
 	mpl.rcParams['lines.linewidth'] = linewidth
 	mpl.rcParams['lines.markersize'] = markersize
 	mpl.rcParams['image.cmap'] = cmap
@@ -38,7 +55,17 @@ def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12.,
 		plt.gca().set_aspect('equal', adjustable='box')
 
 
-def save_figure(file_name='fig', file_type='pdf', crop_level=1, **kwargs):
+def save_figure(file_name='fig', file_type='pdf', crop_level=1):
+	'''
+	This function saves the current figure to disk.
+
+	Inputs:
+	-------
+	    file_name: name of file to save
+	    file_type: type of file to save
+	    crop_level: 0 for no cropping, 1 for some cropping, 2 for a lot
+	    	of cropping
+	'''
 	file_name = file_name + '.' + file_type
 	if crop_level == 0:
 		# Don't crop
@@ -54,56 +81,10 @@ def save_figure(file_name='fig', file_type='pdf', crop_level=1, **kwargs):
 
 
 def show_plot(interactive=False):
-	if interactive:
-		# doesn't work for now
-		plt.ion()
-		plt.show()
-	else:
-		plt.show()
-
-
-# def Plot1D(physics, x, u, SolnLabel, VariableName=None, u_exact=None, 
-# 	u_IC=None, u_var_calculated=False, **kwargs):
-# 	### reshape
-# 	# uplot = u[:,:,iplot]
-# 	# uplot = np.reshape(uplot, (-1,))
-# 	# u_exact = np.reshape(u_exact, (-1,1))
-# 	x = np.reshape(x, (-1,))
-# 	nplot = x.shape[0]
-# 	u.shape = nplot,-1
-# 	if not u_var_calculated:
-# 		uplot = physics.ComputeScalars(VariableName, u)
-# 	else:
-# 		# assume desired variable already calculated
-# 		uplot = u
-
-# 	### sort
-# 	idx = np.argsort(x)
-# 	idx.flatten()
-# 	uplot = uplot[idx]
-# 	# u_exact = u_exact[idx]
-# 	x = x[idx]
-
-# 	if u_exact is not None: 
-# 		# u_ex = u_exact[:,:,iplot]
-# 		# u_ex.shape = -1,
-# 		u_exact.shape = nplot,-1
-# 		u_ex = physics.ComputeScalars(VariableName, u_exact)
-# 		plt.plot(x,u_ex,'k-',label="Exact")
-
-# 	if u_IC is not None: 
-# 		# u_ex = u_exact[:,:,iplot]
-# 		# u_ex.shape = -1,
-# 		u_IC.shape = nplot,-1
-# 		u_i = physics.ComputeScalars(VariableName, u_IC)
-# 		plt.plot(x,u_i,'k--',label="Initial")
-
-# 	if "legend_label" in kwargs:
-# 		legend_label = kwargs["legend_label"]
-# 	else:
-# 		legend_label = "DG"
-# 	plt.plot(x,uplot,'bo',label=legend_label) 
-# 	plt.ylabel(SolnLabel)
+	'''
+	This function is a wrapper for plt.show() (displays all open figures).
+	'''
+	plt.show()
 
 
 def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=0, 
