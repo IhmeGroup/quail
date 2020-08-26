@@ -87,76 +87,71 @@ def show_plot(interactive=False):
 	plt.show()
 
 
-def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=0, 
-		**kwargs):
-	### reshape
-	# uplot = u[:,:,iplot]
-	# uplot = np.reshape(uplot, (-1,))
-	# u_exact = np.reshape(u_exact, (-1,1))
-	# x = np.reshape(x, (-1,))
-	# nplot = x.shape[0]
-	# u.shape = nplot,-1
-	# if not u_var_calculated:
-	# 	uplot = physics.ComputeScalars(VariableName, u)
-	# else:
-	# 	# assume desired variable already calculated
-	# 	uplot = u
+def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=None):
+	'''
+	This function creates a 1D plot.
 
+	Inputs:
+	-------
+		physics: physics object
+		x: x-coordinates [num_pts, 1]
+		var_plot: variable to plot evaluated at x [num_pts, 1]
+		ylabel: y-axis label
+		fmt: format string for plotting, e.g. "bo" for blue circles
+		legend_label: legend label
+		skip: integer value that determines the increment between each point 
+			to skip when plotting (None for no skipping)
+	'''
 	# Reshape
 	x = np.reshape(x, (-1,))
 	var_plot = np.reshape(var_plot, x.shape)
 
-	### sort
+	# Sort
 	idx = np.argsort(x)
 	idx.flatten()
 	x = x[idx]
 	var_plot = var_plot[idx]
-	# u_exact = u_exact[idx]
 
-	# if u_exact is not None: 
-	# 	# u_ex = u_exact[:,:,iplot]
-	# 	# u_ex.shape = -1,
-	# 	u_exact.shape = nplot,-1
-	# 	u_ex = physics.ComputeScalars(VariableName, u_exact)
-	# 	plt.plot(x,u_ex,'k-',label="Exact")
-
-	# if u_IC is not None: 
-	# 	# u_ex = u_exact[:,:,iplot]
-	# 	# u_ex.shape = -1,
-	# 	u_IC.shape = nplot,-1
-	# 	u_i = physics.ComputeScalars(VariableName, u_IC)
-	# 	plt.plot(x,u_i,'k--',label="Initial")
-
-	# if "legend_label" in kwargs:
-	# 	legend_label = kwargs["legend_label"]
-	# else:
-	# 	legend_label = "DG"
-	if skip !=0:
-		plt.plot(x[idx[0]:idx[-1]:skip], var_plot[idx[0]:idx[-1]:skip], fmt, 
-				label=legend_label) 
-	else:
-		plt.plot(x, var_plot, fmt, label=legend_label) 
+	# Plot
+	plt.plot(x[::skip], var_plot[::skip], fmt, label=legend_label) 
 	plt.ylabel(ylabel)
 
 
 def triangulate(physics, x, var):
-	### Remove duplicates
+	'''
+	This function creates a triangulation.
+
+	Inputs:
+	-------
+		physics: physics object
+		x: xy-coordinates [num_pts, 2]
+		var: variable to plot evaluated at x [num_pts, 1]
+
+	Outputs:
+	--------
+		tris: Triangulation object
+		var_tris: variable to plot evaluated at x (modified with removal
+			of duplicates and flattened)
+		x: xy-coordinates (duplicates removed and reshaped)
+		var: variable to plot evaluated at x (duplicates remove and 
+			reshaped)
+	'''
+	if physics.dim != 2:
+		raise ValueError
+
+	# Remove duplicates
 	x.shape = -1,2
 	num_pts = x.shape[0]
 	x, idx = np.unique(x, axis=0, return_index=True)
 
-	### Flatten
+	# Flatten
 	X = x[:,0].flatten()
 	Y = x[:,1].flatten()
 	var.shape = num_pts, -1
-	# U = physics.ComputeScalars(variable_name, u).flatten()
-	# U = u[:,:,iplot].flatten()
 	var = var.flatten()[idx]
 
-	### Triangulation
+	# Triangulation
 	triang = tri.Triangulation(X, Y)
-	# refiner = tri.UniformTriRefiner(triang)
-	# tris, utri = refiner.refine_field(U, subdiv=0)
 	tris = triang; var_tris = var
 
 	return tris, var_tris
@@ -164,43 +159,33 @@ def triangulate(physics, x, var):
 
 def plot_2D_regular(physics, x, var_plot, **kwargs):
 	'''
-	Function: Plot2D
-	-------------------
-	This function plots 2D contours via a triangulation
+	This function plots 2D contours via a triangulation of the coordinates
+	stored in x. This is appropriate only for regular domains since the 
+	entire domain is triangulated at once.
 
-	NOTES:
-			For coarse solutions, the resulting plot may misrepresent
-			the actual solution due to bias in the triangulation
-
-	INPUTS:
-	    x: (x,y) coordinates; 3D array of size [num_elems x num_pts x 2], where
+	Inputs:
+	-------
+		physics: physics object
+	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
 	    	num_pts is the number of points per element
-	    u: values of solution at the points in x; 3D array of size
-	    	[num_elems x num_pts x NUM_STATE_VARS]
+	    var_plot: variable to plot evaluated at x; 3D array of shape
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the 
+	    	number of points per element
+	    kwargs: keyword arguments (see below)
 
-	OUTPUTS:
-	    Plot is created
+	Outputs:
+	--------
+		tcf.levels: contour levels
+		x: xy-coordinates (duplicates removed and reshaped)
+		var_plot: variable to plot evaluated at x (duplicates remove and 
+			reshaped)
+
+	Notes:
+	------
+		For coarse solutions, the resulting plot may misrepresent the actual
+		solution due to bias in the triangulation.
 	'''
-
-	### Remove duplicates
-	# x.shape = -1,2
-	# num_pts = x.shape[0]
-	# x, idx = np.unique(x, axis=0, return_index=True)
-
-	# ### Flatten
-	# X = x[:,0].flatten()
-	# Y = x[:,1].flatten()
-	# u.shape = num_pts,-1
-	# U = physics.ComputeScalars(VariableName, u).flatten()
-	# # U = u[:,:,iplot].flatten()
-	# U = U[idx]
-
-	# ### Triangulation
-	# triang = tri.Triangulation(X, Y)
-	# # refiner = tri.UniformTriRefiner(triang)
-	# # tris, utri = refiner.refine_field(U, subdiv=0)
-	# tris = triang; utri = U
-
+	# Get triangulation and plot
 	tris, var_tris = triangulate(physics, x, var_plot)
 	if "nlevels" in kwargs:
 		tcf = plt.tricontourf(tris, var_tris, kwargs["nlevels"])
@@ -209,109 +194,91 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 	else:
 		tcf = plt.tricontourf(tris, var_tris)
 
-	### Plot contours 
-	# cb = plt.colorbar()
-	# cb.ax.set_title(SolnLabel)
-	# plt.ylabel("$y$")
+	# Show triangulation if requested
 	if "show_triangulation" in kwargs:
 		if kwargs["show_triangulation"]: 
 			plt.triplot(tris, lw=0.5, color='white')
-	# plt.axis("equal")
 
 	return tcf.levels
 
 
 def plot_2D_general(physics, x, var_plot, **kwargs):
 	'''
-	Function: Plot2D
-	-------------------
-	This function plots 2D contours via a triangulation
+	This function plots 2D contours via a triangulation of the coordinates
+	stored in x. This is appropriate for general domains, but is much slower
+	than plot_2D_regular.
 
-	NOTES:
-			For coarse solutions, the resulting plot may misrepresent
-			the actual solution due to bias in the triangulation
-
-	INPUTS:
-	    x: (x,y) coordinates; 3D array of size [num_elems x num_pts x 2], where
+	Inputs:
+	-------
+		physics: physics object
+	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
 	    	num_pts is the number of points per element
-	    u: values of solution at the points in x; 3D array of size
-	    	[num_elems x num_pts x NUM_STATE_VARS]
+	    var_plot: variable to plot evaluated at x; 3D array of shape
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the 
+	    	number of points per element
+	    kwargs: keyword arguments (see below)
 
-	OUTPUTS:
-	    Plot is created
+	Notes:
+	------
+		For coarse solutions, the resulting plot may misrepresent the actual
+		solution due to bias in the triangulation.
 	'''
-
 	''' If not specified, get default contour levels '''
 	if "levels" not in kwargs:
-		# u1 = np.copy(u)
-		# u1.shape = -1,u.shape[-1]
-		# u2 = physics.ComputeScalars(VariableName, u1, u1.shape[0]).flatten()
-		# u2.shape = u.shape[0:2]
-		# figtmp = plt.figure()
-		# if "nlevels" in kwargs:
-		# 	CS = plt.contourf(u2, kwargs["nlevels"])
-		# else:
-		# 	CS = plt.contourf(u2)
-		# levels = CS.levels
-		# plt.close(figtmp)
-
 		figtmp = plt.figure()
+		# Run this for the sole purpose of getting default contour levels
 		levels = plot_2D_regular(physics, np.copy(x), np.copy(var_plot), 
 				**kwargs)
-		# plt.colorbar()
-		# show_plot()
 		plt.close(figtmp)
 	else:
 		levels = kwargs["levels"]
 
-	num_elems = x.shape[0]
-	# num_pts = x.shape[1]
 	''' Loop through elements '''
-	for elem in range(num_elems):
-		# Extract x and y
-		# X = x[elem,:,0].flatten()
-		# Y = x[elem,:,1].flatten()
-		# # Compute requested scalar
-		# U = physics.ComputeScalars(VariableName, u[elem,:,:]).flatten()
-		# # Triangulation
-		# triang = tri.Triangulation(X, Y)
-		# tris = triang; utri = U
-
-		tris, utri = triangulate(physics, x[elem], var_plot[elem])
+	num_elems = x.shape[0]
+	for elem_id in range(num_elems):
+		# Triangulate each element one-by-one
+		tris, utri = triangulate(physics, x[elem_id], var_plot[elem_id])
 		# Plot
 		plt.tricontourf(tris, utri, levels=levels, extend="both")
-		# if "nlevels" in kwargs:
-		# 	plt.tricontourf(tris, utri, kwargs["nlevels"])
-		# elif "levels" in kwargs:
-		# 	plt.tricontourf(tris, utri, levels=kwargs["levels"], extend="both")
-		# else:
-		# 	plt.tricontourf(tris, utri)
+		# Show triangulation if requested
 		if "show_triangulation" in kwargs:
 			if kwargs["show_triangulation"]: 
 				plt.triplot(triang, lw=0.5, color='white')
 
 
-# def Plot2D(physics, x, u, VariableName, SolnLabel, Regular2D, equal_AR=False, **kwargs):
-# 	if Regular2D:
-# 		plot_2D_regular(physics, x, u, VariableName, SolnLabel, equal_AR, **kwargs)
-# 	else:
-# 		plot_2D_general(physics, x, u, VariableName, SolnLabel, equal_AR, **kwargs)
-
-# 	''' Label plot '''
-# 	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
-# 		pass 
-# 		# do nothing
-# 	else:
-# 		cb = plt.colorbar()
-# 		cb.ax.set_title(SolnLabel)
-# 	plt.ylabel("$y$")
-# 	if equal_AR:
-# 		plt.gca().set_aspect('equal', adjustable='box')
-# 	# plt.axis("equal")
-
-
 def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False, 
 		**kwargs):
+	'''
+	This function plots 2D contours via a triangulation of the coordinates
+	stored in x. This is appropriate for general domains, but is much slower
+	than plot_2D_regular.
+
+	Inputs:
+	-------
+		physics: physics object
+	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
+	    	num_pts is the number of points per element
+	    var_plot: variable to plot evaluated at x; 3D array of shape
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the 
+	    	number of points per element
+	    ylabel: y-axis label
+	    regular_2D: if True, then entire domain will be triangulated at once;
+	    	appropriate only for regular domains
+    	equal_AR: if True, will set equal aspect ratio
+	    kwargs: keyword arguments (see below)
+
+	Outputs:
+	--------
+		x: xy-coordinates (modified only if regular_2D is True)
+		var_plot: variable to plot evaluated at x (modified only if 
+			regular_2D is True)
+	    
+	Notes:
+	------
+		For coarse solutions, the resulting plot may misrepresent the actual
+		solution due to bias in the triangulation.
+	'''
+	''' Plot solution '''
 	if regular_2D:
 		plot_2D_regular(physics, x, var_plot, **kwargs)
 	else:
@@ -327,10 +294,17 @@ def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False,
 	plt.ylabel("$y$")
 	if equal_AR:
 		plt.gca().set_aspect('equal', adjustable='box')
-	# plt.axis("equal")
 
 
 def finalize_plot(xlabel="x", **kwargs):
+	'''
+	This function makes final changes to the current plot.
+
+	Inputs:
+	-------
+	    xlabel: x-axis label
+	    kwargs: keyword arguments (see below)
+	'''
 	plt.xlabel("$" + xlabel + "$")
 	ax = plt.gca()
 	handles, labels = ax.get_legend_handles_labels()
@@ -343,6 +317,27 @@ def finalize_plot(xlabel="x", **kwargs):
 
 
 def interpolate_2D_soln_to_points(physics, x, var, xpoints):
+	'''
+	This function interpolates a variable to an arbitrary set of points.
+	2D only.
+
+	Inputs:
+	-------
+	    physics: physics object
+	    x: xy-coordinates at which variable is already evaluated [num_x, 2]
+	    var: values of variable evaluated at x [num_x, 1]
+	    xpoints: xy-coordinates to interpolate variable to [num_pts, 2]
+
+	Outputs:
+	--------
+		var_points: values of variable interpolated to xpoints [num_pts, 2]
+		x: xy-coordinates at which variable is already evaluated (duplicates
+			removed and reshaped)
+	    var: values of variable evaluated at x (duplicates removed and 
+	    	reshaped)
+	'''
+	if physics.dim != 2:
+		raise ValueError
 	tris, utri = triangulate(physics, x, var)
 	interpolator = tri.LinearTriInterpolator(tris, utri)
 
@@ -355,6 +350,33 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 		plot_numerical=True, plot_exact=False, plot_IC=False,
 		create_new_figure=True, ylabel=None, vs_x=True, fmt="k-", 
 		legend_label=None, **kwargs):
+	'''
+	This function evaluates a given variable only a specified line segment 
+	and creates a 1D plot. 2D only.
+
+	Inputs:
+	-------
+		mesh: mesh object
+	    physics: physics object
+	    solver: solver object
+	    var_name: name of variable
+	    xy1: xy-coordinate of 1st endpoint of line segment
+	    xy2: xy-coordinate of 2nd endpoint of line segment
+	    num_pts: number of points along line segment
+	    plot_numerical: plot numerical solution
+	    plot_exact: plot exact solution
+	    plot_IC: plot initial condition
+	    create_new_figure: if True, will create new figure before plotting
+	    ylabel: y-axis label
+	    vs_x: if True, will plot variable vs. x; if False, will plot 
+	    	variable vs. y
+		fmt: format string for plotting, e.g. "bo" for blue circles
+	    legend_label: legend label
+	    kwargs: keyword arguments (see below)
+	'''
+	''' Compatibility checks '''
+	if mesh.dim != 2:
+		raise ValueError
 
 	plot_sum = plot_numerical + plot_exact + plot_IC
 	if plot_sum >= 2:
@@ -362,28 +384,15 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	elif plot_sum == 0:
 		raise ValueError("Need to plot a solution")
 
-	# Construct points on line segment
+	''' Construct points on line segment '''
 	x1 = xy1[0]; y1 = xy1[1]
 	x2 = xy2[0]; y2 = xy2[1]
 	xline = np.linspace(x1, x2, num_pts)
 	yline = np.linspace(y1, y2, num_pts)
 
-	# Interpolation
+	''' Interpolation '''
 	x = get_sample_points(mesh, physics, solver.basis, True)
-	xyline = np.array([xline,yline]).transpose()
-	# U_line = interpolate_2D_soln_to_points(physics, x, u, xyline, var_name)
-
-	if create_new_figure:
-		plt.figure()
-
-	# Analytical?
-	# u_exact, u_IC = get_analytical_solution(physics, xyline, solver.time, PlotExact, PlotIC)
-	# if u_exact is not None:
-	# 	u_exact = physics.ComputeScalars(VariableName, u_exact)
-	# 	# u_exact = interpolate_2D_soln_to_points(physics, x, u_exact, xyline, variable_name)
-	# if u_IC is not None:
-	# 	u_IC = physics.ComputeScalars(VariableName, u_IC)
-		# u_IC = interpolate_2D_soln_to_points(physics, x, u_IC, xyline, variable_name)
+	xyline = np.array([xline, yline]).transpose()
 
 	if plot_numerical:
 		var = get_numerical_solution(physics, physics.U, x, solver.basis, 
@@ -399,10 +408,12 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 				var_name)
 		default_label = "Initial"
 
+	''' Plot '''
+	if create_new_figure:
+		plt.figure()
 	if legend_label is None:
 		legend_label = default_label
 
-	# SolnLabel = get_solution_label(physics, variable_name, Label)
 	ylabel = get_ylabel(physics, var_name, ylabel)
 
 	if vs_x:
@@ -411,30 +422,37 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	else:
 		xlabel = "y"
 		line = yline
-	plot_1D(physics, line, var_plot, ylabel, fmt, legend_label, 0, **kwargs)
-	# Plot1D(physics, line, uline, SolnLabel, var_name, u_exact, u_IC, u_var_calculated=True, **kwargs)
 
+	plot_1D(physics, line, var_plot, ylabel, fmt, legend_label)
 
-	### Finalize plot
 	finalize_plot(xlabel=xlabel, **kwargs)
-	# plt.xlabel("$x$")
-	# ax = plt.gca()
-	# handles, labels = ax.get_legend_handles_labels()
-	# if handles != []:
-	# 	# only create legend if handles can be found
-	# 	plt.legend(loc="best")
-
 
 
 def get_sample_points(mesh, physics, basis, equidistant=True):
-	## Extract data
+	'''
+	This function returns sample points at which to evaluate the solution 
+	for plotting.
+
+	Inputs:
+	-------
+		mesh: mesh object
+	    physics: physics object
+	    basis: basis object
+	    equidistant: if True, then sample points will be equidistant 
+	    	(within each element); if False, sample points will be based 
+	    	on quadrature points
+
+	Outputs:
+	-------
+		x: sample points [num_elems, num_pts, dim], where num_pts is the
+			number of sample points per element
+	'''
+	# Extract
 	dim = mesh.dim
 	U = physics.U
 	order = physics.order
-	sr = physics.NUM_STATE_VARS
 
-	# Get points to plot at
-	# Note: assumes uniform element type
+	# Get sample points in reference space
 	if equidistant:
 		xref = basis.equidistant_nodes(max([1, 3*order]))
 	else:
@@ -443,220 +461,114 @@ def get_sample_points(mesh, physics, basis, equidistant=True):
 		gbasis = mesh.gbasis
 		xref, _ = gbasis.get_quadrature_data(quad_order)
 
-		# QuadOrder,_ = get_gaussian_quadrature_elem(mesh, basis, max([2,2*Order]), physics)
-		# quadData = QuadData(mesh, mesh.gbasis, EntityType.Element, QuadOrder)
-		# xref = gbasis.quad_pts
+	# Allocate
 	num_pts = xref.shape[0]
-
-	# u = np.zeros([mesh.num_elems,num_pts,sr])
-	# u_exact = np.copy(u)
-	x = np.zeros([mesh.num_elems,num_pts,dim])
-	# PhiData = Basis.BasisData(physics.Basis,Order,mesh)
+	x = np.zeros([mesh.num_elems, num_pts, dim])
+	
+	# Evaluate basis at reference-space points
 	basis.get_basis_val_grads(xref, True, False, False, None)
-	el = 0
-	for elem in range(mesh.num_elems):
-		# U_ = U[elem]
 
-		xphys = mesh_tools.ref_to_phys(mesh, elem, xref)
-		x[el,:,:] = xphys
-		# u[el,:,:] = np.matmul(basis.basis_val, U_)
-
-		el += 1
+	# Convert reference-space points to physical space
+	for elem_id in range(mesh.num_elems):
+		xphys = mesh_tools.ref_to_phys(mesh, elem_id, xref)
+		x[elem_id,:,:] = xphys
 
 	return x
 
 
 def get_analytical_solution(physics, fcn_data, x, time, var_name):
+	'''
+	This function evaluates the analytical solution at a set of points.
 
-	U_plot = physics.CallFunction(fcn_data, x=np.reshape(x, 
+	Inputs:
+	-------
+	    physics: physics object
+	    fcn_data: function object (for either exact solution or initial 
+	    	condition)
+	    x: coordinates at which to evaluate solution
+	    time: time at which to evaluate solution
+	    var_name: name of variable to get
+
+	Outputs:
+	-------
+		var_plot: values of variable obtained at x [num_pts, 1]
+	'''
+	U_plot = physics.CallFunction(fcn_data, x=np.reshape(x,  
 			(-1, physics.dim)), t=time)
 	var_plot = physics.ComputeScalars(var_name, U_plot)
-	# var_plot.shape = x.shape[0], x.shape[1], -1
-	# if u is not None: u_IC.shape = u.shape
-
-	# # Exact solution?
-	# if get_exact:
-	# 	u_exact = physics.CallFunction(physics.ExactSoln, x=np.reshape(x, (-1,physics.dim)), t=time)
-	# 	if u is not None: u_exact.shape = u.shape
-	# else:
-	# 	u_exact = None
-	# # IC ?
-	# if get_IC:
-	# 	u_IC = physics.CallFunction(physics.IC, x=np.reshape(x,(-1,physics.dim)), t=0.)
-	# 	if u is not None: u_IC.shape = u.shape
-	# else:
-	# 	u_IC = None
 
 	return var_plot
 
 
-def get_numerical_solution(physics, U, x, basis, var_name, 
-		already_interpolated=False):
+def get_numerical_solution(physics, U, x, basis, var_name):
+	'''
+	This function evaluates the numerical solution at a set of points.
 
-	if already_interpolated:
-		var_numer = physics.ComputeScalars(var_name, U)
-	else:
-		var_numer = np.zeros([x.shape[0], x.shape[1], 1])
-		for elem in range(x.shape[0]):
-			# Up = np.matmul(basis.basis_val, U[elem])
-			Up = helpers.evaluate_state(U[elem], basis.basis_val)
-			var_numer[elem,:,:] = physics.ComputeScalars(var_name, Up)
+	Inputs:
+	-------
+	    physics: physics object
+	    U: state polynomial coefficients
+	    	[num_elems, num_basis_coeffs, num_state_vars]
+	    x: coordinates at which to evaluate solution 
+	    	[num_elems, num_pts, dim], where num_pts is the number of sample 
+	    	points per element
+	    basis: basis object
+	    var_name: name of variable to get
+
+	Outputs:
+	-------
+		var_numer: values of variable obtained at x 
+			[num_elems, num_pts, 1]
+	'''
+	var_numer = np.zeros([x.shape[0], x.shape[1], 1])
+	for elem_id in range(x.shape[0]):
+		# Up = np.matmul(basis.basis_val, U[elem_id])
+		Up = helpers.evaluate_state(U[elem_id], basis.basis_val)
+		var_numer[elem_id,:,:] = physics.ComputeScalars(var_name, Up)
 
 	return var_numer
 
 
-def get_ylabel(physics, variable_name, ylabel=None):
+def get_ylabel(physics, var_name, ylabel=None):
+	'''
+	This function returns an appropriate y-axis label based on the variable
+	name and the physics object.
+
+	Inputs:
+	-------
+	    physics: physics object
+	    var_name: name of variable to get
+	    ylabel: if not None, then nothing will happen
+
+	Outputs:
+	-------
+		ylabel: y-axis label
+	'''
 	if ylabel is None:
 		try:
-			ylabel = physics.StateVariables[variable_name].value
+			ylabel = physics.StateVariables[var_name].value
 		except KeyError:
-			ylabel = physics.AdditionalVariables[variable_name].value
+			ylabel = physics.AdditionalVariables[var_name].value
 		ylabel = "$" + ylabel + "$"
 
 	return ylabel
 
 
-# def PlotSolution(mesh, physics, solver, VariableName, create_new_figure=True, PlotExact=False, PlotIC=False, Label=None, Equidistant=True,
-# 	include_mesh=False, Regular2D=False, equal_AR=False, **kwargs):
-
-# 	# iplot_sr = physics.VariableType[VariableName]
-# 	if PlotExact:
-# 		# if not physics.ExactSoln.Function:
-# 		if physics.ExactSoln is None:
-# 			raise Exception("No exact solution provided")
-
-# 	## Extract params
-# 	FinalTime = solver.time
-# 	dim = mesh.dim
-
-# 	# Get sample points
-# 	x, u = get_sample_points(mesh, physics, solver.basis, Equidistant)
-
-# 	# # Exact solution?
-# 	# if PlotExact:
-# 	# 	u_exact = physics.CallFunction(physics.ExactSoln, x=np.reshape(x, (-1,dim)), Time=FinalTime)
-# 	# 	u_exact.shape = u.shape
-# 	# else:
-# 	# 	u_exact = None
-# 	# # IC ?
-# 	# if PlotIC:
-# 	# 	u_IC = physics.CallFunction(physics.IC, x=np.reshape(x,(-1,dim)),Time=0.)
-# 	# 	u_IC.shape = u.shape
-# 	# else:
-# 	# 	u_IC = None
-# 	# Solution label
-
-# 	u_exact, u_IC = get_analytical_solution(physics, x, FinalTime, PlotExact, PlotIC, u)
-
-# 	# if Label is None:
-# 	# 	try:
-# 	# 		Label = physics.StateVariables[VariableName].value
-# 	# 	except KeyError:
-# 	# 		Label = physics.AdditionalVariables[VariableName].value
-# 	# SolnLabel = "$" + Label + "$"
-
-# 	SolnLabel = get_solution_label(physics, VariableName, Label)
-
-# 	# Plot solution
-# 	if create_new_figure:
-# 		plt.figure()
-
-# 	if dim == 1:
-# 		Plot1D(physics, x, u, SolnLabel, VariableName, u_exact, u_IC, **kwargs)
-# 	else:
-# 		if PlotExact: u = u_exact # plot either only numerical or only exact
-# 		Plot2D(physics, x, u, VariableName, SolnLabel, Regular2D, equal_AR, **kwargs)
-
-# 	### Finalize plot
-# 	finalize_plot(**kwargs)
-
-# 	# plt.xlabel("$x$")
-# 	# ax = plt.gca()
-# 	# handles, labels = ax.get_legend_handles_labels()
-# 	# if handles != []:
-# 	# 	# only create legend if handles can be found
-# 	# 	plt.legend(loc="best")
-
-# 	# if dim == 1 and include_mesh:
-# 	# 	plot_mesh_1D(mesh, **kwargs)
-# 	# elif dim == 2 and include_mesh:
-# 	# 	PlotMesh2D(mesh, **kwargs)
-
-# 	if include_mesh:
-# 		plot_mesh(mesh, **kwargs)
-
-
-def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, 
-		plot_exact=False, plot_IC=False, create_new_figure=True, ylabel=None,
-		fmt='k-', legend_label=None, equidistant_pts=True, 
-		include_mesh=False, regular_2D=False, equal_AR=False, skip=0, 
-		**kwargs):
-
-	plot_sum = plot_numerical + plot_exact + plot_IC
-	if plot_sum >= 2:
-		raise ValueError("Can only plot one solution at a time")
-	elif plot_sum == 0:
-		raise ValueError("Need to plot a solution")
-
-	## Extract params
-	time = solver.time
-	dim = mesh.dim
-
-	# Get sample points
-	x = get_sample_points(mesh, physics, solver.basis, equidistant_pts)
-
-	if plot_numerical:
-		var_plot = get_numerical_solution(physics, physics.U, x, 
-				solver.basis, var_name)
-		default_label = "Numerical"
-	elif plot_exact:
-		var_plot = get_analytical_solution(physics, physics.ExactSoln, x, 
-				time, var_name)
-		var_plot.shape = x.shape[0], x.shape[1], -1
-		default_label = "Exact"
-	elif plot_IC:
-		var_plot = get_analytical_solution(physics, physics.IC, x, 0., 
-				var_name)
-		var_plot.shape = x.shape[0], x.shape[1], -1
-		default_label = "Initial"
-
-	if legend_label is None:
-		legend_label = default_label
-
-	ylabel = get_ylabel(physics, var_name, ylabel)
-
-	# Plot solution
-	if create_new_figure:
-		plt.figure()
-
-	if dim == 1:
-		plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip, 
-				**kwargs)
-	else:
-		# if PlotExact: u = u_exact # plot either only numerical or only exact
-		plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR, **kwargs)
-
-	# plt.xlabel("$x$")
-	# ax = plt.gca()
-	# handles, labels = ax.get_legend_handles_labels()
-	# if handles != []:
-	# 	# only create legend if handles can be found
-	# 	plt.legend(loc="best")
-
-	# if dim == 1 and include_mesh:
-	# 	plot_mesh_1D(mesh, **kwargs)
-	# elif dim == 2 and include_mesh:
-	# 	PlotMesh2D(mesh, **kwargs)
-
-	if include_mesh:
-		plot_mesh(mesh, **kwargs)
-
-	### Finalize plot
-	finalize_plot(**kwargs)
-
-
 def plot_mesh(mesh, equal_AR=False, **kwargs):
+	'''
+	This function plots the mesh. Element IDs can also be plotted (set in 
+	kwargs).
 
+	Inputs:
+	-------
+	    mesh: mesh object
+	    equal_AR: if True, will set equal aspect ratio
+	    kwargs: keyword arguments (see below)
+
+	Notes:
+	------
+		For curved faces, line segments are plotted in between each node.
+	'''
 	gbasis = mesh.gbasis
 	dim = mesh.dim 
 
@@ -681,12 +593,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 			local_node_ids = gbasis.get_local_face_node_nums(mesh.gorder, 
 					face_id)
 
-			# Convert to global node numbering
-			# fnodes = mesh.elem_to_node_ids[elem][fnodes]
-
-			# # Physical coordinates of global nodes
-			# coords = mesh.node_coords[fnodes]
-
+			# Get coordinates
 			elem = mesh.elements[elem_id]
 			coords = elem.node_coords[local_node_ids]
 			if dim == 1:
@@ -698,9 +605,8 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 			plt.plot(x, y, 'k-')
 
 	'''
-	Loop through boundary_faces and plot boundary faces
+	Loop through boundary_groups and plot boundary faces
 	'''
-	# for BFG in mesh.boundary_groups:
 	for boundary_group in mesh.boundary_groups.values():
 		for boundary_face in boundary_group.boundary_faces:
 			# Get adjacent element info
@@ -711,12 +617,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 			local_node_ids = gbasis.get_local_face_node_nums(mesh.gorder, 
 					face_id)
 
-			# Convert to global node numbering
-			# fnodes[:] = mesh.elem_to_node_ids[elem][fnodes[:]]
-
-			# Physical coordinates of global nodes
-			# coords = mesh.node_coords[fnodes]
-
+			# Get coordinates
 			elem = mesh.elements[elem_id]
 			coords = elem.node_coords[local_node_ids]
 			if dim == 1:
@@ -739,76 +640,93 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 				yc = xc[0,1]
 			plt.text(xc[0,0], yc, str(elem_id))
 
-
+	# Labels, aspect ratio
 	plt.xlabel("$x$")
 	if dim == 2: plt.ylabel("$y$")
 	if equal_AR:
 		plt.gca().set_aspect('equal', adjustable='box')
-	# plt.axis("equal")
 
 
-# def PlotMesh2D(mesh, equal_AR=False, **kwargs):
-	
-# 	gbasis = mesh.gbasis
-# 	# Sanity check
-# 	if mesh.dim != 2:
-# 		raise ValueError
+def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, 
+		plot_exact=False, plot_IC=False, create_new_figure=True, ylabel=None,
+		fmt='k-', legend_label=None, equidistant_pts=True, 
+		include_mesh=False, regular_2D=False, equal_AR=False, skip=None, 
+		**kwargs):
+	'''
+	This function plots the solution. For 2D calculations, the solution will
+	be plotted using a triangulation.
 
-# 	'''
-# 	Loop through interior_faces and plot interior faces
-# 	'''
-# 	for IFace in mesh.interior_faces:
-# 		# Choose left element
-# 		elem = IFace.elemL_id; face = IFace.faceL_id
+	Inputs:
+	-------
+	    mesh: mesh object
+	    physics: physics object
+	    solver: solver object
+	    var_name: name of variable to plot
+	    plot_numerical: plot numerical solution
+	    plot_exact: plot exact solution
+	    plot_IC: plot initial condition
+	    create_new_figure: if True, will create new figure before plotting
+	    ylabel: y-axis label
+		fmt: format string for plotting, e.g. "bo" for blue circles
+	    legend_label: legend label
+	    equidistant_pts: if True, then solution will be evaluated at 
+	    	equidistant points (within each element); if False, then solution
+	    	will be evaluated at quadrature points
+	    include_mesh: if True, then the mesh will be superimposed
+	    regular_2D: if True, then entire domain will be triangulated at once
+	    	(appropriate only for regular domains); if False, then each 
+	    	element will be triangulated one-by-one (appropriate for 
+	    	general domains) 
+	    equal_AR: if True, will set equal aspect ratio
+		skip: integer value that determines the increment between each point 
+			to skip when plotting (only matters for 1D)
+	    kwargs: keyword arguments (see below)
+	'''
+	''' Compatibility check '''
+	plot_sum = plot_numerical + plot_exact + plot_IC
+	if plot_sum >= 2:
+		raise ValueError("Can only plot one solution at a time")
+	elif plot_sum == 0:
+		raise ValueError("Need to plot a solution")
 
-# 		# Get local nodes on face
-# 		fnodes, nfnode = gbasis.local_face_nodes( 
-# 			mesh.gorder, face)
+	# Extract params
+	time = solver.time
+	dim = mesh.dim
 
-# 		# Convert to global node numbering
-# 		fnodes[:] = mesh.elem_to_node_ids[elem][fnodes[:]]
+	# Get sample points
+	x = get_sample_points(mesh, physics, solver.basis, equidistant_pts)
 
-# 		# Physical coordinates of global nodes
-# 		coords = mesh.node_coords[fnodes]
-# 		x = coords[:,0]; y = coords[:,1]
+	''' Evaluate desired variable at sample points '''
+	if plot_numerical:
+		var_plot = get_numerical_solution(physics, physics.U, x, 
+				solver.basis, var_name)
+		default_label = "Numerical"
+	elif plot_exact:
+		var_plot = get_analytical_solution(physics, physics.ExactSoln, x, 
+				time, var_name)
+		var_plot.shape = x.shape[0], x.shape[1], -1
+		default_label = "Exact"
+	elif plot_IC:
+		var_plot = get_analytical_solution(physics, physics.IC, x, 0., 
+				var_name)
+		var_plot.shape = x.shape[0], x.shape[1], -1
+		default_label = "Initial"
 
-# 		# Plot face
-# 		plt.plot(x, y, 'k-')
+	if legend_label is None:
+		legend_label = default_label
 
-# 	'''
-# 	Loop through boundary_faces and plot boundary faces
-# 	'''
-# 	for BFG in mesh.boundary_groups:
-# 		for boundary_face in BFG.boundary_faces:
-# 			# Get adjacent element info
-# 			elem = boundary_face.elem_id; face = boundary_face.face_id
+	''' Plot '''
+	ylabel = get_ylabel(physics, var_name, ylabel)
+	if create_new_figure:
+		plt.figure()
 
-# 			# Get local nodes on face
-# 			fnodes, nfnode = gbasis.local_face_nodes( 
-# 				mesh.gorder, face)
+	if dim == 1:
+		plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip)
+	else:
+		plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR, **kwargs)
 
-# 			# Convert to global node numbering
-# 			fnodes[:] = mesh.elem_to_node_ids[elem][fnodes[:]]
+	if include_mesh:
+		plot_mesh(mesh, **kwargs)
 
-# 			# Physical coordinates of global nodes
-# 			coords = mesh.node_coords[fnodes]
-# 			x = coords[:,0]; y = coords[:,1]
-
-# 			# Plot face
-# 			plt.plot(x, y, 'k-')
-
-# 	'''
-# 	If requested, plot element IDs at element centroids
-# 	'''
-# 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
-# 		for elem in range(mesh.num_elems):
-# 			xc = mesh_tools.get_element_centroid(mesh, elem)
-# 			plt.text(xc[0,0], xc[0,1], str(elem))
-
-
-
-# 	plt.xlabel("$x$")
-# 	plt.ylabel("$y$")
-# 	if equal_AR:
-# 		plt.gca().set_aspect('equal', adjustable='box')
-# 	# plt.axis("equal")
+	# Final embellishments
+	finalize_plot(**kwargs)

@@ -114,9 +114,9 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	    plot_vs_y: if True, will plot variable vs. y (lower priority than
 	    	plot_vs_x)
 		ylabel: y-axis label for figure
-		fmt: Format string for plotting, e.g. "bo" for blue circles
+		fmt: format string for plotting, e.g. "bo" for blue circles
 		legend_label: legend label
-		**kwargs: keyword arguments (see plot_defs.finalize_plot)
+		kwargs: keyword arguments (see plot_defs.finalize_plot)
 	'''
 	if mesh.dim != 2:
 		raise errors.IncompatibleError
@@ -193,7 +193,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		plt.figure()
 		bvalues = bvalues.flatten()
 		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
-		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label, 0)
+		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)
 
 
