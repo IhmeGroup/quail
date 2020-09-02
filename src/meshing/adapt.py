@@ -49,17 +49,20 @@ def adapt(solver, physics, mesh, stepper):
     split_id = closest_elem.id
     print(mesh.num_elems)
     # For wedge case
-    #if mesh.num_elems == 3: split_id = 0
-    #elif mesh.num_elems == 7: split_id = 2
-    #elif mesh.num_elems == 11: split_id = 5
+    #if mesh.num_elems == 3: split_id = 1
+    #elif mesh.num_elems == 7: split_id = 4
+    #elif mesh.num_elems == 11: split_id = 7
     #else: split_id = 0
     # For box test
     #split_id = 0
     # For isentropic vortex
     #if mesh.num_elems == 50: split_id = [12,17,18,13]
     #else: split_id = 12
-    split_id = np.argwhere(e > .8)
+
+    split_id = np.argwhere(e > .3)
     needs_refinement[split_id] = True
+
+    min_volume = .01
 
     # Loop over all elements
     for elem_id in range(mesh.num_elems):
@@ -69,6 +72,9 @@ def adapt(solver, physics, mesh, stepper):
             # Get element
             elem = mesh.elements[elem_id]
 
+            # If the element volume is below a threshold, skip it
+            if solver.elem_operators.vol_elems[elem.id] < min_volume: continue
+
             # Skip deactivated elements
             # TODO: add deactivated to constructor of Element?
             if getattr(elem, 'deactivated', False): continue
@@ -76,8 +82,6 @@ def adapt(solver, physics, mesh, stepper):
             # -- Figure out what face to split -- #
             # Get info about the longest face of the element
             long_face, long_face_node_ids = find_longest_face(elem, mesh)
-            # Get neighbor across this face
-            neighbor = mesh.elements[elem.face_to_neighbors[long_face]]
             # Get the midpoint of this face
             midpoint = np.mean(mesh.node_coords[long_face_node_ids], axis=0)
             # Add the midpoint as a new mesh node
@@ -87,76 +91,50 @@ def adapt(solver, physics, mesh, stepper):
             # nodes must be ordered counterclockwise)
             ccwise_node_id, cwise_node_id = find_counterclockwise_node(elem.node_ids,
                     long_face_node_ids[0], long_face_node_ids[1])
-            # Find the local ID of the long face on the neighbor
-            neighbor_opposing_node_id = np.setdiff1d(neighbor.node_ids, long_face_node_ids, assume_unique=True)[0]
-            neighbor_long_face = np.argwhere(neighbor.node_ids == neighbor_opposing_node_id)[0,0]
+            # Get neighbor across this face, if there is one
+            neighbor_id = elem.face_to_neighbors[long_face]
+            if neighbor_id != -1:
+                neighbor = mesh.elements[neighbor_id]
+                # Find the local ID of the long face on the neighbor
+                neighbor_opposing_node_id = np.setdiff1d(neighbor.node_ids, long_face_node_ids, assume_unique=True)[0]
+                neighbor_long_face = np.argwhere(neighbor.node_ids == neighbor_opposing_node_id)[0,0]
 
             # Split this element
             new_elem1, new_elem2 = split_element(mesh, physics, solver.basis, elem, long_face,
                     midpoint_id, ccwise_node_id, cwise_node_id)
             # Split the neighbor, making sure to flip clockwise/counterclockwise
-            new_elem3, new_elem4 = split_element(mesh, physics, solver.basis, neighbor, neighbor_long_face,
-                    midpoint_id, cwise_node_id, ccwise_node_id)
+            if neighbor_id != -1:
+                new_elem3, new_elem4 = split_element(mesh, physics, solver.basis, neighbor, neighbor_long_face,
+                        midpoint_id, cwise_node_id, ccwise_node_id)
 
             # Create the faces between the elements
             append_face(mesh, new_elem2, new_elem1)
-            append_face(mesh, new_elem3, new_elem2)
-            append_face(mesh, new_elem4, new_elem3)
-            append_face(mesh, new_elem1, new_elem4)
+            if neighbor_id != -1:
+                append_face(mesh, new_elem3, new_elem2)
+                append_face(mesh, new_elem4, new_elem3)
+                append_face(mesh, new_elem1, new_elem4)
 
             # TODO: Figure out how to remove long face after making new ones
             # "Deactivate" the original element and its neighbor
             # TODO: figure out a better way to do this
             elem.face_to_neighbors = np.array([-1,-1,-1])
-            neighbor.face_to_neighbors = np.array([-1,-1,-1])
+            if neighbor_id != -1:
+                neighbor.face_to_neighbors = np.array([-1,-1,-1])
             offset = 1
             corner = np.array([-10,-10])
             elem.node_coords = np.array([corner, corner+[0,-offset], corner+[offset,0]])
-            neighbor.node_coords = np.array([corner+[0,-offset], corner+[offset,-offset], corner+[offset,0]])
-            #for iface in mesh.interior_faces:
-            #    if (iface.elemL_id == elem.id or iface.elemR_id == elem.id
-            #            or iface.elemL_id == neighbor.id or iface.elemR_id == neighbor.id):
-            #        print("found face:")
-            #        print(iface.elemL_id)
-            #        print(iface.elemR_id)
+            if neighbor_id != -1:
+                neighbor.node_coords = np.array([corner+[0,-offset], corner+[offset,-offset], corner+[offset,0]])
 
             # Call compute operators
             solver.precompute_matrix_operators()
+            if solver.limiter is not None: solver.limiter.precompute_operators(solver)
 
-            # -- Update solution -- #
-            # TODO: map solution from old elements to new split elements
-            # Append to the end of U
-            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
-            #physics.U = np.append(physics.U, [physics.U[-1,:,:]], axis=0)
             # Delete residual
             stepper.R = np.zeros_like(physics.U)
 
             elem.deactivated = True
-            neighbor.deactivated = True
-
-            #basis_val = solver.basis.get_values(np.array([[-1,-1]]))
-            #print(basis_val)
-            #print(elem.quad_pts)
-
-            #Uq = numerics_helpers.evaluate_state(Up, basis_val)
-
-    # Just printing things to check them out
-    #print(mesh.node_coords)
-    #for i in range(mesh.num_interior_faces):
-    #    print("Face ", i)
-    #    print(mesh.interior_faces[i].elemL_id)
-    #    print(mesh.interior_faces[i].elemR_id)
-    #    print(mesh.interior_faces[i].faceL_id)
-    #    print(mesh.interior_faces[i].faceR_id)
-    #print(mesh.boundary_groups)
-    #for i in range(mesh.num_elems):
-    #        print(mesh.elements[i].id)
-    #        print(mesh.elements[i].node_ids)
-    #        print(mesh.elements[i].node_coords)
-    #        print(mesh.elements[i].face_to_neighbors)
-
+            if neighbor_id != -1: neighbor.deactivated = True
 
 def split_element(mesh, physics, basis, elem, split_face, midpoint_id, ccwise_node_id, cwise_node_id):
     """Split an element into two smaller elements.
@@ -189,13 +167,13 @@ def split_element(mesh, physics, basis, elem, split_face, midpoint_id, ccwise_no
 
     # Create first element
     new_elem1 = append_element(mesh, physics, basis, node_ids_1, ref_nodes_1,
-            elem, split_face - 2, split_face)
+            elem, split_face - 2, split_face, 2)
     # Create second element
     new_elem2 = append_element(mesh, physics, basis, node_ids_2, ref_nodes_2,
-            elem, split_face - 1, split_face)
+            elem, split_face - 1, split_face, 1)
     return new_elem1, new_elem2
 
-def append_element(mesh, physics, basis, node_ids, ref_nodes, parent, parent_face_id, split_face_id):
+def append_element(mesh, physics, basis, node_ids, ref_nodes, parent, parent_face_id, split_face_id, new_split_face_id):
     """Create a new element at specified nodes and append it to the mesh.
     This function creates a new element and sets the neighbors of the element
     and neighbor element across the face specified by face_id. The solution
@@ -209,6 +187,7 @@ def append_element(mesh, physics, basis, node_ids, ref_nodes, parent, parent_fac
     parent - Element object (meshing/meshbase.py), parent of the new element
     parent_face_id - local ID of face in parent element which needs new neighbors
     split_face_id - local ID of face in parent element which has been split
+    new_split_face_id - local ID of face in new element which has been split
     Returns:
     elem - Element object (meshing/meshbase.py), newly created element
     """
@@ -218,7 +197,7 @@ def append_element(mesh, physics, basis, node_ids, ref_nodes, parent, parent_fac
     # Local ID of face in new element which needs new neighbors is always 0,
     # since this face always opposes the midpoint, which is node 0
     face_id = 0
-    # Wrap parent face ID index to be positive
+    # Wrap parent face ID to be positive
     parent_face_id = parent_face_id % mesh.gbasis.NFACES
     # Create element
     mesh.elements.append(mesh_defs.Element())
@@ -254,19 +233,37 @@ def append_element(mesh, physics, basis, node_ids, ref_nodes, parent, parent_fac
                 face.elemR_id = elem.id
                 face.faceR_id = face_id
                 break
-    # If the parent's neighbor is a boundary, update the boundary
+    # If the parent's neighbor is a boundary, add a new boundary face
     if parent_neighbor_id == -1:
-        # Search for the correct boundary face
+        # Search for the correct boundary group
         found = False
         for bgroup in mesh.boundary_groups.values():
             for bface in bgroup.boundary_faces:
-                # If found, change it to neighbor the new element
+                # If found, stop the search
                 if bface.elem_id == parent.id and bface.face_id == parent_face_id:
-                    bface.elem_id = elem.id
-                    bface.face_id = face_id
                     found = True
                     break
-            if found: break
+            if found:
+                bgroup.boundary_faces.append(mesh_defs.BoundaryFace())
+                bgroup.boundary_faces[-1].elem_id = elem.id
+                bgroup.boundary_faces[-1].face_id = face_id
+                bgroup.num_boundary_faces += 1
+    # If the split face is a boundary, add a new boundary face
+    split_face_neighbor_id = parent.face_to_neighbors[split_face_id]
+    if split_face_neighbor_id == -1:
+        # Search for the correct boundary group
+        found = False
+        for bgroup in mesh.boundary_groups.values():
+            for bface in bgroup.boundary_faces:
+                # If found, stop the search
+                if bface.elem_id == parent.id and bface.face_id == split_face_id:
+                    found = True
+                    break
+            if found:
+                bgroup.boundary_faces.append(mesh_defs.BoundaryFace())
+                bgroup.boundary_faces[-1].elem_id = elem.id
+                bgroup.boundary_faces[-1].face_id = new_split_face_id
+                bgroup.num_boundary_faces += 1
     # -- Set nodal solution values of new element -- #
     # Evaluate basis functions at new nodes on parent reference element
     basis_vals = basis.get_values(ref_nodes)
@@ -310,8 +307,6 @@ def find_longest_face(elem, mesh):
     face_node_ids = np.empty((mesh.gbasis.NFACES, 2), dtype=int)
     # Loop over each face
     for i in range(mesh.gbasis.NFACES):
-        # If it's a boundary, skip it
-        if elem.face_to_neighbors[i] == -1: continue
         # Get the neighbor across the face
         face_neighbor = mesh.elements[elem.face_to_neighbors[i]]
         # Calculate the face area and find face nodes
@@ -335,6 +330,7 @@ def face_geometry(elem, face_id, node_coords):
     """
     # Find the node IDs of the face. This works by removing the node
     # opposite the face (only works for first-order triangles).
+    # TODO: replace this with gbasis.get_local_face_node_nums
     face_node_ids = np.setdiff1d(elem.node_ids, elem.node_ids[face_id])
     # Get the coordinates of these nodes
     face_nodes = node_coords[face_node_ids,:]
@@ -400,6 +396,36 @@ def p2_nodes(a, b, c):
     nodes[3,:] = np.mean([b,c],axis=0)
     nodes[4,:] = c
     nodes[5,:] = np.mean([c,a],axis=0)
+    return nodes
+
+def p1_nodes(a, b, c):
+    """Find nodes of a P1 element.
+
+    Arguments:
+    a - coordinates of first corner
+    b - coordinates of second corner
+    c - coordinates of third corner
+    Returns:
+    nodes - array, shape(3,2), containing P2 node coordinates
+    """
+    nodes = np.empty((3,2))
+    nodes[0,:] = a
+    nodes[1,:] = b
+    nodes[2,:] = c
+    return nodes
+
+def p0_nodes(a, b, c):
+    """Find nodes of a P0 element.
+
+    Arguments:
+    a - coordinates of first corner
+    b - coordinates of second corner
+    c - coordinates of third corner
+    Returns:
+    nodes - array, shape(3,2), containing P2 node coordinates
+    """
+    nodes = np.empty((1,2))
+    nodes[0,:] = (a+b+c)/3
     return nodes
 
 def evaluate_gradient_norm(basis_val_grad, Uc):
