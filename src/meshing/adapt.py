@@ -315,28 +315,27 @@ def find_longest_face(elem, mesh):
         # Get the neighbor across the face
         face_neighbor = mesh.elements[elem.face_to_neighbors[i]]
         # Calculate the face area and find face nodes
-        face_areas[i], face_node_ids[i,:] = face_geometry_between(elem,
-                face_neighbor, mesh.node_coords)
+        face_areas[i], face_node_ids[i,:] = face_geometry(elem, i,
+                mesh.node_coords)
     # Get face with highest area
     long_face = np.argmax(face_areas)
     # Get node IDs of the longest face
     long_face_node_ids = face_node_ids[long_face,:]
     return (long_face, long_face_node_ids)
 
-# TODO: If elem1 and elem2 are not actually neighbors, bad things will happen!
-def face_geometry_between(elem1, elem2, node_coords):
-    """Find the area and nodes of the face shared by two elements.
+def face_geometry(elem, face_id, node_coords):
+    """Find the area and nodes of a face.
 
     Arguments:
-    elem1 - first Element object (meshing/meshbase.py)
-    elem2 - second Element object (meshing/meshbase.py)
+    elem - Element object (meshing/meshbase.py)
+    face_id - ID of face to get area/nodes of
     node_coords - array of node coordinates, shape [num_nodes, dim]
     Returns:
     (float, array[2]) tuple of face area and node IDs
     """
-    # Find the node IDs of the face. This works by finding which two nodes
-    # appear in both the current element and the neighbor across the face.
-    face_node_ids = np.intersect1d(elem1.node_ids, elem2.node_ids)
+    # Find the node IDs of the face. This works by removing the node
+    # opposite the face (only works for first-order triangles).
+    face_node_ids = np.setdiff1d(elem.node_ids, elem.node_ids[face_id])
     # Get the coordinates of these nodes
     face_nodes = node_coords[face_node_ids,:]
     # Return the area of the face (which is just the distance since this is a 2D
