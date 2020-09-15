@@ -19,8 +19,8 @@ mesh = MeshCommon.mesh_1D(num_elems=100, xmin=0., xmax=1.)
 
 
 ### Solver parameters
-FinalTime = 4.e-5
-NumTimeSteps = 100
+FinalTime = 4.e-6
+NumTimeSteps = 10
 SolutionOrder = 1
 
 Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
