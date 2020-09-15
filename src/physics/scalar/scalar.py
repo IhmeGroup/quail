@@ -99,7 +99,7 @@ class ConstAdvScalar(base.PhysicsBase):
 		# F.shape = u.shape + (self.dim,) 
 		return F
 
-	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			scalar = np.full([Up.shape[0], 1], self.cspeed)
@@ -189,7 +189,7 @@ class ConstAdvScalar(base.PhysicsBase):
 # 			# 	scalar[:,iscalar] = U[:,sidx]
 # 			# else:
 # 			except KeyError:
-# 				scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
+# 				scalar[:,iscalar:iscalar+1] = self.compute_additional_variable(sname, U, scalar[:,iscalar:iscalar+1],
 # 					flag_non_physical)
 
 # 		return scalar
@@ -236,7 +236,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 		# 	scalar[:,iscalar] = U[:,sidx]
 	# 		# else:
 	# 		except KeyError:
-	# 			scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
+	# 			scalar[:,iscalar:iscalar+1] = self.compute_additional_variable(sname, U, scalar[:,iscalar:iscalar+1],
 	# 				flag_non_physical)
 
 	# 	return scalar
@@ -403,7 +403,7 @@ class Burgers1D(base.PhysicsBase):
 		# F.shape = u.shape + (self.dim,) 
 		return F
 
-	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure

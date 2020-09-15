@@ -349,7 +349,7 @@ class PhysicsBase(object):
 		# 	# 	scalar[:,iscalar] = U[:,sidx]
 		# 	# else:
 		# 	except KeyError:
-		# 		scalar[:,iscalar:iscalar+1] = self.AdditionalScalars(sname, U, scalar[:,iscalar:iscalar+1],
+		# 		scalar[:,iscalar:iscalar+1] = self.compute_additional_variable(sname, U, scalar[:,iscalar:iscalar+1],
 		# 			flag_non_physical)
 
 		try:
@@ -361,13 +361,12 @@ class PhysicsBase(object):
 		# 	scalar[:,iscalar] = U[:,sidx]
 		# else:
 		except KeyError:
-			scalar = self.AdditionalScalars(scalar_name, Uq, 
+			scalar = self.compute_additional_variable(scalar_name, Uq, 
 					flag_non_physical)
 
 		return scalar
 
-	@abstractmethod
-	def AdditionalScalars(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
 		pass
 
 	def CallFunction(self, FcnData, x, t):
