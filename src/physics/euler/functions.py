@@ -460,14 +460,14 @@ class PressureOutlet(BCWeakPrescribed):
 		# Compute interior pressure
 		# rVI2 = np.sum(UpI[:,imom]**2., axis=1, keepdims=True)/rhoI
 		# pI = gmi*(UpI[:,irhoE:irhoE+1] - 0.5*rVI2)
-		pI = physics.ComputeScalars("Pressure", UpI)
+		pI = physics.compute_variable("Pressure", UpI)
 
 		if np.any(pI < 0.):
 			raise errors.NotPhysicalError
 
 		# Interior speed of sound
 		# cI = np.sqrt(gam*pI/rhoI)
-		cI = physics.ComputeScalars("SoundSpeed", UpI)
+		cI = physics.compute_variable("SoundSpeed", UpI)
 		JI = velnI + 2.*cI/(gamma - 1.)
 		veltI = velI - velnI*n_hat
 
@@ -635,8 +635,8 @@ class Roe1D(ConvNumFluxBase):
 
 		rhoL_sqrt = np.sqrt(uL[:,srho])
 		rhoR_sqrt = np.sqrt(uR[:,srho])
-		HL = physics.ComputeScalars("TotalEnthalpy", uL, flag_non_physical=True)
-		HR = physics.ComputeScalars("TotalEnthalpy", uR, flag_non_physical=True)
+		HL = physics.compute_variable("TotalEnthalpy", uL, flag_non_physical=True)
+		HR = physics.compute_variable("TotalEnthalpy", uR, flag_non_physical=True)
 
 		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -655,8 +655,8 @@ class Roe1D(ConvNumFluxBase):
 
 		dvel = velR - velL
 		drho = uR[:,srho] - uL[:,srho]
-		dp = physics.ComputeScalars("Pressure", uR) - \
-			physics.ComputeScalars("Pressure", uL)
+		dp = physics.compute_variable("Pressure", uR) - \
+			physics.compute_variable("Pressure", uL)
 
 		return dvel, drho, dp
 
@@ -795,10 +795,10 @@ class Roe1D(ConvNumFluxBase):
 		FRoe = self.UndoRotateCoordSys(smom, FRoe, n1)
 
 		# Left flux
-		FL = physics.ConvFluxProjected(UL_std, n1)
+		FL = physics.get_conv_flux_projected(UL_std, n1)
 
 		# Right flux
-		FR = physics.ConvFluxProjected(UR_std, n1)
+		FR = physics.get_conv_flux_projected(UR_std, n1)
 		
 		return NN*(0.5*(FL+FR) - 0.5*FRoe)
 
@@ -890,14 +890,14 @@ class HLLC1D(ConvNumFluxBase):
 		rhoL = UpL[:, srho]
 		uL = UpL[:, smom]/rhoL
 		unL = uL * n1
-		pL = physics.ComputeScalars("Pressure", UpL)
-		cL = physics.ComputeScalars("SoundSpeed", UpL)
+		pL = physics.compute_variable("Pressure", UpL)
+		cL = physics.compute_variable("SoundSpeed", UpL)
 		# unpack right hand state
 		rhoR = UpR[:, srho]
 		uR = UpR[:, smom]/rhoR
 		unR = uR * n1
-		pR = physics.ComputeScalars("Pressure", UpR)
-		cR = physics.ComputeScalars("SoundSpeed", UpR)	
+		pR = physics.compute_variable("Pressure", UpR)
+		cR = physics.compute_variable("SoundSpeed", UpR)	
 
 		# calculate averages
 		rho_avg = 0.5 * (rhoL + rhoR)
@@ -928,9 +928,9 @@ class HLLC1D(ConvNumFluxBase):
 		# flux assembly 
 
 		# Left State
-		FL = physics.ConvFluxProjected(UpL, n1)
+		FL = physics.get_conv_flux_projected(UpL, n1)
 		# Right State
-		FR = physics.ConvFluxProjected(UpR, n1)
+		FR = physics.get_conv_flux_projected(UpR, n1)
 
 		Fhllc = np.zeros_like(FL)
 

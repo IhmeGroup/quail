@@ -91,8 +91,8 @@ class Chemistry(base.PhysicsBase):
 		mom = Up[:,smom]
 		rhoY = Up[:,srhoY]
 
-		p = self.ComputeScalars("Pressure", Up)
-		h = self.ComputeScalars("TotalEnthalpy", Up)
+		p = self.compute_variable("Pressure", Up)
+		h = self.compute_variable("TotalEnthalpy", Up)
 
 		pmat = np.zeros([Up.shape[0], dim, dim])
 		idx = np.full([dim,dim],False)

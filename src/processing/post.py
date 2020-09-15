@@ -72,8 +72,8 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 		u = helpers.evaluate_state(Uc, basis.basis_val)
 
 		# Computed requested quantity
-		s = physics.ComputeScalars(var_name, u)
-		s_exact = physics.ComputeScalars(var_name, u_exact)
+		s = physics.compute_variable(var_name, u)
+		s_exact = physics.compute_variable(var_name, u_exact)
 
 		# Calculate element-local error
 		djac, _, _ = basis_tools.element_jacobian(mesh, elem_id, quad_pts, 
@@ -168,7 +168,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		Uq = helpers.evaluate_state(physics.U[elem_id], basis_val)
 
 		# Get requested variable
-		varq = physics.ComputeScalars(var_name, Uq) # [nq, 1]
+		varq = physics.compute_variable(var_name, Uq) # [nq, 1]
 
 		# Normals
 		normals = normals_bfgroups[boundary_num][bface_id] # [nq, dim]

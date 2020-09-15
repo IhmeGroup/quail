@@ -495,7 +495,7 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	'''
 	U_plot = physics.CallFunction(fcn_data, x=np.reshape(x,  
 			(-1, physics.dim)), t=time)
-	var_plot = physics.ComputeScalars(var_name, U_plot)
+	var_plot = physics.compute_variable(var_name, U_plot)
 
 	return var_plot
 
@@ -524,7 +524,7 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	for elem_id in range(x.shape[0]):
 		# Up = np.matmul(basis.basis_val, U[elem_id])
 		Up = helpers.evaluate_state(U[elem_id], basis.basis_val)
-		var_numer[elem_id,:,:] = physics.ComputeScalars(var_name, Up)
+		var_numer[elem_id,:,:] = physics.compute_variable(var_name, Up)
 
 	return var_numer
 

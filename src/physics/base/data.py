@@ -66,7 +66,7 @@ class BCWeakPrescribed(BCWeakRiemann):
     def get_boundary_flux(self, physics, x, t, normals, UpI):
 
         UpB = self.get_boundary_state(physics, x, t, normals, UpI)
-        F = physics.ConvFluxProjected(UpB, normals)
+        F = physics.get_conv_flux_projected(UpB, normals)
 
         return F
 

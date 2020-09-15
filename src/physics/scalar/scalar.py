@@ -166,7 +166,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 # 		return uB
 
-# 	def ComputeScalars(self, ScalarNames, U, scalar=None, flag_non_physical=False):
+# 	def compute_variable(self, ScalarNames, U, scalar=None, flag_non_physical=False):
 # 		if type(ScalarNames) is list:
 # 			nscalar = len(ScalarNames)
 # 		elif type(ScalarNames) is str:
@@ -213,7 +213,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 	# 	return uB
 
-	# def ComputeScalars(self, ScalarNames, U, scalar=None, flag_non_physical=False):
+	# def compute_variable(self, ScalarNames, U, scalar=None, flag_non_physical=False):
 	# 	if type(ScalarNames) is list:
 	# 		nscalar = len(ScalarNames)
 	# 	elif type(ScalarNames) is str:

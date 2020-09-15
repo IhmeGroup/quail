@@ -174,7 +174,7 @@ def get_dt_from_cfl(stepper, solver):
 
 	# get the maximum wave speed per element
 	for i in range(mesh.num_elems):
-		a[i] = physics.ComputeScalars("MaxWaveSpeed", Up[i], 
+		a[i] = physics.compute_variable("MaxWaveSpeed", Up[i], 
 				flag_non_physical=True)
 
 	# calculate the dt for each element

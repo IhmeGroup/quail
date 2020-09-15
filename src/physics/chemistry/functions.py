@@ -224,7 +224,7 @@ class Arrhenius(SourceBase):
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
 		U = FcnData.U
-		T = physics.ComputeScalars("Temperature", U)
+		T = physics.compute_variable("Temperature", U)
 		# K = np.zeros_like(T)
 		# for i in range(len(T)):
 		# 	if T[i]<0.:
@@ -252,7 +252,7 @@ class Arrhenius(SourceBase):
 		U = FcnData.U
 		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
 
-		T = physics.ComputeScalars("Temperature", U)
+		T = physics.compute_variable("Temperature", U)
 		K = A * np.exp(-Tign / T)
 
 		dTdU = get_temperature_jacobian(physics, U)
@@ -311,7 +311,7 @@ class Heaviside(SourceBase):
 		irho, irhou, irhoE, irhoz = physics.GetStateIndices()
 
 		U = FcnData.U
-		T = physics.ComputeScalars("Temperature", U)
+		T = physics.compute_variable("Temperature", U)
 		K = np.zeros([U.shape[0]])
 
 		for i in range(len(T)):
@@ -335,7 +335,7 @@ class Heaviside(SourceBase):
 		
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
-		T = physics.ComputeScalars("Temperature", U)
+		T = physics.compute_variable("Temperature", U)
 		K = np.zeros([U.shape[0]])
 
 		for i in range(len(T)):
@@ -379,14 +379,14 @@ class HLLC1D(ConvNumFluxBase):
 		rhoL = UpL[:, srho]
 		uL = UpL[:, smom]/rhoL
 		unL = uL * n1
-		pL = physics.ComputeScalars("Pressure", UpL)
-		cL = physics.ComputeScalars("SoundSpeed", UpL)
+		pL = physics.compute_variable("Pressure", UpL)
+		cL = physics.compute_variable("SoundSpeed", UpL)
 		# unpack right hand state
 		rhoR = UpR[:, srho]
 		uR = UpR[:, smom]/rhoR
 		unR = uR * n1
-		pR = physics.ComputeScalars("Pressure", UpR)
-		cR = physics.ComputeScalars("SoundSpeed", UpR)	
+		pR = physics.compute_variable("Pressure", UpR)
+		cR = physics.compute_variable("SoundSpeed", UpR)	
 
 		# calculate averages
 		rho_avg = 0.5 * (rhoL + rhoR)
@@ -417,9 +417,9 @@ class HLLC1D(ConvNumFluxBase):
 		# flux assembly 
 
 		# Left State
-		FL = physics.ConvFluxProjected(UpL, n1)
+		FL = physics.get_conv_flux_projected(UpL, n1)
 		# Right State
-		FR = physics.ConvFluxProjected(UpR, n1)
+		FR = physics.get_conv_flux_projected(UpR, n1)
 
 		Fhllc = np.zeros_like(FL)
 

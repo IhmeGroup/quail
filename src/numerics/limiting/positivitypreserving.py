@@ -90,8 +90,8 @@ class PositivityPreserving(base.LimiterBase):
 				self.elem_vols[elem])
 
 		# Density and pressure
-		rho_bar = physics.ComputeScalars(self.scalar1, u_bar)
-		p_bar = physics.ComputeScalars(self.scalar2, u_bar)
+		rho_bar = physics.compute_variable(self.scalar1, u_bar)
+		p_bar = physics.compute_variable(self.scalar2, u_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise errors.NotPhysicalError
@@ -100,7 +100,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		''' Limit density '''
 		# Compute density
-		rho_elem_faces = physics.ComputeScalars(self.scalar1, u_elem_faces)
+		rho_elem_faces = physics.compute_variable(self.scalar1, u_elem_faces)
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		theta1 = np.amin([1., np.amin(theta)])
 
@@ -115,7 +115,7 @@ class PositivityPreserving(base.LimiterBase):
 					skip_interp=solver.basis.skip_interp)
 
 		''' Limit pressure '''
-		p_elem_faces = physics.ComputeScalars(self.scalar2, u_elem_faces)
+		p_elem_faces = physics.compute_variable(self.scalar2, u_elem_faces)
 		# theta = np.abs((p_bar - POS_TOL)/(p_bar - p_elem_faces))
 		theta[:] = 1.
 		i_pos_p = (p_elem_faces < 0.).reshape(-1) # indices where pressure is negative
@@ -203,9 +203,9 @@ class PositivityPreservingChem(PositivityPreserving):
 				self.elem_vols[elem])
 
 		# Density and pressure
-		rho_bar = physics.ComputeScalars(self.scalar1, u_bar)
-		p_bar = physics.ComputeScalars(self.scalar2, u_bar)
-		rhoY_bar = physics.ComputeScalars(self.scalar3, u_bar)
+		rho_bar = physics.compute_variable(self.scalar1, u_bar)
+		p_bar = physics.compute_variable(self.scalar2, u_bar)
+		rhoY_bar = physics.compute_variable(self.scalar3, u_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.) or np.any(rhoY_bar < 0.):
 			raise errors.NotPhysicalError
@@ -214,7 +214,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		''' Limit density '''
 		# Compute density
-		rho_elem_faces = physics.ComputeScalars(self.scalar1, u_elem_faces)
+		rho_elem_faces = physics.compute_variable(self.scalar1, u_elem_faces)
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		theta1 = np.amin([1., np.amin(theta)])
 
@@ -229,7 +229,7 @@ class PositivityPreservingChem(PositivityPreserving):
 					skip_interp=solver.basis.skip_interp)
 
 		''' Limit mass fraction '''
-		rhoY_elem_faces = physics.ComputeScalars(self.scalar3, u_elem_faces)
+		rhoY_elem_faces = physics.compute_variable(self.scalar3, u_elem_faces)
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
 		theta2 = np.amin([1.,np.amin(theta)])
 
@@ -246,7 +246,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 
 		''' Limit pressure '''
-		p_elem_faces = physics.ComputeScalars(self.scalar2, u_elem_faces)
+		p_elem_faces = physics.compute_variable(self.scalar2, u_elem_faces)
 		# theta = np.abs((p_bar - POS_TOL)/(p_bar - p_elem_faces))
 		theta[:] = 1.
 		i_pos_p = (p_elem_faces < 0.).reshape(-1) # indices where pressure is negative

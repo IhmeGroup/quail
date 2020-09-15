@@ -112,17 +112,17 @@ class LaxFriedrichs(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left State
-		FL = physics.ConvFluxProjected(UpL, n_hat)
+		FL = physics.get_conv_flux_projected(UpL, n_hat)
 
 		# Right State
-		FR = physics.ConvFluxProjected(UpR, n_hat)
+		FR = physics.get_conv_flux_projected(UpR, n_hat)
 
 		dU = UpR - UpL
 
 		# max characteristic speed
 		# code.interact(local=locals())
-		a = physics.ComputeScalars("MaxWaveSpeed", UpL, flag_non_physical=True)
-		aR = physics.ComputeScalars("MaxWaveSpeed", UpR, flag_non_physical=True)
+		a = physics.compute_variable("MaxWaveSpeed", UpL, flag_non_physical=True)
+		aR = physics.compute_variable("MaxWaveSpeed", UpR, flag_non_physical=True)
 
 		idx = aR > a
 		a[idx] = aR[idx]

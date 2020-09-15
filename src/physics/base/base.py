@@ -300,7 +300,7 @@ class PhysicsBase(object):
 
 		return jac
 		
-	def ConvFluxProjected(self, Up, normals):
+	def get_conv_flux_projected(self, Up, normals):
 
 		F = self.get_conv_flux_interior(Up)
 		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
@@ -321,11 +321,11 @@ class PhysicsBase(object):
 	# 			F = data.F
 	# 		except AttributeError:
 	# 			data.F = F = np.zeros_like(uI)
-	# 		F[:] = self.ConvFluxProjected(uB, normals)
+	# 		F[:] = self.get_conv_flux_projected(uB, normals)
 
 	# 	return F
 
-	def ComputeScalars(self, scalar_name, Up, flag_non_physical=False):
+	def compute_variable(self, scalar_name, Uq, flag_non_physical=False):
 		# if type(ScalarNames) is list:
 		# 	nscalar = len(ScalarNames)
 		# elif type(ScalarNames) is str:
@@ -355,13 +355,13 @@ class PhysicsBase(object):
 		try:
 			sidx = self.get_state_index(scalar_name)
 			# scalar[:,iscalar] = Up[:,sidx]
-			scalar = Up[:, sidx:sidx+1].copy()
+			scalar = Uq[:, sidx:sidx+1].copy()
 		# if sidx < self.NUM_STATE_VARS:
 		# 	# State variable
 		# 	scalar[:,iscalar] = U[:,sidx]
 		# else:
 		except KeyError:
-			scalar = self.AdditionalScalars(scalar_name, Up, 
+			scalar = self.AdditionalScalars(scalar_name, Uq, 
 					flag_non_physical)
 
 		return scalar
