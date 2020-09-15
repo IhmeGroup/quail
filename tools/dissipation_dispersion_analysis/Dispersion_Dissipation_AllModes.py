@@ -108,7 +108,7 @@ h = elem.node_coords[1, 0] - elem.node_coords[0, 0]
 
 
 ### Solver and physics
-# Params = general.SetSolverParams(SolutionOrder=SolutionOrder,SolutionBasis="LagrangeEqSeg")
+# Params = general.set_solver_params(SolutionOrder=SolutionOrder,SolutionBasis="LagrangeEqSeg")
 params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
 # params["SolutionOrder"] = order 
 params["RestartFile"] = params["File"]

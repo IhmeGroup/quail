@@ -47,7 +47,7 @@ dt = 0.05
 FinalTime = 2.0
 NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
 SolutionOrder = 2
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis=SolutionBasis,TimeStepper="RK4",L2InitialCondition=True,
 								 ElementQuadrature="Dunavant",ApplyLimiter=None)
 

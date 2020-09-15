@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
-import code
 from enum import Enum, auto
 import numpy as np
-from scipy.optimize import root
-import sys
 
 import errors
 
 import numerics.basis.tools as basis_tools
-from physics.base.data import ICData, BCData, ExactData, SourceData
+# from physics.base.data import ICData, BCData, ExactData, SourceData
 import physics.base.functions as base_fcns
 from physics.base.functions import BCType as base_BC_type
 from physics.base.functions import FcnType as base_fcn_type

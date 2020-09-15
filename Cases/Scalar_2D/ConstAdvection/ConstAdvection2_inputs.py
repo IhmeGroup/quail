@@ -28,7 +28,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # FinalTime = 10.0
 # NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
 # SolutionOrder = 10
-# Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+# Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 # 								 SolutionBasis=SolutionBasis,TimeStepper="RK4",InterpolateIC=False,
 # 								 ApplyLimiter=None,WriteInterval=50)
 

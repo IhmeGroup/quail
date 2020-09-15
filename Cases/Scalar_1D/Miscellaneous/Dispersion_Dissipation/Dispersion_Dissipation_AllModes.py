@@ -25,7 +25,7 @@ h = mesh.node_coords[-1,0] - mesh.node_coords[-2,0]
 
 
 ### Solver and physics
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,SolutionBasis="LagrangeEqSeg")
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,SolutionBasis="LagrangeEqSeg")
 physics = Scalar.Scalar(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
 physics.set_physical_params(Velocity=1.)
 # Initial conditions

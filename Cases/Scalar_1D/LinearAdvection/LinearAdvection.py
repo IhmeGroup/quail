@@ -28,7 +28,7 @@ if Periodic:
 FinalTime = 0.5
 NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
 SolutionOrder = 2
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis="LegendreSeg",TimeStepper="LSRK4")
 
 

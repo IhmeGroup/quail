@@ -25,7 +25,7 @@ mesh = MeshCommon.mesh_1D(Uniform=True, num_elems=16, xmin=-1., xmax=1., Periodi
 FinalTime = 0.5
 NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
 SolutionOrder = 3
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis="LagrangeSeg",InterpolateFluxADER=True,SourceTreatmentADER="Implicit")
 nu = -3.
 

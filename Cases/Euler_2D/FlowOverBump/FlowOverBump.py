@@ -46,7 +46,7 @@ mesh = MeshGmsh.import_gmsh_mesh(MeshFile)
 # SolutionOrder = [0]; NumTimeSteps = [500]; FinalTime = [40.]
 # dt = 0.05
 # NumTimeSteps = int(EndTime/dt + 10.*general.eps)
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis=SolutionBasis,TimeStepper="FE",L2InitialCondition=True,
 								 TrackOutput=False,WriteTimeHistory=False,OrderSequencing=True)
 

@@ -31,7 +31,7 @@ FinalTime = 0.1
 NumTimeSteps = np.amax([1,int(FinalTime/((mesh.node_coords[-1,0] - mesh.node_coords[-2,0])*0.1))])
 #NumTimeSteps = int(FinalTime/dt)
 SolutionOrder = 3
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis="LagrangeSeg",TimeStepper="RK4")
 ### Physics
 ConstVelocity = 1.

@@ -76,18 +76,18 @@ class NodeType(Enum):
 INTERIORFACE = -1
 NULLFACE = -2
 
-SolverParams = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
+solver_params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
 
 
-def SetSolverParams(Params=None, **kwargs):
-    if Params is None:
-        Params = SolverParams
-        Params["RestartFile"] = SolverParams["File"]
+def set_solver_params(params=None, **kwargs):
+    if params is None:
+        params = solver_params
+        params["RestartFile"] = solver_params["File"]
     for key in kwargs:
-    	if key not in Params.keys(): 
+    	if key not in params.keys(): 
             raise KeyError
-    	Params[key] = kwargs[key]
-    return Params
+    	params[key] = kwargs[key]
+    return params
 
 
 

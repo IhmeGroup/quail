@@ -19,7 +19,7 @@ mesh = MeshCommon.mesh_1D(num_elems=25, xmin=-1., xmax=1.)
 FinalTime = 0.1
 NumTimeSteps = 100
 SolutionOrder = 2
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis="LagrangeSeg",TimeStepper="RK4",L2InitialCondition=False)
 
 ### Physics

@@ -30,7 +30,7 @@ InitialTime = 2.5
 FinalTime = 10.0
 NumTimeSteps = int((FinalTime-InitialTime)/dt + 10.*general.eps)
 SolutionOrder = 10
-Params = general.SetSolverParams(Params, SolutionOrder=SolutionOrder,InitialTime=InitialTime,FinalTime=FinalTime,
+Params = general.set_solver_params(Params, SolutionOrder=SolutionOrder,InitialTime=InitialTime,FinalTime=FinalTime,
 								 NumTimeSteps=NumTimeSteps,SolutionBasis=SolutionBasis,TimeStepper="RK4",
 								 L2InitialCondition=True,ApplyLimiter=None,WriteInterval=50,
 								 RestartFile=fname)

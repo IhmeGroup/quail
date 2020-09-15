@@ -31,7 +31,7 @@ FinalTime = 0.1
 NumTimeSteps = 100
 SolutionOrder = 5
 
-Params = general.SetSolverParams(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
+Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis="LagrangeSeg",TimeStepper="RK4",L2InitialCondition=False)
 
 
