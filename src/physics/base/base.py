@@ -369,7 +369,7 @@ class PhysicsBase(object):
 	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
 		pass
 
-	def CallFunction(self, FcnData, x, t):
+	def call_function(self, FcnData, x, t):
 		# for key in kwargs:
 		# 	if key is "x":
 		# 		FcnData.x = kwargs[key]

@@ -65,7 +65,7 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 		
 		# Evaluate exact solution at quadrature points
 		xphys = mesh_tools.ref_to_phys(mesh, elem_id, quad_pts)
-		u_exact = physics.CallFunction(physics.exact_soln, x=xphys, t=time)
+		u_exact = physics.call_function(physics.exact_soln, x=xphys, t=time)
 
 		# Interpolate state to quadrature points
 		basis.get_basis_val_grads(quad_pts, True)

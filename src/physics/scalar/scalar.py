@@ -158,7 +158,7 @@ class ConstAdvScalar(base.PhysicsBase):
 # 		BC.time = Time
 # 		bctype = BC.BCType
 # 		if bctype == self.BCType.StateAll:
-# 			uB = self.CallFunction(BC)
+# 			uB = self.call_function(BC)
 # 		elif bctype == self.BCType.Extrapolate:
 # 			uB[:] = uI[:]
 # 		else:
@@ -205,7 +205,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 	BC.time = Time
 	# 	bctype = BC.BCType
 	# 	if bctype == self.BCType.StateAll:
-	# 		uB = self.CallFunction(BC)
+	# 		uB = self.call_function(BC)
 	# 	elif bctype == self.BCType.Extrapolation:
 	# 		uB[:] = uI[:]
 	# 	else:
