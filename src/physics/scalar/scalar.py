@@ -291,11 +291,11 @@ class ConstAdvScalar1D(ConstAdvScalar):
 		self.c = ConstVelocity
 		self.cspeed = np.abs(self.c)
 
-	def SetParams(self,**kwargs):
-		super().SetParams(**kwargs)
+	# def SetParams(self,**kwargs):
+	# 	super().SetParams(**kwargs)
 
-		self.c = self.params["ConstVelocity"]
-		self.cspeed = np.linalg.norm(self.c)
+	# 	self.c = self.params["ConstVelocity"]
+	# 	self.cspeed = np.linalg.norm(self.c)
 
 
 class ConstAdvScalar2D(ConstAdvScalar):
@@ -339,11 +339,11 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		self.c = np.array([ConstXVelocity, ConstYVelocity])
 		self.cspeed = np.linalg.norm(self.c)
 
-	def SetParams(self,**kwargs):
-		super().SetParams(**kwargs)
+	# def SetParams(self,**kwargs):
+	# 	super().SetParams(**kwargs)
 
-		self.c = np.array([self.params["ConstXVelocity"], self.params["ConstYVelocity"]])
-		self.cspeed = np.linalg.norm(self.c)
+	# 	self.c = np.array([self.params["ConstXVelocity"], self.params["ConstYVelocity"]])
+	# 	self.cspeed = np.linalg.norm(self.c)
 
 
 class Burgers1D(base.PhysicsBase):

@@ -164,11 +164,11 @@ class PhysicsBase(object):
 	def set_physical_params(self):
 		pass
 
-	def SetParams(self, **kwargs):
-		Params = self.params
-		# Overwrite
-		for key in kwargs:
-			Params[key] = kwargs[key]
+	# def SetParams(self, **kwargs):
+	# 	Params = self.params
+	# 	# Overwrite
+	# 	for key in kwargs:
+	# 		Params[key] = kwargs[key]
 			# if key not in Params.keys(): raise Exception("Input error")
 			# if key is "ConvFluxNumerical":
 			# 	Params[key] = self.ConvFluxType[kwargs[key]]
