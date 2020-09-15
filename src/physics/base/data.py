@@ -87,10 +87,10 @@ class BCWeakPrescribed(BCWeakRiemann):
 class SourceBase(ABC):
 
     @abstractmethod
-    def get_source(self, x):
+    def get_source(self, physics, x, t):
         pass
 
-    def get_jacobian(self):
+    def get_jacobian(self, physics, x, t):
         raise NotImplementedError
 
 

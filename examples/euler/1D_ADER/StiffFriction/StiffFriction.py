@@ -7,7 +7,7 @@ nTimeStep = int(FinalTime/(cfl*dx))
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "nTimeStep" : nTimeStep,
+    "NumTimeSteps" : nTimeStep,
     "TimeStepper" : "ADER",
     # "OperatorSplittingExplicit" : "SSPRK3",
     # "OperatorSplittingImplicit" : "BDF1",
@@ -15,7 +15,7 @@ TimeStepping = {
 
 Numerics = {
     "SolutionOrder" : 2,
-    "SolutionBasis" : "LagrangeEqSeg",
+    "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
     "SourceTreatmentADER" : "Implicit"
 }

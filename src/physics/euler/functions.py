@@ -503,7 +503,7 @@ class StiffFriction(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 
-	def get_source(self, physics, FcnData, x, t):
+	def get_source(self, physics, x, t):
 		nu = self.nu
 		# irho = physics.get_state_index("Density")
 		# irhou = physics.get_state_index("XMomentum")
@@ -511,7 +511,7 @@ class StiffFriction(SourceBase):
 
 		irho, irhou, irhoE = physics.GetStateIndices()
 		
-		U = FcnData.U
+		U = self.U
 		
 		S = np.zeros_like(U)
 
@@ -540,10 +540,10 @@ class StiffFriction(SourceBase):
 	# 	# jac[:, 2, 1] = 2.0*nu*vel
 
 	# 	return jac
-	def get_jacobian(self, physics, FcnData, x, t):
+	def get_jacobian(self, physics, x, t):
 
 		nu = self.nu
-		U = FcnData.U
+		U = self.U
 
 		irho, irhou, irhoE = physics.GetStateIndices()
 
@@ -562,12 +562,12 @@ class StiffFriction(SourceBase):
 
 class TaylorGreenSource(SourceBase):
 
-	def get_source(self, physics, FcnData, x, t):
+	def get_source(self, physics, x, t):
 		gamma = physics.gamma
 
 		irho, irhou, irhov, irhoE = physics.GetStateIndices()
 		
-		U = FcnData.U
+		U = self.U
 		
 		S = np.zeros_like(U)
 

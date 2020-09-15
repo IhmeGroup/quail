@@ -213,7 +213,7 @@ class Arrhenius(SourceBase):
 		self.b = b
 		self.Tign = Tign
 
-	def get_source(self, physics, FcnData, x, t):
+	def get_source(self, physics, x, t):
 		
 		# Unpack source term constants
 		A = self.A
@@ -223,7 +223,7 @@ class Arrhenius(SourceBase):
 
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
-		U = FcnData.U
+		U = self.U
 		T = physics.compute_variable("Temperature", U)
 		# K = np.zeros_like(T)
 		# for i in range(len(T)):
@@ -239,7 +239,7 @@ class Arrhenius(SourceBase):
 		
 		return S
 
-	def get_jacobian(self, physics, FcnData, x, t):
+	def get_jacobian(self, physics, x, t):
 		
 		# Note: This assumes b = 0 for now.
 
@@ -249,7 +249,7 @@ class Arrhenius(SourceBase):
 		
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
-		U = FcnData.U
+		U = self.U
 		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
 
 		T = physics.compute_variable("Temperature", U)
@@ -302,7 +302,7 @@ class Heaviside(SourceBase):
 		self.Da = Da
 		self.Tign = Tign
 
-	def get_source(self, physics, FcnData, x, t):
+	def get_source(self, physics, x, t):
 		
 		# Unpack source term constants
 		Da = self.Da
@@ -310,7 +310,7 @@ class Heaviside(SourceBase):
 
 		irho, irhou, irhoE, irhoz = physics.GetStateIndices()
 
-		U = FcnData.U
+		U = self.U
 		T = physics.compute_variable("Temperature", U)
 		K = np.zeros([U.shape[0]])
 
@@ -325,13 +325,13 @@ class Heaviside(SourceBase):
 		
 		return S
 
-	def get_jacobian(self, physics, FcnData, x, t):
+	def get_jacobian(self, physics, x, t):
 
 		# Unpack source term constants
 		Da = self.Da
 		Tign = self.Tign
 
-		U = FcnData.U
+		U = self.U
 		
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 

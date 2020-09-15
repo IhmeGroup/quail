@@ -278,28 +278,28 @@ class PhysicsBase(object):
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
 	def eval_source_terms(self, nq, xglob, Time, Up, s=None):
-		for Source in self.source_terms:
+		for source in self.source_terms:
 
 			#loop through available source terms
-			Source.x = xglob
-			Source.nq = nq
-			Source.time = Time
-			Source.U = Up
-			# s += self.CallSourceFunction(Source,Source.x,Source.time)
-			s += Source.get_source(self, Source, Source.x, Source.time)
+			source.x = xglob
+			source.nq = nq
+			source.time = Time
+			source.U = Up
+			# s += self.CallSourceFunction(source,source.x,source.time)
+			s += source.get_source(self, source.x, source.time)
 
 		return s
 
 	def eval_source_term_jacobians(self, nq, xglob, Time, Up, jac=None):
-		for Source in self.source_terms:
+		for source in self.source_terms:
 			#loop through available source terms
-			Source.x = xglob
-			Source.nq = nq
-			Source.time = Time
-			Source.U = Up
-			# jac += self.CallSourceJacobianFunction(Source,Source.x,
-			# 		Source.time)
-			jac += Source.get_jacobian(self, Source, Source.x, Source.time)
+			source.x = xglob
+			source.nq = nq
+			source.time = Time
+			source.U = Up
+			# jac += self.CallSourceJacobianFunction(source,source.x,
+			# 		source.time)
+			jac += source.get_jacobian(self, source.x, source.time)
 
 		return jac
 		
