@@ -182,7 +182,7 @@ class ConstAdvScalar(base.PhysicsBase):
 # 		for iscalar in range(nscalar):
 # 			sname = ScalarNames[iscalar]
 # 			try:
-# 				sidx = self.GetStateIndex(sname)
+# 				sidx = self.get_state_index(sname)
 # 				scalar[:,iscalar] = U[:,sidx]
 # 			# if sidx < self.NUM_STATE_VARS:
 # 			# 	# State variable
@@ -229,7 +229,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 	for iscalar in range(nscalar):
 	# 		sname = ScalarNames[iscalar]
 	# 		try:
-	# 			sidx = self.GetStateIndex(sname)
+	# 			sidx = self.get_state_index(sname)
 	# 			scalar[:,iscalar] = U[:,sidx]
 	# 		# if sidx < self.NUM_STATE_VARS:
 	# 		# 	# State variable

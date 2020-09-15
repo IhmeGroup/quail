@@ -223,7 +223,7 @@ class PhysicsBase(object):
 	class AdditionalVariables(Enum):
 		pass
 
-	def GetStateIndex(self, var_name):
+	def get_state_index(self, var_name):
 		# idx = self.VariableType[VariableName]
 		idx = self.StateIndices[var_name]
 		# idx = self.StateVariables.__members__.keys().index(VariableName)
@@ -258,7 +258,7 @@ class PhysicsBase(object):
 	# 	self.source_terms.append(Source)
 	# 	Source.Set(**kwargs)
 
-	def QuadOrder(self, order):
+	def get_quadrature_order(self, order):
 		return 2*order+1
 
 	@abstractmethod
@@ -342,7 +342,7 @@ class PhysicsBase(object):
 		# for iscalar in range(nscalar):
 		# 	sname = ScalarNames[iscalar]
 		# 	try:
-		# 		sidx = self.GetStateIndex(sname)
+		# 		sidx = self.get_state_index(sname)
 		# 		scalar[:,iscalar] = U[:,sidx]
 		# 	# if sidx < self.NUM_STATE_VARS:
 		# 	# 	# State variable
@@ -353,7 +353,7 @@ class PhysicsBase(object):
 		# 			flag_non_physical)
 
 		try:
-			sidx = self.GetStateIndex(scalar_name)
+			sidx = self.get_state_index(scalar_name)
 			# scalar[:,iscalar] = Up[:,sidx]
 			scalar = Up[:, sidx:sidx+1].copy()
 		# if sidx < self.NUM_STATE_VARS:

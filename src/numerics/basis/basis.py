@@ -258,7 +258,7 @@ class ShapeBase(ABC):
         gorder = mesh.gorder
 
         if physics is not None:
-            qorder = physics.QuadOrder(order)
+            qorder = physics.get_quadrature_order(order)
         else:
             qorder = order
         if gorder > 1:

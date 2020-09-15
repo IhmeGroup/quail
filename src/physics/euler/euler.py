@@ -66,8 +66,8 @@ class Euler(base.PhysicsBase):
 	def ConvFluxInterior(self, Up):
 		dim = self.dim
 		# irho = 0; irhoE = dim + 1
-		irho = self.GetStateIndex("Density")
-		irhoE = self.GetStateIndex("Energy")
+		irho = self.get_state_index("Density")
+		irhoE = self.get_state_index("Energy")
 		# imom = self.GetMomentumSlice()
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
@@ -222,9 +222,9 @@ class Euler1D(Euler):
 		Energy = "\\rho E"
 
 	def GetStateIndices(self):
-		irho = self.GetStateIndex("Density")
-		irhou = self.GetStateIndex("XMomentum")
-		irhoE = self.GetStateIndex("Energy")
+		irho = self.get_state_index("Density")
+		irhou = self.get_state_index("XMomentum")
+		irhoE = self.get_state_index("Energy")
 
 		return irho, irhou, irhoE
 
@@ -236,7 +236,7 @@ class Euler1D(Euler):
 		return srho, srhou, srhoE
 
 	def GetMomentumSlice(self):
-		irhou = self.GetStateIndex("XMomentum")
+		irhou = self.get_state_index("XMomentum")
 		smom = slice(irhou, irhou+1)
 
 		return smom
@@ -280,16 +280,16 @@ class Euler2D(Euler):
 		Energy = "\\rho E"
 
 	def GetStateIndices(self):
-		irho = self.GetStateIndex("Density")
-		irhou = self.GetStateIndex("XMomentum")
-		irhov = self.GetStateIndex("YMomentum")
-		irhoE = self.GetStateIndex("Energy")
+		irho = self.get_state_index("Density")
+		irhou = self.get_state_index("XMomentum")
+		irhov = self.get_state_index("YMomentum")
+		irhoE = self.get_state_index("Energy")
 
 		return irho, irhou, irhov, irhoE
 
 	def GetMomentumSlice(self):
-		irhou = self.GetStateIndex("XMomentum")
-		irhov = self.GetStateIndex("YMomentum")
+		irhou = self.get_state_index("XMomentum")
+		irhov = self.get_state_index("YMomentum")
 		imom = slice(irhou, irhov+1)
 
 		return imom

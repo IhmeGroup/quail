@@ -505,9 +505,9 @@ class StiffFriction(SourceBase):
 
 	def get_source(self, physics, FcnData, x, t):
 		nu = self.nu
-		# irho = physics.GetStateIndex("Density")
-		# irhou = physics.GetStateIndex("XMomentum")
-		# irhoE = physics.GetStateIndex("Energy")
+		# irho = physics.get_state_index("Density")
+		# irhou = physics.get_state_index("XMomentum")
+		# irhoE = physics.get_state_index("Energy")
 
 		irho, irhou, irhoE = physics.GetStateIndices()
 		

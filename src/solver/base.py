@@ -238,7 +238,7 @@ class SolverBase(ABC):
 			eval_pts = basis.get_nodes(order)
 		else:
 			order = 2*np.amax([physics.order, 1])
-			order = physics.QuadOrder(order)
+			order = physics.get_quadrature_order(order)
 
 			quad_order = basis.get_quadrature_order(mesh, order)
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)

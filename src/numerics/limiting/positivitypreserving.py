@@ -106,7 +106,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		# Rescale
 		if theta1 < 1.:
-			irho = physics.GetStateIndex(self.scalar1)
+			irho = physics.get_state_index(self.scalar1)
 			U[:,irho] = theta1*U[:,irho] + (1. - theta1)*rho_bar
 
 			# Intermediate limited solution
@@ -220,7 +220,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		# Rescale
 		if theta1 < 1.:
-			irho = physics.GetStateIndex(self.scalar1)
+			irho = physics.get_state_index(self.scalar1)
 			U[:,irho] = theta1*U[:,irho] + (1. - theta1)*rho_bar
 
 			# Intermediate limited solution
@@ -235,7 +235,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		# Rescale 
 		if theta2 < 1.:
-			irhoY = physics.GetStateIndex(self.scalar3)
+			irhoY = physics.get_state_index(self.scalar3)
 			U[:,irhoY] = theta2*U[:,irhoY] + (1. - theta2)*rhoY_bar
 
 			# Intermediate limited solution

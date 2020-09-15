@@ -74,9 +74,9 @@ class Chemistry(base.PhysicsBase):
 	def ConvFluxInterior(self, Up):
 		dim = self.dim
 		
-		irho = self.GetStateIndex("Density")
-		irhoE = self.GetStateIndex("Energy")
-		irhoY = self.GetStateIndex("Mixture")
+		irho = self.get_state_index("Density")
+		irhoE = self.get_state_index("Energy")
+		irhoY = self.get_state_index("Mixture")
 		# imom = self.GetMomentumSlice()
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
@@ -231,10 +231,10 @@ class Chemistry1D(Chemistry):
 		Mixture = "\\rho Y"
 
 	def GetStateIndices(self):
-		irho = self.GetStateIndex("Density")
-		irhou = self.GetStateIndex("XMomentum")
-		irhoE = self.GetStateIndex("Energy")
-		irhoY = self.GetStateIndex("Mixture")
+		irho = self.get_state_index("Density")
+		irhou = self.get_state_index("XMomentum")
+		irhoE = self.get_state_index("Energy")
+		irhoY = self.get_state_index("Mixture")
 
 		return irho, irhou, irhoE, irhoY
 
@@ -246,7 +246,7 @@ class Chemistry1D(Chemistry):
 		return srho, srhou, srhoE, srhoY
 
 	def GetMomentumSlice(self):
-		irhou = self.GetStateIndex("XMomentum")
+		irhou = self.get_state_index("XMomentum")
 		smom = slice(irhou, irhou+1)
 
 		return smom
