@@ -263,9 +263,9 @@ class PhysicsBase(object):
 		pass
 
 	@abstractmethod
-	def get_conv_flux_numerical(self, UpL, UpR, normals):
+	def get_conv_flux_numerical(self, UqL, UqR, normals):
 		# self.conv_flux_fcn.AllocHelperArrays(uL)
-		F = self.conv_flux_fcn.compute_flux(self, UpL, UpR, normals)
+		F = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
 
 		return F
 
@@ -274,35 +274,35 @@ class PhysicsBase(object):
 	# 	pass
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
-	def eval_source_terms(self, nq, xglob, Time, Up, s=None):
+	def eval_source_terms(self, nq, xglob, Time, Uq, s=None):
 		for source in self.source_terms:
 
 			#loop through available source terms
 			source.x = xglob
 			source.nq = nq
 			source.time = Time
-			source.U = Up
+			source.U = Uq
 			# s += self.CallSourceFunction(source,source.x,source.time)
 			s += source.get_source(self, source.x, source.time)
 
 		return s
 
-	def eval_source_term_jacobians(self, nq, xglob, Time, Up, jac=None):
+	def eval_source_term_jacobians(self, nq, xglob, Time, Uq, jac=None):
 		for source in self.source_terms:
 			#loop through available source terms
 			source.x = xglob
 			source.nq = nq
 			source.time = Time
-			source.U = Up
+			source.U = Uq
 			# jac += self.CallSourceJacobianFunction(source,source.x,
 			# 		source.time)
 			jac += source.get_jacobian(self, source.x, source.time)
 
 		return jac
 		
-	def get_conv_flux_projected(self, Up, normals):
+	def get_conv_flux_projected(self, Uq, normals):
 
-		F = self.get_conv_flux_interior(Up)
+		F = self.get_conv_flux_interior(Uq)
 		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
 
 	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
@@ -337,7 +337,7 @@ class PhysicsBase(object):
 		# nq = U.shape[0]
 		# if scalar is None or scalar.shape != (nq, nscalar):
 		# 	scalar = np.zeros([nq, nscalar])
-		# scalar = np.zeros([Up.shape[0], 1])
+		# scalar = np.zeros([Uq.shape[0], 1])
 
 		# for iscalar in range(nscalar):
 		# 	sname = ScalarNames[iscalar]
@@ -354,7 +354,7 @@ class PhysicsBase(object):
 
 		try:
 			sidx = self.get_state_index(scalar_name)
-			# scalar[:,iscalar] = Up[:,sidx]
+			# scalar[:,iscalar] = Uq[:,sidx]
 			scalar = Uq[:, sidx:sidx+1].copy()
 		# if sidx < self.NUM_STATE_VARS:
 		# 	# State variable
@@ -366,7 +366,7 @@ class PhysicsBase(object):
 
 		return scalar
 
-	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
 		pass
 
 	# def call_function(self, FcnData, x, t):
@@ -386,9 +386,9 @@ class PhysicsBase(object):
 
 	# 	# FcnData.U[:] = FcnData.Function(self, FcnData)
 	# 	# FcnData.alloc_helpers([x.shape[0], self.NUM_STATE_VARS])
-	# 	FcnData.Up = FcnData.get_state(self, x, t)
+	# 	FcnData.Uq = FcnData.get_state(self, x, t)
 
-	# 	return FcnData.Up
+	# 	return FcnData.Uq
 
 	# def CallSourceFunction(self, FcnData, x, t):
 	# 	# for key in kwargs:

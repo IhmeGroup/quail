@@ -71,7 +71,7 @@ class Chemistry(base.PhysicsBase):
 	    SourceTerm = "S"
 	    Jacobian = "J"
 
-	def get_conv_flux_interior(self, Up):
+	def get_conv_flux_interior(self, Uq):
 		dim = self.dim
 		
 		irho = self.get_state_index("Density")
@@ -85,21 +85,21 @@ class Chemistry(base.PhysicsBase):
 
 		eps = general.eps
 
-		rho = Up[:, srho]
+		rho = Uq[:, srho]
 		rho += eps
-		rhoE = Up[:,srhoE]
-		mom = Up[:,smom]
-		rhoY = Up[:,srhoY]
+		rhoE = Uq[:,srhoE]
+		mom = Uq[:,smom]
+		rhoY = Uq[:,srhoY]
 
-		p = self.compute_variable("Pressure", Up)
-		h = self.compute_variable("TotalEnthalpy", Up)
+		p = self.compute_variable("Pressure", Uq)
+		h = self.compute_variable("TotalEnthalpy", Uq)
 
-		pmat = np.zeros([Up.shape[0], dim, dim])
+		pmat = np.zeros([Uq.shape[0], dim, dim])
 		idx = np.full([dim,dim],False)
 		np.fill_diagonal(idx,True)
 		pmat[:, idx] = p
 
-		F = np.empty(Up.shape + (dim,))
+		F = np.empty(Uq.shape + (dim,))
 		F[:, irho, :] = mom
 		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
 		F[:, irhoE, :] = mom*h
@@ -109,16 +109,16 @@ class Chemistry(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		srhoY = self.get_state_slice("Mixture")
 		smom = self.GetMomentumSlice()
-		rho = Up[:, srho]
-		rhoE = Up[:, srhoE]
-		mom = Up[:, smom]
-		rhoY = Up[:, srhoY]
+		rho = Uq[:, srho]
+		rhoE = Uq[:, srhoE]
+		mom = Uq[:, smom]
+		rhoY = Uq[:, srhoY]
 
 		''' Common scalars '''
 		gamma = self.gamma
@@ -162,16 +162,16 @@ class Chemistry(base.PhysicsBase):
 		elif sname is self.AdditionalVariables["MassFraction"].name:
 			scalar = rhoY/rho
 		elif sname is self.AdditionalVariables["SourceTerm"].name:
-			nq = Up.shape[0]
+			nq = Uq.shape[0]
 			x = np.zeros([nq,1])
-			Sp = np.zeros_like(Up) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			Sp = self.eval_source_terms(nq, x, 0., Up, Sp) # [nq,ns]
+			Sp = np.zeros_like(Uq) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
+			Sp = self.eval_source_terms(nq, x, 0., Uq, Sp) # [nq,ns]
 			scalar = Sp[:,3].reshape(7,1)
 		elif sname is self.AdditionalVariables["Jacobian"].name:
-			nq = Up.shape[0]
+			nq = Uq.shape[0]
 			x = np.zeros([nq,1])
 			jac = np.zeros([nq,4,4]) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			jac = self.eval_source_term_jacobians(nq, x, 0., Up, jac) # [nq,ns]
+			jac = self.eval_source_term_jacobians(nq, x, 0., Uq, jac) # [nq,ns]
 			scalar = jac[:,3,3].reshape(7,1)
 		else:
 			raise NotImplementedError

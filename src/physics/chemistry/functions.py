@@ -37,7 +37,7 @@ class DensityWave(FcnBase):
 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 		gam = physics.gamma
 		qo = physics.qo
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		
 		rho = 1.0+0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
@@ -46,12 +46,12 @@ class DensityWave(FcnBase):
 		# rhoE = (p/(gam-1.))+0.5*rhou**2/rho
 
 
-		Up[:,srho] = rho
-		Up[:,srhou] = rhou
-		Up[:,srhoE] = rhoE
-		Up[:,srhoz] = rhoz
+		Uq[:,srho] = rho
+		Uq[:,srhou] = rhou
+		Uq[:,srhoE] = rhoE
+		Uq[:,srhoz] = rhoz
 
-		return Up
+		return Uq
 
 class SimpleDetonation1(FcnBase):
 	def __init__(self, rho_u=1., u_u=0., p_u=1., Y_u=1., xshock = 10.):
@@ -74,7 +74,7 @@ class SimpleDetonation1(FcnBase):
 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 		gam = physics.gamma
 		qo = physics.qo
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		b = -p_u - rho_u*qo * (gam-1.)
 		c = p_u**2 + (2.*(gam-1.) * rho_u*p_u*qo) / (gam+1.)
@@ -92,19 +92,19 @@ class SimpleDetonation1(FcnBase):
 		iright = (x > xshock).reshape(-1)
 
 		# Density
-		Up[iright, srho] = rho_u
-		Up[ileft, srho] = rho_b
+		Uq[iright, srho] = rho_u
+		Uq[ileft, srho] = rho_b
 		# Momentum
-		Up[iright, srhou] = rho_u*u_u
-		Up[ileft, srhou] = rho_b*u_b
+		Uq[iright, srhou] = rho_u*u_u
+		Uq[ileft, srhou] = rho_b*u_b
 		# Energy
-		Up[iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
-		Up[ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
+		Uq[iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
+		Uq[ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
 		# MixtureFraction
-		Up[iright, srhoz] = rho_u*Y_u
-		Up[ileft, srhoz] = rho_b*Y_b
+		Uq[iright, srhoz] = rho_u*Y_u
+		Uq[ileft, srhoz] = rho_b*Y_b
 
-		return Up
+		return Uq
 
 class SimpleDetonation2(FcnBase):
 	def __init__(self, uL=np.array([2.,4.,40.,0.]), xshock=0.):
@@ -126,7 +126,7 @@ class SimpleDetonation2(FcnBase):
 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 		gam = physics.gamma
 		qo = physics.qo
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])		
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])		
 
 		delta = np.sqrt((2.*(gam - 1.)) / (gam + 1.))
 
@@ -138,19 +138,19 @@ class SimpleDetonation2(FcnBase):
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
 		
-		Up[iright, srho] = rhoR
-		Up[ileft, srho] = rhoL
+		Uq[iright, srho] = rhoR
+		Uq[ileft, srho] = rhoL
 		# Momentum
-		Up[iright, srhou] = rhoR*vR
-		Up[ileft, srhou] = rhoL*vL
+		Uq[iright, srhou] = rhoR*vR
+		Uq[ileft, srhou] = rhoL*vL
 		# Energy
-		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
-		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
+		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
+		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
 		# MixtureFraction
-		Up[iright, srhoz] = rhoR*yR
-		Up[ileft, srhoz] = rhoL*yL
+		Uq[iright, srhoz] = rhoR*yR
+		Uq[ileft, srhoz] = rhoL*yL
 
-		return Up
+		return Uq
 
 class SimpleDetonation3(FcnBase):
 	def __init__(self, uL=np.array([2.,4.,40.,0.]), uR=np.array([0.,0.,0.,0.]), xshock=0.):
@@ -179,25 +179,25 @@ class SimpleDetonation3(FcnBase):
 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 		gam = physics.gamma
 		qo = physics.qo
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
 		# Density
 		rhoR = 1. + 0.5*np.sin(2.*x[iright])
-		Up[iright, srho] = rhoR
-		Up[ileft, srho] = rhoL
+		Uq[iright, srho] = rhoR
+		Uq[ileft, srho] = rhoL
 		# Momentum
-		Up[iright, srhou] = rhoR*vR
-		Up[ileft, srhou] = rhoL*vL
+		Uq[iright, srhou] = rhoR*vR
+		Uq[ileft, srhou] = rhoL*vL
 		# Energy
-		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
-		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
+		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
+		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
 		# MixtureFraction
-		Up[iright, srhoz] = rhoR*yR
-		Up[ileft, srhoz] = rhoL*yL
+		Uq[iright, srhoz] = rhoR*yR
+		Uq[ileft, srhoz] = rhoL*yL
 
-		return Up
+		return Uq
 
 '''
 Boundary conditions
@@ -353,15 +353,15 @@ class Heaviside(SourceBase):
 Numerical flux functions
 '''
 class HLLC1D(ConvNumFluxBase):
-	def __init__(self, Up=None):
-		if Up is not None:
-			n = Up.shape[0]
-			ns = Up.shape[1]
+	def __init__(self, Uq=None):
+		if Uq is not None:
+			n = Uq.shape[0]
+			ns = Uq.shape[1]
 			dim = ns - 2
 		else:
 			n = 0; ns = 0; dim = 0
 
-	def compute_flux(self, physics, UpL, UpR, n):
+	def compute_flux(self, physics, UqL, UqR, n):
 
 		# Indices
 		srho = physics.get_state_slice("Density")
@@ -376,17 +376,17 @@ class HLLC1D(ConvNumFluxBase):
 		gam = physics.gamma
 
 		# unpack left hand state
-		rhoL = UpL[:, srho]
-		uL = UpL[:, smom]/rhoL
+		rhoL = UqL[:, srho]
+		uL = UqL[:, smom]/rhoL
 		unL = uL * n1
-		pL = physics.compute_variable("Pressure", UpL)
-		cL = physics.compute_variable("SoundSpeed", UpL)
+		pL = physics.compute_variable("Pressure", UqL)
+		cL = physics.compute_variable("SoundSpeed", UqL)
 		# unpack right hand state
-		rhoR = UpR[:, srho]
-		uR = UpR[:, smom]/rhoR
+		rhoR = UqR[:, srho]
+		uR = UqR[:, smom]/rhoR
 		unR = uR * n1
-		pR = physics.compute_variable("Pressure", UpR)
-		cR = physics.compute_variable("SoundSpeed", UpR)	
+		pR = physics.compute_variable("Pressure", UqR)
+		cR = physics.compute_variable("SoundSpeed", UqR)	
 
 		# calculate averages
 		rho_avg = 0.5 * (rhoL + rhoR)
@@ -417,9 +417,9 @@ class HLLC1D(ConvNumFluxBase):
 		# flux assembly 
 
 		# Left State
-		FL = physics.get_conv_flux_projected(UpL, n1)
+		FL = physics.get_conv_flux_projected(UqL, n1)
 		# Right State
-		FR = physics.get_conv_flux_projected(UpR, n1)
+		FR = physics.get_conv_flux_projected(UqR, n1)
 
 		Fhllc = np.zeros_like(FL)
 
@@ -436,10 +436,10 @@ class HLLC1D(ConvNumFluxBase):
 			c1l = rhoL*cl*sssul
 			c2l = rhoL*cl*sssul*ssstl
 
-			Fhllc[:, srho] = FL[:, srho] + SL*(UpL[:, srho]*(cl-1.))
-			Fhllc[:, smom] = FL[:, smom] + SL*(UpL[:, smom]*(cl-1.)+c1l*n1)
-			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UpL[:, srhoE]*(cl-1.)+c2l)
-			Fhllc[:, srhoY] = FL[:, srhoY] + SL*(UpL[:, srhoY]*(cl-1.))
+			Fhllc[:, srho] = FL[:, srho] + SL*(UqL[:, srho]*(cl-1.))
+			Fhllc[:, smom] = FL[:, smom] + SL*(UqL[:, smom]*(cl-1.)+c1l*n1)
+			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UqL[:, srhoE]*(cl-1.)+c2l)
+			Fhllc[:, srhoY] = FL[:, srhoY] + SL*(UqL[:, srhoY]*(cl-1.))
 
 		elif (sss <= 0.) and (SR >= 0.):
 			slur = SR - unR
@@ -450,9 +450,9 @@ class HLLC1D(ConvNumFluxBase):
 			c1r = rhoR*cr*sssur
 			c2r = rhoR*cr*sssur*ssstr
 
-			Fhllc[:, srho] = FR[:, srho] + SR*(UpR[:, srho]*(cr-1.))
-			Fhllc[:, smom] = FR[:, smom] + SR*(UpR[:, smom]*(cr-1.)+c1r*n1)
-			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UpR[:, srhoE]*(cr-1.)+c2r)
-			Fhllc[:, srhoY] = FR[:, srhoY] + SR*(UpR[:, srhoY]*(cr-1.))
+			Fhllc[:, srho] = FR[:, srho] + SR*(UqR[:, srho]*(cr-1.))
+			Fhllc[:, smom] = FR[:, smom] + SR*(UqR[:, smom]*(cr-1.)+c1r*n1)
+			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UqR[:, srhoE]*(cr-1.)+c2r)
+			Fhllc[:, srhoY] = FR[:, srhoY] + SR*(UqR[:, srhoY]*(cr-1.))
 							  
 		return Fhllc

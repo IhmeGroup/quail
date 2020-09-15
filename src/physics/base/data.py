@@ -35,38 +35,38 @@ class FcnBase(ABC):
 class BCBase(ABC):
 
     # def __init__(self):
-    #     self.UpB = np.zeros(0)
+    #     self.UqB = np.zeros(0)
     #     self.F = np.zeros(0)
 
     # def alloc_helpers(self, shape):
-    #     self.UpB.resize(shape)
+    #     self.UqB.resize(shape)
     #     self.F.resize(shape)
 
     @abstractmethod
-    def get_boundary_state(self, physics, x, t, normals, UpI):
+    def get_boundary_state(self, physics, x, t, normals, UqI):
         pass
 
     @abstractmethod
-    def get_boundary_flux(self, physics, x, t, normals, UpI):
+    def get_boundary_flux(self, physics, x, t, normals, UqI):
         pass
 
 
 class BCWeakRiemann(ABC):
 
-    def get_boundary_flux(self, physics, x, t, normals, UpI):
+    def get_boundary_flux(self, physics, x, t, normals, UqI):
 
-        UpB = self.get_boundary_state(physics, x, t, normals, UpI)
-        F = physics.get_conv_flux_numerical(UpI, UpB, normals)
+        UqB = self.get_boundary_state(physics, x, t, normals, UqI)
+        F = physics.get_conv_flux_numerical(UqI, UqB, normals)
 
         return F
 
 
 class BCWeakPrescribed(BCWeakRiemann):
 
-    def get_boundary_flux(self, physics, x, t, normals, UpI):
+    def get_boundary_flux(self, physics, x, t, normals, UqI):
 
-        UpB = self.get_boundary_state(physics, x, t, normals, UpI)
-        F = physics.get_conv_flux_projected(UpB, normals)
+        UqB = self.get_boundary_state(physics, x, t, normals, UqI)
+        F = physics.get_conv_flux_projected(UqB, normals)
 
         return F
 
@@ -96,14 +96,14 @@ class SourceBase(ABC):
 
 class ConvNumFluxBase(ABC):
 
-    def __init__(self, Up=None):
+    def __init__(self, Uq=None):
         pass
 
-    def alloc_helpers(self, Up):
-        self.__init__(Up)
+    def alloc_helpers(self, Uq):
+        self.__init__(Uq)
 
     @abstractmethod
-    def compute_flux(self, physics, UpL, UpR, normals):
+    def compute_flux(self, physics, UqL, UqR, normals):
         pass
 
 

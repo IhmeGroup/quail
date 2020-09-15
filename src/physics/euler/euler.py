@@ -63,7 +63,7 @@ class Euler(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 	    Velocity = "u"
 
-	def get_conv_flux_interior(self, Up):
+	def get_conv_flux_interior(self, Uq):
 		dim = self.dim
 		# irho = 0; irhoE = dim + 1
 		irho = self.get_state_index("Density")
@@ -75,23 +75,23 @@ class Euler(base.PhysicsBase):
 
 		eps = general.eps
 
-		rho = Up[:, srho]
+		rho = Uq[:, srho]
 		rho += eps
-		rhoE = Up[:, srhoE]
-		mom = Up[:, smom]
+		rhoE = Uq[:, srhoE]
+		mom = Uq[:, smom]
 
-		p = self.compute_variable("Pressure", Up)
-		h = self.compute_variable("TotalEnthalpy", Up)
+		p = self.compute_variable("Pressure", Uq)
+		h = self.compute_variable("TotalEnthalpy", Uq)
 
-		pmat = np.zeros([Up.shape[0], dim, dim])
+		pmat = np.zeros([Uq.shape[0], dim, dim])
 		idx = np.full([dim, dim], False)
 		np.fill_diagonal(idx, True)
 		pmat[:, idx] = p
 
 		# if F is None:
-		# 	F = np.empty(Up.shape+(dim,))
+		# 	F = np.empty(Uq.shape+(dim,))
 
-		F = np.empty(Up.shape + (dim,))
+		F = np.empty(Uq.shape + (dim,))
 		F[:, irho, :] = mom
 		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
 		F[:, irhoE, :] = mom*h
@@ -100,16 +100,16 @@ class Euler(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		smom = self.GetMomentumSlice()
-		rho = Up[:, srho]
-		rhoE = Up[:, srhoE]
-		mom = Up[:, smom]
+		rho = Uq[:, srho]
+		rhoE = Uq[:, srhoE]
+		mom = Uq[:, smom]
 
-		# scalar = np.zeros([Up.shape[0], 1])
+		# scalar = np.zeros([Uq.shape[0], 1])
 
 		''' Common scalars '''
 		gamma = self.gamma

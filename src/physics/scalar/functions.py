@@ -38,9 +38,9 @@ class Sine(FcnBase):
 
 	def get_state(self, physics, x, t):
 		c = physics.c
-		Up = np.sin(self.omega*(x-c*t))
+		Uq = np.sin(self.omega*(x-c*t))
 
-		return Up
+		return Uq
 
 
 class DampingSine(FcnBase):
@@ -50,9 +50,9 @@ class DampingSine(FcnBase):
 
 	def get_state(self, physics, x, t):
 		c = physics.c
-		Up = np.sin(self.omega*(x-c*t))*np.exp(self.nu*t)
+		Uq = np.sin(self.omega*(x-c*t))*np.exp(self.nu*t)
 
-		return Up
+		return Uq
 
 
 # class shifted_cosine(FcnBase):
@@ -61,9 +61,9 @@ class DampingSine(FcnBase):
 
 # 	def get_state(self, physics, x, t):
 # 		c = physics.c
-# 		Up = 1. - np.cos(self.omega*x)
+# 		Uq = 1. - np.cos(self.omega*x)
 
-# 		return Up
+# 		return Uq
 
 
 # class exponential(FcnBase):
@@ -71,9 +71,9 @@ class DampingSine(FcnBase):
 # 		self.theta = theta
 
 # 	def get_state(self, physics, x, t):
-# 		Up = np.exp(self.theta*x)
+# 		Uq = np.exp(self.theta*x)
 
-# 		return Up
+# 		return Uq
 
 
 class Gaussian(FcnBase):
@@ -83,9 +83,9 @@ class Gaussian(FcnBase):
 
 	def get_state(self, physics, x, t):
 		r = np.linalg.norm(x-self.x0-physics.c*t, axis=1, keepdims=True)
-		Up = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.dim) * np.exp(-r**2./(2.*self.sig**2.))
+		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.dim) * np.exp(-r**2./(2.*self.sig**2.))
 
-		return Up
+		return Uq
 
 
 class Paraboloid(FcnBase):
@@ -94,9 +94,9 @@ class Paraboloid(FcnBase):
 
 	def get_state(self, physics, x, t):
 		r2 = x[:,0:1]**2. + x[:,1:2]**2.
-		Up = r2
+		Uq = r2
 
-		return Up
+		return Uq
 
 
 class ShockBurgers(FcnBase):
@@ -115,12 +115,12 @@ class ShockBurgers(FcnBase):
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
 
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
-		Up[ileft] = uL
-		Up[iright] = uR
+		Uq[ileft] = uL
+		Uq[iright] = uR
 
-		return Up
+		return Uq
 
 
 class SineBurgers(FcnBase):
@@ -138,9 +138,9 @@ class SineBurgers(FcnBase):
 		u1 = np.reshape(u, (len(u)))
 		sol = root(F, u1, tol=1e-12)
 		
-		Up = sol.x.reshape(-1,1)
+		Uq = sol.x.reshape(-1,1)
 
-		return Up
+		return Uq
 
 
 class LinearBurgers(FcnBase):
@@ -150,9 +150,9 @@ class LinearBurgers(FcnBase):
 	def get_state(self, physics, x, t):
 		a = -1.
 		b = 1.
-		Up = (a*x+b)/(a*t+1.)
+		Uq = (a*x+b)/(a*t+1.)
 
-		return Up
+		return Uq
 
 
 '''

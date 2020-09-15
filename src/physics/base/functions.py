@@ -32,11 +32,11 @@ class Uniform(FcnBase):
 
 	def get_state(self, physics, x, t):
 		state = self.state
-		Up = np.tile(state, [x.shape[0], 1])
+		Uq = np.tile(state, [x.shape[0], 1])
 		# for s in range(len(self.state)):
-		# 	self.Up[:,s] = self.state[s]
+		# 	self.Uq[:,s] = self.state[s]
 
-		return Up
+		return Uq
 
 
 '''
@@ -51,17 +51,17 @@ class StateAll(BCWeakRiemann):
     	kwargs.pop("function")
     	self.function = fcn_ref(**kwargs)
 
-    def get_boundary_state(self, physics, x, t, normals, UpI):
-    	UpB = self.function.get_state(physics, x, t)
+    def get_boundary_state(self, physics, x, t, normals, UqI):
+    	UqB = self.function.get_state(physics, x, t)
 
-    	return UpB
+    	return UqB
 
 
 class Extrapolate(BCWeakPrescribed):
 	def __init__(self, **kwargs):
 		pass
-	def get_boundary_state(self, physics, x, t, normals, UpI):
-		return UpI.copy()
+	def get_boundary_state(self, physics, x, t, normals, UqI):
+		return UqI.copy()
 
 '''
 Numerical flux functions
@@ -83,7 +83,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 	# def AllocHelperArrays(self, u):
 	# 	self.__init__(u)
 
-	def compute_flux(self, physics, UpL, UpR, normals):
+	def compute_flux(self, physics, UqL, UqR, normals):
 		'''
 		Function: ConvFluxLaxFriedrichs
 		-------------------
@@ -92,8 +92,8 @@ class LaxFriedrichs(ConvNumFluxBase):
 
 		INPUTS:
 		    gam: specific heat ratio
-		    UpL: Left state
-		    UpR: Right state
+		    UqL: Left state
+		    UqR: Right state
 		    normals: Normal vector (assumed left to right)
 
 		OUTPUTS:
@@ -112,17 +112,17 @@ class LaxFriedrichs(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left State
-		FL = physics.get_conv_flux_projected(UpL, n_hat)
+		FL = physics.get_conv_flux_projected(UqL, n_hat)
 
 		# Right State
-		FR = physics.get_conv_flux_projected(UpR, n_hat)
+		FR = physics.get_conv_flux_projected(UqR, n_hat)
 
-		dU = UpR - UpL
+		dU = UqR - UqL
 
 		# max characteristic speed
 		# code.interact(local=locals())
-		a = physics.compute_variable("MaxWaveSpeed", UpL, flag_non_physical=True)
-		aR = physics.compute_variable("MaxWaveSpeed", UpR, flag_non_physical=True)
+		a = physics.compute_variable("MaxWaveSpeed", UqL, flag_non_physical=True)
+		aR = physics.compute_variable("MaxWaveSpeed", UqR, flag_non_physical=True)
 
 		idx = aR > a
 		a[idx] = aR[idx]

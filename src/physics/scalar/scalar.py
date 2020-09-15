@@ -98,10 +98,10 @@ class ConstAdvScalar(base.PhysicsBase):
 		# F.shape = u.shape + (self.dim,) 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			scalar = np.full([Up.shape[0], 1], self.cspeed)
+			scalar = np.full([Uq.shape[0], 1], self.cspeed)
 			# scalar[:] = self.cspeed
 		else:
 			raise NotImplementedError
@@ -402,12 +402,12 @@ class Burgers1D(base.PhysicsBase):
 		# F.shape = u.shape + (self.dim,) 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
+	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[ScalarName].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure
 			# P = GetPressure()
-			scalar = np.abs(Up/2.)
+			scalar = np.abs(Uq/2.)
 		else:
 			raise NotImplementedError
 

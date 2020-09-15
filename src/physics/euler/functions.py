@@ -45,7 +45,7 @@ class SmoothIsentropicFlow(FcnBase):
 		gamma = physics.gamma
 		irho, irhou, irhoE = physics.GetStateIndices()
 	
-		# Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		# Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		rho0 = lambda x, a: 1. + a*np.sin(np.pi*x)
 		pressure = lambda rho, gamma: rho**gamma
@@ -57,7 +57,7 @@ class SmoothIsentropicFlow(FcnBase):
 
 		xr = x.reshape(-1)
 
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		x1 = fsolve(f1, 0.*xr, (xr, t, a))
 		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
@@ -69,11 +69,11 @@ class SmoothIsentropicFlow(FcnBase):
 		p = pressure(den, gamma)
 		rhoE = p/(gamma - 1.) + 0.5*den*u*u
 
-		Up[:, irho] = den
-		Up[:, irhou] = den*u
-		Up[:, irhoE] = rhoE
+		Uq[:, irho] = den
+		Uq[:, irhou] = den*u
+		Uq[:, irhoE] = rhoE
 
-		return Up
+		return Uq
 
 
 class MovingShock(FcnBase):
@@ -90,7 +90,7 @@ class MovingShock(FcnBase):
 
 		gamma = physics.gamma
 		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		''' Pre-shock state '''
 		rho1 = 1.
 		p1 = 1.e5
@@ -116,16 +116,16 @@ class MovingShock(FcnBase):
 		iright = (x > xshock).reshape(-1)
 
 		# Density
-		Up[iright, srho] = rho1
-		Up[ileft, srho] = rho2
+		Uq[iright, srho] = rho1
+		Uq[ileft, srho] = rho2
 		# Momentum
-		Up[iright, srhou] = rho1*u1
-		Up[ileft, srhou] = rho2*u2
+		Uq[iright, srhou] = rho1*u1
+		Uq[ileft, srhou] = rho2*u2
 		# Energy
-		Up[iright, srhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1
-		Up[ileft, srhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2
+		Uq[iright, srhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1
+		Uq[ileft, srhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2
 
-		return Up
+		return Uq
 
 
 class IsentropicVortex(FcnBase):
@@ -137,7 +137,7 @@ class IsentropicVortex(FcnBase):
 		self.vs = vs
 
 	def get_state(self, physics, x, t):		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gamma = physics.gamma
 		Rg = physics.R
 
@@ -183,12 +183,12 @@ class IsentropicVortex(FcnBase):
 		rhov = rho*v
 		rhoE = rho*Rg/(gamma - 1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
 
-		Up[:, 0] = rho
-		Up[:, 1] = rhou
-		Up[:, 2] = rhov
-		Up[:, 3] = rhoE
+		Uq[:, 0] = rho
+		Uq[:, 1] = rhou
+		Uq[:, 2] = rhov
+		Uq[:, 3] = rhoE
 
-		return Up
+		return Uq
 
 
 class DensityWave(FcnBase):
@@ -200,17 +200,17 @@ class DensityWave(FcnBase):
 		srho, srhou, srhoE = physics.get_state_slices()
 		gamma = physics.gamma
 
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		
 		rho = 1.0 + 0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
 		rhoE = (p/(gamma - 1.)) + 0.5*rhou**2/rho
 
-		Up[:,srho] = rho
-		Up[:,srhou] = rhou
-		Up[:,srhoE] = rhoE
+		Uq[:,srho] = rho
+		Uq[:,srhou] = rhou
+		Uq[:,srhoE] = rhoE
 
-		return Up
+		return Uq
 
 
 class RiemannProblem(FcnBase):
@@ -238,23 +238,23 @@ class RiemannProblem(FcnBase):
 
 		gam = physics.gamma
 		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		''' Fill state '''
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
 
 		# Density
-		Up[iright, srho] = rhoR
-		Up[ileft, srho] = rhoL
+		Uq[iright, srho] = rhoR
+		Uq[ileft, srho] = rhoL
 		# Momentum
-		Up[iright, srhou] = rhoR*vR
-		Up[ileft, srhou] = rhoL*vL
+		Uq[iright, srhou] = rhoR*vR
+		Uq[ileft, srhou] = rhoL*vL
 		# Energy
-		Up[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR
-		Up[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL
+		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR
+		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL
 
-		return Up
+		return Uq
 
 class ExactRiemannSolution(FcnBase):
 	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xmin=0., xmax=1., xshock=0.5):
@@ -270,7 +270,7 @@ class ExactRiemannSolution(FcnBase):
 		uR = self.uR
 		L = self.xmax - self.xmin
 		xshock = self.xshock
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gam = physics.gamma
 		srho, srhou, srhoE = physics.get_state_slices()
 
@@ -335,11 +335,11 @@ class ExactRiemannSolution(FcnBase):
 		    else:
 		        uu[i] = u1; pp[i] = p1; rr[i] = rho1;
 
-		Up[:, srho] = rr
-		Up[:, srhou] = rr*uu
-		Up[:, srhoE] = pp/(gam-1.) + 0.5*rr*uu*uu
+		Uq[:, srho] = rr
+		Uq[:, srhou] = rr*uu
+		Uq[:, srhoE] = pp/(gam-1.) + 0.5*rr*uu*uu
 
-		return Up
+		return Uq
 
 class SmoothRiemannProblem(FcnBase):
 	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), w=0.05, xshock=0.):
@@ -368,28 +368,28 @@ class SmoothRiemannProblem(FcnBase):
 
 		gam = physics.gamma
 		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		# w = 0.05
 		def set_tanh(a,b,w,xo):
 			return 0.5*((a+b)+(b-a)*np.tanh((x-xo)/w))
 		# Density
-		Up[:, srho] =  set_tanh(rhoL,rhoR,w,xshock)
+		Uq[:, srho] =  set_tanh(rhoL,rhoR,w,xshock)
 
 		# Momentum
-		Up[:, srhou] = set_tanh(rhoL*vL,rhoR*vR,w,xshock)
+		Uq[:, srhou] = set_tanh(rhoL*vL,rhoR*vR,w,xshock)
 		# Energy
 		rhoeL = pL/(gam-1.) + 0.5*rhoL*vL*vL
 		rhoeR = pR/(gam-1.) + 0.5*rhoR*vR*vR
-		Up[:, srhoE] = set_tanh(rhoeL,rhoeR,w,xshock)
+		Uq[:, srhoE] = set_tanh(rhoeL,rhoeR,w,xshock)
 
-		return Up
+		return Uq
 
 
 class TaylorGreenVortex(FcnBase):
 
 	def get_state(self, physics, x, t):		
-		Up = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gamma = physics.gamma
 		Rg = physics.R
 
@@ -401,12 +401,12 @@ class TaylorGreenVortex(FcnBase):
 		p = 0.25*(np.cos(2.*np.pi*x[:, 0]) + np.cos(2*np.pi*x[:, 1])) + 1.
 		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
 
-		Up[:, irho] = rho
-		Up[:, irhou] = rho*u
-		Up[:, irhov] = rho*v
-		Up[:, irhoE] = rho*E
+		Uq[:, irho] = rho
+		Uq[:, irhou] = rho*u
+		Uq[:, irhov] = rho*v
+		Uq[:, irhoE] = rho*E
 
-		return Up
+		return Uq
 
 
 '''
@@ -414,28 +414,28 @@ Boundary conditions
 '''
 
 class SlipWall(BCWeakPrescribed):
-	def get_boundary_state(self, physics, x, t, normals, UpI):
+	def get_boundary_state(self, physics, x, t, normals, UqI):
 		smom = physics.GetMomentumSlice()
 
 		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
-		rhoveln = np.sum(UpI[:, smom] * n_hat, axis=1, keepdims=True)
-		UpB = UpI.copy()
-		UpB[:, smom] -= rhoveln * n_hat
+		rhoveln = np.sum(UqI[:, smom] * n_hat, axis=1, keepdims=True)
+		UqB = UqI.copy()
+		UqB[:, smom] -= rhoveln * n_hat
 
-		return UpB
+		return UqB
 
 
 class PressureOutlet(BCWeakPrescribed):
 	def __init__(self, p):
 		self.p = p
 
-	def get_boundary_state(self, physics, x, t, normals, UpI):
+	def get_boundary_state(self, physics, x, t, normals, UqI):
 		srho = physics.get_state_slice("Density")
 		srhoE = physics.get_state_slice("Energy")
 		smom = physics.GetMomentumSlice()
 
-		UpB = UpI.copy()
+		UqB = UqI.copy()
 
 		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
@@ -450,49 +450,49 @@ class PressureOutlet(BCWeakPrescribed):
 		# igmi = 1./gmi
 
 		# Interior velocity in normal direction
-		rhoI = UpI[:, srho]
-		velI = UpI[:, smom]/rhoI
+		rhoI = UqI[:, srho]
+		velI = UqI[:, smom]/rhoI
 		velnI = np.sum(velI*n_hat, axis=1, keepdims=True)
 
 		if np.any(velnI < 0.):
 			print("Incoming flow at outlet")
 
 		# Compute interior pressure
-		# rVI2 = np.sum(UpI[:,imom]**2., axis=1, keepdims=True)/rhoI
-		# pI = gmi*(UpI[:,irhoE:irhoE+1] - 0.5*rVI2)
-		pI = physics.compute_variable("Pressure", UpI)
+		# rVI2 = np.sum(UqI[:,imom]**2., axis=1, keepdims=True)/rhoI
+		# pI = gmi*(UqI[:,irhoE:irhoE+1] - 0.5*rVI2)
+		pI = physics.compute_variable("Pressure", UqI)
 
 		if np.any(pI < 0.):
 			raise errors.NotPhysicalError
 
 		# Interior speed of sound
 		# cI = np.sqrt(gam*pI/rhoI)
-		cI = physics.compute_variable("SoundSpeed", UpI)
+		cI = physics.compute_variable("SoundSpeed", UqI)
 		JI = velnI + 2.*cI/(gamma - 1.)
 		veltI = velI - velnI*n_hat
 
 		# Normal Mach number
 		Mn = velnI/cI
 		if np.any(Mn >= 1.):
-			return UpB
+			return UqB
 
 		# Boundary density from interior entropy
 		rhoB = rhoI*np.power(pB/pI, 1./gamma)
-		UpB[:, srho] = rhoB
+		UqB[:, srho] = rhoB
 
 		# Exterior speed of sound
 		cB = np.sqrt(gamma*pB/rhoB)
 		velB = (JI - 2.*cB/(gamma-1.))*n_hat + veltI
-		UpB[:, smom] = rhoB*velB
+		UqB[:, smom] = rhoB*velB
 		# dVn = 2.*igmi*(cI-cB)
-		# UpB[:,imom] = rhoB*dVn*n_hat + rhoB*UpI[:,imom]/rhoI
+		# UqB[:,imom] = rhoB*dVn*n_hat + rhoB*UqI[:,imom]/rhoI
 
 		# Exterior energy
-		# rVB2 = np.sum(UpB[:,imom]**2., axis=1, keepdims=True)/rhoB
+		# rVB2 = np.sum(UqB[:,imom]**2., axis=1, keepdims=True)/rhoB
 		rhovel2B = rhoB*np.sum(velB**2., axis=1, keepdims=True)
-		UpB[:, srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
+		UqB[:, srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
 
-		return UpB
+		return UqB
 
 
 '''
@@ -582,18 +582,18 @@ Numerical flux functions
 '''
 
 class Roe1D(ConvNumFluxBase):
-	def __init__(self, Up=None):
-		if Up is not None:
-			n = Up.shape[0]
-			ns = Up.shape[1]
+	def __init__(self, Uq=None):
+		if Uq is not None:
+			n = Uq.shape[0]
+			ns = Uq.shape[1]
 			dim = ns - 2
 		else:
 			n = 0; ns = 0; dim = 0
 
 		# self.velL = np.zeros([n,dim])
 		# self.velR = np.zeros([n,dim])
-		self.UL = np.zeros_like(Up)
-		self.UR = np.zeros_like(Up)
+		self.UL = np.zeros_like(Uq)
+		self.UR = np.zeros_like(Uq)
 		self.vel = np.zeros([n, dim])
 		# self.rhoL_sqrt = np.zeros([n,1])
 		# self.rhoR_sqrt = np.zeros([n,1])
@@ -607,8 +607,8 @@ class Roe1D(ConvNumFluxBase):
 		# self.dvel = np.zeros([n,dim])
 		# self.drho = np.zeros([n,1])
 		# self.dp = np.zeros([n,1])
-		self.alphas = np.zeros_like(Up)
-		self.evals = np.zeros_like(Up)
+		self.alphas = np.zeros_like(Uq)
+		self.evals = np.zeros_like(Uq)
 		self.R = np.zeros([n, ns, ns])
 		# self.FRoe = np.zeros_like(u)
 		# self.FL = np.zeros_like(u)
@@ -866,15 +866,15 @@ class Roe2D(Roe1D):
 
 
 class HLLC1D(ConvNumFluxBase):
-	def __init__(self, Up=None):
-		if Up is not None:
-			n = Up.shape[0]
-			ns = Up.shape[1]
+	def __init__(self, Uq=None):
+		if Uq is not None:
+			n = Uq.shape[0]
+			ns = Uq.shape[1]
 			dim = ns - 2
 		else:
 			n = 0; ns = 0; dim = 0
 
-	def compute_flux(self, physics, UpL, UpR, n):
+	def compute_flux(self, physics, UqL, UqR, n):
 
 		# Indices
 		srho = physics.get_state_slice("Density")
@@ -887,17 +887,17 @@ class HLLC1D(ConvNumFluxBase):
 		gam = physics.gamma
 
 		# unpack left hand state
-		rhoL = UpL[:, srho]
-		uL = UpL[:, smom]/rhoL
+		rhoL = UqL[:, srho]
+		uL = UqL[:, smom]/rhoL
 		unL = uL * n1
-		pL = physics.compute_variable("Pressure", UpL)
-		cL = physics.compute_variable("SoundSpeed", UpL)
+		pL = physics.compute_variable("Pressure", UqL)
+		cL = physics.compute_variable("SoundSpeed", UqL)
 		# unpack right hand state
-		rhoR = UpR[:, srho]
-		uR = UpR[:, smom]/rhoR
+		rhoR = UqR[:, srho]
+		uR = UqR[:, smom]/rhoR
 		unR = uR * n1
-		pR = physics.compute_variable("Pressure", UpR)
-		cR = physics.compute_variable("SoundSpeed", UpR)	
+		pR = physics.compute_variable("Pressure", UqR)
+		cR = physics.compute_variable("SoundSpeed", UqR)	
 
 		# calculate averages
 		rho_avg = 0.5 * (rhoL + rhoR)
@@ -928,9 +928,9 @@ class HLLC1D(ConvNumFluxBase):
 		# flux assembly 
 
 		# Left State
-		FL = physics.get_conv_flux_projected(UpL, n1)
+		FL = physics.get_conv_flux_projected(UqL, n1)
 		# Right State
-		FR = physics.get_conv_flux_projected(UpR, n1)
+		FR = physics.get_conv_flux_projected(UqR, n1)
 
 		Fhllc = np.zeros_like(FL)
 
@@ -947,9 +947,9 @@ class HLLC1D(ConvNumFluxBase):
 			c1l = rhoL*cl*sssul
 			c2l = rhoL*cl*sssul*ssstl
 
-			Fhllc[:, srho] = FL[:, srho] + SL*(UpL[:, srho]*(cl-1.))
-			Fhllc[:, smom] = FL[:, smom] + SL*(UpL[:, smom]*(cl-1.)+c1l*n1)
-			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UpL[:, srhoE]*(cl-1.)+c2l)
+			Fhllc[:, srho] = FL[:, srho] + SL*(UqL[:, srho]*(cl-1.))
+			Fhllc[:, smom] = FL[:, smom] + SL*(UqL[:, smom]*(cl-1.)+c1l*n1)
+			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UqL[:, srhoE]*(cl-1.)+c2l)
 
 		elif (sss <= 0.) and (SR >= 0.):
 			slur = SR - unR
@@ -960,8 +960,8 @@ class HLLC1D(ConvNumFluxBase):
 			c1r = rhoR*cr*sssur
 			c2r = rhoR*cr*sssur*ssstr
 
-			Fhllc[:, srho] = FR[:, srho] + SR*(UpR[:, srho]*(cr-1.))
-			Fhllc[:, smom] = FR[:, smom] + SR*(UpR[:, smom]*(cr-1.)+c1r*n1)
-			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UpR[:, srhoE]*(cr-1.)+c2r)
+			Fhllc[:, srho] = FR[:, srho] + SR*(UqR[:, srho]*(cr-1.))
+			Fhllc[:, smom] = FR[:, smom] + SR*(UqR[:, smom]*(cr-1.)+c1r*n1)
+			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UqR[:, srhoE]*(cr-1.)+c2r)
 							  
 		return Fhllc
