@@ -326,7 +326,7 @@ class ADER(StepperBase):
 		DataSet = solver.DataSet
 		mesh = solver.mesh
 		W = physics.U
-		Up = physics.Up
+		Up = physics.Upred
 
 		R = self.R
 
