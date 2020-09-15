@@ -530,11 +530,11 @@ class DG(base.SolverBase):
 
     Additional methods and attributes are commented below.
 	'''
-	def __init__(self, Params, physics, mesh):
-		super().__init__(Params, physics, mesh)
+	def __init__(self, params, physics, mesh):
+		super().__init__(params, physics, mesh)
 
-		self.Stepper = stepper_tools.set_stepper(Params, physics.U)
-		stepper_tools.set_time_stepping_approach(self.Stepper, Params)
+		self.Stepper = stepper_tools.set_stepper(params, physics.U)
+		stepper_tools.set_time_stepping_approach(self.Stepper, params)
 	
 		# check validity of parameters
 		self.check_compatibility()
@@ -548,7 +548,7 @@ class DG(base.SolverBase):
 				np.zeros([self.iface_operators.quad_wts.shape[0], 
 				physics.NUM_STATE_VARS]))
 
-		if Params["RestartFile"] is None:
+		if params["RestartFile"] is None:
 			self.init_state_from_fcn()
 		
 	def precompute_matrix_operators(self):
@@ -584,13 +584,13 @@ class DG(base.SolverBase):
 		Uq = helpers.evaluate_state(Up, basis_val, 
 				skip_interp=self.basis.skip_interp)
 
-		if self.Params["ConvFluxSwitch"] == True:
+		if self.params["ConvFluxSwitch"] == True:
 			# evaluate the inviscid flux integral
 			Fq = physics.ConvFluxInterior(Uq) # [nq, ns, dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_ops, elem, Fq)
 
-		if self.Params["SourceSwitch"] == True:
+		if self.params["SourceSwitch"] == True:
 			# evaluate the source term integral
 			Sq = elem_ops.Sq
 			# SourceState is an additive function so source needs to be 
@@ -636,7 +636,7 @@ class DG(base.SolverBase):
 
 		normals = normals_ifaces[iiface]
 		
-		if self.Params["ConvFluxSwitch"] == True:
+		if self.params["ConvFluxSwitch"] == True:
 
 			Fq = physics.ConvFluxNumerical(UqL, UqR, normals) # [nq,ns]
 
@@ -683,7 +683,7 @@ class DG(base.SolverBase):
 		# get boundary state
 		BC = physics.BCs[BFG.name]
 
-		if self.Params["ConvFluxSwitch"] == True:
+		if self.params["ConvFluxSwitch"] == True:
 
 			Fq = BC.get_boundary_flux(physics, x, self.time, normals, UqI)
 

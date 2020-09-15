@@ -15,7 +15,7 @@ import code
 import numpy as np
 
 from data import ArrayList, GenericData
-from general import SetSolverParams, BasisType, ShapeType
+from general import BasisType, ShapeType
 
 import meshing.gmsh as mesh_gmsh
 

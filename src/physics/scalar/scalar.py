@@ -75,21 +75,21 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 	Prescribed = 1
 
 	# def getWaveSpeed(self):
-	# 	return self.Params["ConstVelocity"]
+	# 	return self.params["ConstVelocity"]
 
 	# #Calculate velocity based on the advection operator
 	# def getAdvOperator(self, u):
-	# 	if self.Params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
+	# 	if self.params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
 	# 		c = u/2
 	# 		return c
-	# 	elif self.Params["AdvectionOperator"] == self.AdvectionOperatorType.ConstVel:
-	# 		c = self.Params["ConstVelocity"]
+	# 	elif self.params["AdvectionOperator"] == self.AdvectionOperatorType.ConstVel:
+	# 		c = self.params["ConstVelocity"]
 	# 		return c
 
 	def ConvFluxInterior(self, u):
 		# c = self.getAdvOperator(u)
 		c = self.c
-		#a = self.Params["Velocity"]
+		#a = self.params["Velocity"]
 		# if F is None:
 		# 	F = np.zeros(u.shape + (self.dim,))
 		# for d in range(self.dim):
@@ -142,7 +142,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 	self.ConvFluxFcn.AllocHelperArrays(uL)
 	# 	F = self.ConvFluxFcn.compute_flux(self, uL, uR, normals)
 		
-	# 	# ConvFlux = self.Params["ConvFluxNumerical"] 
+	# 	# ConvFlux = self.params["ConvFluxNumerical"] 
 	# 	# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
 	# 	# 	F = self.ConvFluxLaxFriedrichs(uL, uR, NData.nvec, F)
 		
@@ -264,7 +264,7 @@ class ConstAdvScalar1D(ConstAdvScalar):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.Params.update(
+		self.params.update(
 			ConstVelocity = 1.,
 		)
 		self.c = 0.
@@ -294,7 +294,7 @@ class ConstAdvScalar1D(ConstAdvScalar):
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
 
-		self.c = self.Params["ConstVelocity"]
+		self.c = self.params["ConstVelocity"]
 		self.cspeed = np.linalg.norm(self.c)
 
 
@@ -313,7 +313,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.Params.update(
+		self.params.update(
 			ConstXVelocity = 1.,
 			ConstYVelocity = 1.,
 		)
@@ -342,7 +342,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 	def SetParams(self,**kwargs):
 		super().SetParams(**kwargs)
 
-		self.c = np.array([self.Params["ConstXVelocity"], self.Params["ConstYVelocity"]])
+		self.c = np.array([self.params["ConstXVelocity"], self.params["ConstYVelocity"]])
 		self.cspeed = np.linalg.norm(self.c)
 
 
@@ -363,7 +363,7 @@ class Burgers1D(base.PhysicsBase):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.Params = {
+		self.params = {
 		}
 
 	def set_maps(self):
@@ -393,7 +393,7 @@ class Burgers1D(base.PhysicsBase):
 
 	def ConvFluxInterior(self, u):
 		# c = self.getAdvOperator(u)
-		#a = self.Params["Velocity"]
+		#a = self.params["Velocity"]
 		# if F is None:
 		# 	F = np.zeros(u.shape + (self.dim,))
 		# for d in range(self.dim):

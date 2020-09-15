@@ -309,7 +309,7 @@ def driver(deck):
 				"RestartFile"])
 		# Unpack
 		physics_old = solver_old.physics
-		params_old = solver_old.Params
+		params_old = solver_old.params
 		# Project if different basis and/or order
 		if order != physics_old.order or solver.basis.BASIS_TYPE != \
 				solver_old.basis.BASIS_TYPE:
@@ -323,7 +323,7 @@ def driver(deck):
 			solver.time = solver_old.time
 			solver.Stepper.dt = 0.
 			stepper_tools.set_time_stepping_approach(solver.Stepper, 
-					solver.Params)
+					solver.params)
 
 
 	'''
@@ -409,7 +409,7 @@ def main(argv):
 		# Run
 		solver, physics, mesh = driver(deck)
 		# Process post-processing script
-		auto_process = solver.Params["AutoPostProcess"]
+		auto_process = solver.params["AutoPostProcess"]
 		process_post_file(post_file, auto_process)
 	else:
 		# Post-process only

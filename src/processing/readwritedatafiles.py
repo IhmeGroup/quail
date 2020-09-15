@@ -5,18 +5,18 @@ def write_data_file(solver, iwrite):
 	# Unpack
 	# mesh = solver.mesh
 	# physics = solver.physics
-	# Params = solver.Params
+	# Params = solver.params
 	# Time = solver.time
 
-	prefix = solver.Params["Prefix"]
+	prefix = solver.params["Prefix"]
 	if iwrite >= 0:
 		fname = prefix + "_" + str(iwrite) + ".pkl"
 	else:
 		fname = prefix + "_final" + ".pkl"
 
 	with open(fname, 'wb') as fo:
-		# solver.Params["RestartFile"] = fo.name
-		# solver.Params["InitialTime"] = Time
+		# solver.params["RestartFile"] = fo.name
+		# solver.params["InitialTime"] = Time
 
 		pickle.dump(solver, fo, pickle.HIGHEST_PROTOCOL)
 		# mesh

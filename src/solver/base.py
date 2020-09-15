@@ -50,7 +50,7 @@ class SolverBase(ABC):
 
     Attributes:
     -----------
-    Params: dictionary
+    params: dictionary
         contains a list of parameters that can be accessed with kwargs
     physics: object
     	contains the set of equations to be solved
@@ -87,32 +87,32 @@ class SolverBase(ABC):
 		takes a state from a restartfile and projects it onto a higher
 		order of accuracy
 	'''
-	def __init__(self, Params, physics, mesh):
-		self.Params = Params
+	def __init__(self, params, physics, mesh):
+		self.params = params
 		self.physics = physics
 		self.mesh = mesh
 		self.DataSet = GenericData()
 
-		self.time = Params["InitialTime"]
+		self.time = params["InitialTime"]
 		self.num_time_steps = 0 # will be set later
 
 		# Set the basis functions for the solver
-		BASIS_TYPE  = Params["SolutionBasis"]
+		BASIS_TYPE  = params["SolutionBasis"]
 		self.basis = basis_tools.set_basis(physics.order, BASIS_TYPE)
 
-		NODE_TYPE = Params["NodeType"]
+		NODE_TYPE = params["NodeType"]
 		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(NODE_TYPE)
 
 		# Set quadrature
-		self.basis.set_elem_quadrature_type(Params["ElementQuadrature"])
-		self.basis.set_face_quadrature_type(Params["FaceQuadrature"])
-		mesh.gbasis.set_elem_quadrature_type(Params["ElementQuadrature"])
-		mesh.gbasis.set_face_quadrature_type(Params["FaceQuadrature"])
+		self.basis.set_elem_quadrature_type(params["ElementQuadrature"])
+		self.basis.set_face_quadrature_type(params["FaceQuadrature"])
+		mesh.gbasis.set_elem_quadrature_type(params["ElementQuadrature"])
+		mesh.gbasis.set_face_quadrature_type(params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quad_pts(Params["CollocatedPoints"])
+		self.basis.force_nodes_equal_quad_pts(params["CollocatedPoints"])
 
 		# Limiter
-		LIMITER_TYPE = Params["ApplyLimiter"]
+		LIMITER_TYPE = params["ApplyLimiter"]
 		self.limiter = limiter_tools.set_limiter(LIMITER_TYPE, 
 				physics.PHYSICS_TYPE)
 
@@ -126,22 +126,22 @@ class SolverBase(ABC):
 		for the specified input deck and the following simulation
 		'''
 		mesh = self.mesh 
-		Params = self.Params
+		params = self.params
 		basis = self.basis
 
 		# check for same shape between mesh and solution
 		if mesh.gbasis.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
-		if not Params["L2InitialCondition"] and basis.MODAL_OR_NODAL \
+		if not params["L2InitialCondition"] and basis.MODAL_OR_NODAL \
 			!= ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
 		# Gauss Lobatto nodes compatibility checks
-		node_type = Params["NodeType"]
-		forcing_switch = Params["CollocatedPoints"]
-		elem_quad = Params["ElementQuadrature"]
-		face_quad = Params["FaceQuadrature"]
+		node_type = params["NodeType"]
+		forcing_switch = params["CollocatedPoints"]
+		elem_quad = params["ElementQuadrature"]
+		face_quad = params["FaceQuadrature"]
 
 		# compatibility check for GLL nodes with triangles
 		if NodeType[node_type] == NodeType.GaussLobatto and \
@@ -227,14 +227,14 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 		basis = self.basis
-		Params = self.Params
+		params = self.params
 		iMM_elems = self.elem_operators.iMM_elems
 
 		U = physics.U
 		ns = physics.NUM_STATE_VARS
 		order = physics.order
 
-		if not Params["L2InitialCondition"]:
+		if not params["L2InitialCondition"]:
 			eval_pts = basis.get_nodes(order)
 		else:
 			order = 2*np.amax([physics.order, 1])
@@ -250,7 +250,7 @@ class SolverBase(ABC):
 			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
 			f = physics.CallFunction(physics.IC, x=xphys, t=self.time)
 
-			if not Params["L2InitialCondition"]:
+			if not params["L2InitialCondition"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, f, U[elem,:,:])
@@ -269,7 +269,7 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 		basis = self.basis
-		Params = self.Params
+		params = self.params
 		iMM_elems = self.elem_operators.iMM_elems
 
 		U = physics.U
@@ -278,7 +278,7 @@ class SolverBase(ABC):
 		if basis_old.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
-		if not Params["L2InitialCondition"]:
+		if not params["L2InitialCondition"]:
 			eval_pts = basis.get_nodes(physics.order)
 		else:
 			order = 2*np.amax([physics.order, order_old])
@@ -296,7 +296,7 @@ class SolverBase(ABC):
 			Up_old = helpers.evaluate_state(U_old[elem,:,:], 
 					basis_old.basis_val)
 
-			if not Params["L2InitialCondition"]:
+			if not params["L2InitialCondition"]:
 				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, 
@@ -415,16 +415,16 @@ class SolverBase(ABC):
 		'''
 		physics = self.physics
 		mesh = self.mesh
-		Order = self.Params["SolutionOrder"]
+		Order = self.params["SolutionOrder"]
 		Stepper = self.Stepper
 		Time = self.time
 
 		# Parameters
-		WriteInterval = self.Params["WriteInterval"]
+		WriteInterval = self.params["WriteInterval"]
 		if WriteInterval == -1:
 			WriteInterval = np.NAN
-		WriteFinalSolution = self.Params["WriteFinalSolution"]
-		WriteInitialSolution = self.Params["WriteInitialSolution"]
+		WriteFinalSolution = self.params["WriteFinalSolution"]
+		WriteInitialSolution = self.params["WriteInitialSolution"]
 
 		if WriteInitialSolution:
 			ReadWriteDataFiles.write_data_file(self, 0)

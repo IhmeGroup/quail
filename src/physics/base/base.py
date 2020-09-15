@@ -6,7 +6,6 @@ from scipy.optimize import root
 import sys
 
 import errors
-# from general import *
 
 import numerics.basis.tools as basis_tools
 from physics.base.data import ICData, BCData, ExactData, SourceData
@@ -76,7 +75,7 @@ class PhysicsBase(object):
 		'''
 		# dim = mesh.dim
 		# self.dim = mesh.dim
-		self.Params = {}
+		self.params = {}
 		self.IC = None
 		self.ExactSoln = None
 		self.ConvFluxFcn = None
@@ -166,7 +165,7 @@ class PhysicsBase(object):
 		pass
 
 	def SetParams(self, **kwargs):
-		Params = self.Params
+		Params = self.params
 		# Overwrite
 		for key in kwargs:
 			Params[key] = kwargs[key]

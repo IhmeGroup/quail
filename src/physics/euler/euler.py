@@ -34,7 +34,7 @@ class Euler(base.PhysicsBase):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.Params.update(
+		self.params.update(
 			GasConstant = 287., # specific gas constant
 			SpecificHeatRatio = 1.4,
 		)

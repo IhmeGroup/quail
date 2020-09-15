@@ -363,8 +363,8 @@ class Strang(StepperBase, ode.ODESolvers):
 
 		Inputs:
 		-------
-		    explicit: name of chosen explicit scheme from Params
-		    implicit: name of chosen implicit (ODE) solver from Params
+		    explicit: name of chosen explicit scheme from params
+		    implicit: name of chosen implicit (ODE) solver from params
 		    U: solution state vector used to initialize solver 
 		    	[nelem, nb, ns]
 
@@ -397,18 +397,18 @@ class Strang(StepperBase, ode.ODESolvers):
 		implicit.dt = self.dt
 
 		# First: take the half-step for the inviscid flux only
-		solver.Params["SourceSwitch"] = False
+		solver.params["SourceSwitch"] = False
 		R1 = explicit.TakeTimeStep(solver)
 
 		# Second: take the implicit full step for the source term.
-		solver.Params["SourceSwitch"] = True
-		solver.Params["ConvFluxSwitch"] = False
+		solver.params["SourceSwitch"] = True
+		solver.params["ConvFluxSwitch"] = False
 
 		R2 = implicit.TakeTimeStep(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
-		solver.Params["SourceSwitch"] = False
-		solver.Params["ConvFluxSwitch"] = True
+		solver.params["SourceSwitch"] = False
+		solver.params["ConvFluxSwitch"] = True
 		R3 = explicit.TakeTimeStep(solver)
 
 		return R3 # [nelem, nb, ns]
@@ -438,7 +438,7 @@ class Simpler(Strang):
 		implicit = self.implicit
 		implicit.dt = self.dt
 		
-		solver.Params["SourceSwitch"] = False
+		solver.params["SourceSwitch"] = False
 		R = self.R 
 
 		# First: calculate the balance constant
@@ -449,13 +449,13 @@ class Simpler(Strang):
 		self.balance_const = -1.*balance_const
 
 		# Second: take the implicit full step for the source term.
-		solver.Params["SourceSwitch"] = True
-		solver.Params["ConvFluxSwitch"] = False
+		solver.params["SourceSwitch"] = True
+		solver.params["ConvFluxSwitch"] = False
 		R2 = implicit.TakeTimeStep(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
-		solver.Params["SourceSwitch"] = False
-		solver.Params["ConvFluxSwitch"] = True
+		solver.params["SourceSwitch"] = False
+		solver.params["ConvFluxSwitch"] = True
 		self.balance_const = balance_const
 		R3 = explicit.TakeTimeStep(solver)
 

@@ -21,20 +21,20 @@ import numerics.basis.tools as basis_tools
 import numerics.timestepping.stepper as stepper_defs
 import solver.tools as solver_tools
 
-def set_stepper(Params, U):
+def set_stepper(params, U):
 	'''
 	Given the TimeStepper parameter, set the stepper object
 
 	Inputs:
 	-------
-		Params: list of parameters for solver
+		params: list of parameters for solver
 		U: solution vector for instantiaing stepper class [nelem, nb, ns]
 
 	Outputs:
 	-------- 
 	    stepper: instantiated stepper object
 	'''
-	TimeStepper = Params["TimeStepper"]
+	TimeStepper = params["TimeStepper"]
 	if StepperType[TimeStepper] == StepperType.FE:
 		stepper = stepper_defs.FE(U)
 	elif StepperType[TimeStepper] == StepperType.RK4:
@@ -46,25 +46,25 @@ def set_stepper(Params, U):
 	# if setting a splitting scheme select solvers for the splits
 	elif StepperType[TimeStepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
-		stepper.set_split_schemes(Params["OperatorSplittingExplicit"], 
-			Params["OperatorSplittingImplicit"], U)
+		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
+			params["OperatorSplittingImplicit"], U)
 	elif StepperType[TimeStepper] == StepperType.Simpler:
 		stepper = stepper_defs.Simpler(U)
-		stepper.set_split_schemes(Params["OperatorSplittingExplicit"], 
-			Params["OperatorSplittingImplicit"], U)
+		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
+			params["OperatorSplittingImplicit"], U)
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
 
 
-def set_time_stepping_approach(stepper, Params):
+def set_time_stepping_approach(stepper, params):
 	'''
 	Sets stepper.get_time_step method given input parameters
 
 	Inputs:
 	-------
 		stepper: stepper object (e.g., FE, RK4, etc...)
-		Params: list of parameters for solver
+		params: list of parameters for solver
 
 	Outputs:
 	-------- 
@@ -73,10 +73,10 @@ def set_time_stepping_approach(stepper, Params):
 	'''
 
 	# unpack time stepping settings
-	cfl = Params["CFL"]
-	timestepsize = Params["TimeStepSize"]
-	num_time_steps = Params["NumTimeSteps"]
-	FinalTime = Params["FinalTime"]
+	cfl = params["CFL"]
+	timestepsize = params["TimeStepSize"]
+	num_time_steps = params["NumTimeSteps"]
+	FinalTime = params["FinalTime"]
 
 	'''
 	Hierarchy for cases goes:
@@ -109,7 +109,7 @@ def get_dt_from_num_time_steps(stepper, solver):
 		dt: time step for the solver
 	'''
 	num_time_steps = stepper.num_time_steps
-	tfinal = solver.Params["FinalTime"]
+	tfinal = solver.params["FinalTime"]
 	time = solver.time
 
 	# only needs to be set once per simulation
@@ -122,7 +122,7 @@ def get_dt_from_num_time_steps(stepper, solver):
 def get_dt_from_timestepsize(stepper, solver):
 	'''
 	Sets dt directly based on input deck specification of 
-	Params["TimeStepSize"].
+	params["TimeStepSize"].
 
 	Inputs:
 	-------
@@ -134,8 +134,8 @@ def get_dt_from_timestepsize(stepper, solver):
 		dt: time step for the solver
 	'''
 	time = solver.time
-	timestepsize = solver.Params["TimeStepSize"]
-	tfinal = solver.Params["FinalTime"]
+	timestepsize = solver.params["TimeStepSize"]
+	tfinal = solver.params["FinalTime"]
 
 	# logic to ensure final time step yields FinalTime
 	if time + timestepsize < tfinal:
@@ -165,8 +165,8 @@ def get_dt_from_cfl(stepper, solver):
 	Up = physics.U
 
 	time = solver.time
-	tfinal = solver.Params["FinalTime"]
-	cfl = solver.Params["CFL"]
+	tfinal = solver.params["FinalTime"]
+	cfl = solver.params["CFL"]
 	
 	elem_ops = solver.elem_operators
 	vol_elems = elem_ops.vol_elems
