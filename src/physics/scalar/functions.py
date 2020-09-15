@@ -162,13 +162,13 @@ class SimpleSource(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 
-	def get_source(self, physics, x, t):
+	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
-		U = self.U
-		S = nu*U
+		# U = self.U
+		S = nu*Uq
 
 		return S
-	def get_jacobian(self, physics, x, t):
+	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
 
 class StiffSource(SourceBase):
@@ -176,20 +176,20 @@ class StiffSource(SourceBase):
 		self.nu = nu
 		self.beta = beta
 
-	def get_source(self, physics, x, t):
+	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
 		beta = self.beta
-		U = self.U
+		# Uq = self.Uq
 
-		S = -nu*U*(U-1.)*(U-beta)
+		S = -nu*Uq*(Uq-1.)*(Uq-beta)
 		return S
 
-	def get_jacobian(self, physics, x, t):
-		U = self.U
-		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+	def get_jacobian(self, physics, Uq, x, t):
+		# Uq = self.Uq
+		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 		nu = self.nu
 		beta = self.beta
-		jac[:,0,0] = -nu*(3.*U[:,0]**2 - 2.*U[:,0] - 2.*beta*U[:,0] + beta)
+		jac[:,0,0] = -nu*(3.*Uq[:,0]**2 - 2.*Uq[:,0] - 2.*beta*Uq[:,0] + beta)
 		return jac
 
 

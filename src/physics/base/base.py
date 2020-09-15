@@ -270,33 +270,33 @@ class PhysicsBase(object):
 		return F
 
 	# @abstractmethod
-	# def BoundaryState(self, BC, nq, xglob, Time, normals, uI):
+	# def BoundaryState(self, BC, nq, xphys, Time, normals, uI):
 	# 	pass
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
-	def eval_source_terms(self, nq, xglob, Time, Uq, s=None):
+	def eval_source_terms(self, nq, xphys, time, Uq, s=None):
 		for source in self.source_terms:
 
 			#loop through available source terms
-			source.x = xglob
-			source.nq = nq
-			source.time = Time
-			source.U = Uq
+			# source.x = xphys
+			# source.nq = nq
+			# source.time = Time
+			# source.U = Uq
 			# s += self.CallSourceFunction(source,source.x,source.time)
-			s += source.get_source(self, source.x, source.time)
+			s += source.get_source(self, Uq, xphys, time)
 
 		return s
 
-	def eval_source_term_jacobians(self, nq, xglob, Time, Uq, jac=None):
+	def eval_source_term_jacobians(self, nq, xphys, time, Uq, jac=None):
 		for source in self.source_terms:
 			#loop through available source terms
-			source.x = xglob
-			source.nq = nq
-			source.time = Time
-			source.U = Uq
+			# source.x = xphys
+			# source.nq = nq
+			# source.time = Time
+			# source.U = Uq
 			# jac += self.CallSourceJacobianFunction(source,source.x,
 			# 		source.time)
-			jac += source.get_jacobian(self, source.x, source.time)
+			jac += source.get_jacobian(self, Uq, xphys, time)
 
 		return jac
 		

@@ -148,11 +148,11 @@ class ConstAdvScalar(base.PhysicsBase):
 # <<<<<<< Updated upstream
 # 		return F
 
-# 	def BoundaryState(self, BC, nq, xglob, Time, normals, uI, uB=None):
+# 	def BoundaryState(self, BC, nq, xphys, Time, normals, uI, uB=None):
 # 		if uB is not None:
 # 			BC.U = uB
 
-# 		BC.x = xglob
+# 		BC.x = xphys
 # 		BC.nq = nq
 # 		BC.time = Time
 # 		bctype = BC.BCType
@@ -195,11 +195,11 @@ class ConstAdvScalar(base.PhysicsBase):
 # =======
 	# 	return F
 
-	# def BoundaryState(self, BC, nq, xglob, Time, normals, uI, uB=None):
+	# def BoundaryState(self, BC, nq, xphys, Time, normals, uI, uB=None):
 	# 	if uB is not None:
 	# 		BC.U = uB
 
-	# 	BC.x = xglob
+	# 	BC.x = xphys
 	# 	BC.nq = nq
 	# 	BC.time = Time
 	# 	bctype = BC.BCType

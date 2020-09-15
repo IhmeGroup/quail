@@ -503,7 +503,7 @@ class StiffFriction(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
 
-	def get_source(self, physics, x, t):
+	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
 		# irho = physics.get_state_index("Density")
 		# irhou = physics.get_state_index("XMomentum")
@@ -511,14 +511,14 @@ class StiffFriction(SourceBase):
 
 		irho, irhou, irhoE = physics.GetStateIndices()
 		
-		U = self.U
+		# U = self.U
 		
-		S = np.zeros_like(U)
+		S = np.zeros_like(Uq)
 
 		eps = 1.0e-12
 		S[:, irho] = 0.0
-		S[:, irhou] = nu*(U[:, irhou])
-		S[:, irhoE] = nu*((U[:, irhou])**2/(eps+U[:, irho]))
+		S[:, irhou] = nu*(Uq[:, irhou])
+		S[:, irhoE] = nu*((Uq[:, irhou])**2/(eps+Uq[:, irho]))
 		
 		return S
 
@@ -526,11 +526,11 @@ class StiffFriction(SourceBase):
 
 	# 	nu = self.nu
 
-	# 	U = FcnData.U
+	# 	Uq = FcnData.Uq
 	# 	irho, irhou, irhoE = physics.GetStateIndices()
 
-	# 	jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
-	# 	vel = U[:, 1]/(1.0e-12 + U[:, 0])
+	# 	jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
+	# 	vel = Uq[:, 1]/(1.0e-12 + Uq[:, 0])
 
 	# 	jac[:, irhou, irhou] = nu
 	# 	jac[:, irhoE, irho] = -nu*vel**2
@@ -540,15 +540,15 @@ class StiffFriction(SourceBase):
 	# 	# jac[:, 2, 1] = 2.0*nu*vel
 
 	# 	return jac
-	def get_jacobian(self, physics, x, t):
+	def get_jacobian(self, physics, Uq, x, t):
 
 		nu = self.nu
-		U = self.U
+		# Uq = self.Uq
 
 		irho, irhou, irhoE = physics.GetStateIndices()
 
-		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
-		vel = U[:, 1]/(1.0e-12 + U[:, 0])
+		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
+		vel = Uq[:, 1]/(1.0e-12 + Uq[:, 0])
 
 		jac[:, irhou, irhou] = nu
 		jac[:, irhoE, irho] = -nu*vel**2
@@ -562,14 +562,14 @@ class StiffFriction(SourceBase):
 
 class TaylorGreenSource(SourceBase):
 
-	def get_source(self, physics, x, t):
+	def get_source(self, physics, Uq, x, t):
 		gamma = physics.gamma
 
 		irho, irhou, irhov, irhoE = physics.GetStateIndices()
 		
-		U = self.U
+		# Uq = self.Uq
 		
-		S = np.zeros_like(U)
+		S = np.zeros_like(Uq)
 
 		S[:, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, 0])*np.cos(np.pi*x[:, 1]) - 
 				np.cos(np.pi*x[:, 0])*np.cos(3.*np.pi*x[:, 1]))

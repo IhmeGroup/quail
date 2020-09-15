@@ -213,7 +213,7 @@ class Arrhenius(SourceBase):
 		self.b = b
 		self.Tign = Tign
 
-	def get_source(self, physics, x, t):
+	def get_source(self, physics, Uq, x, t):
 		
 		# Unpack source term constants
 		A = self.A
@@ -223,8 +223,8 @@ class Arrhenius(SourceBase):
 
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
-		U = self.U
-		T = physics.compute_variable("Temperature", U)
+		# U = self.U
+		T = physics.compute_variable("Temperature", Uq)
 		# K = np.zeros_like(T)
 		# for i in range(len(T)):
 		# 	if T[i]<0.:
@@ -233,13 +233,13 @@ class Arrhenius(SourceBase):
 		# 		K[i] = A * T[i]**b * np.exp(-Tign / T[i])
 		K = A * T**b * np.exp(-Tign / T)
 
-		S = np.zeros_like(U)
+		S = np.zeros_like(Uq)
 
-		S[:,irhoY] = -K[:].reshape(-1) * U[:,irhoY]
+		S[:,irhoY] = -K[:].reshape(-1) * Uq[:,irhoY]
 		
 		return S
 
-	def get_jacobian(self, physics, x, t):
+	def get_jacobian(self, physics, Uq, x, t):
 		
 		# Note: This assumes b = 0 for now.
 
@@ -249,28 +249,28 @@ class Arrhenius(SourceBase):
 		
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
-		U = self.U
-		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+		# Uq = self.Uq
+		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 
-		T = physics.compute_variable("Temperature", U)
+		T = physics.compute_variable("Temperature", Uq)
 		K = A * np.exp(-Tign / T)
 
-		dTdU = get_temperature_jacobian(physics, U)
+		dTdU = get_temperature_jacobian(physics, Uq)
 
-		dKdrho =  (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irho].reshape([U.shape[0],1]))  / T**2 
-		dKdrhou = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhou].reshape([U.shape[0],1])) / T**2
-		dKdrhoE = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoE].reshape([U.shape[0],1])) / T**2
-		dKdrhoY = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoY].reshape([U.shape[0],1])) / T**2
+		dKdrho =  (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irho].reshape([Uq.shape[0],1]))  / T**2 
+		dKdrhou = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhou].reshape([Uq.shape[0],1])) / T**2
+		dKdrhoE = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoE].reshape([Uq.shape[0],1])) / T**2
+		dKdrhoY = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoY].reshape([Uq.shape[0],1])) / T**2
 
-		jac[:, irhoY, irho] =  (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1])).reshape(-1)
-		jac[:, irhoY, irhou] = (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1])).reshape(-1)
-		jac[:, irhoY, irhoE] = (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1])).reshape(-1)
-		jac[:, irhoY, irhoY] = (-1.*dKdrho * U[:, irhoY].reshape([U.shape[0],1]) - K ).reshape(-1)
+		jac[:, irhoY, irho] =  (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1])).reshape(-1)
+		jac[:, irhoY, irhou] = (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1])).reshape(-1)
+		jac[:, irhoY, irhoE] = (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1])).reshape(-1)
+		jac[:, irhoY, irhoY] = (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1]) - K ).reshape(-1)
 
 		# return jac.transpose(0,2,1)
 		return jac
 		
-def get_temperature_jacobian(physics, U):
+def get_temperature_jacobian(physics, Uq):
 		
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
@@ -278,12 +278,12 @@ def get_temperature_jacobian(physics, U):
 		qo = physics.qo
 		R = physics.R
 		
-		dTdU = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+		dTdU = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 
-		rho = U[:, irho]
-		rhou = U[:, irhou]
-		rhoE = U[:, irhoE]
-		rhoY = U[:, irhoY]
+		rho = Uq[:, irho]
+		rhou = Uq[:, irhou]
+		rhoE = Uq[:, irhoE]
+		rhoY = Uq[:, irhoY]
 
 		E = rhoE/rho
 		Y = rhoY/rho
@@ -302,7 +302,7 @@ class Heaviside(SourceBase):
 		self.Da = Da
 		self.Tign = Tign
 
-	def get_source(self, physics, x, t):
+	def get_source(self, physics, Uq, x, t):
 		
 		# Unpack source term constants
 		Da = self.Da
@@ -310,9 +310,9 @@ class Heaviside(SourceBase):
 
 		irho, irhou, irhoE, irhoz = physics.GetStateIndices()
 
-		U = self.U
-		T = physics.compute_variable("Temperature", U)
-		K = np.zeros([U.shape[0]])
+		# Uq = self.Uq
+		T = physics.compute_variable("Temperature", Uq)
+		K = np.zeros([Uq.shape[0]])
 
 		for i in range(len(T)):
 			if T[i] >= Tign:
@@ -320,23 +320,23 @@ class Heaviside(SourceBase):
 			else:
 				K[i] = 0.
 
-		S = np.zeros_like(U)
-		S[:,irhoz] = -K[:] * U[:,irhoz]
+		S = np.zeros_like(Uq)
+		S[:,irhoz] = -K[:] * Uq[:,irhoz]
 		
 		return S
 
-	def get_jacobian(self, physics, x, t):
+	def get_jacobian(self, physics, Uq, x, t):
 
 		# Unpack source term constants
 		Da = self.Da
 		Tign = self.Tign
 
-		U = self.U
+		# Uq = self.Uq
 		
 		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
 
-		T = physics.compute_variable("Temperature", U)
-		K = np.zeros([U.shape[0]])
+		T = physics.compute_variable("Temperature", Uq)
+		K = np.zeros([Uq.shape[0]])
 
 		for i in range(len(T)):
 			if T[i] >= Tign:
@@ -344,7 +344,7 @@ class Heaviside(SourceBase):
 			else:
 				K[i] = 0.
 
-		jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
+		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 		jac[:, irhoY, irhoY] = -K
 
 		return jac
