@@ -424,7 +424,7 @@ class ADERDG(base.SolverBase):
 		self.basis_st.force_nodes_equal_quad_pts(params["CollocatedPoints"])
 
 		# Allocate array for predictor step in ADER-Scheme
-		physics.Upred = np.zeros([self.mesh.num_elems, 
+		physics.U_pred = np.zeros([self.mesh.num_elems, 
 				self.basis_st.get_num_basis_coeff(physics.order), 
 				physics.NUM_STATE_VARS])
 
