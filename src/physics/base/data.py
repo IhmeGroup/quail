@@ -56,7 +56,7 @@ class BCWeakRiemann(ABC):
     def get_boundary_flux(self, physics, x, t, normals, UpI):
 
         UpB = self.get_boundary_state(physics, x, t, normals, UpI)
-        F = physics.ConvFluxNumerical(UpI, UpB, normals)
+        F = physics.get_conv_flux_numerical(UpI, UpB, normals)
 
         return F
 

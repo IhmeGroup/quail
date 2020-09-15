@@ -554,7 +554,7 @@ class ADERDG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# evaluate the inviscid flux integral.
-			Fq = physics.ConvFluxInterior(Uq) # [nq,sr,dim]
+			Fq = physics.get_conv_flux_interior(Uq) # [nq,sr,dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, 
 					elem_ops, elem_ops_st, elem, Fq)
 		
@@ -629,7 +629,7 @@ class ADERDG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 
-			Fq = physics.ConvFluxNumerical(UqL, UqR, normals) # [nq_st,ns]
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals) # [nq_st,ns]
 			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valL, quad_wts_st, Fq)
 			RR += solver_tools.calculate_inviscid_flux_boundary_integral(
@@ -747,7 +747,7 @@ class ADERDG(base.SolverBase):
 
 		if params["InterpolateFluxADER"]:
 
-			Fq = physics.ConvFluxInterior(Up)
+			Fq = physics.get_conv_flux_interior(Up)
 			dg_tools.interpolate_to_nodes(Fq, F)
 		else:
 			ader_ops = self.ader_operators
@@ -762,7 +762,7 @@ class ADERDG(base.SolverBase):
 
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
-			Fq = physics.ConvFluxInterior(Uq)
+			Fq = physics.get_conv_flux_interior(Uq)
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, 
 					quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
 

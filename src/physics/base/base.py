@@ -262,11 +262,11 @@ class PhysicsBase(object):
 		return 2*order+1
 
 	@abstractmethod
-	def ConvFluxInterior(self, u):
+	def get_conv_flux_interior(self, u):
 		pass
 
 	@abstractmethod
-	def ConvFluxNumerical(self, UpL, UpR, normals):
+	def get_conv_flux_numerical(self, UpL, UpR, normals):
 		# self.conv_flux_fcn.AllocHelperArrays(uL)
 		F = self.conv_flux_fcn.compute_flux(self, UpL, UpR, normals)
 
@@ -302,7 +302,7 @@ class PhysicsBase(object):
 		
 	def ConvFluxProjected(self, Up, normals):
 
-		F = self.ConvFluxInterior(Up)
+		F = self.get_conv_flux_interior(Up)
 		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
 
 	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
@@ -315,7 +315,7 @@ class PhysicsBase(object):
 	# 			Fa = data.Fa
 	# 		except AttributeError:
 	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.dim])
-	# 		# Fa = self.ConvFluxInterior(uB, Fa)
+	# 		# Fa = self.get_conv_flux_interior(uB, Fa)
 	# 		# # Take dot product with n
 	# 		try: 
 	# 			F = data.F

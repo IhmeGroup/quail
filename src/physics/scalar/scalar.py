@@ -86,7 +86,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 		c = self.params["ConstVelocity"]
 	# 		return c
 
-	def ConvFluxInterior(self, u):
+	def get_conv_flux_interior(self, u):
 		# c = self.getAdvOperator(u)
 		c = self.c
 		#a = self.params["Velocity"]
@@ -391,7 +391,7 @@ class Burgers1D(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def ConvFluxInterior(self, u):
+	def get_conv_flux_interior(self, u):
 		# c = self.getAdvOperator(u)
 		#a = self.params["Velocity"]
 		# if F is None:

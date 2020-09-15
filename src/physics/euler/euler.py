@@ -63,7 +63,7 @@ class Euler(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 	    Velocity = "u"
 
-	def ConvFluxInterior(self, Up):
+	def get_conv_flux_interior(self, Up):
 		dim = self.dim
 		# irho = 0; irhoE = dim + 1
 		irho = self.get_state_index("Density")
