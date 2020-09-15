@@ -72,7 +72,7 @@ class PhysicsBase(object):
 		'''
 		# dim = mesh.dim
 		# self.dim = mesh.dim
-		self.params = {}
+		# self.params = {}
 		self.IC = None
 		self.exact_soln = None
 		self.conv_flux_fcn = None

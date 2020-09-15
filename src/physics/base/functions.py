@@ -63,6 +63,7 @@ class Extrapolate(BCWeakPrescribed):
 	def get_boundary_state(self, physics, UqI, normals, x, t):
 		return UqI.copy()
 
+
 '''
 Numerical flux functions
 '''
@@ -112,12 +113,12 @@ class LaxFriedrichs(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left State
-		FL = physics.get_conv_flux_projected(UqL, n_hat)
+		FqL = physics.get_conv_flux_projected(UqL, n_hat)
 
 		# Right State
-		FR = physics.get_conv_flux_projected(UqR, n_hat)
+		FqR = physics.get_conv_flux_projected(UqR, n_hat)
 
-		dU = UqR - UqL
+		dUq = UqR - UqL
 
 		# max characteristic speed
 		# code.interact(local=locals())
@@ -128,7 +129,7 @@ class LaxFriedrichs(ConvNumFluxBase):
 		a[idx] = aR[idx]
 
 		# flux assembly 
-		return n_mag*(0.5*(FL+FR) - 0.5*a*dU)
+		return n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)
 
 
 # def uniform(physics, fcn_data):

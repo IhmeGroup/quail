@@ -4,7 +4,6 @@ import sys
 
 import errors
 import general
-# from general import *
 
 import physics.base.base as base
 import physics.base.functions as base_fcns
@@ -263,9 +262,9 @@ class ConstAdvScalar1D(ConstAdvScalar):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.params.update(
-			ConstVelocity = 1.,
-		)
+		# self.params.update(
+		# 	ConstVelocity = 1.,
+		# )
 		self.c = 0.
 		self.cspeed = 0.
 
@@ -312,10 +311,10 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.params.update(
-			ConstXVelocity = 1.,
-			ConstYVelocity = 1.,
-		)
+		# self.params.update(
+		# 	ConstXVelocity = 1.,
+		# 	ConstYVelocity = 1.,
+		# )
 		self.c = np.zeros(2)
 		self.cspeed = 0.
 
@@ -362,8 +361,8 @@ class Burgers1D(base.PhysicsBase):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.params = {
-		}
+		# self.params = {
+		# }
 
 	def set_maps(self):
 		super().set_maps()

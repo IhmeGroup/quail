@@ -40,11 +40,11 @@ class Chemistry(base.PhysicsBase):
 		'''
 		super().__init__(order, basis, mesh)
 		# Default parameters
-		self.params.update(
-			GasConstant = 287., # specific gas constant
-			SpecificHeatRatio = 1.4,
-			HeatRelease = 25. 
-		)
+		# self.params.update(
+		# 	GasConstant = 287., # specific gas constant
+		# 	SpecificHeatRatio = 1.4,
+		# 	HeatRelease = 25. 
+		# )
 
 	# def set_maps(self):
 	# 	super().set_maps()

@@ -3,8 +3,8 @@ from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root
 
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
-
+from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
+		SourceBase, ConvNumFluxBase
 
 
 class FcnType(Enum):
@@ -50,7 +50,7 @@ class DampingSine(FcnBase):
 
 	def get_state(self, physics, x, t):
 		c = physics.c
-		Uq = np.sin(self.omega*(x-c*t))*np.exp(self.nu*t)
+		Uq = np.sin(self.omega*(x-c*t)) * np.exp(self.nu*t)
 
 		return Uq
 
@@ -82,8 +82,9 @@ class Gaussian(FcnBase):
 		self.x0 = x0 # center
 
 	def get_state(self, physics, x, t):
-		r = np.linalg.norm(x-self.x0-physics.c*t, axis=1, keepdims=True)
-		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.dim) * np.exp(-r**2./(2.*self.sig**2.))
+		r = np.linalg.norm(x - self.x0 - physics.c*t, axis=1, keepdims=True)
+		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.dim) * \
+				np.exp(-r**2./(2.*self.sig**2.))
 
 		return Uq
 
@@ -93,7 +94,7 @@ class Paraboloid(FcnBase):
 		pass
 
 	def get_state(self, physics, x, t):
-		r2 = x[:,0:1]**2. + x[:,1:2]**2.
+		r2 = x[:, 0:1]**2. + x[:, 1:2]**2.
 		Uq = r2
 
 		return Uq
@@ -150,7 +151,7 @@ class LinearBurgers(FcnBase):
 	def get_state(self, physics, x, t):
 		a = -1.
 		b = 1.
-		Uq = (a*x+b)/(a*t+1.)
+		Uq = (a*x+b) / (a*t+1.)
 
 		return Uq
 
@@ -158,6 +159,7 @@ class LinearBurgers(FcnBase):
 '''
 Source term functions
 '''
+
 class SimpleSource(SourceBase):
 	def __init__(self, nu=-1):
 		self.nu = nu
@@ -171,6 +173,7 @@ class SimpleSource(SourceBase):
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
 
+
 class StiffSource(SourceBase):
 	def __init__(self, nu=-1., beta =0.5):
 		self.nu = nu
@@ -181,7 +184,8 @@ class StiffSource(SourceBase):
 		beta = self.beta
 		# Uq = self.Uq
 
-		S = -nu*Uq*(Uq-1.)*(Uq-beta)
+		S = -nu * Uq * (Uq-1.) * (Uq-beta)
+
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
@@ -189,7 +193,9 @@ class StiffSource(SourceBase):
 		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 		nu = self.nu
 		beta = self.beta
-		jac[:,0,0] = -nu*(3.*Uq[:,0]**2 - 2.*Uq[:,0] - 2.*beta*Uq[:,0] + beta)
+		jac[:, 0, 0] = -nu*(3.*Uq[:, 0]**2 - 2.*Uq[:, 0] \
+				- 2.*beta*Uq[:, 0] + beta)
+
 		return jac
 
 
