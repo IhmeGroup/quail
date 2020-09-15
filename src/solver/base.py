@@ -248,7 +248,8 @@ class SolverBase(ABC):
 
 		for elem in range(mesh.num_elems):
 			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
-			f = physics.call_function(physics.IC, x=xphys, t=self.time)
+			f = physics.IC.get_state(physics, x=xphys, t=self.time)
+			# f = physics.call_function(physics.IC, x=xphys, t=self.time)
 
 			if not params["L2InitialCondition"]:
 				solver_tools.interpolate_to_nodes(f, U[elem,:,:])

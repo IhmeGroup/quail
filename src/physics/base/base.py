@@ -285,7 +285,8 @@ class PhysicsBase(object):
 			Source.nq = nq
 			Source.time = Time
 			Source.U = Up
-			s += self.CallSourceFunction(Source,Source.x,Source.time)
+			# s += self.CallSourceFunction(Source,Source.x,Source.time)
+			s += Source.get_source(self, Source, Source.x, Source.time)
 
 		return s
 
@@ -296,7 +297,9 @@ class PhysicsBase(object):
 			Source.nq = nq
 			Source.time = Time
 			Source.U = Up
-			jac += self.CallSourceJacobianFunction(Source,Source.x,Source.time)
+			# jac += self.CallSourceJacobianFunction(Source,Source.x,
+			# 		Source.time)
+			jac += Source.get_jacobian(self, Source, Source.x, Source.time)
 
 		return jac
 		
@@ -369,63 +372,63 @@ class PhysicsBase(object):
 	def compute_additional_variable(self, ScalarName, Up, flag_non_physical):
 		pass
 
-	def call_function(self, FcnData, x, t):
-		# for key in kwargs:
-		# 	if key is "x":
-		# 		FcnData.x = kwargs[key]
-		# 		FcnData.nq = FcnData.x.shape[0]
-		# 	elif key is "Time":
-		# 		FcnData.time = kwargs[key]
-		# 	else:
-		# 		raise Exception("Input error")
+	# def call_function(self, FcnData, x, t):
+	# 	# for key in kwargs:
+	# 	# 	if key is "x":
+	# 	# 		FcnData.x = kwargs[key]
+	# 	# 		FcnData.nq = FcnData.x.shape[0]
+	# 	# 	elif key is "Time":
+	# 	# 		FcnData.time = kwargs[key]
+	# 	# 	else:
+	# 	# 		raise Exception("Input error")
 
-		# nq = FcnData.nq
-		# sr = self.NUM_STATE_VARS
-		# if FcnData.U is None or FcnData.U.shape != (nq, sr):
-		# 	FcnData.U = np.zeros([nq, sr], dtype=self.U.dtype)
+	# 	# nq = FcnData.nq
+	# 	# sr = self.NUM_STATE_VARS
+	# 	# if FcnData.U is None or FcnData.U.shape != (nq, sr):
+	# 	# 	FcnData.U = np.zeros([nq, sr], dtype=self.U.dtype)
 
-		# FcnData.U[:] = FcnData.Function(self, FcnData)
-		# FcnData.alloc_helpers([x.shape[0], self.NUM_STATE_VARS])
-		FcnData.Up = FcnData.get_state(self, x, t)
+	# 	# FcnData.U[:] = FcnData.Function(self, FcnData)
+	# 	# FcnData.alloc_helpers([x.shape[0], self.NUM_STATE_VARS])
+	# 	FcnData.Up = FcnData.get_state(self, x, t)
 
-		return FcnData.Up
+	# 	return FcnData.Up
 
-	def CallSourceFunction(self, FcnData, x, t):
-		# for key in kwargs:
-		# 	if key is "x":
-		# 		FcnData.x = kwargs[key]
-		# 		FcnData.nq = FcnData.x.shape[0]
-		# 	elif key is "Time":
-		# 		FcnData.time = kwargs[key]
-		# 	else:
-		# 		raise Exception("Input error")
+	# def CallSourceFunction(self, FcnData, x, t):
+	# 	# for key in kwargs:
+	# 	# 	if key is "x":
+	# 	# 		FcnData.x = kwargs[key]
+	# 	# 		FcnData.nq = FcnData.x.shape[0]
+	# 	# 	elif key is "Time":
+	# 	# 		FcnData.time = kwargs[key]
+	# 	# 	else:
+	# 	# 		raise Exception("Input error")
 
-		# nq = FcnData.nq
-		# sr = self.NUM_STATE_VARS
-		# if FcnData.S is None or FcnData.S.shape != (nq, sr):
-		# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
-		# code.interact(local=locals())
-		FcnData.S = FcnData.get_source(self, FcnData, x, t)
+	# 	# nq = FcnData.nq
+	# 	# sr = self.NUM_STATE_VARS
+	# 	# if FcnData.S is None or FcnData.S.shape != (nq, sr):
+	# 	# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
+	# 	# code.interact(local=locals())
+	# 	FcnData.S = FcnData.get_source(self, FcnData, x, t)
 
-		return FcnData.S
+	# 	return FcnData.S
 
-	def CallSourceJacobianFunction(self, FcnData, x, t):
-		# for key in kwargs:
-		# 	if key is "x":
-		# 		FcnData.x = kwargs[key]
-		# 		FcnData.nq = FcnData.x.shape[0]
-		# 	elif key is "Time":
-		# 		FcnData.time = kwargs[key]
-		# 	else:
-		# 		raise Exception("Input error")
+	# def CallSourceJacobianFunction(self, FcnData, x, t):
+	# 	# for key in kwargs:
+	# 	# 	if key is "x":
+	# 	# 		FcnData.x = kwargs[key]
+	# 	# 		FcnData.nq = FcnData.x.shape[0]
+	# 	# 	elif key is "Time":
+	# 	# 		FcnData.time = kwargs[key]
+	# 	# 	else:
+	# 	# 		raise Exception("Input error")
 
-		# nq = FcnData.nq
-		# sr = self.NUM_STATE_VARS
-		# if FcnData.S is None or FcnData.S.shape != (nq, sr):
-		# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
-		# code.interact(local=locals())
-		FcnData.jac = FcnData.get_jacobian(self, FcnData, x, t)
-		return FcnData.jac
+	# 	# nq = FcnData.nq
+	# 	# sr = self.NUM_STATE_VARS
+	# 	# if FcnData.S is None or FcnData.S.shape != (nq, sr):
+	# 	# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
+	# 	# code.interact(local=locals())
+	# 	FcnData.jac = FcnData.get_jacobian(self, FcnData, x, t)
+	# 	return FcnData.jac
 
 	# def FcnUniform(self, FcnData):
 	# 	Data = FcnData.Data
