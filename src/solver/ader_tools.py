@@ -272,7 +272,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 
 	# def F(u):
 	# 	S = 0.
-	# 	S = physics.SourceState(1, 0., 0., u, S)
+	# 	S = physics.eval_source_terms(1, 0., 0., u, S)
 	# 	F = u - S - W_bar[0,0]
 	# 	return F
 
@@ -280,7 +280,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 
 	jac_q = np.zeros([1,ns,ns])
 
-	jac_q = physics.SourceJacobianState(1, x, solver.time, W_bar, jac_q) 
+	jac_q = physics.eval_source_term_jacobians(1, x, solver.time, W_bar, jac_q) 
 	jac = jac_q[0,:,:]
 	
 	Kp = K-MM*dt*jac 
@@ -368,7 +368,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 
 	jac_q = np.zeros([1,ns,ns])
-	jac_q = physics.SourceJacobianState(1, x, solver.time, W_bar, jac_q)
+	jac_q = physics.eval_source_term_jacobians(1, x, solver.time, W_bar, jac_q)
 	jac = jac_q[0,:,:]
 	
 	U_pred[:] = W_bar

@@ -277,7 +277,7 @@ class PhysicsBase(object):
 	# 	pass
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
-	def SourceState(self, nq, xglob, Time, Up, s=None):
+	def eval_source_terms(self, nq, xglob, Time, Up, s=None):
 		for Source in self.source_terms:
 
 			#loop through available source terms
@@ -289,7 +289,7 @@ class PhysicsBase(object):
 
 		return s
 
-	def SourceJacobianState(self, nq, xglob, Time, Up, jac=None):
+	def eval_source_term_jacobians(self, nq, xglob, Time, Up, jac=None):
 		for Source in self.source_terms:
 			#loop through available source terms
 			Source.x = xglob
