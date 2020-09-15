@@ -414,7 +414,7 @@ Boundary conditions
 '''
 
 class SlipWall(BCWeakPrescribed):
-	def get_boundary_state(self, physics, x, t, normals, UqI):
+	def get_boundary_state(self, physics, UqI, normals, x, t):
 		smom = physics.GetMomentumSlice()
 
 		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
@@ -430,7 +430,7 @@ class PressureOutlet(BCWeakPrescribed):
 	def __init__(self, p):
 		self.p = p
 
-	def get_boundary_state(self, physics, x, t, normals, UqI):
+	def get_boundary_state(self, physics, UqI, normals, x, t):
 		srho = physics.get_state_slice("Density")
 		srhoE = physics.get_state_slice("Energy")
 		smom = physics.GetMomentumSlice()

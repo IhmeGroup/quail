@@ -685,7 +685,7 @@ class DG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 
-			Fq = BC.get_boundary_flux(physics, x, self.time, normals, UqI)
+			Fq = BC.get_boundary_flux(physics, UqI, normals, x, self.time)
 
 			R -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)

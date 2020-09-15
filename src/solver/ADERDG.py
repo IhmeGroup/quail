@@ -700,8 +700,10 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# loop over time to apply BC at each temporal quadrature point
 			for i in range(len(t)):	
-				Fq[i,:] = BC.get_boundary_flux(physics, x, t[i], normals, 
-						UqI[i,:].reshape([1,ns]))
+				# Fq[i,:] = BC.get_boundary_flux(physics, x, t[i], normals, 
+				# 		UqI[i,:].reshape([1,ns]))
+				Fq[i,:] = BC.get_boundary_flux(physics, 
+						UqI[i,:].reshape([1,ns]), normals, x, t[i])
 
 			R -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts_st, Fq)

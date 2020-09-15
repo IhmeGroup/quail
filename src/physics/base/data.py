@@ -43,19 +43,19 @@ class BCBase(ABC):
     #     self.F.resize(shape)
 
     @abstractmethod
-    def get_boundary_state(self, physics, x, t, normals, UqI):
+    def get_boundary_state(self, physics, UqI, normals, x, t):
         pass
 
     @abstractmethod
-    def get_boundary_flux(self, physics, x, t, normals, UqI):
+    def get_boundary_flux(self, physics, UqI, normals, x, t):
         pass
 
 
 class BCWeakRiemann(ABC):
 
-    def get_boundary_flux(self, physics, x, t, normals, UqI):
+    def get_boundary_flux(self, physics, UqI, normals, x, t):
 
-        UqB = self.get_boundary_state(physics, x, t, normals, UqI)
+        UqB = self.get_boundary_state(physics, UqI, normals, x, t)
         F = physics.get_conv_flux_numerical(UqI, UqB, normals)
 
         return F
@@ -63,9 +63,9 @@ class BCWeakRiemann(ABC):
 
 class BCWeakPrescribed(BCWeakRiemann):
 
-    def get_boundary_flux(self, physics, x, t, normals, UqI):
+    def get_boundary_flux(self, physics, UqI, normals, x, t):
 
-        UqB = self.get_boundary_state(physics, x, t, normals, UqI)
+        UqB = self.get_boundary_state(physics, UqI, normals, x, t)
         F = physics.get_conv_flux_projected(UqB, normals)
 
         return F

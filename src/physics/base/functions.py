@@ -51,7 +51,7 @@ class StateAll(BCWeakRiemann):
     	kwargs.pop("function")
     	self.function = fcn_ref(**kwargs)
 
-    def get_boundary_state(self, physics, x, t, normals, UqI):
+    def get_boundary_state(self, physics, UqI, normals, x, t):
     	UqB = self.function.get_state(physics, x, t)
 
     	return UqB
@@ -60,7 +60,7 @@ class StateAll(BCWeakRiemann):
 class Extrapolate(BCWeakPrescribed):
 	def __init__(self, **kwargs):
 		pass
-	def get_boundary_state(self, physics, x, t, normals, UqI):
+	def get_boundary_state(self, physics, UqI, normals, x, t):
 		return UqI.copy()
 
 '''
