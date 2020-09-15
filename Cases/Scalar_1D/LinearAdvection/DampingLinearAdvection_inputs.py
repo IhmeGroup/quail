@@ -40,7 +40,7 @@ import code
 # # Initial conditions
 # physics.IC.Set(Function=physics.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # # Exact solution
-# physics.ExactSoln.Set(Function=physics.FcnDampingSine, omega = 2.*np.pi , nu = nu)
+# physics.exact_soln.Set(Function=physics.FcnDampingSine, omega = 2.*np.pi , nu = nu)
 # # Boundary conditions
 # if Velocity >= 0.:
 # 	Inflow = "x1"; Outflow = "x2"

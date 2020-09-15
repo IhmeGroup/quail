@@ -77,15 +77,14 @@ class PhysicsBase(object):
 		# self.dim = mesh.dim
 		self.params = {}
 		self.IC = None
-		self.ExactSoln = None
-		self.ConvFluxFcn = None
-		self.BCTreatments = {}
-		self.Sources = []
+		self.exact_soln = None
+		self.conv_flux_fcn = None
+		self.source_terms = []
 		# Boundary conditions
 		# self.BCs = []
 		# for ibfgrp in range(mesh.num_boundary_groups):
 		# 	self.BCs.append(BCData(Name=mesh.BFGNames[ibfgrp]))
-		self.nBC = mesh.num_boundary_groups
+		# self.nBC = mesh.num_boundary_groups
 		# self.BCs = [BCData() for ibfgrp in range(mesh.num_boundary_groups)]
 		# for ibfgrp in range(mesh.num_boundary_groups):
 		# 	self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
@@ -100,29 +99,19 @@ class PhysicsBase(object):
 		# if type(basis) is str:
 		# 	basis = BasisType[basis]
 		# self.Basis = basis
-		if type(order) is int:
-			self.order = order
-		elif type(order) is list:
-			self.order = order[0]
-		else:
-			raise Exception("Input error")
+		self.order = order
+		# if type(order) is int:
+		# 	self.order = order
+		# elif type(order) is list:
+		# 	self.order = order[0]
+		# else:
+		# 	raise Exception("Input error")
 
 		basis = basis_tools.set_basis(self.order, basis_type)
-		self.U = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
-		self.S = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(self.order), self.NUM_STATE_VARS])
-
-		# State 
-		# self.U = ArrayList(nArray=mesh.num_elemsGroup,nEntriesPerArray=mesh.num_elemss,FullDim=[mesh.num_elems_tot,nn,self.NUM_STATE_VARS])
-		# self.U = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=[[mesh.num_elems_tot,nn,self.NUM_STATE_VARS]])
-		# ArrayDims = [[mesh.num_elemss[egrp],order_to_num_basis_coeff(self.Bases[egrp], self.Orders[egrp]), self.NUM_STATE_VARS] \
-		# 			for egrp in range(mesh.num_elemsGroup)]
-		# self.U = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=ArrayDims)
-		# self.S = ArrayList(nArray=mesh.num_elemsGroup,ArrayDims=ArrayDims)
-		# self.U = np.zeros([mesh.num_elems, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
-		# self.S = np.zeros([mesh.num_elems, order_to_num_basis_coeff(self.Basis, self.order), self.NUM_STATE_VARS])
-
-		# BC treatments
-		# self.SetBCTreatment()
+		self.U = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(
+				self.order), self.NUM_STATE_VARS])
+		self.S = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(
+				self.order), self.NUM_STATE_VARS])
 		set_state_indices_slices(self)
 
 
@@ -181,7 +170,7 @@ class PhysicsBase(object):
 
 	def set_exact(self, exact_type, **kwargs):
 		fcn_ref = process_map(exact_type, self.exact_fcn_map)
-		self.ExactSoln = fcn_ref(**kwargs)
+		self.exact_soln = fcn_ref(**kwargs)
 
 	def set_BC(self, bname, BC_type, fcn_type=None, **kwargs):
 		if self.BCs[bname] is not None:
@@ -220,12 +209,12 @@ class PhysicsBase(object):
 	def set_source(self, source_type, **kwargs):
 		source_ref = process_map(source_type, self.source_map)
 		source = source_ref(**kwargs)
-		self.Sources.append(source)
+		self.source_terms.append(source)
 
 	def set_conv_num_flux(self, conv_num_flux_type, **kwargs):
 		conv_num_flux_ref = process_map(conv_num_flux_type, 
 				self.conv_num_flux_map)
-		self.ConvFluxFcn = conv_num_flux_ref(**kwargs)
+		self.conv_flux_fcn = conv_num_flux_ref(**kwargs)
 		
 	@abstractmethod
 	class StateVariables(Enum):
@@ -264,9 +253,9 @@ class PhysicsBase(object):
 	# 	pass
 
 	# def SetSource(self, **kwargs):
-	# 	#append src data to Sources list 
+	# 	#append src data to source_terms list 
 	# 	Source = SourceData()
-	# 	self.Sources.append(Source)
+	# 	self.source_terms.append(Source)
 	# 	Source.Set(**kwargs)
 
 	def QuadOrder(self, order):
@@ -278,8 +267,8 @@ class PhysicsBase(object):
 
 	@abstractmethod
 	def ConvFluxNumerical(self, UpL, UpR, normals):
-		# self.ConvFluxFcn.AllocHelperArrays(uL)
-		F = self.ConvFluxFcn.compute_flux(self, UpL, UpR, normals)
+		# self.conv_flux_fcn.AllocHelperArrays(uL)
+		F = self.conv_flux_fcn.compute_flux(self, UpL, UpR, normals)
 
 		return F
 
@@ -289,7 +278,7 @@ class PhysicsBase(object):
 
 	#Source state takes multiple source terms (if needed) and sums them together. 
 	def SourceState(self, nq, xglob, Time, Up, s=None):
-		for Source in self.Sources:
+		for Source in self.source_terms:
 
 			#loop through available source terms
 			Source.x = xglob
@@ -301,7 +290,7 @@ class PhysicsBase(object):
 		return s
 
 	def SourceJacobianState(self, nq, xglob, Time, Up, jac=None):
-		for Source in self.Sources:
+		for Source in self.source_terms:
 			#loop through available source terms
 			Source.x = xglob
 			Source.nq = nq

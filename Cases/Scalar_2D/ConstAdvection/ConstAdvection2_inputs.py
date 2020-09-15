@@ -40,7 +40,7 @@ CurrentDir = os.path.dirname(os.path.abspath(__file__)) + "/"
 # # Initial conditions
 # physics.IC.Set(Function=physics.FcnGaussian, x0=x0)
 # # Exact solution
-# physics.ExactSoln.Set(Function=physics.FcnGaussian, x0=x0)
+# physics.exact_soln.Set(Function=physics.FcnGaussian, x0=x0)
 # # Boundary conditions
 # if not Periodic:
 # 	MeshTools.check_face_orientations(mesh)

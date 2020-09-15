@@ -400,7 +400,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
 		default_label = "Numerical"
 	elif plot_exact:
-		var_plot = get_analytical_solution(physics, physics.ExactSoln, 
+		var_plot = get_analytical_solution(physics, physics.exact_soln, 
 				xyline, solver.time, var_name)
 		default_label = "Exact"
 	elif plot_IC:
@@ -702,7 +702,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 				solver.basis, var_name)
 		default_label = "Numerical"
 	elif plot_exact:
-		var_plot = get_analytical_solution(physics, physics.ExactSoln, x, 
+		var_plot = get_analytical_solution(physics, physics.exact_soln, x, 
 				time, var_name)
 		var_plot.shape = x.shape[0], x.shape[1], -1
 		default_label = "Exact"

@@ -132,7 +132,7 @@ physics.set_conv_num_flux("LaxFriedrichs")
 physics.set_IC(IC_type="IsentropicVortex")
 # Exact solution
 physics.set_exact(exact_type="IsentropicVortex")
-# physics.ExactSoln.Set(Function=physics.FcnIsentropicVortexPropagation)
+# physics.exact_soln.Set(Function=physics.FcnIsentropicVortexPropagation)
 # Boundary conditions
 # physics.set_BC(bname="wall", BC_type="StateAll", fcn_type="IsentropicVortex")
 # physics.set_BC(bname="x1", BC_type="StateAll", fcn_type="IsentropicVortex")

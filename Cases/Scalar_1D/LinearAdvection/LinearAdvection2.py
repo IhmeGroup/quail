@@ -42,7 +42,7 @@ physics.set_physical_params(ConstVelocity=Velocity)
 physics.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
 physics.set_IC(IC_type="Sine", omega = 2*np.pi)
 # Exact solution
-# physics.ExactSoln.Se”t(Function=physics.FcnSine, omega = 2*np.pi)
+# physics.exact_soln.Se”t(Function=physics.FcnSine, omega = 2*np.pi)
 physics.set_exact(exact_type="Sine", omega = 2*np.pi)
 # Boundary conditions
 if Velocity >= 0.:

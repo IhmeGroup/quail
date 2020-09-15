@@ -236,7 +236,7 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 		U_pred: predicted solution in space-time [nb_st, 1]
 	'''
 	physics = solver.physics
-	Sources = physics.Sources
+	source_terms = physics.source_terms
 
 	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh
@@ -335,7 +335,7 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 		U_pred: predicted solution in space-time [nb_st, ns]
 	'''
 	physics = solver.physics
-	Sources = physics.Sources
+	source_terms = physics.source_terms
 
 	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh

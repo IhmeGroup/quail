@@ -44,7 +44,7 @@ physics.set_conv_num_flux("LaxFriedrichs")
 # physics.IC.Set(Function=physics.FcnSine, omega = 2*np.pi)
 physics.set_IC(IC_type="SineBurgers", omega = 2*np.pi)
 # Exact solution
-# physics.ExactSoln.Set(Function=physics.FcnSineWaveBurgers, omega = 2*np.pi)
+# physics.exact_soln.Set(Function=physics.FcnSineWaveBurgers, omega = 2*np.pi)
 physics.set_exact(exact_type="SineBurgers", omega = 2*np.pi)
 # Boundary conditions
 if ConstVelocity >= 0.:

@@ -53,7 +53,7 @@ physics.SetSource(Function=physics.FcnStiffSource,beta=0.5, stiffness = 1.)
 physics.IC.Set(Function=physics.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 
 # Exact solution
-physics.ExactSoln.Set(Function=physics.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
+physics.exact_soln.Set(Function=physics.FcnScalarShock, uL = 1., uR = 0.,  xshock = 0.3)
 # Boundary conditions
 if Velocity >= 0.:
 	Inflow = "x1"; Outflow = "x2"

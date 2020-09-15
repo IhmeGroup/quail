@@ -38,7 +38,7 @@ physics.set_physical_params(ConstVelocity=ConstVelocity, ConvFlux="LaxFriedrichs
 # Initial conditions
 physics.IC.Set(Function=physics.FcnLinearBurgers)
 # Exact solution
-physics.ExactSoln.Set(Function=physics.FcnLinearBurgers)
+physics.exact_soln.Set(Function=physics.FcnLinearBurgers)
 # Boundary conditions
 if ConstVelocity >= 0.:
 	Inflow = "x1"; Outflow = "x2"

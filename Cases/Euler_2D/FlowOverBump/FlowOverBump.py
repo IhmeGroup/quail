@@ -83,7 +83,7 @@ physics.set_BC(bname="outflow", BC_type="PressureOutlet", p=1.)
 physics.set_BC(bname="top", BC_type="SlipWall")
 physics.set_BC(bname="bottom", BC_type="SlipWall")
 # Exact solution
-# physics.ExactSoln.Set(Function=physics.FcnUniform, BCType=physics.BCType["StateAll"], State=Uinflow)
+# physics.exact_soln.Set(Function=physics.FcnUniform, BCType=physics.BCType["StateAll"], State=Uinflow)
 
 
 ### Solve

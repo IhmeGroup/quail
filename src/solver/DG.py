@@ -544,7 +544,7 @@ class DG(base.SolverBase):
 		if self.limiter is not None:
 			self.limiter.precompute_operators(self)
 
-		physics.ConvFluxFcn.alloc_helpers(
+		physics.conv_flux_fcn.alloc_helpers(
 				np.zeros([self.iface_operators.quad_wts.shape[0], 
 				physics.NUM_STATE_VARS]))
 

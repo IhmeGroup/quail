@@ -47,7 +47,7 @@ physics.set_conv_num_flux("LaxFriedrichs")
 # physics.IC.Set(Function=physics.FcnGaussian, x0=x0)
 physics.set_IC(IC_type="Gaussian", x0=x0)
 # Exact solution
-# physics.ExactSoln.Set(Function=physics.FcnGaussian, x0=x0)
+# physics.exact_soln.Set(Function=physics.FcnGaussian, x0=x0)
 physics.set_exact(exact_type="Gaussian", x0=x0)
 # Boundary conditions
 # if not Periodic:

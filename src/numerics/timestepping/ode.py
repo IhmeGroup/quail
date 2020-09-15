@@ -154,7 +154,7 @@ class ODESolvers():
 			beta = self.BETA
 			dt = solver.Stepper.dt
 			physics = solver.physics
-			Sources = physics.Sources
+			source_terms = physics.source_terms
 
 			elem_ops = solver.elem_operators
 			basis_val = elem_ops.basis_val
