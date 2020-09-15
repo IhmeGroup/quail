@@ -52,7 +52,7 @@ class PhysicsBase(object):
 
 	@property
 	@abstractmethod
-	def dim(self):
+	def DIM(self):
 		pass
 
 	@property
@@ -71,7 +71,7 @@ class PhysicsBase(object):
 		enthalpies at the table points.
 		'''
 		# dim = mesh.dim
-		# self.dim = mesh.dim
+		# self.DIM = mesh.dim
 		# self.params = {}
 		self.IC = None
 		self.exact_soln = None
@@ -112,7 +112,7 @@ class PhysicsBase(object):
 		set_state_indices_slices(self)
 
 
-		if mesh.dim != self.dim:
+		if mesh.dim != self.DIM:
 			raise errors.IncompatibleError
 
 		self.set_maps()
@@ -314,7 +314,7 @@ class PhysicsBase(object):
 	# 		try:
 	# 			Fa = data.Fa
 	# 		except AttributeError:
-	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.dim])
+	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.DIM])
 	# 		# Fa = self.get_conv_flux_interior(uB, Fa)
 	# 		# # Take dot product with n
 	# 		try: 

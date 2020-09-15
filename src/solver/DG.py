@@ -216,7 +216,7 @@ class ElemHelpers(object):
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		ns = physics.NUM_STATE_VARS
-		dim = physics.dim
+		dim = physics.DIM
 
 		self.Uq = np.zeros([nq, ns]) 
 		self.Fq = np.zeros([nq, ns, dim])
@@ -571,7 +571,7 @@ class DG(base.SolverBase):
 
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
-		dim = physics.dim
+		dim = physics.DIM
 		elem_ops = self.elem_operators
 		basis_val = elem_ops.basis_val
 		quad_wts = elem_ops.quad_wts

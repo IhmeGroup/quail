@@ -64,7 +64,7 @@ class Euler(base.PhysicsBase):
 	    Velocity = "u"
 
 	def get_conv_flux_interior(self, Uq):
-		dim = self.dim
+		dim = self.DIM
 		# irho = 0; irhoE = dim + 1
 		irho = self.get_state_index("Density")
 		irhoE = self.get_state_index("Energy")
@@ -173,7 +173,7 @@ class Euler(base.PhysicsBase):
 class Euler1D(Euler):
 
 	NUM_STATE_VARS = 3
-	dim = 1
+	DIM = 1
 
 	def __init__(self, order, basis, mesh):
 		'''
@@ -245,7 +245,7 @@ class Euler1D(Euler):
 class Euler2D(Euler):
 
 	NUM_STATE_VARS = 4
-	dim = 2
+	DIM = 2
 
 	def __init__(self, order, basis, mesh):
 		super().__init__(order, basis, mesh) 

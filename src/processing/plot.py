@@ -136,7 +136,7 @@ def triangulate(physics, x, var):
 		var: variable to plot evaluated at x (duplicates remove and 
 			reshaped)
 	'''
-	if physics.dim != 2:
+	if physics.DIM != 2:
 		raise ValueError
 
 	# Remove duplicates
@@ -336,7 +336,7 @@ def interpolate_2D_soln_to_points(physics, x, var, xpoints):
 	    var: values of variable evaluated at x (duplicates removed and 
 	    	reshaped)
 	'''
-	if physics.dim != 2:
+	if physics.DIM != 2:
 		raise ValueError
 	tris, utri = triangulate(physics, x, var)
 	interpolator = tri.LinearTriInterpolator(tris, utri)
@@ -493,10 +493,10 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	-------
 		var_plot: values of variable obtained at x [num_pts, 1]
 	'''
-	U_plot = fcn_data.get_state(physics, x=np.reshape(x, (-1, physics.dim)),
+	U_plot = fcn_data.get_state(physics, x=np.reshape(x, (-1, physics.DIM)),
 			t=time)
 	# U_plot = physics.call_function(fcn_data, x=np.reshape(x,  
-	# 		(-1, physics.dim)), t=time)
+	# 		(-1, physics.DIM)), t=time)
 	var_plot = physics.compute_variable(var_name, U_plot)
 
 	return var_plot

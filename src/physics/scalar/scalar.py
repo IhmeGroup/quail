@@ -89,12 +89,12 @@ class ConstAdvScalar(base.PhysicsBase):
 		c = self.c
 		#a = self.params["Velocity"]
 		# if F is None:
-		# 	F = np.zeros(u.shape + (self.dim,))
-		# for d in range(self.dim):
+		# 	F = np.zeros(u.shape + (self.DIM,))
+		# for d in range(self.DIM):
 		# 	F[:,:,d] = c*u
 		F = np.expand_dims(c*u, axis=1)
 		# F = a*u
-		# F.shape = u.shape + (self.dim,) 
+		# F.shape = u.shape + (self.DIM,) 
 		return F
 
 	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
@@ -249,7 +249,7 @@ class ConstAdvScalar1D(ConstAdvScalar):
 	relevant methods
 	'''
 
-	dim = 1
+	DIM = 1
 
 	def __init__(self, order, basis, mesh):
 		'''
@@ -298,7 +298,7 @@ class ConstAdvScalar1D(ConstAdvScalar):
 
 class ConstAdvScalar2D(ConstAdvScalar):
 
-	dim = 2
+	DIM = 2
 
 	def __init__(self, order, basis, mesh):
 		'''
@@ -347,7 +347,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 class Burgers1D(base.PhysicsBase):
 
 	NUM_STATE_VARS = 1
-	dim = 1
+	DIM = 1
 	PHYSICS_TYPE = general.PhysicsType.Burgers
 
 	def __init__(self, order, basis, mesh):
@@ -393,12 +393,12 @@ class Burgers1D(base.PhysicsBase):
 		# c = self.getAdvOperator(u)
 		#a = self.params["Velocity"]
 		# if F is None:
-		# 	F = np.zeros(u.shape + (self.dim,))
-		# for d in range(self.dim):
+		# 	F = np.zeros(u.shape + (self.DIM,))
+		# for d in range(self.DIM):
 		# 	F[:,:,d] = c*u
 		F = np.expand_dims(u*u/2., axis=2)
 		# F = a*u
-		# F.shape = u.shape + (self.dim,) 
+		# F.shape = u.shape + (self.DIM,) 
 		return F
 
 	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):

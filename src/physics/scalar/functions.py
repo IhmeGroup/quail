@@ -83,7 +83,7 @@ class Gaussian(FcnBase):
 
 	def get_state(self, physics, x, t):
 		r = np.linalg.norm(x - self.x0 - physics.c*t, axis=1, keepdims=True)
-		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.dim) * \
+		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.DIM) * \
 				np.exp(-r**2./(2.*self.sig**2.))
 
 		return Uq

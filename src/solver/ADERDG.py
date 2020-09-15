@@ -533,7 +533,7 @@ class ADERDG(base.SolverBase):
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
-		dim = physics.dim
+		dim = physics.DIM
 
 		elem_ops = self.elem_operators
 		elem_ops_st = self.elem_operators_st
@@ -733,7 +733,7 @@ class ADERDG(base.SolverBase):
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
-		dim = physics.dim
+		dim = physics.DIM
 		params = self.params
 
 		InterpolateFluxADER = params["InterpolateFluxADER"]

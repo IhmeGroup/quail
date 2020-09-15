@@ -72,7 +72,7 @@ class Chemistry(base.PhysicsBase):
 	    Jacobian = "J"
 
 	def get_conv_flux_interior(self, Uq):
-		dim = self.dim
+		dim = self.DIM
 		
 		irho = self.get_state_index("Density")
 		irhoE = self.get_state_index("Energy")
