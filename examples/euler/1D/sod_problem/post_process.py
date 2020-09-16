@@ -5,10 +5,11 @@ import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
 ### Postprocess
-fname = "exact.pkl"
+#fname = "exact.pkl"
+fname = "Test2_final.pkl"
 solver1 = readwritedatafiles.read_data_file(fname)
 print('Solution Final Time:', solver1.time)
-solver1.time = 0.25
+#solver1.time = 0.25
 # Unpack
 mesh1 = solver1.mesh
 physics1 = solver1.physics
@@ -28,10 +29,13 @@ physics1 = solver1.physics
 # TotErr,_ = post.get_error(mesh, physics, solver, "Density")
 # Plot
 plot.prepare_plot()
-skip=0
+skip=None
 plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
 			ylabel=None, fmt='k-.', legend_label="Exact", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=False)
+plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False,
+                        ylabel=None, fmt='bo', legend_label="Numerical", equidistant_pts=True,
+                        include_mesh=False, regular_2D=False, equal_AR=False,skip=skip, show_elem_IDs=False)
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, plot_exact=False, plot_IC=True, create_new_figure=False, 
 # 			ylabel=None, fmt='k-.', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
@@ -46,6 +50,9 @@ plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=False, pl
 # plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='b-', legend_label="NoLimiter", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=0, show_elem_IDs=False)
+
+plot.show_plot()
+exit()
 
 fname = "Data_final.pkl"
 solver2 = readwritedatafiles.read_data_file(fname)

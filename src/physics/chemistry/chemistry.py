@@ -77,10 +77,10 @@ class Chemistry(base.PhysicsBase):
 		irho = self.get_state_index("Density")
 		irhoE = self.get_state_index("Energy")
 		irhoY = self.get_state_index("Mixture")
-		# imom = self.GetMomentumSlice()
+		# imom = self.get_momentum_slice()
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
-		smom = self.GetMomentumSlice()
+		smom = self.get_momentum_slice()
 		srhoY = self.get_state_slice("Mixture")
 
 		eps = general.eps
@@ -114,7 +114,7 @@ class Chemistry(base.PhysicsBase):
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		srhoY = self.get_state_slice("Mixture")
-		smom = self.GetMomentumSlice()
+		smom = self.get_momentum_slice()
 		rho = Uq[:, srho]
 		rhoE = Uq[:, srhoE]
 		mom = Uq[:, smom]
@@ -230,7 +230,7 @@ class Chemistry1D(Chemistry):
 		Energy = "\\rho E"
 		Mixture = "\\rho Y"
 
-	def GetStateIndices(self):
+	def get_state_indices(self):
 		irho = self.get_state_index("Density")
 		irhou = self.get_state_index("XMomentum")
 		irhoE = self.get_state_index("Energy")
@@ -245,7 +245,7 @@ class Chemistry1D(Chemistry):
 		srhoY = self.get_state_slice("Mixture")
 		return srho, srhou, srhoE, srhoY
 
-	def GetMomentumSlice(self):
+	def get_momentum_slice(self):
 		irhou = self.get_state_index("XMomentum")
 		smom = slice(irhou, irhou+1)
 

@@ -43,7 +43,7 @@ class SmoothIsentropicFlow(FcnBase):
 		
 		a = self.a
 		gamma = physics.gamma
-		irho, irhou, irhoE = physics.GetStateIndices()
+		irho, irhou, irhoE = physics.get_state_indices()
 	
 		# Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
@@ -206,15 +206,16 @@ class DensityWave(FcnBase):
 		rhou = rho*1.0
 		rhoE = (p/(gamma - 1.)) + 0.5*rhou**2/rho
 
-		Uq[:,srho] = rho
-		Uq[:,srhou] = rhou
-		Uq[:,srhoE] = rhoE
+		Uq[:, srho] = rho
+		Uq[:, srhou] = rhou
+		Uq[:, srhoE] = rhoE
 
 		return Uq
 
 
 class RiemannProblem(FcnBase):
-	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xshock=0.):
+	def __init__(self, uL=np.array([1., 0., 1.]), 
+			uR=np.array([0.125, 0., 0.1]), xshock=0.):
 		# Default conditions set up for Sod Problem.
 		self.uL = uL
 		self.uR = uR
@@ -236,7 +237,7 @@ class RiemannProblem(FcnBase):
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
-		gam = physics.gamma
+		gamma = physics.gamma
 		
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
@@ -251,38 +252,39 @@ class RiemannProblem(FcnBase):
 		Uq[iright, srhou] = rhoR*vR
 		Uq[ileft, srhou] = rhoL*vL
 		# Energy
-		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR
-		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL
+		Uq[iright, srhoE] = pR/(gamma-1.) + 0.5*rhoR*vR*vR
+		Uq[ileft, srhoE] = pL/(gamma-1.) + 0.5*rhoL*vL*vL
 
 		return Uq
 
+
 class ExactRiemannSolution(FcnBase):
-	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), xmin=0., xmax=1., xshock=0.5):
+	def __init__(self, uL=np.array([1., 0., 1.]), 
+			uR=np.array([0.125, 0., 0.1]), xshock=0.):
 		self.uL = uL
 		self.uR = uR
-		self.xmin = xmin
-		self.xmax = xmax
 		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
 
 		uL = self.uL
 		uR = self.uR
-		L = self.xmax - self.xmin
 		xshock = self.xshock
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-		gam = physics.gamma
+		gamma = physics.gamma
 		srho, srhou, srhoE = physics.get_state_slices()
 
-		rho4 = uL[0]; p4 = uL[2]; u4 = uL[1];
-		rho1 = uR[0]; p1 = uR[2]; u1 = uR[1];
+		rho4 = uL[0]; p4 = uL[2]; u4 = uL[1]
+		rho1 = uR[0]; p1 = uR[2]; u1 = uR[1]
 
-		c4 = np.sqrt(gam*p4/rho4)
-		c1 = np.sqrt(gam*p1/rho1)
+		c4 = np.sqrt(gamma*p4/rho4)
+		c1 = np.sqrt(gamma*p1/rho1)
 		p41 = p4/p1
 
 		def F(y):
-			F = y*(1.+(gam-1.)/(2.*c4)*(u4-u1-c1/gam*(y-1.)/np.sqrt((gam+1.)/(2.*gam)*(y-1.)+1)))**(-2.*gam/(gam-1))-p4/p1;
+			F = y * (1. + (gamma-1.)/(2.*c4) * (u4 - u1 - c1/gamma*(y-1.)/ \
+					np.sqrt((gamma+1.)/(2.*gamma)*(y-1.) + 1)))**(-2. \
+					*gamma/(gamma-1)) - p4/p1
 			return F			
 
 		y0 = 0.5*p4/p1
@@ -292,26 +294,27 @@ class ExactRiemannSolution(FcnBase):
 		p2 = Y*p1
 
 		# Equation 11
-		u2 = u1 + c1/gam*(p2/p1-1)/np.sqrt((gam+1)/(2*gam)*(p2/p1-1) + 1)
+		u2 = u1 + c1/gamma*(p2/p1-1)/np.sqrt((gamma+1)/(2*gamma)*(p2/p1-1) \
+				+ 1)
 		# Equation 10
-		num = (gam+1)/(gam-1) + p2/p1
-		den = 1 + (gam+1)/(gam-1)*(p2/p1)
+		num = (gamma+1)/(gamma-1) + p2/p1
+		den = 1 + (gamma+1)/(gamma-1)*(p2/p1)
 		c2 = c1*np.sqrt(p2/p1*num/den)
 		# Equation 12 - shock speed
-		V = u1 + c1*np.sqrt((gam+1)/(2*gam)*(p2/p1-1) + 1)
+		V = u1 + c1*np.sqrt((gamma+1)/(2*gamma)*(p2/p1-1) + 1)
 		# density for state 2
-		rho2 = gam*p2/c2**2
+		rho2 = gamma*p2/c2**2
 
 		# Equations 13 and 14
 		u3 = u2
 		p3 = p2 
 		# Equation 16
-		c3 = (gam-1)/2*(u4-u3+2/(gam-1)*c4)
-		rho3 = gam*p3/c3**2
+		c3 = (gamma-1)/2*(u4-u3+2/(gamma-1)*c4)
+		rho3 = gamma*p3/c3**2
 
 		# now deal with expansion fan
 		xe1 = (u4-c4)*t + xshock; # "start" of expansion fan
-		xe2 = (t*((gam+1)/2*u3 - (gam-1)/2*u4 - c4)+xshock) # end
+		xe2 = (t*((gamma+1)/2*u3 - (gamma-1)/2*u4 - c4)+xshock) # end
 
 		# location of shock
 		xs = V*t + xshock
@@ -320,14 +323,15 @@ class ExactRiemannSolution(FcnBase):
 
 		uu = np.zeros_like(x); pp = np.zeros_like(x); rr = np.zeros_like(x);
 
-		for i in range(len(x)):
+		# for i in range(len(x)):
+		for i in range(x.shape[0]):
 		    if x[i] <= xe1:
 		        uu[i] = u4; pp[i] = p4; rr[i] = rho4;
 		    elif x[i] > xe1 and x[i] <= xe2:
-		        uu[i] = (2/(gam+1)*((x[i]-xshock)/t + (gam-1)/2*u4 + c4)) 
+		        uu[i] = (2/(gamma+1)*((x[i]-xshock)/t + (gamma-1)/2*u4 + c4)) 
 		        cc = uu[i] - (x[i]-xshock)/t
-		        pp[i] = p4*(cc/c4)**(2*gam/(gam-1))
-		        rr[i] = gam*pp[i]/cc**2
+		        pp[i] = p4*(cc/c4)**(2*gamma/(gamma-1))
+		        rr[i] = gamma*pp[i]/cc**2
 		    elif x[i] > xe2 and x[i] <= xc:
 		        uu[i] = u3; pp[i] = p3; rr[i] = rho3;
 		    elif x[i] > xc and x[i] <= xs:
@@ -337,12 +341,14 @@ class ExactRiemannSolution(FcnBase):
 
 		Uq[:, srho] = rr
 		Uq[:, srhou] = rr*uu
-		Uq[:, srhoE] = pp/(gam-1.) + 0.5*rr*uu*uu
+		Uq[:, srhoE] = pp/(gamma-1.) + 0.5*rr*uu*uu
 
 		return Uq
 
+
 class SmoothRiemannProblem(FcnBase):
-	def __init__(self, uL=np.array([1.,0.,1.]), uR=np.array([0.125,0.,0.1]), w=0.05, xshock=0.):
+	def __init__(self, uL=np.array([1., 0., 1.]), 
+				uR=np.array([0.125, 0., 0.1]), w=0.05, xshock=0.):
 		# Default conditions set up for Sod Problem.
 		self.uL = uL
 		self.uR = uR
@@ -366,22 +372,22 @@ class SmoothRiemannProblem(FcnBase):
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
-		gam = physics.gamma
+		gamma = physics.gamma
 		
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		# w = 0.05
-		def set_tanh(a,b,w,xo):
-			return 0.5*((a+b)+(b-a)*np.tanh((x-xo)/w))
+		def set_tanh(a, b, w, xo):
+			return 0.5*((a+b) + (b-a)*np.tanh((x-xo)/w))
 		# Density
-		Uq[:, srho] =  set_tanh(rhoL,rhoR,w,xshock)
+		Uq[:, srho] =  set_tanh(rhoL, rhoR, w, xshock)
 
 		# Momentum
-		Uq[:, srhou] = set_tanh(rhoL*vL,rhoR*vR,w,xshock)
+		Uq[:, srhou] = set_tanh(rhoL*vL, rhoR*vR, w, xshock)
 		# Energy
-		rhoeL = pL/(gam-1.) + 0.5*rhoL*vL*vL
-		rhoeR = pR/(gam-1.) + 0.5*rhoR*vR*vR
-		Uq[:, srhoE] = set_tanh(rhoeL,rhoeR,w,xshock)
+		rhoeL = pL/(gamma-1.) + 0.5*rhoL*vL*vL
+		rhoeR = pR/(gamma-1.) + 0.5*rhoR*vR*vR
+		Uq[:, srhoE] = set_tanh(rhoeL, rhoeR, w, xshock)
 
 		return Uq
 
@@ -393,7 +399,7 @@ class TaylorGreenVortex(FcnBase):
 		gamma = physics.gamma
 		Rg = physics.R
 
-		irho, irhou, irhov, irhoE = physics.GetStateIndices()
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
 
 		rho = 1.
 		u = np.sin(np.pi*x[:, 0])*np.cos(np.pi*x[:, 1])
@@ -415,7 +421,7 @@ Boundary conditions
 
 class SlipWall(BCWeakPrescribed):
 	def get_boundary_state(self, physics, UqI, normals, x, t):
-		smom = physics.GetMomentumSlice()
+		smom = physics.get_momentum_slice()
 
 		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
@@ -433,7 +439,7 @@ class PressureOutlet(BCWeakPrescribed):
 	def get_boundary_state(self, physics, UqI, normals, x, t):
 		srho = physics.get_state_slice("Density")
 		srhoE = physics.get_state_slice("Energy")
-		smom = physics.GetMomentumSlice()
+		smom = physics.get_momentum_slice()
 
 		UqB = UqI.copy()
 
@@ -444,9 +450,9 @@ class PressureOutlet(BCWeakPrescribed):
 
 		gamma = physics.gamma
 
-		# gam = physics.gamma
-		# igam = 1./gam
-		# gmi = gam - 1.
+		# gamma = physics.gamma
+		# igam = 1./gamma
+		# gmi = gamma - 1.
 		# igmi = 1./gmi
 
 		# Interior velocity in normal direction
@@ -466,7 +472,7 @@ class PressureOutlet(BCWeakPrescribed):
 			raise errors.NotPhysicalError
 
 		# Interior speed of sound
-		# cI = np.sqrt(gam*pI/rhoI)
+		# cI = np.sqrt(gamma*pI/rhoI)
 		cI = physics.compute_variable("SoundSpeed", UqI)
 		JI = velnI + 2.*cI/(gamma - 1.)
 		veltI = velI - velnI*n_hat
@@ -509,7 +515,7 @@ class StiffFriction(SourceBase):
 		# irhou = physics.get_state_index("XMomentum")
 		# irhoE = physics.get_state_index("Energy")
 
-		irho, irhou, irhoE = physics.GetStateIndices()
+		irho, irhou, irhoE = physics.get_state_indices()
 		
 		# U = self.U
 		
@@ -527,7 +533,7 @@ class StiffFriction(SourceBase):
 	# 	nu = self.nu
 
 	# 	Uq = FcnData.Uq
-	# 	irho, irhou, irhoE = physics.GetStateIndices()
+	# 	irho, irhou, irhoE = physics.get_state_indices()
 
 	# 	jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 	# 	vel = Uq[:, 1]/(1.0e-12 + Uq[:, 0])
@@ -545,7 +551,7 @@ class StiffFriction(SourceBase):
 		nu = self.nu
 		# Uq = self.Uq
 
-		irho, irhou, irhoE = physics.GetStateIndices()
+		irho, irhou, irhoE = physics.get_state_indices()
 
 		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 		vel = Uq[:, 1]/(1.0e-12 + Uq[:, 0])
@@ -565,14 +571,15 @@ class TaylorGreenSource(SourceBase):
 	def get_source(self, physics, Uq, x, t):
 		gamma = physics.gamma
 
-		irho, irhou, irhov, irhoE = physics.GetStateIndices()
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
 		
 		# Uq = self.Uq
 		
 		S = np.zeros_like(Uq)
 
-		S[:, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, 0])*np.cos(np.pi*x[:, 1]) - 
-				np.cos(np.pi*x[:, 0])*np.cos(3.*np.pi*x[:, 1]))
+		S[:, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, 0])* \
+				np.cos(np.pi*x[:, 1]) - np.cos(np.pi*x[:, 0])*np.cos(3.* \
+				np.pi*x[:, 1]))
 		
 		return S
 
@@ -709,7 +716,7 @@ class Roe1D(ConvNumFluxBase):
 		using the Lax-Friedrichs flux function
 
 		INPUTS:
-		    gam: specific heat ratio
+		    gamma: specific heat ratio
 		    UL: Left state
 		    UR: Right state
 		    n: Normal vector (assumed left to right)
@@ -735,7 +742,7 @@ class Roe1D(ConvNumFluxBase):
 
 		# Indices
 		srho = physics.get_state_slice("Density")
-		smom = physics.GetMomentumSlice()
+		smom = physics.get_momentum_slice()
 
 		gamma = physics.gamma
 
@@ -878,13 +885,13 @@ class HLLC1D(ConvNumFluxBase):
 
 		# Indices
 		srho = physics.get_state_slice("Density")
-		smom = physics.GetMomentumSlice()
+		smom = physics.get_momentum_slice()
 		srhoE = physics.get_state_slice("Energy")
 
 		NN = np.linalg.norm(n, axis=1, keepdims=True)
 		n1 = n/NN
 
-		gam = physics.gamma
+		gamma = physics.gamma
 
 		# unpack left hand state
 		rhoL = UqL[:, srho]
@@ -913,12 +920,12 @@ class HLLC1D(ConvNumFluxBase):
 		# Step 2: Get SL and SR
 		qL = 1.
 		if pspl > 1.:
-			qL = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspl - 1.)) 
+			qL = np.sqrt(1. + (gamma + 1.) / (2.*gamma) * (pspl - 1.)) 
 		SL = unL - cL*qL
 
 		qR = 1.
 		if pspr > 1.:
-			qR = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspr - 1.))
+			qR = np.sqrt(1. + (gamma + 1.) / (2.*gamma) * (pspr - 1.))
 		SR = unR + cR*qR
 
 		# Step 3: Get shear wave speed

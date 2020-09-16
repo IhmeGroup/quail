@@ -1,8 +1,10 @@
 import numpy as np
 import copy
 
-FinalTime = 0.25
-nTimeSteps = 4000
+#FinalTime = 0.25
+#nTimeSteps = 4000
+FinalTime = 6.2500e-03
+nTimeSteps = 100
 #nTimeSteps = 0
 
 TimeStepping = {
@@ -64,8 +66,8 @@ state_exact = {
     "Function" : "ExactRiemannSolution",
     "uL" : uL,
     "uR" : uR,
-    "xmin" : 0.,
-    "xmax" : 1.,
+#    "xmin" : 0.,
+#    "xmax" : 1.,
     "xshock" : 0.5,
 }
 InitialCondition = state

@@ -221,7 +221,7 @@ class Arrhenius(SourceBase):
 		Tign = self.Tign
 
 
-		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 		# U = self.U
 		T = physics.compute_variable("Temperature", Uq)
@@ -247,7 +247,7 @@ class Arrhenius(SourceBase):
 		A = self.A
 		Tign = self.Tign
 		
-		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 		# Uq = self.Uq
 		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
@@ -272,7 +272,7 @@ class Arrhenius(SourceBase):
 		
 def get_temperature_jacobian(physics, Uq):
 		
-		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 		gam = physics.gamma
 		qo = physics.qo
@@ -308,7 +308,7 @@ class Heaviside(SourceBase):
 		Da = self.Da
 		Tign = self.Tign
 
-		irho, irhou, irhoE, irhoz = physics.GetStateIndices()
+		irho, irhou, irhoE, irhoz = physics.get_state_indices()
 
 		# Uq = self.Uq
 		T = physics.compute_variable("Temperature", Uq)
@@ -333,7 +333,7 @@ class Heaviside(SourceBase):
 
 		# Uq = self.Uq
 		
-		irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 		T = physics.compute_variable("Temperature", Uq)
 		K = np.zeros([Uq.shape[0]])
@@ -365,7 +365,7 @@ class HLLC1D(ConvNumFluxBase):
 
 		# Indices
 		srho = physics.get_state_slice("Density")
-		smom = physics.GetMomentumSlice()
+		smom = physics.get_momentum_slice()
 		srhoE = physics.get_state_slice("Energy")
 		srhoY = physics.get_state_slice("Mixture")
 

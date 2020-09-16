@@ -18,7 +18,7 @@ rc('text',usetex=True)
 
 def get_temperature_jacobian(gam, qo, R, U):
 		
-		# irho, irhou, irhoE, irhoY = physics.GetStateIndices()
+		# irho, irhou, irhoE, irhoY = physics.get_state_indices()
 		
 		dTdU = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
 

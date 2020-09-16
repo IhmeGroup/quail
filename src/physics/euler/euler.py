@@ -68,10 +68,10 @@ class Euler(base.PhysicsBase):
 		# irho = 0; irhoE = dim + 1
 		irho = self.get_state_index("Density")
 		irhoE = self.get_state_index("Energy")
-		# imom = self.GetMomentumSlice()
+		# imom = self.get_momentum_slice()
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
-		smom = self.GetMomentumSlice()
+		smom = self.get_momentum_slice()
 
 		eps = general.eps
 
@@ -104,7 +104,7 @@ class Euler(base.PhysicsBase):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
-		smom = self.GetMomentumSlice()
+		smom = self.get_momentum_slice()
 		rho = Uq[:, srho]
 		rhoE = Uq[:, srhoE]
 		mom = Uq[:, smom]
@@ -221,7 +221,7 @@ class Euler1D(Euler):
 		XMomentum = "\\rho u"
 		Energy = "\\rho E"
 
-	def GetStateIndices(self):
+	def get_state_indices(self):
 		irho = self.get_state_index("Density")
 		irhou = self.get_state_index("XMomentum")
 		irhoE = self.get_state_index("Energy")
@@ -235,7 +235,7 @@ class Euler1D(Euler):
 
 		return srho, srhou, srhoE
 
-	def GetMomentumSlice(self):
+	def get_momentum_slice(self):
 		irhou = self.get_state_index("XMomentum")
 		smom = slice(irhou, irhou+1)
 
@@ -279,7 +279,7 @@ class Euler2D(Euler):
 		YMomentum = "\\rho v"
 		Energy = "\\rho E"
 
-	def GetStateIndices(self):
+	def get_state_indices(self):
 		irho = self.get_state_index("Density")
 		irhou = self.get_state_index("XMomentum")
 		irhov = self.get_state_index("YMomentum")
@@ -287,7 +287,7 @@ class Euler2D(Euler):
 
 		return irho, irhou, irhov, irhoE
 
-	def GetMomentumSlice(self):
+	def get_momentum_slice(self):
 		irhou = self.get_state_index("XMomentum")
 		irhov = self.get_state_index("YMomentum")
 		imom = slice(irhou, irhov+1)
