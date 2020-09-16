@@ -347,28 +347,39 @@ class ExactRiemannSolution(FcnBase):
 
 
 class RiemannProblem(FcnBase):
-	def __init__(self, uL=np.array([1., 0., 1.]), 
-				uR=np.array([0.125, 0., 0.1]), w=1.e-30, xshock=0.):
+	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
+				w=1.e-30, xshock=0.):
 		# Default conditions set up for Sod Problem.
+		self.rhoL = rhoL
 		self.uL = uL
+		self.pL = pL
+		self.rhoR = rhoR
 		self.uR = uR
+		self.pR = pR
 		self.w = w
 		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
 
 		xshock = self.xshock
-		uL = self.uL
-		uR = self.uR
+		# uL = self.uL
+		# uR = self.uR
 		w = self.w
 
-		rhoL = uL[0]
-		vL = uL[1]
-		pL = uL[2]
+		rhoL = self.rhoL
+		uL = self.uL
+		pL = self.pL
+		rhoR = self.rhoR
+		uR = self.uR
+		pR = self.pR
+
+		# rhoL = uL[0]
+		# vL = uL[1]
+		# pL = uL[2]
 		
-		rhoR = uR[0]
-		vR = uR[1]
-		pR = uR[2]
+		# rhoR = uR[0]
+		# vR = uR[1]
+		# pR = uR[2]
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
@@ -383,10 +394,10 @@ class RiemannProblem(FcnBase):
 		Uq[:, srho] =  set_tanh(rhoL, rhoR, w, xshock)
 
 		# Momentum
-		Uq[:, srhou] = set_tanh(rhoL*vL, rhoR*vR, w, xshock)
+		Uq[:, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xshock)
 		# Energy
-		rhoeL = pL/(gamma-1.) + 0.5*rhoL*vL*vL
-		rhoeR = pR/(gamma-1.) + 0.5*rhoR*vR*vR
+		rhoeL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
+		rhoeR = pR/(gamma-1.) + 0.5*rhoR*uR*uR
 		Uq[:, srhoE] = set_tanh(rhoeL, rhoeR, w, xshock)
 
 		return Uq

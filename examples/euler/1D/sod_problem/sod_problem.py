@@ -56,8 +56,12 @@ uR = np.array([0.125,0.,0.1])
 
 state = { 
     "Function" : "RiemannProblem",
-    "uL" : uL,
-    "uR" : uR,
+    "rhoL" : 1., 
+    "uL" : 0.,
+    "pL" : 1.,
+    "rhoR" : 0.125, 
+    "uR" : 0.,
+    "pR" : 0.1,
     # "w" : 0.05,
     "xshock" : 0.5,
 }
