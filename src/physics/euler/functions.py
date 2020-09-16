@@ -642,12 +642,12 @@ class Roe1D(ConvNumFluxBase):
 	# def AllocHelperArrays(self, u):
 	# 	self.__init__(u)
 
-	def RotateCoordSys(self, smom, Uq, n):
+	def rotate_coord_sys(self, smom, Uq, n):
 		Uq[:, smom] *= n
 
 		return Uq
 
-	def UndoRotateCoordSys(self, smom, Uq, n):
+	def undo_rotate_coord_sys(self, smom, Uq, n):
 		Uq[:, smom] /= n
 
 		return Uq
@@ -687,7 +687,7 @@ class Roe1D(ConvNumFluxBase):
 
 		return dvel, drho, dp
 
-	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
+	def get_alphas(self, c, c2, dp, dvel, drho, rhoRoe):
 		alphas = self.alphas 
 
 		alphas[:,0:1] = 0.5/c2*(dp - c*rhoRoe*dvel[:,0:1])
@@ -696,7 +696,7 @@ class Roe1D(ConvNumFluxBase):
 
 		return alphas 
 
-	def GetEigenvalues(self, velRoe, c):
+	def get_eigenvalues(self, velRoe, c):
 		evals = self.evals 
 
 		evals[:,0:1] = velRoe[:,0:1] - c
@@ -713,7 +713,7 @@ class Roe1D(ConvNumFluxBase):
 		# 			evals[iq,i] = 0.5*(eps+evals[iq,i]*evals[iq,i]*eps1)
 		return evals 
 
-	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):
+	def get_right_eigenvectors(self, c, evals, velRoe, HRoe):
 		R = self.R
 
 		# first row
@@ -774,8 +774,8 @@ class Roe1D(ConvNumFluxBase):
 		UqR[:] = UqR_std
 
 		# Rotated coordinate system
-		UqL = self.RotateCoordSys(smom, UqL, n1)
-		UqR = self.RotateCoordSys(smom, UqR, n1)
+		UqL = self.rotate_coord_sys(smom, UqL, n1)
+		UqR = self.rotate_coord_sys(smom, UqR, n1)
 
 		# Velocities
 		velL = UqL[:, smom]/UqL[:, srho]
@@ -795,13 +795,13 @@ class Roe1D(ConvNumFluxBase):
 		# alphas[:,[1]] = drho - dp/c2 
 		# alphas[:,ydim] = rhoRoe*dvel[:,[-1]]
 		# alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
-		alphas = self.GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
+		alphas = self.get_alphas(c, c2, dp, dvel, drho, rhoRoe)
 
 		# Eigenvalues
 		# evals[:,[0]] = velRoe[:,[0]] - c
 		# evals[:,1:-1] = velRoe[:,[0]]
 		# evals[:,[-1]] = velRoe[:,[0]] + c
-		evals = self.GetEigenvalues(velRoe, c)
+		evals = self.get_eigenvalues(velRoe, c)
 
 		# Right eigenvector matrix
 		# first row
@@ -814,12 +814,12 @@ class Roe1D(ConvNumFluxBase):
 		# # [third] row
 		# R[:,ydim,0] = velRoe[:,[-1]];  R[:,ydim,1] = velRoe[:,[-1]]; 
 		# R[:,ydim,-1] = velRoe[:,[-1]]; R[:,ydim,ydim] = 1.
-		R = self.GetRightEigenvectors(c, evals, velRoe, HRoe)
+		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 
 		# Form flux Jacobian matrix multiplied by dU
 		FRoe = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
 
-		FRoe = self.UndoRotateCoordSys(smom, FRoe, n1)
+		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n1)
 
 		# Left flux
 		FL = physics.get_conv_flux_projected(UqL_std, n1)
@@ -832,7 +832,7 @@ class Roe1D(ConvNumFluxBase):
 
 class Roe2D(Roe1D):
 
-	def RotateCoordSys(self, smom, Uq, n):
+	def rotate_coord_sys(self, smom, Uq, n):
 		vel = self.vel
 		vel[:] = Uq[:,smom]
 
@@ -843,7 +843,7 @@ class Roe2D(Roe1D):
 
 		return Uq
 
-	def UndoRotateCoordSys(self, smom, Uq, n):
+	def undo_rotate_coord_sys(self, smom, Uq, n):
 		vel = self.vel
 		vel[:] = Uq[:,smom]
 
@@ -854,28 +854,28 @@ class Roe2D(Roe1D):
 
 		return Uq
 
-	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
+	def get_alphas(self, c, c2, dp, dvel, drho, rhoRoe):
 		alphas = self.alphas 
 
-		alphas = super().GetAlphas(c, c2, dp, dvel, drho, rhoRoe)
+		alphas = super().get_alphas(c, c2, dp, dvel, drho, rhoRoe)
 
 		alphas[:,2:3] = rhoRoe*dvel[:,-1:]
 
 		return alphas 
 
-	def GetEigenvalues(self, velRoe, c):
+	def get_eigenvalues(self, velRoe, c):
 		evals = self.evals 
 
-		evals = super().GetEigenvalues(velRoe, c)
+		evals = super().get_eigenvalues(velRoe, c)
 
 		evals[:,2:3] = velRoe[:,0:1]
 
 		return evals 
 
-	def GetRightEigenvectors(self, c, evals, velRoe, HRoe):
+	def get_right_eigenvectors(self, c, evals, velRoe, HRoe):
 		R = self.R
 
-		R = super().GetRightEigenvectors(c, evals, velRoe, HRoe)
+		R = super().get_right_eigenvectors(c, evals, velRoe, HRoe)
 
 		i = 2
 
