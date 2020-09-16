@@ -68,8 +68,12 @@ state = {
 
 state_exact = {
     "Function" : "ExactRiemannSolution",
-    "uL" : uL,
-    "uR" : uR,
+    "rhoL" : 1.,
+    "uL" : 0.,
+    "pL" : 1.,
+    "rhoR" : 0.125,
+    "uR" : 0.,
+    "pR" : 0.1,
 #    "xmin" : 0.,
 #    "xmax" : 1.,
     "xshock" : 0.5,

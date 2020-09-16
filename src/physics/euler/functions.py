@@ -259,23 +259,31 @@ class DensityWave(FcnBase):
 
 
 class ExactRiemannSolution(FcnBase):
-	def __init__(self, uL=np.array([1., 0., 1.]), 
-			uR=np.array([0.125, 0., 0.1]), xshock=0.):
+	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
+				xshock=0.):
+		# Default conditions set up for Sod Problem.
+		self.rhoL = rhoL
 		self.uL = uL
+		self.pL = pL
+		self.rhoR = rhoR
 		self.uR = uR
+		self.pR = pR
 		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
 
-		uL = self.uL
-		uR = self.uR
+		# uL = self.uL
+		# uR = self.uR
 		xshock = self.xshock
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gamma = physics.gamma
 		srho, srhou, srhoE = physics.get_state_slices()
 
-		rho4 = uL[0]; p4 = uL[2]; u4 = uL[1]
-		rho1 = uR[0]; p1 = uR[2]; u1 = uR[1]
+		# rho4 = uL[0]; p4 = uL[2]; u4 = uL[1]
+		# rho1 = uR[0]; p1 = uR[2]; u1 = uR[1]
+
+		rho4 = self.rhoL; p4 = self.pL; u4 = self.uL
+		rho1 = self.rhoR; p1 = self.pR; u1 = self.uR
 
 		c4 = np.sqrt(gamma*p4/rho4)
 		c1 = np.sqrt(gamma*p1/rho1)
@@ -288,7 +296,7 @@ class ExactRiemannSolution(FcnBase):
 			return F			
 
 		y0 = 0.5*p4/p1
-		Y = fsolve(F,y0)
+		Y = fsolve(F, y0)
 
 		# can now get p2
 		p2 = Y*p1
@@ -348,7 +356,7 @@ class ExactRiemannSolution(FcnBase):
 
 class RiemannProblem(FcnBase):
 	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
-				w=1.e-30, xshock=0.):
+				xshock=0., w=1.e-30):
 		# Default conditions set up for Sod Problem.
 		self.rhoL = rhoL
 		self.uL = uL
@@ -356,15 +364,10 @@ class RiemannProblem(FcnBase):
 		self.rhoR = rhoR
 		self.uR = uR
 		self.pR = pR
-		self.w = w
 		self.xshock = xshock
+		self.w = w
 
 	def get_state(self, physics, x, t):
-
-		xshock = self.xshock
-		# uL = self.uL
-		# uR = self.uR
-		w = self.w
 
 		rhoL = self.rhoL
 		uL = self.uL
@@ -372,6 +375,10 @@ class RiemannProblem(FcnBase):
 		rhoR = self.rhoR
 		uR = self.uR
 		pR = self.pR
+		xshock = self.xshock
+		# uL = self.uL
+		# uR = self.uR
+		w = self.w
 
 		# rhoL = uL[0]
 		# vL = uL[1]
