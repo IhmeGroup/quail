@@ -617,8 +617,8 @@ class Roe1D(ConvNumFluxBase):
 
 		# self.velL = np.zeros([n,dim])
 		# self.velR = np.zeros([n,dim])
-		self.UL = np.zeros_like(Uq)
-		self.UR = np.zeros_like(Uq)
+		self.UqL = np.zeros_like(Uq)
+		self.UqR = np.zeros_like(Uq)
 		self.vel = np.zeros([n, dim])
 		# self.rhoL_sqrt = np.zeros([n,1])
 		# self.rhoR_sqrt = np.zeros([n,1])
@@ -642,15 +642,15 @@ class Roe1D(ConvNumFluxBase):
 	# def AllocHelperArrays(self, u):
 	# 	self.__init__(u)
 
-	def RotateCoordSys(self, imom, U, n):
-		U[:,imom] *= n
+	def RotateCoordSys(self, smom, Uq, n):
+		Uq[:, smom] *= n
 
-		return U
+		return Uq
 
-	def UndoRotateCoordSys(self, imom, U, n):
-		U[:,imom] /= n
+	def UndoRotateCoordSys(self, smom, Uq, n):
+		Uq[:, smom] /= n
 
-		return U
+		return Uq
 
 	def RoeAverageState(self, physics, srho, velL, velR, uL, uR):
 		# rhoL_sqrt = self.rhoL_sqrt
@@ -660,8 +660,10 @@ class Roe1D(ConvNumFluxBase):
 
 		rhoL_sqrt = np.sqrt(uL[:,srho])
 		rhoR_sqrt = np.sqrt(uR[:,srho])
-		HL = physics.compute_variable("TotalEnthalpy", uL, flag_non_physical=True)
-		HR = physics.compute_variable("TotalEnthalpy", uR, flag_non_physical=True)
+		HL = physics.compute_variable("TotalEnthalpy", uL, 
+				flag_non_physical=True)
+		HR = physics.compute_variable("TotalEnthalpy", uR, 
+				flag_non_physical=True)
 
 		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -726,7 +728,7 @@ class Roe1D(ConvNumFluxBase):
 		return R 
 
 
-	def compute_flux(self, physics, UL_std, UR_std, n):
+	def compute_flux(self, physics, UqL_std, UqR_std, n):
 		'''
 		Function: ConvFluxLaxFriedrichs
 		-------------------
@@ -735,8 +737,8 @@ class Roe1D(ConvNumFluxBase):
 
 		INPUTS:
 		    gamma: specific heat ratio
-		    UL: Left state
-		    UR: Right state
+		    UqL: Left state
+		    UqR: Right state
 		    n: Normal vector (assumed left to right)
 
 		OUTPUTS:
@@ -744,8 +746,8 @@ class Roe1D(ConvNumFluxBase):
 		'''
 
 		# Extract helper arrays
-		UL = self.UL 
-		UR = self.UR
+		UqL = self.UqL 
+		UqR = self.UqR
 
 		# velL = self.velL
 		# velR = self.velR 
@@ -768,25 +770,25 @@ class Roe1D(ConvNumFluxBase):
 		n1 = n/NN
 
 		# Copy values before rotating
-		UL[:] = UL_std
-		UR[:] = UR_std
+		UqL[:] = UqL_std
+		UqR[:] = UqR_std
 
 		# Rotated coordinate system
-		UL = self.RotateCoordSys(smom, UL, n1)
-		UR = self.RotateCoordSys(smom, UR, n1)
+		UqL = self.RotateCoordSys(smom, UqL, n1)
+		UqR = self.RotateCoordSys(smom, UqR, n1)
 
 		# Velocities
-		velL = UL[:, smom]/UL[:, srho]
-		velR = UR[:, smom]/UR[:, srho]
+		velL = UqL[:, smom]/UqL[:, srho]
+		velR = UqR[:, smom]/UqR[:, srho]
 
-		rhoRoe, velRoe, HRoe = self.RoeAverageState(physics, srho, velL, velR, UL, UR)
+		rhoRoe, velRoe, HRoe = self.RoeAverageState(physics, srho, velL, velR, UqL, UqR)
 
 		# Speed of sound from Roe-averaged state
 		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
 		c = np.sqrt(c2)
 
 		# differences
-		dvel, drho, dp = self.GetDifferences(physics, srho, velL, velR, UL, UR)
+		dvel, drho, dp = self.GetDifferences(physics, srho, velL, velR, UqL, UqR)
 
 		# alphas (left eigenvectors multipled by dU)
 		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
@@ -820,37 +822,37 @@ class Roe1D(ConvNumFluxBase):
 		FRoe = self.UndoRotateCoordSys(smom, FRoe, n1)
 
 		# Left flux
-		FL = physics.get_conv_flux_projected(UL_std, n1)
+		FL = physics.get_conv_flux_projected(UqL_std, n1)
 
 		# Right flux
-		FR = physics.get_conv_flux_projected(UR_std, n1)
+		FR = physics.get_conv_flux_projected(UqR_std, n1)
 		
 		return NN*(0.5*(FL+FR) - 0.5*FRoe)
 
 
 class Roe2D(Roe1D):
 
-	def RotateCoordSys(self, imom, U, n):
+	def RotateCoordSys(self, smom, Uq, n):
 		vel = self.vel
-		vel[:] = U[:,imom]
+		vel[:] = Uq[:,smom]
 
-		vel[:,0] = np.sum(U[:,imom]*n, axis=1)
-		vel[:,1] = np.sum(U[:,imom]*n[:,::-1]*np.array([[-1.,1.]]), axis=1)
+		vel[:,0] = np.sum(Uq[:,smom]*n, axis=1)
+		vel[:,1] = np.sum(Uq[:,smom]*n[:,::-1]*np.array([[-1.,1.]]), axis=1)
 		
-		U[:,imom] = vel
+		Uq[:,smom] = vel
 
-		return U
+		return Uq
 
-	def UndoRotateCoordSys(self, imom, U, n):
+	def UndoRotateCoordSys(self, smom, Uq, n):
 		vel = self.vel
-		vel[:] = U[:,imom]
+		vel[:] = Uq[:,smom]
 
-		vel[:,0] = np.sum(U[:,imom]*n*np.array([[1.,-1.]]), axis=1)
-		vel[:,1] = np.sum(U[:,imom]*n[:,::-1], axis=1)
+		vel[:,0] = np.sum(Uq[:,smom]*n*np.array([[1.,-1.]]), axis=1)
+		vel[:,1] = np.sum(Uq[:,smom]*n[:,::-1], axis=1)
 
-		U[:,imom] = vel
+		Uq[:,smom] = vel
 
-		return U
+		return Uq
 
 	def GetAlphas(self, c, c2, dp, dvel, drho, rhoRoe):
 		alphas = self.alphas 
