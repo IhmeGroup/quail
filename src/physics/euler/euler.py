@@ -194,7 +194,7 @@ class Euler1D(Euler):
 			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
 			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
-			euler_fcn_type.SmoothRiemannProblem : euler_fcns.SmoothRiemannProblem,
+			# euler_fcn_type.SmoothRiemannProblem : euler_fcns.SmoothRiemannProblem,
 			euler_fcn_type.ExactRiemannSolution : euler_fcns.ExactRiemannSolution,
 		}
 

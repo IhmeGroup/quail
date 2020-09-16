@@ -12,7 +12,7 @@ class FcnType(Enum):
     IsentropicVortex = auto()
     DensityWave = auto()
     RiemannProblem = auto()
-    SmoothRiemannProblem = auto()
+    # SmoothRiemannProblem = auto()
     TaylorGreenVortex = auto()
     ExactRiemannSolution = auto()
 
@@ -213,49 +213,49 @@ class DensityWave(FcnBase):
 		return Uq
 
 
-class RiemannProblem(FcnBase):
-	def __init__(self, uL=np.array([1., 0., 1.]), 
-			uR=np.array([0.125, 0., 0.1]), xshock=0.):
-		# Default conditions set up for Sod Problem.
-		self.uL = uL
-		self.uR = uR
-		self.xshock = xshock
+# class RiemannProblem(FcnBase):
+# 	def __init__(self, uL=np.array([1., 0., 1.]), 
+# 			uR=np.array([0.125, 0., 0.1]), xshock=0.):
+# 		# Default conditions set up for Sod Problem.
+# 		self.uL = uL
+# 		self.uR = uR
+# 		self.xshock = xshock
 
-	def get_state(self, physics, x, t):
+# 	def get_state(self, physics, x, t):
 
-		xshock = self.xshock
-		uL = self.uL
-		uR = self.uR
+# 		xshock = self.xshock
+# 		uL = self.uL
+# 		uR = self.uR
 
-		rhoL = uL[0]
-		vL = uL[1]
-		pL = uL[2]
+# 		rhoL = uL[0]
+# 		vL = uL[1]
+# 		pL = uL[2]
 		
-		rhoR = uR[0]
-		vR = uR[1]
-		pR = uR[2]
+# 		rhoR = uR[0]
+# 		vR = uR[1]
+# 		pR = uR[2]
 
-		srho, srhou, srhoE = physics.get_state_slices()
+# 		srho, srhou, srhoE = physics.get_state_slices()
 
-		gamma = physics.gamma
+# 		gamma = physics.gamma
 		
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+# 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
-		''' Fill state '''
-		ileft = (x <= xshock).reshape(-1)
-		iright = (x > xshock).reshape(-1)
+# 		''' Fill state '''
+# 		ileft = (x <= xshock).reshape(-1)
+# 		iright = (x > xshock).reshape(-1)
 
-		# Density
-		Uq[iright, srho] = rhoR
-		Uq[ileft, srho] = rhoL
-		# Momentum
-		Uq[iright, srhou] = rhoR*vR
-		Uq[ileft, srhou] = rhoL*vL
-		# Energy
-		Uq[iright, srhoE] = pR/(gamma-1.) + 0.5*rhoR*vR*vR
-		Uq[ileft, srhoE] = pL/(gamma-1.) + 0.5*rhoL*vL*vL
+# 		# Density
+# 		Uq[iright, srho] = rhoR
+# 		Uq[ileft, srho] = rhoL
+# 		# Momentum
+# 		Uq[iright, srhou] = rhoR*vR
+# 		Uq[ileft, srhou] = rhoL*vL
+# 		# Energy
+# 		Uq[iright, srhoE] = pR/(gamma-1.) + 0.5*rhoR*vR*vR
+# 		Uq[ileft, srhoE] = pL/(gamma-1.) + 0.5*rhoL*vL*vL
 
-		return Uq
+# 		return Uq
 
 
 class ExactRiemannSolution(FcnBase):
@@ -346,9 +346,9 @@ class ExactRiemannSolution(FcnBase):
 		return Uq
 
 
-class SmoothRiemannProblem(FcnBase):
+class RiemannProblem(FcnBase):
 	def __init__(self, uL=np.array([1., 0., 1.]), 
-				uR=np.array([0.125, 0., 0.1]), w=0.05, xshock=0.):
+				uR=np.array([0.125, 0., 0.1]), w=1.e-30, xshock=0.):
 		# Default conditions set up for Sod Problem.
 		self.uL = uL
 		self.uR = uR
