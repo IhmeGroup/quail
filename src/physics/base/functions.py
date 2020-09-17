@@ -47,9 +47,9 @@ class StateAll(BCWeakRiemann):
     def __init__(self, **kwargs):
     	if "function" not in kwargs.keys():
     		raise Exception("function must be specified for StateAll BC")
-    	fcn_ref = kwargs["function"]
+    	fcn_class = kwargs["function"]
     	kwargs.pop("function")
-    	self.function = fcn_ref(**kwargs)
+    	self.function = fcn_class(**kwargs)
 
     def get_boundary_state(self, physics, UqI, normals, x, t):
     	UqB = self.function.get_state(physics, x, t)

@@ -5,7 +5,6 @@ import numpy as np
 import errors
 
 import numerics.basis.tools as basis_tools
-# from physics.base.data import ICData, BCData, ExactData, SourceData
 import physics.base.functions as base_fcns
 from physics.base.functions import BCType as base_BC_type
 from physics.base.functions import FcnType as base_fcn_type
@@ -14,27 +13,28 @@ from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
 
 def process_map(fcn_type, fcn_map):
 	'''
-	This function extracts the .
+	This function extracts the desired Function class from fcn_map.
 
 	Inputs:
 	-------
-	    fcn_type: function type (str)
-	    fcn_map: function map
+	    fcn_type: Function type (member of corresponding Function enum)
+	    fcn_map: Function map; dict whose keys are the types of Functions 
+	    	and whose values are the corresponding Function classes
 
 	Outputs:
 	--------
-	    fcn_ref: function reference
+	    fcn_class: desired Function class (not instantiated)
 	'''
-	fcn_ref = None
+	fcn_class = None
 	for fcn_keys in fcn_map.keys():
 		if fcn_keys.name == fcn_type:
-			fcn_ref = fcn_map[fcn_keys]
+			fcn_class = fcn_map[fcn_keys]
 			break
 
-	if fcn_ref is None:
+	if fcn_class is None:
 		raise ValueError("Function not found in corresponding map")
 
-	return fcn_ref
+	return fcn_class
 
 
 def set_state_indices_slices(physics):
@@ -80,24 +80,22 @@ class PhysicsBase(ABC):
 	    corresponding slices
 	IC_fcn_map: dict
 		keys are the types of initial conditions (members of FcnType enum);
-		values are references to the corresponding classes
+		values are the corresponding classes
 	exact_fcn_map: dict
 		keys are the types of exact solutions (members of FcnType enum); 
-		values are references to the corresponding classes
+		values are the corresponding classes
 	BC_map: dict
 		keys are the types of boundary conditions (members of BCType enum);
-		values are references to the corresponding classes
+		values are the corresponding classes
 	BC_fcn_map: dict
 		keys are the types of functions for use with the StateAll BC 
-		(members of FcnType enum); values are references to the 
-		corresponding classes
+		(members of FcnType enum); values are the corresponding classes
 	source_map: dict
 		keys are the types of source terms (members of SourceType enum); 
-		values are references to the corresponding classes
+		values are the corresponding classes
 	conv_num_flux_map
 		keys are the types of convective numerical fluxes (members of 
-		ConvNumFluxType enum); values are references to the 
-		corresponding classes
+		ConvNumFluxType enum); values are the corresponding classes
 	IC: function object
 	    holds information about the initial condition
 	exact_soln: function object
@@ -316,34 +314,34 @@ class PhysicsBase(ABC):
 			kwargs: keyword arguments; depends on specific initial 
 				condition
 		'''
-		# Get reference to instantiation of specified initial condition class
-		fcn_ref = process_map(IC_type, self.IC_fcn_map)
+		# Get specified initial condition class
+		fcn_class = process_map(IC_type, self.IC_fcn_map)
 		# Instantiate class and store
-		self.IC = fcn_ref(**kwargs)
+		self.IC = fcn_class(**kwargs)
 
 	def set_exact(self, exact_type, **kwargs):
-		fcn_ref = process_map(exact_type, self.exact_fcn_map)
-		self.exact_soln = fcn_ref(**kwargs)
+		fcn_class = process_map(exact_type, self.exact_fcn_map)
+		self.exact_soln = fcn_class(**kwargs)
 
 	def set_BC(self, bname, BC_type, fcn_type=None, **kwargs):
 		if self.BCs[bname] is not None:
 			raise ValueError
 		else:
 			if fcn_type is not None:
-				fcn_ref = process_map(fcn_type, self.BC_fcn_map)
-				kwargs.update(function=fcn_ref)
-			BC_ref = process_map(BC_type, self.BC_map)
-			BC = BC_ref(**kwargs)
+				fcn_class = process_map(fcn_type, self.BC_fcn_map)
+				kwargs.update(function=fcn_class)
+			BC_class = process_map(BC_type, self.BC_map)
+			BC = BC_class(**kwargs)
 			self.BCs[bname] = BC
 
 		# for i in range(len(self.BCs)):
 		# 	BC = self.BCs[i]
 		# 	if BC is None:
 		# 		if fcn_type is not None:
-		# 			fcn_ref = process_map(fcn_type, self.BC_fcn_map)
-		# 			kwargs.update(function=fcn_ref)
-		# 		BC_ref = process_map(BC_type, self.BC_map)
-		# 		BC = BC_ref(**kwargs)
+		# 			fcn_class = process_map(fcn_type, self.BC_fcn_map)
+		# 			kwargs.update(function=fcn_class)
+		# 		BC_class = process_map(BC_type, self.BC_map)
+		# 		BC = BC_class(**kwargs)
 		# 		self.BCs[i] = BC
 		# 		break
 
@@ -360,14 +358,14 @@ class PhysicsBase(ABC):
 	# 		raise NameError
 
 	def set_source(self, source_type, **kwargs):
-		source_ref = process_map(source_type, self.source_map)
-		source = source_ref(**kwargs)
+		source_class = process_map(source_type, self.source_map)
+		source = source_class(**kwargs)
 		self.source_terms.append(source)
 
 	def set_conv_num_flux(self, conv_num_flux_type, **kwargs):
-		conv_num_flux_ref = process_map(conv_num_flux_type, 
+		conv_num_flux_class = process_map(conv_num_flux_type, 
 				self.conv_num_flux_map)
-		self.conv_flux_fcn = conv_num_flux_ref(**kwargs)
+		self.conv_flux_fcn = conv_num_flux_class(**kwargs)
 
 	def get_state_index(self, var_name):
 		# idx = self.VariableType[VariableName]

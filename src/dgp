@@ -46,22 +46,22 @@ def set_physics(order, basis_type, mesh, physics_type):
 
 	if PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and \
 			dim == 1:
-	    physics_ref = scalar.ConstAdvScalar1D
+	    physics_class = scalar.ConstAdvScalar1D
 	elif PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and \
 			dim == 2:
-	    physics_ref = scalar.ConstAdvScalar2D
+	    physics_class = scalar.ConstAdvScalar2D
 	elif PhysicsType[physics_type] == PhysicsType.Burgers and dim == 1:
-	    physics_ref = scalar.Burgers1D
+	    physics_class = scalar.Burgers1D
 	elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 1:
-	    physics_ref = euler.Euler1D
+	    physics_class = euler.Euler1D
 	elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 2:
-	    physics_ref = euler.Euler2D
+	    physics_class = euler.Euler2D
 	elif PhysicsType[physics_type] == PhysicsType.Chemistry and dim ==1:
-		physics_ref = chemistry.Chemistry1D
+		physics_class = chemistry.Chemistry1D
 	else:
 	    raise NotImplementedError
 
-	physics = physics_ref(order, basis_type, mesh)
+	physics = physics_class(order, basis_type, mesh)
 
 	return physics
 
