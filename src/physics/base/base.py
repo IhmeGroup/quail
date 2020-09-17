@@ -13,15 +13,41 @@ from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
 
 
 def process_map(fcn_type, fcn_map):
-	if fcn_type != "":
-		# Update kwargs with reference to desired function 
-		for fcn_keys in fcn_map.keys():
-			if fcn_keys.name == fcn_type:
-				# kwargs.update(Function=fcn_map[fcn_keys])
-				fcn_ref = fcn_map[fcn_keys]
-				break
-	else:
-		fcn_ref = None
+	'''
+	This function creates a 1D uniform mesh.
+
+	Inputs:
+	-------
+	    num_elems: number of mesh elements
+	    xmin: minimum x-coordinate
+	    xmax: maximum x-coordinate
+
+	Outputs:
+	--------
+	    mesh: mesh object
+
+	Notes:
+	------
+		Two boundary groups are created:
+		x1: located at x = xmin
+		x2: located at x = xmax
+	'''
+	fcn_ref = None
+	for fcn_keys in fcn_map.keys():
+		if fcn_keys.name == fcn_type:
+			fcn_ref = fcn_map[fcn_keys]
+			break
+
+	if fcn_ref is None:
+		raise ValueError("Function not found in corresponding map")
+	# if fcn_type != "":
+	# 	for fcn_keys in fcn_map.keys():
+	# 		if fcn_keys.name == fcn_type:
+	# 			fcn_ref = fcn_map[fcn_keys]
+	# 			break
+	# else:
+	# 	fcn_ref = None
+
 	return fcn_ref
 
 
