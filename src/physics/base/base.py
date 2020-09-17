@@ -58,26 +58,95 @@ def set_state_indices_slices(physics):
 		index += 1
 
 
-class PhysicsBase(object):
-    '''
-    This class stores information about the physics.
+class PhysicsBase(ABC):
+	'''
+	This class stores information about the physics.
 
-    Attributes:
-    -----------
-    name : str
-        boundary name
-    number : int
-        boundary number
-    num_boundary_faces : int
-        number of faces in boundary group
-    boundary_faces : list
-        list of BoundaryFace objects
-    
-    Methods:
-    ---------
-    allocate_boundary_faces
-        allocates list of BoundaryFace objects
-    '''
+	Abstract Constants:
+	-------------------
+	NUM_STATE_VARS
+	    number of state variables
+	DIM
+	    number of dimensions
+	PHYSICS_TYPE
+		physics type (general.PhysicsType enum member)
+
+	Attributes:
+	-----------
+	state_indices: dict
+	    keys are the names of the state variables; values are the 
+	    corresponding indices
+	state_slices: dict
+	    keys are the names of the state variables; values are the 
+	    corresponding slices
+	IC: function object
+	    holds information about the initial condition
+	exact_soln: function object
+	    holds information about the (optional) exact solution
+	BCs: dict
+	    keys are the names of the boundary groups; values are the
+	    corresponding function objects
+	source_terms: list
+	    list of function objects corresponding to each source term
+	conv_flux_fcn: function object
+	    holds information about the convective flux function
+	order: int
+	    order of solution approximation
+	U: numpy array
+		coefficients of polynomial approximation of global solution
+
+	Inner Classes:
+	--------------
+	StateVariables: enum
+		state variables
+	AdditionalVariables: enum
+		additional variables (other than state variables)
+
+	Abstract Methods:
+	-----------------
+	get_conv_flux_interior
+		computes the analytic convective flux for element interiors
+
+	Methods:
+	--------
+	set_physical_params
+		sets physical parameters
+	set_maps
+		sets maps for the initial condition, exact solution, boundary
+		conditions, source terms, and convective flux function. Each of 
+		these maps the members of the corresponding enum to the 
+		associated class.
+	set_IC
+		instantiates and stores the initial condition object
+	set_exact
+		instantiates and stores the exact solution object
+	set_BC
+		instantiates and stores the boundary condition objects
+	set_source
+		instantiates and stores the source term objects
+	set_conv_num_flux
+		instantiates and stores the convective numerical flux object
+	get_state_index
+		gets the index corresponding to a given state variable
+	get_state_slice  
+		gets the slice corresponding to a given state variable
+	get_quadrature_order
+		gets the recommended quadrature order associated with the given
+		physics class
+	get_conv_flux_projected
+		computes the analytic convective flux projected in a given 
+		direction
+	get_conv_flux_numerical
+		computes the convective numerical flux
+	eval_source_terms
+		evaluates the source terms
+	eval_source_term_jacobians
+		evaluates the source term Jacobians
+	compute_variable
+		wrapper to compute a given variable (state or additional)
+	compute_additional_variable
+		computes a given additional variable
+	'''
 	@property
 	@abstractmethod
 	def NUM_STATE_VARS(self):
@@ -91,69 +160,45 @@ class PhysicsBase(object):
 	@property
 	@abstractmethod
 	def PHYSICS_TYPE(self):
-		# store so this can be easily accessed outside the physics modules
 		pass
 
 	def __init__(self, order, basis_type, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		# dim = mesh.dim
-		# self.DIM = mesh.dim
-		# self.params = {}
 		self.state_indices = {}
 		self.state_slices = {}
 		self.IC = None
 		self.exact_soln = None
-		self.conv_flux_fcn = None
-		self.source_terms = []
-		# Boundary conditions
-		# self.BCs = []
-		# for ibfgrp in range(mesh.num_boundary_groups):
-		# 	self.BCs.append(BCData(Name=mesh.BFGNames[ibfgrp]))
-		# self.nBC = mesh.num_boundary_groups
-		# self.BCs = [BCData() for ibfgrp in range(mesh.num_boundary_groups)]
-		# for ibfgrp in range(mesh.num_boundary_groups):
-		# 	self.BCs[ibfgrp].Name = mesh.BFGNames[ibfgrp]
-		# 	# self.BCs[0].Set(Name=mesh.BFGNames[ibfgrp])
-		# self.BCs = [None]*mesh.num_boundary_groups
 		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
+		self.source_terms = []
+		self.conv_flux_fcn = None
 
-		# Basis, Order data for each element group
-		# For now, ssume uniform basis and Order for each element group 
-
-
-		# if type(basis) is str:
-		# 	basis = BasisType[basis]
-		# self.Basis = basis
+		# Coefficients of polynomial approximation of global solution
 		self.order = order
-		# if type(order) is int:
-		# 	self.order = order
-		# elif type(order) is list:
-		# 	self.order = order[0]
-		# else:
-		# 	raise Exception("Input error")
-
 		basis = basis_tools.set_basis(self.order, basis_type)
 		self.U = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(
 				self.order), self.NUM_STATE_VARS])
-		self.S = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(
-				self.order), self.NUM_STATE_VARS])
-		set_state_indices_slices(self)
 
-
+		# Compatibility check
 		if mesh.dim != self.DIM:
 			raise errors.IncompatibleError
 
+		# Set indices and slices corresponding to the state variables
+		set_state_indices_slices(self)
+
+		# Set function maps
 		self.set_maps()
 
 	def __repr__(self):
 		return '{self.__class__.__name__}'.format(self=self)
+		
+	@abstractmethod
+	class StateVariables(Enum):
+		pass
+
+	class AdditionalVariables(Enum):
+		pass
+
+	def set_physical_params(self):
+		pass
 
 	def set_maps(self):
 
@@ -181,9 +226,6 @@ class PhysicsBase(object):
 			self.conv_num_flux_map.update({
 				base_conv_num_flux_type.LaxFriedrichs : base_fcns.LaxFriedrichs,
 			})
-
-	def set_physical_params(self):
-		pass
 
 	# def SetParams(self, **kwargs):
 	# 	Params = self.params
@@ -247,13 +289,6 @@ class PhysicsBase(object):
 		conv_num_flux_ref = process_map(conv_num_flux_type, 
 				self.conv_num_flux_map)
 		self.conv_flux_fcn = conv_num_flux_ref(**kwargs)
-		
-	@abstractmethod
-	class StateVariables(Enum):
-		pass
-
-	class AdditionalVariables(Enum):
-		pass
 
 	def get_state_index(self, var_name):
 		# idx = self.VariableType[VariableName]
@@ -296,8 +331,12 @@ class PhysicsBase(object):
 	@abstractmethod
 	def get_conv_flux_interior(self, u):
 		pass
+		
+	def get_conv_flux_projected(self, Uq, normals):
 
-	@abstractmethod
+		F = self.get_conv_flux_interior(Uq)
+		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
+
 	def get_conv_flux_numerical(self, UqL, UqR, normals):
 		# self.conv_flux_fcn.AllocHelperArrays(uL)
 		F = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
@@ -334,11 +373,6 @@ class PhysicsBase(object):
 			jac += source.get_jacobian(self, Uq, xphys, time)
 
 		return jac
-		
-	def get_conv_flux_projected(self, Uq, normals):
-
-		F = self.get_conv_flux_interior(Uq)
-		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
 
 	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
 	# 	bctreatment = self.BCTreatments[BC.BCType]
@@ -403,71 +437,3 @@ class PhysicsBase(object):
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		pass
-
-	# def call_function(self, FcnData, x, t):
-	# 	# for key in kwargs:
-	# 	# 	if key is "x":
-	# 	# 		FcnData.x = kwargs[key]
-	# 	# 		FcnData.nq = FcnData.x.shape[0]
-	# 	# 	elif key is "Time":
-	# 	# 		FcnData.time = kwargs[key]
-	# 	# 	else:
-	# 	# 		raise Exception("Input error")
-
-	# 	# nq = FcnData.nq
-	# 	# sr = self.NUM_STATE_VARS
-	# 	# if FcnData.U is None or FcnData.U.shape != (nq, sr):
-	# 	# 	FcnData.U = np.zeros([nq, sr], dtype=self.U.dtype)
-
-	# 	# FcnData.U[:] = FcnData.Function(self, FcnData)
-	# 	# FcnData.alloc_helpers([x.shape[0], self.NUM_STATE_VARS])
-	# 	FcnData.Uq = FcnData.get_state(self, x, t)
-
-	# 	return FcnData.Uq
-
-	# def CallSourceFunction(self, FcnData, x, t):
-	# 	# for key in kwargs:
-	# 	# 	if key is "x":
-	# 	# 		FcnData.x = kwargs[key]
-	# 	# 		FcnData.nq = FcnData.x.shape[0]
-	# 	# 	elif key is "Time":
-	# 	# 		FcnData.time = kwargs[key]
-	# 	# 	else:
-	# 	# 		raise Exception("Input error")
-
-	# 	# nq = FcnData.nq
-	# 	# sr = self.NUM_STATE_VARS
-	# 	# if FcnData.S is None or FcnData.S.shape != (nq, sr):
-	# 	# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
-	# 	# code.interact(local=locals())
-	# 	FcnData.S = FcnData.get_source(self, FcnData, x, t)
-
-	# 	return FcnData.S
-
-	# def CallSourceJacobianFunction(self, FcnData, x, t):
-	# 	# for key in kwargs:
-	# 	# 	if key is "x":
-	# 	# 		FcnData.x = kwargs[key]
-	# 	# 		FcnData.nq = FcnData.x.shape[0]
-	# 	# 	elif key is "Time":
-	# 	# 		FcnData.time = kwargs[key]
-	# 	# 	else:
-	# 	# 		raise Exception("Input error")
-
-	# 	# nq = FcnData.nq
-	# 	# sr = self.NUM_STATE_VARS
-	# 	# if FcnData.S is None or FcnData.S.shape != (nq, sr):
-	# 	# 	FcnData.S = np.zeros([nq, sr], dtype=self.S.dtype)
-	# 	# code.interact(local=locals())
-	# 	FcnData.jac = FcnData.get_jacobian(self, FcnData, x, t)
-	# 	return FcnData.jac
-
-	# def FcnUniform(self, FcnData):
-	# 	Data = FcnData.Data
-	# 	U = FcnData.U
-	# 	ns = self.NUM_STATE_VARS
-
-	# 	for k in range(ns):
-	# 		U[:,k] = Data.State[k]
-
-	# 	return U

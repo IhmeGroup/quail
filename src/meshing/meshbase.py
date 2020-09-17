@@ -52,11 +52,6 @@ class BoundaryFace(object):
         local ID of face from perspective of adjacent element
     '''
     def __init__(self):
-        '''
-        Method: __init__
-        -------------------
-        This method initializes the object
-        '''
         self.elem_id = 0 
         self.face_id = 0 
 
@@ -82,18 +77,6 @@ class BoundaryGroup(object):
         allocates list of BoundaryFace objects
     '''
     def __init__(self):
-        '''
-        Attributes:
-        -----------
-        name : str
-            boundary name
-        number : int
-            boundary number
-        num_boundary_faces : int
-            number of faces in boundary group
-        boundary_faces : list
-            list of BoundaryFace objects
-        '''
         self.name = ""
         self.number = -1
         self.num_boundary_faces = 0 
@@ -127,19 +110,6 @@ class Element(object):
         neighbor across said face [num_faces]
     '''
     def __init__(self, elem_id=-1):
-        '''
-        Attributes:
-        -----------
-        id: int
-            element ID
-        node_ids : numpy array
-            global IDs of the element nodes
-        node_coords : numpy array
-            coordinates of the element nodes [num_elem_nodes, dim]
-        face_to_neighbors : numpy array
-            maps local face ID to element ID of 
-            neighbor across said face [num_faces]
-        '''
         self.id = elem_id
         self.node_ids = np.zeros(0, dtype=int)
         self.node_coords = np.zeros(0)
@@ -196,38 +166,6 @@ class Mesh(object):
     '''
     def __init__(self, dim=1, num_nodes=1, num_elems=1, gbasis=None, 
             gorder=1):
-        '''
-        Attributes:
-        -----------
-        dim : int
-            number of spatial dimensions
-        num_nodes : int
-            total number of nodes
-        node_coords : numpy array
-            coordinates of nodes [num_nodes, dim]
-        num_interior_faces : int
-            number of interior faces
-        interior_faces : list
-            list of interior face objects
-        num_boundary_groups : int
-            number of boundary face groups
-        boundary_groups : dict
-            dict whose keys are boundary names and values are BoundaryGroup
-            objects
-        gbasis : Basis class
-            geometry basis object
-        gorder : int
-            order of geometry interpolation
-        num_elems : int
-            total number of elements in mesh
-        num_nodes_per_elem : int
-            number of nodes per element
-        elem_to_node_ids : numpy array
-            maps element ID to global node IDs 
-            [num_elems, num_nodes_per_elem]
-        elements : list
-            list of Element objects
-        '''
         if gbasis is None:
             gbasis = basis_defs.LagrangeSeg(1)
 
