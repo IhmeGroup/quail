@@ -5,6 +5,7 @@ import numpy as np
 import errors
 
 import numerics.basis.tools as basis_tools
+
 import physics.base.functions as base_fcns
 from physics.base.functions import BCType as base_BC_type
 from physics.base.functions import FcnType as base_fcn_type
@@ -96,16 +97,16 @@ class PhysicsBase(ABC):
 	conv_num_flux_map
 		keys are the types of convective numerical fluxes (members of 
 		ConvNumFluxType enum); values are the corresponding classes
-	IC: function object
+	IC: Function object
 	    holds information about the initial condition
-	exact_soln: function object
+	exact_soln: Function object
 	    holds information about the (optional) exact solution
 	BCs: dict
 	    keys are the names of the boundary groups; values are the
-	    corresponding function objects
+	    corresponding Function objects
 	source_terms: list
-	    list of function objects corresponding to each source term
-	conv_flux_fcn: function object
+	    list of Function objects corresponding to each source term
+	conv_flux_fcn: Function object
 	    holds information about the convective flux function
 	order: int
 	    order of solution approximation
@@ -122,7 +123,7 @@ class PhysicsBase(ABC):
 	Abstract Methods:
 	-----------------
 	get_conv_flux_interior
-		computes the analytic convective flux for element interiors
+		computes the convective analytic flux for element interiors
 
 	Methods:
 	--------
@@ -156,9 +157,9 @@ class PhysicsBase(ABC):
 	get_conv_flux_numerical
 		computes the convective numerical flux
 	eval_source_terms
-		evaluates the source terms
+		evaluates the source term(s)
 	eval_source_term_jacobians
-		evaluates the source term Jacobians
+		evaluates the source term Jacobian(s)
 	compute_variable
 		wrapper to compute a given variable (state or additional)
 	compute_additional_variable
@@ -310,9 +311,13 @@ class PhysicsBase(ABC):
 
 		Inputs:
 		-------
-			IC_type: type of initial condition (member of ICType enum)
+			IC_type: type of initial condition (member of FcnType enum)
 			kwargs: keyword arguments; depends on specific initial 
 				condition
+
+		Outputs:
+		--------
+			self.IC: stores IC object
 		'''
 		# Get specified initial condition class
 		fcn_class = process_map(IC_type, self.IC_fcn_map)
@@ -320,197 +325,266 @@ class PhysicsBase(ABC):
 		self.IC = fcn_class(**kwargs)
 
 	def set_exact(self, exact_type, **kwargs):
+		'''
+		This method sets the exact solution.
+
+		Inputs:
+		-------
+			exact_type: type of exact condition (member of FcnType enum)
+			kwargs: keyword arguments; depends on specific exact 
+				solution
+
+		Outputs:
+		--------
+			self.exact_soln: stores exact solution object
+		'''
+		# Get specified exact solution class
 		fcn_class = process_map(exact_type, self.exact_fcn_map)
+		# Instantiate class and store
 		self.exact_soln = fcn_class(**kwargs)
 
 	def set_BC(self, bname, BC_type, fcn_type=None, **kwargs):
+		'''
+		This method sets a given boundary condition.
+
+		Inputs:
+		-------
+			bname: boundary name
+			BC_type: type of boundary condition (member of BCType enum)
+			fcn_type: Function type (member of FcnType enum);
+				only for StateAll BC
+			kwargs: keyword arguments; depends on specific BC
+
+		Outputs:
+		--------
+			self.BCs: stores BC object
+		'''
 		if self.BCs[bname] is not None:
 			raise ValueError
 		else:
+			# Process Function type
 			if fcn_type is not None:
 				fcn_class = process_map(fcn_type, self.BC_fcn_map)
 				kwargs.update(function=fcn_class)
+			# Get specified boundary condition class
 			BC_class = process_map(BC_type, self.BC_map)
+			# Instantiate class
 			BC = BC_class(**kwargs)
+			# Store
 			self.BCs[bname] = BC
 
-		# for i in range(len(self.BCs)):
-		# 	BC = self.BCs[i]
-		# 	if BC is None:
-		# 		if fcn_type is not None:
-		# 			fcn_class = process_map(fcn_type, self.BC_fcn_map)
-		# 			kwargs.update(function=fcn_class)
-		# 		BC_class = process_map(BC_type, self.BC_map)
-		# 		BC = BC_class(**kwargs)
-		# 		self.BCs[i] = BC
-		# 		break
-
-	# def SetBC(self, BCName, **kwargs):
-	# 	found = False
-	# 	code.interact(local=locals())
-	# 	for BC in self.BCs:
-	# 		if BC.Name == BCName:
-	# 			BC.Set(**kwargs)
-	# 			found = True
-	# 			break
-
-	# 	if not found:
-	# 		raise NameError
-
 	def set_source(self, source_type, **kwargs):
+		'''
+		This method sets a given source term.
+
+		Inputs:
+		-------
+			source_type: type of source term (member of SourceType enum)
+			kwargs: keyword arguments; depends on specific source term
+
+		Outputs:
+		--------
+			self.source_terms: stores source term object
+		'''
+		# Get specified source term class
 		source_class = process_map(source_type, self.source_map)
+		# Instantiate class
 		source = source_class(**kwargs)
+		# Store
 		self.source_terms.append(source)
 
 	def set_conv_num_flux(self, conv_num_flux_type, **kwargs):
+		'''
+		This method sets the convective numerical flux.
+
+		Inputs:
+		-------
+			conv_num_flux_type: type of convective numerical flux 
+				(member of ConvNumFluxType enum)
+			kwargs: keyword arguments; depends on specific convective
+				numerical flux
+
+		Outputs:
+		--------
+			self.conv_flux_fcn: stores convective numerical flux object
+		'''
+		# Get specified source term class
 		conv_num_flux_class = process_map(conv_num_flux_type, 
 				self.conv_num_flux_map)
+		# Instantiate class and store
 		self.conv_flux_fcn = conv_num_flux_class(**kwargs)
 
 	def get_state_index(self, var_name):
-		# idx = self.VariableType[VariableName]
+		'''
+		This method gets the index corresponding to a given state variable.
+
+		Inputs:
+		-------
+			var_name: name of state variable
+
+		Outputs:
+		--------
+			idx: index of state variable (int)
+		'''
 		idx = self.state_indices[var_name]
-		# idx = self.StateVariables.__members__.keys().index(VariableName)
 		return idx
 
 	def get_state_slice(self, var_name):
-		# idx = self.VariableType[VariableName]
+		'''
+		This method gets the slice corresponding to a given state variable.
+
+		Inputs:
+		-------
+			var_name: name of state variable
+
+		Outputs:
+		--------
+			slc: slice corresponding to state variable
+		'''
 		slc = self.state_slices[var_name]
-		# idx = self.StateVariables.__members__.keys().index(VariableName)
 		return slc
 
-	# @abstractmethod
-	# class BCType(IntEnum):
-	# 	pass
-
-	# @abstractmethod
-	# class BCTreatment(IntEnum):
-	# 	pass
-
-	# def SetBCTreatment(self):
-	# 	# default is Prescribed
-	# 	self.BCTreatments = {n:self.BCTreatment.Prescribed for n in range(len(self.BCType))}
-	# 	self.BCTreatments[self.BCType.StateAll] = self.BCTreatment.Riemann
-
-	# @abstractmethod
-	# class ConvFluxType(IntEnum):
-	# 	pass
-
-	# def SetSource(self, **kwargs):
-	# 	#append src data to source_terms list 
-	# 	Source = SourceData()
-	# 	self.source_terms.append(Source)
-	# 	Source.Set(**kwargs)
-
 	def get_quadrature_order(self, order):
+		'''
+		This method gets recommended quadrature order for the given physics.
+
+		Inputs:
+		-------
+			order: order of solution approximation
+
+		Outputs:
+		--------
+			recommended quadrature order
+		'''
 		return 2*order+1
 
 	@abstractmethod
-	def get_conv_flux_interior(self, u):
+	def get_conv_flux_interior(self, Uq):
+		'''
+		This method computes the convective analytic flux for element 
+		interiors.
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]
+
+		Outputs:
+		--------
+			Fq: flux values [nq, ns, dim]
+		'''
 		pass
 		
 	def get_conv_flux_projected(self, Uq, normals):
+		'''
+		This method computes the convective analytic flux projected in a 
+		given direction.
 
-		F = self.get_conv_flux_interior(Uq)
-		return np.sum(F.transpose(1,0,2)*normals, axis=2).transpose()
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]
+			normals: directions in which to project flux [nq, dim]
+
+		Outputs:
+		--------
+			projected flux values [nq, ns]
+		'''
+		Fq = self.get_conv_flux_interior(Uq)
+
+		return np.sum(Fq.transpose(1, 0, 2)*normals, axis=2).transpose()
 
 	def get_conv_flux_numerical(self, UqL, UqR, normals):
-		# self.conv_flux_fcn.AllocHelperArrays(uL)
-		F = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
+		'''
+		This method computes the convective numerical flux.
 
-		return F
+		Inputs:
+		-------
+			UqL: left values of the state variables (typically at the 
+				quadrature points) [nq, ns]
+			UqR: right values of the state variables (typically at the 
+				quadrature points) [nq, ns]
+			normals: directions from left to right [nq, dim]
 
-	# @abstractmethod
-	# def BoundaryState(self, BC, nq, xphys, Time, normals, uI):
-	# 	pass
+		Outputs:
+		--------
+			Fnum: numerical flux values [nq, ns]
+		'''
+		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
 
-	#Source state takes multiple source terms (if needed) and sums them together. 
-	def eval_source_terms(self, nq, xphys, time, Uq, s=None):
+		return Fnum
+
+	def eval_source_terms(self, Uq, xphys, time, Sq):
+		'''
+		This method computes the source term(s).
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]
+			xphys: coordinates in physical space [nq, dim]
+			time: time
+			Sq: initial values of the sum of the source term(s) (typically 
+				initialized to zero) [nq, ns]
+
+		Outputs:
+		--------
+			Sq: sum of the values of source term(s) [nq, ns]
+		'''
 		for source in self.source_terms:
+			Sq += source.get_source(self, Uq, xphys, time)
 
-			#loop through available source terms
-			# source.x = xphys
-			# source.nq = nq
-			# source.time = Time
-			# source.U = Uq
-			# s += self.CallSourceFunction(source,source.x,source.time)
-			s += source.get_source(self, Uq, xphys, time)
+		return Sq
 
-		return s
+	def eval_source_term_jacobians(self, Uq, xphys, time, jac):
+		'''
+		This method computes the source term Jacobian(s).
 
-	def eval_source_term_jacobians(self, nq, xphys, time, Uq, jac=None):
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]
+			xphys: coordinates in physical space [nq, dim]
+			time: time
+			jac: initial values of the sum of the Jacobian(s) (typically 
+				initialized to zero) [nq, ns, ns]
+
+		Outputs:
+		--------
+			jac: sum of the values of Jacobian(s) [nq, ns]
+		'''
 		for source in self.source_terms:
-			#loop through available source terms
-			# source.x = xphys
-			# source.nq = nq
-			# source.time = Time
-			# source.U = Uq
-			# jac += self.CallSourceJacobianFunction(source,source.x,
-			# 		source.time)
 			jac += source.get_jacobian(self, Uq, xphys, time)
 
 		return jac
 
-	# def ConvFluxBoundary(self, BC, uI, uB, normals, nq, data):
-	# 	bctreatment = self.BCTreatments[BC.BCType]
-	# 	if bctreatment == self.BCTreatment.Riemann:
-	# 		F = self.ConvFluxNumerical(uI, uB, normals, nq, data)
-	# 	else:
-	# 		# Prescribe analytic flux
-	# 		try:
-	# 			Fa = data.Fa
-	# 		except AttributeError:
-	# 			data.Fa = Fa = np.zeros([nq, self.NUM_STATE_VARS, self.DIM])
-	# 		# Fa = self.get_conv_flux_interior(uB, Fa)
-	# 		# # Take dot product with n
-	# 		try: 
-	# 			F = data.F
-	# 		except AttributeError:
-	# 			data.F = F = np.zeros_like(uI)
-	# 		F[:] = self.get_conv_flux_projected(uB, normals)
+	def compute_variable(self, var_name, Uq, flag_non_physical=False):
+		'''
+		This method computes a given variable.
 
-	# 	return F
+		Inputs:
+		-------
+			var_name: name of variable to compute
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]
+			flag_non_physical: if True, will raise an error if a
+				non-physical quantity is computed, e.g., negative pressure
+				for the Euler equations
 
-	def compute_variable(self, scalar_name, Uq, flag_non_physical=False):
-		# if type(var_names) is list:
-		# 	nscalar = len(var_names)
-		# elif type(var_names) is str:
-		# 	nscalar = 1
-		# 	var_names = [var_names]
-		# else:
-		# 	raise TypeError
-
-		# nq = U.shape[0]
-		# if scalar is None or scalar.shape != (nq, nscalar):
-		# 	scalar = np.zeros([nq, nscalar])
-		# scalar = np.zeros([Uq.shape[0], 1])
-
-		# for iscalar in range(nscalar):
-		# 	sname = var_names[iscalar]
-		# 	try:
-		# 		sidx = self.get_state_index(sname)
-		# 		scalar[:,iscalar] = U[:,sidx]
-		# 	# if sidx < self.NUM_STATE_VARS:
-		# 	# 	# State variable
-		# 	# 	scalar[:,iscalar] = U[:,sidx]
-		# 	# else:
-		# 	except KeyError:
-		# 		scalar[:,iscalar:iscalar+1] = self.compute_additional_variable(sname, U, scalar[:,iscalar:iscalar+1],
-		# 			flag_non_physical)
-
+		Outputs:
+		--------
+			varq: values of the given variable [nq, 1]
+		'''
 		try:
-			sidx = self.get_state_index(scalar_name)
-			# scalar[:,iscalar] = Uq[:,sidx]
-			scalar = Uq[:, sidx:sidx+1].copy()
-		# if sidx < self.NUM_STATE_VARS:
-		# 	# State variable
-		# 	scalar[:,iscalar] = U[:,sidx]
-		# else:
+			# First try state variables
+			sidx = self.get_state_index(var_name)
+			varq = Uq[:, sidx:sidx+1].copy()
 		except KeyError:
-			scalar = self.compute_additional_variable(scalar_name, Uq, 
+			# Now try additional
+			varq = self.compute_additional_variable(var_name, Uq, 
 					flag_non_physical)
 
-		return scalar
+		return varq
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		pass

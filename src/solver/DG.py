@@ -596,7 +596,7 @@ class DG(base.SolverBase):
 			# eval_source_terms is an additive function so source needs to be 
 			# initialized to zero for each time step
 			Sq[:] = 0.
-			Sq = physics.eval_source_terms(nq, x, self.time, Uq, Sq) # [nq, ns]
+			Sq = physics.eval_source_terms(Uq, x, self.time, Sq) # [nq, ns]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, 
 					elem, Sq)

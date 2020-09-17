@@ -13,7 +13,7 @@ TOL = 1.e-10
 def ref_to_phys(mesh, elem_id, xref):
     '''
     This function converts reference space coordinates to physical
-    space coordinates
+    space coordinates.
 
     Inputs:
     -------

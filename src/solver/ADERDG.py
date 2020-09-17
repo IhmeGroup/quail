@@ -568,7 +568,7 @@ class ADERDG(base.SolverBase):
 			
 			Sq = elem_ops_st.Sq
 			Sq[:] = 0.
-			Sq = physics.eval_source_terms(nq_st, x, t, Uq, Sq) # [nq,sr,dim]
+			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]
 
 			ER += solver_tools.calculate_source_term_integral(elem_ops, 
 					elem_ops_st, elem, Sq)
@@ -817,7 +817,7 @@ class ADERDG(base.SolverBase):
 					self.time, self.Stepper.dt, TimePhiData, xnode, t, None)
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros_like(Sq)
-			Sq = physics.eval_source_terms(nb, x_ader, t, Up, Sq)
+			Sq = physics.eval_source_terms(Up, x_ader, t, Sq)
 			dg_tools.interpolate_to_nodes(Sq, S)
 
 		else:
@@ -840,7 +840,7 @@ class ADERDG(base.SolverBase):
 		
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros([nb_st, ns])
-			Sq = physics.eval_source_terms(nq_st, x, t, Uq, Sq) # [nq,sr,dim]		
+			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]		
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, 
 					quad_wts_st, np.tile(djac,(nq,1)), Sq, S)
 

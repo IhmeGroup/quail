@@ -165,13 +165,13 @@ class Chemistry(base.PhysicsBase):
 			nq = Uq.shape[0]
 			x = np.zeros([nq,1])
 			Sp = np.zeros_like(Uq) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			Sp = self.eval_source_terms(nq, x, 0., Uq, Sp) # [nq,ns]
+			Sp = self.eval_source_terms(Uq, x, 0., Sp) # [nq,ns]
 			scalar = Sp[:,3].reshape(7,1)
 		elif sname is self.AdditionalVariables["Jacobian"].name:
 			nq = Uq.shape[0]
 			x = np.zeros([nq,1])
 			jac = np.zeros([nq,4,4]) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			jac = self.eval_source_term_jacobians(nq, x, 0., Uq, jac) # [nq,ns]
+			jac = self.eval_source_term_jacobians(x, 0., Uq, jac) # [nq,ns]
 			scalar = jac[:,3,3].reshape(7,1)
 		else:
 			raise NotImplementedError
