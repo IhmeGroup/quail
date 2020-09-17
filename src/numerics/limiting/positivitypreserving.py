@@ -63,11 +63,11 @@ class PositivityPreserving(base.LimiterBase):
 		------------------------
 		Limits the solution on each element
 
-		INPUTS:
+		Inputs:
 			solver: type of solver (e.g., DG, ADER-DG, etc...)
 			elem: element index
 
-		OUTPUTS:
+		Outputs:
 			U: solution array
 		'''
 		physics = solver.physics
@@ -176,11 +176,11 @@ class PositivityPreservingChem(PositivityPreserving):
 		------------------------
 		Limits the solution on each element
 
-		INPUTS:
+		Inputs:
 			solver: type of solver (e.g., DG, ADER-DG, etc...)
 			elem: element index
 
-		OUTPUTS:
+		Outputs:
 			U: solution array
 		'''
 		physics = solver.physics

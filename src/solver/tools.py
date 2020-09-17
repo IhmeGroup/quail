@@ -97,7 +97,7 @@ def calculate_dRdU(elem_ops, elem, jac):
 	
 	with respect to the solution state 
 	
-	INPUTS: 
+	Inputs: 
 		elem_ops: object containing precomputed element operations
 		elem: element index
 		jac: element source term jacobian [nq, ns, ns]
@@ -120,13 +120,13 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 	'''
 	Multiplies the residual array with the inverse mass matrix
 
-	INPUTS:
+	Inputs:
 		mesh: mesh object
 		solver: solver object (e.g., DG, ADER-DG, etc...)
 		dt: time step
 		R: residual array
 
-	OUTPUTS:
+	Outputs:
 		U: solution array
 	'''
 	physics = solver.physics

@@ -64,12 +64,12 @@ def populate_nodes_quadril(gorder, start, nodes):
 	Helper function for mapping dgp node ordering to gmsh node ordering for
 	quadrilaterals. Recursion is employed.
 
-	INPUTS: 
+	Inputs: 
 	    gorder: order of geometry interpolation
 	    start: starting node
 	    nodes: array for mapping node orders
 
-	OUTPUTS:
+	Outputs:
 	    nodes: maps dgp node ordering to gmsh node ordering
 	    	(modified)
 	'''
@@ -108,10 +108,10 @@ def gmsh_node_order_quadril(gorder):
 	This function maps dgp node ordering to gmsh node ordering for 
 	quadrilaterals.
 
-	INPUTS: 
+	Inputs: 
 	    gorder: order of geometry interpolation
 
-	OUTPUTS:
+	Outputs:
 	    nodes: maps dgp node ordering to gmsh node ordering
 	'''
 	nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1], 
@@ -126,12 +126,12 @@ def populate_nodes_tri(gorder, start, nodes):
 	Helper function for mapping dgp node ordering to gmsh node ordering for
 	triangles. Recursion is employed.
 
-	INPUTS: 
+	Inputs: 
 	    gorder: order of geometry interpolation
 	    start: starting node
 	    nodes: array for mapping node orders
 
-	OUTPUTS:
+	Outputs:
 	    nodes: maps dgp node ordering to gmsh node ordering
 	    	(modified)
 	'''
@@ -168,10 +168,10 @@ def gmsh_node_order_tri(gorder):
 	This function maps dgp node ordering to gmsh node ordering for 
 	triangles.
 
-	INPUTS: 
+	Inputs: 
 	    gorder: order of geometry interpolation
 
-	OUTPUTS:
+	Outputs:
 	    nodes: maps dgp node ordering to gmsh node ordering
 	'''
 	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int)-1)

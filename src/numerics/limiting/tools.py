@@ -7,7 +7,7 @@ def set_limiter(limiter_type, physics_type):
     ----------------------------
 	selects limiter bases on input deck
 
-    INPUTS:
+    Inputs:
 		limiterType: type of limiter selected (Default: None)
 	'''
 	if limiter_type is None:

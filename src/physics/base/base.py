@@ -14,8 +14,7 @@ from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
 
 def process_map(fcn_type, fcn_map):
 	'''
-	This function extracts a reference to the desired function from the
-	corresponding function map.
+	This function extracts the .
 
 	Inputs:
 	-------
@@ -79,6 +78,26 @@ class PhysicsBase(ABC):
 	state_slices: dict
 	    keys are the names of the state variables; values are the 
 	    corresponding slices
+	IC_fcn_map: dict
+		keys are the types of initial conditions (members of FcnType enum);
+		values are references to the corresponding classes
+	exact_fcn_map: dict
+		keys are the types of exact solutions (members of FcnType enum); 
+		values are references to the corresponding classes
+	BC_map: dict
+		keys are the types of boundary conditions (members of BCType enum);
+		values are references to the corresponding classes
+	BC_fcn_map: dict
+		keys are the types of functions for use with the StateAll BC 
+		(members of FcnType enum); values are references to the 
+		corresponding classes
+	source_map: dict
+		keys are the types of source terms (members of SourceType enum); 
+		values are references to the corresponding classes
+	conv_num_flux_map
+		keys are the types of convective numerical fluxes (members of 
+		ConvNumFluxType enum); values are references to the 
+		corresponding classes
 	IC: function object
 	    holds information about the initial condition
 	exact_soln: function object
@@ -150,21 +169,36 @@ class PhysicsBase(ABC):
 	@property
 	@abstractmethod
 	def NUM_STATE_VARS(self):
+		'''
+		Number of state variables
+		'''
 		pass
 
 	@property
 	@abstractmethod
 	def DIM(self):
+		'''
+		Number of dimensions
+		'''
 		pass
 
 	@property
 	@abstractmethod
 	def PHYSICS_TYPE(self):
+		'''
+		Physics type (general.PhysicsType enum member)
+		'''
 		pass
 
 	def __init__(self, order, basis_type, mesh):
 		self.state_indices = {}
 		self.state_slices = {}
+		self.IC_fcn_map = {}
+		self.exact_fcn_map = {}
+		self.BC_map = {}
+		self.BC_fcn_map = {}
+		self.source_map = {}
+		self.conv_num_flux_map = {}
 		self.IC = None
 		self.exact_soln = None
 		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
@@ -192,16 +226,60 @@ class PhysicsBase(ABC):
 		
 	@abstractmethod
 	class StateVariables(Enum):
+		'''
+		Enum class that stores the state variables.
+		'''
 		pass
 
 	class AdditionalVariables(Enum):
+		'''
+		Enum class that stores additional variables.
+		'''
 		pass
 
 	def set_physical_params(self):
+		'''
+		This method sets physical parameters.
+
+		Notes:
+		------
+			Inputs are specific to the physics class.
+		'''
 		pass
 
 	def set_maps(self):
+		'''
+		This method sets the maps for the initial condition, exact solution, 
+		boundary conditions, source terms, and convective flux function. 
 
+		Outputs:
+		--------
+		    self.IC_fcn_map: dict whose keys are the types of initial 
+		    	conditions (members of FcnType enum); values are the
+		    	corresponding classes
+		    self.exact_fcn_map: dict whose keys are the types of exact 
+		    	solutions (members of FcnType enum); values are the
+		    	corresponding classes
+		    self.BC_map: dict whose keys are the types of boundary
+		    	conditions (members of BCType enum); values are the
+		    	corresponding classes
+		    self.BC_fcn_map: dict whose keys are the types of functions for 
+		    	use with the StateAll BC (members of FcnType enum); values 
+		    	are to the corresponding classes
+		    self.source_map: dict whose keys are the types of source
+		    	terms (members of SourceType enum); values are the
+		    	corresponding classes
+		    self.conv_num_flux_map: dict whose keys are the types of
+		    	convective numerical fluxes (members of ConvNumFluxType
+		    	enum); values are the corresponding classes
+
+		Notes:
+		------
+			In general, the maps set here should be applicable to all
+			child classes. In child classes, these maps should be updated 
+			with only the functions/BCs/source terms/numerical fluxes 
+			compatible with said classes.
+		'''
 		self.IC_fcn_map = {
 			base_fcn_type.Uniform : base_fcns.Uniform,
 		}
@@ -224,22 +302,23 @@ class PhysicsBase(ABC):
 		self.conv_num_flux_map = {}
 		if "MaxWaveSpeed" in self.AdditionalVariables.__members__:
 			self.conv_num_flux_map.update({
-				base_conv_num_flux_type.LaxFriedrichs : base_fcns.LaxFriedrichs,
+				base_conv_num_flux_type.LaxFriedrichs : 
+					base_fcns.LaxFriedrichs,
 			})
 
-	# def SetParams(self, **kwargs):
-	# 	Params = self.params
-	# 	# Overwrite
-	# 	for key in kwargs:
-	# 		Params[key] = kwargs[key]
-			# if key not in Params.keys(): raise Exception("Input error")
-			# if key is "ConvFluxNumerical":
-			# 	Params[key] = self.ConvFluxType[kwargs[key]]
-			# else:
-			# 	Params[key] = kwargs[key]
-
 	def set_IC(self, IC_type, **kwargs):
+		'''
+		This method sets the initial condition.
+
+		Inputs:
+		-------
+			IC_type: type of initial condition (member of ICType enum)
+			kwargs: keyword arguments; depends on specific initial 
+				condition
+		'''
+		# Get reference to instantiation of specified initial condition class
 		fcn_ref = process_map(IC_type, self.IC_fcn_map)
+		# Instantiate class and store
 		self.IC = fcn_ref(**kwargs)
 
 	def set_exact(self, exact_type, **kwargs):

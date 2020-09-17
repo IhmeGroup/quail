@@ -14,7 +14,7 @@ import numerics.limiting.positivitypreserving as pp
 #     ----------------------------
 # 	selects limiter bases on input deck
 
-#     INPUTS:
+#     Inputs:
 # 		limiterType: type of limiter selected (Default: None)
 # 	'''
 # 	if limiter_type is None:
@@ -61,10 +61,10 @@ class LimiterBase(ABC):
 		Method: limit_solution
 		------------------------
 		Calls the limiter function for each element
-		INPUTS:
+		Inputs:
 			solver: type of solver (e.g., DG, ADER-DG, etc...)
 
-		OUTPUTS:
+		Outputs:
 			U: solution array
 		'''
 		for elem in range(solver.mesh.num_elems):

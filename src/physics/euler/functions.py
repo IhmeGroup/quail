@@ -735,13 +735,13 @@ class Roe1D(ConvNumFluxBase):
 		This function computes the numerical flux (dotted with the normal)
 		using the Lax-Friedrichs flux function
 
-		INPUTS:
+		Inputs:
 		    gamma: specific heat ratio
 		    UqL: Left state
 		    UqR: Right state
 		    n: Normal vector (assumed left to right)
 
-		OUTPUTS:
+		Outputs:
 		    F: Numerical flux dotted with the normal, i.e., F_hat dot n
 		'''
 

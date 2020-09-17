@@ -86,7 +86,8 @@ class BoundaryGroup(object):
         '''
         This method allocates the list of boundary_face objects
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.boundary_faces
         '''
         self.boundary_faces = [BoundaryFace() for i in \
@@ -187,12 +188,14 @@ class Mesh(object):
         '''
         This method sets certain mesh parameters
 
-        INPUTS:
+        Inputs:
+        -------
             gbasis: geometry basis object
             gorder: [OPTIONAL] order of geometry interpolation
             num_elems: [OPTIONAL] total number of elements in mesh
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.gbasis: geometry basis object
             self.gorder: order of geometry interpolation
             self.num_elems: total number of elements in mesh
@@ -208,11 +211,13 @@ class Mesh(object):
         '''
         This method allocates self.elem_to_node_ids
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.elem_to_node_ids: maps element ID to global node IDs 
                 [num_elems, num_nodes_per_elem]
 
-        NOTES:
+        Notes:
+        ------
             elem_to_node_ids[elem_id][i] = ith node of elem_id, 
                 where i = 1,2,...,num_nodes_per_elem
         '''
@@ -223,7 +228,8 @@ class Mesh(object):
         '''
         This method allocates self.interior_faces
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.interior_faces: list of InteriorFace objects
         '''
         self.interior_faces = [InteriorFace() for i in range(self.num_interior_faces)]
@@ -232,10 +238,12 @@ class Mesh(object):
         '''
         This method appends a new boundary group to self.boundary_groups
 
-        INPUTS:
+        Inputs:
+        -------
             bname: name of boundary
 
-        OUTPUTS:
+        Outputs:
+        --------
             bgroup: new boundary group
             self.boundary groups: updated to contain bgroup
         '''
@@ -253,7 +261,8 @@ class Mesh(object):
         '''
         This method creates self.elements
 
-        OUTPUTS:
+        Outputs:
+        --------
             self.elements: list of Element objects
         '''
         # allocate

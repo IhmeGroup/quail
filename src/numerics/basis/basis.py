@@ -379,7 +379,7 @@ class SegShape(ShapeBase):
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
                 self.quadrature_type, forced_pts=fpts)
 
-        return quad_pts, quad_wts # [nq, dim] and [nq, 1]
+        return quad_pts, quad_wts # [nq, dim], [nq, 1]
 
 
 class QuadShape(ShapeBase):
