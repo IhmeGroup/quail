@@ -14,23 +14,17 @@ from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
 
 def process_map(fcn_type, fcn_map):
 	'''
-	This function creates a 1D uniform mesh.
+	This function extracts a reference to the desired function from the
+	corresponding function map.
 
 	Inputs:
 	-------
-	    num_elems: number of mesh elements
-	    xmin: minimum x-coordinate
-	    xmax: maximum x-coordinate
+	    fcn_type: function type (str)
+	    fcn_map: function map
 
 	Outputs:
 	--------
-	    mesh: mesh object
-
-	Notes:
-	------
-		Two boundary groups are created:
-		x1: located at x = xmin
-		x2: located at x = xmax
+	    fcn_ref: function reference
 	'''
 	fcn_ref = None
 	for fcn_keys in fcn_map.keys():
@@ -40,26 +34,26 @@ def process_map(fcn_type, fcn_map):
 
 	if fcn_ref is None:
 		raise ValueError("Function not found in corresponding map")
-	# if fcn_type != "":
-	# 	for fcn_keys in fcn_map.keys():
-	# 		if fcn_keys.name == fcn_type:
-	# 			fcn_ref = fcn_map[fcn_keys]
-	# 			break
-	# else:
-	# 	fcn_ref = None
 
 	return fcn_ref
 
 
 def set_state_indices_slices(physics):
-	# State indices
-	physics.StateIndices = {}
-	physics.state_slices = {}
-	index = 0
+	'''
+	This function sets indices and slices corresponding to each state 
+	variable.
 
-	# indices
+	Inputs:
+	-------
+	    physics: physics object
+
+	Outputs:
+	--------
+	    physics: physics object (modified)
+	'''
+	index = 0
 	for key in physics.StateVariables:
-		physics.StateIndices[key.name] = index
+		physics.state_indices[key.name] = index
 		physics.state_slices[key.name] = slice(index, index+1)
 		index += 1
 
@@ -103,6 +97,8 @@ class PhysicsBase(object):
 		self.exact_soln = None
 		self.conv_flux_fcn = None
 		self.source_terms = []
+		self.state_indices = {}
+		self.state_slices = {}
 		# Boundary conditions
 		# self.BCs = []
 		# for ibfgrp in range(mesh.num_boundary_groups):
@@ -248,7 +244,7 @@ class PhysicsBase(object):
 
 	def get_state_index(self, var_name):
 		# idx = self.VariableType[VariableName]
-		idx = self.StateIndices[var_name]
+		idx = self.state_indices[var_name]
 		# idx = self.StateVariables.__members__.keys().index(VariableName)
 		return idx
 
