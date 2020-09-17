@@ -148,7 +148,7 @@ class Element(object):
 
 class Mesh(object):
     '''
-    This class stores information about the mesh
+    This class stores information about the mesh.
 
     Attributes:
     -----------

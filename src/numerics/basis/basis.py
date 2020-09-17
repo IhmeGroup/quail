@@ -31,11 +31,6 @@ class ShapeBase(ABC):
     This is a Mixin class used to represent a shape. Supported shapes 
     include point, segment, quadrilateral, and triangle.
 
-    Attributes:
-    -----------
-    quadrature_type: enum
-        specifies the type of quadrature to be used on the element
-
     Abstract Constants:
     -------------------
     SHAPE_TYPE
@@ -52,6 +47,11 @@ class ShapeBase(ABC):
     CENTROID
         defines a coordinate (as a numpy array) for the centroid of the 
         reference element
+
+    Attributes:
+    -----------
+    quadrature_type: enum
+        specifies the type of quadrature to be used on the element
 
     Abstract Methods:
     -----------------
@@ -556,6 +556,13 @@ class BasisBase(ABC):
             Element Methods" (Boca Raton, FL: Chapman and Hall/CRC). 2004. 
             pp. 55-60.
 
+    Abstract Constants:
+    -------------------
+    BASIS_TYPE
+        defines an enum from ShapeType to identify the element's shape
+    MODAL_OR_NODAL
+        defines whether the basis function is a modal or nodal type
+
     Attributes:
     -----------
     order: int
@@ -577,13 +584,6 @@ class BasisBase(ABC):
     calculate_normals: method
         method to obtain normals for element faces [options in 
         src/numerics/basis/tools.py]
-
-    Abstract Constants:
-    -------------------
-    BASIS_TYPE
-        defines an enum from ShapeType to identify the element's shape
-    MODAL_OR_NODAL
-        defines whether the basis function is a modal or nodal type
     
     Methods:
     --------

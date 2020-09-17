@@ -59,12 +59,25 @@ def set_state_indices_slices(physics):
 
 
 class PhysicsBase(object):
-	'''
-	Class: IFace
-	--------------------------------------------------------------------------
-	This is a class defined to encapsulate the temperature table with the 
-	relevant methods
-	'''
+    '''
+    This class stores information about the physics.
+
+    Attributes:
+    -----------
+    name : str
+        boundary name
+    number : int
+        boundary number
+    num_boundary_faces : int
+        number of faces in boundary group
+    boundary_faces : list
+        list of BoundaryFace objects
+    
+    Methods:
+    ---------
+    allocate_boundary_faces
+        allocates list of BoundaryFace objects
+    '''
 	@property
 	@abstractmethod
 	def NUM_STATE_VARS(self):
@@ -93,12 +106,12 @@ class PhysicsBase(object):
 		# dim = mesh.dim
 		# self.DIM = mesh.dim
 		# self.params = {}
+		self.state_indices = {}
+		self.state_slices = {}
 		self.IC = None
 		self.exact_soln = None
 		self.conv_flux_fcn = None
 		self.source_terms = []
-		self.state_indices = {}
-		self.state_slices = {}
 		# Boundary conditions
 		# self.BCs = []
 		# for ibfgrp in range(mesh.num_boundary_groups):
