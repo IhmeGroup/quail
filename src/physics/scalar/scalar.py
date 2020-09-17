@@ -97,8 +97,8 @@ class ConstAdvScalar(base.PhysicsBase):
 		# F.shape = u.shape + (self.DIM,) 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
-		sname = self.AdditionalVariables[ScalarName].name
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		sname = self.AdditionalVariables[var_name].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			scalar = np.full([Uq.shape[0], 1], self.cspeed)
 			# scalar[:] = self.cspeed
@@ -164,12 +164,12 @@ class ConstAdvScalar(base.PhysicsBase):
 
 # 		return uB
 
-# 	def compute_variable(self, ScalarNames, U, scalar=None, flag_non_physical=False):
-# 		if type(ScalarNames) is list:
-# 			nscalar = len(ScalarNames)
-# 		elif type(ScalarNames) is str:
+# 	def compute_variable(self, var_names, U, scalar=None, flag_non_physical=False):
+# 		if type(var_names) is list:
+# 			nscalar = len(var_names)
+# 		elif type(var_names) is str:
 # 			nscalar = 1
-# 			ScalarNames = [ScalarNames]
+# 			var_names = [var_names]
 # 		else:
 # 			raise TypeError
 
@@ -178,7 +178,7 @@ class ConstAdvScalar(base.PhysicsBase):
 # 			scalar = np.zeros([nq, nscalar])
 
 # 		for iscalar in range(nscalar):
-# 			sname = ScalarNames[iscalar]
+# 			sname = var_names[iscalar]
 # 			try:
 # 				sidx = self.get_state_index(sname)
 # 				scalar[:,iscalar] = U[:,sidx]
@@ -211,12 +211,12 @@ class ConstAdvScalar(base.PhysicsBase):
 
 	# 	return uB
 
-	# def compute_variable(self, ScalarNames, U, scalar=None, flag_non_physical=False):
-	# 	if type(ScalarNames) is list:
-	# 		nscalar = len(ScalarNames)
-	# 	elif type(ScalarNames) is str:
+	# def compute_variable(self, var_names, U, scalar=None, flag_non_physical=False):
+	# 	if type(var_names) is list:
+	# 		nscalar = len(var_names)
+	# 	elif type(var_names) is str:
 	# 		nscalar = 1
-	# 		ScalarNames = [ScalarNames]
+	# 		var_names = [var_names]
 	# 	else:
 	# 		raise TypeError
 
@@ -225,7 +225,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	# 		scalar = np.zeros([nq, nscalar])
 
 	# 	for iscalar in range(nscalar):
-	# 		sname = ScalarNames[iscalar]
+	# 		sname = var_names[iscalar]
 	# 		try:
 	# 			sidx = self.get_state_index(sname)
 	# 			scalar[:,iscalar] = U[:,sidx]
@@ -401,8 +401,8 @@ class Burgers1D(base.PhysicsBase):
 		# F.shape = u.shape + (self.DIM,) 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
-		sname = self.AdditionalVariables[ScalarName].name
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		sname = self.AdditionalVariables[var_name].name
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Pressure
 			# P = GetPressure()

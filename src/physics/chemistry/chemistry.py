@@ -109,7 +109,7 @@ class Chemistry(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
@@ -141,7 +141,7 @@ class Chemistry(base.PhysicsBase):
 			return get_pressure()/(rho*R)
 
 		''' Get final scalars '''
-		sname = self.AdditionalVariables[ScalarName].name
+		sname = self.AdditionalVariables[var_name].name
 		if sname is self.AdditionalVariables["Pressure"].name:
 			scalar = get_pressure()
 		elif sname is self.AdditionalVariables["Temperature"].name:

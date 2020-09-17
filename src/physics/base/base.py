@@ -326,11 +326,11 @@ class PhysicsBase(object):
 	# 	return F
 
 	def compute_variable(self, scalar_name, Uq, flag_non_physical=False):
-		# if type(ScalarNames) is list:
-		# 	nscalar = len(ScalarNames)
-		# elif type(ScalarNames) is str:
+		# if type(var_names) is list:
+		# 	nscalar = len(var_names)
+		# elif type(var_names) is str:
 		# 	nscalar = 1
-		# 	ScalarNames = [ScalarNames]
+		# 	var_names = [var_names]
 		# else:
 		# 	raise TypeError
 
@@ -340,7 +340,7 @@ class PhysicsBase(object):
 		# scalar = np.zeros([Uq.shape[0], 1])
 
 		# for iscalar in range(nscalar):
-		# 	sname = ScalarNames[iscalar]
+		# 	sname = var_names[iscalar]
 		# 	try:
 		# 		sidx = self.get_state_index(sname)
 		# 		scalar[:,iscalar] = U[:,sidx]
@@ -366,7 +366,7 @@ class PhysicsBase(object):
 
 		return scalar
 
-	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		pass
 
 	# def call_function(self, FcnData, x, t):

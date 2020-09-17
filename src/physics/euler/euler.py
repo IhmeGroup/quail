@@ -100,7 +100,7 @@ class Euler(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, ScalarName, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
@@ -126,7 +126,8 @@ class Euler(base.PhysicsBase):
 		# if np.any(P < 0.) or np.any(rho < 0.):
 		# 	raise errors.NotPhysicalError
 		def get_pressure():
-			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
+			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, 
+					keepdims=True)/rho) # just use for storage
 			# if flag_non_physical:
 			# 	if np.any(scalar < 0.):
 			# 		raise errors.NotPhysicalError
@@ -136,7 +137,7 @@ class Euler(base.PhysicsBase):
 
 
 		''' Get final scalars '''
-		sname = self.AdditionalVariables[ScalarName].name
+		sname = self.AdditionalVariables[var_name].name
 		if sname is self.AdditionalVariables["Pressure"].name:
 			scalar = get_pressure()
 		elif sname is self.AdditionalVariables["Temperature"].name:
@@ -215,7 +216,7 @@ class Euler1D(Euler):
 		})
 
 	class StateVariables(Enum):
-		__Order__ = 'Density XMomentum Energy' # only needed in 2.x
+		# __Order__ = 'Density XMomentum Energy' # only needed in 2.x
 		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"
@@ -264,7 +265,8 @@ class Euler2D(Euler):
 
 		self.source_map.update({
 			euler_source_type.StiffFriction : euler_fcns.StiffFriction,
-			euler_source_type.TaylorGreenSource : euler_fcns.TaylorGreenSource,
+			euler_source_type.TaylorGreenSource : 
+					euler_fcns.TaylorGreenSource,
 		})
 
 		self.conv_num_flux_map.update({
@@ -272,7 +274,7 @@ class Euler2D(Euler):
 		})
 
 	class StateVariables(Enum):
-		__Order__ = 'Density XMomentum YMomentum Energy' # only needed in 2.x
+		# __Order__ = 'Density XMomentum YMomentum Energy' # only needed in 2.x
 		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"
