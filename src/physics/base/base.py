@@ -242,7 +242,7 @@ class PhysicsBase(ABC):
 
 		Notes:
 		------
-			Inputs are specific to the physics class.
+			Inputs and outputs are specific to the physics class.
 		'''
 		pass
 

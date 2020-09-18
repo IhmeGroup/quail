@@ -5,7 +5,10 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, ConvNumF
 
 
 class FcnType(Enum):
-    Uniform = auto()
+	'''
+	Enum class that stores the state variables.
+	'''
+	Uniform = auto()
 
 
 class BCType(Enum):
@@ -130,25 +133,3 @@ class LaxFriedrichs(ConvNumFluxBase):
 
 		# flux assembly 
 		return n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)
-
-
-# def uniform(physics, fcn_data):
-# 	Data = fcn_data.Data
-# 	U = fcn_data.U
-# 	ns = physics.NUM_STATE_VARS
-
-# 	for k in range(ns):
-# 		U[:,k] = Data.State[k]
-
-# 	return U
-
-
-# def extrapolate(physics, fcn_data):
-# 	Data = fcn_data.Data
-# 	U = fcn_data.U
-# 	ns = physics.NUM_STATE_VARS
-
-# 	for k in range(ns):
-# 		U[:,k] = Data.State[k]
-
-# 	return U

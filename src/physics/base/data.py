@@ -3,160 +3,220 @@ from data import GenericData
 import numpy as np
 
 
-def set_key(data, **kwargs):
-    for key in kwargs:
-        if hasattr(data, key):
-            setattr(data, key, kwargs[key])
-        else: 
-            raise KeyError
-
 class FcnBase(ABC):
     '''
-    Class: ICData
-    --------------------------------------------------------------------------
-    This is a class that encompases the initial conditions
+    This is an abstract base class for evaluating a given analytical 
+    function for initial conditions, exact solutions, and/or
+    boundary conditions.
 
-    ATTRIBUTES: 
-        Function: function that describes the initial condition. Options located in Scalar.py and Euler.py
-        x: coordinates for initial conditions
-        Time: establish the initial time
-        U: solution array at the initial condition
-        Data: generic data needed for specific initial conditions
+    Abstract Methods:
+    -----------------
+    get_state
+        computes the state variables
     '''
     @abstractmethod
     def get_state(self, physics, x, t):
+        '''
+        This method computes the state variables.
+
+        Inputs:
+        -------
+            physics: physics object
+            x: coordinates in physical space (typically the quadrature 
+                points) [nq, dim]
+            t: time
+
+        Outputs:
+        --------
+            Uq: values of the state variables at x [nq, ns]
+        '''
         pass
-
-
-# class ExactData(ICData):
-#     pass
 
 
 class BCBase(ABC):
+    '''
+    This is an abstract base class for imposing boundary conditions.
 
-    # def __init__(self):
-    #     self.UqB = np.zeros(0)
-    #     self.F = np.zeros(0)
-
-    # def alloc_helpers(self, shape):
-    #     self.UqB.resize(shape)
-    #     self.F.resize(shape)
-
+    Abstract Methods:
+    -----------------
+    get_boundary_state
+        computes the exterior state at a boundary face
+    get_boundary_flux
+        computes the flux at a boundary face
+    '''
     @abstractmethod
     def get_boundary_state(self, physics, UqI, normals, x, t):
+        '''
+        This method computes the exterior state at a boundary face.
+
+        Inputs:
+        -------
+            physics: physics object
+            UqI: interior values of the state variables (typically 
+                at the quadrature points) [nq, ns]
+            normals: outward-pointing normals [nq, dim]
+            x: coordinates in physical space [nq, dim]
+            t: time
+
+        Outputs:
+        --------
+            UqB: exterior values of the state variables [nq, ns]
+        '''
         pass
 
     @abstractmethod
     def get_boundary_flux(self, physics, UqI, normals, x, t):
+        '''
+        This method computes the flux at a boundary face.
+
+        Inputs:
+        -------
+            physics: physics object
+            UqI: interior values of the state variables (typically 
+                at the quadrature points) [nq, ns]
+            normals: outward-pointing normals [nq, dim]
+            x: coordinates in physical space [nq, dim]
+            t: time
+
+        Outputs:
+        --------
+            Fq: values of the flux dotted with the normals [nq, ns]
+        '''
         pass
 
 
-class BCWeakRiemann(ABC):
+class BCWeakRiemann(BCBase):
+    '''
+    BCWeakRiemann inherits attributes and methods from the BCBase class.
+    See BCBase for detailed comments of attributes and methods.
 
+    This class computes the boundary flux via the numerical flux, which
+    depends on the interior and exterior states, i.e. Fnum(UqI, UqB, n).
+    '''
     def get_boundary_flux(self, physics, UqI, normals, x, t):
-
         UqB = self.get_boundary_state(physics, UqI, normals, x, t)
         F = physics.get_conv_flux_numerical(UqI, UqB, normals)
 
         return F
 
 
-class BCWeakPrescribed(BCWeakRiemann):
+class BCWeakPrescribed(BCBase):
+    '''
+    BCWeakRiemann inherits attributes and methods from the BCBase class.
+    See BCBase for detailed comments of attributes and methods.
 
+    This class computes the boundary flux via the analytic flux based on 
+    only the exterior state, i.e. F(UqB, n).
+    '''
     def get_boundary_flux(self, physics, UqI, normals, x, t):
-
         UqB = self.get_boundary_state(physics, UqI, normals, x, t)
         F = physics.get_conv_flux_projected(UqB, normals)
 
         return F
 
-    # def __init__(self):
-    #     super().__init__()
-    #     self.Name = ""
-    #     self.BCType = 0
-    #     self.uI = np.zeros(0)
-
-    # def Set(self, Function=None, Name="", BCType=0, **kwargs):
-    #     self.Function = Function
-    #     self.Name = Name
-    #     self.BCType = BCType
-    #     for key in kwargs:
-    #         self.Data.__dict__[key] = kwargs[key]
-
 
 class SourceBase(ABC):
+    '''
+    This is an abstract base class for evaluating source terms.
 
+    Abstract Methods:
+    -----------------
+    get_source
+        computes the source term
+
+    Methods:
+    --------
+    get_jacobian
+        computes the Jacobian of the source term
+    '''
     @abstractmethod
     def get_source(self, physics, Uq, x, t):
+        '''
+        This method evaluates the source term.
+
+        Inputs:
+        -------
+            physics: physics object
+            Uq: values of the state variables (typically at the 
+                quadrature points) [nq, ns]
+            x: coordinates in physical space [nq, dim]
+            t: time
+
+        Outputs:
+        --------
+            Sq: values of source term [nq, ns]
+        '''
         pass
 
     def get_jacobian(self, physics, Uq, x, t):
+        '''
+        This method evaluates the Jacobian of the source term.
+
+        Inputs:
+        -------
+            physics: physics object
+            Uq: values of the state variables (typically at the 
+                quadrature points) [nq, ns]
+            x: coordinates in physical space [nq, dim]
+            t: time
+
+        Outputs:
+        --------
+            jac: values of source term Jacobian [nq, ns, ns]
+        '''
         raise NotImplementedError
 
 
 class ConvNumFluxBase(ABC):
+    '''
+    This is an abstract base class for evaluating the convective
+    numerical flux. Attributes depend on the type of numerical flux.
 
+    Abstract Methods:
+    -----------------
+    compute_flux
+        computes the numerical flux
+
+    Methods:
+    --------
+    alloc_helpers
+        allocates helper arrays
+    '''
     def __init__(self, Uq=None):
         pass
 
     def alloc_helpers(self, Uq):
+        '''
+        This method is a wrapper for __init__, in which helper arrays 
+        should be allocated.
+
+        Inputs:
+        -------
+            Uq: values of the state variables (typically at the 
+                quadrature points) [nq, ns]
+
+        Notes:
+        ------
+            Outputs depend on the specific numerical flux.
+        '''
         self.__init__(Uq)
 
     @abstractmethod
     def compute_flux(self, physics, UqL, UqR, normals):
+        '''
+        This method computes the numerical flux.
+
+        Inputs:
+        -------
+            physics: physics object
+            UqL: left values of the state variables (typically at the 
+                quadrature points) [nq, ns]
+            UqR: right values of the state variables (typically at the 
+                quadrature points) [nq, ns]
+            normals: directions from left to right [nq, dim]
+
+        Outputs:
+        --------
+            numerical flux values [nq, ns]
+        '''
         pass
-
-
-# class ICData(object):
-#     '''
-#     Class: ICData
-#     --------------------------------------------------------------------------
-#     This is a class that encompases the initial conditions
-
-#     ATTRIBUTES: 
-#         Function: function that describes the initial condition. Options located in Scalar.py and Euler.py
-#         x: coordinates for initial conditions
-#         Time: establish the initial time
-#         U: solution array at the initial condition
-#         Data: generic data needed for specific initial conditions
-#     '''
-#     def __init__(self):
-#         self.Function = None
-#         self.x = None
-#         self.time = 0.
-#         self.U = None
-#         self.Data = GenericData()
-
-#     def Set(self, **kwargs):
-#         for key in kwargs:
-#             # if key in self.__dict__.keys(): self.__dict__[key] = kwargs[key]
-#                 ## NOTE: __dict__ doesn't work this way for inherited classes
-#             # if key in dir(self): 
-#             if hasattr(self, key):
-#                 setattr(self, key, kwargs[key])
-#             else: 
-#                 setattr(self.Data, key, kwargs[key])
-
-
-# class BCData(ICData):
-#     def __init__(self):
-#         BCData.Name = ""
-#         BCData.BCType = 0
-#         ICData.__init__(self)
-
-#     # def Set(self, Function=None, Name="", BCType=0, **kwargs):
-#     #     self.Function = Function
-#     #     self.Name = Name
-#     #     self.BCType = BCType
-#     #     for key in kwargs:
-#     #         self.Data.__dict__[key] = kwargs[key]
-
-# class SourceData(ICData):
-#     def __init__(self):
-#         SourceData.Name = ""
-#         SourceData.S = None
-#         ICData.__init__(self)
-
-# class ExactData(ICData):
-#     def __init__(self):
-#         ICData.__init__(self)
