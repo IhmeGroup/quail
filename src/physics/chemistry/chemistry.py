@@ -157,7 +157,7 @@ class Chemistry(base.PhysicsBase):
 			scalar = np.sqrt(gamma*get_pressure()/rho)
 		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
-		elif sname is self.AdditionalVariables["Velocity"].name:
+		elif sname is self.AdditionalVariables["Speed"].name:
 			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho
 		elif sname is self.AdditionalVariables["MassFraction"].name:
 			scalar = rhoY/rho

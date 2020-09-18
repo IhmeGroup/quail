@@ -36,17 +36,17 @@ physics3 = solver3.physics
 plot.prepare_plot()
 skip=7
 
-plot.plot_solution(mesh_ex, physics_ex, exact, "Velocity", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
+plot.plot_solution(mesh_ex, physics_ex, exact, "Speed", plot_numerical=False, plot_exact=True, plot_IC=False, create_new_figure=True, 
 			ylabel=None, fmt='k-', legend_label="Exact", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False)
-# plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# plot.plot_solution(mesh1, physics1, solver1, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='b+', legend_label="GL", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
 
-# plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# plot.plot_solution(mesh2, physics2, solver2, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='g1', legend_label="GLL", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
-plot.plot_solution(mesh3, physics3, solver3, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+plot.plot_solution(mesh3, physics3, solver3, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='bx', legend_label="GLL EqualNodes", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
 plot.save_figure(file_name='GLL_Equal_Velocity', file_type='pdf', crop_level=2)
@@ -55,7 +55,7 @@ plot.save_figure(file_name='GLL_Equal_Velocity', file_type='pdf', crop_level=2)
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bx-', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
-# plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+# plot.plot_solution(mesh2, physics2, solver2, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='go', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=7)
 

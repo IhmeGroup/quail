@@ -660,10 +660,8 @@ class Roe1D(ConvNumFluxBase):
 
 		rhoL_sqrt = np.sqrt(uL[:,srho])
 		rhoR_sqrt = np.sqrt(uR[:,srho])
-		HL = physics.compute_variable("TotalEnthalpy", uL, 
-				flag_non_physical=True)
-		HR = physics.compute_variable("TotalEnthalpy", uR, 
-				flag_non_physical=True)
+		HL = physics.compute_variable("TotalEnthalpy", uL)
+		HR = physics.compute_variable("TotalEnthalpy", uR)
 
 		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -781,10 +779,14 @@ class Roe1D(ConvNumFluxBase):
 		velL = UqL[:, smom]/UqL[:, srho]
 		velR = UqR[:, smom]/UqR[:, srho]
 
-		rhoRoe, velRoe, HRoe = self.RoeAverageState(physics, srho, velL, velR, UqL, UqR)
+		rhoRoe, velRoe, HRoe = self.RoeAverageState(physics, srho, velL, 
+				velR, UqL, UqR)
 
 		# Speed of sound from Roe-averaged state
-		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True))
+		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, 
+				keepdims=True))
+		if np.any(c2 <= 0.):
+			raise errors.NotPhysicalError
 		c = np.sqrt(c2)
 
 		# differences

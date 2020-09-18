@@ -66,30 +66,30 @@ plot.plot_solution(mesh1, physics3, solver3, "Density", plot_numerical=True, plo
 plot.save_figure(file_name='SodProblem_IC_comparison_Density_1point', file_type='pdf', crop_level=2)
 
 # Plot Velocity of all cases
-plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+plot.plot_solution(mesh1, physics1, solver1, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 			ylabel=None, fmt='--', legend_label="Sharp", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
-# plot.plot_solution(mesh1, physics2, solver2, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# plot.plot_solution(mesh1, physics2, solver2, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			# ylabel=None, fmt='g', legend_label="$w=0.01$", equidistant_pts=True, 
 			# include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
-plot.plot_solution(mesh1, physics3, solver3, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+plot.plot_solution(mesh1, physics3, solver3, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='bx', legend_label="$w=0.05$", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
-# plot.plot_solution(mesh1, physics4, solver4, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# plot.plot_solution(mesh1, physics4, solver4, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='c', legend_label="$w=0.1$", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
-# plot.plot_solution(mesh1, physics5, solver5, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+# plot.plot_solution(mesh1, physics5, solver5, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 # 			ylabel=None, fmt='r', legend_label="$w=0.5$", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=skip)
 plot.save_figure(file_name='SodProblem_IC_comparison_Velocity_1point', file_type='pdf', crop_level=2)
 
-# plot.plot_solution(mesh1, physics1, solver1, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+# plot.plot_solution(mesh1, physics1, solver1, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False)
 # plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # 			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
 # 			include_mesh=False, regular_2D=False, equal_AR=False)
-# # plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
+# # plot.plot_solution(mesh2, physics2, solver2, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 # # 			ylabel=None, fmt='go', legend_label="DG", equidistant_pts=True, 
 # # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=7)
 

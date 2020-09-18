@@ -243,8 +243,8 @@ class PhysicsBase(ABC):
 		'''
 		Enum class that stores the state variable names. The value of
 		a given member is a string consisting of the symbol used to 
-		denote the corresponding variable (for example, "u" for 
-		velocity).
+		denote the corresponding variable (in TeX format), e.g., "u"
+		for velocity.
 		'''
 		pass
 
@@ -252,8 +252,8 @@ class PhysicsBase(ABC):
 		'''
 		Enum class that stores additional variable names. The value of
 		a given member is a string consisting of the symbol used to 
-		denote the corresponding variable (for example, "u" for 
-		velocity).
+		denote the corresponding variable (in TeX format), e.g., "u"
+		for velocity.
 		'''
 		pass
 

@@ -1,4 +1,3 @@
-import code
 from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
@@ -20,24 +19,29 @@ from physics.euler.functions import SourceType as euler_source_type
 
 
 class Euler(base.PhysicsBase):
+	'''
+	This class corresponds to the compressible Euler equations for a 
+	calorically perfect gas. It inherits attributes and methods from the
+	PhysicsBase class. See PhysicsBase for detailed comments of attributes 
+	and methods. This class should not be instantiated directly. Instead, 
+	the 1D and 2D	variants, which inherit from this class (see below), 
+	should be instantiated.
 
+	Additional methods and attributes are commented below.
+
+	Attributes:
+	-----------
+	R: float
+		mass-specific gas constant
+	gamma: float
+		specific heat ratio
+	'''
 	PHYSICS_TYPE = general.PhysicsType.Euler
 
 	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
 		super().__init__(order, basis, mesh)
-		# Default parameters
-		# self.params.update(
-		# 	GasConstant = 287., # specific gas constant
-		# 	SpecificHeatRatio = 1.4,
-		# )
+		self.R = 0.
+		self.gamma = 0.
 
 	def set_maps(self):
 		super().set_maps()
@@ -50,6 +54,18 @@ class Euler(base.PhysicsBase):
 		})
 
 	def set_physical_params(self, GasConstant=287., SpecificHeatRatio=1.4):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			GasConstant: mass-specific gas constant
+			SpecificHeatRatio: ratio of specific heats
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
 		self.R = GasConstant
 		self.gamma = SpecificHeatRatio
 
@@ -64,11 +80,10 @@ class Euler(base.PhysicsBase):
 	    Velocity = "u"
 
 	def get_conv_flux_interior(self, Uq):
+		# Unpack
 		dim = self.DIM
-		# irho = 0; irhoE = dim + 1
 		irho = self.get_state_index("Density")
 		irhoE = self.get_state_index("Energy")
-		# imom = self.get_momentum_slice()
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		smom = self.get_momentum_slice()
@@ -76,24 +91,24 @@ class Euler(base.PhysicsBase):
 		eps = general.eps
 
 		rho = Uq[:, srho]
-		rho += eps
+		rho += eps # prevent rare division-by-zero errors
 		rhoE = Uq[:, srhoE]
 		mom = Uq[:, smom]
 
 		p = self.compute_variable("Pressure", Uq)
 		h = self.compute_variable("TotalEnthalpy", Uq)
 
+		# Pressure term (general to 1D and 2D)
 		pmat = np.zeros([Uq.shape[0], dim, dim])
 		idx = np.full([dim, dim], False)
 		np.fill_diagonal(idx, True)
 		pmat[:, idx] = p
 
-		# if F is None:
-		# 	F = np.empty(Uq.shape+(dim,))
-
+		# Put together
 		F = np.empty(Uq.shape + (dim,))
 		F[:, irho, :] = mom
-		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
+		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(
+				rho, axis=2) + pmat
 		F[:, irhoE, :] = mom*h
 
 		rho -= eps
@@ -109,101 +124,80 @@ class Euler(base.PhysicsBase):
 		rhoE = Uq[:, srhoE]
 		mom = Uq[:, smom]
 
-		# scalar = np.zeros([Uq.shape[0], 1])
-
-		''' Common scalars '''
+		''' Unpack '''
 		gamma = self.gamma
 		R = self.R
-		# Pressure
-		# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1)/rho)
-		# # Temperature
-		# T = P/(rho*R)
 
+		''' Flag non-physical state '''
 		if flag_non_physical:
 			if np.any(rho < 0.):
 				raise errors.NotPhysicalError
 
-		# if np.any(P < 0.) or np.any(rho < 0.):
-		# 	raise errors.NotPhysicalError
+		''' Nested functions for common quantities '''
 		def get_pressure():
-			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, 
-					keepdims=True)/rho) # just use for storage
-			# if flag_non_physical:
-			# 	if np.any(scalar < 0.):
-			# 		raise errors.NotPhysicalError
-			return scalar
+			varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, 
+					keepdims=True)/rho)
+			if flag_non_physical:
+				if np.any(varq < 0.):
+					raise errors.NotPhysicalError
+			return varq
 		def get_temperature():
 			return get_pressure()/(rho*R)
 
+		''' Compute '''
+		vname = self.AdditionalVariables[var_name].name
 
-		''' Get final scalars '''
-		sname = self.AdditionalVariables[var_name].name
-		if sname is self.AdditionalVariables["Pressure"].name:
-			scalar = get_pressure()
-		elif sname is self.AdditionalVariables["Temperature"].name:
-			# scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)/(rho*R)
-			scalar = get_temperature()
-		elif sname is self.AdditionalVariables["Entropy"].name:
-			# Pressure
-			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
-			# Temperature
-			# T = getP()/(rho*R)
-
-			# scalar = R*(gamma/(gamma-1.)*np.log(getT()) - np.log(getP()))
-			scalar = np.log(get_pressure()/rho**gamma)
-		elif sname is self.AdditionalVariables["InternalEnergy"].name:
-			scalar = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
-		elif sname is self.AdditionalVariables["TotalEnthalpy"].name:
-			scalar = (rhoE + get_pressure())/rho
-		elif sname is self.AdditionalVariables["SoundSpeed"].name:
-			# Pressure
-			# P = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)
-			scalar = np.sqrt(gamma*get_pressure()/rho)
-		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			# Pressure
-			# P = GetPressure()
-			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
-		elif sname is self.AdditionalVariables["Velocity"].name:
-			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho
+		if vname is self.AdditionalVariables["Pressure"].name:
+			varq = get_pressure()
+		elif vname is self.AdditionalVariables["Temperature"].name:
+			varq = get_temperature()
+		elif vname is self.AdditionalVariables["Entropy"].name:
+			# varq = R*(gamma/(gamma-1.)*np.log(getT()) - np.log(getP()))
+			# Alternate way
+			varq = np.log(get_pressure()/rho**gamma)
+		elif vname is self.AdditionalVariables["InternalEnergy"].name:
+			varq = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
+		elif vname is self.AdditionalVariables["TotalEnthalpy"].name:
+			varq = (rhoE + get_pressure())/rho
+		elif vname is self.AdditionalVariables["SoundSpeed"].name:
+			varq = np.sqrt(gamma*get_pressure()/rho)
+		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# |u| + c
+			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
+		elif vname is self.AdditionalVariables["Speed"].name:
+			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho
 		else:
 			raise NotImplementedError
 
-		return scalar
+		return varq
 
 
 class Euler1D(Euler):
+	'''
+	This class corresponds to 1D Euler equations for a calorically
+	perfect gas. It inherits attributes and methods from the Euler class. 
+	See Euler for detailed comments of attributes and methods. 
 
+	Additional methods and attributes are commented below.
+	'''
 	NUM_STATE_VARS = 3
 	DIM = 1
-
-	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		super().__init__(order, basis, mesh)
 
 	def set_maps(self):
 		super().set_maps()
 
 		d = {
-			euler_fcn_type.SmoothIsentropicFlow : euler_fcns.SmoothIsentropicFlow,
+			euler_fcn_type.SmoothIsentropicFlow : 
+					euler_fcns.SmoothIsentropicFlow,
 			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
 			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
-			# euler_fcn_type.SmoothRiemannProblem : euler_fcns.SmoothRiemannProblem,
-			euler_fcn_type.ExactRiemannSolution : euler_fcns.ExactRiemannSolution,
+			euler_fcn_type.ExactRiemannSolution : 
+					euler_fcns.ExactRiemannSolution,
 		}
 
 		self.IC_fcn_map.update(d)
 		self.exact_fcn_map.update(d)
-		# self.exact_fcn_map.update({
-		# 	euler_fcn_type.ExactRiemannSolution : euler_fcns.ExactRiemannSolution,
-		# })
 		self.BC_fcn_map.update(d)
 
 		self.source_map.update({
@@ -216,8 +210,6 @@ class Euler1D(Euler):
 		})
 
 	class StateVariables(Enum):
-		# __Order__ = 'Density XMomentum Energy' # only needed in 2.x
-		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"
 		Energy = "\\rho E"
@@ -244,7 +236,13 @@ class Euler1D(Euler):
 
 
 class Euler2D(Euler):
+	'''
+	This class corresponds to 2D Euler equations for a calorically
+	perfect gas. It inherits attributes and methods from the Euler class. 
+	See Euler for detailed comments of attributes and methods. 
 
+	Additional methods and attributes are commented below.
+	'''
 	NUM_STATE_VARS = 4
 	DIM = 2
 
@@ -274,8 +272,6 @@ class Euler2D(Euler):
 		})
 
 	class StateVariables(Enum):
-		# __Order__ = 'Density XMomentum YMomentum Energy' # only needed in 2.x
-		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"
 		YMomentum = "\\rho v"
@@ -292,7 +288,7 @@ class Euler2D(Euler):
 	def get_momentum_slice(self):
 		irhou = self.get_state_index("XMomentum")
 		irhov = self.get_state_index("YMomentum")
-		imom = slice(irhou, irhov+1)
+		imom = slice(irhou, irhov + 1)
 
 		return imom
 

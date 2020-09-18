@@ -20,7 +20,10 @@ class ConstAdvScalar(base.PhysicsBase):
 	'''
 	This class corresponds to scalar advection with a constant velocity.
 	It inherits attributes and methods from the PhysicsBase class. See 
-	PhysicsBase for detailed comments of attributes and methods. 
+	PhysicsBase for detailed comments of attributes and methods. This 
+	class should not be instantiated directly. Instead, the 1D and 2D
+	variants, which inherit from this class (see below), should be 
+	instantiated.
 
 	Additional methods and attributes are commented below.
 
@@ -80,11 +83,6 @@ class ConstAdvScalar1D(ConstAdvScalar):
 	Additional methods and attributes are commented below.
 	'''
 	DIM = 1
-
-	def __init__(self, order, basis_type, mesh):
-		super().__init__(order, basis_type, mesh)
-		self.c = 0.
-		self.cspeed = 0.
 
 	def set_maps(self):
 		super().set_maps()
@@ -173,9 +171,6 @@ class Burgers1D(base.PhysicsBase):
 	NUM_STATE_VARS = 1
 	DIM = 1
 	PHYSICS_TYPE = general.PhysicsType.Burgers
-
-	def __init__(self, order, basis_type, mesh):
-		super().__init__(order, basis_type, mesh)
 
 	def set_maps(self):
 		super().set_maps()
