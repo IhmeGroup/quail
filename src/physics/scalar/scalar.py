@@ -18,25 +18,24 @@ from physics.scalar.functions import SourceType as scalar_source_type
 
 class ConstAdvScalar(base.PhysicsBase):
 	'''
-	Class: IFace
-	--------------------------------------------------------------------------
-	This is a class defined to encapsulate the temperature table with the 
-	relevant methods
-	'''
+	This class corresponds to scalar advection with a constant velocity.
+	It inherits attributes and methods from the PhysicsBase class. See 
+	PhysicsBase for detailed comments of attributes and methods. 
 
+	Additional methods and attributes are commented below.
+
+	Attributes:
+	-----------
+	c: float or numpy array
+		advection velocity
+	cspeed: float
+		advection speed
+	'''
 	NUM_STATE_VARS = 1
 	PHYSICS_TYPE = general.PhysicsType.ConstAdvScalar
 
-	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		super().__init__(order, basis, mesh)
+	def __init__(self, order, basis_type, mesh):
+		super().__init__(order, basis_type, mesh)
 		self.c = 0.
 		self.cspeed = 0.
 
@@ -54,217 +53,36 @@ class ConstAdvScalar(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-# <<<<<<< Updated upstream
-# 	class BCType(IntEnum):
-# 	    StateAll = 0
-# 	    Extrapolate = 1
-
-# 	class BCTreatment(IntEnum):
-# 		Riemann = 0
-# 		Prescribed = 1
-# =======
-# 	# class BCType(IntEnum):
-# 	#     StateAll = 0
-# 	#     Extrapolation = 1
-# >>>>>>> Stashed changes
-
-	# class BCTreatment(IntEnum):
-	# 	Riemann = 0
-	# 	Prescribed = 1
-
-	# def getWaveSpeed(self):
-	# 	return self.params["ConstVelocity"]
-
-	# #Calculate velocity based on the advection operator
-	# def getAdvOperator(self, u):
-	# 	if self.params["AdvectionOperator"] == self.AdvectionOperatorType.Burgers:
-	# 		c = u/2
-	# 		return c
-	# 	elif self.params["AdvectionOperator"] == self.AdvectionOperatorType.ConstVel:
-	# 		c = self.params["ConstVelocity"]
-	# 		return c
-
 	def get_conv_flux_interior(self, Uq):
-		# c = self.getAdvOperator(u)
 		c = self.c
-		#a = self.params["Velocity"]
-		# if F is None:
-		# 	F = np.zeros(u.shape + (self.DIM,))
-		# for d in range(self.DIM):
-		# 	F[:,:,d] = c*u
 		F = np.expand_dims(c*Uq, axis=1)
-		# F = a*u
-		# F.shape = u.shape + (self.DIM,) 
+
 		return F
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[var_name].name
+
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is the advection speed
 			scalar = np.full([Uq.shape[0], 1], self.cspeed)
-			# scalar[:] = self.cspeed
 		else:
 			raise NotImplementedError
 
 		return scalar
 
-	# def ConvFluxNumerical(self, uL, uR, normals): #, nq, data):
-	# 	# nq = NData.nq
-	# 	# if nq != uL.shape[0] or nq != uR.shape[0]:
-	# 	# 	raise Exception("Wrong nq")	
-	# 	# try:
-	# 	# 	u = data.u
-	# 	# except:
-	# 	# 	data.u = u = np.zeros_like(uL)
-	# 	# try: 
-	# 	# 	F = data.F
-	# 	# except AttributeError: 
-	# 	# 	data.F = F = np.zeros_like(uL)
-	# 	# try:
-	# 	# 	c = data.c
-	# 	# except:
-	# 	# 	data.c = c = np.zeros_like(uL)
-
-	#     #Calculate the max speed and keep its sign.
-	# 	# for i in range(nq):
-
-	# 	# 	u[i] = max(abs(uL[i]),abs(uR[i]))
-
-	# 	# 	if u[i] == abs(uL[i]):
-	# 	# 		usign = np.sign(uL[i])
-	# 	# 	elif u[i] == abs(uR[i]):
-	# 	# 		usign = np.sign(uR[i])
-	# 	# 	u[i] = usign*u[i]
-
-	# 	# 	c[i] = self.getAdvOperator(u[i])
-
-	# 	self.conv_flux_fcn.AllocHelperArrays(uL)
-	# 	F = self.conv_flux_fcn.compute_flux(self, uL, uR, normals)
-		
-	# 	# ConvFlux = self.params["ConvFluxNumerical"] 
-	# 	# if ConvFlux == self.ConvFluxType.LaxFriedrichs:
-	# 	# 	F = self.ConvFluxLaxFriedrichs(uL, uR, NData.nvec, F)
-		
-# <<<<<<< Updated upstream
-# 		return F
-
-# 	def BoundaryState(self, BC, nq, xphys, Time, normals, uI, uB=None):
-# 		if uB is not None:
-# 			BC.U = uB
-
-# 		BC.x = xphys
-# 		BC.nq = nq
-# 		BC.time = Time
-# 		bctype = BC.BCType
-# 		if bctype == self.BCType.StateAll:
-# 			uB = self.call_function(BC)
-# 		elif bctype == self.BCType.Extrapolate:
-# 			uB[:] = uI[:]
-# 		else:
-# 			raise Exception("BC type not supported")
-
-# 		return uB
-
-# 	def compute_variable(self, var_names, U, scalar=None, flag_non_physical=False):
-# 		if type(var_names) is list:
-# 			nscalar = len(var_names)
-# 		elif type(var_names) is str:
-# 			nscalar = 1
-# 			var_names = [var_names]
-# 		else:
-# 			raise TypeError
-
-# 		nq = U.shape[0]
-# 		if scalar is None or scalar.shape != (nq, nscalar):
-# 			scalar = np.zeros([nq, nscalar])
-
-# 		for iscalar in range(nscalar):
-# 			sname = var_names[iscalar]
-# 			try:
-# 				sidx = self.get_state_index(sname)
-# 				scalar[:,iscalar] = U[:,sidx]
-# 			# if sidx < self.NUM_STATE_VARS:
-# 			# 	# State variable
-# 			# 	scalar[:,iscalar] = U[:,sidx]
-# 			# else:
-# 			except KeyError:
-# 				scalar[:,iscalar:iscalar+1] = self.compute_additional_variable(sname, U, scalar[:,iscalar:iscalar+1],
-# 					flag_non_physical)
-
-# 		return scalar
-# =======
-	# 	return F
-
-	# def BoundaryState(self, BC, nq, xphys, Time, normals, uI, uB=None):
-	# 	if uB is not None:
-	# 		BC.U = uB
-
-	# 	BC.x = xphys
-	# 	BC.nq = nq
-	# 	BC.time = Time
-	# 	bctype = BC.BCType
-	# 	if bctype == self.BCType.StateAll:
-	# 		uB = self.call_function(BC)
-	# 	elif bctype == self.BCType.Extrapolation:
-	# 		uB[:] = uI[:]
-	# 	else:
-	# 		raise Exception("BC type not supported")
-
-	# 	return uB
-
-	# def compute_variable(self, var_names, U, scalar=None, flag_non_physical=False):
-	# 	if type(var_names) is list:
-	# 		nscalar = len(var_names)
-	# 	elif type(var_names) is str:
-	# 		nscalar = 1
-	# 		var_names = [var_names]
-	# 	else:
-	# 		raise TypeError
-
-	# 	nq = U.shape[0]
-	# 	if scalar is None or scalar.shape != (nq, nscalar):
-	# 		scalar = np.zeros([nq, nscalar])
-
-	# 	for iscalar in range(nscalar):
-	# 		sname = var_names[iscalar]
-	# 		try:
-	# 			sidx = self.get_state_index(sname)
-	# 			scalar[:,iscalar] = U[:,sidx]
-	# 		# if sidx < self.NUM_STATE_VARS:
-	# 		# 	# State variable
-	# 		# 	scalar[:,iscalar] = U[:,sidx]
-	# 		# else:
-	# 		except KeyError:
-	# 			scalar[:,iscalar:iscalar+1] = self.compute_additional_variable(sname, U, scalar[:,iscalar:iscalar+1],
-	# 				flag_non_physical)
-
-	# 	return scalar
-# >>>>>>> Stashed changes
-
 
 class ConstAdvScalar1D(ConstAdvScalar):
 	'''
-	Class: IFace
-	--------------------------------------------------------------------------
-	This is a class defined to encapsulate the temperature table with the 
-	relevant methods
-	'''
+	This class corresponds to 1D scalar advection with a constant velocity.
+	It inherits attributes and methods from the ConstAdvScalar class. See 
+	ConstAdvScalar for detailed comments of attributes and methods. 
 
+	Additional methods and attributes are commented below.
+	'''
 	DIM = 1
 
-	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		super().__init__(order, basis, mesh)
-		# Default parameters
-		# self.params.update(
-		# 	ConstVelocity = 1.,
-		# )
+	def __init__(self, order, basis_type, mesh):
+		super().__init__(order, basis_type, mesh)
 		self.c = 0.
 		self.cspeed = 0.
 
@@ -276,8 +94,6 @@ class ConstAdvScalar1D(ConstAdvScalar):
 			scalar_fcn_type.Sine : scalar_fcns.Sine,
 			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
 			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
-			# scalar_fcn_type.ShiftedCosine : scalar_fcns.shifted_cosine,
-			# scalar_fcn_type.Exponential : scalar_fcns.exponential,
 			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
 		}
 
@@ -286,35 +102,33 @@ class ConstAdvScalar1D(ConstAdvScalar):
 		self.BC_fcn_map.update(d)
 
 	def set_physical_params(self, ConstVelocity=1.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			ConstVelocity: constant advection velocity
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
 		self.c = ConstVelocity
 		self.cspeed = np.abs(self.c)
 
-	# def SetParams(self,**kwargs):
-	# 	super().SetParams(**kwargs)
-
-	# 	self.c = self.params["ConstVelocity"]
-	# 	self.cspeed = np.linalg.norm(self.c)
-
 
 class ConstAdvScalar2D(ConstAdvScalar):
+	'''
+	This class corresponds to 2D scalar advection with a constant velocity.
+	It inherits attributes and methods from the ConstAdvScalar class. See 
+	ConstAdvScalar for detailed comments of attributes and methods. 
 
+	Additional methods and attributes are commented below.
+	'''
 	DIM = 2
 
-	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		super().__init__(order, basis, mesh)
-		# Default parameters
-		# self.params.update(
-		# 	ConstXVelocity = 1.,
-		# 	ConstYVelocity = 1.,
-		# )
+	def __init__(self, order, basis_type, mesh):
+		super().__init__(order, basis_type, mesh)
 		self.c = np.zeros(2)
 		self.cspeed = 0.
 
@@ -334,35 +148,34 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		self.BC_fcn_map.update(d)
 
 	def set_physical_params(self, ConstXVelocity=1., ConstYVelocity=1.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			ConstXVelocity: constant advection velocity in the x-direction
+			ConstYVelocity: constant advection velocity in the y-direction
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
 		self.c = np.array([ConstXVelocity, ConstYVelocity])
 		self.cspeed = np.linalg.norm(self.c)
 
-	# def SetParams(self,**kwargs):
-	# 	super().SetParams(**kwargs)
-
-	# 	self.c = np.array([self.params["ConstXVelocity"], self.params["ConstYVelocity"]])
-	# 	self.cspeed = np.linalg.norm(self.c)
-
 
 class Burgers1D(base.PhysicsBase):
-
+	'''
+	This class corresponds to the 1D Burgers equation.
+	It inherits attributes and methods from the PhysicsBase class. See 
+	PhysicsBase for detailed comments of attributes and methods. 
+	'''
 	NUM_STATE_VARS = 1
 	DIM = 1
 	PHYSICS_TYPE = general.PhysicsType.Burgers
 
-	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		super().__init__(order, basis, mesh)
-		# Default parameters
-		# self.params = {
-		# }
+	def __init__(self, order, basis_type, mesh):
+		super().__init__(order, basis_type, mesh)
 
 	def set_maps(self):
 		super().set_maps()
@@ -390,23 +203,16 @@ class Burgers1D(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 
 	def get_conv_flux_interior(self, Uq):
-		# c = self.getAdvOperator(u)
-		#a = self.params["Velocity"]
-		# if F is None:
-		# 	F = np.zeros(u.shape + (self.DIM,))
-		# for d in range(self.DIM):
-		# 	F[:,:,d] = c*u
 		F = np.expand_dims(Uq*Uq/2., axis=2)
-		# F = a*u
-		# F.shape = u.shape + (self.DIM,) 
+
 		return F
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[var_name].name
+
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			# Pressure
-			# P = GetPressure()
-			scalar = np.abs(Uq/2.)
+			# Max wave speed is u
+			scalar = np.abs(Uq)
 		else:
 			raise NotImplementedError
 

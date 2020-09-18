@@ -65,7 +65,7 @@ if args.test_1D is True:
 	# Inviscid Burgers with a Sine Wave
 	sys.path.append('Cases/Scalar_1D/BurgersEquation')
 	import invBurgersSin
-	assert_almost_equal(invBurgersSin.TotErr, 0.000874105898423, decimal=decimal)
+	assert_almost_equal(invBurgersSin.TotErr, 0.000883387909002, decimal=decimal)
 	print('Pass 1D Inviscid Burgers')
 
 	if args.src is True:

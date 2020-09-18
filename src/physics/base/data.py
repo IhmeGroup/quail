@@ -88,7 +88,8 @@ class BCBase(ABC):
 class BCWeakRiemann(BCBase):
     '''
     BCWeakRiemann inherits attributes and methods from the BCBase class.
-    See BCBase for detailed comments of attributes and methods.
+    See BCBase for detailed comments of attributes and methods. 
+    Child classes define their own get_boundary_state.
 
     This class computes the boundary flux via the numerical flux, which
     depends on the interior and exterior states, i.e. Fnum(UqI, UqB, n).
@@ -104,6 +105,7 @@ class BCWeakPrescribed(BCBase):
     '''
     BCWeakRiemann inherits attributes and methods from the BCBase class.
     See BCBase for detailed comments of attributes and methods.
+    Child classes define their own get_boundary_state.
 
     This class computes the boundary flux via the analytic flux based on 
     only the exterior state, i.e. F(UqB, n).
@@ -183,6 +185,19 @@ class ConvNumFluxBase(ABC):
         allocates helper arrays
     '''
     def __init__(self, Uq=None):
+        '''
+        This method initializes the attributes, which depend on the 
+        type of numerical flux. 
+
+        Inputs:
+        -------
+            Uq: values of the state variables (typically at the 
+                quadrature points) [nq, ns]
+
+        Outputs:
+        --------
+            self: attributes initialized
+        '''
         pass
 
     def alloc_helpers(self, Uq):

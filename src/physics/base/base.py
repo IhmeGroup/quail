@@ -94,7 +94,7 @@ class PhysicsBase(ABC):
 	source_map: dict
 		keys are the types of source terms (members of SourceType enum); 
 		values are the corresponding classes
-	conv_num_flux_map
+	conv_num_flux_map: dict
 		keys are the types of convective numerical fluxes (members of 
 		ConvNumFluxType enum); values are the corresponding classes
 	IC: Function object
@@ -190,6 +190,21 @@ class PhysicsBase(ABC):
 		pass
 
 	def __init__(self, order, basis_type, mesh):
+		'''
+		This method initializes the attributes (see above for attribute 
+		details). 
+
+		Inputs:
+		-------
+		    order: order of solution approximation
+		    basis_type: type of basis for solution approximation
+		    	(member of BasisType enum)
+		    mesh: mesh object
+
+		Outputs:
+		--------
+			self: attributes initialized
+		'''
 		self.state_indices = {}
 		self.state_slices = {}
 		self.IC_fcn_map = {}
@@ -226,13 +241,19 @@ class PhysicsBase(ABC):
 	@abstractmethod
 	class StateVariables(Enum):
 		'''
-		Enum class that stores the state variables.
+		Enum class that stores the state variable names. The value of
+		a given member is a string consisting of the symbol used to 
+		denote the corresponding variable (for example, "u" for 
+		velocity).
 		'''
 		pass
 
 	class AdditionalVariables(Enum):
 		'''
-		Enum class that stores additional variables.
+		Enum class that stores additional variable names. The value of
+		a given member is a string consisting of the symbol used to 
+		denote the corresponding variable (for example, "u" for 
+		velocity).
 		'''
 		pass
 
