@@ -168,7 +168,7 @@ class ODESolvers():
 
 			# evaluate the source term jacobian [nq, ns, ns]
 			jac = np.zeros([nq,ns,ns])
-			jac = physics.eval_source_term_jacobians(x, solver.time, Uq, jac) 
+			jac = physics.eval_source_term_jacobians(Uq, x, solver.time, jac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
 			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)

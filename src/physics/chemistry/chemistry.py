@@ -171,7 +171,7 @@ class Chemistry(base.PhysicsBase):
 			nq = Uq.shape[0]
 			x = np.zeros([nq,1])
 			jac = np.zeros([nq,4,4]) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			jac = self.eval_source_term_jacobians(x, 0., Uq, jac) # [nq,ns]
+			jac = self.eval_source_term_jacobians(Uq, x, 0., jac) # [nq,ns]
 			scalar = jac[:,3,3].reshape(7,1)
 		else:
 			raise NotImplementedError

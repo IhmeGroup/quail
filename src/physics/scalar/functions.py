@@ -8,32 +8,68 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
 
 
 class FcnType(Enum):
-    Sine = auto()
-    DampingSine = auto()
-    # ShiftedCosine = auto()
-    # Exponential = auto()
-    Gaussian = auto()
-    Paraboloid = auto()
-    ShockBurgers = auto()
-    SineBurgers = auto()
-    LinearBurgers = auto()
+	'''
+	Enum class that stores the types of analytic functions for initial 
+	conditions, exact solutions, and/or boundary conditions. These
+	functions are specific to the available scalar equation sets.
+	'''
+	Sine = auto()
+	DampingSine = auto()
+	Gaussian = auto()
+	Paraboloid = auto()
+	ShockBurgers = auto()
+	SineBurgers = auto()
+	LinearBurgers = auto()
 
 
 class BCType(Enum):
+	'''
+	Enum class that stores the types of boundary conditions. These
+	boundary conditions are specific to the available scalar equation sets.
+	'''
 	pass
 
 
 class SourceType(Enum):
-    SimpleSource = auto()
-    StiffSource = auto()
+	'''
+	Enum class that stores the types of source terms. These
+	source terms are specific to the available scalar equation sets.
+	'''
+	SimpleSource = auto()
+	StiffSource = auto()
 
 
 '''
+---------------
 State functions
+---------------
+These classes inherit from the FcnBase class. See FcnBase for detailed 
+comments of attributes and methods. Information specific to the 
+corresponding child classes can be found below. These classes should 
+correspond to the FcnType enum members above.
 '''
 
 class Sine(FcnBase):
+	'''
+	Sinusoidal profile.
+
+	Attributes:
+	-----------
+	omega: float
+		frequency
+	'''
 	def __init__(self, omega=2*np.pi):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    omega: frequency
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.omega = omega
 
 	def get_state(self, physics, x, t):
@@ -44,7 +80,29 @@ class Sine(FcnBase):
 
 
 class DampingSine(FcnBase):
+	'''
+	Sinusoidal profile with damping.
+
+	Attributes:
+	-----------
+	omega: float
+		frequency
+	nu: float
+		damping parameter
+	'''
 	def __init__(self, omega=2*np.pi, nu=1.):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    omega: frequency
+		    nu: damping parameter
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.omega = omega
 		self.nu = nu
 
@@ -55,31 +113,32 @@ class DampingSine(FcnBase):
 		return Uq
 
 
-# class shifted_cosine(FcnBase):
-# 	def __init__(self, omega=2*np.pi):
-# 		self.omega = omega
-
-# 	def get_state(self, physics, x, t):
-# 		c = physics.c
-# 		Uq = 1. - np.cos(self.omega*x)
-
-# 		return Uq
-
-
-# class exponential(FcnBase):
-# 	def __init__(self, theta=1.):
-# 		self.theta = theta
-
-# 	def get_state(self, physics, x, t):
-# 		Uq = np.exp(self.theta*x)
-
-# 		return Uq
-
-
 class Gaussian(FcnBase):
+	'''
+	Gaussian profile.
+
+	Attributes:
+	-----------
+	sig: float
+		standard deviation
+	x0: float
+		center
+	'''
 	def __init__(self, sig=1., x0=0.):
-		self.sig = sig # standard deviation
-		self.x0 = x0 # center
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.sig = sig
+		self.x0 = x0 
 
 	def get_state(self, physics, x, t):
 		r = np.linalg.norm(x - self.x0 - physics.c*t, axis=1, keepdims=True)
@@ -90,6 +149,10 @@ class Gaussian(FcnBase):
 
 
 class Paraboloid(FcnBase):
+	'''
+	Paraboloid profile. Does not take into account time dependence, so 
+	should not necessarily be used as an exact solution.
+	'''
 	def __init__(self):
 		pass
 
@@ -101,16 +164,43 @@ class Paraboloid(FcnBase):
 
 
 class ShockBurgers(FcnBase):
+	'''
+	Burgers problem with a shock.
+
+	Attributes:
+	-----------
+	uL: float
+		left state
+	uL: float
+		right state
+	xshock: float
+		initial shock location
+	'''
 	def __init__(self, uL=1., uR=0., xshock=0.3):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    uL: left state
+		    uR: right state
+		    xshock: initial shock location
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.uL = uL 
 		self.uR = uR
 		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
+		# Unpack
 		uL = self.uL
 		uR = self.uR
 		xshock = self.xshock
 
+		# Shock
 		us = uR + uL
 		xshock = xshock + us*t
 		ileft = (x <= xshock).reshape(-1)
@@ -125,71 +215,139 @@ class ShockBurgers(FcnBase):
 
 
 class SineBurgers(FcnBase):
+	'''
+	Burgers sinusoidal profile.
+
+	Attributes:
+	-----------
+	omega: float
+		frequency
+	'''
 	def __init__(self, omega=2*np.pi):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    omega: frequency
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.omega = omega
 
 	def get_state(self, physics, x, t):
 
 		def F(u):
-			x1 = np.reshape(x, (len(x)))
+			x1 = np.reshape(x, x.shape[0])
 			F = u - np.sin(self.omega*(x1-u*t)) 
+
 			return F
 			
 		u = np.sin(self.omega*x)
-		u1 = np.reshape(u, (len(u)))
+		u1 = np.reshape(u, u.shape[0])
 		sol = root(F, u1, tol=1e-12)
 		
-		Uq = sol.x.reshape(-1,1)
+		Uq = sol.x.reshape(-1, 1)
 
 		return Uq
 
 
 class LinearBurgers(FcnBase):
+	'''
+	Burgers linear profile.
+	'''
 	def __init__(self):
 		pass
 
 	def get_state(self, physics, x, t):
 		a = -1.
 		b = 1.
-		Uq = (a*x+b) / (a*t+1.)
+		Uq = (a*x + b) / (a*t + 1.)
 
 		return Uq
 
 
 '''
+---------------------
 Source term functions
+---------------------
+These classes inherit from the SourceBase class. See SourceBase for detailed 
+comments of attributes and methods. Information specific to the 
+corresponding child classes can be found below. These classes should 
+correspond to the SourceType enum members above.
 '''
 
 class SimpleSource(SourceBase):
+	'''
+	Simple source term of the form S = nu*U
+
+	Attributes:
+	-----------
+	nu: float
+		source term parameter
+	'''
 	def __init__(self, nu=-1):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    nu: source term parameter
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.nu = nu
 
 	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
-		# U = self.U
 		S = nu*Uq
 
 		return S
+
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
 
 
 class StiffSource(SourceBase):
-	def __init__(self, nu=-1., beta =0.5):
+	'''
+	Stiff source term of the form S = -nu*U*(U-1)*(U-beta)
+
+	Attributes:
+	-----------
+	nu: float
+		source term parameter 1
+	beta: float
+		source term parameter 2
+	'''
+	def __init__(self, nu=-1., beta=0.5):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    nu: source term parameter 1
+		    beta: source term parameter 2
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.nu = nu
 		self.beta = beta
 
 	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
 		beta = self.beta
-		# Uq = self.Uq
 
 		S = -nu * Uq * (Uq-1.) * (Uq-beta)
 
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
-		# Uq = self.Uq
 		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
 		nu = self.nu
 		beta = self.beta
@@ -197,7 +355,3 @@ class StiffSource(SourceBase):
 				- 2.*beta*Uq[:, 0] + beta)
 
 		return jac
-
-
-
-

@@ -45,16 +45,18 @@ State functions
 ---------------
 These classes inherit from the FcnBase class. See FcnBase for detailed 
 comments of attributes and methods. Information specific to the 
-corresponding child classes can be found below.
+corresponding child classes can be found below. These classes should 
+correspond to the FcnType enum members above.
 '''
+
 class Uniform(FcnBase):
 	'''
 	This class sets a uniform state.
 
 	Attributes:
 	-----------
-		state: numpy array
-			values of state variables [ns]
+	state: numpy array
+		values of state variables [ns]
 	'''
 	def __init__(self, state=None):
 		'''
@@ -86,7 +88,8 @@ Boundary conditions
 These classes inherit from either the BCWeakRiemann or BCWeakPrescribed
 classes. See those parent classes for detailed comments of attributes 
 and methods. Information specific to the corresponding child classes can be
-found below.
+found below. These classes should correspond to the BCType enum members 
+above.
 '''
 
 class StateAll(BCWeakRiemann):
@@ -96,8 +99,8 @@ class StateAll(BCWeakRiemann):
 
 	Attributes:
 	-----------
-		function: Function object
-			analytical function to evaluate the state
+	function: Function object
+		analytical function to evaluate the state
 	'''
 	def __init__(self, **kwargs):
 		'''
@@ -139,11 +142,13 @@ class Extrapolate(BCWeakPrescribed):
 
 
 '''
+------------------------
 Numerical flux functions
 ------------------------
 These classes inherit from the ConvNumFluxBase class. See 
 ConvNumFluxBase for detailed comments of attributes and methods. 
 Information specific to the corresponding child classes can be found below.
+These classes should correspond to the ConvNumFluxType enum members above.
 '''
 
 class LaxFriedrichs(ConvNumFluxBase):
