@@ -63,7 +63,7 @@ state = {
     "uR" : 0.,
     "pR" : 0.1,
     # "w" : 0.05,
-    "xshock" : 0.5,
+    "xd" : 0.5,
 }
 
 state_exact = {
@@ -76,7 +76,7 @@ state_exact = {
     "pR" : 0.1,
 #    "xmin" : 0.,
 #    "xmax" : 1.,
-    "xshock" : 0.5,
+    "xd" : 0.5,
 }
 InitialCondition = state
 state2 = state.copy()

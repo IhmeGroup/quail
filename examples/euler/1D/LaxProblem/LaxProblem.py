@@ -60,7 +60,7 @@ state = {
     "uR" : uR,
     "xmin" : -5.,
     "xmax" : 5.,
-    "xshock" : 0.0,
+    "xd" : 0.0,
 }
 InitialCondition = state
 

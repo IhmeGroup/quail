@@ -57,7 +57,7 @@ uR = np.array([0.125,0.,0.1])
 #     "uL" : uL,
 #     "uR" : uR,
 #     # "w" : 0.05,
-#     "xshock" : 0.5,
+#     "xd" : 0.5,
 # }
 
 state_exact = {
@@ -66,7 +66,7 @@ state_exact = {
     "uR" : uR,
     "xmin" : 0.,
     "xmax" : 1.,
-    "xshock" : 0.5,
+    "xd" : 0.5,
 }
 InitialCondition = state_exact
 state2 = state_exact.copy()

@@ -3,55 +3,107 @@ from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
 
+import general
+
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
 
 
 class FcnType(Enum):
-    SmoothIsentropicFlow = auto()
-    MovingShock = auto()
-    IsentropicVortex = auto()
-    DensityWave = auto()
-    RiemannProblem = auto()
-    # SmoothRiemannProblem = auto()
-    TaylorGreenVortex = auto()
-    ExactRiemannSolution = auto()
+	'''
+	Enum class that stores the types of analytic functions for initial 
+	conditions, exact solutions, and/or boundary conditions. These
+	functions are specific to the available Euler equation sets.
+	'''
+	SmoothIsentropicFlow = auto()
+	MovingShock = auto()
+	IsentropicVortex = auto()
+	DensityWave = auto()
+	RiemannProblem = auto()
+	ExactRiemannSolution = auto()
+	TaylorGreenVortex = auto()
+
 
 class BCType(Enum):
+	'''
+	Enum class that stores the types of boundary conditions. These
+	boundary conditions are specific to the available Euler equation sets.
+	'''
 	SlipWall = auto()
 	PressureOutlet = auto()
 
 
 class SourceType(Enum):
-    StiffFriction = auto()
-    TaylorGreenSource = auto()
+	'''
+	Enum class that stores the types of source terms. These
+	source terms are specific to the available Euler equation sets.
+	'''
+	StiffFriction = auto()
+	TaylorGreenSource = auto()
 
 
 class ConvNumFluxType(Enum):
+	'''
+	Enum class that stores the types of convective numerical fluxes. These
+	numerical fluxes are specific to the available Euler equation sets.
+	'''
 	Roe = auto()
 	HLLC = auto()
 
 
 '''
+---------------
 State functions
+---------------
+These classes inherit from the FcnBase class. See FcnBase for detailed 
+comments of attributes and methods. Information specific to the 
+corresponding child classes can be found below. These classes should 
+correspond to the FcnType enum members above.
 '''
 
 class SmoothIsentropicFlow(FcnBase):
+	'''
+	Smooth isentropic flow problem from the following references:
+		[1] J. Cheng, C.-W. Shu, "Positivity-preserving Lagrangian 
+		scheme for multi-material compressible flow," Journal of 
+		Computational Physics. 257:143-168, 2014.
+		[2] R. Abgrall, P. Bacigaluppi, S. Tokareva, "High-order residual 
+		distribution scheme for the time-dependent Euler equations of fluid 
+		dynamics," Computers and Mathematics with Applications, 78:274-297,
+		2019.
+
+	Attributes:
+	-----------
+	a: float
+		parameter that controls magnitude of sinusoidal profile
+	'''
 	def __init__(self, a=0.9):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    a: parameter that controls magnitude of sinusoidal profile
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		if a > 1:
+			raise ValueError
 		self.a = a
 
 	def get_state(self, physics, x, t):
-		
 		a = self.a
 		gamma = physics.gamma
 		irho, irhou, irhoE = physics.get_state_indices()
-	
-		# Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
+		# Lambda functions
 		rho0 = lambda x, a: 1. + a*np.sin(np.pi*x)
 		pressure = lambda rho, gamma: rho**gamma
 		rho = lambda x1, x2, a: 0.5*(rho0(x1, a) + rho0(x2, a))
 		vel = lambda x1, x2, a: np.sqrt(3)*(rho(x1, x2, a) - rho0(x1, a))
 
+		# Nonlinear equations to be solved
 		f1 = lambda x1, x, t, a: x + np.sqrt(3)*rho0(x1, a)*t - x1
 		f2 = lambda x2, x, t, a: x - np.sqrt(3)*rho0(x2, a)*t - x2
 
@@ -59,16 +111,21 @@ class SmoothIsentropicFlow(FcnBase):
 
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
+		# Solve above nonlinear equations for x1 and x2
 		x1 = fsolve(f1, 0.*xr, (xr, t, a))
-		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % (x1))
+		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" % 
+				(x1))
 		x2 = fsolve(f2, 0.*xr, (xr, t, a))
-		if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % (x2))
-			
+		if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" % 
+				(x2))
+		
+		# State
 		den = rho(x1, x2, a)
 		u = vel(x1, x2, a)
 		p = pressure(den, gamma)
 		rhoE = p/(gamma - 1.) + 0.5*den*u*u
 
+		# Store
 		Uq[:, irho] = den
 		Uq[:, irhou] = den*u
 		Uq[:, irhoE] = rhoE
@@ -77,20 +134,41 @@ class SmoothIsentropicFlow(FcnBase):
 
 
 class MovingShock(FcnBase):
-	def __init__(self, M = 5.0, xshock = 0.2):
+	'''
+	Moving shock problem.
+
+	Attributes:
+	-----------
+	M: float
+		Mach number
+	xshock: float
+		initial location of shock
+	'''
+	def __init__(self, M=5.0, xshock=0.2):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+		    M: Mach number
+		    xshock: initial location of shock
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.M = M
 		self.xshock = xshock
 
 	def get_state(self, physics, x, t):
-
+		# Unpack
 		M = self.M
 		xshock = self.xshock
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
 		gamma = physics.gamma
-		
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+
 		''' Pre-shock state '''
 		rho1 = 1.
 		p1 = 1.e5
@@ -114,6 +192,7 @@ class MovingShock(FcnBase):
 		''' Fill state '''
 		ileft = (x <= xshock).reshape(-1)
 		iright = (x > xshock).reshape(-1)
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 		# Density
 		Uq[iright, srho] = rho1
@@ -129,7 +208,42 @@ class MovingShock(FcnBase):
 
 
 class IsentropicVortex(FcnBase):
+	'''
+	Isentropic vortex problem from the following reference:
+		[1] C.-W. Shu, "Essentially non-oscillatory and weighted essentially 
+		non-oscillatory schemes for hyperbolic conservation laws," in: 
+		Advanced Numerical Approximation of Nonlinear Hyperbolic Equations,
+		Springer-Verlag, Berlin/New York, 1998, pp. 325–432.
+
+	Attributes:
+	-----------
+	rhob: float
+		base density
+	ub: float
+		base x-velocity
+	vb: float
+		base y-velocity
+	pb: float
+		base pressure
+	vs: float
+		vortex strength
+	'''
 	def __init__(self, rhob=1., ub=1., vb=1., pb=1., vs=5.):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			rhob: base density
+			ub: base x-velocity
+			vb: base y-velocity
+			pb: base pressure
+			vs: vortex strength
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.rhob = rhob
 		self.ub = ub
 		self.vb = vb
@@ -141,16 +255,16 @@ class IsentropicVortex(FcnBase):
 		gamma = physics.gamma
 		Rg = physics.R
 
-		### Parameters
-		# Base flow
+		''' Base flow '''
+		# Density
 		rhob = self.rhob
 		# x-velocity
 		ub = self.ub
 		# y-velocity
 		vb = self.vb
-		# pressure
+		# Pressure
 		pb = self.pb
-		# vortex strength
+		# Vortex strength
 		vs = self.vs
 		# Make sure Rg is 1
 		if Rg != 1.:
@@ -162,6 +276,7 @@ class IsentropicVortex(FcnBase):
 		# Entropy
 		s = pb/rhob**gamma
 
+		# Track center of vortex
 		xr = x[:,0] - ub*t
 		yr = x[:,1] - vb*t
 		r = np.sqrt(xr**2. + yr**2.)
@@ -192,7 +307,26 @@ class IsentropicVortex(FcnBase):
 
 
 class DensityWave(FcnBase):
+	'''
+	Simple smooth density wave.
+
+	Attributes:
+	-----------
+	p: float
+		pressure
+	'''
 	def __init__(self, p=1.0):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			p: pressure
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.p = p
 
 	def get_state(self, physics, x, t):
@@ -204,7 +338,7 @@ class DensityWave(FcnBase):
 		
 		rho = 1.0 + 0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
-		rhoE = (p/(gamma - 1.)) + 0.5*rhou**2/rho
+		rhoE = p/(gamma - 1.) + 0.5*rhou**2/rho
 
 		Uq[:, srho] = rho
 		Uq[:, srhou] = rhou
@@ -213,180 +347,77 @@ class DensityWave(FcnBase):
 		return Uq
 
 
-# class RiemannProblem(FcnBase):
-# 	def __init__(self, uL=np.array([1., 0., 1.]), 
-# 			uR=np.array([0.125, 0., 0.1]), xshock=0.):
-# 		# Default conditions set up for Sod Problem.
-# 		self.uL = uL
-# 		self.uR = uR
-# 		self.xshock = xshock
-
-# 	def get_state(self, physics, x, t):
-
-# 		xshock = self.xshock
-# 		uL = self.uL
-# 		uR = self.uR
-
-# 		rhoL = uL[0]
-# 		vL = uL[1]
-# 		pL = uL[2]
-		
-# 		rhoR = uR[0]
-# 		vR = uR[1]
-# 		pR = uR[2]
-
-# 		srho, srhou, srhoE = physics.get_state_slices()
-
-# 		gamma = physics.gamma
-		
-# 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-
-# 		''' Fill state '''
-# 		ileft = (x <= xshock).reshape(-1)
-# 		iright = (x > xshock).reshape(-1)
-
-# 		# Density
-# 		Uq[iright, srho] = rhoR
-# 		Uq[ileft, srho] = rhoL
-# 		# Momentum
-# 		Uq[iright, srhou] = rhoR*vR
-# 		Uq[ileft, srhou] = rhoL*vL
-# 		# Energy
-# 		Uq[iright, srhoE] = pR/(gamma-1.) + 0.5*rhoR*vR*vR
-# 		Uq[ileft, srhoE] = pL/(gamma-1.) + 0.5*rhoL*vL*vL
-
-# 		return Uq
-
-
-class ExactRiemannSolution(FcnBase):
-	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
-				xshock=0.):
-		# Default conditions set up for Sod Problem.
-		self.rhoL = rhoL
-		self.uL = uL
-		self.pL = pL
-		self.rhoR = rhoR
-		self.uR = uR
-		self.pR = pR
-		self.xshock = xshock
-
-	def get_state(self, physics, x, t):
-
-		# uL = self.uL
-		# uR = self.uR
-		xshock = self.xshock
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-		gamma = physics.gamma
-		srho, srhou, srhoE = physics.get_state_slices()
-
-		# rho4 = uL[0]; p4 = uL[2]; u4 = uL[1]
-		# rho1 = uR[0]; p1 = uR[2]; u1 = uR[1]
-
-		rho4 = self.rhoL; p4 = self.pL; u4 = self.uL
-		rho1 = self.rhoR; p1 = self.pR; u1 = self.uR
-
-		c4 = np.sqrt(gamma*p4/rho4)
-		c1 = np.sqrt(gamma*p1/rho1)
-		p41 = p4/p1
-
-		def F(y):
-			F = y * (1. + (gamma-1.)/(2.*c4) * (u4 - u1 - c1/gamma*(y-1.)/ \
-					np.sqrt((gamma+1.)/(2.*gamma)*(y-1.) + 1)))**(-2. \
-					*gamma/(gamma-1)) - p4/p1
-			return F			
-
-		y0 = 0.5*p4/p1
-		Y = fsolve(F, y0)
-
-		# can now get p2
-		p2 = Y*p1
-
-		# Equation 11
-		u2 = u1 + c1/gamma*(p2/p1-1)/np.sqrt((gamma+1)/(2*gamma)*(p2/p1-1) \
-				+ 1)
-		# Equation 10
-		num = (gamma+1)/(gamma-1) + p2/p1
-		den = 1 + (gamma+1)/(gamma-1)*(p2/p1)
-		c2 = c1*np.sqrt(p2/p1*num/den)
-		# Equation 12 - shock speed
-		V = u1 + c1*np.sqrt((gamma+1)/(2*gamma)*(p2/p1-1) + 1)
-		# density for state 2
-		rho2 = gamma*p2/c2**2
-
-		# Equations 13 and 14
-		u3 = u2
-		p3 = p2 
-		# Equation 16
-		c3 = (gamma-1)/2*(u4-u3+2/(gamma-1)*c4)
-		rho3 = gamma*p3/c3**2
-
-		# now deal with expansion fan
-		xe1 = (u4-c4)*t + xshock; # "start" of expansion fan
-		xe2 = (t*((gamma+1)/2*u3 - (gamma-1)/2*u4 - c4)+xshock) # end
-
-		# location of shock
-		xs = V*t + xshock
-		# location of contact
-		xc = u2*t + xshock
-
-		uu = np.zeros_like(x); pp = np.zeros_like(x); rr = np.zeros_like(x);
-
-		# for i in range(len(x)):
-		for i in range(x.shape[0]):
-		    if x[i] <= xe1:
-		        uu[i] = u4; pp[i] = p4; rr[i] = rho4;
-		    elif x[i] > xe1 and x[i] <= xe2:
-		        uu[i] = (2/(gamma+1)*((x[i]-xshock)/t + (gamma-1)/2*u4 + c4)) 
-		        cc = uu[i] - (x[i]-xshock)/t
-		        pp[i] = p4*(cc/c4)**(2*gamma/(gamma-1))
-		        rr[i] = gamma*pp[i]/cc**2
-		    elif x[i] > xe2 and x[i] <= xc:
-		        uu[i] = u3; pp[i] = p3; rr[i] = rho3;
-		    elif x[i] > xc and x[i] <= xs:
-		        uu[i] = u2; pp[i] = p2; rr[i] = rho2;
-		    else:
-		        uu[i] = u1; pp[i] = p1; rr[i] = rho1;
-
-		Uq[:, srho] = rr
-		Uq[:, srhou] = rr*uu
-		Uq[:, srhoE] = pp/(gamma-1.) + 0.5*rr*uu*uu
-
-		return Uq
-
-
 class RiemannProblem(FcnBase):
+	'''
+	Riemann problem. Initial condition only.
+
+	Attributes:
+	-----------
+	rhoL: float
+		left density
+	uL: float
+		left velocity
+	pL: float
+		left pressure
+	rhoR: float
+		right density
+	uR: float
+		right velocity
+	pR: float
+		right pressure
+	xd: float
+		location of initial discontinuity
+	w: float
+		parameter that controls smearing of initial discontinuity; larger w
+		results in more smearing.
+	'''
 	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
-				xshock=0., w=1.e-30):
-		# Default conditions set up for Sod Problem.
+				xd=0., w=1.e-30):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			rhoL: left density
+			uL: left velocity
+			pL: left pressure
+			rhoR: right density
+			uR: right velocity
+			pR: right pressure
+			xd: location of initial discontinuity
+			w: parameter that controls smearing of initial discontinuity; 
+				larger w results in more smearing
+
+		Outputs:
+		--------
+		    self: attributes initialized
+
+		Notes:
+		------
+			Default values set up for Sod problem (without smearing).
+		'''
 		self.rhoL = rhoL
 		self.uL = uL
 		self.pL = pL
 		self.rhoR = rhoR
 		self.uR = uR
 		self.pR = pR
-		self.xshock = xshock
+		self.xd = xd
+		if w <= 0:
+			# For zero smearing, make w close to zero but not equal to zero
+			raise ValueError
 		self.w = w
 
 	def get_state(self, physics, x, t):
-
+		# Unpack
 		rhoL = self.rhoL
 		uL = self.uL
 		pL = self.pL
 		rhoR = self.rhoR
 		uR = self.uR
 		pR = self.pR
-		xshock = self.xshock
-		# uL = self.uL
-		# uR = self.uR
+		xd = self.xd
 		w = self.w
-
-		# rhoL = uL[0]
-		# vL = uL[1]
-		# pL = uL[2]
-		
-		# rhoR = uR[0]
-		# vR = uR[1]
-		# pR = uR[2]
 
 		srho, srhou, srhoE = physics.get_state_slices()
 
@@ -394,37 +425,207 @@ class RiemannProblem(FcnBase):
 		
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
-		# w = 0.05
-		def set_tanh(a, b, w, xo):
-			return 0.5*((a+b) + (b-a)*np.tanh((x-xo)/w))
+		def set_tanh(a, b, w, x0):
+			'''
+			This function prescribes a tanh profile. 
+
+			Inputs:
+			-------
+				a: left value
+				b: right value
+				w: characteristic width
+				x0: center
+
+			Outputs:
+			--------
+			    tanh profile
+			'''
+			return 0.5*((a+b) + (b-a)*np.tanh((x-x0)/w))
+
 		# Density
-		Uq[:, srho] =  set_tanh(rhoL, rhoR, w, xshock)
+		Uq[:, srho] =  set_tanh(rhoL, rhoR, w, xd)
 
 		# Momentum
-		Uq[:, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xshock)
+		Uq[:, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xd)
+
 		# Energy
-		rhoeL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
-		rhoeR = pR/(gamma-1.) + 0.5*rhoR*uR*uR
-		Uq[:, srhoE] = set_tanh(rhoeL, rhoeR, w, xshock)
+		rhoEL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
+		rhoER = pR/(gamma-1.) + 0.5*rhoR*uR*uR
+		Uq[:, srhoE] = set_tanh(rhoEL, rhoER, w, xd)
+
+		return Uq
+
+
+class ExactRiemannSolution(FcnBase):
+	'''
+	Riemann problem. Exact solution included (with time dependence), 
+	obtained using the method of characteristics. Detailed derivation not 
+	discussed here. Region 1 is to the right of the shock, region 2 between 
+	the shock and the contact discontinuity, region 3 is between the contact
+	discontinuity and the expansion fan, and region 4 is to the left of the 
+	expansion fan.
+
+	Attributes:
+	-----------
+	rhoL: float
+		left density
+	uL: float
+		left velocity
+	pL: float
+		left pressure
+	rhoR: float
+		right density
+	uR: float
+		right velocity
+	pR: float
+		right pressure
+	xd: float
+		location of initial discontinuity
+	'''
+	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
+				xd=0.):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			rhoL: left density
+			uL: left velocity
+			pL: left pressure
+			rhoR: right density
+			uR: right velocity
+			pR: right pressure
+			xd: location of initial discontinuity
+
+		Outputs:
+		--------
+		    self: attributes initialized
+
+		Notes:
+		------
+			Default values set up for Sod problem.
+		'''
+		self.rhoL = rhoL
+		self.uL = uL
+		self.pL = pL
+		self.rhoR = rhoR
+		self.uR = uR
+		self.pR = pR
+		self.xd = xd
+
+	def get_state(self, physics, x, t):
+		''' Unpack '''
+		xd = self.xd
+		gamma = physics.gamma
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		rho4 = self.rhoL; p4 = self.pL; u4 = self.uL
+		rho1 = self.rhoR; p1 = self.pR; u1 = self.uR
+
+		# Speeds of sound in regions 1 and 4
+		c4 = np.sqrt(gamma*p4/rho4)
+		c1 = np.sqrt(gamma*p1/rho1)
+
+		def F(y):
+			# Nonlinear equation to get y = p2/p1
+			F = y * (1. + (gamma-1.)/(2.*c4) * (u4 - u1 - c1/gamma*(y-1.)/ \
+					np.sqrt((gamma+1.)/(2.*gamma)*(y-1.) + 1)))**(-2. \
+					*gamma/(gamma-1)) - p4/p1
+			return F			
+
+		y0 = 0.5*p4/p1 # initial guess
+		Y = fsolve(F, y0)
+
+		''' Region 2 '''
+		# Pressure
+		p2 = Y*p1
+		# Velocity
+		u2 = u1 + c1/gamma*(p2/p1-1)/np.sqrt((gamma+1)/(2*gamma)*(p2/p1-1) \
+				+ 1)
+		# Speed of sound
+		num = (gamma+1)/(gamma-1) + p2/p1
+		den = 1 + (gamma+1)/(gamma-1)*(p2/p1)
+		c2 = c1*np.sqrt(p2/p1*num/den)
+		# Shock speed
+		V = u1 + c1*np.sqrt((gamma+1)/(2*gamma)*(p2/p1-1) + 1)
+		# Density
+		rho2 = gamma*p2/c2**2
+
+		''' Region 3 '''
+		# Pressure
+		p3 = p2 
+		# Velocity
+		u3 = u2
+		# Speed of sound
+		c3 = (gamma-1)/2*(u4-u3+2/(gamma-1)*c4)
+		# Density
+		rho3 = gamma*p3/c3**2
+
+		# Expansion fan
+		xe1 = (u4-c4)*t + xd; # "start" of expansion fan
+		xe2 = (t*((gamma+1)/2*u3 - (gamma-1)/2*u4 - c4)+xd) # end
+
+		# Location of shock
+		xs = V*t + xd
+		# Location of contact
+		xc = u2*t + xd
+
+		u = np.zeros_like(x); p = np.zeros_like(x); rho = np.zeros_like(x);
+
+		for i in range(x.shape[0]):
+		    if x[i] <= xe1:
+		    	# Left of expansion fan (region 4)
+		        u[i] = u4; p[i] = p4; rho[i] = rho4
+		    elif x[i] > xe1 and x[i] <= xe2:
+		    	# Expansion fan
+		        u[i] = (2/(gamma+1)*((x[i]-xd)/t + (gamma-1)/2*u4 + c4)) 
+		        c = u[i] - (x[i]-xd)/t
+		        p[i] = p4*(c/c4)**(2*gamma/(gamma-1))
+		        rho[i] = gamma*p[i]/c**2
+		    elif x[i] > xe2 and x[i] <= xc:
+		    	# Between expansion fan and and contact discontinuity
+		    	# (region 3)
+		        u[i] = u3; p[i] = p3; rho[i] = rho3
+		    elif x[i] > xc and x[i] <= xs:
+		    	# Between the contact discontinuity and the shock (region 2)
+		        u[i] = u2; p[i] = p2; rho[i] = rho2
+		    else:
+		    	# Right of the shock (region 1)
+		        u[i] = u1; p[i] = p1; rho[i] = rho1
+
+		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq[:, srho] = rho
+		Uq[:, srhou] = rho*u
+		Uq[:, srhoE] = p/(gamma-1.) + 0.5*rho*u*u
 
 		return Uq
 
 
 class TaylorGreenVortex(FcnBase):
-
-	def get_state(self, physics, x, t):		
+	'''
+	2D steady-state Taylor-Green vortex problem. Source term required to
+	account for incompressibility and ensure steady state. Reference:
+		[1] C. Wang, "Reconstructed discontinous Galerkin method for the 
+		compressible Navier-Stokes equations in arbitrary Langrangian and 
+		Eulerian formulation", PhD Thesis, North Carolina State University,
+		2017.
+	'''
+	def get_state(self, physics, x, t):
+		# Unpack		
 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 		gamma = physics.gamma
 		Rg = physics.R
 
 		irho, irhou, irhov, irhoE = physics.get_state_indices()
 
+		# State
 		rho = 1.
 		u = np.sin(np.pi*x[:, 0])*np.cos(np.pi*x[:, 1])
 		v = -np.cos(np.pi*x[:, 0])*np.sin(np.pi*x[:, 1])
 		p = 0.25*(np.cos(2.*np.pi*x[:, 0]) + np.cos(2*np.pi*x[:, 1])) + 1.
 		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
 
+		# Store
 		Uq[:, irho] = rho
 		Uq[:, irhou] = rho*u
 		Uq[:, irhov] = rho*v
@@ -434,15 +635,29 @@ class TaylorGreenVortex(FcnBase):
 
 
 '''
+-------------------
 Boundary conditions
+-------------------
+These classes inherit from either the BCWeakRiemann or BCWeakPrescribed
+classes. See those parent classes for detailed comments of attributes 
+and methods. Information specific to the corresponding child classes can be
+found below. These classes should correspond to the BCType enum members 
+above.
 '''
 
 class SlipWall(BCWeakPrescribed):
+	'''
+	This class corresponds to a slip wall. See documentation for more
+	details.
+	'''
 	def get_boundary_state(self, physics, UqI, normals, x, t):
 		smom = physics.get_momentum_slice()
 
+		# Unit normals
 		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
+		# Remove momentum contribution in normal direction from boundary
+		# state
 		rhoveln = np.sum(UqI[:, smom] * n_hat, axis=1, keepdims=True)
 		UqB = UqI.copy()
 		UqB[:, smom] -= rhoveln * n_hat
@@ -451,27 +666,44 @@ class SlipWall(BCWeakPrescribed):
 
 
 class PressureOutlet(BCWeakPrescribed):
+	'''
+	This class corresponds to an outflow boundary condition with static
+	pressure prescribed.
+
+	Attributes:
+	-----------
+	p: float
+		pressure
+	'''
 	def __init__(self, p):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			p: pressure
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.p = p
 
 	def get_boundary_state(self, physics, UqI, normals, x, t):
+		# Unpack
 		srho = physics.get_state_slice("Density")
 		srhoE = physics.get_state_slice("Energy")
 		smom = physics.get_momentum_slice()
-
-		UqB = UqI.copy()
-
-		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
 		# Pressure
 		pB = self.p
 
 		gamma = physics.gamma
 
-		# gamma = physics.gamma
-		# igam = 1./gamma
-		# gmi = gamma - 1.
-		# igmi = 1./gmi
+		UqB = UqI.copy()
+
+		# Unit normals
+		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
 
 		# Interior velocity in normal direction
 		rhoI = UqI[:, srho]
@@ -481,38 +713,35 @@ class PressureOutlet(BCWeakPrescribed):
 		if np.any(velnI < 0.):
 			print("Incoming flow at outlet")
 
-		# Compute interior pressure
-		# rVI2 = np.sum(UqI[:,imom]**2., axis=1, keepdims=True)/rhoI
-		# pI = gmi*(UqI[:,irhoE:irhoE+1] - 0.5*rVI2)
+		# Interior pressure
 		pI = physics.compute_variable("Pressure", UqI)
 
 		if np.any(pI < 0.):
 			raise errors.NotPhysicalError
 
 		# Interior speed of sound
-		# cI = np.sqrt(gamma*pI/rhoI)
 		cI = physics.compute_variable("SoundSpeed", UqI)
 		JI = velnI + 2.*cI/(gamma - 1.)
+		# Interior velocity in tangential direction
 		veltI = velI - velnI*n_hat
 
 		# Normal Mach number
 		Mn = velnI/cI
 		if np.any(Mn >= 1.):
+			# If supersonic, then extrapolate interior to exterior
 			return UqB
 
 		# Boundary density from interior entropy
 		rhoB = rhoI*np.power(pB/pI, 1./gamma)
 		UqB[:, srho] = rhoB
 
-		# Exterior speed of sound
+		# Boundary speed of sound
 		cB = np.sqrt(gamma*pB/rhoB)
+		# Boundary velocity
 		velB = (JI - 2.*cB/(gamma-1.))*n_hat + veltI
 		UqB[:, smom] = rhoB*velB
-		# dVn = 2.*igmi*(cI-cB)
-		# UqB[:,imom] = rhoB*dVn*n_hat + rhoB*UqI[:,imom]/rhoI
 
-		# Exterior energy
-		# rVB2 = np.sum(UqB[:,imom]**2., axis=1, keepdims=True)/rhoB
+		# Boundary energy
 		rhovel2B = rhoB*np.sum(velB**2., axis=1, keepdims=True)
 		UqB[:, srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
 
@@ -520,79 +749,81 @@ class PressureOutlet(BCWeakPrescribed):
 
 
 '''
+---------------------
 Source term functions
+---------------------
+These classes inherit from the SourceBase class. See SourceBase for detailed 
+comments of attributes and methods. Information specific to the 
+corresponding child classes can be found below. These classes should 
+correspond to the SourceType enum members above.
 '''
 
 class StiffFriction(SourceBase):
+	'''
+	Stiff source term (1D) of the form:
+	S = [0, nu*rho*u, nu*rho*u^2]
+
+	Attributes:
+	-----------
+	nu: float
+		stiffness parameter
+	'''
 	def __init__(self, nu=-1):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			nu: source term parameter
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.nu = nu
 
 	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
-		# irho = physics.get_state_index("Density")
-		# irhou = physics.get_state_index("XMomentum")
-		# irhoE = physics.get_state_index("Energy")
 
 		irho, irhou, irhoE = physics.get_state_indices()
-		
-		# U = self.U
-		
+
 		S = np.zeros_like(Uq)
 
-		eps = 1.0e-12
+		eps = general.eps
 		S[:, irho] = 0.0
 		S[:, irhou] = nu*(Uq[:, irhou])
-		S[:, irhoE] = nu*((Uq[:, irhou])**2/(eps+Uq[:, irho]))
+		S[:, irhoE] = nu*((Uq[:, irhou])**2/(eps + Uq[:, irho]))
 		
 		return S
 
-	# def get_jacobian(self, physics, FcnData, x, t):
-
-	# 	nu = self.nu
-
-	# 	Uq = FcnData.Uq
-	# 	irho, irhou, irhoE = physics.get_state_indices()
-
-	# 	jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
-	# 	vel = Uq[:, 1]/(1.0e-12 + Uq[:, 0])
-
-	# 	jac[:, irhou, irhou] = nu
-	# 	jac[:, irhoE, irho] = -nu*vel**2
-	# 	jac[:, irhoE, irhou] = 2.0*nu*vel
-	# 	# jac[:, 1,1] = nu
-	# 	# jac[:, 2, 0] = -nu*vel**2
-	# 	# jac[:, 2, 1] = 2.0*nu*vel
-
-	# 	return jac
 	def get_jacobian(self, physics, Uq, x, t):
-
 		nu = self.nu
-		# Uq = self.Uq
 
 		irho, irhou, irhoE = physics.get_state_indices()
 
 		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
-		vel = Uq[:, 1]/(1.0e-12 + Uq[:, 0])
+		vel = Uq[:, 1]/(general.eps + Uq[:, 0])
 
 		jac[:, irhou, irhou] = nu
 		jac[:, irhoE, irho] = -nu*vel**2
 		jac[:, irhoE, irhou] = 2.0*nu*vel
-		# jac[:, 1, 1] = nu
-		# jac[:, 2, 0] = -nu*vel**2
-		# jac[:, 2, 1] = 2.0*nu*vel
 
 		return jac
 
 
 class TaylorGreenSource(SourceBase):
-
+	'''
+	Source term for 2D Taylor-Green vortex (see above). Reference:
+		[1] C. Wang, "Reconstructed discontinous Galerkin method for the 
+		compressible Navier-Stokes equations in arbitrary Langrangian and 
+		Eulerian formulation", PhD Thesis, North Carolina State University,
+		2017.
+	'''
 	def get_source(self, physics, Uq, x, t):
 		gamma = physics.gamma
 
 		irho, irhou, irhov, irhoE = physics.get_state_indices()
-		
-		# Uq = self.Uq
-		
+				
 		S = np.zeros_like(Uq)
 
 		S[:, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, 0])* \
@@ -603,11 +834,54 @@ class TaylorGreenSource(SourceBase):
 
 
 '''
+------------------------
 Numerical flux functions
+------------------------
+These classes inherit from the ConvNumFluxBase class. See 
+ConvNumFluxBase for detailed comments of attributes and methods. 
+Information specific to the corresponding child classes can be found below.
+These classes should correspond to the ConvNumFluxType enum members above.
 '''
 
 class Roe1D(ConvNumFluxBase):
+	'''
+	1D Roe numerical flux. References:
+		[1] P. L. Roe, "Approximate Riemann solvers, parameter vectors, and 
+		difference schemes," Journal of Computational Physics, 
+		43(2):357–372, 1981.
+		[2] J. S. Hesthaven, T. Warburton, "Nodal discontinuous Galerkin 
+		methods: algorithms, analysis, and applications," Springer Science 
+		& Business Media, 2007.
+
+	Attributes:
+	-----------
+	UqL: numpy array
+		helper array for left state [nq, ns]
+	UqR: numpy array
+		helper array for right state [nq, ns]
+	vel: numpy array
+		helper array for velocity [nq, dim]
+	alphas: numpy array
+		helper array: left eigenvectors multipled by dU [nq, ns]
+	evals: numpy array
+		helper array for eigenvalues [nq, ns]
+	R: numpy array
+		helper array for right eigenvectors [nq, ns, ns]
+	'''
 	def __init__(self, Uq=None):
+		'''
+		This method initializes the attributes. 
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]; used to allocate helper arrays; if None,
+				then empty arrays allocated
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		if Uq is not None:
 			n = Uq.shape[0]
 			ns = Uq.shape[1]
@@ -615,57 +889,80 @@ class Roe1D(ConvNumFluxBase):
 		else:
 			n = 0; ns = 0; dim = 0
 
-		# self.velL = np.zeros([n,dim])
-		# self.velR = np.zeros([n,dim])
 		self.UqL = np.zeros_like(Uq)
 		self.UqR = np.zeros_like(Uq)
 		self.vel = np.zeros([n, dim])
-		# self.rhoL_sqrt = np.zeros([n,1])
-		# self.rhoR_sqrt = np.zeros([n,1])
-		# self.HL = np.zeros([n,1])
-		# self.HR = np.zeros([n,1])
-		# self.rhoRoe = np.zeros([n,1])
-		# self.velRoe = np.zeros([n,dim])
-		# self.HRoe = np.zeros([n,1])
-		# self.c2 = np.zeros([n,1])
-		# self.c = np.zeros([n,1])
-		# self.dvel = np.zeros([n,dim])
-		# self.drho = np.zeros([n,1])
-		# self.dp = np.zeros([n,1])
 		self.alphas = np.zeros_like(Uq)
 		self.evals = np.zeros_like(Uq)
 		self.R = np.zeros([n, ns, ns])
-		# self.FRoe = np.zeros_like(u)
-		# self.FL = np.zeros_like(u)
-		# self.FR = np.zeros_like(u)
-
-	# def AllocHelperArrays(self, u):
-	# 	self.__init__(u)
 
 	def rotate_coord_sys(self, smom, Uq, n):
+		'''
+		This method expresses the momentum vector in the rotated coordinate 
+		system, which is aligned with the face normal and tangent.
+
+		Inputs:
+		-------
+			smom: momentum slice
+			Uq: values of the state variable (typically at the quadrature 
+				points) [nq, ns]
+			n: normals (typically at the quadrature points) [nq, dim]
+
+		Outputs:
+		--------
+		    Uq: momentum terms modified
+		'''
 		Uq[:, smom] *= n
 
 		return Uq
 
 	def undo_rotate_coord_sys(self, smom, Uq, n):
+		'''
+		This method expresses the momentum vector in the standard coordinate 
+		system. It "undoes" the rotation above.
+
+		Inputs:
+		-------
+			smom: momentum slice
+			Uq: values of the state variable (typically at the quadrature 
+				points) [nq, ns]
+			n: normals (typically at the quadrature points) [nq, dim]
+
+		Outputs:
+		--------
+		    Uq: momentum terms modified
+		'''
 		Uq[:, smom] /= n
 
 		return Uq
 
-	def RoeAverageState(self, physics, srho, velL, velR, uL, uR):
-		# rhoL_sqrt = self.rhoL_sqrt
-		# rhoR_sqrt = self.rhoR_sqrt
-		# HL = self.HL 
-		# HR = self.HR 
+	def roe_average_state(self, physics, srho, velL, velR, UqL, UqR):
+		'''
+		This method computes the Roe-averaged variables.
 
-		rhoL_sqrt = np.sqrt(uL[:,srho])
-		rhoR_sqrt = np.sqrt(uR[:,srho])
-		HL = physics.compute_variable("TotalEnthalpy", uL)
-		HR = physics.compute_variable("TotalEnthalpy", uR)
+		Inputs:
+		-------
+			physics: physics object
+			srho: density slice
+			velL: left velocity (typically evaluated at the quadrature 
+				points) [nq, dim]
+			velR: right velocity (typically evaluated at the quadrature 
+				points) [nq, dim]
+			UqL: left state (typically evaluated at the quadrature 
+				points) [nq, ns]
+			UqR: right state (typically evaluated at the quadrature 
+				points) [nq, ns]
 
-		# self.velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
-		# self.HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
-		# self.rhoRoe = rhoL_sqrt*rhoR_sqrt
+		Outputs:
+		--------
+		    rhoRoe: Roe-averaged density [nq, 1]
+		    velRoe: Roe-averaged velocity [nq, dim]
+		    HRoe: Roe-averaged total enthalpy [nq, 1]
+		'''
+		rhoL_sqrt = np.sqrt(UqL[:, srho])
+		rhoR_sqrt = np.sqrt(UqR[:, srho])
+		HL = physics.compute_variable("TotalEnthalpy", UqL)
+		HR = physics.compute_variable("TotalEnthalpy", UqR)
 
 		velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -673,28 +970,74 @@ class Roe1D(ConvNumFluxBase):
 
 		return rhoRoe, velRoe, HRoe
 
-	def GetDifferences(self, physics, srho, velL, velR, uL, uR):
-		# dvel = self.dvel
-		# drho = self.drho
-		# dp = self.dp 
+	def get_differences(self, physics, srho, velL, velR, UqL, UqR):
+		'''
+		This method computes velocity, density, and pressure jumps.
 
+		Inputs:
+		-------
+			physics: physics object
+			srho: density slice
+			velL: left velocity (typically evaluated at the quadrature 
+				points) [nq, dim]
+			velR: right velocity (typically evaluated at the quadrature 
+				points) [nq, dim]
+			UqL: left state (typically evaluated at the quadrature 
+				points) [nq, ns]
+			UqR: right state (typically evaluated at the quadrature 
+				points) [nq, ns]
+
+		Outputs:
+		--------
+		    drho: density jump [nq, 1]
+		    dvel: velocity jump [nq, dim]
+		    dp: pressure jump [nq, 1]
+		'''
 		dvel = velR - velL
-		drho = uR[:,srho] - uL[:,srho]
-		dp = physics.compute_variable("Pressure", uR) - \
-			physics.compute_variable("Pressure", uL)
+		drho = UqR[:, srho] - UqL[:, srho]
+		dp = physics.compute_variable("Pressure", UqR) - \
+			physics.compute_variable("Pressure", UqL)
 
-		return dvel, drho, dp
+		return drho, dvel, dp
 
 	def get_alphas(self, c, c2, dp, dvel, drho, rhoRoe):
+		'''
+		This method computes alpha_i = ith left eigenvector * dU.
+
+		Inputs:
+		-------
+			c: speed of sound [nq, 1]
+			c2: speed of sound squared [nq, 1]
+			dp: pressure jump [nq, 1]
+			dvel: velocity jump [nq, dim]
+			drho: density jump [nq, 1]
+			rhoRoe: Roe-averaged density [nq, 1]
+
+		Outputs:
+		--------
+		    alphas: left eigenvectors multipled by dU [nq, ns]
+		'''
 		alphas = self.alphas 
 
-		alphas[:,0:1] = 0.5/c2*(dp - c*rhoRoe*dvel[:,0:1])
-		alphas[:,1:2] = drho - dp/c2 
-		alphas[:,-1:] = 0.5/c2*(dp + c*rhoRoe*dvel[:,0:1])
+		alphas[:, 0:1] = 0.5/c2*(dp - c*rhoRoe*dvel[:, 0:1])
+		alphas[:, 1:2] = drho - dp/c2 
+		alphas[:, -1:] = 0.5/c2*(dp + c*rhoRoe*dvel[:, 0:1])
 
 		return alphas 
 
 	def get_eigenvalues(self, velRoe, c):
+		'''
+		This method computes the eigenvalues.
+
+		Inputs:
+		-------
+			velRoe: Roe-averaged velocity [nq, 1]
+			c: speed of sound [nq, 1]
+
+		Outputs:
+		--------
+		    evals: eigenvalues [nq, ns]
+		'''
 		evals = self.evals 
 
 		evals[:,0:1] = velRoe[:,0:1] - c
@@ -743,54 +1086,44 @@ class Roe1D(ConvNumFluxBase):
 		    F: Numerical flux dotted with the normal, i.e., F_hat dot n
 		'''
 
-		# Extract helper arrays
+		# Unpack
 		UqL = self.UqL 
 		UqR = self.UqR
-
-		# velL = self.velL
-		# velR = self.velR 
-		# c2 = self.c2
-		# c = self.c 
-		# alphas = self.alphas 
-		# evals = self.evals 
-		# R = self.R 
-		# FRoe = self.FRoe 
-		# FL = self.FL 
-		# FR = self.FR 
-
-		# Indices
 		srho = physics.get_state_slice("Density")
 		smom = physics.get_momentum_slice()
-
 		gamma = physics.gamma
 
-		NN = np.linalg.norm(n, axis=1, keepdims=True)
-		n1 = n/NN
+		# Unit normals
+		nmag = np.linalg.norm(n, axis=1, keepdims=True)
+		n_unit = n/nmag
 
 		# Copy values before rotating
 		UqL[:] = UqL_std
 		UqR[:] = UqR_std
 
 		# Rotated coordinate system
-		UqL = self.rotate_coord_sys(smom, UqL, n1)
-		UqR = self.rotate_coord_sys(smom, UqR, n1)
+		UqL = self.rotate_coord_sys(smom, UqL, n_unit)
+		UqR = self.rotate_coord_sys(smom, UqR, n_unit)
 
 		# Velocities
 		velL = UqL[:, smom]/UqL[:, srho]
 		velR = UqR[:, smom]/UqR[:, srho]
 
-		rhoRoe, velRoe, HRoe = self.RoeAverageState(physics, srho, velL, 
+		# Roe-averaged state
+		rhoRoe, velRoe, HRoe = self.roe_average_state(physics, srho, velL, 
 				velR, UqL, UqR)
 
 		# Speed of sound from Roe-averaged state
 		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1, 
 				keepdims=True))
 		if np.any(c2 <= 0.):
+			# Non-physical state
 			raise errors.NotPhysicalError
 		c = np.sqrt(c2)
 
-		# differences
-		dvel, drho, dp = self.GetDifferences(physics, srho, velL, velR, UqL, UqR)
+		# Jumps
+		drho, dvel, dp = self.get_differences(physics, srho, velL, velR, 
+				UqL, UqR)
 
 		# alphas (left eigenvectors multipled by dU)
 		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
@@ -819,17 +1152,18 @@ class Roe1D(ConvNumFluxBase):
 		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 
 		# Form flux Jacobian matrix multiplied by dU
-		FRoe = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, axis=2)).squeeze(axis=2)
+		FRoe = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, 
+				axis=2)).squeeze(axis=2)
 
-		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n1)
+		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_unit)
 
 		# Left flux
-		FL = physics.get_conv_flux_projected(UqL_std, n1)
+		FL = physics.get_conv_flux_projected(UqL_std, n_unit)
 
 		# Right flux
-		FR = physics.get_conv_flux_projected(UqR_std, n1)
+		FR = physics.get_conv_flux_projected(UqR_std, n_unit)
 		
-		return NN*(0.5*(FL+FR) - 0.5*FRoe)
+		return nmag*(0.5*(FL+FR) - 0.5*FRoe)
 
 
 class Roe2D(Roe1D):
@@ -838,8 +1172,9 @@ class Roe2D(Roe1D):
 		vel = self.vel
 		vel[:] = Uq[:,smom]
 
-		vel[:,0] = np.sum(Uq[:,smom]*n, axis=1)
-		vel[:,1] = np.sum(Uq[:,smom]*n[:,::-1]*np.array([[-1.,1.]]), axis=1)
+		vel[:, 0] = np.sum(Uq[:, smom]*n, axis=1)
+		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1]*np.array([[-1.,1.]]), 
+				axis=1)
 		
 		Uq[:,smom] = vel
 
@@ -849,8 +1184,8 @@ class Roe2D(Roe1D):
 		vel = self.vel
 		vel[:] = Uq[:,smom]
 
-		vel[:,0] = np.sum(Uq[:,smom]*n*np.array([[1.,-1.]]), axis=1)
-		vel[:,1] = np.sum(Uq[:,smom]*n[:,::-1], axis=1)
+		vel[:, 0] = np.sum(Uq[:, smom]*n*np.array([[1., -1.]]), axis=1)
+		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1], axis=1)
 
 		Uq[:,smom] = vel
 
@@ -861,7 +1196,7 @@ class Roe2D(Roe1D):
 
 		alphas = super().get_alphas(c, c2, dp, dvel, drho, rhoRoe)
 
-		alphas[:,2:3] = rhoRoe*dvel[:,-1:]
+		alphas[:, 2:3] = rhoRoe*dvel[:, -1:]
 
 		return alphas 
 
@@ -870,7 +1205,7 @@ class Roe2D(Roe1D):
 
 		evals = super().get_eigenvalues(velRoe, c)
 
-		evals[:,2:3] = velRoe[:,0:1]
+		evals[:, 2:3] = velRoe[:, 0:1]
 
 		return evals 
 
@@ -882,14 +1217,14 @@ class Roe2D(Roe1D):
 		i = 2
 
 		# first row
-		R[:,0,i] = 0.
+		R[:, 0, i] = 0.
 		# second row
-		R[:,1,i] = 0.
+		R[:, 1, i] = 0.
 		# last row
-		R[:,-1,i] = velRoe[:,-1]
+		R[:, -1, i] = velRoe[:, -1]
 		# [third] row
-		R[:,i,0] = velRoe[:,-1];  R[:,i,1] = velRoe[:,-1]; 
-		R[:,i,-1] = velRoe[:,-1]; R[:,i,i] = 1.
+		R[:, i, 0] = velRoe[:, -1];  R[:, i, 1] = velRoe[:, -1]; 
+		R[:, i, -1] = velRoe[:, -1]; R[:, i, i] = 1.
 
 		return R 
 
