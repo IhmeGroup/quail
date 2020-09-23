@@ -1031,7 +1031,7 @@ class Roe1D(ConvNumFluxBase):
 
 		Inputs:
 		-------
-			velRoe: Roe-averaged velocity [nq, 1]
+			velRoe: Roe-averaged velocity [nq, dim]
 			c: speed of sound [nq, 1]
 
 		Outputs:
@@ -1043,41 +1043,39 @@ class Roe1D(ConvNumFluxBase):
 		evals[:,0:1] = velRoe[:,0:1] - c
 		evals[:,1:2] = velRoe[:,0:1]
 		evals[:,-1:] = velRoe[:,0:1] + c
-		
+
 		return evals 
 
 	def get_right_eigenvectors(self, c, evals, velRoe, HRoe):
+		'''
+		This method computes the right eigenvectors.
+
+		Inputs:
+		-------
+			c: speed of sound [nq, 1]
+			evals: eigenvalues [nq, ns]
+			velRoe: Roe-averaged velocity [nq, dim]
+			HRoe: Roe-averaged total enthalpy [nq, 1]
+
+		Outputs:
+		--------
+		    R: right eigenvectors [nq, ns, ns]
+		'''
 		R = self.R
 
 		# first row
-		# R[:,0,[0,1,-1]] = 1.
-		R[:,0,0:2] = 1.; R[:,0,-1] = 1.
+		R[:, 0, 0:2] = 1.; R[:, 0, -1] = 1.
 		# second row
-		R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,-1] = evals[:,-1]
+		R[:, 1, 0] = evals[:, 0]; R[:, 1, 1] = velRoe[:, 0]
+		R[:, 1, -1] = evals[:, -1]
 		# last row
-		R[:,-1,0:1] = HRoe - velRoe[:,0:1]*c; R[:,-1,1:2] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
-		R[:,-1,-1:] = HRoe + velRoe[:,0:1]*c
+		R[:, -1, 0:1] = HRoe - velRoe[:, 0:1]*c; 
+		R[:, -1, 1:2] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
+		R[:, -1, -1:] = HRoe + velRoe[:, 0:1]*c
 
 		return R 
 
-
-	def compute_flux(self, physics, UqL_std, UqR_std, n):
-		'''
-		Function: ConvFluxLaxFriedrichs
-		-------------------
-		This function computes the numerical flux (dotted with the normal)
-		using the Lax-Friedrichs flux function
-
-		Inputs:
-		    gamma: specific heat ratio
-		    UqL: Left state
-		    UqR: Right state
-		    n: Normal vector (assumed left to right)
-
-		Outputs:
-		    F: Numerical flux dotted with the normal, i.e., F_hat dot n
-		'''
-
+	def compute_flux(self, physics, UqL_std, UqR_std, normals):
 		# Unpack
 		UqL = self.UqL 
 		UqR = self.UqR
@@ -1086,16 +1084,16 @@ class Roe1D(ConvNumFluxBase):
 		gamma = physics.gamma
 
 		# Unit normals
-		nmag = np.linalg.norm(n, axis=1, keepdims=True)
-		n_unit = n/nmag
+		n_mag = np.linalg.norm(normals, axis=1, keepdims=True)
+		n_hat = normals/n_mag
 
-		# Copy values before rotating
+		# Copy values from standard coordinate system before rotating
 		UqL[:] = UqL_std
 		UqR[:] = UqR_std
 
 		# Rotated coordinate system
-		UqL = self.rotate_coord_sys(smom, UqL, n_unit)
-		UqR = self.rotate_coord_sys(smom, UqR, n_unit)
+		UqL = self.rotate_coord_sys(smom, UqL, n_hat)
+		UqR = self.rotate_coord_sys(smom, UqR, n_hat)
 
 		# Velocities
 		velL = UqL[:, smom]/UqL[:, srho]
@@ -1118,57 +1116,46 @@ class Roe1D(ConvNumFluxBase):
 				UqL, UqR)
 
 		# alphas (left eigenvectors multipled by dU)
-		# alphas[:,[0]] = 0.5/c2*(dp - c*rhoRoe*dvel[:,[0]])
-		# alphas[:,[1]] = drho - dp/c2 
-		# alphas[:,ydim] = rhoRoe*dvel[:,[-1]]
-		# alphas[:,[-1]] = 0.5/c2*(dp + c*rhoRoe*dvel[:,[0]])
 		alphas = self.get_alphas(c, c2, dp, dvel, drho, rhoRoe)
 
 		# Eigenvalues
-		# evals[:,[0]] = velRoe[:,[0]] - c
-		# evals[:,1:-1] = velRoe[:,[0]]
-		# evals[:,[-1]] = velRoe[:,[0]] + c
 		evals = self.get_eigenvalues(velRoe, c)
 
 		# Right eigenvector matrix
-		# first row
-		# R[:,0,[0,1,-1]] = 1.; R[:,0,ydim] = 0.
-		# # second row
-		# R[:,1,0] = evals[:,0]; R[:,1,1] = velRoe[:,0]; R[:,1,ydim] = 0.; R[:,1,-1] = evals[:,-1]
-		# # last row
-		# R[:,-1,[0]] = HRoe - velRoe[:,[0]]*c; R[:,-1,[1]] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
-		# R[:,-1,[-1]] = HRoe + velRoe[:,[0]]*c; R[:,-1,ydim] = velRoe[:,[-1]]
-		# # [third] row
-		# R[:,ydim,0] = velRoe[:,[-1]];  R[:,ydim,1] = velRoe[:,[-1]]; 
-		# R[:,ydim,-1] = velRoe[:,[-1]]; R[:,ydim,ydim] = 1.
 		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 
 		# Form flux Jacobian matrix multiplied by dU
 		FRoe = np.matmul(R, np.expand_dims(np.abs(evals)*alphas, 
 				axis=2)).squeeze(axis=2)
 
-		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_unit)
+		# Undo rotation
+		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_hat)
 
 		# Left flux
-		FL = physics.get_conv_flux_projected(UqL_std, n_unit)
+		FL = physics.get_conv_flux_projected(UqL_std, n_hat)
 
 		# Right flux
-		FR = physics.get_conv_flux_projected(UqR_std, n_unit)
+		FR = physics.get_conv_flux_projected(UqR_std, n_hat)
 		
-		return nmag*(0.5*(FL+FR) - 0.5*FRoe)
+		return n_mag*(0.5*(FL+FR) - 0.5*FRoe) # [nq, ns]
 
 
 class Roe2D(Roe1D):
-
+	'''
+	2D Roe numerical flux. This class inherits from the Roe1D class.
+	See Roe1D for detailed comments on the attributes and methods.
+	In this class, several methods are updated to account for the extra 
+	dimension.
+	'''
 	def rotate_coord_sys(self, smom, Uq, n):
 		vel = self.vel
 		vel[:] = Uq[:,smom]
 
 		vel[:, 0] = np.sum(Uq[:, smom]*n, axis=1)
-		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1]*np.array([[-1.,1.]]), 
+		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1]*np.array([[-1., 1.]]), 
 				axis=1)
 		
-		Uq[:,smom] = vel
+		Uq[:, smom] = vel
 
 		return Uq
 
@@ -1179,7 +1166,7 @@ class Roe2D(Roe1D):
 		vel[:, 0] = np.sum(Uq[:, smom]*n*np.array([[1., -1.]]), axis=1)
 		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1], axis=1)
 
-		Uq[:,smom] = vel
+		Uq[:, smom] = vel
 
 		return Uq
 
@@ -1208,14 +1195,14 @@ class Roe2D(Roe1D):
 
 		i = 2
 
-		# first row
+		# First row
 		R[:, 0, i] = 0.
-		# second row
+		# Second row
 		R[:, 1, i] = 0.
-		# last row
+		# Last (fourth) row
 		R[:, -1, i] = velRoe[:, -1]
-		# [third] row
-		R[:, i, 0] = velRoe[:, -1];  R[:, i, 1] = velRoe[:, -1]; 
+		# Third row
+		R[:, i, 0] = velRoe[:, -1];  R[:, i, 1] = velRoe[:, -1]
 		R[:, i, -1] = velRoe[:, -1]; R[:, i, i] = 1.
 
 		return R 
