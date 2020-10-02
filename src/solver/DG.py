@@ -2,26 +2,11 @@
 #
 #       File : src/numerics/solver/DG.py
 #
-<<<<<<< HEAD
 #       Contains class definitions for the DG solver.
 #
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import numpy as np
-=======
-#       Contains class definitions for the DG solver available in the
-#		DG Python framework.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
-#
-# ------------------------------------------------------------------------ #
-from abc import ABC, abstractmethod
-import code
-import copy
-import numpy as np
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 import time
 
 import errors
@@ -64,17 +49,10 @@ class ElemHelpers(object):
 	jac_elems: numpy array
 		stores the evaluated geometric Jacobian for each element
 	ijac_elems: numpy array
-<<<<<<< HEAD
 		stores the evaluated inverse of the geometric Jacobian for each
 		element
 	djac_elems: numpy array
 		stores the evaluated determinant of the geometric Jacobian for
-=======
-		stores the evaluated inverse of the geometric jacobian for each
-		element
-	djac_elems: numpy array
-		stores the evaluated determinant of the geometric jacobian for
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		each element
 	x_elems: numpy array
 		physical coordinates of quadrature points for each element
@@ -106,7 +84,6 @@ class ElemHelpers(object):
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
-<<<<<<< HEAD
 		self.quad_pts = np.zeros(0)
 		self.quad_wts = np.zeros(0)
 		self.basis_val = np.zeros(0)
@@ -120,21 +97,6 @@ class ElemHelpers(object):
 		self.Uq = np.zeros(0)
 		self.Fq = np.zeros(0)
 		self.Sq = np.zeros(0)
-=======
-		self.quad_pts = None
-		self.quad_wts = None
-		self.basis_val = None
-		self.basis_ref_grad = None
-		self.basis_phys_grad_elems = None
-		self.gbasis_val = None
-		self.jac_elems = None
-		self.ijac_elems = None
-		self.djac_elems = None
-		self.x_elems = None
-		self.Uq = None
-		self.Fq = None
-		self.Sq = None
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		self.iMM_elems = np.zeros(0)
 		self.vol_elems = np.zeros(0)
 		self.domain_vol = 0.
@@ -158,13 +120,8 @@ class ElemHelpers(object):
 			self.quad_wts: precomputed quadrature weights [nq, 1]
 		'''
 		gbasis = mesh.gbasis
-<<<<<<< HEAD
 		quad_order = gbasis.get_quadrature_order(mesh, order,
 				physics=physics)
-=======
-		quad_order = gbasis.get_quadrature_order(mesh, order,
-				physics = physics)
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		self.quad_pts, self.quad_wts = basis.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
@@ -184,11 +141,7 @@ class ElemHelpers(object):
 				reference element [nq, nb, dim]
 			self.basis_phys_grad_elems: precomputed basis gradient for each
 				physical element [num_elems, nq, nb, dim]
-<<<<<<< HEAD
 			self.jac_elems: precomputed Jacobian for each element
-=======
-			self.jac_elems: precomputed jacobian for each element
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 				[num_elems, nq, dim, dim]
 			self.ijac_elems: precomputed inverse Jacobian for each element
 				[num_elems, nq, dim, dim]
@@ -210,13 +163,8 @@ class ElemHelpers(object):
 		self.x_elems = np.zeros([num_elems, nq, dim])
 		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, dim])
 
-<<<<<<< HEAD
 		# Basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True,
-=======
-		# basis data
-		basis.get_basis_val_grads(self.quad_pts, get_val=True,
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 				get_ref_grad=True)
 
 		self.basis_val = basis.basis_val
@@ -226,7 +174,6 @@ class ElemHelpers(object):
 			# Jacobian
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID,
 					quad_pts, get_djac=True, get_jac=True, get_ijac=True)
-<<<<<<< HEAD
 			# Store
 			self.jac_elems[elem_ID] = jac
 			self.ijac_elems[elem_ID] = ijac
@@ -245,23 +192,6 @@ class ElemHelpers(object):
 					# [nq, nb, dim]
 
 		# Volumes
-=======
-			# store
-			self.jac_elems[elem] = jac
-			self.ijac_elems[elem] = ijac
-			self.djac_elems[elem] = djac
-
-			# physical coordinates of quadrature points
-			x = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
-			# store
-			self.x_elems[elem] = x
-			# physical gradient
-			basis.get_basis_val_grads(quad_pts, get_phys_grad=True,
-					ijac=ijac)
-			self.basis_phys_grad_elems[elem] = basis.basis_phys_grad
-			# [nq,nb,dim]
-
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)
 
 	def alloc_other_arrays(self, physics, basis, order):
@@ -304,13 +234,8 @@ class ElemHelpers(object):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
-<<<<<<< HEAD
 		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh,
 				basis, order)
-=======
-		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh,
-				physics, basis)
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 
 
 class InteriorFaceHelpers(ElemHelpers):
@@ -337,19 +262,11 @@ class InteriorFaceHelpers(ElemHelpers):
 	normals_int_faces: numpy array
 		normal vector array for each interior face
 	UqL: numpy array
-<<<<<<< HEAD
 		solution vector evaluated at the face quadrature points for left
 		element
 	UqR: numpy array
 		solution vector evaluated at the face quadrature points for right
 		element
-=======
-		solution vector evaluated at the quadrature points for left element
-		neighbor
-	UqR: numpy array
-		solution vector evaluated at the quadrature points for right element
-		neighbor
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 	Fq: numpy array
 		flux vector evaluated at the face quadrature points
 
@@ -368,7 +285,6 @@ class InteriorFaceHelpers(ElemHelpers):
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
-<<<<<<< HEAD
 		self.quad_pts = np.zeros(0)
 		self.quad_wts = np.zeros(0)
 		self.faces_to_basisL = np.zeros(0)
@@ -377,16 +293,6 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.UqL = np.zeros(0)
 		self.UqR = np.zeros(0)
 		self.Fq = np.zeros(0)
-=======
-		self.quad_pts = None
-		self.quad_wts = None
-		self.faces_to_basisL = None
-		self.faces_to_basisR = None
-		self.normals_ifaces = None
-		self.UqL = None
-		self.UqR = None
-		self.Fq = None
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -423,7 +329,6 @@ class InteriorFaceHelpers(ElemHelpers):
 
 		Outputs:
 		--------
-<<<<<<< HEAD
 			self.faces_to_basisL: basis values evaluated at quadrature
 				points of each face for left element
 				[nfaces_per_elem, nq, nb]
@@ -431,13 +336,6 @@ class InteriorFaceHelpers(ElemHelpers):
 				points of each face for right element
 				[nfaces_per_elem, nq, nb]
 			self.normals_int_faces: precomputed normal vectors at each
-=======
-			self.faces_to_basisL: precomputed basis value of left
-				neighboring element [nfaces_per_elem, nq, nb]
-			self.faces_to_basisR: precomputed basis value of right
-				neighboring element [nfaces_per_elem, nq, nb]
-			self.normals_ifaces: precomputed normal vectors at each
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 				interior face [num_interior_faces, nq, dim]
 		'''
 		dim = mesh.dim
@@ -449,7 +347,6 @@ class InteriorFaceHelpers(ElemHelpers):
 		# Allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
-<<<<<<< HEAD
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq, dim])
 
 		# Get values on each face (from both left and right perspectives)
@@ -469,25 +366,6 @@ class InteriorFaceHelpers(ElemHelpers):
 			normals = mesh.gbasis.calculate_normals(mesh,
 					interior_face.elemL_ID, interior_face.faceL_ID, quad_pts)
 			self.normals_int_faces[i] = normals
-=======
-		self.normals_ifaces = np.zeros([mesh.num_interior_faces, nq, dim])
-
-		for f in range(nfaces_per_elem):
-			# left
-			basis.get_basis_face_val_grads(mesh, f, quad_pts, get_val=True)
-			self.faces_to_basisL[f] = basis.basis_val
-			# right
-			basis.get_basis_face_val_grads(mesh, f, quad_pts[::-1],
-					get_val=True)
-			self.faces_to_basisR[f] = basis.basis_val
-
-		# normals
-		i = 0
-		for IFace in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_id,
-					IFace.faceL_id, quad_pts)
-			self.normals_ifaces[i] = normals
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 			i += 1
 
 	def alloc_other_arrays(self, physics, basis, order):
@@ -532,17 +410,9 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		coordinates of the quadrature points in physical space at the
 		boundary face
 	UqI: numpy array
-<<<<<<< HEAD
 		values of interior state at the quadrature points
 	UqB: numpy array
 		values of boundary (exterior) state at the quadrature points
-=======
-		solution vector evaluated at the quadrature points for the interior
-		element
-	UqB: numpy array
-		solution vector evaluated at the quadrature points for the boundary
-		element
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 	Fq: numpy array
 		flux vector evaluated at the face quadrature points
 
@@ -558,7 +428,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
-<<<<<<< HEAD
 		self.quad_pts = np.zeros(0)
 		self.quad_wts = np.zeros(0)
 		self.faces_to_basis = np.zeros(0)
@@ -568,17 +437,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqI = np.zeros(0)
 		self.UqB = np.zeros(0)
 		self.Fq = np.zeros(0)
-=======
-		self.quad_pts = None
-		self.quad_wts = None
-		self.faces_to_basis = None
-		self.faces_to_xref = None
-		self.normals_bfgroups = None
-		self.x = None
-		self.UqI = None
-		self.UqB = None
-		self.Fq = None
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -592,7 +450,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 		Outputs:
 		--------
-<<<<<<< HEAD
 			self.faces_to_basis: basis values evaluated at quadrature points
 				of each face [nfaces_per_elem, nq, nb]
 			self.faces_to_xref: coordinates of quadrature points of each
@@ -601,15 +458,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			self.normals_bgroups: precomputed normal vectors at each
 				boundary face [num_boundary_faces, nq, dim]
 			self.x_bgroups: precomputed physical coordinates of the
-=======
-			self.faces_to_basis: precomputed basis value of interior
-				neighboring element [nfaces_per_elem, nq, nb]
-			self.faces_to_xref: precomputed element reference nodes at
-				the boundary face
-			self.normals_bfgroups: precomputed normal vectors at each
-				boundary face [num_boundary_faces, nq, dim]
-			self.x_bfgroups: precomputed physical coordinates of the
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 				quadrature points [num_boundary_faces, nq, dim]
 		'''
 		dim = mesh.dim
@@ -622,7 +470,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.DIM])
 
-<<<<<<< HEAD
 		# Get values on each face (from interior perspective)
 		for face_ID in range(nfaces_per_elem):
 			self.faces_to_xref[face_ID] = basis.get_elem_ref_from_face_ref(
@@ -630,18 +477,9 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts,
 					get_val=True)
 			self.faces_to_basis[face_ID] = basis.basis_val
-=======
-		for f in range(nfaces_per_elem):
-			# interior
-			self.faces_to_xref[f] = basis.get_elem_ref_from_face_ref(f,
-					quad_pts)
-			basis.get_basis_face_val_grads(mesh, f, quad_pts, get_val=True)
-			self.faces_to_basis[f] = basis.basis_val
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 
 		# Get boundary information
 		i = 0
-<<<<<<< HEAD
 		for bgroup in mesh.boundary_groups.values():
 			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,
 					nq, dim]))
@@ -665,32 +503,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 				x_bgroup[j] = x
 
 				# Increment
-=======
-		for BFG in mesh.boundary_groups.values():
-			self.normals_bfgroups.append(np.zeros([BFG.num_boundary_faces,
-					nq, dim]))
-			self.x_bfgroups.append(np.zeros([BFG.num_boundary_faces,
-					nq, dim]))
-			normal_bfgroup = self.normals_bfgroups[i]
-			x_bfgroup = self.x_bfgroups[i]
-
-			# normals
-			j = 0
-			for boundary_face in BFG.boundary_faces:
-
-				nvec = mesh.gbasis.calculate_normals(mesh,
-						boundary_face.elem_id,
-						boundary_face.face_id, quad_pts)
-				normal_bfgroup[j] = nvec
-
-				# physical coordinates of quadrature points
-				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_id,
-						self.faces_to_xref[boundary_face.face_id])
-				# store
-				x_bfgroup[j] = x
-
-				# increment
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 				j += 1
 			i += 1
 
@@ -761,38 +573,33 @@ class DG(base.SolverBase):
 
 		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
-<<<<<<< HEAD
-		x = x_elems[elem_ID]
 
-		# Interpolate state and gradient at quadrature points
-		Uq = helpers.evaluate_state(Uc, basis_val,
-				skip_interp=self.basis.skip_interp)
-		if self.verbose:
-			# Get min and max of state variables for reporting
-			self.get_min_max_state(Uq)
+		# Interpolate state and gradient at quad points
+		Uq = helpers.evaluate_state(Up, basis_val,
+				skip_interp=self.basis.skip_interp) # [ne, nq, ns]
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
-			Fq = physics.get_conv_flux_interior(Uq) # [nq, ns, dim]
-			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
-					self, elem_helpers, elem_ID, Fq)
+			Fq = physics.get_conv_flux_interior(Uq) # [ne, nq, ns, dim]
+			R += solver_tools.calculate_inviscid_flux_volume_integral(
+					self, elem_ops, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
-			Sq = elem_helpers.Sq
-			# Initialize to zero
-			Sq[:] = 0.
-			# Compute additive contribution of all source terms
-			Sq = physics.eval_source_terms(Uq, x, self.time, Sq) # [nq, ns]
+			# Eval_source_terms is an additive function so source needs to be
+			# initialized to zero for each time step
+			Sq = np.zeros_like(Uq) # [ne, nq, ns]
+			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq) # [ne, nq, ns]
 
-			# Compute contribution to element residual
-			R_elem += solver_tools.calculate_source_term_integral(
-					elem_helpers, elem_ID, Sq)
+			R += solver_tools.calculate_source_term_integral(elem_ops, Sq) # [ne, nb, ns]
 
-		return R_elem
+		#if elem == echeck:
+		#	code.interact(local=locals())
 
-	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
-		# Unpack
+		return R # [ne, nb, ns]
+
+	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
+
 		mesh = self.mesh
 		physics = self.physics
 		interior_face = mesh.interior_faces[int_face_ID]

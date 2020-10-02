@@ -265,8 +265,7 @@ class Euler2D(Euler):
 		return smom
 
 	def get_conv_flux_interior(self, Uq):
-		# Unpack
-		dim = self.DIM
+		# Get indices/slices of state variables
 		irho, irhou, irhov, irhoE = self.get_state_indices()
 		smom = self.get_momentum_slice()
 
@@ -277,7 +276,7 @@ class Euler2D(Euler):
 		rhov = Uq[:, :, irhov] # [n, nq]
 		rhoE = Uq[:, :, irhoE] # [n, nq]
 		mom  = Uq[:, :, smom]  # [n, nq, dim]
-		rho  += eps # prevent rare division-by-zero errors
+		rho += eps # prevent rare division-by-zero errors
 
 		# Get velocity in each dimension
 		u = rhou / rho
@@ -294,7 +293,7 @@ class Euler2D(Euler):
 		H = rhoE + p
 
 		# Assemble flux matrix
-		F = np.empty(Uq.shape + (dim,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
 		F[:,:,irho,:]   = mom          # Flux of mass in all directions
 		F[:,:,irhou, 0] = rho * u2 + p # x-flux of x-momentum
 		F[:,:,irhov, 0] = rhouv        # x-flux of y-momentum

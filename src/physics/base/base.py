@@ -3,7 +3,7 @@
 #       File : src/physics/base/base.py
 #
 #       Contains definition and helper functions for base physics class.
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 from enum import Enum, auto
@@ -24,7 +24,7 @@ def process_map(fcn_type, fcn_map):
 	Inputs:
 	-------
 	    fcn_type: Function type (member of corresponding Function enum)
-	    fcn_map: Function map; dict whose keys are the types of Functions 
+	    fcn_map: Function map; dict whose keys are the types of Functions
 	    	and whose values are the corresponding Function classes
 
 	Outputs:
@@ -45,7 +45,7 @@ def process_map(fcn_type, fcn_map):
 
 def set_state_indices_slices(physics):
 	'''
-	This function sets indices and slices corresponding to each state 
+	This function sets indices and slices corresponding to each state
 	variable.
 
 	Inputs:
@@ -79,28 +79,28 @@ class PhysicsBase(ABC):
 	Attributes:
 	-----------
 	state_indices: dict
-	    keys are the names of the state variables; values are the 
+	    keys are the names of the state variables; values are the
 	    corresponding indices
 	state_slices: dict
-	    keys are the names of the state variables; values are the 
+	    keys are the names of the state variables; values are the
 	    corresponding slices
 	IC_fcn_map: dict
 		keys are the types of initial conditions (members of FcnType enum);
 		values are the corresponding classes
 	exact_fcn_map: dict
-		keys are the types of exact solutions (members of FcnType enum); 
+		keys are the types of exact solutions (members of FcnType enum);
 		values are the corresponding classes
 	BC_map: dict
 		keys are the types of boundary conditions (members of BCType enum);
 		values are the corresponding classes
 	BC_fcn_map: dict
-		keys are the types of functions for use with the StateAll BC 
+		keys are the types of functions for use with the StateAll BC
 		(members of FcnType enum); values are the corresponding classes
 	source_map: dict
-		keys are the types of source terms (members of SourceType enum); 
+		keys are the types of source terms (members of SourceType enum);
 		values are the corresponding classes
 	conv_num_flux_map: dict
-		keys are the types of convective numerical fluxes (members of 
+		keys are the types of convective numerical fluxes (members of
 		ConvNumFluxType enum); values are the corresponding classes
 	IC: Function object
 	    holds information about the initial condition
@@ -132,8 +132,8 @@ class PhysicsBase(ABC):
 		sets physical parameters
 	set_maps
 		sets maps for the initial condition, exact solution, boundary
-		conditions, source terms, and convective flux function. Each of 
-		these maps the members of the corresponding enum to the 
+		conditions, source terms, and convective flux function. Each of
+		these maps the members of the corresponding enum to the
 		associated class.
 	set_IC
 		instantiates and stores the initial condition object
@@ -147,13 +147,13 @@ class PhysicsBase(ABC):
 		instantiates and stores the convective numerical flux object
 	get_state_index
 		gets the index corresponding to a given state variable
-	get_state_slice  
+	get_state_slice
 		gets the slice corresponding to a given state variable
 	get_quadrature_order
 		gets the recommended quadrature order associated with the given
 		physics class
 	get_conv_flux_projected
-		computes the analytic convective flux projected in a given 
+		computes the analytic convective flux projected in a given
 		direction
 	get_conv_flux_numerical
 		computes the convective numerical flux
@@ -192,8 +192,8 @@ class PhysicsBase(ABC):
 
 	def __init__(self, mesh):
 		'''
-		This method initializes the attributes (see above for attribute 
-		details). 
+		This method initializes the attributes (see above for attribute
+		details).
 
 		Inputs:
 		-------
@@ -229,12 +229,12 @@ class PhysicsBase(ABC):
 
 	def __repr__(self):
 		return '{self.__class__.__name__}'.format(self=self)
-		
+
 	@abstractmethod
 	class StateVariables(Enum):
 		'''
 		Enum class that stores the state variable names. The value of
-		a given member is a string consisting of the symbol used to 
+		a given member is a string consisting of the symbol used to
 		denote the corresponding variable (in TeX format), e.g., "u"
 		for velocity.
 		'''
@@ -243,7 +243,7 @@ class PhysicsBase(ABC):
 	class AdditionalVariables(Enum):
 		'''
 		Enum class that stores additional variable names. The value of
-		a given member is a string consisting of the symbol used to 
+		a given member is a string consisting of the symbol used to
 		denote the corresponding variable (in TeX format), e.g., "u"
 		for velocity.
 		'''
@@ -261,22 +261,22 @@ class PhysicsBase(ABC):
 
 	def set_maps(self):
 		'''
-		This method sets the maps for the initial condition, exact solution, 
-		boundary conditions, source terms, and convective flux function. 
+		This method sets the maps for the initial condition, exact solution,
+		boundary conditions, source terms, and convective flux function.
 
 		Outputs:
 		--------
-		    self.IC_fcn_map: dict whose keys are the types of initial 
+		    self.IC_fcn_map: dict whose keys are the types of initial
 		    	conditions (members of FcnType enum); values are the
 		    	corresponding classes
-		    self.exact_fcn_map: dict whose keys are the types of exact 
+		    self.exact_fcn_map: dict whose keys are the types of exact
 		    	solutions (members of FcnType enum); values are the
 		    	corresponding classes
 		    self.BC_map: dict whose keys are the types of boundary
 		    	conditions (members of BCType enum); values are the
 		    	corresponding classes
-		    self.BC_fcn_map: dict whose keys are the types of functions for 
-		    	use with the StateAll BC (members of FcnType enum); values 
+		    self.BC_fcn_map: dict whose keys are the types of functions for
+		    	use with the StateAll BC (members of FcnType enum); values
 		    	are to the corresponding classes
 		    self.source_map: dict whose keys are the types of source
 		    	terms (members of SourceType enum); values are the
@@ -288,8 +288,8 @@ class PhysicsBase(ABC):
 		Notes:
 		------
 			In general, the maps set here should be applicable to all
-			child classes. In child classes, these maps should be updated 
-			with only the functions/BCs/source terms/numerical fluxes 
+			child classes. In child classes, these maps should be updated
+			with only the functions/BCs/source terms/numerical fluxes
 			compatible with said classes.
 		'''
 		self.IC_fcn_map = {
@@ -314,7 +314,7 @@ class PhysicsBase(ABC):
 		self.conv_num_flux_map = {}
 		if "MaxWaveSpeed" in self.AdditionalVariables.__members__:
 			self.conv_num_flux_map.update({
-				base_conv_num_flux_type.LaxFriedrichs : 
+				base_conv_num_flux_type.LaxFriedrichs :
 					base_fcns.LaxFriedrichs,
 			})
 
@@ -325,7 +325,7 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			IC_type: type of initial condition (member of FcnType enum)
-			kwargs: keyword arguments; depends on specific initial 
+			kwargs: keyword arguments; depends on specific initial
 				condition
 
 		Outputs:
@@ -344,7 +344,7 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			exact_type: type of exact condition (member of FcnType enum)
-			kwargs: keyword arguments; depends on specific exact 
+			kwargs: keyword arguments; depends on specific exact
 				solution
 
 		Outputs:
@@ -412,7 +412,7 @@ class PhysicsBase(ABC):
 
 		Inputs:
 		-------
-			conv_num_flux_type: type of convective numerical flux 
+			conv_num_flux_type: type of convective numerical flux
 				(member of ConvNumFluxType enum)
 			kwargs: keyword arguments; depends on specific convective
 				numerical flux
@@ -422,7 +422,7 @@ class PhysicsBase(ABC):
 			self.conv_flux_fcn: stores convective numerical flux object
 		'''
 		# Get specified source term class
-		conv_num_flux_class = process_map(conv_num_flux_type, 
+		conv_num_flux_class = process_map(conv_num_flux_type,
 				self.conv_num_flux_map)
 		# Instantiate class and store
 		self.conv_flux_fcn = conv_num_flux_class(**kwargs)
@@ -476,7 +476,7 @@ class PhysicsBase(ABC):
 	@abstractmethod
 	def get_conv_flux_interior(self, Uq):
 		'''
-		This method computes the convective analytic flux for element 
+		This method computes the convective analytic flux for element
 		interiors.
 
 		Inputs:
@@ -489,10 +489,10 @@ class PhysicsBase(ABC):
 			Fq: flux values [nq, ns, dim]
 		'''
 		pass
-		
+
 	def get_conv_flux_projected(self, Uq, normals):
 		'''
-		This method computes the convective analytic flux projected in a 
+		This method computes the convective analytic flux projected in a
 		given direction.
 
 		Inputs:
@@ -515,9 +515,9 @@ class PhysicsBase(ABC):
 
 		Inputs:
 		-------
-			UqL: left values of the state variables (typically at the 
+			UqL: left values of the state variables (typically at the
 				quadrature points) [nq, ns]
-			UqR: right values of the state variables (typically at the 
+			UqR: right values of the state variables (typically at the
 				quadrature points) [nq, ns]
 			normals: directions from left to right [nq, dim]
 
@@ -536,15 +536,15 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			Uq: values of the state variables (typically at the quadrature
-				points) [nq, ns]
-			xphys: coordinates in physical space [nq, dim]
+				points) [ne, nq, ns]
+			xphys: coordinates in physical space [ne, nq, dim]
 			time: time
-			Sq: initial values of the sum of the source term(s) (typically 
-				initialized to zero) [nq, ns]
+			Sq: initial values of the sum of the source term(s) (typically
+				initialized to zero) [ne, nq, ns]
 
 		Outputs:
 		--------
-			Sq: sum of the values of source term(s) [nq, ns]
+			Sq: sum of the values of source term(s) [ne, nq, ns]
 		'''
 		for source in self.source_terms:
 			Sq += source.get_source(self, Uq, xphys, time)
@@ -561,7 +561,7 @@ class PhysicsBase(ABC):
 				points) [nq, ns]
 			xphys: coordinates in physical space [nq, dim]
 			time: time
-			jac: initial values of the sum of the Jacobian(s) (typically 
+			jac: initial values of the sum of the Jacobian(s) (typically
 				initialized to zero) [nq, ns, ns]
 
 		Outputs:
@@ -596,7 +596,7 @@ class PhysicsBase(ABC):
 			varq = Uq[:, sidx:sidx+1].copy()
 		except KeyError:
 			# Now try additional
-			varq = self.compute_additional_variable(var_name, Uq, 
+			varq = self.compute_additional_variable(var_name, Uq,
 					flag_non_physical)
 
 		return varq

@@ -3,16 +3,14 @@
 #       File : src/numerics/solver/tools.py
 #
 #       Contains additional methods (tools) for the DG solver class
-#      
+#
 # ------------------------------------------------------------------------ #
 import numpy as np
 
 import general
 import numerics.basis.tools as basis_tools
 
-
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, 
-		Fq):
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the DG scheme
 
@@ -20,30 +18,23 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID,
 	-------
 		solver: solver object
 		elem_helpers: helpers defined in ElemHelpers
-		elem_ID: element index
-		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [ne, nq, ns, dim]
 
 	Outputs:
 	--------
-		R_elem: residual contribution (for volume integral of inviscid flux)
-			[nb, ns]
-	'''	
-	# Unpack
-	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-	djac_elems = elem_helpers.djac_elems 
+		R: calculated residual array (for volume integral of all elements)
+		[ne, nb, ns]
+	'''
+	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems # [ne, nq, nb, dim]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
-	basis_phys_grad = basis_phys_grad_elems[elem_ID]
-	djac = djac_elems[elem_ID]
-	nq = quad_wts.shape[0]
+	# Calculate flux quadrature
+	F_quad = np.einsum('ijkl, jm, ijm -> ijkl', Fq, quad_wts, djac_elems) # [ne, nq, ns, dim]
+	# Calculate residual
+	R = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad) # [ne, nb, ns]
 
-	# Integrate
-	R_elem = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq, 
-			1, 1), axes=([0, 2], [0, 2])) # [nb, ns]
-
-	return R_elem # [nb, ns]
-
+	return R # [ne, nb, ns]
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	'''
@@ -64,45 +55,47 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	return R_B # [nb, ns]
 
 
-def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
+def calculate_source_term_integral(elem_helpers, Sq):
 	'''
 	Calculates the source term volume integral for the DG scheme
 
 	Inputs:
 	-------
 		elem_helpers: helpers defined in ElemHelpers
-		elem_ID: element index
-		Sq: source term array evaluated at the quadrature points [nq, ns]
+		Sq: source term array evaluated at the quadrature points [ne, nq, ns]
 
 	Outputs:
 	--------
-		residual contribution (from volume integral of source term) 
-			[nb, ns]
+		R: calculated residual array (for volume integral of all elements)
+		[ne, nb, ns]
 	'''
-	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
-	djac = djac_elems[elem_ID]
+	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	basis_val = elem_helpers.basis_val # [nq, nb]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
-	return np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
+	# Calculate source term quadrature
+	Sq_quad = np.einsum('ijk, jm, ijm -> ijk', Sq, quad_wts, djac_elems) # [ne, nq, ns]
+	# Calculate residual
+	R = np.einsum('jn, ijk -> ink', basis_val, Sq_quad) # [ne, nb, ns]
 
+	return R # [ne, nb, ns]
 
 def calculate_dRdU(elem_helpers, elem_ID, Sjac):
 	'''
-	Helper function for ODE solvers that calculates the derivative of 
+	Helper function for ODE solvers that calculates the derivative of
 
 		integral(basis_val*S(U))dx
-	
-	with respect to the solution state 
-	
-	Inputs: 
+
+	with respect to the solution state
+
+	Inputs:
 		elem_helpers: object containing precomputed element helpers
 		elem_ID: element index
 		Sjac: element source term Jacobian [nq, ns, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
+	basis_val = elem_helpers.basis_val
+	djac_elems = elem_helpers.djac_elems
 	djac = djac_elems[elem_ID]
 
 	a = np.einsum('ijk,il->ijk', Sjac, quad_wts*djac)
