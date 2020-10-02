@@ -3,7 +3,7 @@
 #       File : src/numerics/helpers/helpers.py
 #
 #       Contains general numerics-related helper functions
-#      
+#
 # ------------------------------------------------------------------------ #
 import numpy as np
 
@@ -37,7 +37,7 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 	    Uc: state coefficients [nb, sr]
 	    basis_val: basis values [nq, nb]
 	    skip_interp: if True, then will simply copy the state coefficients;
-	    	useful for a colocated scheme, i.e. quadrature points and 
+	    	useful for a colocated scheme, i.e. quadrature points and
 	    	solution nodes (for a nodal basis) are the same
 
 	Outputs:
@@ -47,6 +47,7 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 	if skip_interp:
 		Uq = Uc.copy()
 	else:
-		Uq = np.matmul(basis_val, Uc)
+		#Up = np.einsum('ijk,ikl->ijl',basis_val, Uc)
+		Up = np.matmul(basis_val, Uc)
 
-	return Uq
+	return Up
