@@ -498,16 +498,16 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			Uq: values of the state variables (typically at the quadrature
-				points) [nq, ns]
-			normals: directions in which to project flux [nq, dim]
+				points) [nf, nq, ns]
+			normals: directions in which to project flux [nf, nq, dim]
 
 		Outputs:
 		--------
-			projected flux values [nq, ns]
+			projected flux values [nf, nq, ns]
 		'''
-		Fq = self.get_conv_flux_interior(Uq)
+		Fq, u, v, rho, p = self.get_conv_flux_interior(Uq) # [nf, nq, ns, dim]
 
-		return np.sum(Fq.transpose(1, 0, 2)*normals, axis=2).transpose()
+		return np.einsum('ijkl, ijl -> ijk', Fq, normals), u, v, rho, p
 
 	def get_conv_flux_numerical(self, UqL, UqR, normals):
 		'''
@@ -516,14 +516,14 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			UqL: left values of the state variables (typically at the
-				quadrature points) [nq, ns]
+				quadrature points) [nf, nq, ns]
 			UqR: right values of the state variables (typically at the
-				quadrature points) [nq, ns]
-			normals: directions from left to right [nq, dim]
+				quadrature points) [nf, nq, ns]
+			normals: directions from left to right [nf, nq, dim]
 
 		Outputs:
 		--------
-			Fnum: numerical flux values [nq, ns]
+			Fnum: numerical flux values [nf, nq, ns]
 		'''
 		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
 

@@ -580,7 +580,7 @@ class DG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
-			Fq = physics.get_conv_flux_interior(Uq) # [ne, nq, ns, dim]
+			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
 			R += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_ops, Fq) # [ne, nb, ns]
 
@@ -598,48 +598,44 @@ class DG(base.SolverBase):
 
 		return R # [ne, nb, ns]
 
-	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
+	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR, RL, RR):
 
 		mesh = self.mesh
 		physics = self.physics
-		interior_face = mesh.interior_faces[int_face_ID]
-		elemL = interior_face.elemL_ID
-		elemR = interior_face.elemR_ID
-		faceL_ID = interior_face.faceL_ID
-		faceR_ID = interior_face.faceR_ID
+		#IFace = mesh.interior_faces[iiface]
+		#elemL = IFace.elemL_id
+		#elemR = IFace.elemR_id
+		#faceL_id = IFace.faceL_id
+		#faceR_id = IFace.faceR_id
 
-		int_face_helpers = self.int_face_helpers
-		quad_pts = int_face_helpers.quad_pts
-		quad_wts = int_face_helpers.quad_wts
-		faces_to_basisL = int_face_helpers.faces_to_basisL
-		faces_to_basisR = int_face_helpers.faces_to_basisR
-		normals_int_faces = int_face_helpers.normals_int_faces
-		UqL = int_face_helpers.UqL
-		UqR = int_face_helpers.UqR
-		Fq = int_face_helpers.Fq
+		iface_ops = self.iface_operators
+		quad_wts = iface_ops.quad_wts
+		faces_to_basisL = iface_ops.faces_to_basisL
+		faces_to_basisR = iface_ops.faces_to_basisR
+		normals_ifaces = iface_ops.normals_ifaces # [nf, nq, dim]
 
-		nq = quad_wts.shape[0]
-		basis_valL = faces_to_basisL[faceL_ID]
-		basis_valR = faces_to_basisR[faceR_ID]
-
-		# Interpolate state and gradient at quadrature points
-		UqL = helpers.evaluate_state(Uc_L, basis_valL)
-		UqR = helpers.evaluate_state(Uc_R, basis_valR)
-
-		normals = normals_int_faces[int_face_ID]
+		# Interpolate state and gradient at quad points
+		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id])
+		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id])
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals)
 				# [nq, ns]
 
-			# Compute contribution to left and right element residuals
-			R_L -= solver_tools.calculate_inviscid_flux_boundary_integral(
-					basis_valL, quad_wts, Fq)
-			R_R += solver_tools.calculate_inviscid_flux_boundary_integral(
-					basis_valR, quad_wts, Fq)
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_ifaces) # [nf, nq, ns]
 
-		return R_L, R_R
+			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(
+					faces_to_basisL[faceL_id], quad_wts, Fq)
+			RR += solver_tools.calculate_inviscid_flux_boundary_integral(
+					faces_to_basisR[faceR_id], quad_wts, Fq)
+
+		#if elemL == echeck or elemR == echeck:
+		#	if elemL == echeck: print("Left!")
+		#	else: print("Right!")
+		#	code.interact(local=locals())
+
+		return RL, RR
 
 	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, R_B):
 		# Unpack

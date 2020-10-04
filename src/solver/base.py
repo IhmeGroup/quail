@@ -3,24 +3,10 @@
 #       File : src/numerics/solver/base.py
 #
 #       Contains class definitions for the solver base class
-<<<<<<< HEAD
 #
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import numpy as np
-=======
-#       available in the DG Python framework.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
-#
-# ------------------------------------------------------------------------ #
-from abc import ABC, abstractmethod
-import code
-import copy
-import numpy as np
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 import time
 
 import errors
@@ -85,13 +71,8 @@ class SolverBase(ABC):
     get_interior_face_residual
     	calculates the residual contribution for a specific interior face
     get_boundary_face_residual
-<<<<<<< HEAD
     	calculates the residual contribution for a specific boundary face
 
-=======
-    	calculates the residual for a specific boundary face
-
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
     Methods:
     --------
     check_compatibility
@@ -147,13 +128,8 @@ class SolverBase(ABC):
 		self.basis.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
 
 		# Limiter
-<<<<<<< HEAD
 		limiter_type = params["ApplyLimiter"]
 		self.limiter = limiter_tools.set_limiter(limiter_type,
-=======
-		LIMITER_TYPE = params["ApplyLimiter"]
-		self.limiter = limiter_tools.set_limiter(LIMITER_TYPE,
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 				physics.PHYSICS_TYPE)
 
 		# Console output
@@ -216,14 +192,9 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_element_residual(self, elem_ID, Uc, R_elem):
 		'''
-<<<<<<< HEAD
 		Calculates the volume contribution to the residual for a given
 		element.
 
-=======
-		Calculates the residual from the volume integral for each element
-
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		Inputs:
 		-------
 			elem_ID: element index
@@ -232,19 +203,13 @@ class SolverBase(ABC):
 
 		Outputs:
 		--------
-<<<<<<< HEAD
 			R_elem: calculated residual array
-=======
-			ER: calculated residiual array (for volume integral of specified
-			element)
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		'''
 		pass
 
 	@abstractmethod
 	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
 		'''
-<<<<<<< HEAD
 		Calculates the surface integral for the interior faces
 
 		Inputs:
@@ -262,21 +227,6 @@ class SolverBase(ABC):
 			R_L: calculated residual array (left neighboring element
 			contribution)
 			R_R: calculated residual array (right neighboring element
-=======
-		Calculates the surface integral for the internal faces
-
-		Inputs:
-		-------
-			iiface: internal face index
-			UpL: solution array from left neighboring element
-			UpR: solution array from right neighboring element
-
-		Outputs:
-		--------
-			RL: calculated residual array (left neighboring element
-			contribution)
-			RR: calculated residual array (right neighboring element
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 			contribution)
 		'''
 		pass
@@ -289,18 +239,11 @@ class SolverBase(ABC):
 
 		Inputs:
 		-------
-<<<<<<< HEAD
 			bgroup: boundary group object
 			bface_ID: ID of boundary face
 			Uc: solution array from adjacent element
 			R_B: residual array (for adjacent element)
 
-=======
-			ibfgrp: index of BC group
-			ibface: index of boundary face
-			U: solution array from internal element
-
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		Outputs:
 		--------
 			R_B: calculated residual array (from boundary face)
@@ -309,15 +252,9 @@ class SolverBase(ABC):
 
 	def init_state_from_fcn(self):
 		'''
-<<<<<<< HEAD
 		Initializes the state (initial condition) from the specified
 		function in the input deck. Either interpolates the state to the
 		nodes or employs L2 projection to initialize the state.
-=======
-		Initializes the state (initial condition) from the specified
-		function in the input deck. Either interpolates the state to the
-		nodes or uses an L2 projection to initialize the state.
->>>>>>> 41be3d7... Vectorized analytic flux for Euler2d
 		'''
 		# Unpack
 		mesh = self.mesh
@@ -433,7 +370,7 @@ class SolverBase(ABC):
 
 		#self.get_boundary_face_residuals(U, R)
 		self.get_element_residuals(U, R)
-		#self.get_interior_face_residuals(U, R)
+		self.get_interior_face_residuals(U, R)
 
 		return R
 
@@ -452,8 +389,6 @@ class SolverBase(ABC):
 		'''
 
 		R = self.get_element_residual(U, R)
-		#for elem in range(mesh.num_elems):
-		#	R[elem] = self.get_element_residual(elem, U[elem], R[elem])
 
 	def get_interior_face_residuals(self, U, R):
 		'''
@@ -471,20 +406,30 @@ class SolverBase(ABC):
 				contributions)
 		'''
 		mesh = self.mesh
-		physics = self.physics
 
-		for int_face_ID in range(mesh.num_interior_faces):
-			interior_face = mesh.interior_faces[int_face_ID]
-			elemL_ID = interior_face.elemL_ID
-			elemR_ID = interior_face.elemR_ID
+		# TODO: refactor this loop out
+		UL = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
+		UR = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
+		RL = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
+		RR = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
+		elemL = np.empty(mesh.num_interior_faces, dtype=int)
+		elemR = np.empty(mesh.num_interior_faces, dtype=int)
+		faceL_id = np.empty(mesh.num_interior_faces, dtype=int)
+		faceR_id = np.empty(mesh.num_interior_faces, dtype=int)
+		for iiface in range(mesh.num_interior_faces):
+			IFace = mesh.interior_faces[iiface]
+			elemL[iiface] = IFace.elemL_id
+			elemR[iiface] = IFace.elemR_id
+			faceL_id[iiface] = IFace.faceL_id
+			faceR_id[iiface] = IFace.faceR_id
+		UL = U[elemL]
+		UR = U[elemR]
+		RL = R[elemL]
+		RR = R[elemR]
 
-			Uc_L = U[elemL_ID] # state coeffs of "left" element
-			Uc_R = U[elemR_ID] # state coeffs of "right" element
-			R_L = R[elemL_ID]
-			R_R = R[elemR_ID]
-
-			R_L, R_R = self.get_interior_face_residual(int_face_ID, Uc_L,
-					Uc_R, R_L, R_R)
+		# TODO: This RL and RR probably have to be manually added to R, because
+		# (I think) it's actually a copy of R, not a view of R.
+		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR, RL, RR)
 
 	def get_boundary_face_residuals(self, U, R):
 		'''

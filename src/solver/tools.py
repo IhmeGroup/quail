@@ -42,17 +42,17 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	Inputs:
 	-------
-		basis_val: basis function for the interior element [nq, nb]
-		quad_wts_st: space-time quadrature weights [nq, 1]
-		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+		basis_val: basis function for the interior element [nf, nq, nb]
+		quad_wts: quadrature weights [nf, nq, 1]
+		Fq: flux array evaluated at the quadrature points [nf, nq, ns]
 
 	Outputs:
 	--------
 		R_B: residual contribution (from boundary face) [nb, ns]
 	'''
-	R_B = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb, ns]
+	R_B = np.einsum('ijn, ijk -> ink', basis_val, Fq*quad_wts) # [nf, nb, ns]
 
-	return R_B # [nb, ns]
+	return R_B # [nf, nb, ns]
 
 
 def calculate_source_term_integral(elem_helpers, Sq):

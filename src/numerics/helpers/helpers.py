@@ -47,7 +47,16 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 	if skip_interp:
 		Uq = Uc.copy()
 	else:
-		#Up = np.einsum('ijk,ikl->ijl',basis_val, Uc)
-		Up = np.matmul(basis_val, Uc)
+		# TODO: This is a temporary hack, will have to vectorize some other
+		# things to remove this
+		if Uc.ndim == 3:
+			if basis_val.ndim == 3:
+				# For faces, there is a different basis_val for each face
+				Up = np.einsum('ijk,ikl->ijl', basis_val, Uc)
+			else:
+				# For elements, all elements have the same basis_val (for now)
+				Up = np.einsum('jk,ikl->ijl', basis_val, Uc)
+		else:
+			Up = np.matmul(basis_val, Uc)
 
 	return Up

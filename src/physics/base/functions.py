@@ -10,12 +10,12 @@ from enum import Enum, auto
 import numpy as np
 
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
-		ConvNumFluxBase 
+		ConvNumFluxBase
 
 
 class FcnType(Enum):
 	'''
-	Enum class that stores the types of analytic functions for initial 
+	Enum class that stores the types of analytic functions for initial
 	conditions, exact solutions, and/or boundary conditions. These
 	functions are generalizable to different kinds of physics.
 	'''
@@ -51,9 +51,9 @@ class ConvNumFluxType(Enum):
 ---------------
 State functions
 ---------------
-These classes inherit from the FcnBase class. See FcnBase for detailed 
-comments of attributes and methods. Information specific to the 
-corresponding child classes can be found below. These classes should 
+These classes inherit from the FcnBase class. See FcnBase for detailed
+comments of attributes and methods. Information specific to the
+corresponding child classes can be found below. These classes should
 correspond to the FcnType enum members above.
 '''
 
@@ -68,7 +68,7 @@ class Uniform(FcnBase):
 	'''
 	def __init__(self, state=None):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -94,9 +94,9 @@ class Uniform(FcnBase):
 Boundary conditions
 -------------------
 These classes inherit from either the BCWeakRiemann or BCWeakPrescribed
-classes. See those parent classes for detailed comments of attributes 
+classes. See those parent classes for detailed comments of attributes
 and methods. Information specific to the corresponding child classes can be
-found below. These classes should correspond to the BCType enum members 
+found below. These classes should correspond to the BCType enum members
 above.
 '''
 
@@ -112,7 +112,7 @@ class StateAll(BCWeakRiemann):
 	'''
 	def __init__(self, **kwargs):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -153,8 +153,8 @@ class Extrapolate(BCWeakPrescribed):
 ------------------------
 Numerical flux functions
 ------------------------
-These classes inherit from the ConvNumFluxBase class. See 
-ConvNumFluxBase for detailed comments of attributes and methods. 
+These classes inherit from the ConvNumFluxBase class. See
+ConvNumFluxBase for detailed comments of attributes and methods.
 Information specific to the corresponding child classes can be found below.
 These classes should correspond to the ConvNumFluxType enum members above.
 '''
@@ -164,26 +164,29 @@ class LaxFriedrichs(ConvNumFluxBase):
 	This class corresponds to the local Lax-Friedrichs flux function.
 	'''
 	def compute_flux(self, physics, UqL, UqR, normals):
+		# TODO: This whole thing assumes Euler2D - make a LaxFriedrichs for each
+		# Physics model
 		# Normalize the normal vectors
-		n_mag = np.linalg.norm(normals, axis=1, keepdims=True)
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL = physics.get_conv_flux_projected(UqL, n_hat)
+		FqL, u2L, v2L, rhoL, pL = physics.get_conv_flux_projected(UqL, n_hat)
 
 		# Right flux
-		FqR = physics.get_conv_flux_projected(UqR, n_hat)
+		FqR, u2R, v2R, rhoR, pR = physics.get_conv_flux_projected(UqR, n_hat)
 
 		# Jump
 		dUq = UqR - UqL
 
 		# Max wave speeds at each point
-		a = physics.compute_variable("MaxWaveSpeed", UqL, 
-				flag_non_physical=True)
-		aR = physics.compute_variable("MaxWaveSpeed", UqR, 
-				flag_non_physical=True)
-		idx = aR > a
-		a[idx] = aR[idx]
+		# TODO: Flag for non-physical
+		aL = np.empty_like(n_mag)
+		aR = np.empty_like(n_mag)
+		aL[:,:,0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
+		aR[:,:,0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
+		idx = aR > aL
+		aL[idx] = aR[idx]
 
 		# Put together
-		return n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)
+		return .5 * n_mag * (FqL + FqR - aL*dUq)

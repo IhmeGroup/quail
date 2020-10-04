@@ -304,4 +304,4 @@ class Euler2D(Euler):
 
 		rho -= eps
 
-		return F
+		return F, u2, v2, rho, p
