@@ -2,19 +2,12 @@
 #
 #       File : src/numerics/basis/basis.py
 #
-#       Contains class definitions for each shape and basis function 
-#       available in the DG Python framework.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
+#       Contains class definitions for each shape and basis function.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import code
 import numpy as np
 
-from data import ArrayList, GenericData
 from general import BasisType, ShapeType, ModalOrNodal, \
     QuadratureType, NodeType
 

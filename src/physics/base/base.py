@@ -60,7 +60,7 @@ def set_state_indices_slices(physics):
 
 class PhysicsBase(ABC):
 	'''
-	This class stores information about the physics.
+	This is a base class for any physics type.
 
 	Abstract Constants:
 	-------------------

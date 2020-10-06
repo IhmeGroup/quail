@@ -440,7 +440,7 @@ class ADERDG(base.SolverBase):
 		self.precompute_matrix_operators()
 
 		if self.limiter is not None:
-			self.limiter.precompute_operators(self)
+			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(np.zeros([self.iface_operators_st.
 			quad_wts.shape[0], physics.NUM_STATE_VARS]))

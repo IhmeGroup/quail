@@ -142,8 +142,8 @@ def check_face_orientations(mesh):
 
         # Node ordering should be reversed between the two elements
         if not np.all(global_node_ids_L == global_node_ids_R[::-1]):
-            raise Exception("Face orientation for elemL_id = %d, elemR_id " +
-                "= %d \\ is incorrect" % (elemL_id, elemR_id))
+            raise Exception("Face orientation for elemL_id = %d, elemR_id " 
+                    % (elemL_id) + "= %d is incorrect" % (elemR_id))
 
 
 def verify_periodic_compatibility(mesh, boundary_group, icoord):

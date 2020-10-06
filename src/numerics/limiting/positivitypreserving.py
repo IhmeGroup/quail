@@ -37,7 +37,7 @@ class PositivityPreserving(base.LimiterBase):
 		self.quad_wts_elem = np.zeros(0)
 		self.djac_elems = np.zeros(0)
 
-	def precompute_operators(self, solver):
+	def precompute_helpers(self, solver):
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
 		self.elem_vols, _ = mesh_tools.element_volumes(solver.mesh, solver)
@@ -153,7 +153,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		# self.quad_wts_elem = np.zeros(0)
 		# self.djac_elems = np.zeros(0)
 
-	# def precompute_operators(self, solver):
+	# def precompute_helpers(self, solver):
 	# 	elem_ops = solver.elem_operators
 	# 	iface_ops = solver.iface_operators
 	# 	_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)

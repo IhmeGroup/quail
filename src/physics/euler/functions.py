@@ -1115,7 +1115,7 @@ class Roe1D(ConvNumFluxBase):
 		drho, dvel, dp = self.get_differences(physics, srho, velL, velR, 
 				UqL, UqR)
 
-		# alphas (left eigenvectors multipled by dU)
+		# alphas (left eigenvectors multiplied by dU)
 		alphas = self.get_alphas(c, c2, dp, dvel, drho, rhoRoe)
 
 		# Eigenvalues

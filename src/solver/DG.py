@@ -542,7 +542,7 @@ class DG(base.SolverBase):
 		# precompute operators
 		self.precompute_matrix_operators()
 		if self.limiter is not None:
-			self.limiter.precompute_operators(self)
+			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(
 				np.zeros([self.iface_operators.quad_wts.shape[0], 

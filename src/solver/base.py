@@ -3,11 +3,6 @@
 #       File : src/numerics/solver/base.py
 #
 #       Contains class definitions for the solver base class
-#       available in the DG Python framework.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
@@ -46,7 +41,7 @@ echeck = -1
 
 class SolverBase(ABC):
 	'''
-	This is a base class for any solver used in the DG Python framework
+	This is a base class for any solver type.
 
     Attributes:
     -----------

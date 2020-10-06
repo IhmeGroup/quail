@@ -313,7 +313,7 @@ class FaceInfo(object):
 		be used as a dictionary key.
 		'''
 		for key in kwargs:
-			if key is "node_ids_sort":
+			if key == "node_ids_sort":
 				self.node_ids_sort = tuple(kwargs[key]) # make it hashable
 			elif hasattr(self, key):
 				setattr(self, key, kwargs[key])
@@ -585,7 +585,7 @@ def import_nodes(fo, ver, mesh):
 	ds = []
 	for d in ds_all:
 		# Find max perturbation from zero
-		diff = np.amax(np.abs(node_coords[:,d]))
+		diff = np.amax(np.abs(node_coords[:, d]))
 		if diff > general.eps:
 			# keep this spatial dimension
 			ds.append(ds_all[d])
