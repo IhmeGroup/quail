@@ -3,10 +3,6 @@
 #       File : src/numerics/timestepping/ode.py
 #
 #       Contains ODE solvers for operator splitting schemes in stepper.py
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod

@@ -65,7 +65,7 @@ class SmoothIsentropicFlow(FcnBase):
 	Smooth isentropic flow problem from the following references:
 		[1] J. Cheng, C.-W. Shu, "Positivity-preserving Lagrangian 
 		scheme for multi-material compressible flow," Journal of 
-		Computational Physics. 257:143-168, 2014.
+		Computational Physics, 257:143-168, 2014.
 		[2] R. Abgrall, P. Bacigaluppi, S. Tokareva, "High-order residual 
 		distribution scheme for the time-dependent Euler equations of fluid 
 		dynamics," Computers and Mathematics with Applications, 78:274-297,

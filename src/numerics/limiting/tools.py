@@ -1,14 +1,26 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/numerics/limiting/tools.py
+#
+#       Contains helpers functions related to limiters.
+#      
+# ------------------------------------------------------------------------ #
 import general
 import numerics.limiting.positivitypreserving as pp_limiter
 
+
 def set_limiter(limiter_type, physics_type):
 	'''
-    Method: set_limiter
-    ----------------------------
-	selects limiter bases on input deck
+	This function instantiates the desired limiter class.
 
-    Inputs:
-		limiterType: type of limiter selected (Default: None)
+	Inputs:
+	-------
+	    limiter_type: limiter type (general.LimiterType enum member)
+	    physics_type: physics type (general.PhysicsType enum member)
+
+	Outputs:
+	--------
+	    limiter: limiter object
 	'''
 	if limiter_type is None:
 		return None

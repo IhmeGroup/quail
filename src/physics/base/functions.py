@@ -1,6 +1,6 @@
 from enum import Enum, auto
-import code
 import numpy as np
+
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
 		ConvNumFluxBase 
 

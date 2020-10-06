@@ -24,7 +24,7 @@ class Euler(base.PhysicsBase):
 	calorically perfect gas. It inherits attributes and methods from the
 	PhysicsBase class. See PhysicsBase for detailed comments of attributes 
 	and methods. This class should not be instantiated directly. Instead, 
-	the 1D and 2D	variants, which inherit from this class (see below), 
+	the 1D and 2D variants, which inherit from this class (see below), 
 	should be instantiated.
 
 	Additional methods and attributes are commented below.

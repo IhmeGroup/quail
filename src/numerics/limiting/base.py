@@ -33,40 +33,7 @@ class LimiterBase(ABC):
 	limit_element
 		applies limiter to individual element
 	limit_solution
-		sets maps for the initial condition, exact solution, boundary
-		conditions, source terms, and convective flux function. Each of 
-		these maps the members of the corresponding enum to the 
-		associated class.
-	set_IC
-		instantiates and stores the initial condition object
-	set_exact
-		instantiates and stores the exact solution object
-	set_BC
-		instantiates and stores the boundary condition objects
-	set_source
-		instantiates and stores the source term objects
-	set_conv_num_flux
-		instantiates and stores the convective numerical flux object
-	get_state_index
-		gets the index corresponding to a given state variable
-	get_state_slice  
-		gets the slice corresponding to a given state variable
-	get_quadrature_order
-		gets the recommended quadrature order associated with the given
-		physics class
-	get_conv_flux_projected
-		computes the analytic convective flux projected in a given 
-		direction
-	get_conv_flux_numerical
-		computes the convective numerical flux
-	eval_source_terms
-		evaluates the source term(s)
-	eval_source_term_jacobians
-		evaluates the source term Jacobian(s)
-	compute_variable
-		wrapper to compute a given variable (state or additional)
-	compute_additional_variable
-		computes a given additional variable
+		applies limiter to global solution
 	'''
 	@property
 	@abstractmethod
