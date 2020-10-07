@@ -74,9 +74,9 @@ def set_time_stepping_approach(stepper, params):
 
 	# unpack time stepping settings
 	cfl = params["CFL"]
-	timestepsize = params["TimeStepSize"]
+	dt = params["TimeStepSize"]
 	num_time_steps = params["NumTimeSteps"]
-	FinalTime = params["FinalTime"]
+	tfinal = params["FinalTime"]
 
 	'''
 	Hierarchy for cases goes:
@@ -87,9 +87,9 @@ def set_time_stepping_approach(stepper, params):
 	if num_time_steps != None:
 		stepper.get_time_step = get_dt_from_num_time_steps
 		stepper.num_time_steps = num_time_steps
-	elif timestepsize != None:
+	elif dt != None:
 		stepper.get_time_step = get_dt_from_timestepsize
-		stepper.num_time_steps = math.ceil(FinalTime/timestepsize)
+		stepper.num_time_steps = math.ceil(tfinal/dt)
 	elif cfl != None:
 		stepper.get_time_step = get_dt_from_cfl
 		stepper.num_time_steps = 1
@@ -134,12 +134,12 @@ def get_dt_from_timestepsize(stepper, solver):
 		dt: time step for the solver
 	'''
 	time = solver.time
-	timestepsize = solver.params["TimeStepSize"]
+	dt = solver.params["TimeStepSize"]
 	tfinal = solver.params["FinalTime"]
 
 	# logic to ensure final time step yields FinalTime
-	if time + timestepsize < tfinal:
-		return timestepsize
+	if time + dt < tfinal:
+		return dt
 	else:
 		return tfinal - time
 

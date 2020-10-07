@@ -2,12 +2,7 @@
 #
 #       File : src/numerics/solver/ADERDG.py
 #
-#       Contains class definitions for the DG solver available in the 
-#		DG Python framework.
-#
-#       Authors: Brett Bornhoft and Eric Ching
-#
-#       Created: January 2020
+#       Contains class definitions for the ADER-DG solver.
 #      
 # ------------------------------------------------------------------------ #
 import code
