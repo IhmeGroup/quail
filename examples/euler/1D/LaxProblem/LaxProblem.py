@@ -25,7 +25,7 @@ Numerics = {
     "NodeType" : "Equidistant",
 #    "ElementQuadrature" : "GaussLobatto",
 #    "FaceQuadrature" : "GaussLobatto",
-#    "CollocatedPoints" : True,
+#    "ColocatedPoints" : True,
 
 }
 

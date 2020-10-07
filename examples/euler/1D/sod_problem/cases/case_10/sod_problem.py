@@ -22,7 +22,7 @@ Numerics = {
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-    "CollocatedPoints" : False,
+    "ColocatedPoints" : False,
 
 }
 

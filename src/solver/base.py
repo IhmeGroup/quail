@@ -104,7 +104,7 @@ class SolverBase(ABC):
 		mesh.gbasis.set_elem_quadrature_type(params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quad_pts(params["CollocatedPoints"])
+		self.basis.force_nodes_equal_quad_pts(params["ColocatedPoints"])
 
 		# Limiter
 		LIMITER_TYPE = params["ApplyLimiter"]
@@ -134,7 +134,7 @@ class SolverBase(ABC):
 
 		# Gauss Lobatto nodes compatibility checks
 		node_type = params["NodeType"]
-		forcing_switch = params["CollocatedPoints"]
+		forcing_switch = params["ColocatedPoints"]
 		elem_quad = params["ElementQuadrature"]
 		face_quad = params["FaceQuadrature"]
 

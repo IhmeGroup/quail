@@ -20,7 +20,7 @@ Numerics = {
     "NodeType" : "GaussLobatto",
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
-    "CollocatedPoints" : False,
+    "ColocatedPoints" : False,
 
 }
 
