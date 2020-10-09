@@ -121,8 +121,8 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 		# normals
 		i = 0
 		for IFace in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_id, 
-				IFace.faceL_id, quad_pts)
+			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_ID, 
+				IFace.faceL_ID, quad_pts)
 			self.normals_ifaces[i] = normals
 			i += 1
 
@@ -172,13 +172,13 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 			j = 0
 			for boundary_face in BFG.boundary_faces:
 				nvec = mesh.gbasis.calculate_normals(mesh, 
-						boundary_face.elem_id, boundary_face.face_id, 
+						boundary_face.elem_ID, boundary_face.face_ID, 
 						quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# physical coordinates of quadrature points
-				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_id, 
-						self.faces_to_xref[boundary_face.face_id])
+				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID, 
+						self.faces_to_xref[boundary_face.face_ID])
 				# store
 				x_bfgroup[j] = x
 
@@ -577,21 +577,21 @@ class ADERDG(base.SolverBase):
 		mesh = self.mesh
 		physics = self.physics
 		IFace = mesh.interior_faces[iiface]
-		elemL = IFace.elemL_id
-		elemR = IFace.elemR_id
-		faceL_id = IFace.faceL_id
-		faceR_id = IFace.faceR_id
+		elemL = IFace.elemL_ID
+		elemR = IFace.elemR_ID
+		faceL_ID = IFace.faceL_ID
+		faceR_ID = IFace.faceR_ID
 
-		if faceL_id == 0:
-			faceL_id_st = 3
-		elif faceL_id == 1:
-			faceL_id_st = 1
+		if faceL_ID == 0:
+			faceL_ID_st = 3
+		elif faceL_ID == 1:
+			faceL_ID_st = 1
 		else:
 			return IncompatibleError
-		if faceR_id == 0:
-			faceR_id_st = 3
-		elif faceR_id == 1:
-			faceR_id_st = 1
+		if faceR_ID == 0:
+			faceR_ID_st = 3
+		elif faceR_ID == 1:
+			faceR_ID_st = 1
 		else:
 			return IncompatibleError
 
@@ -609,11 +609,11 @@ class ADERDG(base.SolverBase):
 		UqR = iface_ops.UqR
 		Fq = iface_ops.Fq
 
-		basis_valL = faces_to_basisL[faceL_id]
-		basis_valR = faces_to_basisR[faceR_id]
+		basis_valL = faces_to_basisL[faceL_ID]
+		basis_valR = faces_to_basisR[faceR_ID]
 
-		basis_valL_st = faces_to_basisL_st[faceL_id_st]
-		basis_valR_st = faces_to_basisR_st[faceR_id_st]
+		basis_valL_st = faces_to_basisL_st[faceL_ID_st]
+		basis_valR_st = faces_to_basisR_st[faceR_ID_st]
 
 		UqL = helpers.evaluate_state(UpL, basis_valL_st)
 		UqR = helpers.evaluate_state(UpR, basis_valR_st)
@@ -644,8 +644,8 @@ class ADERDG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		ibfgrp = BFG.number
 		boundary_face = BFG.boundary_faces[ibface]
-		elem = boundary_face.elem_id
-		face = boundary_face.face_id
+		elem = boundary_face.elem_ID
+		face = boundary_face.face_ID
 
 		bface_ops = self.bface_operators
 		bface_ops_st = self.bface_operators_st

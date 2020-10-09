@@ -360,8 +360,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		# normals
 		i = 0
 		for IFace in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_id, 
-					IFace.faceL_id, quad_pts)
+			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_ID, 
+					IFace.faceL_ID, quad_pts)
 			self.normals_ifaces[i] = normals
 			i += 1
 
@@ -490,13 +490,13 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			for boundary_face in BFG.boundary_faces:
 
 				nvec = mesh.gbasis.calculate_normals(mesh, 
-						boundary_face.elem_id, 
-						boundary_face.face_id, quad_pts)
+						boundary_face.elem_ID, 
+						boundary_face.face_ID, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# physical coordinates of quadrature points
-				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_id, 
-						self.faces_to_xref[boundary_face.face_id])
+				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID, 
+						self.faces_to_xref[boundary_face.face_ID])
 				# store
 				x_bfgroup[j] = x
 
@@ -607,10 +607,10 @@ class DG(base.SolverBase):
 		mesh = self.mesh
 		physics = self.physics
 		IFace = mesh.interior_faces[iiface]
-		elemL = IFace.elemL_id
-		elemR = IFace.elemR_id
-		faceL_id = IFace.faceL_id
-		faceR_id = IFace.faceR_id
+		elemL = IFace.elemL_ID
+		elemR = IFace.elemR_ID
+		faceL_ID = IFace.faceL_ID
+		faceR_ID = IFace.faceR_ID
 
 		iface_ops = self.iface_operators
 		quad_pts = iface_ops.quad_pts
@@ -623,8 +623,8 @@ class DG(base.SolverBase):
 		Fq = iface_ops.Fq
 
 		nq = quad_wts.shape[0]
-		basis_valL = faces_to_basisL[faceL_id]
-		basis_valR = faces_to_basisR[faceR_id]
+		basis_valL = faces_to_basisL[faceL_ID]
+		basis_valR = faces_to_basisR[faceR_ID]
 
 		# interpolate state and gradient at quad points
 		UqL = helpers.evaluate_state(UpL, basis_valL)
@@ -654,8 +654,8 @@ class DG(base.SolverBase):
 		physics = self.physics
 		ibfgrp = BFG.number
 		boundary_face = BFG.boundary_faces[ibface]
-		elem = boundary_face.elem_id
-		face = boundary_face.face_id
+		elem = boundary_face.elem_ID
+		face = boundary_face.face_ID
 
 		bface_ops = self.bface_operators
 		quad_pts = bface_ops.quad_pts

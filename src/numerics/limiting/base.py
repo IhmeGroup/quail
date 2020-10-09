@@ -74,14 +74,14 @@ class LimiterBase(ABC):
 		pass
 
 	@abstractmethod
-	def limit_element(self, solver, elem_id, Uc):
+	def limit_element(self, solver, elem_ID, Uc):
 		'''
 		This method element-local solution
 
 		Inputs:
 		-------
 			solver: solver object
-			elem_id: element ID
+			elem_ID: element ID
 			Uc: state coefficients on element [nb, ns]
 		'''
 		pass

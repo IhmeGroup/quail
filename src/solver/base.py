@@ -362,10 +362,10 @@ class SolverBase(ABC):
 
 		for iiface in range(mesh.num_interior_faces):
 			IFace = mesh.interior_faces[iiface]
-			elemL = IFace.elemL_id
-			elemR = IFace.elemR_id
-			faceL_id = IFace.faceL_id
-			faceR_id = IFace.faceR_id
+			elemL = IFace.elemL_ID
+			elemR = IFace.elemR_ID
+			faceL_ID = IFace.faceL_ID
+			faceR_ID = IFace.faceR_ID
 
 			UL = U[elemL]
 			UR = U[elemR]
@@ -394,8 +394,8 @@ class SolverBase(ABC):
 
 			for ibface in range(BFG.num_boundary_faces):
 				boundary_face = BFG.boundary_faces[ibface]
-				elem = boundary_face.elem_id
-				face = boundary_face.face_id
+				elem = boundary_face.elem_ID
+				face = boundary_face.face_ID
 
 				R[elem] = self.get_boundary_face_residual(BFG, ibface,
 						U[elem], R[elem])

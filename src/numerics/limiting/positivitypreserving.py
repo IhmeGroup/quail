@@ -81,13 +81,13 @@ class PositivityPreserving(base.LimiterBase):
 		# Element quadrature weights
 		self.quad_wts_elem = elem_ops.quad_wts
 
-	def limit_element(self, solver, elem_id, Uc):
+	def limit_element(self, solver, elem_ID, Uc):
 		# Unpack
 		physics = solver.physics
 		elem_ops = solver.elem_operators
 		iface_ops = solver.iface_operators
 
-		djac = self.djac_elems[elem_id]
+		djac = self.djac_elems[elem_ID]
 
 		# Interpolate state at quadrature points over element and on faces
 		u_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces, 
@@ -97,7 +97,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		# Average value of state
 		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac, 
-				self.elem_vols[elem_id])
+				self.elem_vols[elem_ID])
 
 		# Density and pressure from averaged state
 		rho_bar = physics.compute_variable(self.var_name1, u_bar)

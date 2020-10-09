@@ -287,13 +287,13 @@ class FaceInfo(object):
 	    True if boundary face, False if interior face
 	boundary_group_num: int
 	    boundary group number (in dgp)
-	elem_id: int
+	elem_ID: int
 	    ID of current adjacent element
-	face_id: int
+	face_ID: int
 	    local ID of face from perspective of current adjacent element
 	num_face_nodes: int
 	    number of face nodes (q = 1)
-	node_ids_sort: tuple
+	node_IDs_sort: tuple
 		global IDs of face nodes sorted in ascending order 
     
     Methods:
@@ -305,21 +305,21 @@ class FaceInfo(object):
 		self.num_adjacent_elems = 0
 		self.at_boundary = False
 		self.boundary_group_num = 0
-		self.elem_id = 0
-		self.face_id = 0
+		self.elem_ID = 0
+		self.face_ID = 0
 		self.num_face_nodes = 0
-		self.node_ids_sort = tuple() # should be a tuple (hashable)
+		self.node_IDs_sort = tuple() # should be a tuple (hashable)
 
 	def set_info(self, **kwargs):
 		'''
 		This method is a wrapper for setting all of this class's attributes.
-		Note that node_ids_sort can be passed as a numpy array, list, etc.; 
+		Note that node_IDs_sort can be passed as a numpy array, list, etc.; 
 		it will be converted to a tuple, which is hashable and can therefore
 		be used as a dictionary key.
 		'''
 		for key in kwargs:
-			if key == "node_ids_sort":
-				self.node_ids_sort = tuple(kwargs[key]) # make it hashable
+			if key == "node_IDs_sort":
+				self.node_IDs_sort = tuple(kwargs[key]) # make it hashable
 			elif hasattr(self, key):
 				setattr(self, key, kwargs[key])
 			else: 
@@ -458,7 +458,7 @@ def get_nodes_ver2(fo):
 	--------
 		fo: file object (current position is modified)
 		node_coords: node coordinates
-		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 
 	Notes:
 	------
@@ -470,28 +470,28 @@ def get_nodes_ver2(fo):
 	num_nodes = int(fo.readline())
 	if num_nodes == 0:
 		raise ValueError("No nodes to import!")
-	old_to_new_node_ids = {}
+	old_to_new_node_IDs = {}
 	# Allocate nodes - assume 3D first
 	node_coords = np.zeros([num_nodes, 3])
 
 	# Extract nodes
-	new_node_id = 0
+	new_node_ID = 0
 	for n in range(num_nodes):
 		fl = fo.readline()
 		ls = fl.split()
 		# Node ID
-		old_node_id = int(ls[0])
-		old_to_new_node_ids.update({old_node_id : new_node_id})
+		old_node_ID = int(ls[0])
+		old_to_new_node_IDs.update({old_node_ID : new_node_ID})
 		# Node coordinates
 		for d in range(3):
-			node_coords[new_node_id, d] = float(ls[d+1])
+			node_coords[new_node_ID, d] = float(ls[d+1])
 		# Sanity check
 		if int(ls[0]) > num_nodes:
 			raise errors.FileReadError
 
-		new_node_id += 1
+		new_node_ID += 1
 
-	return node_coords, old_to_new_node_ids
+	return node_coords, old_to_new_node_IDs
 
 
 def get_nodes_ver4(fo):
@@ -506,7 +506,7 @@ def get_nodes_ver4(fo):
 	--------
 		fo: file object (current position is modified)
 		node_coords: node coordinates
-		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 
 	Notes:
 	------
@@ -521,32 +521,32 @@ def get_nodes_ver4(fo):
 	if num_nodes == 0:
 		raise ValueError("No nodes to import!")
 
-	old_to_new_node_ids = {}
+	old_to_new_node_IDs = {}
 	# Allocate nodes - assume 3D first
 	node_coords = np.zeros([num_nodes, 3])
 
 	# Extract nodes
-	new_node_id = 0
+	new_node_ID = 0
 	for b in range(num_blocks):
 		# One block at a time
 		fl = fo.readline()
 		ls = [int(l) for l in fl.split()]
 		num_nodes_in_block = ls[3]
-		new_node_ids = np.zeros(num_nodes_in_block, dtype=int)
+		new_node_IDs = np.zeros(num_nodes_in_block, dtype=int)
 		# Node IDs
 		for n in range(num_nodes_in_block):
 			fl = fo.readline()
-			old_node_id = int(fl)
-			new_node_ids[n] = new_node_id
-			old_to_new_node_ids.update({old_node_id : new_node_id})
-			new_node_id += 1
+			old_node_ID = int(fl)
+			new_node_IDs[n] = new_node_ID
+			old_to_new_node_IDs.update({old_node_ID : new_node_ID})
+			new_node_ID += 1
 		# Node coordinates
 		for n in range(num_nodes_in_block):
 			fl = fo.readline()
-			inode = new_node_ids[n]
+			inode = new_node_IDs[n]
 			node_coords[inode] = [float(l) for l in fl.split()[:3]]
 
-	return node_coords, old_to_new_node_ids
+	return node_coords, old_to_new_node_IDs
 
 
 def import_nodes(fo, ver, mesh):
@@ -563,7 +563,7 @@ def import_nodes(fo, ver, mesh):
 	--------
 		fo: file object (current position is modified)
 		mesh: mesh object (modified)
-		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 
 	Notes:
 	------
@@ -576,9 +576,9 @@ def import_nodes(fo, ver, mesh):
 
 	# Import nodes
 	if ver == VERSION2:
-		node_coords, old_to_new_node_ids = get_nodes_ver2(fo)
+		node_coords, old_to_new_node_IDs = get_nodes_ver2(fo)
 	else:
-		node_coords, old_to_new_node_ids = get_nodes_ver4(fo)
+		node_coords, old_to_new_node_IDs = get_nodes_ver4(fo)
 
 	# Verify footer
 	fl = fo.readline()
@@ -607,7 +607,7 @@ def import_nodes(fo, ver, mesh):
 	mesh.num_nodes = node_coords.shape[0]
 	mesh.dim = dim
 
-	return mesh, old_to_new_node_ids
+	return mesh, old_to_new_node_IDs
 
 
 def import_mesh_entities(fo, ver, mesh, phys_groups):
@@ -894,8 +894,8 @@ def import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups,
 	return mesh
 
 
-def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_ids, 
-	at_boundary, group_num, elem_id, face_id):
+def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_IDs, 
+	at_boundary, group_num, elem_ID, face_ID):
 	'''
 	This function adds face (boundary or interior) info to the 
 	node0_to_faces_info table.
@@ -909,12 +909,12 @@ def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_ids,
 	    	given dict have the same node0, which is the smallest global node ID of the keys (tuples); the list is indexed by node0;
 	    	this is used to connect faces to elements
 	    num_face_nodes: number of (q = 1) face nodes
-	    node_ids: global IDs of nodes defining the face
+	    node_IDs: global IDs of nodes defining the face
 	    at_boundary: True if boundary face; False if interior face
 	    group_num: number of physical group if boundary face; -1 if 
 	    	interior face
-	    elem_id: element ID of current adjacent element
-	    face_id: local face ID from perspective of current adjacent element
+	    elem_ID: element ID of current adjacent element
+	    face_ID: local face ID from perspective of current adjacent element
 
 	Outputs:
 	--------
@@ -927,26 +927,26 @@ def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_ids,
 		raise ValueError("Need num_face_nodes > 1")
 
 	# Sort nodes and convert to tuple (to make it hashable)
-	node_ids_sort = tuple(np.sort(node_ids[:num_face_nodes]))
+	node_IDs_sort = tuple(np.sort(node_IDs[:num_face_nodes]))
 
 	# Extract correct faces_info dict
-	node0 = node_ids_sort[0]
+	node0 = node_IDs_sort[0]
 	faces_info = node0_to_faces_info[node0]
 
 	# Check if face already exists in table
 	already_added = False
-	if node_ids_sort in faces_info:
+	if node_IDs_sort in faces_info:
 		already_added = True
-		face_info = faces_info[node_ids_sort]
+		face_info = faces_info[node_IDs_sort]
 		face_info.num_adjacent_elems += 1
 	else:
 		# Not yet added, so add now
 		face_info = FaceInfo()
-		faces_info.update({node_ids_sort : face_info})
+		faces_info.update({node_IDs_sort : face_info})
 		face_info.set_info(at_boundary=at_boundary, 
-				boundary_group_num=group_num, elem_id=elem_id, 
-				face_id=face_id, num_face_nodes=num_face_nodes, 
-				node_ids_sort=node_ids_sort)
+				boundary_group_num=group_num, elem_ID=elem_ID, 
+				face_ID=face_ID, num_face_nodes=num_face_nodes, 
+				node_IDs_sort=node_IDs_sort)
 		if not at_boundary:
 			face_info.num_adjacent_elems = 1
 
@@ -954,7 +954,7 @@ def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_ids,
 
 
 def delete_face_info_from_table(node0_to_faces_info, num_face_nodes, 
-		node_ids):
+		node_IDs):
 	'''
 	This function deletes face (boundary or interior) info from the 
 	node0_to_faces_info table.
@@ -963,7 +963,7 @@ def delete_face_info_from_table(node0_to_faces_info, num_face_nodes,
 	-------
 	    node0_to_faces_info: see above description of add_face_info_to_table
 	    num_face_nodes: number of (q = 1) face nodes
-	    node_ids: global IDs of nodes defining the face
+	    node_IDs: global IDs of nodes defining the face
 
 	Outputs:
 	--------
@@ -973,19 +973,19 @@ def delete_face_info_from_table(node0_to_faces_info, num_face_nodes,
 		raise ValueError("Need num_face_nodes > 1")
 
 	# Sort nodes and convert to tuple (to make it hashable)
-	node_ids_sort = tuple(np.sort(node_ids[:num_face_nodes]))
+	node_IDs_sort = tuple(np.sort(node_IDs[:num_face_nodes]))
 
 	# Extract correct faces_info dict
-	n0 = node_ids_sort[0]
+	n0 = node_IDs_sort[0]
 	faces_info = node0_to_faces_info[n0]
 
 	# Delete
-	if node_ids_sort in faces_info:
-		del faces_info[node_ids_sort]
+	if node_IDs_sort in faces_info:
+		del faces_info[node_IDs_sort]
 
 
 def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, 
-		gmsh_element_database, old_to_new_node_ids, num_bfaces_per_bgroup, 
+		gmsh_element_database, old_to_new_node_IDs, num_bfaces_per_bgroup, 
 		node0_to_faces_info):
 	'''
 	This function processes element and boundary face info for Gmsh 2.2.
@@ -997,7 +997,7 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 		phys_groups: list of physical group objects
 		num_phys_groups: number of physical groups
 		gmsh_element_database: Gmsh element database
-		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 		num_bfaces_per_bgroup: number of boundary faces per boundary group
 	    node0_to_faces_info: see above description of add_face_info_to_table
 
@@ -1037,9 +1037,9 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 			raise Exception("Wrong number of nodes")
 
 		# Convert nodes IDs
-		node_ids = np.zeros(num_nodes, dtype=int)
+		node_IDs = np.zeros(num_nodes, dtype=int)
 		for i in range(num_nodes):
-			node_ids[i] = old_to_new_node_ids[int(elist[i])]
+			node_IDs[i] = old_to_new_node_IDs[int(elist[i])]
 
 		if phys_group.boundary_group_num >= 0:
 			# This is a boundary face
@@ -1053,7 +1053,7 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 
 			# Add face info to table
 			_, _ = add_face_info_to_table(node0_to_faces_info, 
-					num_face_nodes, node_ids, True, bgroup_num, -1, 
+					num_face_nodes, node_IDs, True, bgroup_num, -1, 
 					num_bfaces_per_bgroup[bgroup_num])
 
 			# Increment number of boundary faces
@@ -1071,8 +1071,8 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 				raise Exception("Number of nodes doesn't match up")
 
 			# Convert from Gmsh node ordering to dgp node ordering and store
-			new_node_ids = node_ids[gmsh_element_database[etype].node_order]
-			mesh.elem_to_node_ids[num_elems] = new_node_ids
+			new_node_IDs = node_IDs[gmsh_element_database[etype].node_order]
+			mesh.elem_to_node_IDs[num_elems] = new_node_IDs
 
 			# Increment elem counter
 			num_elems += 1
@@ -1082,7 +1082,7 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 
 
 def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
-		gmsh_element_database, old_to_new_node_ids, num_bfaces_per_bgroup, 
+		gmsh_element_database, old_to_new_node_IDs, num_bfaces_per_bgroup, 
 		node0_to_faces_info):
 	'''
 	This function processes element and boundary face info for Gmsh 4.1.
@@ -1094,7 +1094,7 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 		phys_groups: list of physical group objects
 		num_phys_groups: number of physical groups
 		gmsh_element_database: Gmsh element database
-		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 		num_bfaces_per_bgroup: number of boundary faces per boundary group
 	    node0_to_faces_info: see above description of add_face_info_to_table
 
@@ -1134,9 +1134,9 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 				# Convert from Gmsh to dgp node ordering and store
 				nodes = np.array(lint[1:])
 				for n in range(len(nodes)):
-					nodes[n] = old_to_new_node_ids[nodes[n]]
-				new_node_ids = nodes[gmsh_element_database[etype].node_order]
-				mesh.elem_to_node_ids[num_elems] = new_node_ids
+					nodes[n] = old_to_new_node_IDs[nodes[n]]
+				new_node_IDs = nodes[gmsh_element_database[etype].node_order]
+				mesh.elem_to_node_IDs[num_elems] = new_node_IDs
 
 				# Increment number of elements
 				num_elems += 1
@@ -1169,7 +1169,7 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 				# Convert node IDs
 				nodes = np.array(lint[1:])
 				for n in range(len(nodes)):
-					nodes[n] = old_to_new_node_ids[nodes[n]]
+					nodes[n] = old_to_new_node_IDs[nodes[n]]
 
 				# Add face info to table
 				_, _ = add_face_info_to_table(node0_to_faces_info,
@@ -1186,7 +1186,7 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 
 
 def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, 
-		gmsh_element_database, old_to_new_node_ids):
+		gmsh_element_database, old_to_new_node_IDs):
 	'''
 	This function fills the mesh.
 
@@ -1198,7 +1198,7 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 		phys_groups: list of physical group objects
 		num_phys_groups: number of physical groups
 		gmsh_element_database: Gmsh element database
-		old_to_new_node_ids: maps Gmsh-assigned (old) node IDs to new IDs
+		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 
 	Outputs:
 	--------
@@ -1209,7 +1209,7 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	for bgroup in mesh.boundary_groups.values():
 		bgroup.allocate_boundary_faces()
 	# Allocate element-to-node_IDs map
-	mesh.allocate_elem_to_node_ids_map()
+	mesh.allocate_elem_to_node_IDs_map()
 	# Over-allocate interior_faces since we haven't distinguished
 	# between interior and boundary faces yet
 	num_faces_per_elem = mesh.gbasis.NFACES
@@ -1231,11 +1231,11 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	# Process elements and boundary faces
 	if ver == VERSION2:
 		process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups, 
-				gmsh_element_database, old_to_new_node_ids, 
+				gmsh_element_database, old_to_new_node_IDs, 
 				num_bfaces_per_bgroup, node0_to_faces_info)
 	else:
 		process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups, 
-				gmsh_element_database, old_to_new_node_ids, 
+				gmsh_element_database, old_to_new_node_IDs, 
 				num_bfaces_per_bgroup, node0_to_faces_info)
 
 	# Verify footer
@@ -1244,22 +1244,22 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 		raise errors.FileReadError
 
 	# Fill boundary and interior face info
-	for elem_id in range(mesh.num_elems):
-		for face_id in range(mesh.gbasis.NFACES):
+	for elem_ID in range(mesh.num_elems):
+		for face_ID in range(mesh.gbasis.NFACES):
 			# Get local q = 1 face nodes
 			gbasis = mesh.gbasis
 			local_node_nums = gbasis.get_local_face_principal_node_nums(
-					mesh.gorder, face_id)
+					mesh.gorder, face_ID)
 			num_face_nodes = local_node_nums.shape[0]
 
 			# Convert to global node IDs
-			global_node_nums = mesh.elem_to_node_ids[elem_id][
+			global_node_nums = mesh.elem_to_node_IDs[elem_ID][
 					local_node_nums]
 
 			# Add to face info table
 			face_info, already_added = add_face_info_to_table(
 					node0_to_faces_info, num_face_nodes, global_node_nums, 
-					False, -1, elem_id, face_id)
+					False, -1, elem_ID, face_ID)
 
 			if already_added:
 				# Face was already added to table previously
@@ -1286,9 +1286,9 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 
 					# Fill in info
 					boundary_face = boundary_group.boundary_faces[
-							face_info.face_id]
-					boundary_face.elem_id = elem_id
-					boundary_face.face_id = face_id
+							face_info.face_ID]
+					boundary_face.elem_ID = elem_ID
+					boundary_face.face_ID = face_ID
 				else:
 					# Interior face
 
@@ -1298,10 +1298,10 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 					
 					# Fill in info
 					int_face = mesh.interior_faces[mesh.num_interior_faces]
-					int_face.elemL_id = face_info.elem_id
-					int_face.faceL_id = face_info.face_id
-					int_face.elemR_id = elem_id
-					int_face.faceR_id = face_id
+					int_face.elemL_ID = face_info.elem_ID
+					int_face.faceL_ID = face_info.face_ID
+					int_face.elemR_ID = elem_ID
+					int_face.faceR_ID = face_ID
 
 					# Increment number of interior faces
 					mesh.num_interior_faces += 1
@@ -1313,9 +1313,9 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 	num_faces_left = 0
 	for n in range(mesh.num_nodes):
 		faces_info = node0_to_faces_info[n]
-		for node_ids_sort in faces_info.keys():
-			print(node_ids_sort)
-			# for node in node_ids_sort:
+		for node_IDs_sort in faces_info.keys():
+			print(node_IDs_sort)
+			# for node in node_IDs_sort:
 			# 	print(int(node+1))
 			num_faces_left += 1
 
@@ -1360,14 +1360,14 @@ def import_gmsh_mesh(file_name):
 
 	# Read sections one-by-one and process
 	ver = check_mesh_format(fo)
-	mesh, old_to_new_node_ids = import_nodes(fo, ver, mesh)
+	mesh, old_to_new_node_IDs = import_nodes(fo, ver, mesh)
 	phys_groups, num_phys_groups = import_physical_groups(fo, mesh)
 	phys_groups = import_mesh_entities(fo, ver, mesh, phys_groups)
 	mesh = import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups, 
 			num_phys_groups, gmsh_element_database)
 
 	# Create rest of mesh
-	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_ids)
+	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_IDs)
 
 	# Ensure valid mesh
 	mesh_tools.check_face_orientations(mesh)
