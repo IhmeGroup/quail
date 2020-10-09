@@ -370,7 +370,7 @@ class SolverBase(ABC):
 
 		#self.get_boundary_face_residuals(U, R)
 		self.get_element_residuals(U, R)
-		self.get_interior_face_residuals(U, R)
+		#self.get_interior_face_residuals(U, R)
 
 		return R
 
@@ -430,6 +430,8 @@ class SolverBase(ABC):
 		# TODO: This RL and RR probably have to be manually added to R, because
 		# (I think) it's actually a copy of R, not a view of R.
 		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR, RL, RR)
+		R[elemL] = RL
+		R[elemR] = RR
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
