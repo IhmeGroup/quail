@@ -368,7 +368,7 @@ class SolverBase(ABC):
 		else:
 			R[:] = stepper.balance_const
 
-		#self.get_boundary_face_residuals(U, R)
+		self.get_boundary_face_residuals(U, R)
 		self.get_element_residuals(U, R)
 		self.get_interior_face_residuals(U, R)
 
@@ -422,12 +422,19 @@ class SolverBase(ABC):
 			faceR_id[iiface] = IFace.faceR_id
 		UL = U[elemL]
 		UR = U[elemR]
-		RL = R[elemL]
-		RR = R[elemR]
+		#TODO: Figure out how to get rid of these copies. Maybe replace with
+		# zeros
+		#RL = R.copy()[elemL]
+		#RR = R.copy()[elemR]
 
-		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR, RL, RR)
-		R[elemL] += RL
-		R[elemR] += RR
+		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR)
+		# TODO: Vectorize this. NOT as simple as just doing a -= or +=, since
+		# repeated indices in R will not be modified more than once! Sneaky
+		# Numpy behavior.
+		for i, e in enumerate(elemL):
+			R[e] -= RL[i]
+		for i, e in enumerate(elemR):
+			R[e] += RR[i]
 
 	def get_boundary_face_residuals(self, U, R):
 		'''

@@ -598,7 +598,7 @@ class DG(base.SolverBase):
 
 		return R # [ne, nb, ns]
 
-	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR, RL, RR):
+	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR):
 
 		mesh = self.mesh
 		physics = self.physics
@@ -625,9 +625,9 @@ class DG(base.SolverBase):
 
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_ifaces) # [nf, nq, ns]
 
-			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(
+			RL = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisL[faceL_id], quad_wts, Fq)
-			RR += solver_tools.calculate_inviscid_flux_boundary_integral(
+			RR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisR[faceR_id], quad_wts, Fq)
 
 		#if elemL == echeck or elemR == echeck:
@@ -637,19 +637,17 @@ class DG(base.SolverBase):
 
 		return RL, RR
 
-	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, R_B):
-		# Unpack
+	def get_boundary_face_residual(self, bgroup, basis_val, Uc, R_B):
+
 		mesh = self.mesh
 		physics = self.physics
 		bgroup_num = bgroup.number
-		boundary_face = bgroup.boundary_faces[bface_ID]
-		elem_ID = boundary_face.elem_ID
-		face_ID = boundary_face.face_ID
+
+		# basis_val.shape == [nbf, nq, nb]
 
 		bface_helpers = self.bface_helpers
 		quad_pts = bface_helpers.quad_pts
 		quad_wts = bface_helpers.quad_wts
-		faces_to_basis = bface_helpers.faces_to_basis
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
 		UqI = bface_helpers.UqI
@@ -657,11 +655,12 @@ class DG(base.SolverBase):
 		Fq = bface_helpers.Fq
 
 		nq = quad_wts.shape[0]
-		basis_val = faces_to_basis[face_ID]
 
-		normals = normals_bgroups[bgroup_num][bface_ID]
-		x = x_bgroups[bgroup_num][bface_ID]
-		BC = physics.BCs[bgroup.name]
+		# interpolate state and gradient at quad points
+		UqI = helpers.evaluate_state(U, basis_val) # [nbf, nq, ns]
+
+		normals = normals_bgroups[bgroup_num] # [nbf, nq, dim]
+		x = x_bgroups[bgroup_num] # [nbf, nq, dim]
 
 		# Interpolate state and gradient at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val)
