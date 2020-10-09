@@ -2,18 +2,20 @@
 #
 #       File : src/numerics/timestepping/tools.py
 #
-#       Contains helper functions for the stepper class
+#       Contains helper functions for the stepper class.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import math
 import numpy as np 
 
-from general import StepperType, ODESolverType
-from solver.tools import mult_inv_mass_matrix
+from general import StepperType
+
 import numerics.basis.tools as basis_tools
 import numerics.timestepping.stepper as stepper_defs
+
 import solver.tools as solver_tools
+
 
 def set_stepper(params, U):
 	'''
@@ -22,7 +24,7 @@ def set_stepper(params, U):
 	Inputs:
 	-------
 		params: list of parameters for solver
-		U: solution vector for instantiaing stepper class [nelem, nb, ns]
+		U: solution vector for instantiaing stepper class [num_elems, nb, ns]
 
 	Outputs:
 	-------- 
