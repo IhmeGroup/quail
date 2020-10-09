@@ -62,10 +62,10 @@ class ElemHelpersADER(DG.ElemHelpers):
 		self.basis_ref_grad = basis.basis_ref_grad
 
 		for elem in range(mesh.num_elems):
-			# get jacobian data
+			# get Jacobian data
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem,
 					quad_pts, get_djac=True, get_jac=True, get_ijac=True)
-			# store the jacobian data
+			# store the Jacobian data
 			self.jac_elems[elem] = jac
 			self.ijac_elems[elem] = ijac
 			self.djac_elems[elem] = djac
@@ -226,11 +226,11 @@ class ADERHelpers(object):
 		stiffness matrix in spatial direction evaluated for each element in 
 		physical space
 	jac_elems: numpy array
-		jacobian evaluated at the element nodes
+		Jacobian evaluated at the element nodes
 	ijac_elems: numpy array
-		inverse jacobian evaluated at the element nodes
+		inverse Jacobian evaluated at the element nodes
 	djac_elems: numpy array
-		determinant of the jacobian evaluated at the element nodes
+		determinant of the Jacobian evaluated at the element nodes
 	x_elems: numpy array
 		physical coordinates of nodal points
 	'''
@@ -330,11 +330,11 @@ class ADERHelpers(object):
 
 		Outputs:
 		--------
-			self.jac_elems: precomputed jacobian for each element 
+			self.jac_elems: precomputed Jacobian for each element 
 				[num_elems, nb, dim, dim]
-			self.ijac_elems: precomputed inverse jacobian for each element
+			self.ijac_elems: precomputed inverse Jacobian for each element
 				[num_elems, nb, dim, dim]
-			self.djac_elems: precomputed determinant of the jacobian for each
+			self.djac_elems: precomputed determinant of the Jacobian for each
 				element [num_elems, nb, 1]
 			self.x_elems: precomputed coordinates of the nodal points
 				in physical space [num_elems, nb, dim]

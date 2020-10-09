@@ -97,7 +97,7 @@ class ODESolvers():
 
 		def get_jacobian_matrix(self, mesh, solver):
 			'''
-			Calculates the jacobian matrix of the source term and its inverse for all elements
+			Calculates the Jacobian matrix of the source term and its inverse for all elements
 
 			Inputs:
 			-------
@@ -129,8 +129,8 @@ class ODESolvers():
 
 		def get_jacobian_matrix_elem(self, solver, elem, iMM, Up):
 			'''
-			Calculates the jacobian matrix of the source term and its 
-			inverse for each element. Definition of 'jacobian' matrix:
+			Calculates the Jacobian matrix of the source term and its 
+			inverse for each element. Definition of 'Jacobian' matrix:
 
 			A = I - BETA*dt*iMM^{-1}*dRdU
 
@@ -160,7 +160,7 @@ class ODESolvers():
 			nb = basis_val.shape[1]
 			Uq = np.matmul(basis_val, Up)
 
-			# evaluate the source term jacobian [nq, ns, ns]
+			# evaluate the source term Jacobian [nq, ns, ns]
 			jac = np.zeros([nq,ns,ns])
 			jac = physics.eval_source_term_jacobians(Uq, x, solver.time, jac) 
 

@@ -659,7 +659,7 @@ class BasisBase(ABC):
 
         Inputs:
         -------
-            ijac: inverse of the jacobian [nq, dim, dim]
+            ijac: inverse of the Jacobian [nq, dim, dim]
 
         Outputs:
         --------
@@ -698,7 +698,7 @@ class BasisBase(ABC):
                 functions in ref space
             get_phys_grad: [OPTIONAL] flag to calculate gradient of basis 
                 functions in phys space
-            ijac: [OPTIONAL] inverse jacobian (needed if calculating 
+            ijac: [OPTIONAL] inverse Jacobian (needed if calculating 
                 physical gradients) [nq, dim, dim]
         
         Outputs:
@@ -717,7 +717,7 @@ class BasisBase(ABC):
             self.basis_ref_grad = self.get_grads(quad_pts)
         if get_phys_grad:
             if ijac is None:
-                raise Exception("Need jacobian data")
+                raise Exception("Need Jacobian data")
             self.basis_phys_grad = self.get_physical_grad(ijac)
 
     def get_basis_face_val_grads(self, mesh, faceID, face_pts, basis=None, 
@@ -738,7 +738,7 @@ class BasisBase(ABC):
                 functions in ref space
             get_phys_grad: [OPTIONAL] flag to calculate gradient of basis 
                 functions in phys space
-            ijac: [OPTIONAL] inverse jacobian (needed if calculating 
+            ijac: [OPTIONAL] inverse Jacobian (needed if calculating 
                 physical gradients) [nq, nq, dim]
         
         Outputs:

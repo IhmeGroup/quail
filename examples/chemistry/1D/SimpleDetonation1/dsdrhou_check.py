@@ -66,7 +66,7 @@ R = 1.
 p = (gam - 1.)*(rhoE - 0.5*rhou*rhou/rho - qo*rhoY)
 T = p/(rho*R)
 
-# Get numerical source jacobian wrt density
+# Get numerical source Jacobian wrt density
 K = A * np.exp(-Tign / T)
 S = -K*rhoY
 
@@ -75,7 +75,7 @@ drhou=np.diff(rhou)
 
 dSdrhou_num = dS/drhou
 
-# Get analytical source jacobian wrt density
+# Get analytical source Jacobian wrt density
 jac = np.zeros([U.shape[0], U.shape[-1], U.shape[-1]])
 
 dTdU = get_temperature_jacobian(gam, qo, R, U)

@@ -132,7 +132,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir
         ijac_st = np.zeros([nq_st, dim+1, dim+1])
         ijac_st[:, 0:dim, 0:dim] = ijac
         
-        # add the temporal jacobian in the dim+1 dimension
+        # add the temporal Jacobian in the dim+1 dimension
         ijac_st[:, dim, dim] = 2./dt 
     
     else:

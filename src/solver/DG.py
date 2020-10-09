@@ -54,15 +54,15 @@ class ElemHelpers(object):
 	gbasis_val: numpy array
 		stores the evaluated geometric basis function
 	jac_elems: numpy array
-		stores the evaluated geometric jacobian for each element
+		stores the evaluated geometric Jacobian for each element
 	ijac_elems: numpy array
-		stores the evaluated inverse of the geometric jacobian for each 
+		stores the evaluated inverse of the geometric Jacobian for each 
 		element
 	djac_elems: numpy array
-		stores the evaluated determinant of the geometric jacobian for 
+		stores the evaluated determinant of the geometric Jacobian for 
 		each element
 	x_elems: numpy array
-		physical coordinates of quadrature points
+		physical coordinates of quadrature points for each element
 	Uq: numpy array
 		solution state vector evaluated at the quadrature points
 	Fq: numpy array
@@ -82,8 +82,8 @@ class ElemHelpers(object):
 		precomputes the quadrature points and weights for the given 
 		quadrature type
 	get_basis_and_geom_data
-		precomputes the element's basis function, it's gradients,
-		geometric jacobian info, and volume
+		precomputes the element's basis function, its gradients,
+		geometric Jacobian info, and volume
 	alloc_other_arrays
 		allocate the solution, flux, and source vectors that are evaluated
 		at the quadrature points
@@ -147,11 +147,11 @@ class ElemHelpers(object):
 				reference element [nq, nb, dim]
 			self.basis_phys_grad_elems: precomputed basis gradient for each 
 				physical element [num_elems, nq, nb, dim]
-			self.jac_elems: precomputed jacobian for each element 
+			self.jac_elems: precomputed Jacobian for each element 
 				[num_elems, nq, dim, dim]
-			self.ijac_elems: precomputed inverse jacobian for each element
+			self.ijac_elems: precomputed inverse Jacobian for each element
 				[num_elems, nq, dim, dim]
-			self.djac_elems: precomputed determinant of the jacobian for each
+			self.djac_elems: precomputed determinant of the Jacobian for each
 				element [num_elems, nq, 1]
 			self.x_elems: precomputed coordinates of the quadrature points
 				in physical space [num_elems, nq, dim]
@@ -177,7 +177,7 @@ class ElemHelpers(object):
 		self.basis_ref_grad = basis.basis_ref_grad 
 
 		for elem in range(mesh.num_elems):
-			# jacobian
+			# Jacobian
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem,
 					quad_pts, get_djac=True, get_jac=True, get_ijac=True)
 			# store

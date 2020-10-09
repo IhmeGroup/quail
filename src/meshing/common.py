@@ -114,7 +114,7 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 	xcoords = np.linspace(xmin, xmax, num_nodes_x)
 	ycoords = np.linspace(ymin, ymax, num_nodes_y)
 	xgrid, ygrid = np.meshgrid(xcoords, ycoords)
-	xp = np.array([np.reshape(xgrid,-1),np.reshape(ygrid,-1)]).transpose()
+	xp = np.array([np.reshape(xgrid, -1), np.reshape(ygrid, -1)]).transpose()
 	# Create mesh
 	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], 
 			num_elems=num_elems_x*num_elems_y, 
@@ -250,11 +250,14 @@ def split_quadrils_into_tris(mesh_old):
 
 		n = 0
 		for j in range(num_nodes_per_face):
-			tri1_node_IDs[n:n+num_nodes_per_face-j] = quad_node_IDs[j,:num_nodes_per_face-j]
+			tri1_node_IDs[n:n+num_nodes_per_face-j] = quad_node_IDs[j,
+					:num_nodes_per_face-j]
 			if j == 0:
-				tri2_node_IDs[n:n+num_nodes_per_face-j] = quad_node_IDs[num_nodes_per_face-1,::-1]
+				tri2_node_IDs[n:n+num_nodes_per_face-j] = quad_node_IDs[
+						num_nodes_per_face-1, ::-1]
 			else:
-				tri2_node_IDs[n:n+num_nodes_per_face-j] = quad_node_IDs[num_nodes_per_face-(j+1),
+				tri2_node_IDs[n:n+num_nodes_per_face-j] = quad_node_IDs[
+						num_nodes_per_face-(j+1),
 						num_nodes_per_face-1:j-1:-1]
 			n += num_nodes_per_face-j
 

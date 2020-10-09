@@ -337,24 +337,24 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
 
 def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
     '''
-    Evaluate the geometric jacobian for a specified element
+    Evaluate the geometric Jacobian for a specified element
 
     Inputs:
     -------
         mesh: mesh object 
         elem: element index
         quad_pts: coordinates of quadrature points
-        get_djac: [OPTIONAL]flag to calculate jacobian determinant 
+        get_djac: [OPTIONAL]flag to calculate Jacobian determinant 
             (Default: False)
-        get_jac: [OPTIONAL] flag to calculate jacobian (Default: False)
-        get_ijac: [OPTIONAL] flag to calculate inverse of the jacobian 
+        get_jac: [OPTIONAL] flag to calculate Jacobian (Default: False)
+        get_ijac: [OPTIONAL] flag to calculate inverse of the Jacobian 
             (Default: False)
 
     Outputs:
     --------
-        djac: determinant of the jacobian [nq, 1]
-        jac: jacobian [nq, dim, dim]
-        ijac: inverse jacobian [nq, dim, dim]
+        djac: determinant of the Jacobian [nq, 1]
+        jac: Jacobian [nq, dim, dim]
+        ijac: inverse Jacobian [nq, dim, dim]
     '''
     basis = mesh.gbasis
     order = mesh.gorder

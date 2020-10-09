@@ -97,7 +97,7 @@ def calculate_dRdU(elem_ops, elem, jac):
 	Inputs: 
 		elem_ops: object containing precomputed element operations
 		elem: element index
-		jac: element source term jacobian [nq, ns, ns]
+		jac: element source term Jacobian [nq, ns, ns]
 	'''
 	quad_wts = elem_ops.quad_wts
 	basis_val = elem_ops.basis_val 
@@ -154,7 +154,7 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
 
 	Outputs:
 	--------
-		U: array of values to be projected too
+		U: array of values to be projected to
 	'''
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)

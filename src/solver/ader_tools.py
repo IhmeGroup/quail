@@ -408,7 +408,7 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
 		basis: basis object
 		quad_pts: quadrature coordinates in reference space
 		quad_wts: quadrature weights
-		djac: determinant of the jacobian
+		djac: determinant of the Jacobian
 		f: array of values to be projected from
 
 	Outpust:
