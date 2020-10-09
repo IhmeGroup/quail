@@ -364,7 +364,6 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ij
     '''
     basis = mesh.gbasis
     order = mesh.gorder
-    shape = basis.__class__.__bases__[1].__name__
     nb = basis.nb
     dim = basis.DIM
 
