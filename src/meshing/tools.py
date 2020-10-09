@@ -1,8 +1,8 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/meshing/common.py
+#       File : src/meshing/tools.py
 #
-#       Contains helpers functions related to meshes.
+#       Contains helper functions related to meshes.
 #      
 # ------------------------------------------------------------------------ #
 import numpy as np 
@@ -102,7 +102,7 @@ def get_element_centroid(mesh, elem_ID):
     gbasis = mesh.gbasis
     xcentroid = ref_to_phys(mesh, elem_ID, mesh.gbasis.CENTROID)  
 
-    return xcentroid
+    return xcentroid # [1, dim]
 
 
 def check_face_orientations(mesh):
@@ -119,7 +119,7 @@ def check_face_orientations(mesh):
     '''
     gbasis = mesh.gbasis
     if mesh.dim == 1:
-        # don't need to check for 1D
+        # Don't need to check for 1D
         return
 
     for interior_face in mesh.interior_faces:
@@ -175,9 +175,7 @@ def verify_periodic_compatibility(mesh, boundary_group, icoord):
         elem_ID = boundary_face.elem_ID
         face_ID = boundary_face.face_ID
 
-        # Get local IDs of principal nodes on face
-        # local_node_IDs = gbasis.get_local_face_principal_node_nums(
-        #         mesh.gorder, face_ID)
+        # Get local IDs of nodes on face
         local_node_IDs = gbasis.get_local_face_node_nums(
                 mesh.gorder, face_ID)
 
@@ -422,7 +420,7 @@ def remap_nodes(mesh, old_to_new_node_map, new_to_old_node_map,
     if next_node_ID != -1:
         for node_ID in range(mesh.num_nodes):
             if old_to_new_node_map[node_ID] == -1: 
-                # has not been re-ordered yet
+                # Has not been re-ordered yet
                 old_to_new_node_map[node_ID] = next_node_ID
                 new_to_old_node_map[next_node_ID] = node_ID
                 next_node_ID += 1

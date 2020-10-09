@@ -179,7 +179,8 @@ def gmsh_node_order_tri(gorder):
 	Outputs:
 	    nodes: maps dgp node ordering to gmsh node ordering
 	'''
-	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], dtype=int)-1)
+	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], 
+			dtype=int)-1)
 	# only lower triangular 
 	nodes = nodes[nodes >= 0]
 
@@ -906,7 +907,8 @@ def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_IDs,
 	    	key is a tuple containing the global node IDs defining a face 
 	    	(in ascending order) and the corresponding value is an object
 	    	containing relevant info about the face; all the keys for a 
-	    	given dict have the same node0, which is the smallest global node ID of the keys (tuples); the list is indexed by node0;
+	    	given dict have the same node0, which is the smallest global 
+	    	node ID of the keys (tuples); the list is indexed by node0;
 	    	this is used to connect faces to elements
 	    num_face_nodes: number of (q = 1) face nodes
 	    node_IDs: global IDs of nodes defining the face
@@ -1315,8 +1317,6 @@ def fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups,
 		faces_info = node0_to_faces_info[n]
 		for node_IDs_sort in faces_info.keys():
 			print(node_IDs_sort)
-			# for node in node_IDs_sort:
-			# 	print(int(node+1))
 			num_faces_left += 1
 
 	if num_faces_left != 0:
@@ -1367,7 +1367,8 @@ def import_gmsh_mesh(file_name):
 			num_phys_groups, gmsh_element_database)
 
 	# Create rest of mesh
-	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, gmsh_element_database, old_to_new_node_IDs)
+	fill_mesh(fo, ver, mesh, phys_groups, num_phys_groups, 
+			gmsh_element_database, old_to_new_node_IDs)
 
 	# Ensure valid mesh
 	mesh_tools.check_face_orientations(mesh)

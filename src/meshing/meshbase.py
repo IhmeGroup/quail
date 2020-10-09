@@ -105,7 +105,7 @@ class Element(object):
         neighbor across said face [num_faces]
     '''
     def __init__(self, elem_ID=-1):
-        self.id = elem_ID
+        self.ID = elem_ID
         self.node_IDs = np.zeros(0, dtype=int)
         self.node_coords = np.zeros(0)
         self.face_to_neighbors = np.zeros(0, dtype=int)
@@ -198,7 +198,6 @@ class Mesh(object):
         self.gbasis = gbasis
         self.gorder = gorder
         self.num_elems = num_elems
-        # self.nFacePerElem = gbasis.nfaceperelem
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
 
     def allocate_elem_to_node_IDs_map(self):
@@ -213,7 +212,7 @@ class Mesh(object):
         Notes:
         ------
             elem_to_node_IDs[elem_ID][i] = ith node of elem_ID, 
-                where i = 1,2,...,num_nodes_per_elem
+                where i = 1, 2, ..., num_nodes_per_elem
         '''
         self.elem_to_node_IDs = np.zeros([self.num_elems,
                 self.num_nodes_per_elem], dtype=int)
@@ -226,7 +225,8 @@ class Mesh(object):
         --------
             self.interior_faces: list of InteriorFace objects
         '''
-        self.interior_faces = [InteriorFace() for i in range(self.num_interior_faces)]
+        self.interior_faces = [InteriorFace() for i in range(
+                self.num_interior_faces)]
 
     def add_boundary_group(self, bname):
         '''
@@ -259,19 +259,19 @@ class Mesh(object):
         --------
             self.elements: list of Element objects
         '''
-        # allocate
+        # Allocate
         self.elements = [Element() for i in range(self.num_elems)]
 
-        # fill in information for each element
+        # Fill in information for each element
         for elem_ID in range(self.num_elems):
             elem = self.elements[elem_ID]
 
-            elem.id = elem_ID
+            elem.ID = elem_ID
             elem.node_IDs = self.elem_to_node_IDs[elem_ID]
             elem.node_coords = self.node_coords[elem.node_IDs]
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
-        # fill in information about neighbors
+        # Fill in information about neighbors
         for int_face in self.interior_faces:
             elemL_ID = int_face.elemL_ID
             elemR_ID = int_face.elemR_ID
