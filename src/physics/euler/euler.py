@@ -1,6 +1,12 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/euler/euler.py
+#
+#       Contains class definitions for 1D and 2D Euler equations.
+#      
+# ------------------------------------------------------------------------ #
 from enum import Enum
 import numpy as np
-from scipy.optimize import fsolve, root
 
 import errors
 import general
@@ -13,7 +19,8 @@ from physics.base.functions import FcnType as base_fcn_type
 
 import physics.euler.functions as euler_fcns
 from physics.euler.functions import BCType as euler_BC_type
-from physics.euler.functions import ConvNumFluxType as euler_conv_num_flux_type
+from physics.euler.functions import ConvNumFluxType as \
+		euler_conv_num_flux_type
 from physics.euler.functions import FcnType as euler_fcn_type
 from physics.euler.functions import SourceType as euler_source_type
 

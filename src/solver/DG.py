@@ -4,10 +4,6 @@
 #
 #       Contains class definitions for the DG solver available in the 
 #		DG Python framework.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod

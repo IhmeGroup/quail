@@ -3,13 +3,8 @@
 #       File : src/numerics/basis/tools.py
 #
 #       Contains helper definitions for the shape and basis classes.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January, 2020
 #      
 # ------------------------------------------------------------------------ #
-import code
 import numpy as np
 
 from data import ArrayList, GenericData

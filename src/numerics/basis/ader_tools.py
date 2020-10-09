@@ -4,14 +4,9 @@
 #
 #       Contains helper definitions for the shape and basis classes with
 #       specific application to the ADER-DG solver.
-#
-#       Authors: Brett Bornhoft and Eric Ching
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import code
 import numpy as np
 
 from data import ArrayList, GenericData

@@ -6,7 +6,6 @@
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import code
 import numpy as np 
 
 import errors

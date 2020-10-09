@@ -1,4 +1,11 @@
-import code
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/euler/functions.py
+#
+#       Contains definitions of Functions, boundary conditions, and source
+#       terms for the Euler equations.
+#      
+# ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root

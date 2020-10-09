@@ -1,4 +1,10 @@
-import code
+# ------------------------------------------------------------------------ #
+#
+#       File : src/meshing/common.py
+#
+#       Contains functions for creating and modifying structured meshes.
+#      
+# ------------------------------------------------------------------------ #
 import copy
 import numpy as np
 

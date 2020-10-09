@@ -2,15 +2,9 @@
 #
 #       File : src/numerics/solver/ader_tools.py
 #
-#       Contains additional methods (tools) for the ADERDG solver class
-#
-#       Authors: Brett Bornhoft and Eric Ching
-#
-#       Created: January 2020
+#       Contains additional functions (tools) for the ADERDG solver class
 #      
 # ------------------------------------------------------------------------ #
-import code
-import copy
 import numpy as np
 from scipy.optimize import fsolve, root
 from scipy.linalg import solve_sylvester

@@ -1,5 +1,13 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/base/data.py
+#
+#       Contains definitions for base classes for Functions (for initial
+#       conditions and exact solutions), boundary conditions, and source
+#       terms.
+#      
+# ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-from data import GenericData
 import numpy as np
 
 

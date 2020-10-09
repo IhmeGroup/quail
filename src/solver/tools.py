@@ -3,13 +3,8 @@
 #       File : src/numerics/solver/tools.py
 #
 #       Contains additional methods (tools) for the DG solver class
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
-import code
 import copy
 import numpy as np
 

@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/base/base.py
+#
+#       Contains definition and helper functions for base physics class.
+#      
+# ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 import numpy as np

@@ -3,14 +3,8 @@
 #       File : src/meshing/meshbase.py
 #
 #       Contains class definitions for mesh structures.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
-
-import code
 from enum import Enum, auto
 import numpy as np
 

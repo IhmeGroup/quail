@@ -1,4 +1,11 @@
-import code
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/scalar/functions.py
+#
+#       Contains definitions of Functions, boundary conditions, and source
+#       terms for scalar equations.
+#      
+# ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root

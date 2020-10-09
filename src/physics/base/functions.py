@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/base/functions.py
+#
+#       Contains definitions of Functions, boundary conditions, and source
+#       terms generally applicable to all physics types.
+#      
+# ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
 

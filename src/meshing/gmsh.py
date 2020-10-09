@@ -1,5 +1,10 @@
-import code
-import copy
+# ------------------------------------------------------------------------ #
+#
+#       File : src/meshing/gmsh.py
+#
+#       Contains functions for processing Gmsh files.
+#      
+# ------------------------------------------------------------------------ #
 import numpy as np
 
 import errors

@@ -6,7 +6,6 @@
 #      
 # ------------------------------------------------------------------------ #
 import numpy as np
-import code
 import numerics.quadrature.segment as qseg
 
 

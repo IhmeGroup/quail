@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/scalar/scalar.py
+#
+#       Contains class definitions for scalar equations.
+#      
+# ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
 import sys

@@ -4,14 +4,9 @@
 #
 #       Contains class definitions for timestepping methods available 
 #		in the DG Python framework.
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import code
 import numpy as np 
 from scipy.optimize import fsolve, root
 

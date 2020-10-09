@@ -1,11 +1,15 @@
-import code
+# ------------------------------------------------------------------------ #
+#
+#       File : src/meshing/common.py
+#
+#       Contains helpers functions related to meshes.
+#      
+# ------------------------------------------------------------------------ #
 import numpy as np 
 
-import data
-
 import meshing.meshbase as mesh_defs
-
 import numerics.basis.tools as basis_tools
+
 
 TOL = 1.e-10
 
@@ -37,7 +41,7 @@ def ref_to_phys(mesh, elem_id, xref):
     # Convert to physical space
     xphys = np.matmul(gbasis.basis_val, elem_coords)
 
-    return xphys
+    return xphys # [nq, dim]
 
 
 def element_volumes(mesh, solver=None):
@@ -79,7 +83,7 @@ def element_volumes(mesh, solver=None):
     # Get domain volume
     domain_vol = np.sum(vol_elems)
 
-    return vol_elems, domain_vol
+    return vol_elems, domain_vol # [num_elems], [1]
 
 
 def get_element_centroid(mesh, elem_id):

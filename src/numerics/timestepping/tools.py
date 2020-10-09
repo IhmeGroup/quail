@@ -3,14 +3,9 @@
 #       File : src/numerics/timestepping/tools.py
 #
 #       Contains helper functions for the stepper class
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import code
 import math
 import numpy as np 
 

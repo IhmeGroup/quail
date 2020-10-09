@@ -11,7 +11,6 @@
 # ------------------------------------------------------------------------ #
 import numpy as np
 import math
-import code
 from scipy.linalg import eigh_tridiagonal, solve_banded, solve
 
 import itertools
