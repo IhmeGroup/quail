@@ -1,3 +1,11 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/processing/post.py
+#
+#       Contains functions for computing error and integrating boundary
+#		data.
+#      
+# ------------------------------------------------------------------------ #
 import copy
 from matplotlib import pyplot as plt
 import numpy as np

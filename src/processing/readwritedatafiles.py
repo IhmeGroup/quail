@@ -1,13 +1,23 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/processing/readwritedatafiles.py
+#
+#       Contains functions reading and writing data files.
+#      
+# ------------------------------------------------------------------------ #
 import pickle
-import code
+
 
 def write_data_file(solver, iwrite):
-	# Unpack
-	# mesh = solver.mesh
-	# physics = solver.physics
-	# Params = solver.params
-	# Time = solver.time
+	'''
+	This function writes a data file (pickle format).
 
+	Inputs:
+	-------
+	    solver: solver object
+	    iwrite: integer to label data file
+	'''
+	# Get file name
 	prefix = solver.params["Prefix"]
 	if iwrite >= 0:
 		fname = prefix + "_" + str(iwrite) + ".pkl"
@@ -15,33 +25,24 @@ def write_data_file(solver, iwrite):
 		fname = prefix + "_final" + ".pkl"
 
 	with open(fname, 'wb') as fo:
-		# solver.params["RestartFile"] = fo.name
-		# solver.params["InitialTime"] = Time
-
+		# Save solver
 		pickle.dump(solver, fo, pickle.HIGHEST_PROTOCOL)
-		# mesh
-		# pickle.dump(mesh, fo, pickle.HIGHEST_PROTOCOL)
-		# # physics
-		# pickle.dump(physics, fo, pickle.HIGHEST_PROTOCOL)
-		# # Params
-		# pickle.dump(Params, fo, pickle.HIGHEST_PROTOCOL)
-		# # Time
-		# pickle.dump(Time, fo, pickle.HIGHEST_PROTOCOL)
 
 
 def read_data_file(fname):
+	'''
+	This function reads a data file (pickle format).
 
+	Inputs:
+	-------
+	    fname: file name (str)
+
+	Outputs:
+	--------
+	    solver: solver object
+	'''
+	# Open and get solver
 	with open(fname, 'rb') as fo:
 	    solver = pickle.load(fo)
 
 	return solver
-		# mesh
-	 #    mesh = pickle.load(fo)
-		# # physics
-	 #    physics = pickle.load(fo)
-		# # Params
-	 #    Params = pickle.load(fo)
-		# # Time
-	 #    Time = pickle.load(fo)
-
-	# return mesh, physics, Params, Time

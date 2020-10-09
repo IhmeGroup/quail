@@ -675,7 +675,7 @@ class SlipWall(BCWeakPrescribed):
 class PressureOutlet(BCWeakPrescribed):
 	'''
 	This class corresponds to an outflow boundary condition with static
-	pressure prescribed.
+	pressure prescribed. See documentation for more details.
 
 	Attributes:
 	-----------

@@ -86,7 +86,7 @@ class LimiterBase(ABC):
 		'''
 		pass
 
-	def limit_solution(self, solver, U):
+	def limit_solution(self, solver, Uc):
 		'''
 		This method limits the global solution
 
@@ -102,4 +102,4 @@ class LimiterBase(ABC):
 				[num_elems, nb, ns] (modified)
 		'''
 		for elem in range(solver.mesh.num_elems):
-			U[elem] = self.limit_element(solver, elem, U[elem])
+			Uc[elem] = self.limit_element(solver, elem, Uc[elem])

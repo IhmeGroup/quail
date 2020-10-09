@@ -71,7 +71,8 @@ class PositivityPreserving(base.LimiterBase):
 			basis_val_faces = iface_ops.faces_to_basisL.copy()
 			bshape = basis_val_faces.shape
 			basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-			self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
+			self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, 
+					basis_val_faces))
 		else:
 			self.basis_val_elem_faces = elem_ops.basis_val
 
