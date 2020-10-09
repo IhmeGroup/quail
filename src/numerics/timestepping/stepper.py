@@ -105,7 +105,6 @@ class FE(StepperBase):
 	def TakeTimeStep(self, solver):
 
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh = solver.mesh
 		U = physics.U
 
@@ -128,7 +127,6 @@ class RK4(StepperBase):
 	''' 
 	def TakeTimeStep(self, solver):
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh = solver.mesh
 		U = physics.U
 
@@ -189,28 +187,24 @@ class LSRK4(StepperBase):
 			change in solution array in each stage
 				(shape: [nelem, nb, ns])
 		'''
-		self.rk4a = np.array([            0.0, \
-		    -567301805773.0/1357537059087.0, \
-		    -2404267990393.0/2016746695238.0, \
-		    -3550918686646.0/2091501179385.0, \
+		self.rk4a = np.array([0.0, -567301805773.0/1357537059087.0, 
+		    -2404267990393.0/2016746695238.0, 
+		    -3550918686646.0/2091501179385.0,
 		    -1275806237668.0/842570457699.0])
-		self.rk4b = np.array([ 1432997174477.0/9575080441755.0, \
-		    5161836677717.0/13612068292357.0, \
-		    1720146321549.0/2090206949498.0, \
-		    3134564353537.0/4481467310338.0, \
+		self.rk4b = np.array([1432997174477.0/9575080441755.0,
+		    5161836677717.0/13612068292357.0,
+		    1720146321549.0/2090206949498.0,
+		    3134564353537.0/4481467310338.0,
 		    2277821191437.0/14882151754819.0])
-		self.rk4c = np.array([             0.0, \
-		    1432997174477.0/9575080441755.0, \
-		    2526269341429.0/6820363962896.0, \
-		    2006345519317.0/3224310063776.0, \
+		self.rk4c = np.array([0.0, 1432997174477.0/9575080441755.0, 
+		    2526269341429.0/6820363962896.0, 
+		    2006345519317.0/3224310063776.0, 
 		    2802321613138.0/2924317926251.0])
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
 	def TakeTimeStep(self, solver):
-
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh = solver.mesh
 		U = physics.U
 
@@ -262,22 +256,15 @@ class SSPRK3(StepperBase):
 			change in solution array in each stage
 				(shape: [nelem, nb, ns])
 		'''
-		self.ssprk3a = np.array([	0.0, \
-			-2.60810978953486, \
-			-0.08977353434746, \
-			-0.60081019321053, \
-			-0.72939715170280])
-		self.ssprk3b = np.array([ 0.67892607116139, \
-			0.20654657933371, \
-			0.27959340290485, \
-			0.31738259840613, \
-			0.30319904778284])
+		self.ssprk3a = np.array([0.0, -2.60810978953486, -0.08977353434746, 
+			-0.60081019321053, -0.72939715170280])
+		self.ssprk3b = np.array([0.67892607116139, 0.20654657933371, 
+			0.27959340290485, 0.31738259840613, 0.30319904778284])
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
 	def TakeTimeStep(self, solver):
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh = solver.mesh
 		U = physics.U
 
@@ -318,7 +305,6 @@ class ADER(StepperBase):
 	def TakeTimeStep(self, solver):
 
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh = solver.mesh
 		W = physics.U
 		Up = physics.U_pred
@@ -337,6 +323,7 @@ class ADER(StepperBase):
 		solver.apply_limiter(W)
 
 		return R # [nelem, nb, ns]
+
 
 class Strang(StepperBase, ode.ODESolvers):
 	'''
@@ -382,7 +369,6 @@ class Strang(StepperBase, ode.ODESolvers):
 	def TakeTimeStep(self, solver):
 
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh  = solver.mesh
 		U = physics.U
 
@@ -408,6 +394,7 @@ class Strang(StepperBase, ode.ODESolvers):
 
 		return R3 # [nelem, nb, ns]
 
+
 class Simpler(Strang):
 	'''
 	The Simpler balanced operator splitting scheme inherits attributes from 
@@ -424,7 +411,6 @@ class Simpler(Strang):
 	def TakeTimeStep(self, solver):
 
 		physics = solver.physics
-		DataSet = solver.DataSet
 		mesh  = solver.mesh
 		U = physics.U
 

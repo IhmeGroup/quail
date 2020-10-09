@@ -9,7 +9,6 @@ import code
 import numpy as np
 from scipy.linalg import solve_sylvester
 
-from data import GenericData
 import errors
 
 from general import ModalOrNodal, StepperType

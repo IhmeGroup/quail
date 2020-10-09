@@ -7,7 +7,6 @@
 # ------------------------------------------------------------------------ #
 import numpy as np
 
-from data import ArrayList, GenericData
 from general import BasisType, ShapeType, NodeType
 
 import meshing.gmsh as mesh_gmsh

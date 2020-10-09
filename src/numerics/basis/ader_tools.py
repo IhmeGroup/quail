@@ -9,7 +9,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
-from data import ArrayList, GenericData
 from general import BasisType, ShapeType
 
 import meshing.gmsh as mesh_gmsh

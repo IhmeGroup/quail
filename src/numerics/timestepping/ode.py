@@ -12,6 +12,7 @@ from scipy.optimize import fsolve, root
 from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
 
+
 class ODESolvers():
 	'''
 	ODESolvers is a class of classes used as a Mixin class for operator 
@@ -76,7 +77,6 @@ class ODESolvers():
 		def TakeTimeStep(self, solver):
 
 			physics = solver.physics
-			DataSet = solver.DataSet
 			mesh = solver.mesh
 			U = physics.U
 
@@ -112,7 +112,6 @@ class ODESolvers():
 			'''
 			basis = solver.basis
 			nb = basis.nb
-			DataSet = solver.DataSet
 			physics = solver.physics
 			Up = physics.U
 			ns = physics.NUM_STATE_VARS

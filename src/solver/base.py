@@ -9,10 +9,8 @@ from abc import ABC, abstractmethod
 import copy
 import numpy as np 
 import time
-import warnings
 
 import errors
-from data import ArrayList, GenericData
 
 from general import ModalOrNodal, NodeType, ShapeType, QuadratureType
 
@@ -85,7 +83,6 @@ class SolverBase(ABC):
 		self.params = params
 		self.physics = physics
 		self.mesh = mesh
-		self.DataSet = GenericData()
 
 		self.time = params["InitialTime"]
 		self.num_time_steps = 0 # will be set later
@@ -412,7 +409,7 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		Order = self.params["SolutionOrder"]
 		Stepper = self.Stepper
-		Time = self.time
+		t = self.time
 
 		# Parameters
 		WriteInterval = self.params["WriteInterval"]
@@ -435,8 +432,8 @@ class SolverBase(ABC):
 			R = Stepper.TakeTimeStep(self)
 
 			# Increment time
-			Time += Stepper.dt
-			self.time = Time
+			t += Stepper.dt
+			self.time = t
 
 			# Info to print
 			PrintInfo = (iStep+1, self.time, \

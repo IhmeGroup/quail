@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 import math
 import numpy as np 
 
-from data import ArrayList
 from general import StepperType, ODESolverType
 from solver.tools import mult_inv_mass_matrix
 import numerics.basis.tools as basis_tools

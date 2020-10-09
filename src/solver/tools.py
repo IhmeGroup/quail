@@ -8,10 +8,9 @@
 import copy
 import numpy as np
 
-import data
 import general
-
 import numerics.basis.tools as basis_tools
+
 
 def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
 	'''
@@ -42,6 +41,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
 
 	return ER # [nb, ns]
 
+
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	'''
 	Calculates the inviscid flux boundary integral for the DG scheme
@@ -59,6 +59,7 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	R = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb, ns]
 
 	return R # [nb, ns]
+
 
 def calculate_source_term_integral(elem_ops, elem, Sq):
 	'''
@@ -83,6 +84,7 @@ def calculate_source_term_integral(elem_ops, elem, Sq):
 	ER = np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
 
 	return ER # [nb, ns]
+
 
 def calculate_dRdU(elem_ops, elem, jac):
 	'''
@@ -111,6 +113,7 @@ def calculate_dRdU(elem_ops, elem, jac):
 
 	return ER # [nb, ns, ns]
 
+
 def mult_inv_mass_matrix(mesh, solver, dt, R):
 	'''
 	Multiplies the residual array with the inverse mass matrix
@@ -125,7 +128,6 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 		U: solution array
 	'''
 	physics = solver.physics
-	DataSet = solver.DataSet
 	iMM_elems = solver.elem_operators.iMM_elems
 
 	if dt is None:
