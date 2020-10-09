@@ -615,8 +615,8 @@ class DG(base.SolverBase):
 		normals_ifaces = iface_ops.normals_ifaces # [nf, nq, dim]
 
 		# Interpolate state and gradient at quad points
-		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id])
-		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id])
+		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) # [nf, nq, ns]
+		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) # [nf, nq, ns]
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux

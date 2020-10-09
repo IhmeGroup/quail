@@ -370,7 +370,7 @@ class SolverBase(ABC):
 
 		#self.get_boundary_face_residuals(U, R)
 		self.get_element_residuals(U, R)
-		#self.get_interior_face_residuals(U, R)
+		self.get_interior_face_residuals(U, R)
 
 		return R
 
@@ -385,7 +385,7 @@ class SolverBase(ABC):
 
 		Outputs:
 		--------
-			R: calculated residiual array
+			R: calculated residual array
 		'''
 
 		R = self.get_element_residual(U, R)
@@ -407,11 +407,9 @@ class SolverBase(ABC):
 		'''
 		mesh = self.mesh
 
-		# TODO: refactor this loop out
-		UL = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
-		UR = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
-		RL = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
-		RR = np.empty((mesh.num_interior_faces,) + U.shape[1:]) # [nf, nb, ns]
+		# TODO: refactor this loop out. This loop basically vectorizes the face
+		# information every iteration. This does not need to be done every
+		# iteration.
 		elemL = np.empty(mesh.num_interior_faces, dtype=int)
 		elemR = np.empty(mesh.num_interior_faces, dtype=int)
 		faceL_id = np.empty(mesh.num_interior_faces, dtype=int)
@@ -427,11 +425,9 @@ class SolverBase(ABC):
 		RL = R[elemL]
 		RR = R[elemR]
 
-		# TODO: This RL and RR probably have to be manually added to R, because
-		# (I think) it's actually a copy of R, not a view of R.
 		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR, RL, RR)
-		R[elemL] = RL
-		R[elemR] = RR
+		R[elemL] += RL
+		R[elemR] += RR
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
