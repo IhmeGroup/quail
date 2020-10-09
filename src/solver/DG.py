@@ -2,8 +2,7 @@
 #
 #       File : src/numerics/solver/DG.py
 #
-#       Contains class definitions for the DG solver available in the 
-#		DG Python framework.
+#       Contains class definitions for the DG solver.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod

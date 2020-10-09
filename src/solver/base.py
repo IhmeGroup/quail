@@ -429,7 +429,7 @@ class SolverBase(ABC):
 
 			Stepper.dt = Stepper.get_time_step(Stepper, self)
 			# integrate in time
-			R = Stepper.TakeTimeStep(self)
+			R = Stepper.take_time_step(self)
 
 			# Increment time
 			t += Stepper.dt

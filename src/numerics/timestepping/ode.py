@@ -47,7 +47,7 @@ class ODESolvers():
 		
 		Abstract Methods:
 		-----------------
-		TakeTimeStep
+		take_time_step
 			method that takes a given time step for the solver depending on 
 			the selected time-stepping scheme
 		'''
@@ -74,7 +74,7 @@ class ODESolvers():
 		# constant used to differentiate between BDF1 and Trapezoidal scheme
 		BETA = 1.0
 
-		def TakeTimeStep(self, solver):
+		def take_time_step(self, solver):
 
 			physics = solver.physics
 			mesh = solver.mesh
@@ -187,5 +187,5 @@ class ODESolvers():
 		''' 
 		BETA = 0.5 
 
-		def TakeTimeStep(self, solver):
-			super().TakeTimeStep(solver)
+		def take_time_step(self, solver):
+			super().take_time_step(solver)

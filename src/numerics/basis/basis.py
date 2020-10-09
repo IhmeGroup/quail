@@ -538,8 +538,8 @@ class TriShape(ShapeBase):
 class BasisBase(ABC): 
     '''
     This is an abstract base class used for the base attributes and methods 
-    of all basis functions available in the DG Python framework. Child
-    classes (available basis functions) of this base class include:
+    of all available basis functions. 
+    Child classes (available basis functions) of this base class include:
 
         - Lagrange basis [support for segments, quadrilaterals, and 
           triangles] 
