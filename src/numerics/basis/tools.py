@@ -269,59 +269,6 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     return SM # [nb, nb]
 
 
-def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
-    '''
-    Calculate the projection matrix to increase order
-
-    Inputs:
-    -------
-        mesh: mesh object
-        basis: basis function object
-        basis_old: basis function from previous order
-        order: solution order
-        order_old: previous solution order
-        iMM: inverse mass matrix [nb, nb]
-
-    Outputs:
-    -------- 
-        PM: projection matrix # [nb, nb_old]
-    '''
-    quad_order = np.amax([order_old+order, 2*order])
-    quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
-
-    nq = quad_pts.shape[0]
-
-    basis_old.get_basis_val_grads(quad_pts, get_val=True)
-
-    phi_old = basis_old.basis_val
-    nb_old = phi_old.shape[1]
-
-    basis.get_basis_val_grads(quad_pts, get_val=True)
-    phi = basis.basis_val
-    nb = phi.shape[1]
-
-    A = np.zeros([nb,nb_old])
-
-    # ------------------------------------------------------------------- #
-    # Example of Projection Matrix calculation using for-loops
-    # ------------------------------------------------------------------- #
-    #
-    # for i in range(nb):
-    #     for j in range(nb_old):
-    #         a = 0.
-    #         for iq in range(nq):
-    #             a += phi[iq,i]*phi_old[iq,j]*quad_wts[iq]
-    #         A[i,j] = a
-    #
-    # ------------------------------------------------------------------- #
-
-    A = np.matmul(phi.transpose(), phi_old*quad_wts) # [nb, nb_old]
-
-    PM = np.matmul(iMM,A) # [nb, nb_old]
-
-    return PM # [nb, nb_old]
-
-
 def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, 
         get_ijac=False):
     '''
