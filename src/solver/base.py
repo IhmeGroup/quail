@@ -170,36 +170,36 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
+	def get_interior_face_residual(self, int_face_ID, UpL, UpR, R_L, R_R):
 		'''
-		Calculates the surface integral for the internal faces
+		Calculates the surface integral for the interior faces
 		
 		Inputs:
 		-------
-			iiface: internal face index
+			interior_face: interior face object
 			UpL: solution array from left neighboring element
 			UpR: solution array from right neighboring element
 			
 		Outputs:
 		--------
-			RL: calculated residual array (left neighboring element 
+			R_L: calculated residual array (left neighboring element 
 			contribution)
-			RR: calculated residual array (right neighboring element 
+			R_R: calculated residual array (right neighboring element 
 			contribution)
 		'''
 		pass
 
 	@abstractmethod
-	def get_boundary_face_residual(self, bgroup_num, bface_ID, U, R):
+	def get_boundary_face_residual(self, bgroup, bface_ID, U, R):
 		'''
 		Calculates the residual from the surface integral for each boundary 
 		face
 
 		Inputs:
 		-------
-			bgroup_num: index of boundary group
+			bgroup: boundary group object
 			bface_ID: index of boundary face
-			U: solution array from internal element
+			U: solution array from adjacent element
 			
 		Outputs:
 		--------
@@ -350,27 +350,28 @@ class SolverBase(ABC):
 		Inputs:
 		-------
 			U: solution array
+			R: residual array
 			
 		Outputs:
 		--------
-			R: calculated residual array (includes all face contributions)
+			R: calculated residual array (includes all interior face 
+				contributions)
 		'''
 		mesh = self.mesh
 		physics = self.physics
 
-		for iiface in range(mesh.num_interior_faces):
-			IFace = mesh.interior_faces[iiface]
-			elemL = IFace.elemL_ID
-			elemR = IFace.elemR_ID
-			faceL_ID = IFace.faceL_ID
-			faceR_ID = IFace.faceR_ID
+		for int_face_ID in range(mesh.num_interior_faces):
+			interior_face = mesh.interior_faces[int_face_ID]
+			elemL_ID = interior_face.elemL_ID
+			elemR_ID = interior_face.elemR_ID
 
-			UL = U[elemL]
-			UR = U[elemR]
-			RL = R[elemL]
-			RR = R[elemR]
+			Uc_L = U[elemL_ID] # state coeffs of "left" element
+			Uc_R = U[elemR_ID] # state coeffs of "right" element
+			R_L = R[elemL_ID]
+			R_R = R[elemR_ID]
 
-			RL, RR = self.get_interior_face_residual(iiface, UL, UR, RL, RR)
+			R_L, R_R = self.get_interior_face_residual(int_face_ID, Uc_L, 
+					Uc_R, R_L, R_R)
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
@@ -380,10 +381,12 @@ class SolverBase(ABC):
 		Inputs:
 		-------
 			U: solution array
+			R: residual array
 			
 		Outputs:
 		--------
-			R: calculated residual array (includes all face contributions)
+			R: calculated residual array (includes all boundary face 
+				contributions)
 		'''
 		mesh = self.mesh
 		physics = self.physics

@@ -124,9 +124,9 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 
 		# normals
 		i = 0
-		for IFace in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_ID, 
-				IFace.faceL_ID, quad_pts)
+		for interior_face in mesh.interior_faces:
+			normals = mesh.gbasis.calculate_normals(mesh, interior_face.elemL_ID, 
+				interior_face.faceL_ID, quad_pts)
 			self.normals_ifaces[i] = normals
 			i += 1
 
@@ -165,16 +165,16 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
-		for BFG in mesh.boundary_groups.values():
-			self.normals_bfgroups.append(np.zeros([BFG.num_boundary_faces,nq,
+		for bgroup in mesh.boundary_groups.values():
+			self.normals_bfgroups.append(np.zeros([bgroup.num_boundary_faces,nq,
 					dim]))
-			self.x_bfgroups.append(np.zeros([BFG.num_boundary_faces,nq,dim]))
+			self.x_bfgroups.append(np.zeros([bgroup.num_boundary_faces,nq,dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
 			x_bfgroup = self.x_bfgroups[i]
 
 			# normals
 			j = 0
-			for boundary_face in BFG.boundary_faces:
+			for boundary_face in bgroup.boundary_faces:
 				nvec = mesh.gbasis.calculate_normals(mesh, 
 						boundary_face.elem_ID, boundary_face.face_ID, 
 						quad_pts)
@@ -440,7 +440,7 @@ class ADERDG(base.SolverBase):
 		if self.limiter is not None:
 			self.limiter.precompute_helpers(self)
 
-		physics.conv_flux_fcn.alloc_helpers(np.zeros([self.iface_helpers_st.
+		physics.conv_flux_fcn.alloc_helpers(np.zeros([self.int_face_helpers_st.
 			quad_wts.shape[0], physics.NUM_STATE_VARS]))
 
 		# Initialize state
@@ -480,8 +480,8 @@ class ADERDG(base.SolverBase):
 		self.elem_helpers = DG.ElemHelpers()
 		self.elem_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.iface_helpers = DG.InteriorFaceHelpers()
-		self.iface_helpers.compute_helpers(mesh, physics, basis, 
+		self.int_face_helpers = DG.InteriorFaceHelpers()
+		self.int_face_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
 		self.bface_helpers = DG.BoundaryFaceHelpers()
 		self.bface_helpers.compute_helpers(mesh, physics, basis,
@@ -491,8 +491,8 @@ class ADERDG(base.SolverBase):
 		self.elem_helpers_st = ElemHelpersADER()
 		self.elem_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
-		self.iface_helpers_st = InteriorFaceHelpersADER()
-		self.iface_helpers_st.compute_helpers(mesh, physics, basis_st,
+		self.int_face_helpers_st = InteriorFaceHelpersADER()
+		self.int_face_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
 		self.bface_helpers_st = BoundaryFaceHelpersADER()
 		self.bface_helpers_st.compute_helpers(mesh, physics, basis_st,
@@ -557,7 +557,6 @@ class ADERDG(base.SolverBase):
 		
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
-			TimePhiData = None
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
 					mesh, elem, self.time, self.Stepper.dt, 
 					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
@@ -574,42 +573,42 @@ class ADERDG(base.SolverBase):
 
 		return ER
 
-	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
-
+	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
 		mesh = self.mesh
 		physics = self.physics
-		IFace = mesh.interior_faces[iiface]
-		elemL = IFace.elemL_ID
-		elemR = IFace.elemR_ID
-		faceL_ID = IFace.faceL_ID
-		faceR_ID = IFace.faceR_ID
+		interior_face = mesh.interior_faces[int_face_ID]
+		elemL = interior_face.elemL_ID
+		elemR = interior_face.elemR_ID
+		faceL_ID = interior_face.faceL_ID
+		faceR_ID = interior_face.faceR_ID
 
+		# Convert 1D face numbering to "2D" face numbering
 		if faceL_ID == 0:
 			faceL_ID_st = 3
 		elif faceL_ID == 1:
 			faceL_ID_st = 1
 		else:
-			return IncompatibleError
+			return ValueError
 		if faceR_ID == 0:
 			faceR_ID_st = 3
 		elif faceR_ID == 1:
 			faceR_ID_st = 1
 		else:
-			return IncompatibleError
+			return ValueError
 
-		iface_helpers = self.iface_helpers
-		iface_helpers_st = self.iface_helpers_st
-		quad_wts_st = iface_helpers_st.quad_wts
+		int_face_helpers = self.int_face_helpers
+		int_face_helpers_st = self.int_face_helpers_st
+		quad_wts_st = int_face_helpers_st.quad_wts
 
-		faces_to_basisL = iface_helpers.faces_to_basisL
-		faces_to_basisR = iface_helpers.faces_to_basisR
+		faces_to_basisL = int_face_helpers.faces_to_basisL
+		faces_to_basisR = int_face_helpers.faces_to_basisR
 
-		faces_to_basisL_st = iface_helpers_st.faces_to_basisL
-		faces_to_basisR_st = iface_helpers_st.faces_to_basisR
+		faces_to_basisL_st = int_face_helpers_st.faces_to_basisL
+		faces_to_basisR_st = int_face_helpers_st.faces_to_basisR
 
-		UqL = iface_helpers.UqL
-		UqR = iface_helpers.UqR
-		Fq = iface_helpers.Fq
+		UqL = int_face_helpers.UqL
+		UqR = int_face_helpers.UqR
+		Fq = int_face_helpers.Fq
 
 		basis_valL = faces_to_basisL[faceL_ID]
 		basis_valR = faces_to_basisR[faceR_ID]
@@ -617,18 +616,18 @@ class ADERDG(base.SolverBase):
 		basis_valL_st = faces_to_basisL_st[faceL_ID_st]
 		basis_valR_st = faces_to_basisR_st[faceR_ID_st]
 
-		UqL = helpers.evaluate_state(UpL, basis_valL_st)
-		UqR = helpers.evaluate_state(UpR, basis_valR_st)
+		UqL = helpers.evaluate_state(Uc_L, basis_valL_st)
+		UqR = helpers.evaluate_state(Uc_R, basis_valR_st)
 
-		normals_ifaces = iface_helpers.normals_ifaces
-		normals = normals_ifaces[iiface]
+		normals_ifaces = int_face_helpers.normals_ifaces
+		normals = normals_ifaces[int_face_ID]
 
 		if self.params["ConvFluxSwitch"] == True:
 
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals) # [nq_st,ns]
-			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_L -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valL, quad_wts_st, Fq)
-			RR += solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_R += solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valR, quad_wts_st, Fq)
 
 		if elemL == echeck or elemR == echeck:
@@ -636,16 +635,16 @@ class ADERDG(base.SolverBase):
 			else: print("Right!")
 			code.interact(local=locals())
 
-		return RL, RR
+		return R_L, R_R
 
-	def get_boundary_face_residual(self, BFG, bface_ID, U, R):
+	def get_boundary_face_residual(self, bgroup, bface_ID, U, R):
 
 		mesh = self.mesh
 		dim = mesh.dim
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
-		bgroup_num = BFG.number
-		boundary_face = BFG.boundary_faces[bface_ID]
+		bgroup_num = bgroup.number
+		boundary_face = bgroup.boundary_faces[bface_ID]
 		elem = boundary_face.elem_ID
 		face = boundary_face.face_ID
 
@@ -664,6 +663,7 @@ class ADERDG(base.SolverBase):
 		UqB = bface_helpers_st.UqB
 		Fq = bface_helpers_st.Fq
 
+		# Convert 1D face ID to "2D" face ID
 		if face == 0:
 			face_st = 3
 		elif face == 1:
@@ -677,8 +677,6 @@ class ADERDG(base.SolverBase):
 
 		nq_st = quad_wts_st.shape[0]
 
-		TimePhiData = None
-
 		t = np.zeros([nq_st,dim])
 		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, self.time,
 				self.Stepper.dt, xref_st[:, -1:], self.elem_helpers_st.basis_time)
@@ -691,7 +689,7 @@ class ADERDG(base.SolverBase):
 		x = x_bfgroups[bgroup_num][bface_ID]
 
 		# Get boundary state
-		BC = physics.BCs[BFG.name]
+		BC = physics.BCs[bgroup.name]
 
 		if self.params["ConvFluxSwitch"] == True:
 			# loop over time to apply BC at each temporal quadrature point
@@ -789,8 +787,6 @@ class ADERDG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		params = self.params
 
-		InterpolateFluxADER = params["InterpolateFluxADER"]
-
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
 		djac_elems = elem_helpers.djac_elems 
@@ -802,8 +798,6 @@ class ADERDG(base.SolverBase):
 		ader_helpers = self.ader_helpers
 		x_elems_ader = ader_helpers.x_elems
 		x_ader = x_elems_ader[elem]
-
-		TimePhiData = None
 
 		if params["InterpolateFluxADER"]:
 			xnode = basis.get_nodes(order)

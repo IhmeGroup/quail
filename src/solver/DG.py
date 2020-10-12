@@ -358,9 +358,9 @@ class InteriorFaceHelpers(ElemHelpers):
 		
 		# normals
 		i = 0
-		for IFace in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_ID, 
-					IFace.faceL_ID, quad_pts)
+		for interior_face in mesh.interior_faces:
+			normals = mesh.gbasis.calculate_normals(mesh, 
+					interior_face.elemL_ID, interior_face.faceL_ID, quad_pts)
 			self.normals_ifaces[i] = normals
 			i += 1
 
@@ -476,17 +476,17 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			self.faces_to_basis[f] = basis.basis_val
 
 		i = 0
-		for BFG in mesh.boundary_groups.values():
-			self.normals_bfgroups.append(np.zeros([BFG.num_boundary_faces, 
+		for bgroup in mesh.boundary_groups.values():
+			self.normals_bfgroups.append(np.zeros([bgroup.num_boundary_faces, 
 					nq, dim]))
-			self.x_bfgroups.append(np.zeros([BFG.num_boundary_faces, 
+			self.x_bfgroups.append(np.zeros([bgroup.num_boundary_faces, 
 					nq, dim]))
 			normal_bfgroup = self.normals_bfgroups[i]
 			x_bfgroup = self.x_bfgroups[i]
 			
 			# normals
 			j = 0
-			for boundary_face in BFG.boundary_faces:
+			for boundary_face in bgroup.boundary_faces:
 
 				nvec = mesh.gbasis.calculate_normals(mesh, 
 						boundary_face.elem_ID, 
@@ -540,7 +540,7 @@ class DG(base.SolverBase):
 			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(
-				np.zeros([self.iface_helpers.quad_wts.shape[0], 
+				np.zeros([self.int_face_helpers.quad_wts.shape[0], 
 				physics.NUM_STATE_VARS]))
 
 		if params["RestartFile"] is None:
@@ -555,8 +555,8 @@ class DG(base.SolverBase):
 		self.elem_helpers = ElemHelpers()
 		self.elem_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.iface_helpers = InteriorFaceHelpers()
-		self.iface_helpers.compute_helpers(mesh, physics, basis, 
+		self.int_face_helpers = InteriorFaceHelpers()
+		self.int_face_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
 		self.bface_helpers = BoundaryFaceHelpers()
 		self.bface_helpers.compute_helpers(mesh, physics, basis, 
@@ -600,24 +600,24 @@ class DG(base.SolverBase):
 
 		return R_elem
 
-	def get_interior_face_residual(self, iiface, UpL, UpR, R_L, R_R):
+	def get_interior_face_residual(self, int_face_ID, UpL, UpR, R_L, R_R):
 		mesh = self.mesh
 		physics = self.physics
-		IFace = mesh.interior_faces[iiface]
-		elemL = IFace.elemL_ID
-		elemR = IFace.elemR_ID
-		faceL_ID = IFace.faceL_ID
-		faceR_ID = IFace.faceR_ID
+		interior_face = mesh.interior_faces[int_face_ID]
+		elemL = interior_face.elemL_ID
+		elemR = interior_face.elemR_ID
+		faceL_ID = interior_face.faceL_ID
+		faceR_ID = interior_face.faceR_ID
 
-		iface_helpers = self.iface_helpers
-		quad_pts = iface_helpers.quad_pts
-		quad_wts = iface_helpers.quad_wts
-		faces_to_basisL = iface_helpers.faces_to_basisL
-		faces_to_basisR = iface_helpers.faces_to_basisR
-		normals_ifaces = iface_helpers.normals_ifaces
-		UqL = iface_helpers.UqL
-		UqR = iface_helpers.UqR
-		Fq = iface_helpers.Fq
+		int_face_helpers = self.int_face_helpers
+		quad_pts = int_face_helpers.quad_pts
+		quad_wts = int_face_helpers.quad_wts
+		faces_to_basisL = int_face_helpers.faces_to_basisL
+		faces_to_basisR = int_face_helpers.faces_to_basisR
+		normals_ifaces = int_face_helpers.normals_ifaces
+		UqL = int_face_helpers.UqL
+		UqR = int_face_helpers.UqR
+		Fq = int_face_helpers.Fq
 
 		nq = quad_wts.shape[0]
 		basis_valL = faces_to_basisL[faceL_ID]
@@ -627,7 +627,7 @@ class DG(base.SolverBase):
 		UqL = helpers.evaluate_state(UpL, basis_valL)
 		UqR = helpers.evaluate_state(UpR, basis_valR)
 
-		normals = normals_ifaces[iiface]
+		normals = normals_ifaces[int_face_ID]
 		
 		if self.params["ConvFluxSwitch"] == True:
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals) # [nq,ns]
@@ -644,11 +644,11 @@ class DG(base.SolverBase):
 
 		return R_L, R_R
 
-	def get_boundary_face_residual(self, BFG, bface_ID, U, R_B):
+	def get_boundary_face_residual(self, bgroup, bface_ID, U, R_B):
 		mesh = self.mesh
 		physics = self.physics
-		bgroup_num = BFG.number
-		boundary_face = BFG.boundary_faces[bface_ID]
+		bgroup_num = bgroup.number
+		boundary_face = bgroup.boundary_faces[bface_ID]
 		elem_ID = boundary_face.elem_ID
 		face_ID = boundary_face.face_ID
 
@@ -672,7 +672,7 @@ class DG(base.SolverBase):
 		x = x_bfgroups[bgroup_num][bface_ID]
 
 		# get boundary state
-		BC = physics.BCs[BFG.name]
+		BC = physics.BCs[bgroup.name]
 
 		if self.params["ConvFluxSwitch"] == True:
 
