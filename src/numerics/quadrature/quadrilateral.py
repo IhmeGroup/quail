@@ -12,7 +12,7 @@ import numerics.quadrature.segment as qseg
 def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
     '''
     Calls the segment quadrature function to obtain quadrature points and 
-    weights and restructures them for quadrilateral shapes
+    restructures them for quadrilateral shapes using tensor products
 
     Inputs:
     ------- 
@@ -31,12 +31,12 @@ def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
     except:
     	fpts = None
 
-    # get quadrature points and weights for segment		
+    # Get quadrature points and weights for segment		
     qpts_seg, qwts_seg = qseg.get_quadrature_points_weights(order, quad_type, fpts)
 
-    # weights
+    # Weights
     qwts = np.reshape(np.outer(qwts_seg, qwts_seg), (-1,), 'F').reshape(-1, 1)
-    # points
+    # Points
     qpts = np.zeros([qwts.shape[0], 2])
     qpts[:, 0] = np.tile(qpts_seg, (qpts_seg.shape[0], 1)).reshape(-1)
     qpts[:, 1] = np.repeat(qpts_seg, qpts_seg.shape[0], axis=0).reshape(-1)

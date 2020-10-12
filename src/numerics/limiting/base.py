@@ -74,19 +74,19 @@ class LimiterBase(ABC):
 		pass
 
 	@abstractmethod
-	def limit_element(self, solver, elem_id, Uc):
+	def limit_element(self, solver, elem_ID, Uc):
 		'''
 		This method element-local solution
 
 		Inputs:
 		-------
 			solver: solver object
-			elem_id: element ID
+			elem_ID: element ID
 			Uc: state coefficients on element [nb, ns]
 		'''
 		pass
 
-	def limit_solution(self, solver, U):
+	def limit_solution(self, solver, Uc):
 		'''
 		This method limits the global solution
 
@@ -102,4 +102,4 @@ class LimiterBase(ABC):
 				[num_elems, nb, ns] (modified)
 		'''
 		for elem in range(solver.mesh.num_elems):
-			U[elem] = self.limit_element(solver, elem, U[elem])
+			Uc[elem] = self.limit_element(solver, elem, Uc[elem])

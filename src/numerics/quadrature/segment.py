@@ -3,21 +3,15 @@
 #       File : numerics/quadrature/segment.py
 #
 #       Contains functions to evaluate quadrature for segment shapes
-#
-#       Authors: Eric Ching and Brett Bornhoft
-#
-#       Created: January 2020
 #      
 # ------------------------------------------------------------------------ #
 import numpy as np
-# import math
-
 import general
 
 
 def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
     '''
-    Depending on the QuadratureType enum calculate the appropriate 
+    Depending on the general.QuadratureType enum, calculate the appropriate 
     function to obtain quadrature points and weights
 
     Inputs:
@@ -44,7 +38,7 @@ def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
 
 def get_quadrature_gauss_legendre(order):
     '''
-    Calculate the quadrature points and weights using Gauss Legendre rules
+    Calculate the quadrature points and weights using Gauss-Legendre rules
 
     Inputs:
     ------- 

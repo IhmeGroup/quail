@@ -9,7 +9,8 @@
 ''' Restart parameters '''
 Restart = {
     "File" : None,
-        # If file name provided (str), then will restart from said file
+        # If file name provided (str), then will restart from said data file
+        # (pickle format)
     "StartFromFileTime" : True
         # If True, then will restart from time saved in restart file
 }

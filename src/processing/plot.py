@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/processing/plot.py
+#
+#       Contains functions for plotting 1D and 2D solutions and meshes.
+#      
+# ------------------------------------------------------------------------ #
 import copy
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -235,9 +242,9 @@ def plot_2D_general(physics, x, var_plot, **kwargs):
 
 	''' Loop through elements '''
 	num_elems = x.shape[0]
-	for elem_id in range(num_elems):
+	for elem_ID in range(num_elems):
 		# Triangulate each element one-by-one
-		tris, utri = triangulate(physics, x[elem_id], var_plot[elem_id])
+		tris, utri = triangulate(physics, x[elem_ID], var_plot[elem_ID])
 		# Plot
 		plt.tricontourf(tris, utri, levels=levels, extend="both")
 		# Show triangulation if requested
@@ -469,9 +476,9 @@ def get_sample_points(mesh, physics, basis, equidistant=True):
 	basis.get_basis_val_grads(xref, True, False, False, None)
 
 	# Convert reference-space points to physical space
-	for elem_id in range(mesh.num_elems):
-		xphys = mesh_tools.ref_to_phys(mesh, elem_id, xref)
-		x[elem_id,:,:] = xphys
+	for elem_ID in range(mesh.num_elems):
+		xphys = mesh_tools.ref_to_phys(mesh, elem_ID, xref)
+		x[elem_ID,:,:] = xphys
 
 	return x
 
@@ -523,10 +530,10 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 			[num_elems, num_pts, 1]
 	'''
 	var_numer = np.zeros([x.shape[0], x.shape[1], 1])
-	for elem_id in range(x.shape[0]):
-		# Up = np.matmul(basis.basis_val, U[elem_id])
-		Uq = helpers.evaluate_state(U[elem_id], basis.basis_val)
-		var_numer[elem_id,:,:] = physics.compute_variable(var_name, Uq)
+	for elem_ID in range(x.shape[0]):
+		# Up = np.matmul(basis.basis_val, U[elem_ID])
+		Uq = helpers.evaluate_state(U[elem_ID], basis.basis_val)
+		var_numer[elem_ID,:,:] = physics.compute_variable(var_name, Uq)
 
 	return var_numer
 
@@ -585,19 +592,19 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 		# boundaries
 		for e in range(2):
 			if e == 0:
-				elem_id = interior_face.elemL_id
-				face_id = interior_face.faceL_id
+				elem_ID = interior_face.elemL_ID
+				face_ID = interior_face.faceL_ID
 			else:
-				elem_id = interior_face.elemR_id
-				face_id = interior_face.faceR_id
+				elem_ID = interior_face.elemR_ID
+				face_ID = interior_face.faceR_ID
 
 			# Get local node IDs on face
-			local_node_ids = gbasis.get_local_face_node_nums(mesh.gorder, 
-					face_id)
+			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder, 
+					face_ID)
 
 			# Get coordinates
-			elem = mesh.elements[elem_id]
-			coords = elem.node_coords[local_node_ids]
+			elem = mesh.elements[elem_ID]
+			coords = elem.node_coords[local_node_IDs]
 			if dim == 1:
 				x = np.full(2, coords[:, 0])
 			else:
@@ -612,16 +619,16 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	for boundary_group in mesh.boundary_groups.values():
 		for boundary_face in boundary_group.boundary_faces:
 			# Get adjacent element info
-			elem_id = boundary_face.elem_id
-			face_id = boundary_face.face_id
+			elem_ID = boundary_face.elem_ID
+			face_ID = boundary_face.face_ID
 
 			# Get local node IDs on face
-			local_node_ids = gbasis.get_local_face_node_nums(mesh.gorder, 
-					face_id)
+			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder, 
+					face_ID)
 
 			# Get coordinates
-			elem = mesh.elements[elem_id]
-			coords = elem.node_coords[local_node_ids]
+			elem = mesh.elements[elem_ID]
+			coords = elem.node_coords[local_node_IDs]
 			if dim == 1:
 				x = np.full(2, coords[:, 0])
 			else:
@@ -634,13 +641,13 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	If requested, plot element IDs at element centroids
 	'''
 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
-		for elem_id in range(mesh.num_elems):
-			xc = mesh_tools.get_element_centroid(mesh, elem_id)
+		for elem_ID in range(mesh.num_elems):
+			xc = mesh_tools.get_element_centroid(mesh, elem_ID)
 			if dim == 1:
 				yc = np.mean(y)
 			else:
 				yc = xc[0,1]
-			plt.text(xc[0,0], yc, str(elem_id))
+			plt.text(xc[0,0], yc, str(elem_ID))
 
 	# Labels, aspect ratio
 	plt.xlabel("$x$")

@@ -62,32 +62,33 @@ class PositivityPreserving(base.LimiterBase):
 
 	def precompute_helpers(self, solver):
 		# Unpack
-		elem_ops = solver.elem_operators
-		iface_ops = solver.iface_operators
+		elem_helpers = solver.elem_helpers
+		iface_helpers = solver.iface_helpers
 		self.elem_vols, _ = mesh_tools.element_volumes(solver.mesh, solver)
 
 		# Basis values in element interior and on faces
 		if not solver.basis.skip_interp:
-			basis_val_faces = iface_ops.faces_to_basisL.copy()
+			basis_val_faces = iface_helpers.faces_to_basisL.copy()
 			bshape = basis_val_faces.shape
 			basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-			self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
+			self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val, 
+					basis_val_faces))
 		else:
-			self.basis_val_elem_faces = elem_ops.basis_val
+			self.basis_val_elem_faces = elem_helpers.basis_val
 
 		# Jacobian determinant
-		self.djac_elems = elem_ops.djac_elems
+		self.djac_elems = elem_helpers.djac_elems
 
 		# Element quadrature weights
-		self.quad_wts_elem = elem_ops.quad_wts
+		self.quad_wts_elem = elem_helpers.quad_wts
 
-	def limit_element(self, solver, elem_id, Uc):
+	def limit_element(self, solver, elem_ID, Uc):
 		# Unpack
 		physics = solver.physics
-		elem_ops = solver.elem_operators
-		iface_ops = solver.iface_operators
+		elem_helpers = solver.elem_helpers
+		iface_helpers = solver.iface_helpers
 
-		djac = self.djac_elems[elem_id]
+		djac = self.djac_elems[elem_ID]
 
 		# Interpolate state at quadrature points over element and on faces
 		u_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces, 
@@ -97,7 +98,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		# Average value of state
 		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac, 
-				self.elem_vols[elem_id])
+				self.elem_vols[elem_ID])
 
 		# Density and pressure from averaged state
 		rho_bar = physics.compute_variable(self.var_name1, u_bar)
@@ -169,21 +170,21 @@ class PositivityPreservingChem(PositivityPreserving):
 		# self.djac_elems = np.zeros(0)
 
 	# def precompute_helpers(self, solver):
-	# 	elem_ops = solver.elem_operators
-	# 	iface_ops = solver.iface_operators
+	# 	elem_helpers = solver.elem_helpers
+	# 	iface_helpers = solver.iface_helpers
 	# 	_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
 
 	# 	# basis values in element interior and on faces
-	# 	basis_val_faces = iface_ops.faces_to_basisL.copy()
+	# 	basis_val_faces = iface_helpers.faces_to_basisL.copy()
 	# 	bshape = basis_val_faces.shape
 	# 	basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-	# 	self.basis_val_elem_faces = np.vstack((elem_ops.basis_val, basis_val_faces))
+	# 	self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val, basis_val_faces))
 
 	# 	# Jacobian determinant
-	# 	self.djac_elems = elem_ops.djac_elems
+	# 	self.djac_elems = elem_helpers.djac_elems
 
 	# 	# Element quadrature weights
-	# 	self.quad_wts_elem = elem_ops.quad_wts
+	# 	self.quad_wts_elem = elem_helpers.quad_wts
 
 	def limit_element(self, solver, elem, U):
 		'''
@@ -199,8 +200,8 @@ class PositivityPreservingChem(PositivityPreserving):
 			U: solution array
 		'''
 		physics = solver.physics
-		elem_ops = solver.elem_operators
-		iface_ops = solver.iface_operators
+		elem_helpers = solver.elem_helpers
+		iface_helpers = solver.iface_helpers
 
 		djac = self.djac_elems[elem]
 

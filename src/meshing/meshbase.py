@@ -18,20 +18,20 @@ class InteriorFace(object):
 
     Attributes:
     -----------
-    elemL_id : int
+    elemL_ID : int
         ID of "left" element
-    faceL_id : int
+    faceL_ID : int
         local ID of face from perspective of left element
-    elemR_id : int
+    elemR_ID : int
         ID of "right" element
-    faceR_id : int
+    faceR_ID : int
         local ID of face from perspective of right element
     '''
     def __init__(self):
-        self.elemL_id = 0 
-        self.faceL_id = 0 
-        self.elemR_id = 0 
-        self.faceR_id = 0 
+        self.elemL_ID = 0 
+        self.faceL_ID = 0 
+        self.elemR_ID = 0 
+        self.faceR_ID = 0 
 
 
 class BoundaryFace(object):
@@ -40,14 +40,14 @@ class BoundaryFace(object):
 
     Attributes:
     -----------
-    elem_id : int
+    elem_ID : int
         ID of adjacent element
-    face_id : int
+    face_ID : int
         local ID of face from perspective of adjacent element
     '''
     def __init__(self):
-        self.elem_id = 0 
-        self.face_id = 0 
+        self.elem_ID = 0 
+        self.face_ID = 0 
 
 
 class BoundaryGroup(object):
@@ -96,7 +96,7 @@ class Element(object):
     -----------
     id: int
         element ID
-    node_ids: numpy array
+    node_IDs: numpy array
         global IDs of the element nodes
     node_coords: numpy array
         coordinates of the element nodes [num_nodes, dim]
@@ -104,9 +104,9 @@ class Element(object):
         maps local face ID to element ID of 
         neighbor across said face [num_faces]
     '''
-    def __init__(self, elem_id=-1):
-        self.id = elem_id
-        self.node_ids = np.zeros(0, dtype=int)
+    def __init__(self, elem_ID=-1):
+        self.ID = elem_ID
+        self.node_IDs = np.zeros(0, dtype=int)
         self.node_coords = np.zeros(0)
         self.face_to_neighbors = np.zeros(0, dtype=int)
 
@@ -140,7 +140,7 @@ class Mesh(object):
         total number of elements in mesh
     num_nodes_per_elem : int
         number of nodes per element
-    elem_to_node_ids : numpy array
+    elem_to_node_IDs : numpy array
         maps element ID to global node IDs 
         [num_elems, num_nodes_per_elem]
     elements : list
@@ -150,8 +150,8 @@ class Mesh(object):
     ---------
     set_params
         sets certain mesh parameters
-    allocate_elem_to_node_ids_map
-        allocates self.elem_to_node_ids
+    allocate_elem_to_node_IDs_map
+        allocates self.elem_to_node_IDs
     allocate_interior_faces
         allocates self.interior_faces
     add_boundary_group
@@ -175,7 +175,7 @@ class Mesh(object):
         self.gorder = gorder
         self.num_elems = num_elems
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
-        self.elem_to_node_ids = np.zeros(0, dtype=int)
+        self.elem_to_node_IDs = np.zeros(0, dtype=int)
         self.elements = []
 
     def set_params(self, gbasis, gorder=1, num_elems=1):
@@ -198,24 +198,23 @@ class Mesh(object):
         self.gbasis = gbasis
         self.gorder = gorder
         self.num_elems = num_elems
-        # self.nFacePerElem = gbasis.nfaceperelem
         self.num_nodes_per_elem = gbasis.get_num_basis_coeff(gorder)
 
-    def allocate_elem_to_node_ids_map(self):
+    def allocate_elem_to_node_IDs_map(self):
         '''
-        This method allocates self.elem_to_node_ids
+        This method allocates self.elem_to_node_IDs
 
         Outputs:
         --------
-            self.elem_to_node_ids: maps element ID to global node IDs 
+            self.elem_to_node_IDs: maps element ID to global node IDs 
                 [num_elems, num_nodes_per_elem]
 
         Notes:
         ------
-            elem_to_node_ids[elem_id][i] = ith node of elem_id, 
-                where i = 1,2,...,num_nodes_per_elem
+            elem_to_node_IDs[elem_ID][i] = ith node of elem_ID, 
+                where i = 1, 2, ..., num_nodes_per_elem
         '''
-        self.elem_to_node_ids = np.zeros([self.num_elems,
+        self.elem_to_node_IDs = np.zeros([self.num_elems,
                 self.num_nodes_per_elem], dtype=int)
 
     def allocate_interior_faces(self):
@@ -226,7 +225,8 @@ class Mesh(object):
         --------
             self.interior_faces: list of InteriorFace objects
         '''
-        self.interior_faces = [InteriorFace() for i in range(self.num_interior_faces)]
+        self.interior_faces = [InteriorFace() for i in range(
+                self.num_interior_faces)]
 
     def add_boundary_group(self, bname):
         '''
@@ -259,27 +259,27 @@ class Mesh(object):
         --------
             self.elements: list of Element objects
         '''
-        # allocate
+        # Allocate
         self.elements = [Element() for i in range(self.num_elems)]
 
-        # fill in information for each element
-        for elem_id in range(self.num_elems):
-            elem = self.elements[elem_id]
+        # Fill in information for each element
+        for elem_ID in range(self.num_elems):
+            elem = self.elements[elem_ID]
 
-            elem.id = elem_id
-            elem.node_ids = self.elem_to_node_ids[elem_id]
-            elem.node_coords = self.node_coords[elem.node_ids]
+            elem.ID = elem_ID
+            elem.node_IDs = self.elem_to_node_IDs[elem_ID]
+            elem.node_coords = self.node_coords[elem.node_IDs]
             elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 
-        # fill in information about neighbors
+        # Fill in information about neighbors
         for int_face in self.interior_faces:
-            elemL_id = int_face.elemL_id
-            elemR_id = int_face.elemR_id
-            faceL_id = int_face.faceL_id
-            faceR_id = int_face.faceR_id
+            elemL_ID = int_face.elemL_ID
+            elemR_ID = int_face.elemR_ID
+            faceL_ID = int_face.faceL_ID
+            faceR_ID = int_face.faceR_ID
 
-            elemL = self.elements[elemL_id]
-            elemR = self.elements[elemR_id]
+            elemL = self.elements[elemL_ID]
+            elemR = self.elements[elemR_ID]
 
-            elemL.face_to_neighbors[faceL_id] = elemR_id
-            elemR.face_to_neighbors[faceR_id] = elemL_id
+            elemL.face_to_neighbors[faceL_ID] = elemR_ID
+            elemR.face_to_neighbors[faceR_ID] = elemL_ID

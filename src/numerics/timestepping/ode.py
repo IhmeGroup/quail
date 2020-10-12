@@ -47,7 +47,7 @@ class ODESolvers():
 		
 		Abstract Methods:
 		-----------------
-		TakeTimeStep
+		take_time_step
 			method that takes a given time step for the solver depending on 
 			the selected time-stepping scheme
 		'''
@@ -74,7 +74,7 @@ class ODESolvers():
 		# constant used to differentiate between BDF1 and Trapezoidal scheme
 		BETA = 1.0
 
-		def TakeTimeStep(self, solver):
+		def take_time_step(self, solver):
 
 			physics = solver.physics
 			mesh = solver.mesh
@@ -97,7 +97,7 @@ class ODESolvers():
 
 		def get_jacobian_matrix(self, mesh, solver):
 			'''
-			Calculates the jacobian matrix of the source term and its inverse for all elements
+			Calculates the Jacobian matrix of the source term and its inverse for all elements
 
 			Inputs:
 			-------
@@ -116,7 +116,7 @@ class ODESolvers():
 			Up = physics.U
 			ns = physics.NUM_STATE_VARS
 
-			iMM_elems = solver.elem_operators.iMM_elems
+			iMM_elems = solver.elem_helpers.iMM_elems
 			
 			A = np.zeros([mesh.num_elems, nb, nb, ns])
 			iA = np.zeros([mesh.num_elems, nb, nb, ns])
@@ -129,8 +129,8 @@ class ODESolvers():
 
 		def get_jacobian_matrix_elem(self, solver, elem, iMM, Up):
 			'''
-			Calculates the jacobian matrix of the source term and its 
-			inverse for each element. Definition of 'jacobian' matrix:
+			Calculates the Jacobian matrix of the source term and its 
+			inverse for each element. Definition of 'Jacobian' matrix:
 
 			A = I - BETA*dt*iMM^{-1}*dRdU
 
@@ -150,22 +150,22 @@ class ODESolvers():
 			physics = solver.physics
 			source_terms = physics.source_terms
 
-			elem_ops = solver.elem_operators
-			basis_val = elem_ops.basis_val
-			quad_wts = elem_ops.quad_wts
-			x_elems = elem_ops.x_elems
+			elem_helpers = solver.elem_helpers
+			basis_val = elem_helpers.basis_val
+			quad_wts = elem_helpers.quad_wts
+			x_elems = elem_helpers.x_elems
 			x = x_elems[elem]
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
 			Uq = np.matmul(basis_val, Up)
 
-			# evaluate the source term jacobian [nq, ns, ns]
-			jac = np.zeros([nq,ns,ns])
-			jac = physics.eval_source_term_jacobians(Uq, x, solver.time, jac) 
+			# evaluate the source term Jacobian [nq, ns, ns]
+			Sjac = np.zeros([nq,ns,ns])
+			Sjac = physics.eval_source_term_jacobians(Uq, x, solver.time, Sjac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
-			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)
+			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem, Sjac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
 					np.einsum('ij,jkl->ijl',iMM,dRdU)
@@ -187,5 +187,5 @@ class ODESolvers():
 		''' 
 		BETA = 0.5 
 
-		def TakeTimeStep(self, solver):
-			super().TakeTimeStep(solver)
+		def take_time_step(self, solver):
+			super().take_time_step(solver)

@@ -18,12 +18,12 @@ mesh = MeshGmsh.import_gmsh_mesh("mesh_v2.msh")
 # code.interact(local=locals())
 
 # Test "random" 1D mesh
-# mesh.elem_to_node_ids[1,:] = np.array([1,2])
+# mesh.elem_to_node_IDs[1,:] = np.array([1,2])
 # MeshTools.RandomizeNodes(mesh)
-mesh.interior_faces[0].elemL_id = 1
-mesh.interior_faces[0].elemR_id = 0
-mesh.interior_faces[0].faceL_id = 0
-mesh.interior_faces[0].faceR_id = 1
+mesh.interior_faces[0].elemL_ID = 1
+mesh.interior_faces[0].elemR_ID = 0
+mesh.interior_faces[0].faceL_ID = 0
+mesh.interior_faces[0].faceR_ID = 1
 # code.interact(local=locals())
 
 ### Solver parameters
@@ -45,8 +45,8 @@ physics.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 
 # Boundary conditions
 # if not Periodic:
-# 	for ibfgrp in range(mesh.num_boundary_groups):
-# 		BFG = mesh.boundary_groups[ibfgrp]
+# 	for bgroup_num in range(mesh.num_boundary_groups):
+# 		BFG = mesh.boundary_groups[bgroup_num]
 # 		if BFG.Name is "x1":
 # 			physics.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 # 		elif BFG.Name is "x2":

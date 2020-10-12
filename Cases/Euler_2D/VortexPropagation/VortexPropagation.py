@@ -41,28 +41,28 @@ def RandomizeElements(mesh):
     if np.min(new_elem_order) == -1:
         raise ValueError
 
-    mesh.elem_to_node_ids = mesh.elem_to_node_ids[new_elem_order]
+    mesh.elem_to_node_IDs = mesh.elem_to_node_IDs[new_elem_order]
     elements_old = copy.deepcopy(mesh.elements)
     for e in range(mesh.num_elems):
     	mesh.elements[e] = elements_old[new_elem_order[e]]
 
     for iface in mesh.interior_faces:
-    	iface.elemL_id = old_to_new_elem[iface.elemL_id]
-    	iface.elemR_id = old_to_new_elem[iface.elemR_id]
+    	iface.elemL_ID = old_to_new_elem[iface.elemL_ID]
+    	iface.elemR_ID = old_to_new_elem[iface.elemR_ID]
 
     for boundary_group in mesh.boundary_groups.values():
     	for bface in boundary_group.boundary_faces:
-    		bface.elem_id = old_to_new_elem[bface.elem_id]
+    		bface.elem_ID = old_to_new_elem[bface.elem_ID]
 
 
     # Assign new node IDs
     # mesh.node_coords = mesh.node_coords[new_to_old_node_map]
 
-    # # New elem_to_node_ids
+    # # New elem_to_node_IDs
     # num_elems = mesh.num_elems
-    # for elem_id in range(num_elems):
-    #     mesh.elem_to_node_ids[elem_id,:] = old_to_new_node_map[
-    #             mesh.elem_to_node_ids[elem_id, :]]
+    # for elem_ID in range(num_elems):
+    #     mesh.elem_to_node_IDs[elem_ID,:] = old_to_new_node_map[
+    #             mesh.elem_to_node_IDs[elem_ID, :]]
 
     print("Randomized elements")
 

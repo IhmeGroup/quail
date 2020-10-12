@@ -2,8 +2,7 @@
 #
 #       File : src/numerics/timestepping/stepper.py
 #
-#       Contains class definitions for timestepping methods available 
-#		in the DG Python framework.
+#       Contains class definitions for timestepping methods.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
@@ -22,8 +21,7 @@ import solver.tools as solver_tools
 
 class StepperBase(ABC):
 	'''
-	This is an abstract base class used to represent time stepping schemes
-	in the DG Python framework. The current build supports the following time
+	This is an abstract base class used to represent time stepping schemes. The current build supports the following time
 	schemes:
 
 		Explicit Schemes:
@@ -48,8 +46,8 @@ class StepperBase(ABC):
 
 	Attributes:
 	-----------
-	R: numpy array of floats (shape : [nelem, nb, ns])
-		solution's residaul array
+	R: numpy array [num_elems, nb, ns]
+		residual array
 	dt: float
 		time-step for the solution
 	num_time_steps: int
@@ -57,12 +55,12 @@ class StepperBase(ABC):
 	get_time_step: method
 		method to obtain dt given input decks logic (CFL-based vs # of 
 		timesteps, etc...)
-	balance_const: numpy array of floats (shaped like R)
+	balance_const: numpy array (shaped like R)
 		balancing constant array used only with the Simpler splitting scheme
 	
 	Abstract Methods:
 	-----------------
-	TakeTimeStep
+	take_time_step
 		method that takes a given time step for the solver depending on the 
 		selected time-stepping scheme
 	'''
@@ -78,7 +76,7 @@ class StepperBase(ABC):
 			self=self)
 	
 	@abstractmethod
-	def TakeTimeStep(self, solver):
+	def take_time_step(self, solver):
 		'''
 		Takes a time step using the specified time-stepping scheme for the
 		solution.
@@ -89,8 +87,8 @@ class StepperBase(ABC):
 
 		Outputs:
 		-------- 
-			R: Updated residual vector [nelem, nb, ns]
-			U: Updates the solution vector [nelem, nb, ns]
+			R: Updated residual vector [num_elems, nb, ns]
+			U: Updates the solution vector [num_elems, nb, ns]
 		'''
 		pass
 
@@ -102,8 +100,7 @@ class FE(StepperBase):
 
 	Additional methods and attributes are commented below.
 	''' 
-	def TakeTimeStep(self, solver):
-
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = physics.U
@@ -115,7 +112,7 @@ class FE(StepperBase):
 
 		solver.apply_limiter(U)
 
-		return R # [nelem, nb, ns]
+		return R # [num_elems, nb, ns]
 
 
 class RK4(StepperBase):
@@ -125,33 +122,33 @@ class RK4(StepperBase):
 
 	Additional methods and attributes are commented below.
 	''' 
-	def TakeTimeStep(self, solver):
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = physics.U
 
 		R = self.R
 
-		# first stage
+		# First stage
 		R = solver.get_residual(U, R)
 		dU1 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU1
 		solver.apply_limiter(Utemp)
 
-		# second stage
+		# Second stage
 		solver.time += self.dt/2.
 		R = solver.get_residual(Utemp, R)
 		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + 0.5*dU2
 		solver.apply_limiter(Utemp)
 
-		# third stage
+		# Third stage
 		R = solver.get_residual(Utemp, R)
 		dU3 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
 		Utemp = U + dU3
 		solver.apply_limiter(Utemp)
 
-		# fourth stage
+		# Fourth stage
 		solver.time += self.dt/2.
 		R = solver.get_residual(Utemp, R)
 		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
@@ -159,7 +156,7 @@ class RK4(StepperBase):
 		U += dU
 		solver.apply_limiter(U)
 
-		return R # [nelem, nb, ns]
+		return R # [num_elems, nb, ns]
 
 
 class LSRK4(StepperBase):
@@ -167,6 +164,10 @@ class LSRK4(StepperBase):
 	Low storage 4th-order Runge Kutta (RK4) method inherits attributes from 
 	StepperBase. See StepperBase for detailed comments of methods and 
 	attributes.
+
+	Reference:
+
+	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta schemes,"" NASA Report TM 109112, NASA Langley Research Center, 1994.
 
 	Additional methods and attributes are commented below.
 	''' 
@@ -185,7 +186,7 @@ class LSRK4(StepperBase):
 			number of stages in scheme
 		dU: numpy array
 			change in solution array in each stage
-				(shape: [nelem, nb, ns])
+				(shape: [num_elems, nb, ns])
 		'''
 		self.rk4a = np.array([0.0, -567301805773.0/1357537059087.0, 
 		    -2404267990393.0/2016746695238.0, 
@@ -203,7 +204,7 @@ class LSRK4(StepperBase):
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
-	def TakeTimeStep(self, solver):
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = physics.U
@@ -212,19 +213,19 @@ class LSRK4(StepperBase):
 		dU = self.dU
 
 		Time = solver.time
-		for INTRK in range(self.nstages):
+		for istage in range(self.nstages):
 			dt = self.dt
-			solver.time = Time + self.rk4c[INTRK]*dt
+			solver.time = Time + self.rk4c[istage]*dt
 			R = solver.get_residual(U, R)
 
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
-			dU *= self.rk4a[INTRK]
+			dU *= self.rk4a[istage]
 			dU += dUtemp
 
-			U += self.rk4b[INTRK]*dU
+			U += self.rk4b[istage]*dU
 			solver.apply_limiter(U)
 
-		return R # [nelem, nb, ns]
+		return R # [num_elems, nb, ns]
 
 
 class SSPRK3(StepperBase):
@@ -235,7 +236,7 @@ class SSPRK3(StepperBase):
 
 	Reference: 
 
-	Spiteri, R.J. and Ruuth, S.. "A new class of optimal high-order 
+	R. J. Spiteri, S., Ruuth, "A new class of optimal high-order 
 	strong-stability-preserving time discrtization methods". SIAM Journal on 
 	Numerical Analysis. Vol. 2, Num. 2, pp. 469-491. 2002
 
@@ -254,16 +255,16 @@ class SSPRK3(StepperBase):
 			number of stages in scheme
 		dU: numpy array
 			change in solution array in each stage
-				(shape: [nelem, nb, ns])
+				(shape: [num_elems, nb, ns])
 		'''
 		self.ssprk3a = np.array([0.0, -2.60810978953486, -0.08977353434746, 
-			-0.60081019321053, -0.72939715170280])
+				-0.60081019321053, -0.72939715170280])
 		self.ssprk3b = np.array([0.67892607116139, 0.20654657933371, 
-			0.27959340290485, 0.31738259840613, 0.30319904778284])
+				0.27959340290485, 0.31738259840613, 0.30319904778284])
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
-	def TakeTimeStep(self, solver):
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = physics.U
@@ -272,18 +273,18 @@ class SSPRK3(StepperBase):
 		dU = self.dU
 
 		Time = solver.time
-		for INTRK in range(self.nstages):
+		for istage in range(self.nstages):
 			dt = self.dt
 			solver.time = Time + dt
 			R = solver.get_residual(U, R)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
-			dU *= self.ssprk3a[INTRK]
+			dU *= self.ssprk3a[istage]
 			dU += dUtemp
 
-			U += self.ssprk3b[INTRK]*dU
+			U += self.ssprk3b[istage]*dU
 			solver.apply_limiter(U)
 
-		return R # [nelem, nb, ns]
+		return R # [num_elems, nb, ns]
 
 
 class ADER(StepperBase):
@@ -294,16 +295,14 @@ class ADER(StepperBase):
 
 	Reference: 
 
-	Dumbser, M., Enaux, C., and Toro, E.F.."Finite volume schemes of very 
+	Dumbser, M., Enaux, C., and Toro, E.F., "Finite volume schemes of very 
 	high order of accuracy for stiff hyperbolic balance laws". Journal of 
 	Computational Physics. Vol. 227, Num. 8, pp. 3971 - 4001, 2008.
 
 	Additional methods and attributes are commented below. Additional 
-	information on the ADER scheme can be found in the Prototyping section 
-	in the supplemental documentation.
+	information on the ADER scheme can be found in the documentation.
 	''' 	
-	def TakeTimeStep(self, solver):
-
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
 		W = physics.U
@@ -322,7 +321,7 @@ class ADER(StepperBase):
 		W += dU
 		solver.apply_limiter(W)
 
-		return R # [nelem, nb, ns]
+		return R # [num_elems, nb, ns]
 
 
 class Strang(StepperBase, ode.ODESolvers):
@@ -348,7 +347,7 @@ class Strang(StepperBase, ode.ODESolvers):
 		    explicit: name of chosen explicit scheme from params
 		    implicit: name of chosen implicit (ODE) solver from params
 		    U: solution state vector used to initialize solver 
-		    	[nelem, nb, ns]
+		    	[num_elems, nb, ns]
 
 		Outputs:
 		-------- 
@@ -366,8 +365,7 @@ class Strang(StepperBase, ode.ODESolvers):
 		else:
 			raise NotImplementedError("Time scheme not supported")
 
-	def TakeTimeStep(self, solver):
-
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
 		U = physics.U
@@ -379,20 +377,20 @@ class Strang(StepperBase, ode.ODESolvers):
 
 		# First: take the half-step for the inviscid flux only
 		solver.params["SourceSwitch"] = False
-		R1 = explicit.TakeTimeStep(solver)
+		R1 = explicit.take_time_step(solver)
 
 		# Second: take the implicit full step for the source term.
 		solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
 
-		R2 = implicit.TakeTimeStep(solver)
+		R2 = implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
 		solver.params["SourceSwitch"] = False
 		solver.params["ConvFluxSwitch"] = True
-		R3 = explicit.TakeTimeStep(solver)
+		R3 = explicit.take_time_step(solver)
 
-		return R3 # [nelem, nb, ns]
+		return R3 # [num_elems, nb, ns]
 
 
 class Simpler(Strang):
@@ -408,8 +406,7 @@ class Simpler(Strang):
 
 	Additional methods and attributes are commented below.
 	''' 	
-	def TakeTimeStep(self, solver):
-
+	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
 		U = physics.U
@@ -432,12 +429,12 @@ class Simpler(Strang):
 		# Second: take the implicit full step for the source term.
 		solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
-		R2 = implicit.TakeTimeStep(solver)
+		R2 = implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
 		solver.params["SourceSwitch"] = False
 		solver.params["ConvFluxSwitch"] = True
 		self.balance_const = balance_const
-		R3 = explicit.TakeTimeStep(solver)
+		R3 = explicit.take_time_step(solver)
 
-		return R3 # [nelem, nb, ns]
+		return R3 # [num_elems, nb, ns]

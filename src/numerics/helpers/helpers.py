@@ -36,7 +36,9 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 	-------
 	    Uc: state coefficients [nb, sr]
 	    basis_val: basis values [nq, nb]
-	    skip_interp: if True, then will simply copy the state coefficients
+	    skip_interp: if True, then will simply copy the state coefficients;
+	    	useful for a colocated scheme, i.e. quadrature points and 
+	    	solution nodes (for a nodal basis) are the same
 
 	Outputs:
 	--------

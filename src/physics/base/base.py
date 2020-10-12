@@ -455,6 +455,7 @@ class PhysicsBase(ABC):
 			idx: index of state variable (int)
 		'''
 		idx = self.state_indices[var_name]
+
 		return idx
 
 	def get_state_slice(self, var_name):
@@ -470,6 +471,7 @@ class PhysicsBase(ABC):
 			slc: slice corresponding to state variable
 		'''
 		slc = self.state_slices[var_name]
+
 		return slc
 
 	def get_quadrature_order(self, order):
@@ -615,4 +617,20 @@ class PhysicsBase(ABC):
 		return varq
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		'''
+		This method computes a variable that is not a state variable.
+
+		Inputs:
+		-------
+			var_name: name of variable to compute
+			Uq: values of the state variables (typically at the quadrature
+				points) [nq, ns]
+			flag_non_physical: if True, will raise an error if a
+				non-physical quantity is computed, e.g., negative pressure
+				for the Euler equations
+
+		Outputs:
+		--------
+			varq: values of the given variable [nq, 1]
+		'''
 		pass

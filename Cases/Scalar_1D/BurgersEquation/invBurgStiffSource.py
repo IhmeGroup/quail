@@ -60,8 +60,8 @@ if Velocity >= 0.:
 else:
 	Inflow = "x2"; Outflow = "x1"
 if not Periodic:
-	for ibfgrp in range(mesh.num_boundary_groups):
-		BC = physics.BCs[ibfgrp]
+	for bgroup_num in range(mesh.num_boundary_groups):
+		BC = physics.BCs[bgroup_num]
 		## Left
 		if BC.Name is Inflow:
 			BC.Set(Function=physics.FcnScalarShock, BCType=physics.BCType["StateAll"], uL = 1., uR = 0., xshock = 0.3)

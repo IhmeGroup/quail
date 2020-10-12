@@ -2,8 +2,7 @@
 #
 #       File : src/numerics/solver/DG.py
 #
-#       Contains class definitions for the DG solver available in the 
-#		DG Python framework.
+#       Contains class definitions for the DG solver.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
@@ -54,15 +53,15 @@ class ElemHelpers(object):
 	gbasis_val: numpy array
 		stores the evaluated geometric basis function
 	jac_elems: numpy array
-		stores the evaluated geometric jacobian for each element
+		stores the evaluated geometric Jacobian for each element
 	ijac_elems: numpy array
-		stores the evaluated inverse of the geometric jacobian for each 
+		stores the evaluated inverse of the geometric Jacobian for each 
 		element
 	djac_elems: numpy array
-		stores the evaluated determinant of the geometric jacobian for 
+		stores the evaluated determinant of the geometric Jacobian for 
 		each element
 	x_elems: numpy array
-		physical coordinates of quadrature points
+		physical coordinates of quadrature points for each element
 	Uq: numpy array
 		solution state vector evaluated at the quadrature points
 	Fq: numpy array
@@ -82,12 +81,12 @@ class ElemHelpers(object):
 		precomputes the quadrature points and weights for the given 
 		quadrature type
 	get_basis_and_geom_data
-		precomputes the element's basis function, it's gradients,
-		geometric jacobian info, and volume
+		precomputes the element's basis function, its gradients,
+		geometric Jacobian info, and volume
 	alloc_other_arrays
 		allocate the solution, flux, and source vectors that are evaluated
 		at the quadrature points
-	compute_operators
+	compute_helpers
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
@@ -147,11 +146,11 @@ class ElemHelpers(object):
 				reference element [nq, nb, dim]
 			self.basis_phys_grad_elems: precomputed basis gradient for each 
 				physical element [num_elems, nq, nb, dim]
-			self.jac_elems: precomputed jacobian for each element 
+			self.jac_elems: precomputed Jacobian for each element 
 				[num_elems, nq, dim, dim]
-			self.ijac_elems: precomputed inverse jacobian for each element
+			self.ijac_elems: precomputed inverse Jacobian for each element
 				[num_elems, nq, dim, dim]
-			self.djac_elems: precomputed determinant of the jacobian for each
+			self.djac_elems: precomputed determinant of the Jacobian for each
 				element [num_elems, nq, 1]
 			self.x_elems: precomputed coordinates of the quadrature points
 				in physical space [num_elems, nq, dim]
@@ -176,24 +175,24 @@ class ElemHelpers(object):
 		self.basis_val = basis.basis_val 
 		self.basis_ref_grad = basis.basis_ref_grad 
 
-		for elem in range(mesh.num_elems):
-			# jacobian
-			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem,
+		for elem_ID in range(mesh.num_elems):
+			# Jacobian
+			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID,
 					quad_pts, get_djac=True, get_jac=True, get_ijac=True)
-			# store
-			self.jac_elems[elem] = jac
-			self.ijac_elems[elem] = ijac
-			self.djac_elems[elem] = djac
+			# Store
+			self.jac_elems[elem_ID] = jac
+			self.ijac_elems[elem_ID] = ijac
+			self.djac_elems[elem_ID] = djac
 
-			# physical coordinates of quadrature points
-			x = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
-			# store
-			self.x_elems[elem] = x
-			# physical gradient
+			# Physical coordinates of quadrature points
+			x = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
+			# Store
+			self.x_elems[elem_ID] = x
+			# Physical gradient
 			basis.get_basis_val_grads(quad_pts, get_phys_grad=True, 
 					ijac=ijac)
-			self.basis_phys_grad_elems[elem] = basis.basis_phys_grad  
-			# [nq,nb,dim]
+			self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad  
+				# [nq,nb,dim]
 
 		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)
 
@@ -218,7 +217,7 @@ class ElemHelpers(object):
 		self.Fq = np.zeros([nq, ns, dim])
 		self.Sq = np.zeros([nq, ns])  
 
-	def compute_operators(self, mesh, physics, basis, order):
+	def compute_helpers(self, mesh, physics, basis, order):
 		'''
 		Calls the functions to precompute the necessary helper data
 
@@ -282,7 +281,7 @@ class InteriorFaceHelpers(ElemHelpers):
 	alloc_other_arrays
 		allocate the solution and flux vectors that are evaluated
 		at the quadrature points
-	compute_operators
+	compute_helpers
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
@@ -360,8 +359,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		# normals
 		i = 0
 		for IFace in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_id, 
-					IFace.faceL_id, quad_pts)
+			normals = mesh.gbasis.calculate_normals(mesh, IFace.elemL_ID, 
+					IFace.faceL_ID, quad_pts)
 			self.normals_ifaces[i] = normals
 			i += 1
 
@@ -374,7 +373,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.UqR = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
-	def compute_operators(self, mesh, physics, basis, order):
+	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
@@ -422,7 +421,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 	alloc_other_arrays
 		allocate the solution and flux vectors that are evaluated
 		at the quadrature points
-	compute_operators
+	compute_helpers
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
@@ -490,13 +489,13 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			for boundary_face in BFG.boundary_faces:
 
 				nvec = mesh.gbasis.calculate_normals(mesh, 
-						boundary_face.elem_id, 
-						boundary_face.face_id, quad_pts)
+						boundary_face.elem_ID, 
+						boundary_face.face_ID, quad_pts)
 				normal_bfgroup[j] = nvec
 
 				# physical coordinates of quadrature points
-				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_id, 
-						self.faces_to_xref[boundary_face.face_id])
+				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID, 
+						self.faces_to_xref[boundary_face.face_ID])
 				# store
 				x_bfgroup[j] = x
 
@@ -513,7 +512,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqB = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
-	def compute_operators(self, mesh, physics, basis, order):
+	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
@@ -532,49 +531,48 @@ class DG(base.SolverBase):
 		self.Stepper = stepper_tools.set_stepper(params, physics.U)
 		stepper_tools.set_time_stepping_approach(self.Stepper, params)
 	
-		# check validity of parameters
+		# Check validity of parameters
 		self.check_compatibility()
 		
-		# precompute operators
-		self.precompute_matrix_operators()
+		# Precompute helpers
+		self.precompute_matrix_helpers()
 		if self.limiter is not None:
 			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(
-				np.zeros([self.iface_operators.quad_wts.shape[0], 
+				np.zeros([self.iface_helpers.quad_wts.shape[0], 
 				physics.NUM_STATE_VARS]))
 
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()
 		
-	def precompute_matrix_operators(self):
+	def precompute_matrix_helpers(self):
 
 		mesh = self.mesh 
 		physics = self.physics
 		basis = self.basis
 
-		self.elem_operators = ElemHelpers()
-		self.elem_operators.compute_operators(mesh, physics, basis, 
+		self.elem_helpers = ElemHelpers()
+		self.elem_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.iface_operators = InteriorFaceHelpers()
-		self.iface_operators.compute_operators(mesh, physics, basis, 
+		self.iface_helpers = InteriorFaceHelpers()
+		self.iface_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.bface_operators = BoundaryFaceHelpers()
-		self.bface_operators.compute_operators(mesh, physics, basis, 
+		self.bface_helpers = BoundaryFaceHelpers()
+		self.bface_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
 
-	def get_element_residual(self, elem, Up, ER):
-
+	def get_element_residual(self, elem_ID, Up, R_elem):
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		dim = physics.DIM
-		elem_ops = self.elem_operators
-		basis_val = elem_ops.basis_val
-		quad_wts = elem_ops.quad_wts
+		elem_helpers = self.elem_helpers
+		basis_val = elem_helpers.basis_val
+		quad_wts = elem_helpers.quad_wts
 
-		x_elems = elem_ops.x_elems
+		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
-		x = x_elems[elem]
+		x = x_elems[elem_ID]
 
 		# interpolate state and gradient at quad points
 		Uq = helpers.evaluate_state(Up, basis_val, 
@@ -583,48 +581,47 @@ class DG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq) # [nq, ns, dim]
-			ER += solver_tools.calculate_inviscid_flux_volume_integral(
-					self, elem_ops, elem, Fq)
+			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+					self, elem_helpers, elem_ID, Fq)
 
 		if self.params["SourceSwitch"] == True:
 			# evaluate the source term integral
-			Sq = elem_ops.Sq
+			Sq = elem_helpers.Sq
 			# eval_source_terms is an additive function so source needs to be 
 			# initialized to zero for each time step
 			Sq[:] = 0.
 			Sq = physics.eval_source_terms(Uq, x, self.time, Sq) # [nq, ns]
 
-			ER += solver_tools.calculate_source_term_integral(elem_ops, 
-					elem, Sq)
+			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, 
+					elem_ID, Sq)
 
-		if elem == echeck:
+		if elem_ID == echeck:
 			code.interact(local=locals())
 
-		return ER
+		return R_elem
 
-	def get_interior_face_residual(self, iiface, UpL, UpR, RL, RR):
-
+	def get_interior_face_residual(self, iiface, UpL, UpR, R_L, R_R):
 		mesh = self.mesh
 		physics = self.physics
 		IFace = mesh.interior_faces[iiface]
-		elemL = IFace.elemL_id
-		elemR = IFace.elemR_id
-		faceL_id = IFace.faceL_id
-		faceR_id = IFace.faceR_id
+		elemL = IFace.elemL_ID
+		elemR = IFace.elemR_ID
+		faceL_ID = IFace.faceL_ID
+		faceR_ID = IFace.faceR_ID
 
-		iface_ops = self.iface_operators
-		quad_pts = iface_ops.quad_pts
-		quad_wts = iface_ops.quad_wts
-		faces_to_basisL = iface_ops.faces_to_basisL
-		faces_to_basisR = iface_ops.faces_to_basisR
-		normals_ifaces = iface_ops.normals_ifaces
-		UqL = iface_ops.UqL
-		UqR = iface_ops.UqR
-		Fq = iface_ops.Fq
+		iface_helpers = self.iface_helpers
+		quad_pts = iface_helpers.quad_pts
+		quad_wts = iface_helpers.quad_wts
+		faces_to_basisL = iface_helpers.faces_to_basisL
+		faces_to_basisR = iface_helpers.faces_to_basisR
+		normals_ifaces = iface_helpers.normals_ifaces
+		UqL = iface_helpers.UqL
+		UqR = iface_helpers.UqR
+		Fq = iface_helpers.Fq
 
 		nq = quad_wts.shape[0]
-		basis_valL = faces_to_basisL[faceL_id]
-		basis_valR = faces_to_basisR[faceR_id]
+		basis_valL = faces_to_basisL[faceL_ID]
+		basis_valR = faces_to_basisR[faceR_ID]
 
 		# interpolate state and gradient at quad points
 		UqL = helpers.evaluate_state(UpL, basis_valL)
@@ -633,12 +630,11 @@ class DG(base.SolverBase):
 		normals = normals_ifaces[iiface]
 		
 		if self.params["ConvFluxSwitch"] == True:
-
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals) # [nq,ns]
 
-			RL -= solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_L -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valL, quad_wts, Fq)
-			RR += solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_R += solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valR, quad_wts, Fq)
 
 		if elemL == echeck or elemR == echeck:
@@ -646,35 +642,34 @@ class DG(base.SolverBase):
 			else: print("Right!")
 			code.interact(local=locals())
 
-		return RL, RR
+		return R_L, R_R
 
-	def get_boundary_face_residual(self, BFG, ibface, U, R):
-
+	def get_boundary_face_residual(self, BFG, bface_ID, U, R_B):
 		mesh = self.mesh
 		physics = self.physics
-		ibfgrp = BFG.number
-		boundary_face = BFG.boundary_faces[ibface]
-		elem = boundary_face.elem_id
-		face = boundary_face.face_id
+		bgroup_num = BFG.number
+		boundary_face = BFG.boundary_faces[bface_ID]
+		elem_ID = boundary_face.elem_ID
+		face_ID = boundary_face.face_ID
 
-		bface_ops = self.bface_operators
-		quad_pts = bface_ops.quad_pts
-		quad_wts = bface_ops.quad_wts
-		faces_to_basis = bface_ops.faces_to_basis
-		normals_bfgroups = bface_ops.normals_bfgroups
-		x_bfgroups = bface_ops.x_bfgroups
-		UqI = bface_ops.UqI
-		UqB = bface_ops.UqB
-		Fq = bface_ops.Fq
+		bface_helpers = self.bface_helpers
+		quad_pts = bface_helpers.quad_pts
+		quad_wts = bface_helpers.quad_wts
+		faces_to_basis = bface_helpers.faces_to_basis
+		normals_bfgroups = bface_helpers.normals_bfgroups
+		x_bfgroups = bface_helpers.x_bfgroups
+		UqI = bface_helpers.UqI
+		UqB = bface_helpers.UqB
+		Fq = bface_helpers.Fq
 
 		nq = quad_wts.shape[0]
-		basis_val = faces_to_basis[face]
+		basis_val = faces_to_basis[face_ID]
 
 		# interpolate state and gradient at quad points
 		UqI = helpers.evaluate_state(U, basis_val)
 
-		normals = normals_bfgroups[ibfgrp][ibface]
-		x = x_bfgroups[ibfgrp][ibface]
+		normals = normals_bfgroups[bgroup_num][bface_ID]
+		x = x_bfgroups[bgroup_num][bface_ID]
 
 		# get boundary state
 		BC = physics.BCs[BFG.name]
@@ -683,10 +678,10 @@ class DG(base.SolverBase):
 
 			Fq = BC.get_boundary_flux(physics, UqI, normals, x, self.time)
 
-			R -= solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)
 
-		if elem == echeck:
+		if elem_ID == echeck:
 			code.interact(local=locals())
 
-		return R
+		return R_B

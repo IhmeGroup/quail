@@ -675,7 +675,7 @@ class SlipWall(BCWeakPrescribed):
 class PressureOutlet(BCWeakPrescribed):
 	'''
 	This class corresponds to an outflow boundary condition with static
-	pressure prescribed.
+	pressure prescribed. See documentation for more details.
 
 	Attributes:
 	-----------
@@ -1047,9 +1047,9 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		evals = self.evals 
 
-		evals[:,0:1] = velRoe[:,0:1] - c
-		evals[:,1:2] = velRoe[:,0:1]
-		evals[:,-1:] = velRoe[:,0:1] + c
+		evals[:, 0:1] = velRoe[:, 0:1] - c
+		evals[:, 1:2] = velRoe[:, 0:1]
+		evals[:, -1:] = velRoe[:, 0:1] + c
 
 		return evals 
 

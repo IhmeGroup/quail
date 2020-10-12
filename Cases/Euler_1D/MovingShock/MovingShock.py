@@ -41,8 +41,8 @@ physics.set_IC(IC_type="MovingShock", M=M, xshock=xshock)
 physics.set_exact(exact_type="MovingShock", M=M, xshock = xshock)
 
 # Boundary conditions
-# for ibfgrp in range(mesh.num_boundary_groups):
-# 	BFG = mesh.boundary_groups[ibfgrp]
+# for bgroup_num in range(mesh.num_boundary_groups):
+# 	BFG = mesh.boundary_groups[bgroup_num]
 # 	if BFG.Name is "x1":
 # 		physics.set_BC(BC_type="StateAll", fcn_type="MovingShock", M=M, xshock=xshock)
 # 	elif BFG.Name is "x2":

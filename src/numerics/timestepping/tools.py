@@ -2,18 +2,20 @@
 #
 #       File : src/numerics/timestepping/tools.py
 #
-#       Contains helper functions for the stepper class
+#       Contains helper functions for the stepper class.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import math
 import numpy as np 
 
-from general import StepperType, ODESolverType
-from solver.tools import mult_inv_mass_matrix
+from general import StepperType
+
 import numerics.basis.tools as basis_tools
 import numerics.timestepping.stepper as stepper_defs
+
 import solver.tools as solver_tools
+
 
 def set_stepper(params, U):
 	'''
@@ -22,27 +24,27 @@ def set_stepper(params, U):
 	Inputs:
 	-------
 		params: list of parameters for solver
-		U: solution vector for instantiaing stepper class [nelem, nb, ns]
+		U: solution vector for instantiaing stepper class [num_elems, nb, ns]
 
 	Outputs:
 	-------- 
 	    stepper: instantiated stepper object
 	'''
-	TimeStepper = params["TimeStepper"]
-	if StepperType[TimeStepper] == StepperType.FE:
+	time_stepper = params["TimeStepper"]
+	if StepperType[time_stepper] == StepperType.FE:
 		stepper = stepper_defs.FE(U)
-	elif StepperType[TimeStepper] == StepperType.RK4:
+	elif StepperType[time_stepper] == StepperType.RK4:
 		stepper = stepper_defs.RK4(U)
-	elif StepperType[TimeStepper] == StepperType.LSRK4:
+	elif StepperType[time_stepper] == StepperType.LSRK4:
 		stepper = stepper_defs.LSRK4(U)
-	elif StepperType[TimeStepper] == StepperType.SSPRK3:
+	elif StepperType[time_stepper] == StepperType.SSPRK3:
 		stepper = stepper_defs.SSPRK3(U)
 	# if setting a splitting scheme select solvers for the splits
-	elif StepperType[TimeStepper] == StepperType.Strang:
+	elif StepperType[time_stepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
 			params["OperatorSplittingImplicit"], U)
-	elif StepperType[TimeStepper] == StepperType.Simpler:
+	elif StepperType[time_stepper] == StepperType.Simpler:
 		stepper = stepper_defs.Simpler(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
 			params["OperatorSplittingImplicit"], U)
@@ -162,8 +164,8 @@ def get_dt_from_cfl(stepper, solver):
 	tfinal = solver.params["FinalTime"]
 	cfl = solver.params["CFL"]
 	
-	elem_ops = solver.elem_operators
-	vol_elems = elem_ops.vol_elems
+	elem_helpers = solver.elem_helpers
+	vol_elems = elem_helpers.vol_elems
 	a = np.zeros([mesh.num_elems,Up.shape[1],1])
 
 	# get the maximum wave speed per element

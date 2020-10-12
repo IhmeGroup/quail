@@ -32,9 +32,6 @@ import processing.readwritedatafiles as ReadWriteDataFiles
 
 import solver.tools as solver_tools
 
-global echeck
-echeck = -1
-
 
 class SolverBase(ABC):
 	'''
@@ -59,7 +56,7 @@ class SolverBase(ABC):
 
     Abstract Methods:
     -----------------
-    precompute_matrix_operators
+    precompute_matrix_helpers
     	precomputes a variety of functions and methods prior to running the
     	simulation
     get_element_residual
@@ -142,18 +139,19 @@ class SolverBase(ABC):
 		# compatibility check for forcing nodes equal to quadrature points
 		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
 			raise errors.IncompatibleError
-		if ( QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
-			QuadratureType[face_quad] != QuadratureType.GaussLobatto ) \
+		if (QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
+			QuadratureType[face_quad] != QuadratureType.GaussLobatto) \
 			and forcing_switch:
 			raise errors.IncompatibleError
 
 	@abstractmethod
-	def precompute_matrix_operators(self):
+	def precompute_matrix_helpers(self):
 		'''
 		Precomputes element and face helper functions that only need to be
 		computed at the beginning of the simulation.
 		'''
 		pass
+
 	@abstractmethod
 	def get_element_residual(self, elem, Up, ER):
 		'''
@@ -192,15 +190,15 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_face_residual(self, ibfgrp, ibface, U, R):
+	def get_boundary_face_residual(self, bgroup_num, bface_ID, U, R):
 		'''
 		Calculates the residual from the surface integral for each boundary 
 		face
 
 		Inputs:
 		-------
-			ibfgrp: index of BC group
-			ibface: index of boundary face
+			bgroup_num: index of boundary group
+			bface_ID: index of boundary face
 			U: solution array from internal element
 			
 		Outputs:
@@ -219,7 +217,7 @@ class SolverBase(ABC):
 		physics = self.physics
 		basis = self.basis
 		params = self.params
-		iMM_elems = self.elem_operators.iMM_elems
+		iMM_elems = self.elem_helpers.iMM_elems
 
 		U = physics.U
 		ns = physics.NUM_STATE_VARS
@@ -262,7 +260,7 @@ class SolverBase(ABC):
 		physics = self.physics
 		basis = self.basis
 		params = self.params
-		iMM_elems = self.elem_operators.iMM_elems
+		iMM_elems = self.elem_helpers.iMM_elems
 
 		U = physics.U
 		ns = physics.NUM_STATE_VARS
@@ -362,10 +360,10 @@ class SolverBase(ABC):
 
 		for iiface in range(mesh.num_interior_faces):
 			IFace = mesh.interior_faces[iiface]
-			elemL = IFace.elemL_id
-			elemR = IFace.elemR_id
-			faceL_id = IFace.faceL_id
-			faceR_id = IFace.faceR_id
+			elemL = IFace.elemL_ID
+			elemR = IFace.elemR_ID
+			faceL_ID = IFace.faceL_ID
+			faceR_ID = IFace.faceR_ID
 
 			UL = U[elemL]
 			UR = U[elemR]
@@ -392,12 +390,12 @@ class SolverBase(ABC):
 
 		for BFG in mesh.boundary_groups.values():
 
-			for ibface in range(BFG.num_boundary_faces):
-				boundary_face = BFG.boundary_faces[ibface]
-				elem = boundary_face.elem_id
-				face = boundary_face.face_id
+			for bface_ID in range(BFG.num_boundary_faces):
+				boundary_face = BFG.boundary_faces[bface_ID]
+				elem = boundary_face.elem_ID
+				face = boundary_face.face_ID
 
-				R[elem] = self.get_boundary_face_residual(BFG, ibface,
+				R[elem] = self.get_boundary_face_residual(BFG, bface_ID,
 						U[elem], R[elem])
 
 
@@ -429,7 +427,7 @@ class SolverBase(ABC):
 
 			Stepper.dt = Stepper.get_time_step(Stepper, self)
 			# integrate in time
-			R = Stepper.TakeTimeStep(self)
+			R = Stepper.take_time_step(self)
 
 			# Increment time
 			t += Stepper.dt
