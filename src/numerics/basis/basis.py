@@ -817,7 +817,7 @@ class LagrangeSeg(BasisBase, SegShape):
         if p > 0:
             xnodes = self.get_1d_nodes(-1., 1., p+1)
             basis_tools.get_lagrange_basis_1D(quad_pts, xnodes, 
-                    gphi=basis_ref_grad)
+                    basis_ref_grad=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -914,7 +914,7 @@ class LagrangeQuad(BasisBase, QuadShape):
         if p > 0:
             xnodes = self.get_1d_nodes(-1., 1., p + 1)
             basis_tools.get_lagrange_basis_2D(quad_pts, xnodes, 
-                    gphi=basis_ref_grad)
+                    basis_ref_grad=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -1080,7 +1080,7 @@ class LegendreSeg(BasisBase, SegShape):
 
         if p > 0:
             basis_tools.get_legendre_basis_1D(quad_pts, p, 
-                    gphi=basis_ref_grad)
+                    basis_ref_grad=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 
@@ -1124,7 +1124,7 @@ class LegendreQuad(BasisBase, QuadShape):
 
         if p > 0:
             basis_tools.get_legendre_basis_2D(quad_pts, p, 
-                    gphi=basis_ref_grad)
+                    basis_ref_grad=basis_ref_grad)
 
         return basis_ref_grad # [nq, nb, dim]
 

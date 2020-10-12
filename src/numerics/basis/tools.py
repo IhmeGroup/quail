@@ -146,16 +146,16 @@ def get_inv_mass_matrices(mesh, physics, basis):
 
     iMM_all = np.zeros([mesh.num_elems, nb, nb])
 
-    for elem in range(mesh.num_elems):
+    for elem_ID in range(mesh.num_elems):
         # Calculate the inv mass matrix in physical space
-        iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
+        iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem_ID, True)
         # Store
-        iMM_all[elem] = iMM
+        iMM_all[elem_ID] = iMM
 
     return iMM_all # [mesh.num_elems, nb, nb]
 
 
-def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, 
+def get_elem_inv_mass_matrix(mesh, basis, order, elem_ID=-1, 
         physical_space=False):
     '''
     Calculate the inverse mass matrix for a given element
@@ -165,7 +165,7 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1,
         mesh: mesh object
         basis: basis function object
         order: solution order
-        elem: [OPTIONAL] element index
+        elem_ID: [OPTIONAL] element index
         physical_space: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space})
 
@@ -173,14 +173,15 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1,
     -------- 
         iMM: inverse mass matrix [nb, nb]
     '''
-    MM = get_elem_mass_matrix(mesh, basis, order, elem, physical_space)
+    MM = get_elem_mass_matrix(mesh, basis, order, elem_ID, physical_space)
     
     iMM = np.linalg.inv(MM) 
 
     return iMM # [nb, nb]
 
 
-def get_elem_mass_matrix(mesh, basis, order, elem=-1, physical_space=False):
+def get_elem_mass_matrix(mesh, basis, order, elem_ID=-1, 
+        physical_space=False):
     '''
     Calculate the mass matrix for a given element
 
@@ -189,7 +190,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, physical_space=False):
         mesh: mesh object
         basis: basis function object
         order: solution order [int]
-        elem: [OPTIONAL] element index [int]
+        elem_ID: [OPTIONAL] element index [int]
         physical_space: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space}) 
 
@@ -208,10 +209,11 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, physical_space=False):
 
     nq = quad_pts.shape[0]
 
+    # Compute basis values
     basis.get_basis_val_grads(quad_pts, get_val=True)
 
     if physical_space:
-        djac, _, _ = element_jacobian(mesh, elem, quad_pts, get_djac=True)
+        djac, _, _ = element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
 
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
@@ -225,7 +227,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, physical_space=False):
     return MM # [nb, nb]
 
 
-def get_stiffness_matrix(solver, mesh, order, elem):
+def get_stiffness_matrix(solver, mesh, order, elem_ID):
     '''
     Calculate the stiffness matrix
 
@@ -234,17 +236,18 @@ def get_stiffness_matrix(solver, mesh, order, elem):
         solver: instance of solver object
         mesh: instance of mesh object
         order: solution order
-        elem: element index
+        elem_ID: element index
 
     Outputs:
     -------- 
         SM: stiffness matrix # [nb, nb]
     '''
+    # Unpack
     quad_pts = solver.elem_operators.quad_pts
     quad_wts = solver.elem_operators.quad_wts
-    djac = solver.elem_operators.djac_elems[elem]
+    djac = solver.elem_operators.djac_elems[elem_ID]
     basis_val = solver.elem_operators.basis_val
-    basis_grad = solver.elem_operators.basis_phys_grad_elems[elem]
+    basis_grad = solver.elem_operators.basis_phys_grad_elems[elem_ID]
 
     # ------------------------------------------------------------------- #
     # Example of Stiffness Matrix calculation using for-loops
@@ -256,11 +259,11 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     # SM = np.zeros([nb, nb])
     # for i in range(nb):
     #     for j in range(nb):
-    #         t = 0.
+    #         a = 0.
     #         for iq in range(nq):
-    #             t += basis_grad[iq,i,0]*basis_val[iq,j]*quad_wts[iq]* \
+    #             a += basis_grad[iq, i, 0]*basis_val[iq, j]*quad_wts[iq]* \
     #                 djac[iq]
-    #         SM[i,j] = t
+    #         SM[i,j] = a
     #
     # ------------------------------------------------------------------- #
     SM = np.matmul(basis_grad[:, :, 0].transpose(), basis_val*quad_wts*djac) 
@@ -269,7 +272,7 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     return SM # [nb, nb]
 
 
-def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, 
+def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False, 
         get_ijac=False):
     '''
     Evaluate the geometric Jacobian for a specified element
@@ -277,9 +280,9 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False,
     Inputs:
     -------
         mesh: mesh object 
-        elem: element index
+        elem_ID: element index
         quad_pts: coordinates of quadrature points
-        get_djac: [OPTIONAL]flag to calculate Jacobian determinant 
+        get_djac: [OPTIONAL] flag to calculate Jacobian determinant 
             (Default: False)
         get_jac: [OPTIONAL] flag to calculate Jacobian (Default: False)
         get_ijac: [OPTIONAL] flag to calculate inverse of the Jacobian 
@@ -291,42 +294,35 @@ def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False,
         jac: Jacobian [nq, dim, dim]
         ijac: inverse Jacobian [nq, dim, dim]
     '''
-    basis = mesh.gbasis
-    order = mesh.gorder
-    nb = basis.nb
-    dim = basis.DIM
+    gbasis = mesh.gbasis
+    dim = gbasis.DIM
 
     nq = quad_pts.shape[0]
 
-    if dim != dim: Resize = True
-    else: Resize = False
-
-    basis_phys_grad = basis.get_grads(quad_pts) # [nq, nb, dim]
+    # Gradients in reference space
+    basis_ref_grad = gbasis.get_grads(quad_pts) # [nq, nb, dim]
     
     if dim != mesh.dim:
         raise Exception("Dimensions don't match")
 
-    jac = np.zeros([nq,dim,dim])
-    djac = np.zeros([nq,1])
-    ijac = np.zeros([nq,dim,dim])
+    elem_coords = mesh.elements[elem_ID].node_coords
 
-    A = np.zeros([dim,dim])
+    # Compute Jacobian
+    jac = np.tensordot(basis_ref_grad, elem_coords.transpose(),
+            axes=[[1], [1]]).transpose((0, 2, 1))
 
-    elem_coords = mesh.elements[elem].node_coords
-
-    jac = np.tensordot(basis_phys_grad, elem_coords.transpose(), \
-            axes=[[1],[1]]).transpose((0,2,1))
-
-    for i in range(nq):
-        MatDetInv(jac[i], dim, djac[i], ijac[i])
+    # Get inverse and determinant
+    ijac = np.linalg.inv(jac)
+    djac = np.linalg.det(jac).reshape(-1, 1)
  
-    if get_djac and np.any(djac[i] <= 0.):
-        raise Exception("Nonpositive Jacobian (elem = %d)" % (elem))
+    # Check for nonpositive Jacobian
+    if get_djac and np.any(djac <= 0.):
+        raise Exception("Nonpositive Jacobian (elem_ID = %d)" % (elem_ID))
 
     return djac, jac, ijac # [nq, 1], [nq, dim, dim], and [nq, dim, dim]
 
 
-def calculate_1D_normals(mesh, elem, face, quad_pts):
+def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
 
     '''
     Calculate the normals for a 1D face
@@ -334,95 +330,98 @@ def calculate_1D_normals(mesh, elem, face, quad_pts):
     Inputs:
     -------
         mesh: mesh object
-        elem: element index
-        face: face index
+        elem_ID: element index
+        face_ID: face index
         quad_pts: points in reference space at which to calculate normals
 
     Outputs:
     --------
-        nvec: normal vector [nq, dim]
+        normals: normal vector [nq, dim]
     '''
-    gorder = mesh.gorder
     nq = quad_pts.shape[0]
 
-    if gorder == 1:
-        nq = 1
+    # nq should be 1
+    # if nq != 1:
+    #     raise ValueError
 
-    nvec = np.zeros([nq,mesh.dim])
+    normals = np.zeros([nq, mesh.dim])
     
-    #1D normals calculation
-    if face == 0:
-        nvec[0] = -1.
-    elif face == 1:
-        nvec[0] = 1.
+    # 1D normals calculation
+    if face_ID == 0:
+        normals[0] = -1.
+    elif face_ID == 1:
+        normals[0] = 1.
     else:
         raise ValueError
 
-    return nvec # [nq, dim]
+    return normals # [nq, dim]
 
     
-def calculate_2D_normals(mesh, elem, face, quad_pts):
+def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
     '''
-    Calculate the normals for 2D shapes
+    Calculate the normals for 2D shapes (triangles and quadrilaterals).
 
     Inputs:
     -------
         mesh: mesh object
-        elem: element index 
-        face: face index
+        elem_ID: element index 
+        face_ID: face index
         quad_pts: points in reference space at which to calculate normals
 
     Outputs:
     --------
-        nvec: normal vector [nq, dim]
+        normals: normal vector [nq, dim]
     '''
     gbasis = mesh.gbasis
     gorder = mesh.gorder
+    elem_coords = mesh.elements[elem_ID].node_coords
 
-    # Calculate 2D normals
-    ElemNodes = mesh.elem_to_node_IDs[elem]
-    elem_coords = mesh.elements[elem].node_coords
-
-    fnodes = gbasis.get_local_face_node_nums(gorder, face)
-
+    ''' Get face coordinates '''
+    # Get local IDs of face nodes
+    fnodes = gbasis.get_local_face_node_nums(gorder, face_ID)
+    # Instantiate segment basis
     basis_seg = basis_defs.LagrangeSeg(gorder)
+    # Compute basis values
     basis_ref_grad = basis_seg.get_grads(quad_pts)
+    # Extract coordinates of face nodes
     face_coords = elem_coords[fnodes]
 
-    x_s = np.matmul(face_coords.transpose(), basis_ref_grad)[:, :, 0]
-    nvec = x_s[:,::-1]
-    nvec[:,1] *= -1.
+    ''' Calculate 2D normals '''
+    xphys_grad = np.matmul(face_coords.transpose(), basis_ref_grad)[:, 
+            :, 0] # gradient of physical space w.r.t ref space
+    normals = xphys_grad[:, ::-1]
+    normals[:, 1] *= -1.
 
-    return nvec # [nq, dim]
+    return normals # [nq, dim]
 
 
-def get_lagrange_basis_1D(x, xnodes, phi=None, gphi=None):
+def get_lagrange_basis_1D(xq, xnodes, basis_val=None, basis_ref_grad=None):
     '''
     Calculates the 1D Lagrange basis functions
 
     Inputs:
     -------
-        x: coordinate of current node [nq, 1]
+        xq: coordinates of quadrature points [nq, 1]
         xnodes: coordinates of nodes in 1D ref space [nb, 1] 
         
     Outputs:
     -------- 
-        phi: evaluated basis [nq, nb]
-        gphi: evaluated physical gradient of basis [nq, nb, dim]
+        basis_val: evaluated basis [nq, nb]
+        basis_ref_grad: evaluated gradient of basis [nq, nb, dim]
     '''
     nnodes = xnodes.shape[0]
     mask = np.ones(nnodes, bool)
 
-    if phi is not None:
-        phi[:] = 1.
+    if basis_val is not None:
+        basis_val[:] = 1.
         for j in range(nnodes):
             mask[j] = False
-            phi[:,j] = np.prod((x - xnodes[mask])/(xnodes[j] - xnodes[mask]),
-                    axis=1)
+            basis_val[:,j] = np.prod((xq - xnodes[mask])/(xnodes[j] - xnodes[
+                    mask]), axis=1)
             mask[j] = True
 
-    if gphi is not None:
-        gphi[:] = 0.
+    if basis_ref_grad is not None:
+        basis_ref_grad[:] = 0.
 
         for j in range(nnodes):
             mask[j] = False
@@ -432,85 +431,87 @@ def get_lagrange_basis_1D(x, xnodes, phi=None, gphi=None):
 
                 mask[i] = False
                 if nnodes > 2: 
-                    gphi[:,j,:] += np.prod((x - xnodes[mask])/(xnodes[j] - 
-                            xnodes[mask]), axis=1).reshape(-1,1)/(xnodes[j] -
-                            xnodes[i])
+                    basis_ref_grad[:,j,:] += np.prod((xq - xnodes[mask])/(
+                            xnodes[j] - xnodes[mask]), axis=1).reshape(-1, 
+                            1)/(xnodes[j] - xnodes[i])
                 else:
-                    gphi[:,j,:] += 1./(xnodes[j] - xnodes[i])
+                    basis_ref_grad[:,j,:] += 1./(xnodes[j] - xnodes[i])
 
                 mask[i] = True
             mask[j] = True
 
 
-def get_lagrange_basis_2D(x, xnodes, phi=None, gphi=None):
+def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
     '''
     Calculates the 2D Lagrange basis functions
 
     Inputs:
     -------
-        x: coordinate of current node [nq, dim]
+        xq: coordinates of quadrature points [nq, dim]
         xnodes: coordinates of nodes in 1D ref space [nb, dim]
         
     Outputs:
     -------- 
-        phi: evaluated basis [nq, nb]
-        gphi: evaluated gradient of basis [nq, nb, dim]
+        basis_val: evaluated basis [nq, nb]
+        basis_ref_grad: evaluated gradient of basis [nq, nb, dim]
     '''
-    if gphi is not None:
-        gphix = np.zeros((x.shape[0], xnodes.shape[0], 1))
-        gphiy = np.zeros_like(gphix)
+    if basis_ref_grad is not None:
+        gradx = np.zeros((xq.shape[0], xnodes.shape[0], 1))
+        grady = np.zeros_like(gradx)
     else:
-        gphix = None; gphiy = None
-    # Always need phi
-    phix = np.zeros((x.shape[0], xnodes.shape[0]))
-    phiy = np.zeros_like(phix)
+        gradx = None; grady = None
+    # Always need basis_val
+    valx = np.zeros((xq.shape[0], xnodes.shape[0]))
+    valy = np.zeros_like(valx)
 
+    # Get 1D basis values first
     nnodes_1D = xnodes.shape[0]
     lagrange_eq_seg = basis_defs.LagrangeSeg(nnodes_1D-1)
-    get_lagrange_basis_1D(x[:, 0].reshape(-1, 1), xnodes, phix, gphix)
-    get_lagrange_basis_1D(x[:, 1].reshape(-1, 1), xnodes, phiy, gphiy)
+    get_lagrange_basis_1D(xq[:, 0].reshape(-1, 1), xnodes, valx, gradx)
+    get_lagrange_basis_1D(xq[:, 1].reshape(-1, 1), xnodes, valy, grady)
 
-    if phi is not None:
-        for i in range(x.shape[0]):
-            phi[i, :] = np.reshape(np.outer(phix[i, :], \
-                    phiy[i, :]), (-1, ), 'F')
-    if gphi is not None:
-        for i in range(x.shape[0]):
-            gphi[i, :, 0] = np.reshape(np.outer(gphix[i, :, 0], \
-                    phiy[i, :]), (-1, ), 'F')
-            gphi[i, :, 1] = np.reshape(np.outer(phix[i, :], \
-                    gphiy[i, :, 0]), (-1, ), 'F')
+    # Tensor products to get 2D basis values
+    if basis_val is not None:
+        for i in range(xq.shape[0]):
+            basis_val[i, :] = np.reshape(np.outer(valx[i, :],
+                    valy[i, :]), (-1, ), 'F')
+    if basis_ref_grad is not None:
+        for i in range(xq.shape[0]):
+            basis_ref_grad[i, :, 0] = np.reshape(np.outer(gradx[i, :, 0],
+                    valy[i, :]), (-1, ), 'F')
+            basis_ref_grad[i, :, 1] = np.reshape(np.outer(valx[i, :],
+                    grady[i, :, 0]), (-1, ), 'F')
 
 
-def get_lagrange_basis_tri(x, p, xn, phi):
+def get_lagrange_basis_tri(xq, p, xnodes, basis_val):
     '''
     Calculates the value for Lagrange triangle basis function
 
     Inputs:
     -------
-        x: coordinate of quadrature points [nq, dim]
+        xq: coordinate of quadrature points [nq, dim]
         p: polynomial solution order
-        xn: coordinates of nodes in 1D equidistant ref space 
+        xnodes: coordinates of nodes in 1D equidistant ref space 
             [nb, dim]
         
     Outputs:
     -------- 
-        phi: evaluated basis [nq, nb]
+        basis_val: evaluated basis [nq, nb]
     '''
-    nb = xn.shape[0]
+    nb = xnodes.shape[0]
 
-    alpha = np.round(p*xn)
+    alpha = np.round(p*xnodes)
     alpha = np.c_[(p*np.ones(nb) - np.sum(alpha, axis=1), alpha)]
-    l = np.c_[(np.ones(x.shape[0]) - np.sum(x, axis=1)), x]
+    l = np.c_[(np.ones(xq.shape[0]) - np.sum(xq, axis=1)), xq]
 
     if p == 0:
-        phi[:] = 1.
+        basis_val[:] = 1.
         return 
 
     for i in range(nb):
-        phi[:,i] = get_tri_area_coordinates(p, alpha[i], l)
+        basis_val[:, i] = get_tri_area_coordinates(p, alpha[i], l)
 
-    return phi # [nq, nb]
+    return basis_val # [nq, nb]
 
 
 def get_tri_area_coordinates(p, alpha, l):
@@ -526,7 +527,7 @@ def get_tri_area_coordinates(p, alpha, l):
     return N
 
 
-def get_eta_function(p, alpha, l, skip = -1):
+def get_eta_function(p, alpha, l, skip=-1):
     '''
     Helper function for Lagrange triangular basis
     '''
@@ -545,43 +546,44 @@ def get_grad_eta_function(p, alpha, l):
     '''
     get_a = np.zeros_like(l)
     for i in range(int(alpha)):
-        get_a += ( p / (i + 1)) * get_eta_function(p, alpha, l, i)
+        get_a += (p / (i + 1)) * get_eta_function(p, alpha, l, i)
 
     return get_a
 
 
-def get_lagrange_grad_tri(x, p, xn, gphi):
+def get_lagrange_grad_tri(xq, p, xnodes, basis_ref_grad):
     '''
-    Calculates the gradient of the triangular basis functions 
+    Calculates the gradient of the Lagrange triangular basis functions 
 
     Inputs:
     -------
-        x: coordinate of quadrature points [nq, dim]
+        xq: coordinate of quadrature points [nq, dim]
         p: polynomial solution order
-        xn: coordinates of nodes in 1D equidistant ref space 
+        xnodes: coordinates of nodes in 1D equidistant ref space 
             [nb, dim]
         
     Outputs:
     -------- 
-        gphi: evaluated gradient of basis function [nq, nb, dim]
+        basis_ref_grad: evaluated gradient of basis function [nq, nb, dim]
     '''
-    nb = xn.shape[0]
-    gphi_dir = np.zeros((x.shape[0], nb, 3))
+    nb = xnodes.shape[0]
+    grad_dir = np.zeros((xq.shape[0], nb, 3))
 
-    alpha = np.round(p*xn)
+    alpha = np.round(p*xnodes)
     alpha = np.c_[(p*np.ones(nb) - np.sum(alpha, axis=1), alpha)]
-    l = np.c_[(np.ones(x.shape[0]) - np.sum(x, axis=1)), x]
+    l = np.c_[(np.ones(xq.shape[0]) - np.sum(xq, axis=1)), xq]
 
     if p == 0:
-        gphi[:] = 0.
+        basis_ref_grad[:] = 0.
         return 
     for i in range(nb):
-        gphi_dir[:,i,:] = get_tri_grad_area_coordinates(p, alpha[i], l)
+        grad_dir[:, i, :] = get_tri_grad_area_coordinates(p, alpha[i], l)
 
-    gphi[:,:,0] = gphi_dir[:,:,1] - gphi_dir[:,:,0]
-    gphi[:,:,1] = gphi_dir[:,:,2] - gphi_dir[:,:,0]
+    basis_ref_grad[:, :, 0] = grad_dir[:, :, 1] - grad_dir[:, :, 0]
+    basis_ref_grad[:, :, 1] = grad_dir[:, :, 2] - grad_dir[:, :, 0]
 
-    return gphi # [nq, nb, dim]
+    return basis_ref_grad # [nq, nb, dim]
+
 
 def get_tri_grad_area_coordinates(p, alpha, l):
     '''
@@ -604,79 +606,78 @@ def get_tri_grad_area_coordinates(p, alpha, l):
     return dN
 
 
-def get_legendre_basis_1D(x, p, phi=None, gphi=None):
+def get_legendre_basis_1D(xq, p, basis_val=None, basis_ref_grad=None):
     '''
     Calculates the 1D Legendre basis functions
 
     Inputs:
     -------
-        x: coordinate of current node [nq, dim]
+        xq: coordinate of current node [nq, dim]
         p: order of polynomial space
         
     Outputs:
     -------- 
-        phi: evaluated basis [nq, nb]
-        gphi: evaluated physical gradient of basis [nq, nb, dim]
+        basis_val: evaluated basis [nq, nb]
+        basis_ref_grad: evaluated physical gradient of basis [nq, nb, dim]
     '''
-
-    # use numpy legendre polynomials
+    # Use numpy legendre polynomials
     leg_poly = np.polynomial.legendre.Legendre
 
-    if phi is not None:
-        phi[:, :] = 0.            
-        x.shape = -1
+    if basis_val is not None:
+        basis_val[:, :] = 0.            
+        xq.shape = -1
         
         for it in range(p+1):
-            phi[:, it] = leg_poly.basis(it)(x)
-        x.shape = -1, 1
+            basis_val[:, it] = leg_poly.basis(it)(xq)
+        xq.shape = -1, 1
 
-    if gphi is not None:
-        gphi[:,:] = 0.
+    if basis_ref_grad is not None:
+        basis_ref_grad[:,:] = 0.
 
         for it in range(p+1):
             dleg = leg_poly.basis(it).deriv(1)
-            gphi[:,it] = dleg(x)
+            basis_ref_grad[:,it] = dleg(xq)
 
 
-def get_legendre_basis_2D(x, p, phi=None, gphi=None):
+def get_legendre_basis_2D(xq, p, basis_val=None, basis_ref_grad=None):
     '''
     Calculates the 2D Legendre basis functions
 
     Inputs:
     -------
-        x: coordinate of current node [nq, dim]
+        xq: coordinate of current node [nq, dim]
         p: order of polynomial space
         
     Outputs:
     -------- 
-        phi: evaluated basis [nq, nb]
-        gphi: evaluated physical gradient of basis [nq, nb, dim]
+        basis_val: evaluated basis [nq, nb]
+        basis_ref_grad: evaluated physical gradient of basis [nq, nb, dim]
     '''
-    nq = x.shape[0]
-    if gphi is not None:
-        gphix = np.zeros((nq, p+1, 1)); gphiy = np.zeros_like(gphix)
+    nq = xq.shape[0]
+    if basis_ref_grad is not None:
+        gradx = np.zeros((nq, p+1, 1)); grady = np.zeros_like(gradx)
     else:
-        gphix = None; gphiy = None
-    # Always need phi
-    phix = np.zeros((nq, p+1)); phiy = np.zeros_like(phix)
+        gradx = None; grady = None
+    # Always need basis_val
+    valx = np.zeros((nq, p+1)); valy = np.zeros_like(valx)
 
     legendre_seg = basis_defs.LegendreSeg(p)
-    get_legendre_basis_1D(x[:, 0], p, phix, gphix)
-    get_legendre_basis_1D(x[:, 1], p, phiy, gphiy)
+    get_legendre_basis_1D(xq[:, 0], p, valx, gradx)
+    get_legendre_basis_1D(xq[:, 1], p, valy, grady)
 
-    if phi is not None:
+    if basis_val is not None:
         for i in range(nq):
-            phi[i, :] = np.reshape(np.outer(phix[i, :], \
-                    phiy[i, :]), (-1, ), 'F')
-    if gphi is not None:
+            basis_val[i, :] = np.reshape(np.outer(valx[i, :], \
+                    valy[i, :]), (-1, ), 'F')
+    if basis_ref_grad is not None:
         for i in range(nq):
-            gphi[i, :, 0] = np.reshape(np.outer(gphix[i, :, 0], \
-                    phiy[i, :]), (-1, ), 'F')
-            gphi[i, :, 1] = np.reshape(np.outer(phix[i, :], \
-                    gphiy[i, :, 0]), (-1, ), 'F')
+            basis_ref_grad[i, :, 0] = np.reshape(np.outer(gradx[i, :, 0], \
+                    valy[i, :]), (-1, ), 'F')
+            basis_ref_grad[i, :, 1] = np.reshape(np.outer(valx[i, :], \
+                    grady[i, :, 0]), (-1, ), 'F')
 
 
-def get_modal_basis_tri(xi, p, xn, phi):
+def get_modal_basis_tri(xi, p, xnodes, basis_val):
     '''
     Calculates the value for Hierarchical triangle basis function
 
@@ -684,52 +685,52 @@ def get_modal_basis_tri(xi, p, xn, phi):
     -------
         xi: coordinate of quadrature points [nq, dim]
         p: polynomial solution order
-        xn: coordinates of nodes in 1D equidistant ref space 
+        xnodes: coordinates of nodes in 1D equidistant ref space 
             [nb, dim]
         
     Outputs:
     -------- 
-        phi: evaluated basis [nq, nb]
+        basis_val: evaluated basis [nq, nb]
     '''
-    nb = xn.shape[0]
+    nb = xnodes.shape[0]
 
-    phi_reorder = np.zeros_like(phi)
+    val_reorder = np.zeros_like(basis_val)
 
     # Transform to the modal basis reference element
-    # [-1,-1],[1,-1],[-1,1]
-    xn = 2.*xn - 1.
+    # [-1,-1], [1,-1], [-1,1]
+    xnodes = 2.*xnodes - 1.
     xi = 2.*xi - 1.
 
     # Define the affine coordinates
     l = np.zeros([xi.shape[0], 3])
 
-    l[:,0] = (xi[:,1] + 1.) / 2.
-    l[:,1] = -1.*((xi[:,1] + xi[:,0]) / 2.)
-    l[:,2] = (xi[:,0] + 1.) / 2.
+    l[:, 0] = (xi[:, 1] + 1.) / 2.
+    l[:, 1] = -1.*((xi[:, 1] + xi[:, 0]) / 2.)
+    l[:, 2] = (xi[:, 0] + 1.) / 2.
 
     if p == 0:
-        phi[:] = 1.
+        basis_val[:] = 1.
         return 
 
-    phi_reorder[:,[0, 1, 2]] = l[:,[1, 2, 0]]
+    val_reorder[:,[0, 1, 2]] = l[:,[1, 2, 0]]
 
     e1 = np.arange(3, p-1+3, 1)
     e2 = np.arange(p-1+3, 2*p-2+3, 1)
     e3 = np.arange(2*p-2+3, 3*p-3+3, 1)
 
-    phi_reorder[:,e1] = get_edge_basis(p, l[:,2], l[:,1])
-    phi_reorder[:,e2] = get_edge_basis(p, l[:,0], l[:,2])
-    phi_reorder[:,e3] = get_edge_basis(p, l[:,1], l[:,0])
+    val_reorder[:, e1] = get_edge_basis(p, l[:, 2], l[:, 1])
+    val_reorder[:, e2] = get_edge_basis(p, l[:, 0], l[:, 2])
+    val_reorder[:, e3] = get_edge_basis(p, l[:, 1], l[:, 0])
 
     internal = np.arange(3*p-3+3, nb, 1)
 
-    phi_reorder[:,internal] = get_internal_basis(p, internal, l)
+    val_reorder[:,internal] = get_internal_basis(p, internal, l)
 
     index = mesh_gmsh.gmsh_node_order_tri(p)
 
-    phi[:,:] = phi_reorder[:,index]
+    basis_val[:, :] = val_reorder[:, index]
 
-    return phi # [nb, nb]
+    return basis_val # [nb, nb]
 
 
 def get_edge_basis(p, ll, lr):
@@ -740,9 +741,10 @@ def get_edge_basis(p, ll, lr):
     phi_e = np.zeros([ll.shape[0], p-1])
     for k in range(p-1):
         kernel = get_kernel_function(k, ll-lr)
-        phi_e[:,k] = ll*lr*kernel
+        phi_e[:, k] = ll*lr*kernel
 
     return phi_e
+
 
 def get_internal_basis(p, index, l):
     '''
@@ -762,31 +764,32 @@ def get_internal_basis(p, index, l):
     for i in range(len(n1)):
         for j in range(len(n2)):
             if n1[i] + n2[j] <= p-1:
-                n[k,0] = n1[i]
-                n[k,1] = n2[j]
+                n[k, 0] = n1[i]
+                n[k, 1] = n2[j]
                 k += 1
 
     for m in range(c):
-        phi_i[:,m] = l[:,0]*l[:,1]**n[m,0]*l[:,2]**n[m,1]
+        phi_i[:, m] = l[:, 0]*l[:, 1]**n[m, 0]*l[:, 2]**n[m, 1]
 
     return phi_i
+
 
 def get_kernel_function(p, x):
     '''
     Helper function for Hierarchical triangular basis
     Note: pp. 27 of Sorin et al.
     '''
-    p+=2
+    p += 2
     # Initialize the legendre polynomial object
     leg_poly = np.polynomial.legendre.Legendre
     x.shape = -1
 
     # Construct the kernel's denominator 
-    # (series of Lobatto fnc's)                    
+    # (series of Lobatto fcns)                    
     
     # First two lobatto shape functions 
-    l0 =  (1.-x)/2.
-    l1 =  (1.+x)/2.
+    l0 = (1.-x)/2.
+    l1 = (1.+x)/2.
 
     den = l0*l1
 
@@ -795,103 +798,105 @@ def get_kernel_function(p, x):
 
     kernel = num / (1e-12 + den)
 
-    x.shape = -1,1
+    x.shape = -1, 1
 
     return kernel
 
 
-def get_modal_grad_tri(xi, p, xn, gphi):
+def get_modal_grad_tri(xi, p, xnodes, basis_ref_grad):
     '''
     Calculates the gradient of the triangular basis functions 
 
     Inputs:
     -------
-        xi: coordinate of quadrature points [nq, dim]
+        xi: coordinates of quadrature points [nq, dim]
         p: polynomial solution order
-        xn: coordinates of nodes in 1D equidistant ref space 
+        xnodes: coordinates of nodes in 1D equidistant ref space 
             [nb, dim]
         
     Outputs:
     -------- 
-        gphi: evaluated gradient of basis function [nq, nb, dim]
+        basis_ref_grad: evaluated gradient of basis function [nq, nb, dim]
     '''
-    nb = xn.shape[0]
+    nb = xnodes.shape[0]
 
-    gphi_reorder = np.zeros_like(gphi)
+    grad_reorder = np.zeros_like(basis_ref_grad)
 
-    xn = 2.*xn - 1.
+    xnodes = 2.*xnodes - 1.
     xi = 2.*xi - 1.
 
-    gl = np.zeros([xi.shape[0],3,2])
-    l = np.zeros([xi.shape[0],3])
+    gl = np.zeros([xi.shape[0], 3, 2])
+    l = np.zeros([xi.shape[0], 3])
 
     # Calculate the affine coordinates
-    l[:,0] = (xi[:,1] + 1.) / 2.
-    l[:,1] = -1.*((xi[:,1] + xi[:,0]) / 2.)
-    l[:,2] = (xi[:,0] + 1.) / 2.
+    l[:, 0] = (xi[:, 1] + 1.) / 2.
+    l[:, 1] = -1.*((xi[:, 1] + xi[:, 0]) / 2.)
+    l[:, 2] = (xi[:, 0] + 1.) / 2.
 
     # Calculate vertex gradients
-    gl[:,0,0] = 0.
-    gl[:,0,1] = 0.5 
+    gl[:, 0, 0] = 0.
+    gl[:, 0, 1] = 0.5 
     
-    gl[:,1,0] = -0.5
-    gl[:,1,1] = -0.5
+    gl[:, 1, 0] = -0.5
+    gl[:, 1, 1] = -0.5
 
-    gl[:,2,0] = 0.5
-    gl[:,2,1] = 0.
+    gl[:, 2, 0] = 0.5
+    gl[:, 2, 1] = 0.
 
     if p == 0:
-        phi[:] = 1.
+        basis_val[:] = 1.
         return 
 
-    gphi_reorder[:,[0,1,2],:] = gl[:,[1,2,0],:]
+    grad_reorder[:, [0, 1, 2], :] = gl[:, [1, 2, 0], :]
 
     # Calculate edge gradients
     e1 = np.arange(3, p-1+3, 1)
     e2 = np.arange(p-1+3, 2*p-2+3, 1)
     e3 = np.arange(2*p-2+3, 3*p-3+3, 1)
 
-    dxdxi = np.zeros([3,2])
-    dxdxi[0,0] = 1.   ; dxdxi[0,1] = 0.5
-    dxdxi[1,0] = -0.5 ; dxdxi[1,1] = 0.5
-    dxdxi[2,0] = -0.5 ; dxdxi[2,1] = -1.
+    dxdxi = np.zeros([3, 2])
+    dxdxi[0, 0] = 1.   ; dxdxi[0, 1] = 0.5
+    dxdxi[1, 0] = -0.5 ; dxdxi[1, 1] = 0.5
+    dxdxi[2, 0] = -0.5 ; dxdxi[2, 1] = -1.
 
-    gphi_reorder[:,e1,0] = get_edge_grad(p, dxdxi[0,0], gl[:,2,0], \
-            gl[:,1,0], l[:,2], l[:,1])
-    gphi_reorder[:,e1,1] = get_edge_grad(p, dxdxi[0,1], gl[:,2,1], \
-            gl[:,1,1], l[:,2], l[:,1])
-    gphi_reorder[:,e2,0] = get_edge_grad(p, dxdxi[1,0], gl[:,0,0], \
-            gl[:,2,0], l[:,0], l[:,2])
-    gphi_reorder[:,e2,1] = get_edge_grad(p, dxdxi[1,1], gl[:,0,1], \
-            gl[:,2,1], l[:,0], l[:,2])
-    gphi_reorder[:,e3,0] = get_edge_grad(p, dxdxi[2,0], gl[:,1,0], \
-            gl[:,0,0], l[:,1], l[:,0])
-    gphi_reorder[:,e3,1] = get_edge_grad(p, dxdxi[2,1], gl[:,1,1], \
-            gl[:,0,1], l[:,1], l[:,0])
+    grad_reorder[:, e1, 0] = get_edge_grad(p, dxdxi[0, 0], gl[:, 2, 0],
+            gl[:, 1, 0], l[:, 2], l[:, 1])
+    grad_reorder[:, e1, 1] = get_edge_grad(p, dxdxi[0, 1], gl[:, 2, 1],
+            gl[:, 1, 1], l[:, 2], l[:, 1])
+    grad_reorder[:, e2, 0] = get_edge_grad(p, dxdxi[1, 0], gl[:, 0, 0],
+            gl[:, 2, 0], l[:, 0], l[:, 2])
+    grad_reorder[:, e2, 1] = get_edge_grad(p, dxdxi[1, 1], gl[:, 0, 1],
+            gl[:, 2, 1], l[:, 0], l[:, 2])
+    grad_reorder[:, e3, 0] = get_edge_grad(p, dxdxi[2, 0], gl[:, 1, 0],
+            gl[:, 0, 0], l[:, 1], l[:, 0])
+    grad_reorder[:, e3, 1] = get_edge_grad(p, dxdxi[2, 1], gl[:, 1, 1],
+            gl[:, 0, 1], l[:, 1], l[:, 0])
 
-    internal = np.arange(3*p-3+3,nb,1)
+    internal = np.arange(3*p-3+3, nb, 1)
 
-    gphi_reorder[:,internal,0] = get_internal_grad(p, internal, gl[:,:,0], l)
-    gphi_reorder[:,internal,1] = get_internal_grad(p, internal, gl[:,:,1], l)
+    grad_reorder[:, internal, 0] = get_internal_grad(p, internal, 
+            gl[:, :, 0], l)
+    grad_reorder[:, internal, 1] = get_internal_grad(p, internal, 
+            gl[:, :, 1], l)
 
     index = mesh_gmsh.gmsh_node_order_tri(p)
 
-    gphi[:,:,:] = gphi_reorder[:,index,:]
+    basis_ref_grad[:,:,:] = grad_reorder[:,index,:]
 
-    return gphi # [nq, nb, dim]
+    return basis_ref_grad # [nq, nb, dim]
 
 
 def get_edge_grad(p, dxdxi, gl, gr, ll, lr):
     '''
     Helper function for Hierarchical triangular basis
     '''
-    gphi_e = np.zeros([ll.shape[0],p-1])
+    grad_e = np.zeros([ll.shape[0], p-1])
     for k in range(p-1):
         gkernel = get_kernel_grad(k, dxdxi, ll-lr)
-        kernel = get_kernel_function(k,ll-lr)
-        gphi_e[:,k] = (ll*gr+lr*gl)*kernel + ll*lr*gkernel
+        kernel = get_kernel_function(k, ll-lr)
+        grad_e[:,k] = (ll*gr+lr*gl)*kernel + ll*lr*gkernel
 
-    return gphi_e
+    return grad_e
 
 
 def get_kernel_grad(p, dxdxi, x):
@@ -903,8 +908,8 @@ def get_kernel_grad(p, dxdxi, x):
     x.shape = -1
 
     # First two lobatto shape functions 
-    l0 =  (1.-x)/2.
-    l1 =  (1.+x)/2.
+    l0 =  (1. - x)/2.
+    l1 =  (1. + x)/2.
     dl0 = -0.5
     dl1 = 0.5
 
@@ -926,49 +931,27 @@ def get_internal_grad(p, index, gl,l):
     '''
     Helper function for Hierarchical triangular basis
     '''
-    gphi_i = np.zeros([l.shape[0],len(index)])
+    grad_i = np.zeros([l.shape[0], len(index)])
 
-    c=0
-    for i in range(3,p+1):
+    c = 0
+    for i in range(3, p+1):
         c += i-2
     
-    n = np.zeros([c,2])
-    n1 = np.arange(1,p-1,1)
-    n2 = np.arange(1,p-1,1)
+    n = np.zeros([c, 2])
+    n1 = np.arange(1, p-1, 1)
+    n2 = np.arange(1, p-1, 1)
     k = 0
     for i in range(len(n1)):
         for j in range(len(n2)):
             if n1[i] + n2[j] <= p-1:
-                n[k,0] = n1[i]
-                n[k,1] = n2[j]
+                n[k, 0] = n1[i]
+                n[k, 1] = n2[j]
                 k+=1
 
     for m in range(c):
-        dl2l3_1 = n[m,0]*l[:,1]**(n[m,0]-1)*l[:,2]**n[m,1]*gl[:,1]
-        dl2l3_2 = n[m,1]*l[:,2]**(n[m,1]-1)*l[:,1]**n[m,0]*gl[:,2]
-        gphi_i[:,m] = gl[:,0]*l[:,1]**n[m,0]*l[:,2]**n[m,1]+l[:,0] \
+        dl2l3_1 = n[m, 0]*l[:, 1]**(n[m, 0]-1)*l[:, 2]**n[m, 1]*gl[:, 1]
+        dl2l3_2 = n[m, 1]*l[:, 2]**(n[m, 1]-1)*l[:, 1]**n[m, 0]*gl[:, 2]
+        grad_i[:, m] = gl[:, 0]*l[:, 1]**n[m, 0]*l[:, 2]**n[m, 1]+l[:, 0] \
                 * (dl2l3_1+dl2l3_2)
 
-    return gphi_i
-
-
-def MatDetInv(A, d, detA, iA):
-    if d == 1:
-        det = A[0]
-        if detA is not None: detA[0] = det;
-        if iA is not None:
-            if det == 0.:
-                raise Exception("Singular matrix")
-            iA[0] = 1./det
-    elif d == 2:
-        det = A[0,0]*A[1,1] - A[0,1]*A[1,0]
-        if detA is not None: detA[0] = det;
-        if iA is not None:
-            if det == 0.:
-                raise Exception("Singular matrix")
-            iA[0,0] =  A[1,1]/det
-            iA[0,1] = -A[0,1]/det
-            iA[1,0] = -A[1,0]/det
-            iA[1,1] =  A[0,0]/det;
-    else:
-        raise Exception("Can only deal with 2x2 matrices or smaller")
+    return grad_i

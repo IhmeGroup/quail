@@ -287,13 +287,13 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
     # ------------------------------------------------------------------- # 
     #
     # nb_st = basis.basis_val.shape[1]
-    # phi = basis.basis_val
+    # basis_val = basis.basis_val
     #
     # for i in range(nb_st):
     #     for j in range(nb_st):
     #         a = 0.
     #         for iq in range(nq):
-    #             a += phi[iq,i]*phi[iq,j]*quad_wts[iq]*djac[iq]
+    #             a += basis_val[iq,i]*basis_val[iq,j]*quad_wts[iq]*djac[iq]
     #         MM[i,j] = a
     #
     # ------------------------------------------------------------------- # 
