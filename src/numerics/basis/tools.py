@@ -12,18 +12,7 @@ from general import BasisType, ShapeType, NodeType
 import meshing.gmsh as mesh_gmsh
 
 import numerics.basis.basis as basis_defs
-
 import numerics.quadrature.segment as segment
-
-# mapping for ShapeType enum to appropriate BasisType enums
-Basis2Shape = {
-    BasisType.LagrangeSeg : ShapeType.Segment,
-    BasisType.LagrangeQuad : ShapeType.Quadrilateral,
-    BasisType.LagrangeTri : ShapeType.Triangle,
-    BasisType.LegendreSeg : ShapeType.Segment,
-    BasisType.LegendreQuad : ShapeType.Quadrilateral,
-    BasisType.HierarchicH1Tri : ShapeType.Triangle
-}
 
 
 def set_basis(order, basis_name):
@@ -42,7 +31,7 @@ def set_basis(order, basis_name):
 
     Raise:
     ------
-        If the basis class is not defined returns a NotImplementedError
+        If the basis class is not defined, returns a NotImplementedError
     '''
     if BasisType[basis_name] == BasisType.LagrangeSeg:
         basis = basis_defs.LagrangeSeg(order)
@@ -58,6 +47,7 @@ def set_basis(order, basis_name):
         basis = basis_defs.HierarchicH1Tri(order)
     else:
         raise NotImplementedError
+
     return basis
 
 

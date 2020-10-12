@@ -142,8 +142,8 @@ class SolverBase(ABC):
 		# compatibility check for forcing nodes equal to quadrature points
 		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
 			raise errors.IncompatibleError
-		if ( QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
-			QuadratureType[face_quad] != QuadratureType.GaussLobatto ) \
+		if (QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
+			QuadratureType[face_quad] != QuadratureType.GaussLobatto) \
 			and forcing_switch:
 			raise errors.IncompatibleError
 

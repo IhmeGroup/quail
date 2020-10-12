@@ -205,19 +205,19 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order,
     if basis1 == basis2:
         # If both bases are space-time you are at tau_{n+1} in ref time
         # Evaluate basis functions at tau_{n+1}
-        face = 2
+        face_ID = 2
 
-        basis2.get_basis_face_val_grads(mesh, face, quad_pts, basis1, 
+        basis2.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis1, 
                 get_val=True)
     else:
         # If basis are different you are at tau_{n} in ref time
         # Evaluate basis at tau_{n}
-        face = 0
+        face_ID = 0
 
         basis2.get_basis_val_grads(quad_pts, get_val=True, 
                 get_ref_grad=False)
 
-    basis1.get_basis_face_val_grads(mesh, face, quad_pts, basis1, 
+    basis1.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis1, 
             get_val=True)
 
     # ------------------------------------------------------------------- #
@@ -298,6 +298,6 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
     #
     # ------------------------------------------------------------------- # 
     MM = np.matmul(basis.basis_val.transpose(), basis.basis_val * \
-                quad_wts * djac) # [nb_st, nb_st]
+            quad_wts * djac) # [nb_st, nb_st]
 
     return MM # [nb_st, nb_st]
