@@ -100,7 +100,7 @@ class SolverBase(ABC):
 		mesh.gbasis.set_elem_quadrature_type(params["ElementQuadrature"])
 		mesh.gbasis.set_face_quadrature_type(params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quad_pts(params["ColocatedPoints"])
+		self.basis.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
 
 		# Limiter
 		LIMITER_TYPE = params["ApplyLimiter"]

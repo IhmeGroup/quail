@@ -414,8 +414,8 @@ class ADERDG(base.SolverBase):
 		self.basis_st.set_elem_quadrature_type(params["ElementQuadrature"])
 		self.basis_st.set_face_quadrature_type(params["FaceQuadrature"])
 
-		self.basis.force_nodes_equal_quad_pts(params["ColocatedPoints"])
-		self.basis_st.force_nodes_equal_quad_pts(params["ColocatedPoints"])
+		self.basis.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
+		self.basis_st.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
 
 		# Allocate array for predictor step in ADER-Scheme
 		physics.U_pred = np.zeros([self.mesh.num_elems, 

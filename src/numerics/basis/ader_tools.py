@@ -44,6 +44,7 @@ def set_basis_spacetime(mesh, order, basis_name):
 
     return basis_st
 
+
 def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1, 
     PhysicalSpace=False):
     '''
@@ -67,29 +68,6 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1,
     iMM = np.linalg.inv(MM)
 
     return iMM # [nb_st, nb_st]
-
-
-def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, gradDir):
-    '''
-    Calculate the inverse stiffness matrix (Currently not used)
-
-    Inputs:
-    -------
-        mesh: mesh object
-        basis: basis object
-        order: solution order
-        elem: element index
-        gradDir: direction to take the gradient in
-
-    Outputs:
-    -------- 
-        iSM: inverse stiffness matrix [nb_st, nb_st]
-    '''
-    SM = get_stiffness_matrix_ader(mesh, basis, order, elem, gradDir)
-
-    iSM = np.linalg.inv(SM) 
-
-    return iSM # [nb_st, nb_st]
 
 
 def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, gradDir

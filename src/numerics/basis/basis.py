@@ -68,7 +68,7 @@ class ShapeBase(ABC):
         sets the enum for the element's face quadrature type given a str
     get_quadrature_order
         conducts logic to specify the quadrature order for an element
-    force_nodes_equal_quad_pts
+    force_colocated_nodes_quad_pts
         if flag is True, method forces node pts equal to quadrature pts
     '''
 
@@ -258,7 +258,7 @@ class ShapeBase(ABC):
             qorder += dim * (gorder-1)
         return qorder
 
-    def force_nodes_equal_quad_pts(self, force_flag):
+    def force_colocated_nodes_quad_pts(self, force_flag):
         '''
         If the input flag is True, this method forces the number of nodes
         per element to be equal to the number of quadrature points. This 
@@ -271,7 +271,7 @@ class ShapeBase(ABC):
 
         Outputs:
         --------
-            self.forced_pts: set to nb if force_flag is True, left as None 
+            self.colocated_pts: set to nb if force_flag is True, left as None 
                 otherwise
         
         Notes:
@@ -280,7 +280,7 @@ class ShapeBase(ABC):
             quadrature and node type
         '''
         if force_flag:
-            self.forced_pts = self.get_num_basis_coeff(self.order)
+            self.colocated_pts = self.get_num_basis_coeff(self.order)
             self.skip_interp = True
 
 
@@ -365,12 +365,12 @@ class SegShape(ShapeBase):
     def get_quadrature_data(self, order):
 
         try:
-            fpts = self.forced_pts
+            fpts = self.colocated_pts
         except:
             fpts = None
 
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
-                self.quadrature_type, forced_pts=fpts)
+                self.quadrature_type, colocated_pts=fpts)
 
         return quad_pts, quad_wts # [nq, dim], [nq, 1]
 
@@ -448,12 +448,12 @@ class QuadShape(ShapeBase):
     def get_quadrature_data(self, order):
 
         try:
-            fpts = self.forced_pts
+            fpts = self.colocated_pts
         except:
             fpts = None
 
         quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(
-                order, self.quadrature_type, forced_pts=fpts)
+                order, self.quadrature_type, colocated_pts=fpts)
 
         return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
