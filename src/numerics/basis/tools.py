@@ -74,67 +74,67 @@ def set_1D_node_calc(node_type):
     return fcn
 
 
-def equidistant_nodes_1D_range(start, stop, nnode):
+def equidistant_nodes_1D_range(start, stop, nnodes):
     '''
-    This function calculates the 1D coordinates in reference space 
-    equidistantly
+    This function gets the 1D equidistant coordinates in reference space 
 
     Inputs:
     -------
-        start: start of ref space (default: -1)
-        stop:  end of ref space (default: 1)
-        nnode: num of nodes in 1D ref space
+        start: start of ref space (typically -1)
+        stop:  end of ref space (typically 1)
+        nnodes: num of nodes in 1D ref space
 
     Outputs:
     -------- 
-        xnode: coordinates of nodes in 1D ref space
+        xnodes: coordinates of nodes in 1D ref space
     '''
-    if nnode <= 1:
+    if nnodes <= 1:
         raise ValueError
     if stop <= start:
         raise ValueError
+
     # Note: this is faster than linspace unless p is large
-    xnode = np.zeros(nnode)
-    dx = (stop-start) / float(nnode-1)
-    for i in range(nnode): xnode[i] = start + float(i)*dx
+    xnodes = np.zeros(nnodes)
+    dx = (stop-start) / float(nnodes-1)
+    for i in range(nnodes): xnodes[i] = start + float(i)*dx
 
-    return xnode # [nnode, 1]
+    return xnodes # [nnodes, 1]
 
 
-def gauss_lobatto_nodes_1D_range(start, stop, nnode):
+def gauss_lobatto_nodes_1D_range(start, stop, nnodes):
     '''
     This function calculates the 1D coordinates in reference space 
     using Gauss Lobatto nodes
 
     Inputs:
     -------
-        start: start of ref space (default: -1)
-        stop:  end of ref space (default: 1)
-        nnode: num of nodes in 1D ref space
+        start: start of ref space (typically -1)
+        stop:  end of ref space (typically 1)
+        nnodes: num of nodes in 1D ref space
 
     Outputs:
     -------- 
-        xnode: coordinates of nodes in 1D ref space
+        xnodes: coordinates of nodes in 1D ref space
     '''
-    if nnode <= 1: 
+    if nnodes <= 1: 
         raise ValueError
     if stop <= start:
         raise ValueError
         
-    order = 2*nnode - 3
-    xnode,_ = segment.gauss_lobatto(order) 
+    order = 2*nnodes - 3
+    xnodes, _ = segment.gauss_lobatto(order) 
 
-    return xnode # [nnode, 1]
+    return xnodes # [nnodes, 1]
 
 
 def get_inv_mass_matrices(mesh, physics, basis):
     '''
-    Calculate the inverse mass matrices
+    Calculate the inverse mass matrices for all elements
 
     Inputs:
     -------
         mesh: mesh object
-        physics: type of physics set (e.g., scalar, euler, etc...)
+        physics: physics object (e.g., scalar, euler, etc...)
         basis: instantiation of the basis
 
     Outputs:
@@ -146,13 +146,10 @@ def get_inv_mass_matrices(mesh, physics, basis):
 
     iMM_all = np.zeros([mesh.num_elems, nb, nb])
 
-    # TODO: Set logic to recalculate only if using non-uniform mesh
-    recalc_mm = True
-
     for elem in range(mesh.num_elems):
-        if elem == 0 or recalc_mm:
-            # calculate the inv mass matrix in physical space
-            iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
+        # Calculate the inv mass matrix in physical space
+        iMM = get_elem_inv_mass_matrix(mesh, basis, order, elem, True)
+        # Store
         iMM_all[elem] = iMM
 
     return iMM_all # [mesh.num_elems, nb, nb]
@@ -214,24 +211,23 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, physical_space=False):
     basis.get_basis_val_grads(quad_pts, get_val=True)
 
     if physical_space:
-        djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
+        djac, _, _ = element_jacobian(mesh, elem, quad_pts, get_djac=True)
 
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
     else:
         djac = np.full(nq, 1.)
 
-    nb = basis.get_num_basis_coeff(order)
-    phi = basis.basis_val
+    basis_val = basis.basis_val
 
-    MM = np.matmul(phi.transpose(), phi*quad_wts*djac) # [nb, nb]
+    MM = np.matmul(basis_val.transpose(), basis_val*quad_wts*djac) # [nb, nb]
 
     return MM # [nb, nb]
 
 
 def get_stiffness_matrix(solver, mesh, order, elem):
     '''
-    Calculate the stiffness_matrix
+    Calculate the stiffness matrix
 
     Inputs:
     -------
@@ -247,27 +243,28 @@ def get_stiffness_matrix(solver, mesh, order, elem):
     quad_pts = solver.elem_operators.quad_pts
     quad_wts = solver.elem_operators.quad_wts
     djac = solver.elem_operators.djac_elems[elem]
-    phi = solver.elem_operators.basis_val
-    gPhi = solver.elem_operators.basis_phys_grad_elems[elem]
-
-    nq = quad_pts.shape[0]
-    nb = phi.shape[1]
+    basis_val = solver.elem_operators.basis_val
+    basis_grad = solver.elem_operators.basis_phys_grad_elems[elem]
 
     # ------------------------------------------------------------------- #
     # Example of Stiffness Matrix calculation using for-loops
     # ------------------------------------------------------------------- #
+    #
+    # nq = quad_pts.shape[0]
+    # nb = basis_val.shape[1]
     #
     # SM = np.zeros([nb, nb])
     # for i in range(nb):
     #     for j in range(nb):
     #         t = 0.
     #         for iq in range(nq):
-    #             t += gPhi[iq,i,0]*phi[iq,j]*quad_wts[iq]* \
+    #             t += basis_grad[iq,i,0]*basis_val[iq,j]*quad_wts[iq]* \
     #                 djac[iq]
     #         SM[i,j] = t
     #
     # ------------------------------------------------------------------- #
-    SM = np.matmul(gPhi[:,:,0].transpose(), phi*quad_wts*djac) # [nb, nb]
+    SM = np.matmul(basis_grad[:, :, 0].transpose(), basis_val*quad_wts*djac) 
+        # [nb, nb]
 
     return SM # [nb, nb]
 
@@ -311,10 +308,10 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     #
     # for i in range(nb):
     #     for j in range(nb_old):
-    #         t = 0.
+    #         a = 0.
     #         for iq in range(nq):
-    #             t += phi[iq,i]*phi_old[iq,j]*quad_wts[iq]
-    #         A[i,j] = t
+    #             a += phi[iq,i]*phi_old[iq,j]*quad_wts[iq]
+    #         A[i,j] = a
     #
     # ------------------------------------------------------------------- #
 
@@ -325,7 +322,8 @@ def get_projection_matrix(mesh, basis, basis_old, order, order_old, iMM):
     return PM # [nb, nb_old]
 
 
-def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, get_ijac=False):
+def element_jacobian(mesh, elem, quad_pts, get_djac=False, get_jac=False, 
+        get_ijac=False):
     '''
     Evaluate the geometric Jacobian for a specified element
 
