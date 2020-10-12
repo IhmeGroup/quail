@@ -423,9 +423,9 @@ class ADERDG(base.SolverBase):
 				physics.NUM_STATE_VARS])
 
 		# Set predictor function
-		SourceTreatmentADER = params["SourceTreatmentADER"]
+		source_treatment = params["SourceTreatmentADER"]
 		self.calculate_predictor_elem = solver_tools.set_source_treatment(ns,
-				SourceTreatmentADER)
+				source_treatment)
 
 		# Check validity of parameters
 		self.check_compatibility()

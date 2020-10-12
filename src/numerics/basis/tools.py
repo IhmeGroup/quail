@@ -788,12 +788,12 @@ def get_kernel_function(p, x):
     # (series of Lobatto fcns)                    
     
     # First two lobatto shape functions 
-    l0 = (1.-x)/2.
-    l1 = (1.+x)/2.
+    l0 = (1. - x)/2.
+    l1 = (1. + x)/2.
 
     den = l0*l1
 
-    leg_int = leg_poly.basis(p-1).integ(m=1,lbnd=-1)
+    leg_int = leg_poly.basis(p-1).integ(m=1, lbnd=-1)
     num = np.sqrt((2.*p-1.)/2.)*leg_int(x)
 
     kernel = num / (1e-12 + den)

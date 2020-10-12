@@ -32,9 +32,6 @@ import processing.readwritedatafiles as ReadWriteDataFiles
 
 import solver.tools as solver_tools
 
-global echeck
-echeck = -1
-
 
 class SolverBase(ABC):
 	'''
@@ -154,6 +151,7 @@ class SolverBase(ABC):
 		computed at the beginning of the simulation.
 		'''
 		pass
+
 	@abstractmethod
 	def get_element_residual(self, elem, Up, ER):
 		'''

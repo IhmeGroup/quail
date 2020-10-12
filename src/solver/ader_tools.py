@@ -9,7 +9,6 @@ import numpy as np
 from scipy.optimize import fsolve, root
 from scipy.linalg import solve_sylvester
 
-
 import general
 
 import meshing.tools as mesh_tools
@@ -18,7 +17,7 @@ import numerics.basis.basis as basis_defs
 import numerics.helpers.helpers as helpers
 
 
-def set_source_treatment(ns, SourceTreatmentADER):
+def set_source_treatment(ns, source_treatment):
 	'''
 	This method sets the appropriate predictor function for the ADER-DG
 	scheme given the input deck parameters
@@ -26,16 +25,16 @@ def set_source_treatment(ns, SourceTreatmentADER):
 	Inputs:
 	-------
 		ns: number of state variables
-		SourceTreatmentADER: string from input deck to determine if the source
+		source_treatment: string from input deck to determine if the source
 			term should be taken implicitly or explicitly
 
 	Outputs:
 	--------
 		fcn: the name of the function chosen for the calculate_predictor_elem
 	'''
-	if SourceTreatmentADER == "Explicit":
+	if source_treatment == "Explicit":
 		fcn = predictor_elem_explicit
-	elif SourceTreatmentADER == "Implicit":
+	elif source_treatment == "Implicit":
 		if ns == 1:
 			fcn = predictor_elem_implicit
 		else:
