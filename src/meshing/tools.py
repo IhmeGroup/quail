@@ -60,10 +60,10 @@ def element_volumes(mesh, solver=None):
     '''
     # Check if already calculated
     if solver is not None:
-        if hasattr(solver.elem_operators, "domain_vol") \
-                and hasattr(solver.elem_operators, "vol_elems"):
-            return solver.elem_operators.vol_elems, \
-                    solver.elem_operators.domain_vol
+        if hasattr(solver.elem_helpers, "domain_vol") \
+                and hasattr(solver.elem_helpers, "vol_elems"):
+            return solver.elem_helpers.vol_elems, \
+                    solver.elem_helpers.domain_vol
 
     # Allocate, unpack
     vol_elems = np.zeros(mesh.num_elems)

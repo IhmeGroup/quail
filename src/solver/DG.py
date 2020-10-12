@@ -86,7 +86,7 @@ class ElemHelpers(object):
 	alloc_other_arrays
 		allocate the solution, flux, and source vectors that are evaluated
 		at the quadrature points
-	compute_operators
+	compute_helpers
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
@@ -217,7 +217,7 @@ class ElemHelpers(object):
 		self.Fq = np.zeros([nq, ns, dim])
 		self.Sq = np.zeros([nq, ns])  
 
-	def compute_operators(self, mesh, physics, basis, order):
+	def compute_helpers(self, mesh, physics, basis, order):
 		'''
 		Calls the functions to precompute the necessary helper data
 
@@ -281,7 +281,7 @@ class InteriorFaceHelpers(ElemHelpers):
 	alloc_other_arrays
 		allocate the solution and flux vectors that are evaluated
 		at the quadrature points
-	compute_operators
+	compute_helpers
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
@@ -373,7 +373,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.UqR = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
-	def compute_operators(self, mesh, physics, basis, order):
+	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
@@ -421,7 +421,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 	alloc_other_arrays
 		allocate the solution and flux vectors that are evaluated
 		at the quadrature points
-	compute_operators
+	compute_helpers
 		call the functions to precompute the necessary helper data
 	'''
 	def __init__(self):
@@ -512,7 +512,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqB = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
-	def compute_operators(self, mesh, physics, basis, order):
+	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
@@ -535,31 +535,31 @@ class DG(base.SolverBase):
 		self.check_compatibility()
 		
 		# precompute operators
-		self.precompute_matrix_operators()
+		self.precompute_matrix_helpers()
 		if self.limiter is not None:
 			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(
-				np.zeros([self.iface_operators.quad_wts.shape[0], 
+				np.zeros([self.iface_helpers.quad_wts.shape[0], 
 				physics.NUM_STATE_VARS]))
 
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()
 		
-	def precompute_matrix_operators(self):
+	def precompute_matrix_helpers(self):
 
 		mesh = self.mesh 
 		physics = self.physics
 		basis = self.basis
 
-		self.elem_operators = ElemHelpers()
-		self.elem_operators.compute_operators(mesh, physics, basis, 
+		self.elem_helpers = ElemHelpers()
+		self.elem_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.iface_operators = InteriorFaceHelpers()
-		self.iface_operators.compute_operators(mesh, physics, basis, 
+		self.iface_helpers = InteriorFaceHelpers()
+		self.iface_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.bface_operators = BoundaryFaceHelpers()
-		self.bface_operators.compute_operators(mesh, physics, basis, 
+		self.bface_helpers = BoundaryFaceHelpers()
+		self.bface_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
 
 	def get_element_residual(self, elem, Up, ER):
@@ -567,11 +567,11 @@ class DG(base.SolverBase):
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		dim = physics.DIM
-		elem_ops = self.elem_operators
-		basis_val = elem_ops.basis_val
-		quad_wts = elem_ops.quad_wts
+		elem_helpers = self.elem_helpers
+		basis_val = elem_helpers.basis_val
+		quad_wts = elem_helpers.quad_wts
 
-		x_elems = elem_ops.x_elems
+		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
 		x = x_elems[elem]
 
@@ -583,17 +583,17 @@ class DG(base.SolverBase):
 			# evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq) # [nq, ns, dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(
-					self, elem_ops, elem, Fq)
+					self, elem_helpers, elem, Fq)
 
 		if self.params["SourceSwitch"] == True:
 			# evaluate the source term integral
-			Sq = elem_ops.Sq
+			Sq = elem_helpers.Sq
 			# eval_source_terms is an additive function so source needs to be 
 			# initialized to zero for each time step
 			Sq[:] = 0.
 			Sq = physics.eval_source_terms(Uq, x, self.time, Sq) # [nq, ns]
 
-			ER += solver_tools.calculate_source_term_integral(elem_ops, 
+			ER += solver_tools.calculate_source_term_integral(elem_helpers, 
 					elem, Sq)
 
 		if elem == echeck:
@@ -611,15 +611,15 @@ class DG(base.SolverBase):
 		faceL_ID = IFace.faceL_ID
 		faceR_ID = IFace.faceR_ID
 
-		iface_ops = self.iface_operators
-		quad_pts = iface_ops.quad_pts
-		quad_wts = iface_ops.quad_wts
-		faces_to_basisL = iface_ops.faces_to_basisL
-		faces_to_basisR = iface_ops.faces_to_basisR
-		normals_ifaces = iface_ops.normals_ifaces
-		UqL = iface_ops.UqL
-		UqR = iface_ops.UqR
-		Fq = iface_ops.Fq
+		iface_helpers = self.iface_helpers
+		quad_pts = iface_helpers.quad_pts
+		quad_wts = iface_helpers.quad_wts
+		faces_to_basisL = iface_helpers.faces_to_basisL
+		faces_to_basisR = iface_helpers.faces_to_basisR
+		normals_ifaces = iface_helpers.normals_ifaces
+		UqL = iface_helpers.UqL
+		UqR = iface_helpers.UqR
+		Fq = iface_helpers.Fq
 
 		nq = quad_wts.shape[0]
 		basis_valL = faces_to_basisL[faceL_ID]
@@ -656,15 +656,15 @@ class DG(base.SolverBase):
 		elem = boundary_face.elem_ID
 		face = boundary_face.face_ID
 
-		bface_ops = self.bface_operators
-		quad_pts = bface_ops.quad_pts
-		quad_wts = bface_ops.quad_wts
-		faces_to_basis = bface_ops.faces_to_basis
-		normals_bfgroups = bface_ops.normals_bfgroups
-		x_bfgroups = bface_ops.x_bfgroups
-		UqI = bface_ops.UqI
-		UqB = bface_ops.UqB
-		Fq = bface_ops.Fq
+		bface_helpers = self.bface_helpers
+		quad_pts = bface_helpers.quad_pts
+		quad_wts = bface_helpers.quad_wts
+		faces_to_basis = bface_helpers.faces_to_basis
+		normals_bfgroups = bface_helpers.normals_bfgroups
+		x_bfgroups = bface_helpers.x_bfgroups
+		UqI = bface_helpers.UqI
+		UqB = bface_helpers.UqB
+		Fq = bface_helpers.Fq
 
 		nq = quad_wts.shape[0]
 		basis_val = faces_to_basis[face]

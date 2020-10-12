@@ -12,15 +12,15 @@ import general
 import numerics.basis.tools as basis_tools
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the DG scheme
 
 	Inputs:
 	-------
 		solver: solver object
-		elem_ops: helper operators defined in ElemHelpers
-		elem: element index
+		elem_helpers: helper operators defined in ElemHelpers
+		elem_ID: element index
 		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
 
 	Outputs:
@@ -28,13 +28,13 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem, Fq):
 		ER: calculated residual array (for volume integral of specified 
 		element) [nb, ns]
 	'''	
-	quad_wts = elem_ops.quad_wts
-	basis_val = elem_ops.basis_val 
-	basis_phys_grad_elems = elem_ops.basis_phys_grad_elems
-	djac_elems = elem_ops.djac_elems 
+	quad_wts = elem_helpers.quad_wts
+	basis_val = elem_helpers.basis_val 
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+	djac_elems = elem_helpers.djac_elems 
 
-	basis_phys_grad = basis_phys_grad_elems[elem]
-	djac = djac_elems[elem]
+	basis_phys_grad = basis_phys_grad_elems[elem_ID]
+	djac = djac_elems[elem_ID]
 	nq = quad_wts.shape[0]
 
 	ER = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
@@ -61,14 +61,14 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	return R # [nb, ns]
 
 
-def calculate_source_term_integral(elem_ops, elem, Sq):
+def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
 	'''
 	Calculates the source term volume integral for the DG scheme
 
 	Inputs:
 	-------
-		elem_ops: helper operators defined in ElemHelpers
-		elem: element index
+		elem_helpers: helper operators defined in ElemHelpers
+		elem_ID: element index
 		Sq: source term array evaluated at the quadrature points [nq, ns]
 
 	Outputs:
@@ -76,17 +76,17 @@ def calculate_source_term_integral(elem_ops, elem, Sq):
 		ER: calculated residual array (for volume integral of specified 
 		element) [nb, ns]
 	'''
-	quad_wts = elem_ops.quad_wts
-	basis_val = elem_ops.basis_val 
-	djac_elems = elem_ops.djac_elems 
-	djac = djac_elems[elem]
+	quad_wts = elem_helpers.quad_wts
+	basis_val = elem_helpers.basis_val 
+	djac_elems = elem_helpers.djac_elems 
+	djac = djac_elems[elem_ID]
 
 	ER = np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
 
 	return ER # [nb, ns]
 
 
-def calculate_dRdU(elem_ops, elem, jac):
+def calculate_dRdU(elem_helpers, elem_ID, jac):
 	'''
 	Helper function for ODE solvers that calculates the derivative of 
 
@@ -95,14 +95,14 @@ def calculate_dRdU(elem_ops, elem, jac):
 	with respect to the solution state 
 	
 	Inputs: 
-		elem_ops: object containing precomputed element operations
-		elem: element index
+		elem_helpers: object containing precomputed element operations
+		elem_ID: element index
 		jac: element source term Jacobian [nq, ns, ns]
 	'''
-	quad_wts = elem_ops.quad_wts
-	basis_val = elem_ops.basis_val 
-	djac_elems = elem_ops.djac_elems 
-	djac = djac_elems[elem]
+	quad_wts = elem_helpers.quad_wts
+	basis_val = elem_helpers.basis_val 
+	djac_elems = elem_helpers.djac_elems 
+	djac = djac_elems[elem_ID]
 	ns = jac.shape[-1]
 	nb = basis_val.shape[1]
 	nq = quad_wts.shape[0]
@@ -128,7 +128,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 		U: solution array
 	'''
 	physics = solver.physics
-	iMM_elems = solver.elem_operators.iMM_elems
+	iMM_elems = solver.elem_helpers.iMM_elems
 
 	if dt is None:
 		c = 1.
@@ -138,7 +138,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 	return c*np.einsum('ijk,ikl->ijl', iMM_elems, R)
 
 
-def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
+def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
 	'''
 	Performs an L2 projection
 
@@ -149,7 +149,7 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
 		basis: basis object
 		quad_pts: quadrature coordinates in reference space
 		quad_wts: quadrature weights
-		elem: element index
+		elem_ID: element index
 		f: array of values to be projected from
 
 	Outputs:
@@ -159,7 +159,7 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem, f, U):
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
-	djac, _, _ = basis_tools.element_jacobian(mesh, elem, quad_pts, get_djac=True)
+	djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
 
 	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
 

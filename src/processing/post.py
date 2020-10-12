@@ -134,12 +134,12 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	boundary_group = mesh.boundary_groups[bname]
 	boundary_num = boundary_group.number
 	# Extract helpers
-	bface_ops = solver.bface_operators
-	quad_pts = bface_ops.quad_pts
-	quad_wts = bface_ops.quad_wts
-	faces_to_basis = bface_ops.faces_to_basis
-	normals_bfgroups = bface_ops.normals_bfgroups
-	x_bfgroups = bface_ops.x_bfgroups
+	bface_helpers = solver.bface_helpers
+	quad_pts = bface_helpers.quad_pts
+	quad_wts = bface_helpers.quad_wts
+	faces_to_basis = bface_helpers.faces_to_basis
+	normals_bfgroups = bface_helpers.normals_bfgroups
+	x_bfgroups = bface_helpers.x_bfgroups
 	nq = quad_wts.shape[0]
 
 	# For plotting

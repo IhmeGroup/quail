@@ -243,11 +243,11 @@ def get_stiffness_matrix(solver, mesh, order, elem_ID):
         SM: stiffness matrix # [nb, nb]
     '''
     # Unpack
-    quad_pts = solver.elem_operators.quad_pts
-    quad_wts = solver.elem_operators.quad_wts
-    djac = solver.elem_operators.djac_elems[elem_ID]
-    basis_val = solver.elem_operators.basis_val
-    basis_grad = solver.elem_operators.basis_phys_grad_elems[elem_ID]
+    quad_pts = solver.elem_helpers.quad_pts
+    quad_wts = solver.elem_helpers.quad_wts
+    djac = solver.elem_helpers.djac_elems[elem_ID]
+    basis_val = solver.elem_helpers.basis_val
+    basis_grad = solver.elem_helpers.basis_phys_grad_elems[elem_ID]
 
     # ------------------------------------------------------------------- #
     # Example of Stiffness Matrix calculation using for-loops

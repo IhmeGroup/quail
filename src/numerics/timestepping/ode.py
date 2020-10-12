@@ -116,7 +116,7 @@ class ODESolvers():
 			Up = physics.U
 			ns = physics.NUM_STATE_VARS
 
-			iMM_elems = solver.elem_operators.iMM_elems
+			iMM_elems = solver.elem_helpers.iMM_elems
 			
 			A = np.zeros([mesh.num_elems, nb, nb, ns])
 			iA = np.zeros([mesh.num_elems, nb, nb, ns])
@@ -150,10 +150,10 @@ class ODESolvers():
 			physics = solver.physics
 			source_terms = physics.source_terms
 
-			elem_ops = solver.elem_operators
-			basis_val = elem_ops.basis_val
-			quad_wts = elem_ops.quad_wts
-			x_elems = elem_ops.x_elems
+			elem_helpers = solver.elem_helpers
+			basis_val = elem_helpers.basis_val
+			quad_wts = elem_helpers.quad_wts
+			x_elems = elem_helpers.x_elems
 			x = x_elems[elem]
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
@@ -165,7 +165,7 @@ class ODESolvers():
 			jac = physics.eval_source_term_jacobians(Uq, x, solver.time, jac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
-			dRdU = solver_tools.calculate_dRdU(elem_ops, elem, jac)
+			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem, jac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
 					np.einsum('ij,jkl->ijl',iMM,dRdU)

@@ -56,7 +56,7 @@ class SolverBase(ABC):
 
     Abstract Methods:
     -----------------
-    precompute_matrix_operators
+    precompute_matrix_helpers
     	precomputes a variety of functions and methods prior to running the
     	simulation
     get_element_residual
@@ -145,7 +145,7 @@ class SolverBase(ABC):
 			raise errors.IncompatibleError
 
 	@abstractmethod
-	def precompute_matrix_operators(self):
+	def precompute_matrix_helpers(self):
 		'''
 		Precomputes element and face helper functions that only need to be
 		computed at the beginning of the simulation.
@@ -217,7 +217,7 @@ class SolverBase(ABC):
 		physics = self.physics
 		basis = self.basis
 		params = self.params
-		iMM_elems = self.elem_operators.iMM_elems
+		iMM_elems = self.elem_helpers.iMM_elems
 
 		U = physics.U
 		ns = physics.NUM_STATE_VARS
@@ -260,7 +260,7 @@ class SolverBase(ABC):
 		physics = self.physics
 		basis = self.basis
 		params = self.params
-		iMM_elems = self.elem_operators.iMM_elems
+		iMM_elems = self.elem_helpers.iMM_elems
 
 		U = physics.U
 		ns = physics.NUM_STATE_VARS

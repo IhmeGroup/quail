@@ -45,7 +45,7 @@ def set_source_treatment(ns, source_treatment):
 	return fcn
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem_ops_st, 
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_helpers_st, 
 		elem, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the ADERDG scheme
@@ -53,8 +53,8 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem_ops_st,
 	Inputs:
 	-------
 		solver: solver object
-		elem_ops: helper operators defined in ElemHelpers
-		elem_ops_st: space-time helper operators defined in ElemHelpers
+		elem_helpers: helper operators defined in ElemHelpers
+		elem_helpers_st: space-time helper operators defined in ElemHelpers
 		elem: element index
 		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
 
@@ -63,11 +63,11 @@ def calculate_inviscid_flux_volume_integral(solver, elem_ops, elem_ops_st,
 		ER: calculated residual array (for volume integral of specified 
 		element) [nb, ns]
 	'''
-	quad_wts = elem_ops.quad_wts
-	quad_wts_st = elem_ops_st.quad_wts
-	basis_val = elem_ops.basis_val 
-	basis_phys_grad_elems = elem_ops.basis_phys_grad_elems
-	djac_elems = elem_ops.djac_elems 
+	quad_wts = elem_helpers.quad_wts
+	quad_wts_st = elem_helpers_st.quad_wts
+	basis_val = elem_helpers.basis_val 
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+	djac_elems = elem_helpers.djac_elems 
 
 	basis_phys_grad = basis_phys_grad_elems[elem]
 	djac = djac_elems[elem]
@@ -105,14 +105,14 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	return R # [nb, ns]
 
 
-def calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq):
+def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem, Sq):
 	'''
 	Calculates the source term volume integral for the ADERDG scheme
 
 	Inputs:
 	-------
-		elem_ops: helper operators defined in ElemHelpers
-		elem_ops_st: space-time helper operators defined in ElemHelpers
+		elem_helpers: helper operators defined in ElemHelpers
+		elem_helpers_st: space-time helper operators defined in ElemHelpers
 		elem: element index
 		Sq: source term array evaluated at the quadrature points [nq, ns]
 
@@ -121,11 +121,11 @@ def calculate_source_term_integral(elem_ops, elem_ops_st, elem, Sq):
 		ER: calculated residual array (for volume integral of specified 
 		element) [nb, ns]
 	'''
-	quad_wts = elem_ops.quad_wts
-	quad_wts_st = elem_ops_st.quad_wts
+	quad_wts = elem_helpers.quad_wts
+	quad_wts_st = elem_helpers_st.quad_wts
 
-	basis_val = elem_ops.basis_val 
-	djac_elems = elem_ops.djac_elems 
+	basis_val = elem_helpers.basis_val 
+	djac_elems = elem_helpers.djac_elems 
 	djac = djac_elems[elem]
 
 	nb = basis_val.shape[1]
@@ -165,20 +165,20 @@ def predictor_elem_explicit(solver, elem, dt, W, U_pred):
 
 	order = physics.order
 	
-	elem_ops = solver.elem_operators
-	ader_ops = solver.ader_operators
+	elem_helpers = solver.elem_helpers
+	ader_helpers = solver.ader_helpers
 	
-	quad_wts = elem_ops.quad_wts
-	basis_val = elem_ops.basis_val 
-	djac_elems = elem_ops.djac_elems 
+	quad_wts = elem_helpers.quad_wts
+	basis_val = elem_helpers.basis_val 
+	djac_elems = elem_helpers.djac_elems 
 	djac = djac_elems[elem]
 
-	FTR = ader_ops.FTR
-	MM = ader_ops.MM
-	SMS = ader_ops.SMS_elems[elem]
-	iK = ader_ops.iK
+	FTR = ader_helpers.FTR
+	MM = ader_helpers.MM
+	SMS = ader_helpers.SMS_elems[elem]
+	iK = ader_helpers.iK
 
-	vol_elems = elem_ops.vol_elems
+	vol_elems = elem_helpers.vol_elems
 	W_bar = np.zeros([1,ns])
 
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
@@ -239,22 +239,22 @@ def predictor_elem_implicit(solver, elem, dt, W, U_pred):
 
 	order = physics.order
 	
-	elem_ops = solver.elem_operators
-	ader_ops = solver.ader_operators
+	elem_helpers = solver.elem_helpers
+	ader_helpers = solver.ader_helpers
 	
-	quad_wts = elem_ops.quad_wts
-	basis_val = elem_ops.basis_val 
-	djac_elems = elem_ops.djac_elems 
+	quad_wts = elem_helpers.quad_wts
+	basis_val = elem_helpers.basis_val 
+	djac_elems = elem_helpers.djac_elems 
 	djac = djac_elems[elem]
-	x_elems = elem_ops.x_elems
+	x_elems = elem_helpers.x_elems
 	x = x_elems[elem]
 
-	FTR = ader_ops.FTR
-	MM = ader_ops.MM
-	SMS = ader_ops.SMS_elems[elem]
-	K = ader_ops.K
+	FTR = ader_helpers.FTR
+	MM = ader_helpers.MM
+	SMS = ader_helpers.SMS_elems[elem]
+	K = ader_helpers.K
 
-	vol_elems = elem_ops.vol_elems
+	vol_elems = elem_helpers.vol_elems
 	# W_bar = np.zeros([1,ns])
 	# Wq = np.matmul(basis_val, W)
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
@@ -338,22 +338,22 @@ def predictor_elem_sylvester(solver, elem, dt, W, U_pred):
 
 	order = physics.order
 	
-	elem_ops = solver.elem_operators
-	ader_ops = solver.ader_operators
+	elem_helpers = solver.elem_helpers
+	ader_helpers = solver.ader_helpers
 	
-	quad_wts = elem_ops.quad_wts
-	basis_val = elem_ops.basis_val 
-	djac_elems = elem_ops.djac_elems 
+	quad_wts = elem_helpers.quad_wts
+	basis_val = elem_helpers.basis_val 
+	djac_elems = elem_helpers.djac_elems 
 	djac = djac_elems[elem]
-	x_elems = elem_ops.x_elems
+	x_elems = elem_helpers.x_elems
 	x = x_elems[elem]
 
-	FTR = ader_ops.FTR
-	# iMM = ader_ops.iMM_elems[elem]
-	iMM = ader_ops.iMM
-	SMS = ader_ops.SMS_elems[elem]
-	K = ader_ops.K
-	vol_elems = elem_ops.vol_elems
+	FTR = ader_helpers.FTR
+	# iMM = ader_helpers.iMM_elems[elem]
+	iMM = ader_helpers.iMM
+	SMS = ader_helpers.SMS_elems[elem]
+	K = ader_helpers.K
+	vol_elems = elem_helpers.vol_elems
 
 	Wq = np.matmul(basis_val, W)
 

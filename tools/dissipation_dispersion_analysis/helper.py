@@ -11,13 +11,13 @@ import code
 def CalculateBasisAndMatrices(solver, mesh, order):
 	## Mass, stiffness matrix
 	# MMinv, _ = basis_defs.get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, physical_space=True)
-	MMinv = solver.elem_operators.iMM_elems[0]
+	MMinv = solver.elem_helpers.iMM_elems[0]
 	SM = basis_tools.get_stiffness_matrix(solver, mesh, order=order, elem=0)
 
 	# _ = basis.get_basis_face_val_grads(mesh, f, quad_pts, None, get_val=True)
 	# 		self.faces_to_basisL[f] = basis.basis_val
-	PhiLeft = solver.iface_operators.faces_to_basisL[0].transpose()
-	PhiRight = solver.iface_operators.faces_to_basisL[1].transpose()
+	PhiLeft = solver.iface_helpers.faces_to_basisL[0].transpose()
+	PhiRight = solver.iface_helpers.faces_to_basisL[1].transpose()
 	nn = solver.basis.get_num_basis_coeff(order)
 
 	## Evaluate basis polynomials

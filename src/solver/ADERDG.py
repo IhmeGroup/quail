@@ -381,7 +381,7 @@ class ADERHelpers(object):
 				# Store
 				self.x_elems[elem] = np.tile(x,(nnode,1))
 
-	def compute_operators(self, mesh, physics, basis, basis_st, dt, order):
+	def compute_helpers(self, mesh, physics, basis, basis_st, dt, order):
 		self.calc_ader_matrices(mesh, basis, basis_st, dt, order)
 		self.get_geom_data(mesh, basis_st, order)
 
@@ -431,12 +431,12 @@ class ADERDG(base.SolverBase):
 		self.check_compatibility()
 
 		# Precompute operators
-		self.precompute_matrix_operators()
+		self.precompute_matrix_helpers()
 
 		if self.limiter is not None:
 			self.limiter.precompute_helpers(self)
 
-		physics.conv_flux_fcn.alloc_helpers(np.zeros([self.iface_operators_st.
+		physics.conv_flux_fcn.alloc_helpers(np.zeros([self.iface_helpers_st.
 			quad_wts.shape[0], physics.NUM_STATE_VARS]))
 
 		# Initialize state
@@ -465,7 +465,7 @@ class ADERDG(base.SolverBase):
 			print('')
 			raise errors.IncompatibleError
 
-	def precompute_matrix_operators(self):
+	def precompute_matrix_helpers(self):
 		mesh = self.mesh 
 		physics = self.physics
 
@@ -473,31 +473,31 @@ class ADERDG(base.SolverBase):
 		basis_st = self.basis_st
 		Stepper = self.Stepper
 
-		self.elem_operators = DG.ElemHelpers()
-		self.elem_operators.compute_operators(mesh, physics, basis, 
+		self.elem_helpers = DG.ElemHelpers()
+		self.elem_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.iface_operators = DG.InteriorFaceHelpers()
-		self.iface_operators.compute_operators(mesh, physics, basis, 
+		self.iface_helpers = DG.InteriorFaceHelpers()
+		self.iface_helpers.compute_helpers(mesh, physics, basis, 
 				physics.order)
-		self.bface_operators = DG.BoundaryFaceHelpers()
-		self.bface_operators.compute_operators(mesh, physics, basis,
+		self.bface_helpers = DG.BoundaryFaceHelpers()
+		self.bface_helpers.compute_helpers(mesh, physics, basis,
 				physics.order)
 
 		# Calculate ADER specific space-time operators
-		self.elem_operators_st = ElemHelpersADER()
-		self.elem_operators_st.compute_operators(mesh, physics, basis_st,
+		self.elem_helpers_st = ElemHelpersADER()
+		self.elem_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
-		self.iface_operators_st = InteriorFaceHelpersADER()
-		self.iface_operators_st.compute_operators(mesh, physics, basis_st,
+		self.iface_helpers_st = InteriorFaceHelpersADER()
+		self.iface_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
-		self.bface_operators_st = BoundaryFaceHelpersADER()
-		self.bface_operators_st.compute_operators(mesh, physics, basis_st,
+		self.bface_helpers_st = BoundaryFaceHelpersADER()
+		self.bface_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
 
 		Stepper.dt = Stepper.get_time_step(Stepper, self)
 		dt = Stepper.dt
-		self.ader_operators = ADERHelpers()
-		self.ader_operators.compute_operators(mesh, physics, basis, 
+		self.ader_helpers = ADERHelpers()
+		self.ader_helpers.compute_helpers(mesh, physics, basis, 
 				basis_st, dt, physics.order)
 
 	def calculate_predictor_step(self, dt, W, Up):
@@ -529,15 +529,15 @@ class ADERDG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		dim = physics.DIM
 
-		elem_ops = self.elem_operators
-		elem_ops_st = self.elem_operators_st
+		elem_helpers = self.elem_helpers
+		elem_helpers_st = self.elem_helpers_st
 
-		quad_wts = elem_ops.quad_wts
-		quad_wts_st = elem_ops_st.quad_wts
-		quad_pts_st = elem_ops_st.quad_pts
+		quad_wts = elem_helpers.quad_wts
+		quad_wts_st = elem_helpers_st.quad_wts
+		quad_pts_st = elem_helpers_st.quad_pts
 
-		basis_val_st = elem_ops_st.basis_val
-		x_elems = elem_ops.x_elems
+		basis_val_st = elem_helpers_st.basis_val
+		x_elems = elem_helpers.x_elems
 		x = x_elems[elem]
 
 		nq = quad_wts.shape[0]
@@ -550,7 +550,7 @@ class ADERDG(base.SolverBase):
 			# evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq) # [nq,sr,dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, 
-					elem_ops, elem_ops_st, elem, Fq)
+					elem_helpers, elem_helpers_st, elem, Fq)
 		
 		if self.params["SourceSwitch"] == True:
 			# evaluate the source term integral
@@ -560,12 +560,12 @@ class ADERDG(base.SolverBase):
 					self.time, self.Stepper.dt, TimePhiData, quad_pts_st, 
 					t, None)
 			
-			Sq = elem_ops_st.Sq
+			Sq = elem_helpers_st.Sq
 			Sq[:] = 0.
 			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]
 
-			ER += solver_tools.calculate_source_term_integral(elem_ops, 
-					elem_ops_st, elem, Sq)
+			ER += solver_tools.calculate_source_term_integral(elem_helpers, 
+					elem_helpers_st, elem, Sq)
 
 		if elem == echeck:
 			code.interact(local=locals())
@@ -595,19 +595,19 @@ class ADERDG(base.SolverBase):
 		else:
 			return IncompatibleError
 
-		iface_ops = self.iface_operators
-		iface_ops_st = self.iface_operators_st
-		quad_wts_st = iface_ops_st.quad_wts
+		iface_helpers = self.iface_helpers
+		iface_helpers_st = self.iface_helpers_st
+		quad_wts_st = iface_helpers_st.quad_wts
 
-		faces_to_basisL = iface_ops.faces_to_basisL
-		faces_to_basisR = iface_ops.faces_to_basisR
+		faces_to_basisL = iface_helpers.faces_to_basisL
+		faces_to_basisR = iface_helpers.faces_to_basisR
 
-		faces_to_basisL_st = iface_ops_st.faces_to_basisL
-		faces_to_basisR_st = iface_ops_st.faces_to_basisR
+		faces_to_basisL_st = iface_helpers_st.faces_to_basisL
+		faces_to_basisR_st = iface_helpers_st.faces_to_basisR
 
-		UqL = iface_ops.UqL
-		UqR = iface_ops.UqR
-		Fq = iface_ops.Fq
+		UqL = iface_helpers.UqL
+		UqR = iface_helpers.UqR
+		Fq = iface_helpers.Fq
 
 		basis_valL = faces_to_basisL[faceL_ID]
 		basis_valR = faces_to_basisR[faceR_ID]
@@ -618,7 +618,7 @@ class ADERDG(base.SolverBase):
 		UqL = helpers.evaluate_state(UpL, basis_valL_st)
 		UqR = helpers.evaluate_state(UpR, basis_valR_st)
 
-		normals_ifaces = iface_ops.normals_ifaces
+		normals_ifaces = iface_helpers.normals_ifaces
 		normals = normals_ifaces[iiface]
 
 		if self.params["ConvFluxSwitch"] == True:
@@ -647,20 +647,20 @@ class ADERDG(base.SolverBase):
 		elem = boundary_face.elem_ID
 		face = boundary_face.face_ID
 
-		bface_ops = self.bface_operators
-		bface_ops_st = self.bface_operators_st
-		quad_wts_st = bface_ops_st.quad_wts
-		faces_to_xref_st = bface_ops_st.faces_to_xref
+		bface_helpers = self.bface_helpers
+		bface_helpers_st = self.bface_helpers_st
+		quad_wts_st = bface_helpers_st.quad_wts
+		faces_to_xref_st = bface_helpers_st.faces_to_xref
 
-		faces_to_basis = bface_ops.faces_to_basis
-		faces_to_basis_st = bface_ops_st.faces_to_basis
+		faces_to_basis = bface_helpers.faces_to_basis
+		faces_to_basis_st = bface_helpers_st.faces_to_basis
 
-		normals_bfgroups = bface_ops.normals_bfgroups
-		x_bfgroups = bface_ops.x_bfgroups
+		normals_bfgroups = bface_helpers.normals_bfgroups
+		x_bfgroups = bface_helpers.x_bfgroups
 
-		UqI = bface_ops_st.UqI
-		UqB = bface_ops_st.UqB
-		Fq = bface_ops_st.Fq
+		UqI = bface_helpers_st.UqI
+		UqB = bface_helpers_st.UqB
+		Fq = bface_helpers_st.Fq
 
 		if face == 0:
 			face_st = 3
@@ -732,9 +732,9 @@ class ADERDG(base.SolverBase):
 
 		InterpolateFluxADER = params["InterpolateFluxADER"]
 
-		elem_ops = self.elem_operators
-		elem_ops_st = self.elem_operators_st
-		djac_elems = elem_ops.djac_elems 
+		elem_helpers = self.elem_helpers
+		elem_helpers_st = self.elem_helpers_st
+		djac_elems = elem_helpers.djac_elems 
 		djac = djac_elems[elem]
 
 		rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],
@@ -746,15 +746,15 @@ class ADERDG(base.SolverBase):
 			Fq = physics.get_conv_flux_interior(Up)
 			dg_tools.interpolate_to_nodes(Fq, F)
 		else:
-			ader_ops = self.ader_operators
-			basis_val_st = elem_ops_st.basis_val
-			quad_wts_st = elem_ops_st.quad_wts
-			quad_wts = elem_ops.quad_wts
-			quad_pts_st = elem_ops_st.quad_pts
-			quad_pts = elem_ops.quad_pts
+			ader_helpers = self.ader_helpers
+			basis_val_st = elem_helpers_st.basis_val
+			quad_wts_st = elem_helpers_st.quad_wts
+			quad_wts = elem_helpers.quad_wts
+			quad_pts_st = elem_helpers_st.quad_pts
+			quad_pts = elem_helpers.quad_pts
 			nq_st = quad_wts_st.shape[0]
 			nq = quad_wts.shape[0]
-			iMM = ader_ops.iMM_elems[elem]
+			iMM = ader_helpers.iMM_elems[elem]
 
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
@@ -789,16 +789,16 @@ class ADERDG(base.SolverBase):
 
 		InterpolateFluxADER = params["InterpolateFluxADER"]
 
-		elem_ops = self.elem_operators
-		elem_ops_st = self.elem_operators_st
-		djac_elems = elem_ops.djac_elems 
+		elem_helpers = self.elem_helpers
+		elem_helpers_st = self.elem_helpers_st
+		djac_elems = elem_helpers.djac_elems 
 		djac = djac_elems[elem]
 
-		x_elems = elem_ops.x_elems
+		x_elems = elem_helpers.x_elems
 		x = x_elems[elem]
 
-		ader_ops = self.ader_operators
-		x_elems_ader = ader_ops.x_elems
+		ader_helpers = self.ader_helpers
+		x_elems_ader = ader_helpers.x_elems
 		x_ader = x_elems_ader[elem]
 
 		TimePhiData = None
@@ -815,15 +815,15 @@ class ADERDG(base.SolverBase):
 			dg_tools.interpolate_to_nodes(Sq, S)
 
 		else:
-			ader_ops = self.ader_operators
-			basis_val_st = elem_ops_st.basis_val
+			ader_helpers = self.ader_helpers
+			basis_val_st = elem_helpers_st.basis_val
 			nb_st = basis_val_st.shape[1]
-			quad_wts_st = elem_ops_st.quad_wts
-			quad_wts = elem_ops.quad_wts
-			quad_pts_st = elem_ops_st.quad_pts
+			quad_wts_st = elem_helpers_st.quad_wts
+			quad_wts = elem_helpers.quad_wts
+			quad_pts_st = elem_helpers_st.quad_pts
 			nq_st = quad_wts_st.shape[0]
 			nq = quad_wts.shape[0]
-			iMM = ader_ops.iMM_elems[elem]
+			iMM = ader_helpers.iMM_elems[elem]
 
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
