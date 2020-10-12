@@ -9,7 +9,7 @@ import numpy as np
 import numerics.quadrature.segment as qseg
 
 
-def get_quadrature_points_weights(order, quad_type, forced_pts=None):
+def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
     '''
     Calls the segment quadrature function to obtain quadrature points and 
     restructures them for quadrilateral shapes using tensor products
@@ -18,7 +18,7 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
     ------- 
         order: solution order
         quad_type: Enum that points to the appropriate quadrature calc
-        forced_pts: [OPTIONAL] number of points if forcing nodes to be 
+        colocated_pts: [OPTIONAL] number of points if forcing nodes to be 
             equal to quad_pts is turned on
 
     Outputs:
@@ -27,7 +27,7 @@ def get_quadrature_points_weights(order, quad_type, forced_pts=None):
         qwts: quadrature weights [nq, 1]
     '''
     try:
-        fpts = int(np.sqrt(forced_pts))
+        fpts = int(np.sqrt(colocated_pts))
     except:
     	fpts = None
 

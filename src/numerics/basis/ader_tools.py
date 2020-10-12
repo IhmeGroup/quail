@@ -69,30 +69,7 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem=-1,
     iMM = np.linalg.inv(MM)
 
     return iMM # [nb_st, nb_st]
-
-
-def get_inv_stiffness_matrix_ader(mesh, basis, order, elem, grad_dir):
-    '''
-    Calculate the inverse stiffness matrix (currently not used)
-
-    Inputs:
-    -------
-        mesh: mesh object
-        basis: basis object
-        order: solution order
-        elem: element index
-        grad_dir: direction to take the gradient in
-
-    Outputs:
-    -------- 
-        iSM: inverse stiffness matrix [nb_st, nb_st]
-    '''
-    SM = get_stiffness_matrix_ader(mesh, basis, order, elem, grad_dir)
-
-    iSM = np.linalg.inv(SM) 
-
-    return iSM # [nb_st, nb_st]
-
+    
 
 def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem, 
         grad_dir, physical_space=False):
