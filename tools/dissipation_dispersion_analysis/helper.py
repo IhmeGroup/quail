@@ -10,7 +10,7 @@ import code
 ### Function to calculate mass matrix, stiffness matrix, basis polynomials
 def CalculateBasisAndMatrices(solver, mesh, order):
 	## Mass, stiffness matrix
-	# MMinv, _ = basis_defs.get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, PhysicalSpace=True)
+	# MMinv, _ = basis_defs.get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, physical_space=True)
 	MMinv = solver.elem_operators.iMM_elems[0]
 	SM = basis_tools.get_stiffness_matrix(solver, mesh, order=order, elem=0)
 

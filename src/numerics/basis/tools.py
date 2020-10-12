@@ -169,7 +169,7 @@ def get_inv_mass_matrices(mesh, physics, basis):
 
 
 def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1, 
-        PhysicalSpace=False):
+        physical_space=False):
     '''
     Calculate the inverse mass matrix for a given element
 
@@ -179,21 +179,21 @@ def get_elem_inv_mass_matrix(mesh, basis, order, elem=-1,
         basis: basis function object
         order: solution order
         elem: [OPTIONAL] element index
-        PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
+        physical_space: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space})
 
     Outputs:
     -------- 
         iMM: inverse mass matrix [nb, nb]
     '''
-    MM = get_elem_mass_matrix(mesh, basis, order, elem, PhysicalSpace)
+    MM = get_elem_mass_matrix(mesh, basis, order, elem, physical_space)
     
     iMM = np.linalg.inv(MM) 
 
     return iMM # [nb, nb]
 
 
-def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
+def get_elem_mass_matrix(mesh, basis, order, elem=-1, physical_space=False):
     '''
     Calculate the mass matrix for a given element
 
@@ -203,7 +203,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
         basis: basis function object
         order: solution order [int]
         elem: [OPTIONAL] element index [int]
-        PhysicalSpace: [OPTIONAL] Flag to calc matrix in physical or 
+        physical_space: [OPTIONAL] Flag to calc matrix in physical or 
             reference space (default: False {reference space}) 
 
     Outputs:
@@ -212,7 +212,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
     '''
     gbasis = mesh.gbasis
 
-    if PhysicalSpace:
+    if physical_space:
         quad_order = gbasis.get_quadrature_order(mesh, order*2)
     else:
         quad_order = order*2
@@ -223,7 +223,7 @@ def get_elem_mass_matrix(mesh, basis, order, elem=-1, PhysicalSpace=False):
 
     basis.get_basis_val_grads(quad_pts, get_val=True)
 
-    if PhysicalSpace:
+    if physical_space:
         djac,_,_ = element_jacobian(mesh,elem,quad_pts,get_djac=True)
 
         if len(djac) == 1:

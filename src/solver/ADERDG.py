@@ -284,28 +284,28 @@ class ADERHelpers(object):
 		iMM_elems = np.zeros([mesh.num_elems,nb,nb])
 		# Get flux matrices in time
 		FTL = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis_st,
-				order, elem=0, PhysicalSpace=False)
+				order, physical_space=False)
 		FTR = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis,
-				order, elem=0, PhysicalSpace=False)
+				order, physical_space=False)
 
 		# Get stiffness matrix in time
 		SMT = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st,
-				order, dt, elem=0, gradDir=1, PhysicalSpace=False)
+				order, dt, elem=0, grad_dir=1, physical_space=False)
 
 		# Get stiffness matrix in space
 		for elem in range(mesh.num_elems):
 			SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis,
-					basis_st, order, dt, elem, gradDir=0, PhysicalSpace=True)
+					basis_st, order, dt, elem, grad_dir=0, physical_space=True)
 			SMS_elems[elem,:,:,0] = SMS.transpose()
 
 			iMM = basis_st_tools.get_elem_inv_mass_matrix_ader(mesh,
-					basis_st, order, elem, PhysicalSpace=True)
+					basis_st, order, elem, physical_space=True)
 			iMM_elems[elem] = iMM
 
 		iMM = basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st,
-				order, elem=-1, PhysicalSpace=False)
+				order, elem=-1, physical_space=False)
 		MM = basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order,
-				elem=-1, PhysicalSpace=False)
+				elem=-1, physical_space=False)
 
 		self.FTL = FTL
 		self.FTR = FTR

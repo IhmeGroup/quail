@@ -47,7 +47,7 @@ class StepperBase(ABC):
 	Attributes:
 	-----------
 	R: numpy array of floats (shape : [num_elems, nb, ns])
-		solution's residaul array
+		solution's residual array
 	dt: float
 		time-step for the solution
 	num_time_steps: int
