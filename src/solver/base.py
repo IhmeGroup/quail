@@ -190,15 +190,15 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_face_residual(self, ibfgrp, ibface, U, R):
+	def get_boundary_face_residual(self, bgroup_num, bface_ID, U, R):
 		'''
 		Calculates the residual from the surface integral for each boundary 
 		face
 
 		Inputs:
 		-------
-			ibfgrp: index of BC group
-			ibface: index of boundary face
+			bgroup_num: index of boundary group
+			bface_ID: index of boundary face
 			U: solution array from internal element
 			
 		Outputs:
@@ -390,12 +390,12 @@ class SolverBase(ABC):
 
 		for BFG in mesh.boundary_groups.values():
 
-			for ibface in range(BFG.num_boundary_faces):
-				boundary_face = BFG.boundary_faces[ibface]
+			for bface_ID in range(BFG.num_boundary_faces):
+				boundary_face = BFG.boundary_faces[bface_ID]
 				elem = boundary_face.elem_ID
 				face = boundary_face.face_ID
 
-				R[elem] = self.get_boundary_face_residual(BFG, ibface,
+				R[elem] = self.get_boundary_face_residual(BFG, bface_ID,
 						U[elem], R[elem])
 
 

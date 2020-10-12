@@ -46,8 +46,8 @@ class StepperBase(ABC):
 
 	Attributes:
 	-----------
-	R: numpy array of floats (shape : [num_elems, nb, ns])
-		solution's residual array
+	R: numpy array [num_elems, nb, ns]
+		residual array
 	dt: float
 		time-step for the solution
 	num_time_steps: int
@@ -55,7 +55,7 @@ class StepperBase(ABC):
 	get_time_step: method
 		method to obtain dt given input decks logic (CFL-based vs # of 
 		timesteps, etc...)
-	balance_const: numpy array of floats (shaped like R)
+	balance_const: numpy array (shaped like R)
 		balancing constant array used only with the Simpler splitting scheme
 	
 	Abstract Methods:
@@ -213,16 +213,16 @@ class LSRK4(StepperBase):
 		dU = self.dU
 
 		Time = solver.time
-		for INTRK in range(self.nstages):
+		for istage in range(self.nstages):
 			dt = self.dt
-			solver.time = Time + self.rk4c[INTRK]*dt
+			solver.time = Time + self.rk4c[istage]*dt
 			R = solver.get_residual(U, R)
 
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
-			dU *= self.rk4a[INTRK]
+			dU *= self.rk4a[istage]
 			dU += dUtemp
 
-			U += self.rk4b[INTRK]*dU
+			U += self.rk4b[istage]*dU
 			solver.apply_limiter(U)
 
 		return R # [num_elems, nb, ns]
@@ -258,9 +258,9 @@ class SSPRK3(StepperBase):
 				(shape: [num_elems, nb, ns])
 		'''
 		self.ssprk3a = np.array([0.0, -2.60810978953486, -0.08977353434746, 
-			-0.60081019321053, -0.72939715170280])
+				-0.60081019321053, -0.72939715170280])
 		self.ssprk3b = np.array([0.67892607116139, 0.20654657933371, 
-			0.27959340290485, 0.31738259840613, 0.30319904778284])
+				0.27959340290485, 0.31738259840613, 0.30319904778284])
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
@@ -273,15 +273,15 @@ class SSPRK3(StepperBase):
 		dU = self.dU
 
 		Time = solver.time
-		for INTRK in range(self.nstages):
+		for istage in range(self.nstages):
 			dt = self.dt
 			solver.time = Time + dt
 			R = solver.get_residual(U, R)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
-			dU *= self.ssprk3a[INTRK]
+			dU *= self.ssprk3a[istage]
 			dU += dUtemp
 
-			U += self.ssprk3b[INTRK]*dU
+			U += self.ssprk3b[istage]*dU
 			solver.apply_limiter(U)
 
 		return R # [num_elems, nb, ns]

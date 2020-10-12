@@ -65,8 +65,8 @@ physics.set_exact(exact_type="Uniform", state=Uinflow)
 # physics.SetBC("outflow", BCType=physics.BCType["PressureOutflow"], p=1.)
 # physics.SetBC("top", BCType=physics.BCType["SlipWall"])
 # physics.SetBC("bottom", BCType=physics.BCType["SlipWall"])
-# for ibfgrp in range(mesh.num_boundary_groups):
-# 	BFG = mesh.boundary_groups[ibfgrp]
+# for bgroup_num in range(mesh.num_boundary_groups):
+# 	BFG = mesh.boundary_groups[bgroup_num]
 # 	if BFG.Name == "inflow":
 # 		physics.set_BC(BC_type="StateAll", fcn_type="Uniform", state=Uinflow)
 # 	elif BFG.Name == "outflow":

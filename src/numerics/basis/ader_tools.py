@@ -265,7 +265,7 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem=-1,
         gbasis = mesh.gbasis
         quad_order = gbasis.get_quadrature_order(mesh, order*2)
     else:
-        quad_order = order*2 # TODO: Verify (+ 1 #Add one for ADER method)
+        quad_order = order*2
 
     quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 

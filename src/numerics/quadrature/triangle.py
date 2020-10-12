@@ -66,9 +66,9 @@ def get_quadrature_gauss_legendre(order):
         general.QuadratureType.GaussLegendre)
 
     # Apply transformation
-    qwts[:,0] *= 0.125*(1. - qpts[:,0])
-    qpts[:,1] = 0.25*(1. - qpts[:,0])*(1. + qpts[:,1])
-    qpts[:,0] = 0.5*(1. + qpts[:,0])
+    qwts[:, 0] *= 0.125*(1. - qpts[:, 0])
+    qpts[:, 1] = 0.25*(1. - qpts[:, 0])*(1. + qpts[:, 1])
+    qpts[:, 0] = 0.5*(1. + qpts[:, 0])
 
     return qpts, qwts
 

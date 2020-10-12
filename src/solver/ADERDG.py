@@ -25,13 +25,13 @@ import numerics.limiting.tools as limiter_tools
 import numerics.timestepping.tools as stepper_tools
 import numerics.timestepping.stepper as stepper_defs
 
-global echeck
-echeck = -1
-
 import solver.ader_tools as solver_tools
 import solver.tools as dg_tools
 import solver.base as base
 import solver.DG as DG
+
+global echeck
+echeck = -1
 
 
 class ElemHelpersADER(DG.ElemHelpers):
@@ -42,8 +42,12 @@ class ElemHelpersADER(DG.ElemHelpers):
 
     Additional methods and attributes are commented below.
 	'''
-	def get_basis_and_geom_data(self, mesh, basis, order):
+	def __init__(self):
+		super().__init__()
+		self.basis_time = None 
+			# basis object for converting time from ref to phys space
 
+	def get_basis_and_geom_data(self, mesh, basis, order):
 		dim = mesh.dim 
 		quad_pts = self.quad_pts 
 		num_elems = mesh.num_elems 
@@ -430,7 +434,7 @@ class ADERDG(base.SolverBase):
 		# Check validity of parameters
 		self.check_compatibility()
 
-		# Precompute operators
+		# Precompute helpers
 		self.precompute_matrix_helpers()
 
 		if self.limiter is not None:
@@ -483,7 +487,7 @@ class ADERDG(base.SolverBase):
 		self.bface_helpers.compute_helpers(mesh, physics, basis,
 				physics.order)
 
-		# Calculate ADER specific space-time operators
+		# Calculate ADER specific space-time helpers
 		self.elem_helpers_st = ElemHelpersADER()
 		self.elem_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
@@ -523,7 +527,6 @@ class ADERDG(base.SolverBase):
 		return Up
 
 	def get_element_residual(self, elem, Up, ER):
-
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
@@ -547,18 +550,17 @@ class ADERDG(base.SolverBase):
 		Uq = helpers.evaluate_state(Up, basis_val_st)
 
 		if self.params["ConvFluxSwitch"] == True:
-			# evaluate the inviscid flux integral.
+			# Evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq) # [nq,sr,dim]
 			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, 
 					elem_helpers, elem_helpers_st, elem, Fq)
 		
 		if self.params["SourceSwitch"] == True:
-			# evaluate the source term integral
-			t = np.zeros([nq_st,dim])
+			# Evaluate the source term integral
 			TimePhiData = None
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, 
-					self.time, self.Stepper.dt, TimePhiData, quad_pts_st, 
-					t, None)
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
+					mesh, elem, self.time, self.Stepper.dt, 
+					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 			
 			Sq = elem_helpers_st.Sq
 			Sq[:] = 0.
@@ -636,14 +638,14 @@ class ADERDG(base.SolverBase):
 
 		return RL, RR
 
-	def get_boundary_face_residual(self, BFG, ibface, U, R):
+	def get_boundary_face_residual(self, BFG, bface_ID, U, R):
 
 		mesh = self.mesh
 		dim = mesh.dim
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
-		ibfgrp = BFG.number
-		boundary_face = BFG.boundary_faces[ibface]
+		bgroup_num = BFG.number
+		boundary_face = BFG.boundary_faces[bface_ID]
 		elem = boundary_face.elem_ID
 		face = boundary_face.face_ID
 
@@ -678,15 +680,15 @@ class ADERDG(base.SolverBase):
 		TimePhiData = None
 
 		t = np.zeros([nq_st,dim])
-		t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, self.time,
-				self.Stepper.dt, TimePhiData, xref_st, t, None)
+		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, self.time,
+				self.Stepper.dt, xref_st[:, -1:], self.elem_helpers_st.basis_time)
 
 		# interpolate state and gradient at quad points
 		UqI = helpers.evaluate_state(U, basis_val_st)
 
 
-		normals = normals_bfgroups[ibfgrp][ibface]
-		x = x_bfgroups[ibfgrp][ibface]
+		normals = normals_bfgroups[bgroup_num][bface_ID]
+		x = x_bfgroups[bgroup_num][bface_ID]
 
 		# Get boundary state
 		BC = physics.BCs[BFG.name]
@@ -807,8 +809,8 @@ class ADERDG(base.SolverBase):
 			xnode = basis.get_nodes(order)
 			nb = xnode.shape[0]
 			t = np.zeros([nb,dim])
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, 
-					self.time, self.Stepper.dt, TimePhiData, xnode, t, None)
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, 
+					self.time, self.Stepper.dt, xnode[:, -1:], elem_helpers_st.basis_time)
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros_like(Sq)
 			Sq = physics.eval_source_terms(Up, x_ader, t, Sq)
@@ -828,9 +830,8 @@ class ADERDG(base.SolverBase):
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			t = np.zeros([nq_st,dim])
-			t, TimePhiData = solver_tools.ref_to_phys_time(mesh, elem, 
-					self.time, self.Stepper.dt, TimePhiData, 
-					quad_pts_st, t, None)
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, 
+					self.time, self.Stepper.dt, quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 		
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros([nb_st, ns])

@@ -161,11 +161,11 @@ class ODESolvers():
 			Uq = np.matmul(basis_val, Up)
 
 			# evaluate the source term Jacobian [nq, ns, ns]
-			jac = np.zeros([nq,ns,ns])
-			jac = physics.eval_source_term_jacobians(Uq, x, solver.time, jac) 
+			Sjac = np.zeros([nq,ns,ns])
+			Sjac = physics.eval_source_term_jacobians(Uq, x, solver.time, Sjac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
-			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem, jac)
+			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem, Sjac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
 					np.einsum('ij,jkl->ijl',iMM,dRdU)

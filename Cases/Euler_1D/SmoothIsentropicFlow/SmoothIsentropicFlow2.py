@@ -45,8 +45,8 @@ physics.set_exact(exact_type="SmoothIsentropicFlow", a=0.9)
 
 # Boundary conditions
 # if not Periodic:
-# 	for ibfgrp in range(mesh.num_boundary_groups):
-# 		BFG = mesh.boundary_groups[ibfgrp]
+# 	for bgroup_num in range(mesh.num_boundary_groups):
+# 		BFG = mesh.boundary_groups[bgroup_num]
 # 		if BFG.Name is "x1":
 # 			physics.set_BC(BC_type="StateAll", fcn_type="SmoothIsentropicFlow", a=0.9)
 # 		elif BFG.Name is "x2":

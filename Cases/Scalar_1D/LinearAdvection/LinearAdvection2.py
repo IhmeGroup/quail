@@ -51,8 +51,8 @@ else:
 	Inflow = "x2"; Outflow = "x1"
 if not Periodic:
 	raise Exception
-	# for ibfgrp in range(mesh.num_boundary_groups):
-	# 	BC = physics.BCs[ibfgrp]
+	# for bgroup_num in range(mesh.num_boundary_groups):
+	# 	BC = physics.BCs[bgroup_num]
 	# 	## Left
 	# 	if BC.Name is Inflow:
 	# 		BC.Set(Function=physics.FcnSine, BCType=physics.BCType["StateAll"], omega = 2*np.pi)

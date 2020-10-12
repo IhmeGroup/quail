@@ -19,7 +19,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, Fq):
 	Inputs:
 	-------
 		solver: solver object
-		elem_helpers: helper operators defined in ElemHelpers
+		elem_helpers: helpers defined in ElemHelpers
 		elem_ID: element index
 		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
 
@@ -67,7 +67,7 @@ def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
 
 	Inputs:
 	-------
-		elem_helpers: helper operators defined in ElemHelpers
+		elem_helpers: helpers defined in ElemHelpers
 		elem_ID: element index
 		Sq: source term array evaluated at the quadrature points [nq, ns]
 
@@ -81,37 +81,30 @@ def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
 	djac_elems = elem_helpers.djac_elems 
 	djac = djac_elems[elem_ID]
 
-	ER = np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
-
-	return ER # [nb, ns]
+	return np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
 
 
-def calculate_dRdU(elem_helpers, elem_ID, jac):
+def calculate_dRdU(elem_helpers, elem_ID, Sjac):
 	'''
 	Helper function for ODE solvers that calculates the derivative of 
 
-		integral(basis_val*S(U))dVol
+		integral(basis_val*S(U))dx
 	
 	with respect to the solution state 
 	
 	Inputs: 
-		elem_helpers: object containing precomputed element operations
+		elem_helpers: object containing precomputed element helpers
 		elem_ID: element index
-		jac: element source term Jacobian [nq, ns, ns]
+		Sjac: element source term Jacobian [nq, ns, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
 	djac_elems = elem_helpers.djac_elems 
 	djac = djac_elems[elem_ID]
-	ns = jac.shape[-1]
-	nb = basis_val.shape[1]
-	nq = quad_wts.shape[0]
 
-	test1 = quad_wts*djac
-	test = np.einsum('ijk,il->ijk',jac,test1)
-	ER = np.einsum('bq,qts -> bts',basis_val.transpose(),test)
+	a = np.einsum('ijk,il->ijk', Sjac, quad_wts*djac)
 
-	return ER # [nb, ns, ns]
+	return np.einsum('bq,qts->bts',basis_val.transpose(), a) # [nb, ns, ns]
 
 
 def mult_inv_mass_matrix(mesh, solver, dt, R):

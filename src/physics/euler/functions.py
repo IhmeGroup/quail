@@ -1047,9 +1047,9 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		evals = self.evals 
 
-		evals[:,0:1] = velRoe[:,0:1] - c
-		evals[:,1:2] = velRoe[:,0:1]
-		evals[:,-1:] = velRoe[:,0:1] + c
+		evals[:, 0:1] = velRoe[:, 0:1] - c
+		evals[:, 1:2] = velRoe[:, 0:1]
+		evals[:, -1:] = velRoe[:, 0:1] + c
 
 		return evals 
 

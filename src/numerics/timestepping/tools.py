@@ -30,21 +30,21 @@ def set_stepper(params, U):
 	-------- 
 	    stepper: instantiated stepper object
 	'''
-	TimeStepper = params["TimeStepper"]
-	if StepperType[TimeStepper] == StepperType.FE:
+	time_stepper = params["TimeStepper"]
+	if StepperType[time_stepper] == StepperType.FE:
 		stepper = stepper_defs.FE(U)
-	elif StepperType[TimeStepper] == StepperType.RK4:
+	elif StepperType[time_stepper] == StepperType.RK4:
 		stepper = stepper_defs.RK4(U)
-	elif StepperType[TimeStepper] == StepperType.LSRK4:
+	elif StepperType[time_stepper] == StepperType.LSRK4:
 		stepper = stepper_defs.LSRK4(U)
-	elif StepperType[TimeStepper] == StepperType.SSPRK3:
+	elif StepperType[time_stepper] == StepperType.SSPRK3:
 		stepper = stepper_defs.SSPRK3(U)
 	# if setting a splitting scheme select solvers for the splits
-	elif StepperType[TimeStepper] == StepperType.Strang:
+	elif StepperType[time_stepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
 			params["OperatorSplittingImplicit"], U)
-	elif StepperType[TimeStepper] == StepperType.Simpler:
+	elif StepperType[time_stepper] == StepperType.Simpler:
 		stepper = stepper_defs.Simpler(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
 			params["OperatorSplittingImplicit"], U)
