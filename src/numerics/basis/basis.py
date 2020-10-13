@@ -68,8 +68,6 @@ class ShapeBase(ABC):
         sets the enum for the element's face quadrature type given a str
     get_quadrature_order
         conducts logic to specify the quadrature order for an element
-    force_colocated_nodes_quad_pts
-        if flag is True, method forces node pts equal to quadrature pts
     '''
 
     @property
@@ -258,31 +256,6 @@ class ShapeBase(ABC):
             qorder += dim * (gorder-1)
         return qorder
 
-    def force_colocated_nodes_quad_pts(self, force_flag):
-        '''
-        If the input flag is True, this method forces the number of nodes
-        per element to be equal to the number of quadrature points. This 
-        eliminates aliasing by removing any interpolation of quadrature
-        points to nodes. 
-
-        Inputs:
-        -------
-            force_flag: Flag used to determine if the method is activated
-
-        Outputs:
-        --------
-            self.colocated_pts: set to nb if force_flag is True, left as 
-                None otherwise
-        
-        Notes:
-        ------ 
-            can only be used when GaussLobatto is specified for both the 
-            quadrature and node type
-        '''
-        if force_flag:
-            self.colocated_pts = self.get_num_basis_coeff(self.order)
-            self.skip_interp = True
-
 
 class PointShape(ShapeBase):
     '''
@@ -304,7 +277,6 @@ class PointShape(ShapeBase):
         pass
 
     def get_quadrature_data(self, order):
-
         quad_pts = np.zeros([1, 1])
         quad_wts = np.ones([1, 1])
 
@@ -360,13 +332,8 @@ class SegShape(ShapeBase):
         return elem_pts # [1, 1]
 
     def get_quadrature_data(self, order):
-        try:
-            fpts = self.colocated_pts
-        except:
-            fpts = None
-
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
-                self.quadrature_type, colocated_pts=fpts)
+                self.quadrature_type, self.num_pts_colocated)
 
         return quad_pts, quad_wts # [nq, dim], [nq, 1]
 
@@ -437,13 +404,8 @@ class QuadShape(ShapeBase):
         return qorder
 
     def get_quadrature_data(self, order):
-        try:
-            fpts = self.colocated_pts
-        except:
-            fpts = None
-
         quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(
-                order, self.quadrature_type, colocated_pts=fpts)
+                order, self.quadrature_type, self.num_pts_colocated)
 
         return quad_pts, quad_wts # [nq, dim] and [nq, 1]
 
@@ -515,7 +477,7 @@ class TriShape(ShapeBase):
         '''
         Additional Notes:
         -----------------
-        Forced points cannot be used with triangles
+        Colocated scheme cannot be used with triangles
         '''
         quad_pts, quad_wts = triangle.get_quadrature_points_weights(order, 
                 self.quadrature_type)
@@ -554,9 +516,6 @@ class BasisBase(ABC):
         evaluated gradient of the basis function in reference space
     basis_phys_grad: numpy array
         evaluated gradient of the basis function in physical space
-    skip_interp: boolean
-        when forcing nodes to be the same as quadrature this flag is 
-        used to skip the interpolation routines as they are not needed
     nb: int
         number of polynomial coefficients
     get_1d_nodes: method
@@ -565,6 +524,13 @@ class BasisBase(ABC):
     calculate_normals: method
         method to obtain normals for element faces [options in 
         src/numerics/basis/tools.py]
+    skip_interp: boolean
+        if True, then interpolation to the quadrature points is skipped;
+        useful for a collocated scheme in which the quadrature points
+        are the same as the solution nodes
+    num_pts_colocated: int
+        for a collocated scheme, the number of quadrature points (same
+        as the number of solution nodes)
     
     Methods:
     --------
@@ -577,6 +543,8 @@ class BasisBase(ABC):
     get_basis_val_grads
         function that gets the basis values and either the phys or ref 
         gradient for the basis depending on the optional arguments 
+    force_colocated_nodes_quad_pts
+        if flag is True, method forces node pts equal to quadrature pts
     '''
     @property
     @abstractmethod
@@ -597,14 +565,15 @@ class BasisBase(ABC):
     @abstractmethod
     def __init__(self, order):
         self.order = order
-        self.nb = 0
+        self.nb = self.get_num_basis_coeff(order)
         self.basis_val = np.zeros(0)
         self.basis_ref_grad = np.zeros(0)
         self.basis_phys_grad = np.zeros(0)
-        self.skip_interp = False
         self.quadrature_type = -1
         self.get_1d_nodes = basis_tools.set_1D_node_calc("Equidistant")
         self.calculate_normals = None
+        self.skip_interp = False
+        self.num_pts_colocated = 0
 
     def __repr__(self):
         return '{self.__class__.__name__}(order={self.order})'.format(
@@ -748,6 +717,40 @@ class BasisBase(ABC):
         self.get_basis_val_grads(elem_pts, get_val, get_ref_grad, 
                 get_phys_grad, ijac)
 
+    def force_colocated_nodes_quad_pts(self, use_colocated_scheme):
+        '''
+        This method sets appropriate attributes if using a colocated 
+        scheme, i.e. quadrature points and solution nodes are the same.
+
+        Inputs:
+        -------
+            use_colocated_scheme: if True, then we are using a 
+                colocated scheme
+
+        Outputs:
+        --------
+            self.num_pts_colocated: number of solution nodes (if 
+                use_colocated_scheme is True)
+            self.skip_interp: True (use_colocated_scheme)
+        
+        Notes:
+        ------ 
+            Can only be used when GaussLobatto is specified for both the 
+            quadrature and node type;
+            FACE_SHAPE.num_pts_colocated also modified
+        '''
+        if use_colocated_scheme:
+            self.num_pts_colocated = self.nb
+            self.skip_interp = True
+        try:
+            if use_colocated_scheme:
+                self.FACE_SHAPE.num_pts_colocated = \
+                        self.FACE_SHAPE.get_num_basis_coeff(self.order)
+            else:
+                self.FACE_SHAPE.num_pts_colocated = 0
+        except AttributeError:
+            pass
+
 
 class LagrangeSeg(BasisBase, SegShape):
     '''
@@ -762,7 +765,6 @@ class LagrangeSeg(BasisBase, SegShape):
 
     def __init__(self, order):
         super().__init__(order)
-        self.nb = self.get_num_basis_coeff(order)
         self.calculate_normals = basis_tools.calculate_1D_normals
  
     def get_nodes(self, p):
@@ -852,7 +854,6 @@ class LagrangeQuad(BasisBase, QuadShape):
 
     def __init__(self, order):
         super().__init__(order)
-        self.nb = self.get_num_basis_coeff(order)
         self.calculate_normals = basis_tools.calculate_2D_normals
 
     def get_nodes(self, p):
@@ -961,7 +962,6 @@ class LagrangeTri(BasisBase, TriShape):
 
     def __init__(self, order):
         super().__init__(order)
-        self.nb = self.get_num_basis_coeff(order)
         self.calculate_normals = basis_tools.calculate_2D_normals
 
     def get_nodes(self, p):
@@ -1054,7 +1054,6 @@ class LegendreSeg(BasisBase, SegShape):
 
     def __init__(self, order):
         super().__init__(order)
-        self.nb = self.get_num_basis_coeff(order)
 
     def get_values(self, quad_pts):
         p = self.order
@@ -1098,7 +1097,6 @@ class LegendreQuad(BasisBase, QuadShape):
 
     def __init__(self, order):
         super().__init__(order)
-        self.nb = self.get_num_basis_coeff(order)
 
     def get_values(self, quad_pts):
         p = self.order
@@ -1147,7 +1145,6 @@ class HierarchicH1Tri(BasisBase, TriShape):
 
     def __init__(self, order):
         super().__init__(order)
-        self.nb = self.get_num_basis_coeff(order)
 
     def get_values(self, quad_pts):
         p = self.order

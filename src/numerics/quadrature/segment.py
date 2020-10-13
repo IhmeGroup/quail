@@ -9,7 +9,7 @@ import numpy as np
 import general
 
 
-def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
+def get_quadrature_points_weights(order, quad_type, num_pts_colocated=0):
     '''
     Depending on the general.QuadratureType enum, calculate the appropriate 
     function to obtain quadrature points and weights
@@ -17,9 +17,10 @@ def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
     Inputs:
     ------- 
         order: solution order
-        quad_type: Enum that points to the appropriate quadrature calc
-        colocated_pts: [OPTIONAL] number of points if forcing nodes to be 
-            equal to quad_pts is turned on
+        num_pts_colocated: if greater than 0, then a colocated scheme will
+            be used, i.e. the quadrature points will be the same as the 
+            solution nodes; this value then determines the number of 
+            quadrature points
 
     Outputs:
     --------
@@ -29,7 +30,8 @@ def get_quadrature_points_weights(order, quad_type, colocated_pts=None):
     if quad_type == general.QuadratureType.GaussLegendre:
         qpts, qwts = get_quadrature_gauss_legendre(order)
     elif quad_type == general.QuadratureType.GaussLobatto:
-        qpts, qwts = get_quadrature_gauss_lobatto(order, colocated_pts)
+        qpts, qwts = get_quadrature_gauss_lobatto(order, 
+                num_pts_colocated)
     else:
         raise NotImplementedError
 
@@ -63,28 +65,30 @@ def get_quadrature_gauss_legendre(order):
     return qpts, qwts # [nq, 1] and [nq, 1]
 
 
-def get_quadrature_gauss_lobatto(order, colocated_pts=None):
+def get_quadrature_gauss_lobatto(order, num_pts_colocated):
     '''
     Calculate the quadrature points and weights using Gauss Lobatto rules
 
     Inputs:
     ------- 
         order: solution order 
-        colocated_pts: [OPTIONAL] number of points if forcing nodes to be 
-            equal to quad_pts is turned on
+        num_pts_colocated: if greater than 0, then a colocated scheme will
+            be used, i.e. the quadrature points will be the same as the 
+            solution nodes; this value then determines the number of 
+            quadrature points
 
     Outputs:
     --------
         qpts: quadrature point coordinates [nq, dim]
         qwts: quadrature weights [nq, dim]
     '''
-    if order == 1: # Gauss Lobatto not defined for order = 1
+    if order == 1: # Gauss-Lobatto quadrature not defined for order = 1
         qpts, qwts = get_quadrature_points_weights(order, 
             general.QuadratureType["GaussLegendre"])
     else:
-        if colocated_pts != None:
-            # get order from colocated_pts -> pass order.
-            order = 2*colocated_pts - 3
+        if num_pts_colocated > 0:
+            # Get order from num_pts_colocated -> pass order.
+            order = 2*num_pts_colocated - 3
             qpts, qwts = gauss_lobatto(order)
         else:
             # use order argument in function call
@@ -98,7 +102,7 @@ def get_quadrature_gauss_lobatto(order, colocated_pts=None):
 
 def gauss_lobatto(order):
     '''
-    Evaluate quadrature with Gauss Lobatto rules
+    Evaluate quadrature with Gauss-Lobatto rules
 
     Inputs:
     ------- 
@@ -172,7 +176,7 @@ def get_lobatto_pts_wts(n, tol):
     qpts = -np.cos(np.pi*ind/n)
 
     niter = 1000
-    # Iterative evaluation to get roots of Legendre polynomials
+    # Iterative evaluation to get roots of Legendre polynomial derivatives
     for i in range(niter):
         qpts_old = qpts
         vander = np.polynomial.legendre.legvander(qpts, n)

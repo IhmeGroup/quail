@@ -1,5 +1,4 @@
 import sys; sys.path.append('../../src')
-import code
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d

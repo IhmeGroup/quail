@@ -42,7 +42,7 @@ class ElemHelpersADER(DG.ElemHelpers):
 		super().__init__()
 		self.need_phys_grad = False
 		self.basis_time = None 
-		
+
 
 class ADERHelpers(object):
 	'''
@@ -252,6 +252,7 @@ class ADERDG(base.SolverBase):
 
 		ns = physics.NUM_STATE_VARS
 
+		# Time stepping
 		time_stepper = params["TimeStepper"]
 		if StepperType[time_stepper] != StepperType.ADER:
 			raise errors.IncompatibleError
@@ -268,8 +269,8 @@ class ADERDG(base.SolverBase):
 		self.basis_st.set_elem_quadrature_type(params["ElementQuadrature"])
 		self.basis_st.set_face_quadrature_type(params["FaceQuadrature"])
 
-		self.basis.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
-		self.basis_st.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
+		self.basis_st.force_colocated_nodes_quad_pts(
+				params["ColocatedPoints"])
 
 		# Allocate array for predictor step in ADER-Scheme
 		physics.U_pred = np.zeros([self.mesh.num_elems, 
@@ -370,8 +371,8 @@ class ADERDG(base.SolverBase):
 		physics = self.physics
 
 		for elem_ID in range(mesh.num_elems):
-			Up[elem_ID] = self.calculate_predictor_elem(self, elem_ID, dt, W[elem_ID],
-					Up[elem_ID])
+			Up[elem_ID] = self.calculate_predictor_elem(self, elem_ID, dt, 
+					W[elem_ID], Up[elem_ID])
 
 		return Up
 
