@@ -138,7 +138,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	quad_pts = bface_helpers.quad_pts
 	quad_wts = bface_helpers.quad_wts
 	faces_to_basis = bface_helpers.faces_to_basis
-	normals_bfgroups = bface_helpers.normals_bfgroups
+	normals_bgroups = bface_helpers.normals_bgroups
 	x_bfgroups = bface_helpers.x_bfgroups
 	nq = quad_wts.shape[0]
 
@@ -180,7 +180,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		varq = physics.compute_variable(var_name, Uq) # [nq, 1]
 
 		# Normals
-		normals = normals_bfgroups[boundary_num][bface_ID] # [nq, dim]
+		normals = normals_bgroups[boundary_num][bface_ID] # [nq, dim]
 		jac = np.linalg.norm(normals, axis=1, keepdims=True) # [nq, 1]
 
 		# If requested, account for normal and dot with input dir

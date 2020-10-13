@@ -152,7 +152,7 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 		# Allocate
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, dim+1])
-		self.normals_bfgroups = []
+		self.normals_bgroups = []
 		self.x_bfgroups = []
 
 
@@ -166,10 +166,10 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 
 		i = 0
 		for bgroup in mesh.boundary_groups.values():
-			self.normals_bfgroups.append(np.zeros([bgroup.num_boundary_faces,nq,
+			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,nq,
 					dim]))
 			self.x_bfgroups.append(np.zeros([bgroup.num_boundary_faces,nq,dim]))
-			normal_bfgroup = self.normals_bfgroups[i]
+			normal_bgroup = self.normals_bgroups[i]
 			x_bfgroup = self.x_bfgroups[i]
 
 			# normals
@@ -178,7 +178,7 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 				nvec = mesh.gbasis.calculate_normals(mesh, 
 						boundary_face.elem_ID, boundary_face.face_ID, 
 						quad_pts)
-				normal_bfgroup[j] = nvec
+				normal_bgroup[j] = nvec
 
 				# physical coordinates of quadrature points
 				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID, 
@@ -406,8 +406,8 @@ class ADERDG(base.SolverBase):
 		if StepperType[TimeStepper] != StepperType.ADER:
 			raise errors.IncompatibleError
 
-		self.Stepper = stepper_defs.ADER(physics.U)
-		stepper_tools.set_time_stepping_approach(self.Stepper, params)
+		self.stepper = stepper_defs.ADER(physics.U)
+		stepper_tools.set_time_stepping_approach(self.stepper, params)
 
 		# Set the space-time basis functions for the solver
 		basis_name  = params["SolutionBasis"]
@@ -440,8 +440,9 @@ class ADERDG(base.SolverBase):
 		if self.limiter is not None:
 			self.limiter.precompute_helpers(self)
 
-		physics.conv_flux_fcn.alloc_helpers(np.zeros([self.int_face_helpers_st.
-			quad_wts.shape[0], physics.NUM_STATE_VARS]))
+		physics.conv_flux_fcn.alloc_helpers(np.zeros([
+			self.int_face_helpers_st.quad_wts.shape[0], 
+			physics.NUM_STATE_VARS]))
 
 		# Initialize state
 		if params["RestartFile"] is None:
@@ -450,7 +451,7 @@ class ADERDG(base.SolverBase):
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
 				Basis: {self.basis}, \n   Basis_st: {self.basis_st},\n   \
-				Stepper: {self.Stepper})'.format(self=self)
+				Stepper: {self.stepper})'.format(self=self)
 	
 	def check_compatibility(self):
 		super().check_compatibility()
@@ -465,7 +466,8 @@ class ADERDG(base.SolverBase):
 		if params["CFL"] != None:
 			print('Error Message')
 			print('-------------------------------------------------------')
-			print('CFL-based time-stepping not currently supported in ADERDG')
+			print('CFL-based time-stepping not currently supported in \
+					ADERDG')
 			print('')
 			raise errors.IncompatibleError
 
@@ -475,7 +477,7 @@ class ADERDG(base.SolverBase):
 
 		basis = self.basis
 		basis_st = self.basis_st
-		Stepper = self.Stepper
+		stepper = self.stepper
 
 		self.elem_helpers = DG.ElemHelpers()
 		self.elem_helpers.compute_helpers(mesh, physics, basis, 
@@ -498,8 +500,8 @@ class ADERDG(base.SolverBase):
 		self.bface_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
 
-		Stepper.dt = Stepper.get_time_step(Stepper, self)
-		dt = Stepper.dt
+		stepper.dt = stepper.get_time_step(stepper, self)
+		dt = stepper.dt
 		self.ader_helpers = ADERHelpers()
 		self.ader_helpers.compute_helpers(mesh, physics, basis, 
 				basis_st, dt, physics.order)
@@ -526,7 +528,7 @@ class ADERDG(base.SolverBase):
 
 		return Up
 
-	def get_element_residual(self, elem, Up, ER):
+	def get_element_residual(self, elem, Uc, R_elem):
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
@@ -546,32 +548,32 @@ class ADERDG(base.SolverBase):
 		nq = quad_wts.shape[0]
 		nq_st = quad_wts_st.shape[0]
 
-		# interpolate state and gradient at quad points
-		Uq = helpers.evaluate_state(Up, basis_val_st)
+		# interpolate state and gradient at quadrature points
+		Uq = helpers.evaluate_state(Uc, basis_val_st)
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq) # [nq,sr,dim]
-			ER += solver_tools.calculate_inviscid_flux_volume_integral(self, 
+			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(self, 
 					elem_helpers, elem_helpers_st, elem, Fq)
 		
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
-					mesh, elem, self.time, self.Stepper.dt, 
+					mesh, elem, self.time, self.stepper.dt, 
 					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 			
 			Sq = elem_helpers_st.Sq
 			Sq[:] = 0.
 			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]
 
-			ER += solver_tools.calculate_source_term_integral(elem_helpers, 
+			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, 
 					elem_helpers_st, elem, Sq)
 
 		if elem == echeck:
 			code.interact(local=locals())
 
-		return ER
+		return R_elem
 
 	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
 		mesh = self.mesh
@@ -637,7 +639,7 @@ class ADERDG(base.SolverBase):
 
 		return R_L, R_R
 
-	def get_boundary_face_residual(self, bgroup, bface_ID, U, R):
+	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, R_B):
 
 		mesh = self.mesh
 		dim = mesh.dim
@@ -656,7 +658,7 @@ class ADERDG(base.SolverBase):
 		faces_to_basis = bface_helpers.faces_to_basis
 		faces_to_basis_st = bface_helpers_st.faces_to_basis
 
-		normals_bfgroups = bface_helpers.normals_bfgroups
+		normals_bgroups = bface_helpers.normals_bgroups
 		x_bfgroups = bface_helpers.x_bfgroups
 
 		UqI = bface_helpers_st.UqI
@@ -677,15 +679,14 @@ class ADERDG(base.SolverBase):
 
 		nq_st = quad_wts_st.shape[0]
 
-		t = np.zeros([nq_st,dim])
 		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, self.time,
-				self.Stepper.dt, xref_st[:, -1:], self.elem_helpers_st.basis_time)
+				self.stepper.dt, xref_st[:, -1:], self.elem_helpers_st.basis_time)
 
-		# interpolate state and gradient at quad points
-		UqI = helpers.evaluate_state(U, basis_val_st)
+		# interpolate state and gradient at quadrature points
+		UqI = helpers.evaluate_state(Uc, basis_val_st)
 
 
-		normals = normals_bfgroups[bgroup_num][bface_ID]
+		normals = normals_bgroups[bgroup_num][bface_ID]
 		x = x_bfgroups[bgroup_num][bface_ID]
 
 		# Get boundary state
@@ -693,19 +694,19 @@ class ADERDG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# loop over time to apply BC at each temporal quadrature point
-			for i in range(len(t)):	
+			for i in range(t.shape[0]):	
 				# Fq[i,:] = BC.get_boundary_flux(physics, x, t[i], normals, 
 				# 		UqI[i,:].reshape([1,ns]))
 				Fq[i,:] = BC.get_boundary_flux(physics, 
-						UqI[i,:].reshape([1,ns]), normals, x, t[i])
+						UqI[i, :].reshape([1, ns]), normals, x, t[i])
 
-			R -= solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts_st, Fq)
 
 		if elem == echeck:
 			code.interact(local=locals())
 
-		return R
+		return R_B
 
 	def flux_coefficients(self, elem, dt, order, basis, Up):
 		'''
@@ -804,7 +805,7 @@ class ADERDG(base.SolverBase):
 			nb = xnode.shape[0]
 			t = np.zeros([nb,dim])
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, 
-					self.time, self.Stepper.dt, xnode[:, -1:], elem_helpers_st.basis_time)
+					self.time, self.stepper.dt, xnode[:, -1:], elem_helpers_st.basis_time)
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros_like(Sq)
 			Sq = physics.eval_source_terms(Up, x_ader, t, Sq)
@@ -825,7 +826,7 @@ class ADERDG(base.SolverBase):
 
 			t = np.zeros([nq_st,dim])
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, 
-					self.time, self.Stepper.dt, quad_pts_st[:, -1:], elem_helpers_st.basis_time)
+					self.time, self.stepper.dt, quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 		
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros([nb_st, ns])

@@ -100,13 +100,13 @@ class SolverBase(ABC):
 		self.basis.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
 
 		# Limiter
-		LIMITER_TYPE = params["ApplyLimiter"]
-		self.limiter = limiter_tools.set_limiter(LIMITER_TYPE, 
+		limiter_type = params["ApplyLimiter"]
+		self.limiter = limiter_tools.set_limiter(limiter_type, 
 				physics.PHYSICS_TYPE)
 
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
-		Basis: {self.basis},\n   Stepper: {self.Stepper})'.format(self=self)
+		Basis: {self.basis},\n   Stepper: {self.stepper})'.format(self=self)
 
 	def check_compatibility(self):
 		'''
@@ -147,38 +147,43 @@ class SolverBase(ABC):
 	@abstractmethod
 	def precompute_matrix_helpers(self):
 		'''
-		Precomputes element and face helper functions that only need to be
-		computed at the beginning of the simulation.
+		Precomputes element and face helper arrays and structures that only 
+		need to be computed once at the beginning of the simulation.
 		'''
 		pass
 
 	@abstractmethod
-	def get_element_residual(self, elem, Up, ER):
+	def get_element_residual(self, elem_ID, Uc, R_elem):
 		'''
-		Calculates the residual from the volume integral for each element
+		Calculates the volume contribution to the residual for a given
+		element.
 		
 		Inputs:
 		-------
-			elem: element index
+			elem_ID: element index
 			Up: solution state
+			R_elem: residual array 
 
 		Outputs:
 		--------
-			ER: calculated residiual array (for volume integral of specified 
-			element)
+			R_elem: calculated residual array 
 		'''
 		pass
 
 	@abstractmethod
-	def get_interior_face_residual(self, int_face_ID, UpL, UpR, R_L, R_R):
+	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
 		'''
 		Calculates the surface integral for the interior faces
 		
 		Inputs:
 		-------
-			interior_face: interior face object
-			UpL: solution array from left neighboring element
-			UpR: solution array from right neighboring element
+			int_face_ID: interior face ID
+			Uc_L: solution array for left neighboring element (polynomial
+				coefficients)
+			Uc_R: solution array for right neighboring element (polynomial
+				coefficients)
+			R_L: residual array (left neighboring element)
+			R_R: residual array (right neighboring element)
 			
 		Outputs:
 		--------
@@ -190,7 +195,7 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_face_residual(self, bgroup, bface_ID, U, R):
+	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, R_B):
 		'''
 		Calculates the residual from the surface integral for each boundary 
 		face
@@ -198,12 +203,13 @@ class SolverBase(ABC):
 		Inputs:
 		-------
 			bgroup: boundary group object
-			bface_ID: index of boundary face
-			U: solution array from adjacent element
+			bface_ID: ID of boundary face
+			Uc: solution array from adjacent element
+			R_B: residual array (for adjacent element)
 			
 		Outputs:
 		--------
-			R: calculated residual array (from boundary face)
+			R_B: calculated residual array (from boundary face)
 		'''
 		pass
 
@@ -211,8 +217,9 @@ class SolverBase(ABC):
 		'''
 		Initializes the state (initial condition) from the specified 
 		function in the input deck. Either interpolates the state to the 
-		nodes or uses an L2 projection to initialize the state.
+		nodes or employs L2 projection to initialize the state.
 		'''
+		# Unpack
 		mesh = self.mesh
 		physics = self.physics
 		basis = self.basis
@@ -223,9 +230,12 @@ class SolverBase(ABC):
 		ns = physics.NUM_STATE_VARS
 		order = physics.order
 
+		# Get solution nodes or quadrature info
 		if not params["L2InitialCondition"]:
+			# Solution nodes
 			eval_pts = basis.get_nodes(order)
 		else:
+			# Quadrature
 			order = 2*np.amax([physics.order, 1])
 			order = physics.get_quadrature_order(order)
 
@@ -235,26 +245,32 @@ class SolverBase(ABC):
 			eval_pts = quad_pts
 		npts = eval_pts.shape[0]
 
-		for elem in range(mesh.num_elems):
-			xphys = mesh_tools.ref_to_phys(mesh, elem, eval_pts)
+		for elem_ID in range(mesh.num_elems):
+			# Compute state
+			xphys = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
 			f = physics.IC.get_state(physics, x=xphys, t=self.time)
-			# f = physics.call_function(physics.IC, x=xphys, t=self.time)
 
 			if not params["L2InitialCondition"]:
-				solver_tools.interpolate_to_nodes(f, U[elem,:,:])
+				# Interpolate to solution nodes
+				solver_tools.interpolate_to_nodes(f, U[elem_ID,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, quad_pts, quad_wts, elem, f, U[elem,:,:])
+				# L2 projection
+				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis, 
+						quad_pts, quad_wts, elem_ID, f, U[elem_ID,:,:])
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		'''
-		Projects the state of a restartfile onto a new basis/order of 
-		accuracy
+		Projects the state to a different basis and/or order
 
 		Inputs:
 		-------
 			U_old: restart files old solution array
 			basis_old: previous basis function
-			order_old: previous polynomial order			
+			order_old: previous polynomial order
+
+		Outputs:
+		--------
+			state is modified
 		'''
 		mesh = self.mesh
 		physics = self.physics
@@ -281,16 +297,16 @@ class SolverBase(ABC):
 
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
-		for elem in range(mesh.num_elems):
+		for elem_ID in range(mesh.num_elems):
 
-			Up_old = helpers.evaluate_state(U_old[elem,:,:], 
+			Up_old = helpers.evaluate_state(U_old[elem_ID,:,:], 
 					basis_old.basis_val)
 
 			if not params["L2InitialCondition"]:
-				solver_tools.interpolate_to_nodes(Up_old, U[elem,:,:])
+				solver_tools.interpolate_to_nodes(Up_old, U[elem_ID,:,:])
 			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem], basis, 
-						quad_pts, quad_wts, elem, Up_old, U[elem,:,:])
+				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis, 
+						quad_pts, quad_wts, elem_ID, Up_old, U[elem_ID,:,:])
 	
 	def get_residual(self, U, R):
 		'''
@@ -306,7 +322,7 @@ class SolverBase(ABC):
 		'''
 		mesh = self.mesh
 		physics = self.physics
-		stepper = self.Stepper
+		stepper = self.stepper
 
 		if R is None:
 			R = np.copy(U)
@@ -339,8 +355,8 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 
-		for elem in range(mesh.num_elems):
-			R[elem] = self.get_element_residual(elem, U[elem], R[elem])
+		for elem_ID in range(mesh.num_elems):
+			R[elem_ID] = self.get_element_residual(elem_ID, U[elem_ID], R[elem_ID])
 
 	def get_interior_face_residuals(self, U, R):
 		'''
@@ -395,11 +411,11 @@ class SolverBase(ABC):
 
 			for bface_ID in range(BFG.num_boundary_faces):
 				boundary_face = BFG.boundary_faces[bface_ID]
-				elem = boundary_face.elem_ID
+				elem_ID = boundary_face.elem_ID
 				face = boundary_face.face_ID
 
-				R[elem] = self.get_boundary_face_residual(BFG, bface_ID,
-						U[elem], R[elem])
+				R[elem_ID] = self.get_boundary_face_residual(BFG, bface_ID,
+						U[elem_ID], R[elem_ID])
 
 
 	def apply_time_scheme(self):
@@ -409,7 +425,7 @@ class SolverBase(ABC):
 		physics = self.physics
 		mesh = self.mesh
 		Order = self.params["SolutionOrder"]
-		Stepper = self.Stepper
+		stepper = self.stepper
 		t = self.time
 
 		# Parameters
@@ -426,14 +442,14 @@ class SolverBase(ABC):
 		iwrite = 1
 
 		iStep = 0
-		while iStep < Stepper.num_time_steps:
+		while iStep < stepper.num_time_steps:
 
-			Stepper.dt = Stepper.get_time_step(Stepper, self)
+			stepper.dt = stepper.get_time_step(stepper, self)
 			# integrate in time
-			R = Stepper.take_time_step(self)
+			R = stepper.take_time_step(self)
 
 			# Increment time
-			t += Stepper.dt
+			t += stepper.dt
 			self.time = t
 
 			# Info to print

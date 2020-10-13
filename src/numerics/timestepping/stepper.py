@@ -310,10 +310,10 @@ class ADER(StepperBase):
 
 		R = self.R
 
-		# Prediction Step
+		# Prediction step
 		Up = solver.calculate_predictor_step(self.dt, W, Up)
 
-		# Correction Step
+		# Correction step
 		R = solver.get_residual(Up, R)
 
 		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt/2., R)

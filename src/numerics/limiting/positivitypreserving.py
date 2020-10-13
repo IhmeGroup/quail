@@ -205,7 +205,8 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		djac = self.djac_elems[elem]
 
-		# interpolate state and gradient at quad points over element and on faces
+		# interpolate state and gradient at quadrature points over element
+		# and on faces
 		# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
 		u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
 				skip_interp=solver.basis.skip_interp)
