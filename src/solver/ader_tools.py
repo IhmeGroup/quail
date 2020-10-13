@@ -45,8 +45,8 @@ def set_source_treatment(ns, source_treatment):
 	return fcn
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_helpers_st, 
-		elem_ID, Fq):
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers, 
+		elem_helpers_st, elem_ID, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the ADERDG scheme
 
@@ -60,8 +60,8 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_helpers_s
 
 	Outputs:
 	--------
-		R_elem: calculated residual array (for volume integral of specified 
-		element) [nb, ns]
+		R_elem: residual contribution (for volume integral of inviscid flux) 
+			[nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	quad_wts_st = elem_helpers_st.quad_wts
@@ -76,7 +76,8 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_helpers_s
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 	
-	R_elem = np.tensordot(np.tile(basis_phys_grad,(nq, 1, 1)), 
+	# Integrate
+	R_elem = np.tensordot(np.tile(basis_phys_grad, (nq, 1, 1)), 
 			Fq*(quad_wts_st.reshape(nq, nq)*djac).reshape(nq_st, 1, 1), 
 			axes=([0, 2], [0, 2])) # [nb, ns]
 
@@ -95,17 +96,19 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 
 	Outputs:
 	--------
-		R_B: calculated residual array (from boundary face) [nb, ns]
+		R_B: residual contribution (from boundary face) [nb, ns]
 	'''
 	nb = basis_val.shape[1]
 	nq = quad_wts_st.shape[0]
 
+	# Integrate
 	R_B = np.matmul(np.tile(basis_val,(nq,1)).transpose(), Fq*quad_wts_st) 
 
 	return R_B # [nb, ns]
 
 
-def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID, Sq):
+def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID, 
+		Sq):
 	'''
 	Calculates the source term volume integral for the ADERDG scheme
 
@@ -118,8 +121,8 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID, Sq):
 
 	Outputs:
 	--------
-		R_elem: calculated residual array (for volume integral of specified 
-		element) [nb, ns]
+		R_elem: residual contribution (from volume integral of source term) 
+			[nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	quad_wts_st = elem_helpers_st.quad_wts
@@ -132,6 +135,7 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID, Sq):
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 
+	# Integrate
 	R_elem = np.matmul(np.tile(basis_val,(nq, 1)).transpose(), 
 			Sq*(quad_wts_st.reshape(nq, nq)*djac).reshape(nq_st, 1))
 
@@ -143,7 +147,7 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 	Calculates the predicted solution state for the ADER-DG method using a 
 	nonlinear solve of the weak form of the DG discretization in time.
 
-	This function applies the source term explicitly. Appropriate for 
+	This function treats the source term explicitly. Appropriate for 
 	non-stiff systems.
 
 	Inputs:
@@ -180,7 +184,7 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 	iK = ader_helpers.iK
 
 	vol_elems = elem_helpers.vol_elems
-	W_bar = np.zeros([1,ns])
+	W_bar = np.zeros([1, ns])
 
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
 	vol = vol_elems[elem_ID]
@@ -188,17 +192,19 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 	U_pred[:] = W_bar
 
-	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, U_pred)
-	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, U_pred)
+	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, 
+			U_pred)
+	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+			U_pred)
 
 	niter = 100
 	for i in range(niter):
 
-		U_pred_new = np.matmul(iK, (np.matmul(MM, source_coeffs) - \
-				np.einsum('ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W)))
+		U_pred_new = np.matmul(iK, (np.matmul(MM, source_coeffs) - np.einsum(
+				'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W)))
 		err = U_pred_new - U_pred
 
-		if np.amax(np.abs(err)) < 1e-10:
+		if np.amax(np.abs(err)) < 1.e-10:
 			U_pred = U_pred_new
 			break
 
@@ -206,9 +212,10 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 		
 		source_coeffs = solver.source_coefficients(elem_ID, dt, order, 
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, U_pred)
+		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+				U_pred)
 
-		if i == niter-1:
+		if i == niter - 1:
 			print('Sub-iterations not converging')
 			raise ValueError
 
@@ -220,7 +227,7 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 	Calculates the predicted solution state for the ADER-DG method using a 
 	nonlinear solve of the weak form of the DG discretization in time.
 
-	This function applies the source term implicitly. Appropriate for 
+	This function treats the source term implicitly. Appropriate for 
 	stiff scalar equations.
 
 	Inputs:
@@ -261,43 +268,34 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 	K = ader_helpers.K
 
 	vol_elems = elem_helpers.vol_elems
-	# W_bar = np.zeros([1,ns])
-	# Wq = np.matmul(basis_val, W)
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
 	vol = vol_elems[elem_ID]
 
-	# W_bar[:] = np.matmul(Wq.transpose(),quad_wts*djac).T/vol
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 
-	# def F(u):
-	# 	S = 0.
-	# 	S = physics.eval_source_terms(1, 0., 0., u, S)
-	# 	F = u - S - W_bar[0,0]
-	# 	return F
-
-	# U_bar = fsolve(F, W_bar)
-
-	jac_q = np.zeros([1,ns,ns])
-
-	jac_q = physics.eval_source_term_jacobians(W_bar, x, solver.time, jac_q) 
-	jac = jac_q[0,:,:]
+	Sjac_q = np.zeros([1, ns, ns])
+	Sjac_q = physics.eval_source_term_jacobians(W_bar, x, solver.time, 
+			Sjac_q) 
+	Sjac = Sjac_q[0, :, :]
 	
-	Kp = K-MM*dt*jac 
+	Kp = K - MM*dt*Sjac 
 	iK = np.linalg.inv(Kp)
 
 	U_pred[:] = W_bar
 
-	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, U_pred)
-	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, U_pred)
+	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, 
+			U_pred)
+	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+			U_pred)
+
 	niter = 100
 	for i in range(niter):
-
-		U_pred_new = np.matmul(iK,(np.matmul(MM,source_coeffs) - \
-				np.einsum('ijk,jlk->il',SMS,flux_coeffs)+np.matmul(FTR,W) - \
-				np.matmul(MM,dt*jac*U_pred)))
+		U_pred_new = np.matmul(iK, np.matmul(MM, source_coeffs) - np.einsum(
+				'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W) - \
+				np.matmul(MM, dt*Sjac*U_pred))
 		err = U_pred_new - U_pred
 
-		if np.amax(np.abs(err))<1e-10:
+		if np.amax(np.abs(err)) < 1.e-10:
 			U_pred = U_pred_new
 			break
 
@@ -305,9 +303,10 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 
 		source_coeffs = solver.source_coefficients(elem_ID, dt, order, 
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, U_pred)
+		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+				U_pred)
 		
-		if i == niter-1:
+		if i == niter - 1:
 			print('Sub-iterations not converging')
 			raise ValueError
 
@@ -359,7 +358,6 @@ def predictor_elem_sylvester(solver, elem_ID, dt, W, U_pred):
 	x = x_elems[elem_ID]
 
 	FTR = ader_helpers.FTR
-	# iMM = ader_helpers.iMM_elems[elem_ID]
 	iMM = ader_helpers.iMM
 	SMS = ader_helpers.SMS_elems[elem_ID]
 	K = ader_helpers.K
@@ -370,29 +368,32 @@ def predictor_elem_sylvester(solver, elem_ID, dt, W, U_pred):
 	vol = vol_elems[elem_ID]
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
 
-	jac_q = np.zeros([1, ns, ns])
-	jac_q = physics.eval_source_term_jacobians(W_bar, x, solver.time, jac_q)
-	jac = jac_q[0, :, :]
+	Sjac_q = np.zeros([1, ns, ns])
+	Sjac_q = physics.eval_source_term_jacobians(W_bar, x, solver.time, 
+			Sjac_q)
+	Sjac = Sjac_q[0, :, :]
 	
 	U_pred[:] = W_bar
 
-	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, U_pred)
-	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, U_pred)
+	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st,
+			U_pred)
+	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+			U_pred)
 
 	niter = 100
 	for i in range(niter):
 
 		A = np.matmul(iMM,K)/dt
-		B = -1.0*jac.transpose()
+		B = -1.0*Sjac.transpose()
 
-		C = np.matmul(FTR,W) - np.einsum('ijk,jlk->il',SMS,flux_coeffs)
-		Q = source_coeffs/dt - np.matmul(U_pred,jac.transpose()) + \
-				np.matmul(iMM,C)/dt
+		C = np.matmul(FTR, W) - np.einsum('ijk,jlk->il', SMS, flux_coeffs)
+		Q = source_coeffs/dt - np.matmul(U_pred, Sjac.transpose()) + \
+				np.matmul(iMM, C)/dt
 
-		U_pred_new = solve_sylvester(A,B,Q)
+		U_pred_new = solve_sylvester(A, B, Q)
 
 		err = U_pred_new - U_pred
-		if np.amax(np.abs(err))<1e-10:
+		if np.amax(np.abs(err)) < 1.e-10:
 			U_pred = U_pred_new
 			break
 
@@ -400,9 +401,10 @@ def predictor_elem_sylvester(solver, elem_ID, dt, W, U_pred):
 		
 		source_coeffs = solver.source_coefficients(elem_ID, dt, order, 
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, U_pred)
+		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st,
+				U_pred)
 
-		if i == niter-1:
+		if i == niter - 1:
 			print('Sub-iterations not converging')
 			raise ValueError
 
@@ -445,10 +447,8 @@ def ref_to_phys_time(mesh, elem_ID, time, dt, tref, basis=None):
         elem_ID: element ID 
         time: current solution time
         dt: solution time step
-        basis: basis object
         tref: time in reference space [nq, 1]
-        PointsChanged: flag to determine in points have changed between
-        		each time step 
+        basis: basis object
 
 	Outputs:
 	--------
@@ -459,21 +459,6 @@ def ref_to_phys_time(mesh, elem_ID, time, dt, tref, basis=None):
     	basis = basis_defs.LagrangeSeg(gorder)
     	basis.get_basis_val_grads(tref, get_val=True)
 
-    # nq_st = points_st.shape[0]
-
-    
-
-    # dim = mesh.dim
-
-    # if tphys is None:
-    #     tphys = np.zeros([nq_st, dim])
-    # else:
-    #     tphys[:] = time
-
-    # tref = points_st[:, -1:]
     tphys = (time/2.)*(1. - tref) + (time + dt)/2.*(1. + tref)
-    # for ipoint in range(nq_st):
-    #     tphys[ipoint] = (time/2.)*(1 - points_st[ipoint, dim]) + ((time+dt)/2.0)*\
-    #     		(1 + points_st[ipoint, dim])
 
     return tphys, basis

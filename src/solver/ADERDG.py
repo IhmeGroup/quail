@@ -223,7 +223,7 @@ class ADERHelpers(object):
 	FTL: numpy array
 		flux matrix in space-time reference space (evaluated at tau=1)
 	FTR: numpy array
-		flux matrix in reference space (evaulated at tau=-1)
+		flux matrix in space-time reference space (evaulated at tau=-1)
 	SMT: numpy array
 		stiffness matrix in time (gradient taken in temporal "direction")
 	SMS_elems: numpy array

@@ -184,9 +184,9 @@ def get_lobatto_pts_wts(n, tol):
         if (np.amax(np.abs(qpts - qpts_old)) < tol):
             break    
 
-    if i == niter - 1:
-        # Didn't converge
-        raise ValueError
+        if i == niter - 1:
+            # Didn't converge
+            raise ValueError
 
     # Evaluate Legendre polynomials
     for it in range(n+1):

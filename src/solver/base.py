@@ -6,7 +6,6 @@
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import copy
 import numpy as np 
 import time
 
@@ -359,7 +358,8 @@ class SolverBase(ABC):
 		physics = self.physics
 
 		for elem_ID in range(mesh.num_elems):
-			R[elem_ID] = self.get_element_residual(elem_ID, U[elem_ID], R[elem_ID])
+			R[elem_ID] = self.get_element_residual(elem_ID, U[elem_ID], 
+					R[elem_ID])
 
 	def get_interior_face_residuals(self, U, R):
 		'''
@@ -410,72 +410,15 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 
-		for BFG in mesh.boundary_groups.values():
-
-			for bface_ID in range(BFG.num_boundary_faces):
-				boundary_face = BFG.boundary_faces[bface_ID]
+		# Loop through boundary groups
+		for bgroup in mesh.boundary_groups.values():
+			# Loop through boundary faces
+			for bface_ID in range(bgroup.num_boundary_faces):
+				boundary_face = bgroup.boundary_faces[bface_ID]
 				elem_ID = boundary_face.elem_ID
-				face = boundary_face.face_ID
 
-				R[elem_ID] = self.get_boundary_face_residual(BFG, bface_ID,
-						U[elem_ID], R[elem_ID])
-
-
-	def apply_time_scheme(self):
-		'''
-		Applies the specified time scheme to update the solution
-		'''
-		physics = self.physics
-		mesh = self.mesh
-		Order = self.params["SolutionOrder"]
-		stepper = self.stepper
-		t = self.time
-
-		# Parameters
-		WriteInterval = self.params["WriteInterval"]
-		if WriteInterval == -1:
-			WriteInterval = np.NAN
-		WriteFinalSolution = self.params["WriteFinalSolution"]
-		WriteInitialSolution = self.params["WriteInitialSolution"]
-
-		if WriteInitialSolution:
-			ReadWriteDataFiles.write_data_file(self, 0)
-
-		t0 = time.time()
-		iwrite = 1
-
-		iStep = 0
-		while iStep < stepper.num_time_steps:
-
-			stepper.dt = stepper.get_time_step(stepper, self)
-			# integrate in time
-			R = stepper.take_time_step(self)
-
-			# Increment time
-			t += stepper.dt
-			self.time = t
-
-			# Info to print
-			PrintInfo = (iStep+1, self.time, \
-					np.linalg.norm(np.reshape(R,-1), ord=1))
-			PrintString = "%d: Time = %g, Residual norm = %g" % (PrintInfo)
-
-			# Print info
-			print(PrintString)
-
-			# Write data file
-			if (iStep + 1) % WriteInterval == 0:
-				ReadWriteDataFiles.write_data_file(self, iwrite)
-				iwrite += 1
-
-			iStep += 1
-
-		t1 = time.time()
-		print("Wall clock time = %g seconds" % (t1-t0))
-
-		if WriteFinalSolution:
-			ReadWriteDataFiles.write_data_file(self, -1)
-			
+				R[elem_ID] = self.get_boundary_face_residual(bgroup, 
+						bface_ID, U[elem_ID], R[elem_ID])
 
 	def apply_limiter(self, U):
 		'''
@@ -492,12 +435,58 @@ class SolverBase(ABC):
 		if self.limiter is not None:
 			self.limiter.limit_solution(self, U)
 
-
 	def solve(self):
 		'''
 		Performs the main solve of the DG method. Initializes the temporal
 		loop. 
-		'''	
+		'''
+		physics = self.physics
+		mesh = self.mesh
+		stepper = self.stepper
+		t = self.time
 
-		# apply time scheme
-		self.apply_time_scheme()	
+		# Parameters for writing data
+		write_interval = self.params["WriteInterval"]
+		if write_interval == -1:
+			write_interval = np.NAN
+		write_final_solution = self.params["WriteFinalSolution"]
+		write_initial_solution = self.params["WriteInitialSolution"]
+
+		if write_initial_solution:
+			ReadWriteDataFiles.write_data_file(self, 0)
+
+		t0 = time.time()
+		iwrite = 1
+
+		itime = 0
+		while itime < stepper.num_time_steps:
+			# Get time step size
+			stepper.dt = stepper.get_time_step(stepper, self)
+
+			# Integrate in time
+			R = stepper.take_time_step(self)
+
+			# Increment time
+			t += stepper.dt
+			self.time = t
+
+			# Info to print
+			print_info = (itime+1, self.time,
+					np.linalg.norm(np.reshape(R, -1), ord=1))
+			print_string = "%d: Time = %g, Residual norm = %g" % (print_info)
+
+			# Print info
+			print(print_string)
+
+			# Write data file
+			if (itime + 1) % write_interval == 0:
+				ReadWriteDataFiles.write_data_file(self, iwrite)
+				iwrite += 1
+
+			itime += 1
+
+		t1 = time.time()
+		print("Wall clock time = %g seconds" % (t1 - t0))
+
+		if write_final_solution:
+			ReadWriteDataFiles.write_data_file(self, -1)
