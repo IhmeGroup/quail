@@ -112,12 +112,12 @@ def gauss_lobatto(order):
     if order % 2 == 0: # if order is even, add 1
         order += 1
     npts = int((order + 3)/2)
-    qpts, qwts = get_lobatto_pts_wts(npts-1, 1e-10)
+    qpts, qwts = get_lobatto_pts_wts(npts-1, general.eps)
 
     return qpts, qwts
 
 
-def get_lobatto_pts_wts(n, eps):
+def get_lobatto_pts_wts(n, tol):
     '''
     Computes the Lobatto nodes and weights given n-1 quadrature points. This
     method is adapted from the following reference.
@@ -127,10 +127,36 @@ def get_lobatto_pts_wts(n, eps):
         gauss-lobatto-nodes-and-weights), MATLAB Central File Exchange. 
         Retrieved October 12, 2020.
 
+    Copyright (c) 2009, Greg von Winckel
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are 
+    met:
+
+    * Redistributions of source code must retain the above copyright notice, 
+    this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright 
+    notice, this list of conditions and the following disclaimer in the 
+    documentation and/or other materials provided with the distribution
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS 
+    IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
+    TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
+    PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER 
+    OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+    EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+    PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
+    PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+    LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+    NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
     Inputs:
     -------
         n: number of quadrature points minus one
-        eps: error tolerance for iterative scheme
+        tol: error tolerance for iterative scheme
 
     Outputs:
     --------
@@ -140,27 +166,33 @@ def get_lobatto_pts_wts(n, eps):
     leg_poly = np.polynomial.legendre.Legendre
 
     ind = np.arange(n+1)
-    qwts = np.zeros((n+1,))
-    qpts = np.zeros((n+1,))
-    L = np.zeros((n+1,n+1))
+    L = np.zeros([n+1, n+1])
 
-    # use the Chebyshev-Gauss-Lobatto nodes as the first guess
-    qpts = -np.cos(np.pi*ind / n)
+    # Initialize to Gauss-Lobatto Chebyshev points
+    qpts = -np.cos(np.pi*ind/n)
 
-    for i in range(100):
-
+    niter = 1000
+    # Iterative evaluation to get roots of Legendre polynomials
+    for i in range(niter):
         qpts_old = qpts
         vander = np.polynomial.legendre.legvander(qpts, n)
         
-        # iterative evaluation to get roots of the polynomial
-        qpts = qpts_old - ( qpts*vander[:,n] - vander[:,n-1] )/( (n+1)*vander[:,n]) 
+        qpts = qpts_old - (qpts*vander[:, n] - vander[:, n-1])/(
+            (n+1)*vander[:, n]) 
 
-        if (max(abs(qpts - qpts_old).flatten()) < eps ):
-            break     
-    # construct legendre polynomials from quadrature points
+        # Check if tolerance is met
+        if (np.amax(np.abs(qpts - qpts_old)) < tol):
+            break    
+
+    if i == niter - 1:
+        # Didn't converge
+        raise ValueError
+
+    # Evaluate Legendre polynomials
     for it in range(n+1):
-        L[:,it] = leg_poly.basis(it)(qpts)
+        L[:, it] = leg_poly.basis(it)(qpts)
 
-    qwts = 2.0 / ( (n*(n+1))*(L[:,n]**2))
+    # Quadrature weights
+    qwts = 2./(n*(n+1)*L[:,n]**2.)
 
     return qpts, qwts # [nq, 1] and [nq, 1]
