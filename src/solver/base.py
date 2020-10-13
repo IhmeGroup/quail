@@ -46,8 +46,6 @@ class SolverBase(ABC):
 		contains the geometric information for the solver's mesh
 	time: float
 		global time of the solution at the given time step
-	num_time_steps: int
-		number of time steps required to solve to the specified end time
 	basis: object
 		contains all the information and methods for the basis class
 	order: int
@@ -85,7 +83,6 @@ class SolverBase(ABC):
 		self.mesh = mesh
 
 		self.time = params["InitialTime"]
-		self.num_time_steps = 0 # will be set later
 
 		# Set solution basis and order
 		self.order = params["SolutionOrder"]
