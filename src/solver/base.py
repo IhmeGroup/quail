@@ -126,7 +126,7 @@ class SolverBase(ABC):
 		params = self.params
 		basis = self.basis
 
-		# check for same shape between mesh and solution
+		# Check for same shape between mesh and solution
 		if mesh.gbasis.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
@@ -140,12 +140,13 @@ class SolverBase(ABC):
 		elem_quad = params["ElementQuadrature"]
 		face_quad = params["FaceQuadrature"]
 
-		# compatibility check for GLL nodes with triangles
+		# Compatibility check for GLL nodes with triangles
 		if NodeType[node_type] == NodeType.GaussLobatto and \
 			basis.SHAPE_TYPE == ShapeType.Triangle:
 			raise errors.IncompatibleError
 
-		# compatibility check for forcing nodes equal to quadrature points
+		# Compatibility check for colocated scheme, i.e. quadrature points
+		# equal solution nodes
 		if NodeType[node_type] == NodeType.Equidistant and colocated_points:
 			raise errors.IncompatibleError
 		if (QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \

@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : tools/plot_basis_functions/plot_segment_basis_fcn.py
+#
+#       Plots basis functions for the reference line segment.
+#      
+# ------------------------------------------------------------------------ #
 import sys; sys.path.append('../../src')
 import numpy as np
 from matplotlib import pyplot as plt
@@ -12,21 +19,28 @@ import processing.plot as plot
 
 
 '''
-Parameters, initialization
+Parameters
 '''
-p = 4 # order
-plot_all = True
+p = 4 # polynomial order
+plot_all = True # if True, will plot all basis functions
 b = 0 # the (b+1)th basis function will be plotted if plot_all is False
-node_type = "GaussLobatto"
-basis = basis_defs.LagrangeSeg(p)
-# basis = basis_defs.LegendreSeg(p)
+
+# Node type (matters for nodal basis only)
+node_type = "Equidistant"
+# node_type = "GaussLobatto"
+
+# Basis type
+basis = basis_defs.LagrangeSeg(p) # Lagranage basis
+# basis = basis_defs.LegendreSeg(p) # Legendre basis
+
+
+'''
+Pre-processing
+'''
+# Solution nodes
 basis.get_1d_nodes = basis_tools.set_1D_node_calc(node_type)
-
-
-'''
-Get sample points
-'''
-p_plot = 100 # (p_plot+1) points
+# Sample points
+p_plot = 100 # (p_plot + 1) points
 xp = basis.equidistant_nodes(p_plot)
 
 

@@ -1,3 +1,10 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : tools/plot_basis_functions/plot_quadrilateral_basis_fcn.py
+#
+#       Plots basis functions for the reference quadrilateral.
+#      
+# ------------------------------------------------------------------------ #
 import sys; sys.path.append('../../src')
 import numpy as np
 from matplotlib import pyplot as plt
@@ -12,18 +19,27 @@ import processing.plot as plot
 
 
 '''
-Parameters, initialization
+Parameters
 '''
-p = 3 # order
+p = 3 # polynomial order
 b = 10 # the (b+1)th basis function will be plotted
+
+# Node type (matters for nodal basis only)
 node_type = "Equidistant"
-basis = basis_defs.LagrangeQuad(p)
+# node_type = "GaussLobatto"
+
+# Basis type
+basis = basis_defs.LagrangeQuad(p) # Lagrange basis
+# basis = basis_defs.LegendreQuad(p) # Legendre basis
+
+
+'''
+Pre-processing
+'''
+# Solution nodes
 basis.get_1d_nodes = basis_tools.set_1D_node_calc(node_type)
 
-
-'''
-Get sample points
-'''
+# Sample points
 n = 101 # number of points in each direction
 x = y = np.linspace(-1., 1., n)
 X, Y = np.meshgrid(x, y)
