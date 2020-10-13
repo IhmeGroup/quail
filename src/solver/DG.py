@@ -26,10 +26,6 @@ import solver.base as base
 import solver.tools as solver_tools
 
 
-global echeck
-echeck = -1
-
-
 class ElemHelpers(object):
 	'''
 	The ElemHelpers class contains the methods and attributes that are 
@@ -598,9 +594,6 @@ class DG(base.SolverBase):
 			R_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, elem_ID, Sq)
 
-		if elem_ID == echeck:
-			code.interact(local=locals())
-
 		return R_elem
 
 	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
@@ -644,11 +637,6 @@ class DG(base.SolverBase):
 			R_R += solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valR, quad_wts, Fq)
 
-		if elemL == echeck or elemR == echeck:
-			if elemL == echeck: print("Left!")
-			else: print("Right!")
-			code.interact(local=locals())
-
 		return R_L, R_R
 
 	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, R_B):
@@ -687,8 +675,5 @@ class DG(base.SolverBase):
 			# Compute contribution to adjacent element residual
 			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)
-
-		if elem_ID == echeck:
-			code.interact(local=locals())
 
 		return R_B

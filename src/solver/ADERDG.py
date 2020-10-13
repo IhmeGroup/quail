@@ -5,7 +5,6 @@
 #       Contains class definitions for the ADER-DG solver.
 #      
 # ------------------------------------------------------------------------ #
-import code
 import numpy as np
 from scipy.linalg import solve_sylvester
 
@@ -29,9 +28,6 @@ import solver.ader_tools as solver_tools
 import solver.tools as dg_tools
 import solver.base as base
 import solver.DG as DG
-
-global echeck
-echeck = -1
 
 
 class ElemHelpersADER(DG.ElemHelpers):
@@ -567,9 +563,6 @@ class ADERDG(base.SolverBase):
 			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, 
 					elem_helpers_st, elem, Sq)
 
-		if elem == echeck:
-			code.interact(local=locals())
-
 		return R_elem
 
 	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
@@ -628,11 +621,6 @@ class ADERDG(base.SolverBase):
 					basis_valL, quad_wts_st, Fq)
 			R_R += solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valR, quad_wts_st, Fq)
-
-		if elemL == echeck or elemR == echeck:
-			if elemL == echeck: print("Left!")
-			else: print("Right!")
-			code.interact(local=locals())
 
 		return R_L, R_R
 
@@ -699,9 +687,6 @@ class ADERDG(base.SolverBase):
 
 			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts_st, Fq)
-
-		if elem == echeck:
-			code.interact(local=locals())
 
 		return R_B
 
