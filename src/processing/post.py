@@ -6,10 +6,8 @@
 #		data.
 #      
 # ------------------------------------------------------------------------ #
-import copy
 from matplotlib import pyplot as plt
 import numpy as np
-import sys
 
 import errors
 

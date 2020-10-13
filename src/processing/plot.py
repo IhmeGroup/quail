@@ -5,7 +5,6 @@
 #       Contains functions for plotting 1D and 2D solutions and meshes.
 #      
 # ------------------------------------------------------------------------ #
-import copy
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import matplotlib.tri as tri
