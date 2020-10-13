@@ -5,14 +5,14 @@
 #       Contains additional methods (tools) for the DG solver class
 #      
 # ------------------------------------------------------------------------ #
-import copy
 import numpy as np
 
 import general
 import numerics.basis.tools as basis_tools
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, Fq):
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, 
+		Fq):
 	'''
 	Calculates the inviscid flux volume integral for the DG scheme
 
@@ -25,9 +25,10 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, Fq):
 
 	Outputs:
 	--------
-		ER: calculated residual array (for volume integral of specified 
-		element) [nb, ns]
+		R_elem: residual contribution (for volume integral of inviscid flux)
+			[nb, ns]
 	'''	
+	# Unpack
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
@@ -37,9 +38,11 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, Fq):
 	djac = djac_elems[elem_ID]
 	nq = quad_wts.shape[0]
 
-	ER = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq,1,1), axes=([0,2],[0,2])) # [nb, ns]
+	# Integrate
+	R_elem = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq, 
+			1, 1), axes=([0, 2], [0, 2])) # [nb, ns]
 
-	return ER # [nb, ns]
+	return R_elem # [nb, ns]
 
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
@@ -54,11 +57,11 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	Outputs:
 	--------
-		R: calculated residual array (from boundary face) [nb, ns]
+		R_B: residual contribution (from boundary face) [nb, ns]
 	'''
-	R = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb, ns]
+	R_B = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb, ns]
 
-	return R # [nb, ns]
+	return R_B # [nb, ns]
 
 
 def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
@@ -73,8 +76,8 @@ def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
 
 	Outputs:
 	--------
-		ER: calculated residual array (for volume integral of specified 
-		element) [nb, ns]
+		residual contribution (from volume integral of source term) 
+			[nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
@@ -123,12 +126,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 	physics = solver.physics
 	iMM_elems = solver.elem_helpers.iMM_elems
 
-	if dt is None:
-		c = 1.
-	else:
-		c = dt
-
-	return c*np.einsum('ijk,ikl->ijl', iMM_elems, R)
+	return dt*np.einsum('ijk,ikl->ijl', iMM_elems, R)
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):

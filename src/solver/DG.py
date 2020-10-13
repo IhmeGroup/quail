@@ -189,7 +189,7 @@ class ElemHelpers(object):
 				basis.get_basis_val_grads(quad_pts, get_phys_grad=True, 
 						ijac=ijac)
 				self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad  
-					# [nq,nb,dim]
+					# [nq, nb, dim]
 
 		# Volumes
 		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)

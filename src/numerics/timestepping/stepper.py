@@ -420,8 +420,8 @@ class Simpler(Strang):
 		R = self.R 
 
 		# First: calculate the balance constant
-		# Note: we skip the first explicit step as it is in equillibrium by 
-		# 		definition
+		# Note: we skip the first explicit step as it is in equilibrium by 
+		# definition
 		self.balance_const = None
 		balance_const = -1.*solver.get_residual(U, R)
 		self.balance_const = -1.*balance_const

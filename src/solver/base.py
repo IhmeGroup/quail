@@ -258,7 +258,7 @@ class SolverBase(ABC):
 			else:
 				# L2 projection
 				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis, 
-						quad_pts, quad_wts, elem_ID, f, U[elem_ID,:,:])
+						quad_pts, quad_wts, elem_ID, f, U[elem_ID, :, :])
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		'''
@@ -300,15 +300,15 @@ class SolverBase(ABC):
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
 		for elem_ID in range(mesh.num_elems):
-
-			Up_old = helpers.evaluate_state(U_old[elem_ID,:,:], 
+			Uq_old = helpers.evaluate_state(U_old[elem_ID, :, :], 
 					basis_old.basis_val)
 
 			if not params["L2InitialCondition"]:
-				solver_tools.interpolate_to_nodes(Up_old, U[elem_ID,:,:])
+				solver_tools.interpolate_to_nodes(Uq_old, U[elem_ID,:,:])
 			else:
 				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis, 
-						quad_pts, quad_wts, elem_ID, Up_old, U[elem_ID,:,:])
+						quad_pts, quad_wts, elem_ID, Uq_old, 
+						U[elem_ID, :, :])
 	
 	def get_residual(self, U, R):
 		'''
@@ -325,11 +325,8 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 		stepper = self.stepper
-
-		if R is None:
-			R = np.copy(U)
+		
 		# Initialize residual to zero
-
 		if stepper.balance_const is None:
 			R[:] = 0.
 		else:

@@ -402,8 +402,8 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq) # [nq,sr,dim]
-			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(self, 
-					elem_helpers, elem_helpers_st, elem_ID, Fq)
+			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+					self, elem_helpers, elem_helpers_st, elem_ID, Fq)
 		
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
@@ -415,8 +415,8 @@ class ADERDG(base.SolverBase):
 			Sq[:] = 0.
 			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]
 
-			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, 
-					elem_helpers_st, elem_ID, Sq)
+			R_elem += solver_tools.calculate_source_term_integral(
+					elem_helpers, elem_helpers_st, elem_ID, Sq)
 
 		return R_elem
 
@@ -470,8 +470,8 @@ class ADERDG(base.SolverBase):
 		normals = normals_int_faces[int_face_ID]
 
 		if self.params["ConvFluxSwitch"] == True:
-
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals) # [nq_st,ns]
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals) 
+				# [nq_st, ns]
 			R_L -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valL, quad_wts_st, Fq)
 			R_R += solver_tools.calculate_inviscid_flux_boundary_integral(
@@ -519,12 +519,12 @@ class ADERDG(base.SolverBase):
 
 		nq_st = quad_wts_st.shape[0]
 
-		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem_ID, self.time,
-				self.stepper.dt, xref_st[:, -1:], self.elem_helpers_st.basis_time)
+		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
+				mesh, elem_ID, self.time, self.stepper.dt, xref_st[:, -1:], 
+				self.elem_helpers_st.basis_time)
 
-		# interpolate state and gradient at quadrature points
+		# Interpolate state and gradient at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val_st)
-
 
 		normals = normals_bgroups[bgroup_num][bface_ID]
 		x = x_bgroups[bgroup_num][bface_ID]
@@ -533,11 +533,9 @@ class ADERDG(base.SolverBase):
 		BC = physics.BCs[bgroup.name]
 
 		if self.params["ConvFluxSwitch"] == True:
-			# loop over time to apply BC at each temporal quadrature point
+			# Loop over time to apply BC at each temporal quadrature point
 			for i in range(t.shape[0]):	
-				# Fq[i,:] = BC.get_boundary_flux(physics, x, t[i], normals, 
-				# 		UqI[i,:].reshape([1,ns]))
-				Fq[i,:] = BC.get_boundary_flux(physics, 
+				Fq[i,:] = BC.get_boundary_flux(physics,
 						UqI[i, :].reshape([1, ns]), normals, x, t[i])
 
 			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
@@ -556,11 +554,11 @@ class ADERDG(base.SolverBase):
 			dt: time step size
 			order: solution order
 			basis: basis object
-			Up: solution array [nb_st, ns]
+			Up: coefficients of predicted solution [nb_st, ns]
 			
 		Outputs:
 		--------
-			F: polynomical coefficients of the flux function [nb_st, ns, dim]
+			F: polynomial coefficients of the flux function [nb_st, ns, dim]
 		'''
 		physics = self.physics
 		mesh = self.mesh
@@ -575,12 +573,10 @@ class ADERDG(base.SolverBase):
 		djac_elems = elem_helpers.djac_elems 
 		djac = djac_elems[elem_ID]
 
-		rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],
+		F = np.zeros([basis.get_num_basis_coeff(order), ns, dim],
 				dtype=Up.dtype)
-		F = np.zeros_like(rhs)
 
 		if params["InterpolateFluxADER"]:
-
 			Fq = physics.get_conv_flux_interior(Up)
 			dg_tools.interpolate_to_nodes(Fq, F)
 		else:
@@ -598,7 +594,8 @@ class ADERDG(base.SolverBase):
 
 			Fq = physics.get_conv_flux_interior(Uq)
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, 
-					quad_wts_st, np.tile(djac,(nq,1)), Fq[:,:,0], F[:,:,0])
+					quad_wts_st, np.tile(djac, (nq, 1)), Fq[:, :, 0], 
+					F[:, :, 0])
 
 		return F*dt/2.0 # [nb_st, ns, dim]
 
@@ -613,7 +610,7 @@ class ADERDG(base.SolverBase):
 			dt: time step size
 			order: solution order
 			basis: basis object
-			Up: solution array [nb_st, ns]
+			Up: coefficients of predicted solution [nb_st, ns]
 			
 		Outputs:
 		--------
@@ -640,14 +637,14 @@ class ADERDG(base.SolverBase):
 		if params["InterpolateFluxADER"]:
 			xnodes = basis.get_nodes(order)
 			nb = xnodes.shape[0]
-			t = np.zeros([nb,dim])
-			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem_ID, 
-					self.time, self.stepper.dt, xnodes[:, -1:], elem_helpers_st.basis_time)
-			Sq = np.zeros([t.shape[0],ns])
+			t = np.zeros([nb, dim])
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
+					mesh, elem_ID, self.time, self.stepper.dt, 
+					xnodes[:, -1:], elem_helpers_st.basis_time)
+			Sq = np.zeros([t.shape[0], ns])
 			S = np.zeros_like(Sq)
 			Sq = physics.eval_source_terms(Up, x_ader, t, Sq)
 			dg_tools.interpolate_to_nodes(Sq, S)
-
 		else:
 			ader_helpers = self.ader_helpers
 			basis_val_st = elem_helpers_st.basis_val
@@ -661,14 +658,16 @@ class ADERDG(base.SolverBase):
 
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
-			t = np.zeros([nq_st,dim])
-			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem_ID, 
-					self.time, self.stepper.dt, quad_pts_st[:, -1:], elem_helpers_st.basis_time)
+			t = np.zeros([nq_st, dim])
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
+					mesh, elem_ID, self.time, self.stepper.dt, 
+					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 		
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros([nb_st, ns])
-			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]		
+			Sq = physics.eval_source_terms(Uq, x, t, Sq) 
+				# [nq, ns, dim]		
 			solver_tools.L2_projection(mesh, iMM, basis, quad_pts_st, 
-					quad_wts_st, np.tile(djac,(nq,1)), Sq, S)
+					quad_wts_st, np.tile(djac, (nq, 1)), Sq, S)
 
 		return S*dt/2.0 # [nb_st, ns]
