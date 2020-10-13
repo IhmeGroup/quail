@@ -271,8 +271,8 @@ class ShapeBase(ABC):
 
         Outputs:
         --------
-            self.colocated_pts: set to nb if force_flag is True, left as None 
-                otherwise
+            self.colocated_pts: set to nb if force_flag is True, left as 
+                None otherwise
         
         Notes:
         ------ 

@@ -61,19 +61,19 @@ class ElemHelpersADER(DG.ElemHelpers):
 		self.basis_val = basis.basis_val
 		self.basis_ref_grad = basis.basis_ref_grad
 
-		for elem in range(mesh.num_elems):
-			# get Jacobian data
-			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem,
+		for elem_ID in range(mesh.num_elems):
+			# Get Jacobian data
+			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID,
 					quad_pts, get_djac=True, get_jac=True, get_ijac=True)
-			# store the Jacobian data
-			self.jac_elems[elem] = jac
-			self.ijac_elems[elem] = ijac
-			self.djac_elems[elem] = djac
+			# Store the Jacobian data
+			self.jac_elems[elem_ID] = jac
+			self.ijac_elems[elem_ID] = ijac
+			self.djac_elems[elem_ID] = djac
 
-			# physical coordinates of quadrature points
-			x = mesh_tools.ref_to_phys(mesh, elem, quad_pts)
-			# store
-			self.x_elems[elem] = x
+			# Physical coordinates of quadrature points
+			x = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
+			# Store
+			self.x_elems[elem_ID] = x
 
 
 class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
@@ -85,7 +85,6 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
     Additional methods and attributes are commented below.
 	'''
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
-		
 		gbasis = mesh.gbasis
 		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh, 
 				order, physics=physics)
@@ -93,38 +92,39 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 				basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
-
 		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
 
-		# primary difference is that their are two additional faces 
-		# per element for the ADER-DG approach
+		# Primary difference is that there are two additional faces 
+		# per element for the ADER-DG approach (due to space-time ref space)
 		nfaces_per_elem = mesh.gbasis.NFACES + 2
 
-		# allocate
-		self.faces_to_basisL = np.zeros([nfaces_per_elem,nq,nb])
-		self.faces_to_basisR = np.zeros([nfaces_per_elem,nq,nb])
-		self.normals_ifaces = np.zeros([mesh.num_interior_faces,nq,dim])
+		# Allocate
+		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
+		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
+		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq, dim])
 
-		for f in range(nfaces_per_elem):
-			# left
-			basis.get_basis_face_val_grads(mesh, f, quad_pts, 
+		# Get values on each face (from both left and right perspectives)
+		for face_ID in range(nfaces_per_elem):
+			# Left
+			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts, 
 					basis, get_val=True)
-			self.faces_to_basisL[f] = basis.basis_val
-			# right
-			basis.get_basis_face_val_grads(mesh, f, quad_pts[::-1], 
+			self.faces_to_basisL[face_ID] = basis.basis_val
+			# Right
+			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts[::-1], 
 					basis, get_val=True)
-			self.faces_to_basisR[f] = basis.basis_val
+			self.faces_to_basisR[face_ID] = basis.basis_val
 
-		# normals
+		# Normals
 		i = 0
 		for interior_face in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, interior_face.elemL_ID, 
-				interior_face.faceL_ID, quad_pts)
-			self.normals_ifaces[i] = normals
+			normals = mesh.gbasis.calculate_normals(mesh, 
+					interior_face.elemL_ID, interior_face.faceL_ID, quad_pts)
+			self.normals_int_faces[i] = normals
 			i += 1
+
 
 class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 	'''
@@ -134,55 +134,64 @@ class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
 
     Additional methods and attributes are commented below.
 	'''
-	def get_basis_and_geom_data(self, mesh, basis, order):
+	def __init__(self):
+		self.quad_pts = np.zeros(0)
+		self.quad_wts = np.zeros(0)
+		self.faces_to_basis = np.zeros(0)
+		self.faces_to_xref = np.zeros(0)
+		self.normals_bgroups = []
+		self.x_bgroups = []
+		self.UqI = np.zeros(0) 
+		self.UqB = np.zeros(0) 
+		self.Fq = np.zeros(0) 
 
+	def get_basis_and_geom_data(self, mesh, basis, order):
 		dim = mesh.dim
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.get_num_basis_coeff(order)
 
-		# primary difference is that their are two additional faces 
+		# Primary difference is that there are two additional faces 
 		# per element for the ADER-DG approach
 		nfaces_per_elem = mesh.gbasis.NFACES + 2
 
 		# Allocate
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, dim+1])
-		self.normals_bgroups = []
-		self.x_bfgroups = []
 
-
-		for f in range(nfaces_per_elem):
-			# Left
-			self.faces_to_xref[f] = basis.get_elem_ref_from_face_ref(f, 
-					quad_pts)
-			basis.get_basis_face_val_grads(mesh, f, quad_pts, basis, 
+		# Get values on each face (from interior perspective)
+		for face_ID in range(nfaces_per_elem):
+			self.faces_to_xref[face_ID] = basis.get_elem_ref_from_face_ref(
+					face_ID, quad_pts)
+			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis, 
 					get_val=True)
-			self.faces_to_basis[f] = basis.basis_val
+			self.faces_to_basis[face_ID] = basis.basis_val
 
+		# Get boundary information
 		i = 0
 		for bgroup in mesh.boundary_groups.values():
-			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,nq,
-					dim]))
-			self.x_bfgroups.append(np.zeros([bgroup.num_boundary_faces,nq,dim]))
+			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,
+					nq, dim]))
+			self.x_bgroups.append(np.zeros([bgroup.num_boundary_faces, 
+					nq, dim]))
 			normal_bgroup = self.normals_bgroups[i]
-			x_bfgroup = self.x_bfgroups[i]
+			x_bgroup = self.x_bgroups[i]
 
-			# normals
+			# Normals
 			j = 0
 			for boundary_face in bgroup.boundary_faces:
-				nvec = mesh.gbasis.calculate_normals(mesh, 
+				normals = mesh.gbasis.calculate_normals(mesh, 
 						boundary_face.elem_ID, boundary_face.face_ID, 
 						quad_pts)
-				normal_bgroup[j] = nvec
+				normal_bgroup[j] = normals
 
-				# physical coordinates of quadrature points
+				# Physical coordinates of quadrature points
 				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID, 
 						self.faces_to_xref[boundary_face.face_ID])
-				# store
-				x_bfgroup[j] = x
+				# Store
+				x_bgroup[j] = x
 
-				# increment
+				# Increment
 				j += 1
 			i += 1
 
@@ -235,19 +244,19 @@ class ADERHelpers(object):
 		physical coordinates of nodal points
 	'''
 	def __init__(self):
-		self.MM = None
-		self.iMM = None
-		self.iMM_elems = None
-		self.K = None
-		self.iK = None 
-		self.FTL = None 
-		self.FTR = None
-		self.SMT = None
-		self.SMS_elems = None	
-		self.jac_elems = None 
-		self.ijac_elems = None 
-		self.djac_elems = None 
-		self.x_elems = None
+		self.MM = np.zeros(0)
+		self.iMM = np.zeros(0)
+		self.iMM_elems = np.zeros(0)
+		self.K = np.zeros(0)
+		self.iK = np.zeros(0) 
+		self.FTL = np.zeros(0) 
+		self.FTR = np.zeros(0)
+		self.SMT = np.zeros(0)
+		self.SMS_elems = np.zeros(0)	
+		self.jac_elems = np.zeros(0) 
+		self.ijac_elems = np.zeros(0) 
+		self.djac_elems = np.zeros(0) 
+		self.x_elems = np.zeros(0)
 
 	def calc_ader_matrices(self, mesh, basis, basis_st, dt, order):
 		'''
@@ -280,8 +289,9 @@ class ADERHelpers(object):
 		'''		
 		dim = mesh.dim
 		nb = basis_st.nb
-		SMS_elems = np.zeros([mesh.num_elems,nb,nb,dim])
-		iMM_elems = np.zeros([mesh.num_elems,nb,nb])
+		SMS_elems = np.zeros([mesh.num_elems, nb, nb, dim])
+		iMM_elems = np.zeros([mesh.num_elems, nb, nb])
+
 		# Get flux matrices in time
 		FTL = basis_st_tools.get_temporal_flux_ader(mesh, basis_st, basis_st,
 				order, physical_space=False)
@@ -290,23 +300,27 @@ class ADERHelpers(object):
 
 		# Get stiffness matrix in time
 		SMT = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st,
-				order, dt, elem=0, grad_dir=1, physical_space=False)
+				order, dt, elem_ID=0, grad_dir=1, physical_space=False)
 
-		# Get stiffness matrix in space
-		for elem in range(mesh.num_elems):
+		# Get stiffness matrices in space and inverse mass matrices 
+		# (physical space)
+		for elem_ID in range(mesh.num_elems):
 			SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis,
-					basis_st, order, dt, elem, grad_dir=0, physical_space=True)
-			SMS_elems[elem,:,:,0] = SMS.transpose()
+					basis_st, order, dt, elem_ID, grad_dir=0, 
+					physical_space=True)
+			SMS_elems[elem_ID, :, :, 0] = SMS.transpose()
 
 			iMM = basis_st_tools.get_elem_inv_mass_matrix_ader(mesh,
-					basis_st, order, elem, physical_space=True)
-			iMM_elems[elem] = iMM
+					basis_st, order, elem_ID, physical_space=True)
+			iMM_elems[elem_ID] = iMM
 
+		# Get mass matrix (and inverse) in reference space
 		iMM = basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis_st,
-				order, elem=-1, physical_space=False)
+				order, elem_ID=-1, physical_space=False)
 		MM = basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order,
-				elem=-1, physical_space=False)
+				elem_ID=-1, physical_space=False)
 
+		# Store
 		self.FTL = FTL
 		self.FTR = FTR
 		self.SMT = SMT
@@ -316,7 +330,6 @@ class ADERHelpers(object):
 		self.iMM_elems = iMM_elems
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K) 
-
 
 	def get_geom_data(self, mesh, basis, order):
 		'''
@@ -339,47 +352,49 @@ class ADERHelpers(object):
 			self.x_elems: precomputed coordinates of the nodal points
 				in physical space [num_elems, nb, dim]
 		'''
+		# TODO: get rid of this
 		shape_name = basis.__class__.__bases__[1].__name__
 
 		dim = mesh.dim 
 		num_elems = mesh.num_elems 
 		nb = basis.nb
 		gbasis = mesh.gbasis
-		xnode = gbasis.get_nodes(order)
-		nnode = xnode.shape[0]
+		xnodes = gbasis.get_nodes(order)
+		nnodes = xnodes.shape[0]
 
-		# allocate
-		self.jac_elems = np.zeros([num_elems,nb,dim,dim])
-		self.ijac_elems = np.zeros([num_elems,nb,dim,dim])
-		self.djac_elems = np.zeros([num_elems,nb,1])
-		self.x_elems = np.zeros([num_elems,nb,dim])
+		# Allocate
+		self.jac_elems = np.zeros([num_elems, nb, dim, dim])
+		self.ijac_elems = np.zeros([num_elems, nb, dim, dim])
+		self.djac_elems = np.zeros([num_elems, nb, 1])
+		self.x_elems = np.zeros([num_elems, nb, dim])
 
-
-		for elem in range(mesh.num_elems):
+		for elem_ID in range(mesh.num_elems):
 			# Jacobian
-			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem, xnode,
-				 	get_djac=True, get_jac=True, get_ijac=True)
+			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID, 
+					xnodes, get_djac=True, get_jac=True, get_ijac=True)
 
 			if shape_name == 'HexShape':
-				self.jac_elems[elem] = np.tile(jac,(int(np.sqrt(nnode)),1,1))
-				self.ijac_elems[elem] = np.tile(ijac,
-						(int(np.sqrt(nnode)),1,1))
-				self.djac_elems[elem] = np.tile(djac,(int(np.sqrt(nnode)),1))
+				self.jac_elems[elem_ID] = np.tile(jac,
+						(int(np.sqrt(nnodes)), 1, 1))
+				self.ijac_elems[elem_ID] = np.tile(ijac,
+						(int(np.sqrt(nnodes)), 1, 1))
+				self.djac_elems[elem_ID] = np.tile(djac, 
+						(int(np.sqrt(nnodes)), 1))
 
 				# Physical coordinates of nodal points
-				x = mesh_tools.ref_to_phys(mesh, elem, xnode)
+				x = mesh_tools.ref_to_phys(mesh, elem_ID, xnodes)
 				# Store
-				self.x_elems[elem] = np.tile(x,(int(np.sqrt(nnode)),1))
+				self.x_elems[elem_ID] = np.tile(x,(int(np.sqrt(nnodes)),1))
 
 			elif shape_name == 'QuadShape':
-				self.jac_elems[elem] = np.tile(jac,(nnode,1,1))
-				self.ijac_elems[elem] = np.tile(ijac,(nnode,1,1))
-				self.djac_elems[elem] = np.tile(djac,(nnode,1))
+				self.jac_elems[elem_ID] = np.tile(jac, (nnodes, 1, 1))
+				self.ijac_elems[elem_ID] = np.tile(ijac, (nnodes, 1, 1))
+				self.djac_elems[elem_ID] = np.tile(djac, (nnodes, 1))
 
 				# Physical coordinates of nodal points
-				x = mesh_tools.ref_to_phys(mesh, elem, xnode)
+				x = mesh_tools.ref_to_phys(mesh, elem_ID, xnodes)
 				# Store
-				self.x_elems[elem] = np.tile(x,(nnode,1))
+				self.x_elems[elem_ID] = np.tile(x, (nnodes, 1))
 
 	def compute_helpers(self, mesh, physics, basis, basis_st, dt, order):
 		self.calc_ader_matrices(mesh, basis, basis_st, dt, order)
@@ -398,15 +413,15 @@ class ADERDG(base.SolverBase):
 
 		ns = physics.NUM_STATE_VARS
 
-		TimeStepper = params["TimeStepper"]
-		if StepperType[TimeStepper] != StepperType.ADER:
+		time_stepper = params["TimeStepper"]
+		if StepperType[time_stepper] != StepperType.ADER:
 			raise errors.IncompatibleError
 
 		self.stepper = stepper_defs.ADER(physics.U)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
 
 		# Set the space-time basis functions for the solver
-		basis_name  = params["SolutionBasis"]
+		basis_name = params["SolutionBasis"]
 		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, 
 				physics.order, basis_name)
 
@@ -515,13 +530,13 @@ class ADERDG(base.SolverBase):
 		mesh = self.mesh
 		physics = self.physics
 
-		for elem in range(mesh.num_elems):
-			Up[elem] = self.calculate_predictor_elem(self, elem, dt, W[elem],
-					Up[elem])
+		for elem_ID in range(mesh.num_elems):
+			Up[elem_ID] = self.calculate_predictor_elem(self, elem_ID, dt, W[elem_ID],
+					Up[elem_ID])
 
 		return Up
 
-	def get_element_residual(self, elem, Uc, R_elem):
+	def get_element_residual(self, elem_ID, Uc, R_elem):
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
@@ -536,7 +551,7 @@ class ADERDG(base.SolverBase):
 
 		basis_val_st = elem_helpers_st.basis_val
 		x_elems = elem_helpers.x_elems
-		x = x_elems[elem]
+		x = x_elems[elem_ID]
 
 		nq = quad_wts.shape[0]
 		nq_st = quad_wts_st.shape[0]
@@ -548,12 +563,12 @@ class ADERDG(base.SolverBase):
 			# Evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq) # [nq,sr,dim]
 			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(self, 
-					elem_helpers, elem_helpers_st, elem, Fq)
+					elem_helpers, elem_helpers_st, elem_ID, Fq)
 		
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
-					mesh, elem, self.time, self.stepper.dt, 
+					mesh, elem_ID, self.time, self.stepper.dt, 
 					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 			
 			Sq = elem_helpers_st.Sq
@@ -561,7 +576,7 @@ class ADERDG(base.SolverBase):
 			Sq = physics.eval_source_terms(Uq, x, t, Sq) # [nq,sr,dim]
 
 			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, 
-					elem_helpers_st, elem, Sq)
+					elem_helpers_st, elem_ID, Sq)
 
 		return R_elem
 
@@ -611,8 +626,8 @@ class ADERDG(base.SolverBase):
 		UqL = helpers.evaluate_state(Uc_L, basis_valL_st)
 		UqR = helpers.evaluate_state(Uc_R, basis_valR_st)
 
-		normals_ifaces = int_face_helpers.normals_ifaces
-		normals = normals_ifaces[int_face_ID]
+		normals_int_faces = int_face_helpers.normals_int_faces
+		normals = normals_int_faces[int_face_ID]
 
 		if self.params["ConvFluxSwitch"] == True:
 
@@ -632,7 +647,7 @@ class ADERDG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		bgroup_num = bgroup.number
 		boundary_face = bgroup.boundary_faces[bface_ID]
-		elem = boundary_face.elem_ID
+		elem_ID = boundary_face.elem_ID
 		face = boundary_face.face_ID
 
 		bface_helpers = self.bface_helpers
@@ -644,7 +659,7 @@ class ADERDG(base.SolverBase):
 		faces_to_basis_st = bface_helpers_st.faces_to_basis
 
 		normals_bgroups = bface_helpers.normals_bgroups
-		x_bfgroups = bface_helpers.x_bfgroups
+		x_bgroups = bface_helpers.x_bgroups
 
 		UqI = bface_helpers_st.UqI
 		UqB = bface_helpers_st.UqB
@@ -664,7 +679,7 @@ class ADERDG(base.SolverBase):
 
 		nq_st = quad_wts_st.shape[0]
 
-		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, self.time,
+		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem_ID, self.time,
 				self.stepper.dt, xref_st[:, -1:], self.elem_helpers_st.basis_time)
 
 		# interpolate state and gradient at quadrature points
@@ -672,7 +687,7 @@ class ADERDG(base.SolverBase):
 
 
 		normals = normals_bgroups[bgroup_num][bface_ID]
-		x = x_bfgroups[bgroup_num][bface_ID]
+		x = x_bgroups[bgroup_num][bface_ID]
 
 		# Get boundary state
 		BC = physics.BCs[bgroup.name]
@@ -690,14 +705,14 @@ class ADERDG(base.SolverBase):
 
 		return R_B
 
-	def flux_coefficients(self, elem, dt, order, basis, Up):
+	def flux_coefficients(self, elem_ID, dt, order, basis, Up):
 		'''
 		Calculates the polynomial coefficients for the flux functions in 
 		ADER-DG
 
 		Inputs:
 		-------
-			elem: element index
+			elem_ID: element index
 			dt: time step size
 			order: solution order
 			basis: basis object
@@ -718,7 +733,7 @@ class ADERDG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
 		djac_elems = elem_helpers.djac_elems 
-		djac = djac_elems[elem]
+		djac = djac_elems[elem_ID]
 
 		rhs = np.zeros([basis.get_num_basis_coeff(order),ns,dim],
 				dtype=Up.dtype)
@@ -737,7 +752,7 @@ class ADERDG(base.SolverBase):
 			quad_pts = elem_helpers.quad_pts
 			nq_st = quad_wts_st.shape[0]
 			nq = quad_wts.shape[0]
-			iMM = ader_helpers.iMM_elems[elem]
+			iMM = ader_helpers.iMM_elems[elem_ID]
 
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
@@ -747,14 +762,14 @@ class ADERDG(base.SolverBase):
 
 		return F*dt/2.0 # [nb_st, ns, dim]
 
-	def source_coefficients(self, elem, dt, order, basis, Up):
+	def source_coefficients(self, elem_ID, dt, order, basis, Up):
 		'''
 		Calculates the polynomial coefficients for the source functions in 
 		ADER-DG
 
 		Inputs:
 		-------
-			elem: element index
+			elem_ID: element index
 			dt: time step size
 			order: solution order
 			basis: basis object
@@ -773,21 +788,21 @@ class ADERDG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
 		djac_elems = elem_helpers.djac_elems 
-		djac = djac_elems[elem]
+		djac = djac_elems[elem_ID]
 
 		x_elems = elem_helpers.x_elems
-		x = x_elems[elem]
+		x = x_elems[elem_ID]
 
 		ader_helpers = self.ader_helpers
 		x_elems_ader = ader_helpers.x_elems
-		x_ader = x_elems_ader[elem]
+		x_ader = x_elems_ader[elem_ID]
 
 		if params["InterpolateFluxADER"]:
-			xnode = basis.get_nodes(order)
-			nb = xnode.shape[0]
+			xnodes = basis.get_nodes(order)
+			nb = xnodes.shape[0]
 			t = np.zeros([nb,dim])
-			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, 
-					self.time, self.stepper.dt, xnode[:, -1:], elem_helpers_st.basis_time)
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem_ID, 
+					self.time, self.stepper.dt, xnodes[:, -1:], elem_helpers_st.basis_time)
 			Sq = np.zeros([t.shape[0],ns])
 			S = np.zeros_like(Sq)
 			Sq = physics.eval_source_terms(Up, x_ader, t, Sq)
@@ -802,12 +817,12 @@ class ADERDG(base.SolverBase):
 			quad_pts_st = elem_helpers_st.quad_pts
 			nq_st = quad_wts_st.shape[0]
 			nq = quad_wts.shape[0]
-			iMM = ader_helpers.iMM_elems[elem]
+			iMM = ader_helpers.iMM_elems[elem_ID]
 
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			t = np.zeros([nq_st,dim])
-			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem, 
+			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(mesh, elem_ID, 
 					self.time, self.stepper.dt, quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 		
 			Sq = np.zeros([t.shape[0],ns])

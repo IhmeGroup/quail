@@ -139,7 +139,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	quad_wts = bface_helpers.quad_wts
 	faces_to_basis = bface_helpers.faces_to_basis
 	normals_bgroups = bface_helpers.normals_bgroups
-	x_bfgroups = bface_helpers.x_bfgroups
+	x_bgroups = bface_helpers.x_bgroups
 	nq = quad_wts.shape[0]
 
 	# For plotting
@@ -155,7 +155,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	if plot:
 		bvalues = np.zeros([boundary_group.num_boundary_faces, nq]) 
 			# [num_boundary_faces, nq]
-		bpoints = x_bfgroups[boundary_num][:,:,d].flatten() 
+		bpoints = x_bgroups[boundary_num][:,:,d].flatten() 
 			# [num_boundary_faces, nq, dim]
 
 	integ_val = 0.
