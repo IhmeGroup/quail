@@ -254,9 +254,11 @@ class InteriorFaceHelpers(ElemHelpers):
 	quad_wts: numpy array
 		values for the weights of each quadrature point
 	faces_to_basisL: numpy array
-		stores the evaluated basis function of left element neighbor
+		basis values evaluated at quadrature points of each face for 
+		left element
 	faces_to_basisR: numpy array
-		stores the evaluated basis function of right element neighbor
+		basis values evaluated at quadrature points of each face for 
+		right element
 	normals_int_faces: numpy array
 		normal vector array for each interior face
 	UqL: numpy array
@@ -327,10 +329,12 @@ class InteriorFaceHelpers(ElemHelpers):
 
 		Outputs:
 		--------
-			self.faces_to_basisL: precomputed basis value of left
-				neighboring element [nfaces_per_elem, nq, nb]
-			self.faces_to_basisR: precomputed basis value of right
-				neighboring element [nfaces_per_elem, nq, nb]
+			self.faces_to_basisL: basis values evaluated at quadrature
+				points of each face for left element 
+				[nfaces_per_elem, nq, nb]
+			self.faces_to_basisR: basis values evaluated at quadrature
+				points of each face for right element 
+				[nfaces_per_elem, nq, nb]
 			self.normals_int_faces: precomputed normal vectors at each 
 				interior face [num_interior_faces, nq, dim]
 		'''
@@ -396,9 +400,10 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 	quad_wts: numpy array
 		values for the weights of each quadrature point
 	faces_to_basis: numpy array
-		stores the evaluated basis function of interior element
+		basis values evaluated at quadrature points of each face
 	faces_to_xref: numpy array
-		stores the element reference nodes at boundary face
+		coordinates of quadrature points of each face converted to
+		element reference space
 	normals_bgroups: numpy array
 		normal vector array for each boundary face
 	x: numpy array
@@ -445,10 +450,11 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 		Outputs:
 		--------
-			self.faces_to_basis: precomputed basis value of interior
-				neighboring element [nfaces_per_elem, nq, nb]
-			self.faces_to_xref: precomputed element reference nodes at 
-				the boundary face
+			self.faces_to_basis: basis values evaluated at quadrature points 
+				of each face [nfaces_per_elem, nq, nb]
+			self.faces_to_xref: coordinates of quadrature points of each 
+				face converted to element reference space
+				[nfaces_per_elem, nq, dim]
 			self.normals_bgroups: precomputed normal vectors at each 
 				boundary face [num_boundary_faces, nq, dim]
 			self.x_bgroups: precomputed physical coordinates of the 

@@ -232,8 +232,8 @@ def get_stiffness_matrix(solver, mesh, order, elem_ID):
 
     Inputs:
     -------
-        solver: instance of solver object
-        mesh: instance of mesh object
+        solver: solver object
+        mesh: mesh object
         order: solution order
         elem_ID: element index
 
