@@ -431,9 +431,6 @@ class ADERDG(base.SolverBase):
 		self.calculate_predictor_elem = solver_tools.set_source_treatment(ns,
 				source_treatment)
 
-		# Check validity of parameters
-		self.check_compatibility()
-
 		# Precompute helpers
 		self.precompute_matrix_helpers()
 
@@ -441,8 +438,8 @@ class ADERDG(base.SolverBase):
 			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(np.zeros([
-			self.int_face_helpers_st.quad_wts.shape[0], 
-			physics.NUM_STATE_VARS]))
+				self.int_face_helpers_st.quad_wts.shape[0], 
+				physics.NUM_STATE_VARS]))
 
 		# Initialize state
 		if params["RestartFile"] is None:
@@ -464,11 +461,11 @@ class ADERDG(base.SolverBase):
 			raise errors.IncompatibleError
 
 		if params["CFL"] != None:
-			print('Error Message')
-			print('-------------------------------------------------------')
-			print('CFL-based time-stepping not currently supported in \
-					ADERDG')
-			print('')
+			print("Error Message")
+			print("-------------------------------------------------------")
+			print("CFL-based time-stepping not currently supported in " + \
+					"ADERDG")
+			print("")
 			raise errors.IncompatibleError
 
 	def precompute_matrix_helpers(self):

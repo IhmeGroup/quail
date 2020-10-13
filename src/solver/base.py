@@ -104,6 +104,9 @@ class SolverBase(ABC):
 		self.limiter = limiter_tools.set_limiter(limiter_type, 
 				physics.PHYSICS_TYPE)
 
+		# Compatibility checks
+		self.check_compatibility()
+
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
 		Basis: {self.basis},\n   Stepper: {self.stepper})'.format(self=self)
@@ -122,7 +125,7 @@ class SolverBase(ABC):
 			raise errors.IncompatibleError
 
 		if not params["L2InitialCondition"] and basis.MODAL_OR_NODAL \
-			!= ModalOrNodal.Nodal:
+				!= ModalOrNodal.Nodal:
 			raise errors.IncompatibleError
 
 		# Gauss Lobatto nodes compatibility checks
@@ -140,8 +143,8 @@ class SolverBase(ABC):
 		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
 			raise errors.IncompatibleError
 		if (QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
-			QuadratureType[face_quad] != QuadratureType.GaussLobatto) \
-			and forcing_switch:
+				QuadratureType[face_quad] != QuadratureType.GaussLobatto) \
+				and forcing_switch:
 			raise errors.IncompatibleError
 
 	@abstractmethod

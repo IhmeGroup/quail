@@ -535,9 +535,6 @@ class DG(base.SolverBase):
 
 		self.stepper = stepper_tools.set_stepper(params, physics.U)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
-	
-		# Check validity of parameters
-		self.check_compatibility()
 		
 		# Precompute helpers
 		self.precompute_matrix_helpers()
