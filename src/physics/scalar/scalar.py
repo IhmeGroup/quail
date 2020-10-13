@@ -44,8 +44,8 @@ class ConstAdvScalar(base.PhysicsBase):
 	NUM_STATE_VARS = 1
 	PHYSICS_TYPE = general.PhysicsType.ConstAdvScalar
 
-	def __init__(self, order, basis_type, mesh):
-		super().__init__(order, basis_type, mesh)
+	def __init__(self, mesh):
+		super().__init__(mesh)
 		self.c = 0.
 		self.cspeed = 0.
 
@@ -132,8 +132,8 @@ class ConstAdvScalar2D(ConstAdvScalar):
 	'''
 	DIM = 2
 
-	def __init__(self, order, basis_type, mesh):
-		super().__init__(order, basis_type, mesh)
+	def __init__(self, mesh):
+		super().__init__(mesh)
 		self.c = np.zeros(2)
 		self.cspeed = 0.
 

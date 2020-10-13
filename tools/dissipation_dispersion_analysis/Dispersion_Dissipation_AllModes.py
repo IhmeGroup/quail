@@ -18,7 +18,7 @@ import numerics.basis.basis as basis_defs
 def get_physical_modes(mesh, params, order, nL):
 	params["SolutionOrder"] = order 
 	# physics = Scalar.Scalar(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
-	physics = scalar.ConstAdvScalar1D(order, params["SolutionBasis"], mesh)
+	physics = scalar.ConstAdvScalar1D(mesh)
 	# physics.set_physical_params(Velocity=1.)
 
 	# Initial conditions

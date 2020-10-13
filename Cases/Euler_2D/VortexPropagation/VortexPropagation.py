@@ -124,7 +124,7 @@ Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTi
 
 
 ### Physics
-physics = Euler.Euler2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+physics = Euler.Euler2D(mesh)
 # physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
 physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=1.4)
 physics.set_conv_num_flux("LaxFriedrichs")

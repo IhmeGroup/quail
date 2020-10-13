@@ -23,7 +23,7 @@ Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTi
 								 SolutionBasis="LagrangeSeg",TimeStepper="RK4",L2InitialCondition=False)
 
 ### Physics
-physics = Euler.Euler1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+physics = Euler.Euler1D(mesh)
 physics.set_physical_params(GasConstant=1.,SpecificHeatRatio=3.)
 physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions

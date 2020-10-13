@@ -29,7 +29,7 @@ class Chemistry(base.PhysicsBase):
 
 	PHYSICS_TYPE = general.PhysicsType.Chemistry
 
-	def __init__(self, order, basis, mesh):
+	def __init__(self, mesh):
 		'''
 		Method: __init__
 		--------------------------------------------------------------------------
@@ -38,7 +38,7 @@ class Chemistry(base.PhysicsBase):
 		coefficients. The coefficients are selected to retain the exact 
 		enthalpies at the table points.
 		'''
-		super().__init__(order, basis, mesh)
+		super().__init__(mesh)
 		# Default parameters
 		# self.params.update(
 		# 	GasConstant = 287., # specific gas constant

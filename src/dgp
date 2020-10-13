@@ -25,7 +25,7 @@ import solver.DG as DG
 import solver.ADERDG as ADERDG
 
 
-def set_physics(order, basis_type, mesh, physics_type):
+def set_physics(mesh, physics_type):
 	'''
 	This function creates the physics object based on the input parameters.
 
@@ -59,7 +59,7 @@ def set_physics(order, basis_type, mesh, physics_type):
 	else:
 	    raise NotImplementedError
 
-	physics = physics_class(order, basis_type, mesh)
+	physics = physics_class(mesh)
 
 	return physics
 
@@ -244,7 +244,7 @@ def driver(deck):
 	basis_type = numerics_params["SolutionBasis"]
 
 	# Create physics object
-	physics = set_physics(order, basis_type, mesh, physics_params["Type"])
+	physics = set_physics(mesh, physics_params["Type"])
 
 	# Set parameters
 	pparams = physics_params.copy()

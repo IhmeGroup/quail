@@ -40,7 +40,7 @@ Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTi
 
 ### Physics
 x0 = np.array([0., 0.])
-physics = Scalar.ConstAdvScalar2D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+physics = Scalar.ConstAdvScalar2D(mesh)
 physics.set_physical_params(ConstXVelocity=1.,ConstYVelocity=1.)
 physics.set_conv_num_flux("LaxFriedrichs")
 # Initial conditions

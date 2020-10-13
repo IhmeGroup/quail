@@ -35,7 +35,7 @@ Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTi
 								 SolutionBasis="LagrangeSeg",TimeStepper="RK4")
 ### Physics
 ConstVelocity = 1.
-physics = Scalar.Burgers1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+physics = Scalar.Burgers1D(mesh)
 #physics.set_physical_params(AdvectionOperator="Burgers")
 # physics.set_physical_params(ConstVelocity=ConstVelocity)
 physics.set_conv_num_flux("LaxFriedrichs")

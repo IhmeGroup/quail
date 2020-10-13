@@ -34,7 +34,7 @@ Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTi
 
 ### Physics
 Velocity = 1.
-physics = Scalar.ConstAdvScalar1D(Params["SolutionOrder"], Params["SolutionBasis"], mesh)
+physics = Scalar.ConstAdvScalar1D(mesh)
 # physics.set_physical_params(ConstVelocity=Velocity)
 physics.set_physical_params(ConstVelocity=Velocity)
 # Initial conditions

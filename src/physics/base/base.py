@@ -190,16 +190,13 @@ class PhysicsBase(ABC):
 		'''
 		pass
 
-	def __init__(self, order, basis_type, mesh):
+	def __init__(self, mesh):
 		'''
 		This method initializes the attributes (see above for attribute 
 		details). 
 
 		Inputs:
 		-------
-		    order: order of solution approximation
-		    basis_type: type of basis for solution approximation
-		    	(member of BasisType enum)
 		    mesh: mesh object
 
 		Outputs:
