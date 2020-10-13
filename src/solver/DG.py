@@ -102,6 +102,7 @@ class ElemHelpers(object):
 		self.iMM_elems = np.zeros(0)
 		self.vol_elems = np.zeros(0)
 		self.domain_vol = 0.
+		self.need_phys_grad = True
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -157,14 +158,14 @@ class ElemHelpers(object):
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 
-		# allocate
+		# Allocate
 		self.jac_elems = np.zeros([num_elems, nq, dim, dim])
 		self.ijac_elems = np.zeros([num_elems, nq, dim, dim])
 		self.djac_elems = np.zeros([num_elems, nq, 1])
 		self.x_elems = np.zeros([num_elems, nq, dim])
 		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, dim])
 
-		# basis data
+		# Basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True, 
 				get_ref_grad=True)
 
@@ -184,11 +185,13 @@ class ElemHelpers(object):
 			x = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
 			# Store
 			self.x_elems[elem_ID] = x
-			# Physical gradient
-			basis.get_basis_val_grads(quad_pts, get_phys_grad=True, 
-					ijac=ijac)
-			self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad  
-				# [nq,nb,dim]
+
+			if self.need_phys_grad:
+				# Physical gradient
+				basis.get_basis_val_grads(quad_pts, get_phys_grad=True, 
+						ijac=ijac)
+				self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad  
+					# [nq,nb,dim]
 
 		# Volumes
 		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)
@@ -337,7 +340,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
-		nfaces_per_elem = mesh.gbasis.NFACES
+		nfaces_per_elem = basis.NFACES
 
 		# Allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
@@ -457,11 +460,11 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		quad_pts = self.quad_pts 
 		nq = quad_pts.shape[0]
 		nb = basis.nb
-		nfaces_per_elem = mesh.gbasis.NFACES
+		nfaces_per_elem = basis.NFACES
 
 		# Allocate
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
-		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, dim])
+		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.DIM])
 
 		# Get values on each face (from interior perspective)
 		for face_ID in range(nfaces_per_elem):

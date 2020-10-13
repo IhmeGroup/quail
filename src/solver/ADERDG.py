@@ -40,170 +40,9 @@ class ElemHelpersADER(DG.ElemHelpers):
 	'''
 	def __init__(self):
 		super().__init__()
+		self.need_phys_grad = False
 		self.basis_time = None 
-			# basis object for converting time from ref to phys space
-
-	def get_basis_and_geom_data(self, mesh, basis, order):
-		dim = mesh.dim 
-		quad_pts = self.quad_pts 
-		num_elems = mesh.num_elems 
-		nq = quad_pts.shape[0]
-		nb = basis.nb
-
-		self.jac_elems = np.zeros([num_elems,nq,dim,dim])
-		self.ijac_elems = np.zeros([num_elems,nq,dim,dim])
-		self.djac_elems = np.zeros([num_elems,nq,1])
-		self.x_elems = np.zeros([num_elems,nq,dim])
-		self.basis_phys_grad_elems = np.zeros([num_elems,nq,nb,dim])
-
-		basis.get_basis_val_grads(quad_pts, get_val=True, get_ref_grad=True)
-
-		self.basis_val = basis.basis_val
-		self.basis_ref_grad = basis.basis_ref_grad
-
-		for elem_ID in range(mesh.num_elems):
-			# Get Jacobian data
-			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID,
-					quad_pts, get_djac=True, get_jac=True, get_ijac=True)
-			# Store the Jacobian data
-			self.jac_elems[elem_ID] = jac
-			self.ijac_elems[elem_ID] = ijac
-			self.djac_elems[elem_ID] = djac
-
-			# Physical coordinates of quadrature points
-			x = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
-			# Store
-			self.x_elems[elem_ID] = x
-
-
-class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
-	'''
-    InteriorHelpersADER inherits attributes and methods from the
-    DG.InteriorFaceHelpers class. See DG.InteriorFaceHelpers for detailed
-    comments of attributes and methods.
-
-    Additional methods and attributes are commented below.
-	'''
-	def get_gaussian_quadrature(self, mesh, physics, basis, order):
-		gbasis = mesh.gbasis
-		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh, 
-				order, physics=physics)
-		self.quad_pts, self.quad_wts = \
-				basis.FACE_SHAPE.get_quadrature_data(quad_order)
-
-	def get_basis_and_geom_data(self, mesh, basis, order):
-		dim = mesh.dim
-		quad_pts = self.quad_pts 
-		nq = quad_pts.shape[0]
-		nb = basis.get_num_basis_coeff(order)
-
-		# Primary difference is that there are two additional faces 
-		# per element for the ADER-DG approach (due to space-time ref space)
-		nfaces_per_elem = mesh.gbasis.NFACES + 2
-
-		# Allocate
-		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
-		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
-		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq, dim])
-
-		# Get values on each face (from both left and right perspectives)
-		for face_ID in range(nfaces_per_elem):
-			# Left
-			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts, 
-					basis, get_val=True)
-			self.faces_to_basisL[face_ID] = basis.basis_val
-			# Right
-			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts[::-1], 
-					basis, get_val=True)
-			self.faces_to_basisR[face_ID] = basis.basis_val
-
-		# Normals
-		i = 0
-		for interior_face in mesh.interior_faces:
-			normals = mesh.gbasis.calculate_normals(mesh, 
-					interior_face.elemL_ID, interior_face.faceL_ID, quad_pts)
-			self.normals_int_faces[i] = normals
-			i += 1
-
-
-class BoundaryFaceHelpersADER(InteriorFaceHelpersADER):
-	'''
-    BoundaryHelpersADER inherits attributes and methods from the
-    InteriorFaceHelpersADER class. See InteriorFaceHelpersADER for detailed
-    comments of attributes and methods.
-
-    Additional methods and attributes are commented below.
-	'''
-	def __init__(self):
-		self.quad_pts = np.zeros(0)
-		self.quad_wts = np.zeros(0)
-		self.faces_to_basis = np.zeros(0)
-		self.faces_to_xref = np.zeros(0)
-		self.normals_bgroups = []
-		self.x_bgroups = []
-		self.UqI = np.zeros(0) 
-		self.UqB = np.zeros(0) 
-		self.Fq = np.zeros(0) 
-
-	def get_basis_and_geom_data(self, mesh, basis, order):
-		dim = mesh.dim
-		quad_pts = self.quad_pts 
-		nq = quad_pts.shape[0]
-		nb = basis.get_num_basis_coeff(order)
-
-		# Primary difference is that there are two additional faces 
-		# per element for the ADER-DG approach
-		nfaces_per_elem = mesh.gbasis.NFACES + 2
-
-		# Allocate
-		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
-		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, dim+1])
-
-		# Get values on each face (from interior perspective)
-		for face_ID in range(nfaces_per_elem):
-			self.faces_to_xref[face_ID] = basis.get_elem_ref_from_face_ref(
-					face_ID, quad_pts)
-			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis, 
-					get_val=True)
-			self.faces_to_basis[face_ID] = basis.basis_val
-
-		# Get boundary information
-		i = 0
-		for bgroup in mesh.boundary_groups.values():
-			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,
-					nq, dim]))
-			self.x_bgroups.append(np.zeros([bgroup.num_boundary_faces, 
-					nq, dim]))
-			normal_bgroup = self.normals_bgroups[i]
-			x_bgroup = self.x_bgroups[i]
-
-			# Normals
-			j = 0
-			for boundary_face in bgroup.boundary_faces:
-				normals = mesh.gbasis.calculate_normals(mesh, 
-						boundary_face.elem_ID, boundary_face.face_ID, 
-						quad_pts)
-				normal_bgroup[j] = normals
-
-				# Physical coordinates of quadrature points
-				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID, 
-						self.faces_to_xref[boundary_face.face_ID])
-				# Store
-				x_bgroup[j] = x
-
-				# Increment
-				j += 1
-			i += 1
-
-	def alloc_other_arrays(self, physics, basis, order):
-		quad_pts = self.quad_pts 
-		nq = quad_pts.shape[0]
-		ns = physics.NUM_STATE_VARS
-
-		self.UqI = np.zeros([nq, ns])
-		self.UqB = np.zeros([nq, ns])
-		self.Fq = np.zeros([nq, ns])
-
+		
 
 class ADERHelpers(object):
 	'''
@@ -501,10 +340,10 @@ class ADERDG(base.SolverBase):
 		self.elem_helpers_st = ElemHelpersADER()
 		self.elem_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
-		self.int_face_helpers_st = InteriorFaceHelpersADER()
+		self.int_face_helpers_st = DG.InteriorFaceHelpers()
 		self.int_face_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
-		self.bface_helpers_st = BoundaryFaceHelpersADER()
+		self.bface_helpers_st = DG.BoundaryFaceHelpers()
 		self.bface_helpers_st.compute_helpers(mesh, physics, basis_st,
 				physics.order)
 
