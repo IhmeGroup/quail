@@ -127,21 +127,20 @@ def gauss_lobatto_nodes_1D_range(start, stop, nnodes):
     return xnodes # [nnodes, 1]
 
 
-def get_inv_mass_matrices(mesh, physics, basis):
+def get_inv_mass_matrices(mesh, basis, order):
     '''
     Calculate the inverse mass matrices for all elements
 
     Inputs:
     -------
         mesh: mesh object
-        physics: physics object (e.g., scalar, euler, etc...)
         basis: instantiation of the basis
+        order: polynomial order of solution approximation
 
     Outputs:
     -------- 
         iMM_all: all inverse mass matrices
     '''
-    order = physics.order
     nb = basis.nb
 
     iMM_all = np.zeros([mesh.num_elems, nb, nb])

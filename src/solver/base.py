@@ -50,6 +50,10 @@ class SolverBase(ABC):
 		number of time steps required to solve to the specified end time
 	basis: object
 		contains all the information and methods for the basis class
+	order: int
+	    order of solution approximation
+	state_coeffs: numpy array
+		coefficients of polynomial approximation of global solution
 	limiter: object
 		contains all the information and methods for the limiter class
 
@@ -83,12 +87,18 @@ class SolverBase(ABC):
 		self.time = params["InitialTime"]
 		self.num_time_steps = 0 # will be set later
 
-		# Set the basis functions for the solver
-		BASIS_TYPE  = params["SolutionBasis"]
-		self.basis = basis_tools.set_basis(physics.order, BASIS_TYPE)
+		# Set solution basis and order
+		self.order = params["SolutionOrder"]
+		basis_type  = params["SolutionBasis"]
+		self.basis = basis_tools.set_basis(self.order, basis_type)
+		# State polynomial coefficients (what we're solving for)
+		self.state_coeffs = np.zeros([mesh.num_elems, 
+				self.basis.get_num_basis_coeff(self.order), 
+				physics.NUM_STATE_VARS])
 
-		NODE_TYPE = params["NodeType"]
-		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(NODE_TYPE)
+		# Node type
+		node_type = params["NodeType"]
+		self.basis.get_1d_nodes = basis_tools.set_1D_node_calc(node_type)
 
 		# Set quadrature
 		self.basis.set_elem_quadrature_type(params["ElementQuadrature"])
@@ -129,7 +139,7 @@ class SolverBase(ABC):
 
 		# Gauss Lobatto nodes compatibility checks
 		node_type = params["NodeType"]
-		forcing_switch = params["ColocatedPoints"]
+		colocated_points = params["ColocatedPoints"]
 		elem_quad = params["ElementQuadrature"]
 		face_quad = params["FaceQuadrature"]
 
@@ -139,11 +149,11 @@ class SolverBase(ABC):
 			raise errors.IncompatibleError
 
 		# compatibility check for forcing nodes equal to quadrature points
-		if NodeType[node_type] == NodeType.Equidistant and forcing_switch:
+		if NodeType[node_type] == NodeType.Equidistant and colocated_points:
 			raise errors.IncompatibleError
 		if (QuadratureType[elem_quad] != QuadratureType.GaussLobatto or \
 				QuadratureType[face_quad] != QuadratureType.GaussLobatto) \
-				and forcing_switch:
+				and colocated_points:
 			raise errors.IncompatibleError
 
 	@abstractmethod
@@ -228,9 +238,9 @@ class SolverBase(ABC):
 		params = self.params
 		iMM_elems = self.elem_helpers.iMM_elems
 
-		U = physics.U
+		U = self.state_coeffs
 		ns = physics.NUM_STATE_VARS
-		order = physics.order
+		order = self.order
 
 		# Get solution nodes or quadrature info
 		if not params["L2InitialCondition"]:
@@ -238,14 +248,15 @@ class SolverBase(ABC):
 			eval_pts = basis.get_nodes(order)
 		else:
 			# Quadrature
-			order = 2*np.amax([physics.order, 1])
+
+			# Over-integrate
+			order = 2*np.amax([self.order, 1])
 			order = physics.get_quadrature_order(order)
 
 			quad_order = basis.get_quadrature_order(mesh, order)
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 
 			eval_pts = quad_pts
-		npts = eval_pts.shape[0]
 
 		for elem_ID in range(mesh.num_elems):
 			# Compute state
@@ -280,22 +291,22 @@ class SolverBase(ABC):
 		params = self.params
 		iMM_elems = self.elem_helpers.iMM_elems
 
-		U = physics.U
+		U = self.state_coeffs
 		ns = physics.NUM_STATE_VARS
 
 		if basis_old.SHAPE_TYPE != basis.SHAPE_TYPE:
 			raise errors.IncompatibleError
 
 		if not params["L2InitialCondition"]:
-			eval_pts = basis.get_nodes(physics.order)
+			# Interpolate to solution nodes
+			eval_pts = basis.get_nodes(self.order)
 		else:
-			order = 2*np.amax([physics.order, order_old])
+			# Quadrature
+			order = 2*np.amax([self.order, order_old])
 			quad_order = basis.get_quadrature_order(mesh, order)
 
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 			eval_pts = quad_pts
-
-		npts = eval_pts.shape[0]
 
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
@@ -468,7 +479,7 @@ class SolverBase(ABC):
 			self.time = t
 
 			# Info to print
-			print_info = (itime+1, self.time,
+			print_info = (itime + 1, self.time,
 					np.linalg.norm(np.reshape(R, -1), ord=1))
 			print_string = "%d: Time = %g, Residual norm = %g" % (print_info)
 

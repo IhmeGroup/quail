@@ -75,10 +75,8 @@ class ODESolvers():
 		BETA = 1.0
 
 		def take_time_step(self, solver):
-
-			physics = solver.physics
 			mesh = solver.mesh
-			U = physics.U
+			U = solver.state_coeffs
 
 			R = self.R
 
@@ -91,7 +89,7 @@ class ODESolvers():
 			U = np.einsum('ijkl,ikl->ijl',iA,R)
 
 			solver.apply_limiter(U)
-			physics.U = U
+			solver.state_coeffs = U
 
 			return R
 
@@ -113,7 +111,7 @@ class ODESolvers():
 			basis = solver.basis
 			nb = basis.nb
 			physics = solver.physics
-			Up = physics.U
+			U = solver.state_coeffs
 			ns = physics.NUM_STATE_VARS
 
 			iMM_elems = solver.elem_helpers.iMM_elems
@@ -121,13 +119,13 @@ class ODESolvers():
 			A = np.zeros([mesh.num_elems, nb, nb, ns])
 			iA = np.zeros([mesh.num_elems, nb, nb, ns])
 
-			for elem in range(mesh.num_elems):
-				A[elem], iA[elem] = self.get_jacobian_matrix_elem(solver, 
-						elem, iMM_elems[elem], Up[elem])
+			for elem_ID in range(mesh.num_elems):
+				A[elem_ID], iA[elem_ID] = self.get_jacobian_matrix_elem(solver, 
+						elem_ID, iMM_elems[elem_ID], U[elem_ID])
 
 			return A, iA # [nelem, nb, nb, ns]
 
-		def get_jacobian_matrix_elem(self, solver, elem, iMM, Up):
+		def get_jacobian_matrix_elem(self, solver, elem_ID, iMM, Uc):
 			'''
 			Calculates the Jacobian matrix of the source term and its 
 			inverse for each element. Definition of 'Jacobian' matrix:
@@ -137,7 +135,9 @@ class ODESolvers():
 			Inputs:
 			-------
 				solver: solver object (e.g., DG, ADERDG, etc...)
-				elem: element index
+				elem_ID: element ID
+				iMM: inverse mass matrix [nb, nb]
+				Uc: state coefficients on element [nb, ns]
 
 			Outputs:
 			-------- 
@@ -154,18 +154,18 @@ class ODESolvers():
 			basis_val = elem_helpers.basis_val
 			quad_wts = elem_helpers.quad_wts
 			x_elems = elem_helpers.x_elems
-			x = x_elems[elem]
+			x = x_elems[elem_ID]
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
-			Uq = np.matmul(basis_val, Up)
+			Uq = np.matmul(basis_val, Uc)
 
 			# evaluate the source term Jacobian [nq, ns, ns]
 			Sjac = np.zeros([nq,ns,ns])
 			Sjac = physics.eval_source_term_jacobians(Uq, x, solver.time, Sjac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
-			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem, Sjac)
+			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem_ID, Sjac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
 					np.einsum('ij,jkl->ijl',iMM,dRdU)

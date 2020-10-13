@@ -83,13 +83,10 @@ Numerics = {
     "ConvFluxSwitch" : True,
         # If False, will ignore the convective flux
         # Useful for debugging
-        # If ConvFluxSwitch and SourceSwitch are both False, can easily
-        # test ODE solvers
+        # If ConvFluxSwitch is False, can easily test ODE solvers
     "SourceSwitch" : True,
         # If False, will ignore the source terms
         # Useful for debugging
-        # If ConvFluxSwitch and SourceSwitch are both False, can easily
-        # test ODE solvers
 }
 
 

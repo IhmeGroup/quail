@@ -257,13 +257,13 @@ class ADERDG(base.SolverBase):
 		if StepperType[time_stepper] != StepperType.ADER:
 			raise errors.IncompatibleError
 
-		self.stepper = stepper_defs.ADER(physics.U)
+		self.stepper = stepper_defs.ADER(self.state_coeffs)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
 
 		# Set the space-time basis functions for the solver
 		basis_name = params["SolutionBasis"]
 		self.basis_st = basis_st_tools.set_basis_spacetime(mesh, 
-				physics.order, basis_name)
+				self.order, basis_name)
 
 		# Set quadrature for space-time basis
 		self.basis_st.set_elem_quadrature_type(params["ElementQuadrature"])
@@ -273,8 +273,8 @@ class ADERDG(base.SolverBase):
 				params["ColocatedPoints"])
 
 		# Allocate array for predictor step in ADER-Scheme
-		physics.U_pred = np.zeros([self.mesh.num_elems, 
-				self.basis_st.get_num_basis_coeff(physics.order), 
+		self.state_coeffs_pred = np.zeros([self.mesh.num_elems, 
+				self.basis_st.get_num_basis_coeff(self.order), 
 				physics.NUM_STATE_VARS])
 
 		# Set predictor function
@@ -323,36 +323,37 @@ class ADERDG(base.SolverBase):
 		mesh = self.mesh 
 		physics = self.physics
 
+		order = self.order
 		basis = self.basis
 		basis_st = self.basis_st
 		stepper = self.stepper
 
 		self.elem_helpers = DG.ElemHelpers()
 		self.elem_helpers.compute_helpers(mesh, physics, basis, 
-				physics.order)
+				order)
 		self.int_face_helpers = DG.InteriorFaceHelpers()
 		self.int_face_helpers.compute_helpers(mesh, physics, basis, 
-				physics.order)
+				order)
 		self.bface_helpers = DG.BoundaryFaceHelpers()
 		self.bface_helpers.compute_helpers(mesh, physics, basis,
-				physics.order)
+				order)
 
 		# Calculate ADER specific space-time helpers
 		self.elem_helpers_st = ElemHelpersADER()
 		self.elem_helpers_st.compute_helpers(mesh, physics, basis_st,
-				physics.order)
+				order)
 		self.int_face_helpers_st = DG.InteriorFaceHelpers()
 		self.int_face_helpers_st.compute_helpers(mesh, physics, basis_st,
-				physics.order)
+				order)
 		self.bface_helpers_st = DG.BoundaryFaceHelpers()
 		self.bface_helpers_st.compute_helpers(mesh, physics, basis_st,
-				physics.order)
+				order)
 
 		stepper.dt = stepper.get_time_step(stepper, self)
 		dt = stepper.dt
 		self.ader_helpers = ADERHelpers()
 		self.ader_helpers.compute_helpers(mesh, physics, basis, 
-				basis_st, dt, physics.order)
+				basis_st, dt, order)
 
 	def calculate_predictor_step(self, dt, W, Up):
 		'''

@@ -168,7 +168,7 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 	basis = solver.basis
 	basis_st = solver.basis_st
 
-	order = physics.order
+	order = solver.order
 	
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
@@ -250,7 +250,7 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 	basis = solver.basis
 	basis_st = solver.basis_st
 
-	order = physics.order
+	order = solver.order
 	
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
@@ -345,7 +345,7 @@ def predictor_elem_sylvester(solver, elem_ID, dt, W, U_pred):
 	basis = solver.basis
 	basis_st = solver.basis_st
 
-	order = physics.order
+	order = solver.order
 	
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers

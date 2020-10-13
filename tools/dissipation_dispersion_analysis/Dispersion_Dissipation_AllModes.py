@@ -25,11 +25,11 @@ def get_physical_modes(mesh, params, order, nL):
 	# physics.IC.Set(Function=physics.FcnExponential)
 	physics.set_IC(IC_type="Sine")
 	physics.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
-	U = physics.U
-	U = U.astype(complex)
 
 	# Set solver
 	solver = DG.DG(params, physics, mesh)
+	U = solver.state_coeffs
+	U = U.astype(complex)
 
 
 	### Mass matrix, stiffness matrix, basis

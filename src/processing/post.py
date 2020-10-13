@@ -43,9 +43,9 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	'''
 	# Extract info
 	time = solver.time
-	U = physics.U
+	U = solver.state_coeffs
 	basis = solver.basis
-	order = physics.order
+	order = solver.order
 	if physics.exact_soln is None:
 		raise ValueError("No exact solution provided")
 
@@ -172,7 +172,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		basis_val = faces_to_basis[face_ID]
 
 		# Interpolate state and gradient at quad points
-		Uq = helpers.evaluate_state(physics.U[elem_ID], basis_val)
+		Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
 
 		# Get requested variable
 		varq = physics.compute_variable(var_name, Uq) # [nq, 1]

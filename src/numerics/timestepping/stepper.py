@@ -103,7 +103,7 @@ class FE(StepperBase):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
-		U = physics.U
+		U = solver.state_coeffs
 
 		R = self.R 
 		R = solver.get_residual(U, R)
@@ -125,7 +125,7 @@ class RK4(StepperBase):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
-		U = physics.U
+		U = solver.state_coeffs
 
 		R = self.R
 
@@ -207,7 +207,7 @@ class LSRK4(StepperBase):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
-		U = physics.U
+		U = solver.state_coeffs
 
 		R = self.R
 		dU = self.dU
@@ -267,7 +267,7 @@ class SSPRK3(StepperBase):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
-		U = physics.U
+		U = solver.state_coeffs
 
 		R = self.R
 		dU = self.dU
@@ -305,8 +305,8 @@ class ADER(StepperBase):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
-		W = physics.U
-		Up = physics.U_pred
+		W = solver.state_coeffs
+		Up = solver.state_coeffs_pred
 
 		R = self.R
 
@@ -368,7 +368,7 @@ class Strang(StepperBase, ode.ODESolvers):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
-		U = physics.U
+		U = solver.state_coeffs
 
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
@@ -409,7 +409,7 @@ class Simpler(Strang):
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
-		U = physics.U
+		U = solver.state_coeffs
 
 		explicit = self.explicit
 		explicit.dt = self.dt/2.

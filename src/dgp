@@ -305,17 +305,14 @@ def driver(deck):
 		# Old solver
 		solver_old = readwritedatafiles.read_data_file(solver_params[
 				"RestartFile"])
-		# Unpack
-		physics_old = solver_old.physics
-		params_old = solver_old.params
 		# Project if different basis and/or order
-		if order != physics_old.order or solver.basis.BASIS_TYPE != \
+		if order != solver_old.order or solver.basis.BASIS_TYPE != \
 				solver_old.basis.BASIS_TYPE:
 			print("Projecting to a different solution basis and/or order")
-			solver.project_state_to_new_basis(physics_old.U, 
-					solver_old.basis, physics_old.order)
+			solver.project_state_to_new_basis(solver_old.state_coeffs, 
+					solver_old.basis, solver_old.order)
 		else:
-			solver.physics.U = physics_old.U
+			solver.state_coeffs = solver_old.state_coeffs
 			# Time
 		if restart_params["StartFromFileTime"]:
 			solver.time = solver_old.time

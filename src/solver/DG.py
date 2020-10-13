@@ -235,7 +235,7 @@ class ElemHelpers(object):
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
 		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh, 
-				physics, basis)
+				basis, order)
 
 
 class InteriorFaceHelpers(ElemHelpers):
@@ -525,7 +525,7 @@ class DG(base.SolverBase):
 	def __init__(self, params, physics, mesh):
 		super().__init__(params, physics, mesh)
 
-		self.stepper = stepper_tools.set_stepper(params, physics.U)
+		self.stepper = stepper_tools.set_stepper(params, self.state_coeffs)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
 		
 		# Precompute helpers
@@ -548,13 +548,13 @@ class DG(base.SolverBase):
 
 		self.elem_helpers = ElemHelpers()
 		self.elem_helpers.compute_helpers(mesh, physics, basis, 
-				physics.order)
+				self.order)
 		self.int_face_helpers = InteriorFaceHelpers()
 		self.int_face_helpers.compute_helpers(mesh, physics, basis, 
-				physics.order)
+				self.order)
 		self.bface_helpers = BoundaryFaceHelpers()
 		self.bface_helpers.compute_helpers(mesh, physics, basis, 
-				physics.order)
+				self.order)
 
 	def get_element_residual(self, elem_ID, Uc, R_elem):
 		# Unpack

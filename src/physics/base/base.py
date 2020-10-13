@@ -115,10 +115,6 @@ class PhysicsBase(ABC):
 	    list of Function objects corresponding to each source term
 	conv_flux_fcn: Function object
 	    holds information about the convective flux function
-	order: int
-	    order of solution approximation
-	U: numpy array
-		coefficients of polynomial approximation of global solution
 
 	Inner Classes:
 	--------------
@@ -225,12 +221,6 @@ class PhysicsBase(ABC):
 		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
 		self.source_terms = []
 		self.conv_flux_fcn = None
-
-		# Coefficients of polynomial approximation of global solution
-		self.order = order
-		basis = basis_tools.set_basis(self.order, basis_type)
-		self.U = np.zeros([mesh.num_elems, basis.get_num_basis_coeff(
-				self.order), self.NUM_STATE_VARS])
 
 		# Compatibility check
 		if mesh.dim != self.DIM:

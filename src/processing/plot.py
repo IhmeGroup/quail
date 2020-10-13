@@ -397,12 +397,12 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	yline = np.linspace(y1, y2, num_pts)
 
 	''' Interpolation '''
-	x = get_sample_points(mesh, physics, solver.basis, True)
+	x = get_sample_points(mesh, solver, physics, solver.basis, True)
 	xyline = np.array([xline, yline]).transpose()
 
 	if plot_numerical:
-		var = get_numerical_solution(physics, physics.U, x, solver.basis, 
-				var_name)
+		var = get_numerical_solution(physics, solver.state_coeffs, x, 
+				solver.basis, var_name)
 		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
 		default_label = "Numerical"
 	elif plot_exact:
@@ -434,7 +434,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	finalize_plot(xlabel=xlabel, **kwargs)
 
 
-def get_sample_points(mesh, physics, basis, equidistant=True):
+def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	'''
 	This function returns sample points at which to evaluate the solution 
 	for plotting.
@@ -455,8 +455,8 @@ def get_sample_points(mesh, physics, basis, equidistant=True):
 	'''
 	# Extract
 	dim = mesh.dim
-	U = physics.U
-	order = physics.order
+	U = solver.state_coeffs
+	order = solver.order
 
 	# Get sample points in reference space
 	if equidistant:
@@ -702,11 +702,12 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 	dim = mesh.dim
 
 	# Get sample points
-	x = get_sample_points(mesh, physics, solver.basis, equidistant_pts)
+	x = get_sample_points(mesh, solver, physics, solver.basis, 
+			equidistant_pts)
 
 	''' Evaluate desired variable at sample points '''
 	if plot_numerical:
-		var_plot = get_numerical_solution(physics, physics.U, x, 
+		var_plot = get_numerical_solution(physics, solver.state_coeffs, x, 
 				solver.basis, var_name)
 		default_label = "Numerical"
 	elif plot_exact:
