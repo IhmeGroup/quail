@@ -12,7 +12,7 @@ def CalculateBasisAndMatrices(solver, mesh, order):
 	## Mass, stiffness matrix
 	# MMinv, _ = basis_defs.get_elem_inv_mass_matrix(mesh, basis=basis, Order=Order, elem=0, physical_space=True)
 	MMinv = solver.elem_helpers.iMM_elems[0]
-	SM = basis_tools.get_stiffness_matrix(solver, mesh, order=order, elem=0)
+	SM = basis_tools.get_stiffness_matrix(solver, mesh, order=order, elem_ID=0)
 
 	# _ = basis.get_basis_face_val_grads(mesh, f, quad_pts, None, get_val=True)
 	# 		self.faces_to_basisL[f] = basis.basis_val
