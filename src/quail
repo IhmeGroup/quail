@@ -415,11 +415,11 @@ def process_post_file(post_file, auto_process):
 
 def main(argv):
 	'''
-	This is the top-level main function of dgp.
+	This is the top-level main function of quail.
 
 	Inputs:
 	-------
-		argv: command-line arguments (run "dgp -h" or see below for info)
+		argv: command-line arguments (run "quail -h" or see below for info)
 	'''
 	''' Parser '''
 	my_parser = argparse.ArgumentParser(conflict_handler="resolve", 

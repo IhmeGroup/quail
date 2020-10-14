@@ -35,7 +35,7 @@ class GmshElementData(object):
 	gbasis: int
 		object for geometry basis
 	node_order: numpy array (int)
-		maps dgp node ordering to gmsh node ordering
+		maps quail node ordering to gmsh node ordering
 	'''
 	def __init__(self):
 		self.num_nodes = -1
@@ -46,7 +46,7 @@ class GmshElementData(object):
 
 def gmsh_node_order_seg(gorder):
 	'''
-	This function maps dgp node ordering to gmsh node ordering for segments
+	This function maps quail node ordering to gmsh node ordering for segments
 
 	Inputs:
 	------- 
@@ -54,7 +54,7 @@ def gmsh_node_order_seg(gorder):
 
 	Outputs:
 	--------
-	    nodes: maps dgp node ordering to gmsh node ordering
+	    nodes: maps quail node ordering to gmsh node ordering
 	'''
 	num_nodes = gorder + 1
 	nodes = np.arange(num_nodes)
@@ -66,7 +66,7 @@ def gmsh_node_order_seg(gorder):
 
 def populate_nodes_quadril(gorder, start, nodes):
 	'''
-	Helper function for mapping dgp node ordering to gmsh node ordering for
+	Helper function for mapping quail node ordering to gmsh node ordering for
 	quadrilaterals. Recursion is employed.
 
 	Inputs: 
@@ -75,7 +75,7 @@ def populate_nodes_quadril(gorder, start, nodes):
 	    nodes: array for mapping node orders
 
 	Outputs:
-	    nodes: maps dgp node ordering to gmsh node ordering
+	    nodes: maps quail node ordering to gmsh node ordering
 	    	(modified)
 	'''
 	if gorder == 0:
@@ -110,14 +110,14 @@ def populate_nodes_quadril(gorder, start, nodes):
 
 def gmsh_node_order_quadril(gorder):
 	'''
-	This function maps dgp node ordering to gmsh node ordering for 
+	This function maps quail node ordering to gmsh node ordering for 
 	quadrilaterals.
 
 	Inputs: 
 	    gorder: order of geometry interpolation
 
 	Outputs:
-	    nodes: maps dgp node ordering to gmsh node ordering
+	    nodes: maps quail node ordering to gmsh node ordering
 	'''
 	nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1], 
 			dtype=int))
@@ -128,7 +128,7 @@ def gmsh_node_order_quadril(gorder):
 
 def populate_nodes_tri(gorder, start, nodes):
 	'''
-	Helper function for mapping dgp node ordering to gmsh node ordering for
+	Helper function for mapping quail node ordering to gmsh node ordering for
 	triangles. Recursion is employed.
 
 	Inputs: 
@@ -137,7 +137,7 @@ def populate_nodes_tri(gorder, start, nodes):
 	    nodes: array for mapping node orders
 
 	Outputs:
-	    nodes: maps dgp node ordering to gmsh node ordering
+	    nodes: maps quail node ordering to gmsh node ordering
 	    	(modified)
 	'''
 	if gorder == 0:
@@ -170,14 +170,14 @@ def populate_nodes_tri(gorder, start, nodes):
 
 def gmsh_node_order_tri(gorder):
 	'''
-	This function maps dgp node ordering to gmsh node ordering for 
+	This function maps quail node ordering to gmsh node ordering for 
 	triangles.
 
 	Inputs: 
 	    gorder: order of geometry interpolation
 
 	Outputs:
-	    nodes: maps dgp node ordering to gmsh node ordering
+	    nodes: maps quail node ordering to gmsh node ordering
 	'''
 	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1], 
 			dtype=int)-1)
@@ -260,7 +260,7 @@ class PhysicalGroup(object):
 	dim: int
 	    number of spatial dimensions
 	boundary_group_num: int
-	    boundary group number (in dgp)
+	    boundary group number (in quail)
 	gmsh_phys_num: int
 	    physical group number assigned by Gmsh
 	name: str
@@ -287,7 +287,7 @@ class FaceInfo(object):
 	at_boundary: bool
 	    True if boundary face, False if interior face
 	boundary_group_num: int
-	    boundary group number (in dgp)
+	    boundary group number (in quail)
 	elem_ID: int
 	    ID of current adjacent element
 	face_ID: int
@@ -1072,7 +1072,8 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 			if num_nodes != gmsh_element_database[etype].num_nodes:
 				raise Exception("Number of nodes doesn't match up")
 
-			# Convert from Gmsh node ordering to dgp node ordering and store
+			# Convert from Gmsh node ordering to quail node ordering and
+			# store
 			new_node_IDs = node_IDs[gmsh_element_database[etype].node_order]
 			mesh.elem_to_node_IDs[num_elems] = new_node_IDs
 
@@ -1133,7 +1134,7 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 				fl = fo.readline()
 				lint = [int(l) for l in fl.split()]
 
-				# Convert from Gmsh to dgp node ordering and store
+				# Convert from Gmsh to quail node ordering and store
 				nodes = np.array(lint[1:])
 				for n in range(len(nodes)):
 					nodes[n] = old_to_new_node_IDs[nodes[n]]
