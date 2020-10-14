@@ -6,8 +6,7 @@
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import numpy as np 
-from scipy.optimize import fsolve, root
+import numpy as np
 
 from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
