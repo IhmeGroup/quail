@@ -647,6 +647,8 @@ def make_periodic_translational(mesh, x1=None, x2=None, y1=None, y2=None):
     --------
         mesh: mesh object (modified)
     '''
+    print("-------------------------------------------------")
+    print("IMPOSING PERIODICITY\n")
     ''' Reorder nodes '''
     old_to_new_node_map = np.zeros(mesh.num_nodes, dtype=int) - 1  
         # old_to_new_node_map[n] = the new node ID of the nth node
@@ -682,3 +684,6 @@ def make_periodic_translational(mesh, x1=None, x2=None, y1=None, y2=None):
 
     ''' Update elements '''
     mesh.create_elements()
+
+    print("\nDONE")
+    print("-------------------------------------------------")

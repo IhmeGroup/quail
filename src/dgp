@@ -164,6 +164,60 @@ def read_inputs(deck):
 			source_params, output_params
 
 
+def print_info(restart_params, stepper_params, numerics_params, mesh_params, 
+		physics_params, IC_params, exact_params, BC_params, source_params,
+		output_params):
+	print()
+	print("=================================================")
+	print("||                                             ||")
+	print("||  Quail: a discontinuous Galerkin solver in  ||")
+	print("||     Python for teaching and prototyping     ||")
+	print("||                                             ||")
+	print("=================================================")
+	print()
+
+	def print_dict(d):
+		[print("   ", key, ":", value) for key, value in d.items()]
+		print()
+
+	# Print input deck
+	if output_params["Verbose"]:
+		print("-------------------")
+		print("PRINTING INPUT DECK")
+		print("-------------------")
+		print()
+		print("Restart:")
+		print("--------")
+		print_dict(restart_params)
+		print("TimeStepping:")
+		print("-------------")
+		print_dict(stepper_params)
+		print("Numerics:")
+		print("---------")
+		print_dict(numerics_params)
+		print("Mesh:")
+		print("-----")
+		print_dict(mesh_params)
+		print("Physics:")
+		print("--------")
+		print_dict(physics_params)
+		print("InitialCondition:")
+		print("-----------------")
+		print_dict(IC_params)
+		print("ExactSolution:")
+		print("--------------")
+		print_dict(exact_params)
+		print("BoundaryConditions:")
+		print("-------------------")
+		print_dict(BC_params)
+		print("SourceTerms:")
+		print("------------")
+		print_dict(source_params)
+		print("Output:")
+		print("-------")
+		print_dict(output_params)
+
+
 def driver(deck):
 	'''
 	This function processes the input deck and performs the simulation.
@@ -184,6 +238,10 @@ def driver(deck):
 	restart_params, stepper_params, numerics_params, mesh_params, \
 			physics_params, IC_params, exact_params, BC_params, \
 			source_params, output_params = read_inputs(deck)
+	# Print info
+	print_info(restart_params, stepper_params, numerics_params, mesh_params, 
+			physics_params, IC_params, exact_params, BC_params, 
+			source_params, output_params)
 
 	'''
 	Mesh
@@ -342,12 +400,14 @@ def process_post_file(post_file, auto_process):
 	if post_file != None:
 		post_file = post_file.replace(".py","")
 		try:
+			print("\nRunning post-processing script")
 			postprocess = importlib.import_module(post_file)
 		except ModuleNotFoundError:
 			raise errors.FileReadError(f"{post_file}.py not found")
 	if auto_process == True and post_file == None:
 		post_file = "post_process"
 		try:
+			print("\nRunning post-processing script")
 			postprocess = importlib.import_module(post_file)
 		except ModuleNotFoundError:
 			print("Warning: post_process.py file not found")
@@ -409,6 +469,11 @@ def main(argv):
 	else:
 		# Post-process only
 		process_post_file(post_file, True)
+
+	print()
+	print("----------")
+	print("Quail done")
+	print("----------")
 
 
 if __name__ == "__main__":

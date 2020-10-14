@@ -54,6 +54,12 @@ class SolverBase(ABC):
 		coefficients of polynomial approximation of global solution
 	limiter: object
 		contains all the information and methods for the limiter class
+	verbose: bool
+		determines whether to print detailed info to console
+	min_state: numpy array
+		minimum values of state variables
+	max_state: numpy array
+		maximum values of state variables
 
     Abstract Methods:
     -----------------
@@ -61,11 +67,11 @@ class SolverBase(ABC):
     	precomputes a variety of functions and methods prior to running the
     	simulation
     get_element_residual
-    	calculates the residual for a specific element
+    	calculates the residual contribution for  a given element interior
     get_interior_face_residual
-    	calculates the residual for a specific face
+    	calculates the residual contribution for a specific interior face
     get_boundary_face_residual
-    	calculates the residual for a specific boundary face
+    	calculates the residual contribution for a specific boundary face
     
     Methods:
     --------
@@ -76,6 +82,22 @@ class SolverBase(ABC):
 	project_state_to_new_basis
 		takes a state from a restartfile and projects it onto a higher
 		order of accuracy
+	get_residual
+		computes the full residual
+	get_element_residuals
+		computes the residual contributions from interiors of all elements
+	get_interior_face_residuals
+		computes the residual contributions from all interior faces
+	get_boundary_face_residuals
+		computes the residual contributions from all boundary faces
+	apply_limiter
+		applies limiter to the state
+	get_min_max_state
+		computes minimum and maximum values of the state
+	print_info
+		prints key info (at each time step)
+	solve
+		applies time integration scheme to solve the system
 	'''
 	def __init__(self, params, physics, mesh):
 		self.params = params
@@ -109,6 +131,11 @@ class SolverBase(ABC):
 		limiter_type = params["ApplyLimiter"]
 		self.limiter = limiter_tools.set_limiter(limiter_type, 
 				physics.PHYSICS_TYPE)
+
+		# Console output
+		self.verbose = params["Verbose"]
+		self.min_state = np.zeros(physics.NUM_STATE_VARS)
+		self.max_state = np.zeros(physics.NUM_STATE_VARS)
 
 		# Compatibility checks
 		self.check_compatibility()
@@ -441,6 +468,52 @@ class SolverBase(ABC):
 		if self.limiter is not None:
 			self.limiter.limit_solution(self, U)
 
+	def get_min_max_state(self, Uq):
+		'''
+		Gets min and max values of state variables.
+		
+		Inputs:
+		-------
+			Uq: state variables evaluated at quadrature points [nq, ns]
+
+		Outputs:
+		--------
+			self.min_state: minimum values of state variables
+			self.max_state: maximum values of state variables
+		'''
+		self.min_state = np.minimum(self.min_state, np.amin(Uq, axis=0))
+		self.max_state = np.maximum(self.max_state, np.amax(Uq, axis=0))
+
+	def print_info(self, physics, R, itime, t, dt):
+		'''
+		Prints key information to console. If self.verbose is False, then
+		only time and residual info is printed; otherwise, min and max 
+		values of the state are also reported.
+		
+		Inputs:
+		-------
+			physics: physics object
+			R: residual array [num_elems, nb, ns]
+			itime: time iteration
+			t: time
+			dt: time step size
+		'''
+		# Basic info: time, residual
+		print("%d: Time = %g - Time step = %g - Residual norm = %g" % (
+				itime + 1, t, dt, np.linalg.norm(np.reshape(R, -1), ord=1)))
+
+		# If requested, report min and max of state variables
+		if self.verbose:
+			print("\nMin|Max at volume quadrature points:")
+			s = 0
+			for state_var in physics.StateVariables:
+				string = "    " + state_var.name + ": " + "%g | %g"
+				print(string % (self.min_state[s], self.max_state[s]))
+				s += 1
+		
+		print("--------------------------------------------------------" + \
+				"-----------------------")
+
 	def solve(self):
 		'''
 		Performs the main solve of the DG method. Initializes the temporal
@@ -464,8 +537,16 @@ class SolverBase(ABC):
 		t0 = time.time()
 		iwrite = 1
 
+		print("\n\nUNSTEADY SOLVE:")
+		print("--------------------------------------------------------" + \
+				"-----------------------")
+
 		itime = 0
 		while itime < stepper.num_time_steps:
+			# Reset min and max state
+			self.max_state[:] = -np.inf
+			self.min_state[:] = np.inf
+
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
 
@@ -476,13 +557,8 @@ class SolverBase(ABC):
 			t += stepper.dt
 			self.time = t
 
-			# Info to print
-			print_info = (itime + 1, self.time,
-					np.linalg.norm(np.reshape(R, -1), ord=1))
-			print_string = "%d: Time = %g, Residual norm = %g" % (print_info)
-
 			# Print info
-			print(print_string)
+			self.print_info(physics, R, itime, t, stepper.dt)
 
 			# Write data file
 			if (itime + 1) % write_interval == 0:
@@ -492,7 +568,9 @@ class SolverBase(ABC):
 			itime += 1
 
 		t1 = time.time()
-		print("Wall clock time = %g seconds" % (t1 - t0))
+		print("\nWall clock time = %g seconds" % (t1 - t0))
+		print("--------------------------------------------------------" + \
+				"-----------------------")
 
 		if write_final_solution:
 			ReadWriteDataFiles.write_data_file(self, -1)

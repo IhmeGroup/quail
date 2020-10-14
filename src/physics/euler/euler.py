@@ -112,9 +112,9 @@ class Euler(base.PhysicsBase):
 		pmat[:, idx] = p
 
 		# Put together
-		F = np.empty(Uq.shape + (dim,))
+		F = np.empty(Uq.shape + (dim, ))
 		F[:, irho, :] = mom
-		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(
+		F[:, smom, :] = np.einsum('ij,ik->ijk', mom, mom)/np.expand_dims(
 				rho, axis=2) + pmat
 		F[:, irhoE, :] = mom*h
 
@@ -170,7 +170,8 @@ class Euler(base.PhysicsBase):
 			varq = np.sqrt(gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# |u| + c
-			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
+			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(
+					gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["Speed"].name:
 			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho
 		else:

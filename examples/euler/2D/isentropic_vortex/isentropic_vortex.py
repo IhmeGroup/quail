@@ -58,4 +58,5 @@ BoundaryConditions = {
 
 Output = {
     "AutoPostProcess" : True,
+    "Verbose" : True,
 }

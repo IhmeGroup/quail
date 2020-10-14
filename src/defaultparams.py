@@ -186,4 +186,9 @@ Output = {
     "AutoPostProcess" : True,
         # If True, then postprocessing script (if provided) will be
         # automatically called at the end of the simulation
+    "Verbose" : False,
+        # If False, minimal info will be printed to console, specifically
+        # time step and residual information
+        # If True, will also print out the input deck and the min/max of
+        # the state variables
 }

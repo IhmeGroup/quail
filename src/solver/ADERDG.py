@@ -397,8 +397,11 @@ class ADERDG(base.SolverBase):
 		nq = quad_wts.shape[0]
 		nq_st = quad_wts_st.shape[0]
 
-		# interpolate state and gradient at quadrature points
+		# Interpolate state and gradient at quadrature points
 		Uq = helpers.evaluate_state(Uc, basis_val_st)
+		if self.verbose:
+			# Get min and max of state variables for reporting
+			self.get_min_max_state(Uq)
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral.

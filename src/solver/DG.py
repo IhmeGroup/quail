@@ -578,6 +578,9 @@ class DG(base.SolverBase):
 		# Interpolate state and gradient at quadrature points
 		Uq = helpers.evaluate_state(Uc, basis_val, 
 				skip_interp=self.basis.skip_interp)
+		if self.verbose:
+			# Get min and max of state variables for reporting
+			self.get_min_max_state(Uq)
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
