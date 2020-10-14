@@ -62,7 +62,8 @@ def get_quadrature_gauss_legendre(order):
         qwts: quadrature weights [nq, 1]
     '''
     # Get quadrature points and weights for quadrilateral
-    qpts, qwts = qquad.get_quadrature_points_weights(order, 
+    # Augment order by 1 because transformation increases polynomial order
+    qpts, qwts = qquad.get_quadrature_points_weights(order + 1, 
         general.QuadratureType.GaussLegendre)
 
     # Apply transformation
