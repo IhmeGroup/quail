@@ -218,8 +218,8 @@ class Euler2D(Euler):
 	NUM_STATE_VARS = 4
 	DIM = 2
 
-	def __init__(self, order, basis, mesh):
-		super().__init__(order, basis, mesh)
+	def __init__(self, mesh):
+		super().__init__(mesh)
 
 	def set_maps(self):
 		super().set_maps()

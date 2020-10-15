@@ -562,7 +562,7 @@ class DG(base.SolverBase):
 		self.bface_helpers.compute_helpers(mesh, physics, basis,
 				self.order)
 
-	def get_element_residual(self, elem_ID, Uc, R_elem):
+	def get_element_residual(self, Uc, R_elem):
 		# Unpack
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
@@ -575,14 +575,14 @@ class DG(base.SolverBase):
 		nq = quad_wts.shape[0]
 
 		# Interpolate state and gradient at quad points
-		Uq = helpers.evaluate_state(Up, basis_val,
+		Uq = helpers.evaluate_state(Uc, basis_val,
 				skip_interp=self.basis.skip_interp) # [ne, nq, ns]
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
-			R += solver_tools.calculate_inviscid_flux_volume_integral(
-					self, elem_ops, Fq) # [ne, nb, ns]
+			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+					self, elem_helpers, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
@@ -591,28 +591,20 @@ class DG(base.SolverBase):
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
 			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq) # [ne, nq, ns]
 
-			R += solver_tools.calculate_source_term_integral(elem_ops, Sq) # [ne, nb, ns]
+			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, Sq) # [ne, nb, ns]
 
-		#if elem == echeck:
-		#	code.interact(local=locals())
-
-		return R # [ne, nb, ns]
+		return R_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR):
 
 		mesh = self.mesh
 		physics = self.physics
-		#IFace = mesh.interior_faces[iiface]
-		#elemL = IFace.elemL_id
-		#elemR = IFace.elemR_id
-		#faceL_id = IFace.faceL_id
-		#faceR_id = IFace.faceR_id
 
-		iface_ops = self.iface_operators
-		quad_wts = iface_ops.quad_wts
-		faces_to_basisL = iface_ops.faces_to_basisL
-		faces_to_basisR = iface_ops.faces_to_basisR
-		normals_ifaces = iface_ops.normals_ifaces # [nf, nq, dim]
+		int_face_helpers = self.int_face_helpers
+		quad_wts = int_face_helpers.quad_wts
+		faces_to_basisL = int_face_helpers.faces_to_basisL
+		faces_to_basisR = int_face_helpers.faces_to_basisR
+		normals_int_faces = int_face_helpers.normals_int_faces # [nf, nq, dim]
 
 		# Interpolate state and gradient at quad points
 		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) # [nf, nq, ns]
@@ -620,47 +612,36 @@ class DG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals)
-				# [nq, ns]
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces) # [nf, nq, ns]
 
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_ifaces) # [nf, nq, ns]
-
+			# Compute contribution to left and right element residuals
 			RL = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisL[faceL_id], quad_wts, Fq)
 			RR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisR[faceR_id], quad_wts, Fq)
 
-		#if elemL == echeck or elemR == echeck:
-		#	if elemL == echeck: print("Left!")
-		#	else: print("Right!")
-		#	code.interact(local=locals())
-
 		return RL, RR
 
-	def get_boundary_face_residual(self, bgroup, basis_val, Uc, R_B):
+	def get_boundary_face_residual(self, bgroup, face_ID, Uc, R_B):
 
 		mesh = self.mesh
 		physics = self.physics
 		bgroup_num = bgroup.number
 
-		# basis_val.shape == [nbf, nq, nb]
-
 		bface_helpers = self.bface_helpers
-		quad_pts = bface_helpers.quad_pts
 		quad_wts = bface_helpers.quad_wts
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
-		UqI = bface_helpers.UqI
-		UqB = bface_helpers.UqB
-		Fq = bface_helpers.Fq
 
 		nq = quad_wts.shape[0]
+		basis_val = bface_helpers.faces_to_basis[face_ID] # [nbf, nq, nb]
 
 		# interpolate state and gradient at quad points
-		UqI = helpers.evaluate_state(U, basis_val) # [nbf, nq, ns]
+		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
 
 		normals = normals_bgroups[bgroup_num] # [nbf, nq, dim]
 		x = x_bgroups[bgroup_num] # [nbf, nq, dim]
+		BC = physics.BCs[bgroup.name]
 
 		# Interpolate state and gradient at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val)

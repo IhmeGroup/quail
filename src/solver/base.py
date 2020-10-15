@@ -416,10 +416,10 @@ class SolverBase(ABC):
 		faceR_id = np.empty(mesh.num_interior_faces, dtype=int)
 		for iiface in range(mesh.num_interior_faces):
 			IFace = mesh.interior_faces[iiface]
-			elemL[iiface] = IFace.elemL_id
-			elemR[iiface] = IFace.elemR_id
-			faceL_id[iiface] = IFace.faceL_id
-			faceR_id[iiface] = IFace.faceR_id
+			elemL[iiface] = IFace.elemL_ID
+			elemR[iiface] = IFace.elemR_ID
+			faceL_id[iiface] = IFace.faceL_ID
+			faceR_id[iiface] = IFace.faceR_ID
 		UL = U[elemL]
 		UR = U[elemR]
 		#TODO: Figure out how to get rid of these copies. Maybe replace with
@@ -456,13 +456,22 @@ class SolverBase(ABC):
 
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
-			# Loop through boundary faces
+
+			# TODO: refactor this loop out. This loop basically vectorizes the face
+			# information every iteration. This does not need to be done every
+			# iteration.
+			elem_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
+			face_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
 			for bface_ID in range(bgroup.num_boundary_faces):
 				boundary_face = bgroup.boundary_faces[bface_ID]
-				elem_ID = boundary_face.elem_ID
+				elem_ID[bface_ID] = boundary_face.elem_ID
+				face_ID[bface_ID] = boundary_face.face_ID
 
-				R[elem_ID] = self.get_boundary_face_residual(bgroup,
-						bface_ID, U[elem_ID], R[elem_ID])
+			# TODO: Should this be an assignment or an addition?
+			# TODO: Function is modifying R...but only sometimes (if the
+			# indexing is simple). Make it not modify R, ever.
+			R[elem_ID] = self.get_boundary_face_residual(bgroup, face_ID, U[elem_ID],
+					R[elem_ID])
 
 	def apply_limiter(self, U):
 		'''
