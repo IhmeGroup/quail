@@ -1,8 +1,8 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/timestepping/ode.py
+#       File : src/numerics/timestepping/source_stepper.py
 #
-#       Contains ODE solvers for operator splitting schemes in stepper.py
+#       Contains solvers for operator splitting schemes in stepper.py
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
@@ -12,9 +12,9 @@ from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
 
 
-class ODESolvers():
+class SourceSolvers():
 	'''
-	ODESolvers is a class of classes used as a Mixin class for operator 
+	SourceSolvers is a class of classes used as a Mixin class for operator 
 	splitting approaches (see stepper.py). These methods are specifically
 	used for solving ODEs of the form:
 
@@ -24,7 +24,7 @@ class ODESolvers():
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
 	'''
-	class ODEBase(ABC):
+	class SourceStepperBase(ABC):
 		'''
 		This is an abstract base class used to represent a specific ODE 
 		solver for operator splitting integration schemes.
@@ -61,10 +61,10 @@ class ODESolvers():
 			return '{self.__class__.__name__}(TimeStep={self.dt})'.format( \
 					self=self)
 
-	class BDF1(ODEBase):
+	class BDF1(SourceStepperBase):
 		'''
 		1st-order Backward Differencing (BDF1) method inherits attributes 
-		from ODEBase. See ODEBase for detailed comments of methods and 
+		from SourceStepperBase. See SourcStepperBase for detailed comments of methods and 
 		attributes.
 
 		Additional methods and attributes are commented below.

@@ -38,7 +38,7 @@ TimeStepping = {
     "OperatorSplittingImplicit" : "BDF1",
         # Implicit time stepping scheme for source terms if doing operator 
         # splitting
-        # See general.ODESolverType
+        # See general.SourceStepperType
 }
 
 

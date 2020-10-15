@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 import numpy as np 
 from scipy.optimize import fsolve, root
 
-from general import StepperType, ODESolverType
+from general import StepperType, SourceStepperType
 
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
@@ -358,9 +358,9 @@ class Strang(StepperBase, ode.ODESolvers):
 		# call set_stepper from stepper tools for the explicit scheme
 		self.explicit = stepper_tools.set_stepper(param, U)
 
-		if ODESolverType[implicit] == ODESolverType.BDF1:
+		if SourceStepperType[implicit] == SourceStepperType.BDF1:
 			self.implicit = ode.ODESolvers.BDF1(U)
-		elif ODESolverType[implicit] == ODESolverType.Trapezoidal:
+		elif SourceStepperType[implicit] == SourceStepperType.Trapezoidal:
 			self.implicit = ode.ODESolvers.Trapezoidal(U)
 		else:
 			raise NotImplementedError("Time scheme not supported")
