@@ -14,7 +14,7 @@ from general import StepperType, SourceStepperType
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
 import numerics.timestepping.tools as stepper_tools
-import numerics.timestepping.ode as ode
+import numerics.timestepping.source_stepper as source_stepper
 
 import solver.tools as solver_tools
 
@@ -324,11 +324,11 @@ class ADER(StepperBase):
 		return R # [num_elems, nb, ns]
 
 
-class Strang(StepperBase, ode.ODESolvers):
+class Strang(StepperBase, source_stepper.SourceSolvers):
 	'''
 	The Strang operator splitting scheme inherits attributes from 
-	StepperBase and ODESolvers (in ode.py). See StepperBase and ODESolvers 
-	for detailed comments of methods and attributes.
+	StepperBase and SourceSolvers (in source_stepper.py). See StepperBase 
+	and SourceSolvers for detailed comments of methods and attributes.
 
 	Reference: 
 
@@ -359,9 +359,9 @@ class Strang(StepperBase, ode.ODESolvers):
 		self.explicit = stepper_tools.set_stepper(param, U)
 
 		if SourceStepperType[implicit] == SourceStepperType.BDF1:
-			self.implicit = ode.ODESolvers.BDF1(U)
+			self.implicit = source_stepper.SourceSolvers.BDF1(U)
 		elif SourceStepperType[implicit] == SourceStepperType.Trapezoidal:
-			self.implicit = ode.ODESolvers.Trapezoidal(U)
+			self.implicit = source_stepper.SourceSolvers.Trapezoidal(U)
 		else:
 			raise NotImplementedError("Time scheme not supported")
 
