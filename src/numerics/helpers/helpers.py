@@ -50,3 +50,12 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 		Uq = np.matmul(basis_val, Uc)
 
 	return Uq
+
+def minmod(a):
+	import code
+
+	s = np.sign(a)
+	if np.all(s > 0.) or np.all(s < 0.):
+		return s[0]*np.amin(np.abs(a))
+	else:
+		return 0.

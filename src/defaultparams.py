@@ -69,10 +69,14 @@ Numerics = {
         # If True, will perform L2 projection to initialize the solution.
         # Otherwise, will interpolate to the nodes (only valid for a nodal
         # basis).
-    "ApplyLimiter" : None, 
+    "ApplyLimiters" : [], 
         # Limiter type
         # If None, then no limiter will be applied
         # See general.LimiterType
+    "ShockIndicator" : None,
+        # Shock Indicator Type
+        # If None, then no shock indicator is applied
+        # See general.ShockIndicatorType
     "SourceTreatmentADER" : "Explicit",
         # Treatment of source terms for ADER-DG
         # Either "Explicit" or "Implicit"

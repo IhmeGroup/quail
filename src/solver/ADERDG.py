@@ -284,9 +284,10 @@ class ADERDG(base.SolverBase):
 
 		# Precompute helpers
 		self.precompute_matrix_helpers()
-
-		if self.limiter is not None:
-			self.limiter.precompute_helpers(self)
+		
+		if self.limiters:
+			for limiter in self.limiters:
+				limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(np.zeros([
 				self.int_face_helpers_st.quad_wts.shape[0], 

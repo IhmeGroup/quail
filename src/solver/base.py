@@ -128,9 +128,15 @@ class SolverBase(ABC):
 		self.basis.force_colocated_nodes_quad_pts(params["ColocatedPoints"])
 
 		# Limiter
-		limiter_type = params["ApplyLimiter"]
-		self.limiter = limiter_tools.set_limiter(limiter_type, 
-				physics.PHYSICS_TYPE)
+		limiter_types = params["ApplyLimiters"]
+		shock_indicator_type = params["ShockIndicator"]
+		self.limiters = []
+		for limiter_type in limiter_types:
+			limiter = limiter_tools.set_limiter(limiter_type, 
+					physics.PHYSICS_TYPE)
+			limiter_tools.set_shock_indicator(limiter,
+					shock_indicator_type)
+			self.limiters.append(limiter)
 
 		# Console output
 		self.verbose = params["Verbose"]
@@ -465,8 +471,9 @@ class SolverBase(ABC):
 		--------
 			U: limited solution array
 		'''
-		if self.limiter is not None:
-			self.limiter.limit_solution(self, U)
+		for limiter in self.limiters:
+			if limiter is not None:
+				limiter.limit_solution(self, U)
 
 	def get_min_max_state(self, Uq):
 		'''
