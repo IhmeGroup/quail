@@ -25,7 +25,7 @@ SolutionOrder = 1
 
 Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis="LagrangeSeg",TimeStepper="SSPRK3",L2InitialCondition=True,
-								 ApplyLimiter="PositivityPreserving")
+								 ApplyLimiters=["PositivityPreserving"])
 
 
 ### Physics

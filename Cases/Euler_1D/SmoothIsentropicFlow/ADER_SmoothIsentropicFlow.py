@@ -20,7 +20,7 @@ FinalTime = 0.1
 NumTimeSteps = 100
 SolutionOrder = 2
 Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
-								 SolutionBasis="LagrangeSeg",TimeStepper="ADER",L2InitialCondition=False,ApplyLimiter=None)
+								 SolutionBasis="LagrangeSeg",TimeStepper="ADER",L2InitialCondition=False,ApplyLimiters=[])
 
 # nu = -1000.
 ### Physics

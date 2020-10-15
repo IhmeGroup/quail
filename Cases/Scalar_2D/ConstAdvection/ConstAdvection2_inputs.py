@@ -69,7 +69,7 @@ Numerics = {
     "Solver" : "DG",
     "L2InitialCondition" : True,
     "InterpolateFluxADER" : False,
-    "ApplyLimiter" : None, 
+    "ApplyLimiters" : None, 
 }
 
 Output = {

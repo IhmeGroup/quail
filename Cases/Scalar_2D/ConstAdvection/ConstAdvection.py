@@ -49,7 +49,7 @@ NumTimeSteps = int(FinalTime/dt + 10.*general.eps)
 SolutionOrder = 2
 Params = general.set_solver_params(SolutionOrder=SolutionOrder,FinalTime=FinalTime,NumTimeSteps=NumTimeSteps,
 								 SolutionBasis=SolutionBasis,TimeStepper="RK4",L2InitialCondition=True,
-								 ElementQuadrature="Dunavant",ApplyLimiter=None)
+								 ElementQuadrature="Dunavant",ApplyLimiters=[])
 
 
 ### Physics
