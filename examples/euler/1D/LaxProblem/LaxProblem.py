@@ -20,7 +20,7 @@ Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "ApplyLimiter" : "PositivityPreserving",
+    "ApplyLimiters" : "PositivityPreserving",
     "L2InitialCondition" : False,
     "NodeType" : "Equidistant",
 #    "ElementQuadrature" : "GaussLobatto",

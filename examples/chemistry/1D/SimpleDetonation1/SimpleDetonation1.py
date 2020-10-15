@@ -18,7 +18,7 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "InterpolateIC" : False,
     "Solver" : "DG",
-    "ApplyLimiter" : "PositivityPreservingChem",
+    "ApplyLimiters" : "PositivityPreservingChem",
     "SourceTreatmentADER" : "Explicit",
     "InterpolateFluxADER" : True,
     # "NodeType" : "GaussLobatto",

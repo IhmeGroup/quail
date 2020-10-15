@@ -20,7 +20,7 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "InterpolateIC" : False,
     "Solver" : "DG",
-    "ApplyLimiter" : "PositivityPreservingChem",
+    "ApplyLimiters" : "PositivityPreservingChem",
     "SourceTreatmentADER" : "Implicit",
 #     "NodeType" : "GaussLobatto",
 #     "ElementQuadrature" : "GaussLobatto",

@@ -15,7 +15,7 @@ Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
-    # "ApplyLimiter" : "ScalarPositivityPreserving", 
+    # "ApplyLimiters" : "ScalarPositivityPreserving", 
     "SourceTreatmentADER" : "Implicit",
 
 }

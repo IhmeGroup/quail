@@ -1,9 +1,9 @@
 import numpy as np
 
 cfl = 0.05
-NumTimeSteps = 8000
-# FinalTime = 0.1
-FinalTime = 1.8
+#NumTimeSteps = 8000
+FinalTime = 0.1
+#FinalTime = 1.8
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
@@ -30,7 +30,7 @@ Numerics = {
 Output = {
     "WriteInterval" : 10,
     "WriteInitialSolution" : True,
-    "AutoProcess" : True,
+    "AutoProcess" : False,
 }
 
 Mesh = {
@@ -44,7 +44,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Chemistry",
-    "ConvFlux" : "HLLC",
+    "ConvFlux" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
     "HeatRelease": 25.,
