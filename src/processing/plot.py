@@ -3,7 +3,7 @@
 #       File : src/processing/plot.py
 #
 #       Contains functions for plotting 1D and 2D solutions and meshes.
-#      
+#
 # ------------------------------------------------------------------------ #
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -16,8 +16,8 @@ import meshing.tools as mesh_tools
 import numerics.helpers.helpers as helpers
 
 
-def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12., 
-		font={'family':'serif', 'serif': ['DejaVu Sans']}, linewidth=1.5, 
+def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12.,
+		font={'family':'serif', 'serif': ['DejaVu Sans']}, linewidth=1.5,
 		markersize=4.0, axis=None, cmap='viridis', equal_AR=False):
 	'''
 	This function sets parameters for plotting.
@@ -105,7 +105,7 @@ def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=None):
 		ylabel: y-axis label
 		fmt: format string for plotting, e.g. "bo" for blue circles
 		legend_label: legend label
-		skip: integer value that determines the increment between each point 
+		skip: integer value that determines the increment between each point
 			to skip when plotting (None for no skipping)
 	'''
 	# Reshape
@@ -119,7 +119,7 @@ def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=None):
 	var_plot = var_plot[idx]
 
 	# Plot
-	plt.plot(x[::skip], var_plot[::skip], fmt, label=legend_label) 
+	plt.plot(x[::skip], var_plot[::skip], fmt, label=legend_label)
 	plt.ylabel(ylabel)
 
 
@@ -139,7 +139,7 @@ def triangulate(physics, x, var):
 		var_tris: variable to plot evaluated at x (modified with removal
 			of duplicates and flattened)
 		x: xy-coordinates (duplicates removed and reshaped)
-		var: variable to plot evaluated at x (duplicates remove and 
+		var: variable to plot evaluated at x (duplicates remove and
 			reshaped)
 	'''
 	if physics.DIM != 2:
@@ -166,7 +166,7 @@ def triangulate(physics, x, var):
 def plot_2D_regular(physics, x, var_plot, **kwargs):
 	'''
 	This function plots 2D contours via a triangulation of the coordinates
-	stored in x. This is appropriate only for regular domains since the 
+	stored in x. This is appropriate only for regular domains since the
 	entire domain is triangulated at once.
 
 	Inputs:
@@ -175,7 +175,7 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
 	    	num_pts is the number of points per element
 	    var_plot: variable to plot evaluated at x; 3D array of shape
-	    	[num_elems, num_pts, num_state_vars], where num_pts is the 
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the
 	    	number of points per element
 	    kwargs: keyword arguments (see below)
 
@@ -183,7 +183,7 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 	--------
 		tcf.levels: contour levels
 		x: xy-coordinates (duplicates removed and reshaped)
-		var_plot: variable to plot evaluated at x (duplicates remove and 
+		var_plot: variable to plot evaluated at x (duplicates remove and
 			reshaped)
 
 	Notes:
@@ -202,7 +202,7 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 
 	# Show triangulation if requested
 	if "show_triangulation" in kwargs:
-		if kwargs["show_triangulation"]: 
+		if kwargs["show_triangulation"]:
 			plt.triplot(tris, lw=0.5, color='white')
 
 	return tcf.levels
@@ -220,7 +220,7 @@ def plot_2D_general(physics, x, var_plot, **kwargs):
 	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
 	    	num_pts is the number of points per element
 	    var_plot: variable to plot evaluated at x; 3D array of shape
-	    	[num_elems, num_pts, num_state_vars], where num_pts is the 
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the
 	    	number of points per element
 	    kwargs: keyword arguments (see below)
 
@@ -233,7 +233,7 @@ def plot_2D_general(physics, x, var_plot, **kwargs):
 	if "levels" not in kwargs:
 		figtmp = plt.figure()
 		# Run this for the sole purpose of getting default contour levels
-		levels = plot_2D_regular(physics, np.copy(x), np.copy(var_plot), 
+		levels = plot_2D_regular(physics, np.copy(x), np.copy(var_plot),
 				**kwargs)
 		plt.close(figtmp)
 	else:
@@ -248,11 +248,11 @@ def plot_2D_general(physics, x, var_plot, **kwargs):
 		plt.tricontourf(tris, utri, levels=levels, extend="both")
 		# Show triangulation if requested
 		if "show_triangulation" in kwargs:
-			if kwargs["show_triangulation"]: 
+			if kwargs["show_triangulation"]:
 				plt.triplot(triang, lw=0.5, color='white')
 
 
-def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False, 
+def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False,
 		**kwargs):
 	'''
 	This function plots 2D contours via a triangulation of the coordinates
@@ -265,7 +265,7 @@ def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False,
 	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
 	    	num_pts is the number of points per element
 	    var_plot: variable to plot evaluated at x; 3D array of shape
-	    	[num_elems, num_pts, num_state_vars], where num_pts is the 
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the
 	    	number of points per element
 	    ylabel: y-axis label
 	    regular_2D: if True, then entire domain will be triangulated at once;
@@ -276,9 +276,9 @@ def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False,
 	Outputs:
 	--------
 		x: xy-coordinates (modified only if regular_2D is True)
-		var_plot: variable to plot evaluated at x (modified only if 
+		var_plot: variable to plot evaluated at x (modified only if
 			regular_2D is True)
-	    
+
 	Notes:
 	------
 		For coarse solutions, the resulting plot may misrepresent the actual
@@ -293,7 +293,7 @@ def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False,
 	''' Label plot '''
 	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
 		# Do nothing
-		pass 
+		pass
 	else:
 		cb = plt.colorbar()
 		cb.ax.set_title(ylabel)
@@ -339,7 +339,7 @@ def interpolate_2D_soln_to_points(physics, x, var, xpoints):
 		var_points: values of variable interpolated to xpoints [num_pts, 2]
 		x: xy-coordinates at which variable is already evaluated (duplicates
 			removed and reshaped)
-	    var: values of variable evaluated at x (duplicates removed and 
+	    var: values of variable evaluated at x (duplicates removed and
 	    	reshaped)
 	'''
 	if physics.DIM != 2:
@@ -352,12 +352,12 @@ def interpolate_2D_soln_to_points(physics, x, var, xpoints):
 	return var_points
 
 
-def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101, 
+def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 		plot_numerical=True, plot_exact=False, plot_IC=False,
-		create_new_figure=True, ylabel=None, vs_x=True, fmt="k-", 
+		create_new_figure=True, ylabel=None, vs_x=True, fmt="k-",
 		legend_label=None, **kwargs):
 	'''
-	This function evaluates a given variable only a specified line segment 
+	This function evaluates a given variable only a specified line segment
 	and creates a 1D plot. 2D only.
 
 	Inputs:
@@ -374,7 +374,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	    plot_IC: plot initial condition
 	    create_new_figure: if True, will create new figure before plotting
 	    ylabel: y-axis label
-	    vs_x: if True, will plot variable vs. x; if False, will plot 
+	    vs_x: if True, will plot variable vs. x; if False, will plot
 	    	variable vs. y
 		fmt: format string for plotting, e.g. "bo" for blue circles
 	    legend_label: legend label
@@ -401,16 +401,16 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	xyline = np.array([xline, yline]).transpose()
 
 	if plot_numerical:
-		var = get_numerical_solution(physics, solver.state_coeffs, x, 
+		var = get_numerical_solution(physics, solver.state_coeffs, x,
 				solver.basis, var_name)
 		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
 		default_label = "Numerical"
 	elif plot_exact:
-		var_plot = get_analytical_solution(physics, physics.exact_soln, 
+		var_plot = get_analytical_solution(physics, physics.exact_soln,
 				xyline, solver.time, var_name)
 		default_label = "Exact"
 	elif plot_IC:
-		var_plot = get_analytical_solution(physics, physics.IC, xyline, 0., 
+		var_plot = get_analytical_solution(physics, physics.IC, xyline, 0.,
 				var_name)
 		default_label = "Initial"
 
@@ -436,7 +436,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 
 def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	'''
-	This function returns sample points at which to evaluate the solution 
+	This function returns sample points at which to evaluate the solution
 	for plotting.
 
 	Inputs:
@@ -444,8 +444,8 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 		mesh: mesh object
 	    physics: physics object
 	    basis: basis object
-	    equidistant: if True, then sample points will be equidistant 
-	    	(within each element); if False, sample points will be based 
+	    equidistant: if True, then sample points will be equidistant
+	    	(within each element); if False, sample points will be based
 	    	on quadrature points
 
 	Outputs:
@@ -462,7 +462,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	if equidistant:
 		xref = basis.equidistant_nodes(max([1, 3*order]))
 	else:
-		quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]), 
+		quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]),
 				physics=physics)
 		gbasis = mesh.gbasis
 		xref, _ = gbasis.get_quadrature_data(quad_order)
@@ -470,7 +470,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	# Allocate
 	num_pts = xref.shape[0]
 	x = np.zeros([mesh.num_elems, num_pts, dim])
-	
+
 	# Evaluate basis at reference-space points
 	basis.get_basis_val_grads(xref, True, False, False, None)
 
@@ -489,7 +489,7 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	Inputs:
 	-------
 	    physics: physics object
-	    fcn_data: function object (for either exact solution or initial 
+	    fcn_data: function object (for either exact solution or initial
 	    	condition)
 	    x: coordinates at which to evaluate solution
 	    time: time at which to evaluate solution
@@ -501,7 +501,7 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	'''
 	U_plot = fcn_data.get_state(physics, x=np.reshape(x, (-1, physics.DIM)),
 			t=time)
-	# U_plot = physics.call_function(fcn_data, x=np.reshape(x,  
+	# U_plot = physics.call_function(fcn_data, x=np.reshape(x,
 	# 		(-1, physics.DIM)), t=time)
 	var_plot = physics.compute_variable(var_name, U_plot)
 
@@ -517,22 +517,22 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	    physics: physics object
 	    U: state polynomial coefficients
 	    	[num_elems, num_basis_coeffs, num_state_vars]
-	    x: coordinates at which to evaluate solution 
-	    	[num_elems, num_pts, dim], where num_pts is the number of sample 
+	    x: coordinates at which to evaluate solution
+	    	[num_elems, num_pts, dim], where num_pts is the number of sample
 	    	points per element
 	    basis: basis object
 	    var_name: name of variable to get
 
 	Outputs:
 	-------
-		var_numer: values of variable obtained at x 
+		var_numer: values of variable obtained at x
 			[num_elems, num_pts, 1]
 	'''
-	var_numer = np.zeros([x.shape[0], x.shape[1], 1])
-	for elem_ID in range(x.shape[0]):
-		# Up = np.matmul(basis.basis_val, U[elem_ID])
-		Uq = helpers.evaluate_state(U[elem_ID], basis.basis_val)
-		var_numer[elem_ID,:,:] = physics.compute_variable(var_name, Uq)
+	Uq = helpers.evaluate_state(U, basis.basis_val)
+	var_numer = physics.compute_variable(var_name, Uq)
+	print(U.shape)
+	print(Uq.shape)
+	print(var_numer.shape)
 
 	return var_numer
 
@@ -564,7 +564,7 @@ def get_ylabel(physics, var_name, ylabel=None):
 
 def plot_mesh(mesh, equal_AR=False, **kwargs):
 	'''
-	This function plots the mesh. Element IDs can also be plotted (set in 
+	This function plots the mesh. Element IDs can also be plotted (set in
 	kwargs).
 
 	Inputs:
@@ -578,7 +578,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 		For curved faces, line segments are plotted in between each node.
 	'''
 	gbasis = mesh.gbasis
-	dim = mesh.dim 
+	dim = mesh.dim
 
 	if dim == 1:
 		y = plt.ylim()
@@ -587,7 +587,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	Loop through interior_faces and plot interior faces
 	'''
 	for interior_face in mesh.interior_faces:
-		# Loop through both connected elements to account for periodic 
+		# Loop through both connected elements to account for periodic
 		# boundaries
 		for e in range(2):
 			if e == 0:
@@ -598,7 +598,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 				face_ID = interior_face.faceR_ID
 
 			# Get local node IDs on face
-			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder, 
+			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder,
 					face_ID)
 
 			# Get coordinates
@@ -622,7 +622,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 			face_ID = boundary_face.face_ID
 
 			# Get local node IDs on face
-			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder, 
+			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder,
 					face_ID)
 
 			# Get coordinates
@@ -655,10 +655,10 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 		plt.gca().set_aspect('equal', adjustable='box')
 
 
-def plot_solution(mesh, physics, solver, var_name, plot_numerical=True, 
+def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 		plot_exact=False, plot_IC=False, create_new_figure=True, ylabel=None,
-		fmt='k-', legend_label=None, equidistant_pts=True, 
-		include_mesh=False, regular_2D=False, equal_AR=False, skip=None, 
+		fmt='k-', legend_label=None, equidistant_pts=True,
+		include_mesh=False, regular_2D=False, equal_AR=False, skip=None,
 		**kwargs):
 	'''
 	This function plots the solution. For 2D calculations, the solution will
@@ -677,16 +677,16 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 	    ylabel: y-axis label
 		fmt: format string for plotting, e.g. "bo" for blue circles
 	    legend_label: legend label
-	    equidistant_pts: if True, then solution will be evaluated at 
+	    equidistant_pts: if True, then solution will be evaluated at
 	    	equidistant points (within each element); if False, then solution
 	    	will be evaluated at quadrature points
 	    include_mesh: if True, then the mesh will be superimposed
 	    regular_2D: if True, then entire domain will be triangulated at once
-	    	(appropriate only for regular domains); if False, then each 
-	    	element will be triangulated one-by-one (appropriate for 
-	    	general domains) 
+	    	(appropriate only for regular domains); if False, then each
+	    	element will be triangulated one-by-one (appropriate for
+	    	general domains)
 	    equal_AR: if True, will set equal aspect ratio
-		skip: integer value that determines the increment between each point 
+		skip: integer value that determines the increment between each point
 			to skip when plotting (only matters for 1D)
 	    kwargs: keyword arguments (see below)
 	'''
@@ -702,21 +702,21 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 	dim = mesh.dim
 
 	# Get sample points
-	x = get_sample_points(mesh, solver, physics, solver.basis, 
+	x = get_sample_points(mesh, solver, physics, solver.basis,
 			equidistant_pts)
 
 	''' Evaluate desired variable at sample points '''
 	if plot_numerical:
-		var_plot = get_numerical_solution(physics, solver.state_coeffs, x, 
+		var_plot = get_numerical_solution(physics, solver.state_coeffs, x,
 				solver.basis, var_name)
 		default_label = "Numerical"
 	elif plot_exact:
-		var_plot = get_analytical_solution(physics, physics.exact_soln, x, 
+		var_plot = get_analytical_solution(physics, physics.exact_soln, x,
 				time, var_name)
 		var_plot.shape = x.shape[0], x.shape[1], -1
 		default_label = "Exact"
 	elif plot_IC:
-		var_plot = get_analytical_solution(physics, physics.IC, x, 0., 
+		var_plot = get_analytical_solution(physics, physics.IC, x, 0.,
 				var_name)
 		var_plot.shape = x.shape[0], x.shape[1], -1
 		default_label = "Initial"

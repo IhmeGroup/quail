@@ -540,7 +540,7 @@ class DG(base.SolverBase):
 			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(
-				np.zeros([self.int_face_helpers.quad_wts.shape[0],
+				np.zeros([mesh.num_interior_faces, self.int_face_helpers.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
 		# Initial condition

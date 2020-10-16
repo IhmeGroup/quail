@@ -929,17 +929,17 @@ class Roe1D(ConvNumFluxBase):
 	Attributes:
 	-----------
 	UqL: numpy array
-		helper array for left state [nq, ns]
+		helper array for left state [nf, nq, ns]
 	UqR: numpy array
-		helper array for right state [nq, ns]
+		helper array for right state [nf, nq, ns]
 	vel: numpy array
-		helper array for velocity [nq, dim]
+		helper array for velocity [nf, nq, dim]
 	alphas: numpy array
-		helper array: left eigenvectors multipled by dU [nq, ns]
+		helper array: left eigenvectors multipled by dU [nf, nq, ns]
 	evals: numpy array
-		helper array for eigenvalues [nq, ns]
+		helper array for eigenvalues [nf, nq, ns]
 	R: numpy array
-		helper array for right eigenvectors [nq, ns, ns]
+		helper array for right eigenvectors [nf, nq, ns, ns]
 	'''
 	def __init__(self, Uq=None):
 		'''
@@ -948,7 +948,7 @@ class Roe1D(ConvNumFluxBase):
 		Inputs:
 		-------
 			Uq: values of the state variables (typically at the quadrature
-				points) [nq, ns]; used to allocate helper arrays; if None,
+				points) [nf, nq, ns]; used to allocate helper arrays; if None,
 				then empty arrays allocated
 
 		Outputs:
@@ -957,17 +957,18 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		if Uq is not None:
 			n = Uq.shape[0]
-			ns = Uq.shape[1]
+			nq = Uq.shape[1]
+			ns = Uq.shape[2]
 			dim = ns - 2
 		else:
-			n = 0; ns = 0; dim = 0
+			n = nq = ns = dim = 0
 
 		self.UqL = np.zeros_like(Uq)
 		self.UqR = np.zeros_like(Uq)
-		self.vel = np.zeros([n, dim])
+		self.vel = np.zeros([n, nq, dim])
 		self.alphas = np.zeros_like(Uq)
 		self.evals = np.zeros_like(Uq)
-		self.R = np.zeros([n, ns, ns])
+		self.R = np.zeros([n, nq, ns, ns])
 
 	def rotate_coord_sys(self, smom, Uq, n):
 		'''
@@ -978,14 +979,14 @@ class Roe1D(ConvNumFluxBase):
 		-------
 			smom: momentum slice
 			Uq: values of the state variable (typically at the quadrature
-				points) [nq, ns]
-			n: normals (typically at the quadrature points) [nq, dim]
+				points) [nf, nq, ns]
+			n: normals (typically at the quadrature points) [nf, nq, dim]
 
 		Outputs:
 		--------
 		    Uq: momentum terms modified
 		'''
-		Uq[:, smom] *= n
+		Uq[:,:,smom] *= n
 
 		return Uq
 
@@ -998,14 +999,14 @@ class Roe1D(ConvNumFluxBase):
 		-------
 			smom: momentum slice
 			Uq: values of the state variable (typically at the quadrature
-				points) [nq, ns]
-			n: normals (typically at the quadrature points) [nq, dim]
+				points) [nf, nq, ns]
+			n: normals (typically at the quadrature points) [nf, nq, dim]
 
 		Outputs:
 		--------
 		    Uq: momentum terms modified
 		'''
-		Uq[:, smom] /= n
+		Uq[:, :, smom] /= n
 
 		return Uq
 
@@ -1018,22 +1019,22 @@ class Roe1D(ConvNumFluxBase):
 			physics: physics object
 			srho: density slice
 			velL: left velocity (typically evaluated at the quadrature
-				points) [nq, dim]
+				points) [nf, nq, dim]
 			velR: right velocity (typically evaluated at the quadrature
-				points) [nq, dim]
+				points) [nf, nq, dim]
 			UqL: left state (typically evaluated at the quadrature
-				points) [nq, ns]
+				points) [nf, nq, ns]
 			UqR: right state (typically evaluated at the quadrature
-				points) [nq, ns]
+				points) [nf, nq, ns]
 
 		Outputs:
 		--------
-		    rhoRoe: Roe-averaged density [nq, 1]
-		    velRoe: Roe-averaged velocity [nq, dim]
-		    HRoe: Roe-averaged total enthalpy [nq, 1]
+		    rhoRoe: Roe-averaged density [nf, nq, 1]
+		    velRoe: Roe-averaged velocity [nf, nq, dim]
+		    HRoe: Roe-averaged total enthalpy [nf, nq, 1]
 		'''
-		rhoL_sqrt = np.sqrt(UqL[:, srho])
-		rhoR_sqrt = np.sqrt(UqR[:, srho])
+		rhoL_sqrt = np.sqrt(UqL[:, :, srho])
+		rhoR_sqrt = np.sqrt(UqR[:, :, srho])
 		HL = physics.compute_variable("TotalEnthalpy", UqL)
 		HR = physics.compute_variable("TotalEnthalpy", UqR)
 
@@ -1052,22 +1053,22 @@ class Roe1D(ConvNumFluxBase):
 			physics: physics object
 			srho: density slice
 			velL: left velocity (typically evaluated at the quadrature
-				points) [nq, dim]
+				points) [nf, nq, dim]
 			velR: right velocity (typically evaluated at the quadrature
-				points) [nq, dim]
+				points) [nf, nq, dim]
 			UqL: left state (typically evaluated at the quadrature
-				points) [nq, ns]
+				points) [nf, nq, ns]
 			UqR: right state (typically evaluated at the quadrature
-				points) [nq, ns]
+				points) [nf, nq, ns]
 
 		Outputs:
 		--------
-		    drho: density jump [nq, 1]
-		    dvel: velocity jump [nq, dim]
-		    dp: pressure jump [nq, 1]
+		    drho: density jump [nf, nq, 1]
+		    dvel: velocity jump [nf, nq, dim]
+		    dp: pressure jump [nf, nq, 1]
 		'''
 		dvel = velR - velL
-		drho = UqR[:, srho] - UqL[:, srho]
+		drho = UqR[:, :, srho] - UqL[:, :, srho]
 		dp = physics.compute_variable("Pressure", UqR) - \
 			physics.compute_variable("Pressure", UqL)
 
@@ -1079,22 +1080,22 @@ class Roe1D(ConvNumFluxBase):
 
 		Inputs:
 		-------
-			c: speed of sound [nq, 1]
-			c2: speed of sound squared [nq, 1]
-			dp: pressure jump [nq, 1]
-			dvel: velocity jump [nq, dim]
-			drho: density jump [nq, 1]
-			rhoRoe: Roe-averaged density [nq, 1]
+			c: speed of sound [nf, nq, 1]
+			c2: speed of sound squared [nf, nq, 1]
+			dp: pressure jump [nf, nq, 1]
+			dvel: velocity jump [nf, nq, dim]
+			drho: density jump [nf, nq, 1]
+			rhoRoe: Roe-averaged density [nf, nq, 1]
 
 		Outputs:
 		--------
-		    alphas: left eigenvectors multipled by dU [nq, ns]
+		    alphas: left eigenvectors multipled by dU [nf, nq, ns]
 		'''
 		alphas = self.alphas
 
-		alphas[:, 0:1] = 0.5/c2*(dp - c*rhoRoe*dvel[:, 0:1])
-		alphas[:, 1:2] = drho - dp/c2
-		alphas[:, -1:] = 0.5/c2*(dp + c*rhoRoe*dvel[:, 0:1])
+		alphas[:, :, 0:1] = 0.5/c2*(dp - c*rhoRoe*dvel[:, :, 0:1])
+		alphas[:, :, 1:2] = drho - dp/c2
+		alphas[:, :, -1:] = 0.5/c2*(dp + c*rhoRoe*dvel[:, :, 0:1])
 
 		return alphas
 
@@ -1104,18 +1105,18 @@ class Roe1D(ConvNumFluxBase):
 
 		Inputs:
 		-------
-			velRoe: Roe-averaged velocity [nq, dim]
-			c: speed of sound [nq, 1]
+			velRoe: Roe-averaged velocity [nf, nq, dim]
+			c: speed of sound [nf, nq, 1]
 
 		Outputs:
 		--------
-		    evals: eigenvalues [nq, ns]
+		    evals: eigenvalues [nf, nq, ns]
 		'''
 		evals = self.evals
 
-		evals[:, 0:1] = velRoe[:, 0:1] - c
-		evals[:, 1:2] = velRoe[:, 0:1]
-		evals[:, -1:] = velRoe[:, 0:1] + c
+		evals[:, :, 0:1] = velRoe[:, :, 0:1] - c
+		evals[:, :, 1:2] = velRoe[:, :, 0:1]
+		evals[:, :, -1:] = velRoe[:, :, 0:1] + c
 
 		return evals
 
@@ -1125,33 +1126,48 @@ class Roe1D(ConvNumFluxBase):
 
 		Inputs:
 		-------
-			c: speed of sound [nq, 1]
-			evals: eigenvalues [nq, ns]
-			velRoe: Roe-averaged velocity [nq, dim]
-			HRoe: Roe-averaged total enthalpy [nq, 1]
+			c: speed of sound [nf, nq, 1]
+			evals: eigenvalues [nf, nq, ns]
+			velRoe: Roe-averaged velocity [nf, nq, dim]
+			HRoe: Roe-averaged total enthalpy [nf, nq, 1]
 
 		Outputs:
 		--------
-		    R: right eigenvectors [nq, ns, ns]
+		    R: right eigenvectors [nf, nq, ns, ns]
 		'''
 		R = self.R
 
 		# first row
-		R[:, 0, 0:2] = 1.; R[:, 0, -1] = 1.
+		R[:, :, 0, 0:2] = 1.; R[:, :, 0, -1] = 1.
 		# second row
-		R[:, 1, 0] = evals[:, 0]; R[:, 1, 1] = velRoe[:, 0]
-		R[:, 1, -1] = evals[:, -1]
+		R[:, :, 1, 0] = evals[:, :, 0]; R[:, :, 1, 1] = velRoe[:, :, 0]
+		R[:, :, 1, -1] = evals[:, :, -1]
 		# last row
-		R[:, -1, 0:1] = HRoe - velRoe[:, 0:1]*c;
-		R[:, -1, 1:2] = 0.5*np.sum(velRoe*velRoe, axis=1, keepdims=True)
-		R[:, -1, -1:] = HRoe + velRoe[:, 0:1]*c
+		R[:, :, -1, 0:1] = HRoe - velRoe[:, :, 0:1]*c;
+		R[:, :, -1, 1:2] = 0.5*np.sum(velRoe*velRoe, axis=2, keepdims=True)
+		R[:, :, -1, -1:] = HRoe + velRoe[:, :, 0:1]*c
 
 		return R
 
 	def compute_flux(self, physics, UqL_std, UqR_std, normals):
+
+		# TODO: Either figure out a smarter way to do this, or get rid of the
+		# init function doing this and accept the arrays being recreated every
+		# iteration.
+		# This needs to happen because there is a different number of interior
+		# faces compared to boundary faces.
+		n = UqL_std.shape[0]
+		nq = UqL_std.shape[1]
+		ns = UqL_std.shape[2]
+		dim = ns - 2
+		self.UqL_stdL = np.zeros_like(UqL_std)
+		self.UqL_stdR = np.zeros_like(UqL_std)
+		self.vel = np.zeros([n, nq, dim])
+		self.alphas = np.zeros_like(UqL_std)
+		self.evals = np.zeros_like(UqL_std)
+		self.R = np.zeros([n, nq, ns, ns])
+
 		# Unpack
-		UqL = self.UqL
-		UqR = self.UqR
 		srho = physics.get_state_slice("Density")
 		smom = physics.get_momentum_slice()
 		gamma = physics.gamma
@@ -1161,23 +1177,23 @@ class Roe1D(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Copy values from standard coordinate system before rotating
-		UqL[:] = UqL_std
-		UqR[:] = UqR_std
+		UqL = UqL_std.copy()
+		UqR = UqR_std.copy()
 
 		# Rotated coordinate system
 		UqL = self.rotate_coord_sys(smom, UqL, n_hat)
 		UqR = self.rotate_coord_sys(smom, UqR, n_hat)
 
 		# Velocities
-		velL = UqL[:, smom]/UqL[:, srho]
-		velR = UqR[:, smom]/UqR[:, srho]
+		velL = UqL[:, :, smom]/UqL[:, :, srho]
+		velR = UqR[:, :, smom]/UqR[:, :, srho]
 
 		# Roe-averaged state
 		rhoRoe, velRoe, HRoe = self.roe_average_state(physics, srho, velL,
 				velR, UqL, UqR)
 
 		# Speed of sound from Roe-averaged state
-		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=1,
+		c2 = (gamma - 1.)*(HRoe - 0.5*np.sum(velRoe*velRoe, axis=2,
 				keepdims=True))
 		if np.any(c2 <= 0.):
 			# Non-physical state
@@ -1198,19 +1214,19 @@ class Roe1D(ConvNumFluxBase):
 		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 
 		# Form flux Jacobian matrix multiplied by dU
-		FRoe = np.matmul(R, np.expand_dims(np.abs(evals)*alphas,
-				axis=2)).squeeze(axis=2)
+		#TODO: Figure out how these indices should be labeled
+		FRoe = np.einsum('ijkl, ijl -> ijk', R, np.abs(evals)*alphas)
 
 		# Undo rotation
 		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_hat)
 
 		# Left flux
-		FL = physics.get_conv_flux_projected(UqL_std, n_hat)
+		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat)
 
 		# Right flux
-		FR = physics.get_conv_flux_projected(UqR_std, n_hat)
+		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat)
 
-		return n_mag*(0.5*(FL+FR) - 0.5*FRoe) # [nq, ns]
+		return .5*n_mag*(FL + FR - FRoe) # [nf, nq, ns]
 
 
 class Roe2D(Roe1D):

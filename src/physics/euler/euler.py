@@ -91,9 +91,9 @@ class Euler(base.PhysicsBase):
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
 		smom = self.get_momentum_slice()
-		rho = Uq[:, srho]
-		rhoE = Uq[:, srhoE]
-		mom = Uq[:, smom]
+		rho = Uq[:, :, srho]
+		rhoE = Uq[:, :, srhoE]
+		mom = Uq[:, :, smom]
 
 		''' Unpack '''
 		gamma = self.gamma
@@ -106,7 +106,7 @@ class Euler(base.PhysicsBase):
 
 		''' Nested functions for common quantities '''
 		def get_pressure():
-			varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1,
+			varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2,
 					keepdims=True)/rho)
 			if flag_non_physical:
 				if np.any(varq < 0.):
@@ -127,17 +127,17 @@ class Euler(base.PhysicsBase):
 			# Alternate way
 			varq = np.log(get_pressure()/rho**gamma)
 		elif vname is self.AdditionalVariables["InternalEnergy"].name:
-			varq = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
+			varq = rhoE - 0.5*np.sum(mom*mom, axis=2, keepdims=True)/rho
 		elif vname is self.AdditionalVariables["TotalEnthalpy"].name:
 			varq = (rhoE + get_pressure())/rho
 		elif vname is self.AdditionalVariables["SoundSpeed"].name:
 			varq = np.sqrt(gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# |u| + c
-			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(
+			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
 					gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["Speed"].name:
-			varq = np.linalg.norm(mom, axis=1, keepdims=True)/rho
+			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho
 		else:
 			raise NotImplementedError
 
