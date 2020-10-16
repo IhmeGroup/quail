@@ -206,6 +206,37 @@ class Euler1D(Euler):
 
 		return smom
 
+	def get_conv_flux_interior(self, Uq):
+		# Get indices of state variables
+		irho, irhou, irhoE = self.get_state_indices()
+
+		eps = general.eps
+
+		rho  = Uq[:, :, irho]  # [n, nq]
+		rhou = Uq[:, :, irhou] # [n, nq]
+		rhoE = Uq[:, :, irhoE] # [n, nq]
+		rho += eps # prevent rare division-by-zero errors
+
+		# Get velocity
+		u = rhou / rho
+		# Get squared velocitiy
+		u2 = u**2
+
+		# Calculate pressure using the Ideal Gas Law
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2) # [n, nq]
+		# Get total enthalpy
+		H = rhoE + p
+
+		# Assemble flux matrix
+		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
+		F[:,:,irho,  0] = rhou         # Flux of mass
+		F[:,:,irhou, 0] = rho * u2 + p # Flux of momentum
+		F[:,:,irhoE, 0] = H * u        # Flux of energy
+
+		rho -= eps
+
+		return F, u2, rho, p
+
 
 class Euler2D(Euler):
 	'''
@@ -281,10 +312,10 @@ class Euler2D(Euler):
 		# Get velocity in each dimension
 		u = rhou / rho
 		v = rhov / rho
-
 		# Get squared velocities
 		u2 = u**2
 		v2 = v**2
+
 		# Calculate pressure using the Ideal Gas Law
 		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 		# Get off-diagonal momentum
@@ -294,7 +325,7 @@ class Euler2D(Euler):
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
-		F[:,:,irho,:]   = mom          # Flux of mass in all directions
+		F[:,:,irho,  :] = mom          # Flux of mass in all directions
 		F[:,:,irhou, 0] = rho * u2 + p # x-flux of x-momentum
 		F[:,:,irhov, 0] = rhouv        # x-flux of y-momentum
 		F[:,:,irhou, 1] = rhouv        # y-flux of x-momentum
