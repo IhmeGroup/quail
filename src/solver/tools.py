@@ -147,9 +147,9 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
 	djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
-
+	
 	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
-
+	
 	U[:,:] = np.matmul(iMM, rhs)
 
 

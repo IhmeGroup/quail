@@ -581,6 +581,7 @@ class DG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
+
 			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, Fq) # [ne, nb, ns]
 

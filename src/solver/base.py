@@ -291,6 +291,8 @@ class SolverBase(ABC):
 		# TODO: Vectorize the rest of this loop (for code clarity). Only the
 		# IC.get_state was vectorized because that needs to be for the code to
 		# actually run).
+		# import code 
+		# code.interact(local=locals())
 		for elem_ID in range(mesh.num_elems):
 			xphys = xphys_elems[elem_ID]
 			f = f_elems[elem_ID]

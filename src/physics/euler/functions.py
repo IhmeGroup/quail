@@ -138,7 +138,7 @@ class SmoothIsentropicFlow(FcnBase):
 			Uq[elem_ID, :, irho] = den
 			Uq[elem_ID, :, irhou] = den*u
 			Uq[elem_ID, :, irhoE] = rhoE
-
+		
 		return Uq
 
 
