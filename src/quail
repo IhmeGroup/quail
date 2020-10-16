@@ -423,7 +423,7 @@ def main(argv):
 	'''
 	''' Parser '''
 	my_parser = argparse.ArgumentParser(conflict_handler="resolve", 
-			description="This script is the driver for Stanford\'s DGP " +
+			description="This script is the driver for Stanford\'s Quail " +
 			"solver")
 
 	''' Command-line arguments '''
