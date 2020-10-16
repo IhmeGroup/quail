@@ -283,10 +283,17 @@ class SolverBase(ABC):
 
 			eval_pts = quad_pts
 
+		# Compute state
+		xphys_elems = np.empty((mesh.num_elems,) + eval_pts.shape)
 		for elem_ID in range(mesh.num_elems):
-			# Compute state
-			xphys = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
-			f = physics.IC.get_state(physics, x=xphys, t=self.time)
+			xphys_elems[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
+		f_elems = physics.IC.get_state(physics, x=xphys_elems, t=self.time)
+		# TODO: Vectorize the rest of this loop (for code clarity). Only the
+		# IC.get_state was vectorized because that needs to be for the code to
+		# actually run).
+		for elem_ID in range(mesh.num_elems):
+			xphys = xphys_elems[elem_ID]
+			f = f_elems[elem_ID]
 
 			if not params["L2InitialCondition"]:
 				# Interpolate to solution nodes

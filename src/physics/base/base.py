@@ -504,10 +504,11 @@ class PhysicsBase(ABC):
 		Outputs:
 		--------
 			projected flux values [nf, nq, ns]
+			tuple of extra variables computed by interior flux
 		'''
-		Fq, u, v, rho, p = self.get_conv_flux_interior(Uq) # [nf, nq, ns, dim]
+		Fq, vars = self.get_conv_flux_interior(Uq) # [nf, nq, ns, dim]
 
-		return np.einsum('ijkl, ijl -> ijk', Fq, normals), u, v, rho, p
+		return np.einsum('ijkl, ijl -> ijk', Fq, normals), vars
 
 	def get_conv_flux_numerical(self, UqL, UqR, normals):
 		'''

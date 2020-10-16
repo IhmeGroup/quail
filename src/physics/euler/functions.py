@@ -114,28 +114,30 @@ class SmoothIsentropicFlow(FcnBase):
 		f1 = lambda x1, x, t, a: x + np.sqrt(3)*rho0(x1, a)*t - x1
 		f2 = lambda x2, x, t, a: x - np.sqrt(3)*rho0(x2, a)*t - x2
 
-		xr = x.reshape(-1)
+		xr_elems = x[:,:,0]
 
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros(xr_elems.shape + (physics.NUM_STATE_VARS,))
 
-		# Solve above nonlinear equations for x1 and x2
-		x1 = fsolve(f1, 0.*xr, (xr, t, a))
-		if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" %
-				(x1))
-		x2 = fsolve(f2, 0.*xr, (xr, t, a))
-		if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" %
-				(x2))
+		for elem_ID in range(x.shape[0]):
+			xr = xr_elems[elem_ID,:]
+			# Solve above nonlinear equations for x1 and x2
+			x1 = fsolve(f1, 0.*xr, (xr, t, a))
+			if np.abs(x1.any()) > 1.: raise Exception("x1 = %g out of range" %
+					(x1))
+			x2 = fsolve(f2, 0.*xr, (xr, t, a))
+			if np.abs(x2.any()) > 1.: raise Exception("x2 = %g out of range" %
+					(x2))
 
-		# State
-		den = rho(x1, x2, a)
-		u = vel(x1, x2, a)
-		p = pressure(den, gamma)
-		rhoE = p/(gamma - 1.) + 0.5*den*u*u
+			# State
+			den = rho(x1, x2, a)
+			u = vel(x1, x2, a)
+			p = pressure(den, gamma)
+			rhoE = p/(gamma - 1.) + 0.5*den*u*u
 
-		# Store
-		Uq[:, irho] = den
-		Uq[:, irhou] = den*u
-		Uq[:, irhoE] = rhoE
+			# Store
+			Uq[elem_ID, :, irho] = den
+			Uq[elem_ID, :, irhou] = den*u
+			Uq[elem_ID, :, irhoE] = rhoE
 
 		return Uq
 
@@ -258,11 +260,6 @@ class IsentropicVortex(FcnBase):
 		self.vs = vs
 
 	def get_state(self, physics, x, t):
-		# TODO: Refactor all of this once IC's are vectorized
-		ic = False
-		if x.ndim == 2:
-			ic = True
-			x = x[np.newaxis, :, :]
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 		gamma = physics.gamma
 		Rg = physics.R
@@ -315,9 +312,7 @@ class IsentropicVortex(FcnBase):
 		Uq[:,:, 2] = rhov
 		Uq[:,:, 3] = rhoE
 
-		# TODO: Remove this once IC's are vectorized
-		if ic: return Uq[0,:,:]
-		else: return Uq
+		return Uq
 
 
 class DensityWave(FcnBase):
@@ -856,6 +851,70 @@ ConvNumFluxBase for detailed comments of attributes and methods.
 Information specific to the corresponding child classes can be found below.
 These classes should correspond to the ConvNumFluxType enum members above.
 '''
+
+class LaxFriedrichsEuler2D(ConvNumFluxBase):
+	'''
+	This class corresponds to the local Lax-Friedrichs flux function for Euler
+    2D.
+	'''
+	def compute_flux(self, physics, UqL, UqR, normals):
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+
+		# Left flux
+		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat)
+
+		# Right flux
+		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat)
+
+		# Jump
+		dUq = UqR - UqL
+
+		# Max wave speeds at each point
+		# TODO: Flag for non-physical
+		aL = np.empty_like(n_mag)
+		aR = np.empty_like(n_mag)
+		aL[:,:,0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
+		aR[:,:,0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
+		idx = aR > aL
+		aL[idx] = aR[idx]
+
+		# Put together
+		return .5 * n_mag * (FqL + FqR - aL*dUq)
+
+
+class LaxFriedrichsEuler1D(ConvNumFluxBase):
+	'''
+	This class corresponds to the local Lax-Friedrichs flux function for Euler
+    1D.
+	'''
+	def compute_flux(self, physics, UqL, UqR, normals):
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+
+		# Left flux
+		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat)
+
+		# Right flux
+		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat)
+
+		# Jump
+		dUq = UqR - UqL
+
+		# Max wave speeds at each point
+		# TODO: Flag for non-physical
+		aL = np.empty_like(n_mag)
+		aR = np.empty_like(n_mag)
+		aL[:,:,0] = np.sqrt(u2L) + np.sqrt(physics.gamma * pL / rhoL)
+		aR[:,:,0] = np.sqrt(u2R) + np.sqrt(physics.gamma * pR / rhoR)
+		idx = aR > aL
+		aL[idx] = aR[idx]
+
+		# Put together
+		return .5 * n_mag * (FqL + FqR - aL*dUq)
+
 
 class Roe1D(ConvNumFluxBase):
 	'''

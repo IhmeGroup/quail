@@ -4,7 +4,7 @@
 #
 #       Contains definitions of Functions, boundary conditions, and source
 #       terms generally applicable to all physics types.
-#      
+#
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
@@ -171,10 +171,10 @@ class LaxFriedrichs(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, u2L, v2L, rhoL, pL = physics.get_conv_flux_projected(UqL, n_hat)
+		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat)
 
 		# Right flux
-		FqR, u2R, v2R, rhoR, pR = physics.get_conv_flux_projected(UqR, n_hat)
+		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat)
 
 		# Jump
 		dUq = UqR - UqL
