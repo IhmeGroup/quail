@@ -14,7 +14,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 solver.time = 0.
-TotErr,_ = post.get_error(mesh, physics, solver, "Scalar")
+# TotErr,_ = post.get_error( mesh, physics, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
@@ -26,12 +26,12 @@ plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, create_
 plot.save_figure(file_name='gaussian', file_type='pdf', crop_level=2)
 
 # plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, PlotExact=True, PlotIC=True)
-plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=False, plot_exact=False,
-		plot_IC=True, create_new_figure=True, ylabel=None, vs_x=True, fmt="k-.", legend_label=None)
-plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=False, plot_exact=True,
-		plot_IC=False, create_new_figure=False, fmt="k-", legend_label=None)
-plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=True, plot_exact=False,
-		plot_IC=False, create_new_figure=False, fmt="bo", legend_label=None)
+# plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=False, plot_exact=False,
+# 		plot_IC=True, create_new_figure=True, ylabel=None, vs_x=True, fmt="k-.", legend_label=None)
+# plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=False, plot_exact=True,
+# 		plot_IC=False, create_new_figure=False, fmt="k-", legend_label=None)
+# plot.plot_line_probe(mesh, physics, solver, "Scalar", xy1=[-5.,-5.], xy2=[5.,5.], nPoint=101, plot_numerical=True, plot_exact=False,
+# 		plot_IC=False, create_new_figure=False, fmt="bo", legend_label=None)
 # Post.get_boundary_info(mesh, physics, solver, "y1", "Scalar", integrate=True, 
 # 		vec=[0.,1.], dot_normal_with_vec=True, plot_vs_x=True, plot_vs_y=False)
 plot.show_plot()

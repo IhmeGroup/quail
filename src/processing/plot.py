@@ -499,10 +499,11 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	-------
 		var_plot: values of variable obtained at x [num_pts, 1]
 	'''
-	U_plot = fcn_data.get_state(physics, x=np.reshape(x, (-1, physics.DIM)),
-			t=time)
-	# U_plot = physics.call_function(fcn_data, x=np.reshape(x,
-	# 		(-1, physics.DIM)), t=time)
+	# U_plot = fcn_data.get_state(physics, x=np.reshape(x, (-1, physics.DIM)),
+	# 		t=time)
+
+	U_plot = fcn_data.get_state(physics, x=x, t=time)
+
 	var_plot = physics.compute_variable(var_name, U_plot)
 
 	return var_plot

@@ -594,7 +594,7 @@ class PhysicsBase(ABC):
 		try:
 			# First try state variables
 			sidx = self.get_state_index(var_name)
-			varq = Uq[:, sidx:sidx+1].copy()
+			varq = Uq[:, :, sidx:sidx+1].copy()
 		except KeyError:
 			# Now try additional
 			varq = self.compute_additional_variable(var_name, Uq,

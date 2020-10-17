@@ -14,7 +14,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 # Error
-TotErr, _ = post.get_error(mesh, physics, solver, "Scalar")
+# TotErr, _ = post.get_error(mesh, physics, solver, "Scalar")
 # Plot
 plot.prepare_plot()
 # plot.PlotSolution(mesh, physics, solver, "Scalar", PlotExact=True, PlotIC=True, Label="u")
