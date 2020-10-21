@@ -142,12 +142,11 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):
 	--------
 		U: array of values to be projected to
 	'''
-	if basis.basis_val.shape[0] != quad_wts.shape[1]:
+	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
 	for elem_ID in range(U.shape[0]):
 		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
-
 		rhs = np.matmul(basis.basis_val.transpose(),
 				f[elem_ID, :, :]*quad_wts*djac) # [nb, ns]
 

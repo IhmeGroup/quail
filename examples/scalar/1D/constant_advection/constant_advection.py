@@ -10,7 +10,7 @@ TimeStepping = {
 }
 
 Numerics = {
-    "SolutionOrder" : 2,
+    "SolutionOrder" : 3,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLobatto",
@@ -26,7 +26,7 @@ Mesh = {
     "NumElemsX" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
-    "PeriodicBoundariesX" : ["x1","x2"]
+    #"PeriodicBoundariesX" : ["x1","x2"]
 }
 
 Physics = {
@@ -42,13 +42,13 @@ InitialCondition = {
 
 ExactSolution = InitialCondition.copy()
 
-#BoundaryConditions = {
-#    "x1" : {
-#	    "Function" : "Sine",
-#	    "omega" : 2*np.pi,
-#    	"BCType" : "StateAll",
-#    },
-#    "x2" : {
-#    	"BCType" : "Extrapolate",
-#    },
-#}
+BoundaryConditions = {
+    "x1" : {
+	    "Function" : "Sine",
+	    "omega" : 2*np.pi,
+   	"BCType" : "StateAll",
+    },
+    "x2" : {
+    	"BCType" : "Extrapolate",
+    },
+}

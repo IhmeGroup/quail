@@ -23,8 +23,13 @@ def get_element_mean(Uq, quad_wts, djac, vol):
 	--------
 	    U_mean: mean values of state variables [1, sr]
 	'''
-	U_mean = np.matmul(Uq.transpose(), quad_wts*djac).transpose()/vol
+	U_mean = np.einsum('ijk, jl, ijl -> ilk', Uq, quad_wts, djac)
 
+	# NEED TO VECTORIZE
+	for i in range(U_mean.shape[0]):
+		U_mean[i, :, :] = U_mean[i, :, :] / vol[i]
+	# U_mean = np.matmul(Uq.transpose(), quad_wts*djac).transpose()/vol
+	
 	return U_mean
 
 

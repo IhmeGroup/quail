@@ -46,7 +46,7 @@ def set_source_treatment(ns, source_treatment):
 
 
 def calculate_inviscid_flux_volume_integral(solver, elem_helpers, 
-		elem_helpers_st, elem_ID, Fq):
+		elem_helpers_st, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the ADERDG scheme
 
@@ -69,17 +69,16 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 	djac_elems = elem_helpers.djac_elems 
 
-	basis_phys_grad = basis_phys_grad_elems[elem_ID]
-	djac = djac_elems[elem_ID]
-
 	nb = basis_val.shape[1]
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
-	
 	# Integrate
-	R_elem = np.tensordot(np.tile(basis_phys_grad, (nq, 1, 1)), 
-			Fq*(quad_wts_st.reshape(nq, nq)*djac).reshape(nq_st, 1, 1), 
-			axes=([0, 2], [0, 2])) # [nb, ns]
+	tile_basis_phys_grads = np.tile(basis_phys_grad_elems, (1, nq, 1, 1))
+	quad_wts_st_djac = (quad_wts_st.reshape(nq, nq)*
+			djac_elems).reshape(Fq.shape[0], nq_st, 1, 1)
+
+	R_elem = np.einsum('ijkl, ijml -> ikm', tile_basis_phys_grads,
+			Fq * quad_wts_st_djac)
 
 	return R_elem # [nb, ns]
 
@@ -102,12 +101,16 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	nq = quad_wts_st.shape[0]
 
 	# Integrate
-	R_B = np.matmul(np.tile(basis_val,(nq,1)).transpose(), Fq*quad_wts_st) 
+	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts_st)
+	# Calculate residual
+	R_B = np.einsum('ijn, ijk -> ink', np.tile(basis_val,(nq, 1)), Fq_quad)
+
+	# R_B = np.matmul(np.tile(basis_val,(nq,1)).transpose(), Fq*quad_wts_st) 
 
 	return R_B # [nb, ns]
 
 
-def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID, 
+def calculate_source_term_integral(elem_helpers, elem_helpers_st, 
 		Sq):
 	'''
 	Calculates the source term volume integral for the ADERDG scheme
@@ -116,7 +119,6 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID,
 	-------
 		elem_helpers: helpers defined in ElemHelpers
 		elem_helpers_st: space-time helpers defined in ElemHelpers
-		elem_ID: element ID
 		Sq: source term array evaluated at the quadrature points [nq, ns]
 
 	Outputs:
@@ -129,20 +131,23 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, elem_ID,
 
 	basis_val = elem_helpers.basis_val 
 	djac_elems = elem_helpers.djac_elems 
-	djac = djac_elems[elem_ID]
+	# djac = djac_elems[elem_ID]
 
 	nb = basis_val.shape[1]
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 
 	# Integrate
-	R_elem = np.matmul(np.tile(basis_val,(nq, 1)).transpose(), 
-			Sq*(quad_wts_st.reshape(nq, nq)*djac).reshape(nq_st, 1))
 
+	# R_elem = np.matmul(np.tile(basis_val,(nq, 1)).transpose(), 
+			# Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(nq_st, 1))
+	R_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)), 
+			Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(Sq.shape[0], 
+			nq_st, 1))
 	return R_elem # [nb, ns]
 
 
-def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
+def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
 	Calculates the predicted solution state for the ADER-DG method using a 
 	nonlinear solve of the weak form of the DG discretization in time.
@@ -176,32 +181,38 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
 	djac_elems = elem_helpers.djac_elems 
-	djac = djac_elems[elem_ID]
+	# djac = djac_elems[elem_ID]
 
 	FTR = ader_helpers.FTR
 	MM = ader_helpers.MM
-	SMS = ader_helpers.SMS_elems[elem_ID]
+	SMS_elems = ader_helpers.SMS_elems
+	# SMS = ader_helpers.SMS_elems[elem_ID]
 	iK = ader_helpers.iK
 
 	vol_elems = elem_helpers.vol_elems
-	W_bar = np.zeros([1, ns])
+	# W_bar = np.zeros([1, ns])
 
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
-	vol = vol_elems[elem_ID]
 
-	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
+	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
 	U_pred[:] = W_bar
 
-	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, 
+	source_coeffs = solver.source_coefficients(dt, order, basis_st, 
 			U_pred)
-	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 			U_pred)
 
 	niter = 100
 	for i in range(niter):
+		# U_pred_new = np.matmul(iK, (np.matmul(MM, source_coeffs) - np.einsum(
+				# 'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W)))
+		# test = (np.einsum('jk, ijl -> ijl', MM, source_coeffs) 
+		# 		- np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
+		# 		np.einsum('jk, ikm -> ijm', FTR, W))
+		U_pred_new = np.einsum('jk, ikm -> ijm',iK, np.einsum('jk, ijl -> ijl', MM, source_coeffs) 
+				- np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
+				np.einsum('jk, ikm -> ijm', FTR, W))
 
-		U_pred_new = np.matmul(iK, (np.matmul(MM, source_coeffs) - np.einsum(
-				'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W)))
 		err = U_pred_new - U_pred
 
 		if np.amax(np.abs(err)) < 1.e-10:
@@ -210,9 +221,9 @@ def predictor_elem_explicit(solver, elem_ID, dt, W, U_pred):
 
 		U_pred = U_pred_new
 		
-		source_coeffs = solver.source_coefficients(elem_ID, dt, order, 
+		source_coeffs = solver.source_coefficients(dt, order, 
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+		flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 				U_pred)
 
 		if i == niter - 1:
@@ -436,7 +447,7 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
 	U[:, :] = np.matmul(iMM, rhs)
 
 
-def ref_to_phys_time(mesh, elem_ID, time, dt, tref, basis=None):
+def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     '''
     This function converts reference time coordinates to physical
     time coordinates
@@ -458,7 +469,6 @@ def ref_to_phys_time(mesh, elem_ID, time, dt, tref, basis=None):
     if basis is None:
     	basis = basis_defs.LagrangeSeg(gorder)
     	basis.get_basis_val_grads(tref, get_val=True)
-
     tphys = (time/2.)*(1. - tref) + (time + dt)/2.*(1. + tref)
 
     return tphys, basis

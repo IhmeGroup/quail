@@ -210,10 +210,11 @@ class ElemHelpers(object):
 		nb = basis.nb
 		ns = physics.NUM_STATE_VARS
 		dim = physics.DIM
+		nelem = self.vol_elems.shape[0]
 
-		self.Uq = np.zeros([nq, ns])
-		self.Fq = np.zeros([nq, ns, dim])
-		self.Sq = np.zeros([nq, ns])
+		self.Uq = np.zeros([nelem, nq, ns])
+		self.Fq = np.zeros([nelem, nq, ns, dim])
+		self.Sq = np.zeros([nelem, nq, ns])
 
 	def compute_helpers(self, mesh, physics, basis, order):
 		'''

@@ -109,6 +109,7 @@ def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=None):
 			to skip when plotting (None for no skipping)
 	'''
 	# Reshape
+
 	x = np.reshape(x, (-1,))
 	var_plot = np.reshape(var_plot, x.shape)
 
