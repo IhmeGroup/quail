@@ -621,7 +621,7 @@ class TaylorGreenVortex(FcnBase):
 	'''
 	def get_state(self, physics, x, t):
 		# Unpack
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 		gamma = physics.gamma
 		Rg = physics.R
 
@@ -629,16 +629,16 @@ class TaylorGreenVortex(FcnBase):
 
 		# State
 		rho = 1.
-		u = np.sin(np.pi*x[:, 0])*np.cos(np.pi*x[:, 1])
-		v = -np.cos(np.pi*x[:, 0])*np.sin(np.pi*x[:, 1])
-		p = 0.25*(np.cos(2.*np.pi*x[:, 0]) + np.cos(2*np.pi*x[:, 1])) + 1.
+		u = np.sin(np.pi*x[:, :, 0])*np.cos(np.pi*x[:, :, 1])
+		v = -np.cos(np.pi*x[:, :, 0])*np.sin(np.pi*x[:, :, 1])
+		p = 0.25*(np.cos(2.*np.pi*x[:, :, 0]) + np.cos(2*np.pi*x[:, :, 1])) + 1.
 		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
 
 		# Store
-		Uq[:, irho] = rho
-		Uq[:, irhou] = rho*u
-		Uq[:, irhov] = rho*v
-		Uq[:, irhoE] = rho*E
+		Uq[:, :, irho] = rho
+		Uq[:, :, irhou] = rho*u
+		Uq[:, :, irhov] = rho*v
+		Uq[:, :, irhoE] = rho*E
 
 		return Uq
 
@@ -835,9 +835,9 @@ class TaylorGreenSource(SourceBase):
 
 		S = np.zeros_like(Uq)
 
-		S[:, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, 0])* \
-				np.cos(np.pi*x[:, 1]) - np.cos(np.pi*x[:, 0])*np.cos(3.* \
-				np.pi*x[:, 1]))
+		S[:, :, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, :, 0])* \
+				np.cos(np.pi*x[:, :, 1]) - np.cos(np.pi*x[:, :, 0])*np.cos(3.* \
+				np.pi*x[:, :, 1]))
 
 		return S
 
