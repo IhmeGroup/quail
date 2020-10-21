@@ -34,30 +34,25 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 
 	Inputs:
 	-------
-	    Uc: state coefficients [nb, sr]
-	    basis_val: basis values [nq, nb]
+	    Uc: state coefficients [n, nb, sr]
+	    basis_val: basis values [n, nq, nb]
 	    skip_interp: if True, then will simply copy the state coefficients;
 	    	useful for a colocated scheme, i.e. quadrature points and
 	    	solution nodes (for a nodal basis) are the same
 
 	Outputs:
 	--------
-	    Uq: values of state [nq, sr]
+	    Uq: values of state [n, nq, sr]
 	'''
-	import code
 	if skip_interp:
 		Uq = Uc.copy()
 	else:
-		# TODO: This is a temporary hack, will have to vectorize some other
-		# things to remove this
 		if Uc.ndim == 3:
 			if basis_val.ndim == 3:
 				# For faces, there is a different basis_val for each face
-				Uq = np.einsum('ijn,ink->ijk', basis_val, Uc)
+				Uq = np.einsum('ijn, ink -> ijk', basis_val, Uc)
 			else:
 				# For elements, all elements have the same basis_val (for now)
-				Uq = np.einsum('jn,ink->ijk', basis_val, Uc)
-		else:
-			Uq = np.matmul(basis_val, Uc)
+				Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
 
 	return Uq
