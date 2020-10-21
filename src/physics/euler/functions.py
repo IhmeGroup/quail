@@ -138,7 +138,7 @@ class SmoothIsentropicFlow(FcnBase):
 			Uq[elem_ID, :, irho] = den
 			Uq[elem_ID, :, irhou] = den*u
 			Uq[elem_ID, :, irhoE] = rhoE
-		
+
 		return Uq
 
 
@@ -1173,7 +1173,7 @@ class Roe1D(ConvNumFluxBase):
 		gamma = physics.gamma
 
 		# Unit normals
-		n_mag = np.linalg.norm(normals, axis=1, keepdims=True)
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Copy values from standard coordinate system before rotating
@@ -1238,24 +1238,24 @@ class Roe2D(Roe1D):
 	'''
 	def rotate_coord_sys(self, smom, Uq, n):
 		vel = self.vel
-		vel[:] = Uq[:,smom]
+		vel[:] = Uq[:,:,smom]
 
-		vel[:, 0] = np.sum(Uq[:, smom]*n, axis=1)
-		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1]*np.array([[-1., 1.]]),
-				axis=1)
+		vel[:, :, 0] = np.sum(Uq[:, :, smom]*n, axis=2)
+		vel[:, :, 1] = np.sum(Uq[:, :, smom]*n[:, :, ::-1]*np.array([[-1., 1.]]),
+				axis=2)
 
-		Uq[:, smom] = vel
+		Uq[:, :, smom] = vel
 
 		return Uq
 
 	def undo_rotate_coord_sys(self, smom, Uq, n):
 		vel = self.vel
-		vel[:] = Uq[:,smom]
+		vel[:] = Uq[:, :, smom]
 
-		vel[:, 0] = np.sum(Uq[:, smom]*n*np.array([[1., -1.]]), axis=1)
-		vel[:, 1] = np.sum(Uq[:, smom]*n[:, ::-1], axis=1)
+		vel[:, :, 0] = np.sum(Uq[:, :, smom]*n*np.array([[1., -1.]]), axis=2)
+		vel[:, :, 1] = np.sum(Uq[:, :, smom]*n[:, :, ::-1], axis=2)
 
-		Uq[:, smom] = vel
+		Uq[:, :, smom] = vel
 
 		return Uq
 
@@ -1264,7 +1264,7 @@ class Roe2D(Roe1D):
 
 		alphas = super().get_alphas(c, c2, dp, dvel, drho, rhoRoe)
 
-		alphas[:, 2:3] = rhoRoe*dvel[:, -1:]
+		alphas[:, :, 2:3] = rhoRoe*dvel[:, :, -1:]
 
 		return alphas
 
@@ -1273,7 +1273,7 @@ class Roe2D(Roe1D):
 
 		evals = super().get_eigenvalues(velRoe, c)
 
-		evals[:, 2:3] = velRoe[:, 0:1]
+		evals[:, :, 2:3] = velRoe[:, :, 0:1]
 
 		return evals
 
@@ -1285,14 +1285,14 @@ class Roe2D(Roe1D):
 		i = 2
 
 		# First row
-		R[:, 0, i] = 0.
-		# Second row
-		R[:, 1, i] = 0.
-		# Last (fourth) row
-		R[:, -1, i] = velRoe[:, -1]
-		# Third row
-		R[:, i, 0] = velRoe[:, -1];  R[:, i, 1] = velRoe[:, -1]
-		R[:, i, -1] = velRoe[:, -1]; R[:, i, i] = 1.
+		R[:, :, 0, i] = 0.
+		#  Second row
+		R[:, :, 1, i] = 0.
+		#  Last (fourth) row
+		R[:, :, -1, i] = velRoe[:, :, -1]
+		#  Third row
+		R[:, :, i, 0] = velRoe[:, :, -1];  R[:, :, i, 1] = velRoe[:, :, -1]
+		R[:, :, i, -1] = velRoe[:, :, -1]; R[:, :, i, i] = 1.
 
 		return R
 
