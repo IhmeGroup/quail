@@ -286,8 +286,8 @@ class IsentropicVortex(FcnBase):
 		s = pb/rhob**gamma
 
 		# Track center of vortex
-		xr = x[:,:,0] - ub*t
-		yr = x[:,:,1] - vb*t
+		xr = x[:, :, 0] - ub*t
+		yr = x[:, :, 1] - vb*t
 		r = np.sqrt(xr**2. + yr**2.)
 
 		# Perturbations
@@ -307,10 +307,10 @@ class IsentropicVortex(FcnBase):
 		rhov = rho*v
 		rhoE = rho*Rg/(gamma - 1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
 
-		Uq[:,:, 0] = rho
-		Uq[:,:, 1] = rhou
-		Uq[:,:, 2] = rhov
-		Uq[:,:, 3] = rhoE
+		Uq[:, :, 0] = rho
+		Uq[:, :, 1] = rhou
+		Uq[:, :, 2] = rhov
+		Uq[:, :, 3] = rhoE
 
 		return Uq
 

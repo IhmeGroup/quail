@@ -148,10 +148,10 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):
 	for elem_ID in range(U.shape[0]):
 		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
 
-		rhs = np.matmul(basis.basis_val.transpose(), f[elem_ID, :,
-			:]*quad_wts[elem_ID, :]*djac) # [nb, ns]
+		rhs = np.matmul(basis.basis_val.transpose(),
+				f[elem_ID, :, :]*quad_wts*djac) # [nb, ns]
 
-		U[:, :,:] = np.matmul(iMM, rhs)
+		U[elem_ID, :, :] = np.matmul(iMM[elem_ID], rhs)
 
 
 def interpolate_to_nodes(f, U):

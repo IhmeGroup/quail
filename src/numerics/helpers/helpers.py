@@ -47,12 +47,11 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 	if skip_interp:
 		Uq = Uc.copy()
 	else:
-		if Uc.ndim == 3:
-			if basis_val.ndim == 3:
-				# For faces, there is a different basis_val for each face
-				Uq = np.einsum('ijn, ink -> ijk', basis_val, Uc)
-			else:
-				# For elements, all elements have the same basis_val (for now)
-				Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
+		if basis_val.ndim == 3:
+			# For faces, there is a different basis_val for each face
+			Uq = np.einsum('ijn, ink -> ijk', basis_val, Uc)
+		else:
+			# For elements, all elements have the same basis_val (for now)
+			Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
 
 	return Uq
