@@ -284,26 +284,18 @@ class SolverBase(ABC):
 			eval_pts = quad_pts
 
 		# Compute state
-		xphys_elems = np.empty((mesh.num_elems,) + eval_pts.shape)
+		xphys = np.empty((mesh.num_elems,) + eval_pts.shape)
 		for elem_ID in range(mesh.num_elems):
-			xphys_elems[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
-		f_elems = physics.IC.get_state(physics, x=xphys_elems, t=self.time)
-		# TODO: Vectorize the rest of this loop (for code clarity). Only the
-		# IC.get_state was vectorized because that needs to be for the code to
-		# actually run).
-		# import code
-		# code.interact(local=locals())
-		for elem_ID in range(mesh.num_elems):
-			xphys = xphys_elems[elem_ID]
-			f = f_elems[elem_ID]
+			xphys[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
+		f = physics.IC.get_state(physics, x=xphys, t=self.time)
 
-			if not params["L2InitialCondition"]:
-				# Interpolate to solution nodes
-				solver_tools.interpolate_to_nodes(f, U[elem_ID,:,:])
-			else:
-				# L2 projection
-				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis,
-						quad_pts, quad_wts, elem_ID, f, U[elem_ID, :, :])
+		if not params["L2InitialCondition"]:
+			# Interpolate to solution nodes
+			solver_tools.interpolate_to_nodes(f, U)
+		else:
+			# L2 projection
+			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts,
+					quad_wts, f, U)
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		'''
@@ -423,27 +415,24 @@ class SolverBase(ABC):
 		elemR = np.empty(mesh.num_interior_faces, dtype=int)
 		faceL_id = np.empty(mesh.num_interior_faces, dtype=int)
 		faceR_id = np.empty(mesh.num_interior_faces, dtype=int)
-		for iiface in range(mesh.num_interior_faces):
-			IFace = mesh.interior_faces[iiface]
-			elemL[iiface] = IFace.elemL_ID
-			elemR[iiface] = IFace.elemR_ID
-			faceL_id[iiface] = IFace.faceL_ID
-			faceR_id[iiface] = IFace.faceR_ID
+		for face_ID in range(mesh.num_interior_faces):
+			IFace = mesh.interior_faces[face_ID]
+			elemL[face_ID] = IFace.elemL_ID
+			elemR[face_ID] = IFace.elemR_ID
+			faceL_id[face_ID] = IFace.faceL_ID
+			faceR_id[face_ID] = IFace.faceR_ID
+
+		# Make copies of the U array of each element left and right of each face
 		UL = U[elemL]
 		UR = U[elemR]
-		#TODO: Figure out how to get rid of these copies. Maybe replace with
-		# zeros
-		#RL = R.copy()[elemL]
-		#RR = R.copy()[elemR]
 
+		# Calculate face residuals for left and right elements
 		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR)
-		# TODO: Vectorize this. NOT as simple as just doing a -= or +=, since
-		# repeated indices in R will not be modified more than once! Sneaky
-		# Numpy behavior.
-		for i, e in enumerate(elemL):
-			R[e] -= RL[i]
-		for i, e in enumerate(elemR):
-			R[e] += RR[i]
+
+		# Add this residual back to the global. The np.add.at function is used
+		# to correctly handle duplicate element ID's.
+		np.add.at(R, elemL, -RL)
+		np.add.at(R, elemR,  RR)
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
@@ -476,9 +465,6 @@ class SolverBase(ABC):
 				elem_ID[bface_ID] = boundary_face.elem_ID
 				face_ID[bface_ID] = boundary_face.face_ID
 
-			# TODO: Should this be an assignment or an addition?
-			# TODO: Function is modifying R...but only sometimes (if the
-			# indexing is simple). Make it not modify R, ever.
 			R[elem_ID] = self.get_boundary_face_residual(bgroup, face_ID, U[elem_ID],
 					R[elem_ID])
 

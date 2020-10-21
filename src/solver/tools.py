@@ -125,7 +125,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 	return dt*np.einsum('ijk,ikl->ijl', iMM_elems, R)
 
 
-def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
+def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):
 	'''
 	Performs an L2 projection
 
@@ -136,21 +136,22 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
 		basis: basis object
 		quad_pts: quadrature coordinates in reference space
 		quad_wts: quadrature weights
-		elem_ID: element index
 		f: array of values to be projected from
 
 	Outputs:
 	--------
 		U: array of values to be projected to
 	'''
-	if basis.basis_val.shape[0] != quad_wts.shape[0]:
+	if basis.basis_val.shape[0] != quad_wts.shape[1]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
-	djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
-	
-	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
-	
-	U[:,:] = np.matmul(iMM, rhs)
+	for elem_ID in range(U.shape[0]):
+		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
+
+		rhs = np.matmul(basis.basis_val.transpose(), f[elem_ID, :,
+			:]*quad_wts[elem_ID, :]*djac) # [nb, ns]
+
+		U[:, :,:] = np.matmul(iMM, rhs)
 
 
 def interpolate_to_nodes(f, U):
@@ -165,4 +166,4 @@ def interpolate_to_nodes(f, U):
 	--------
 		U: array of values to be interpolated onto
 	'''
-	U[:,:] = f
+	U[:, :, :] = f
