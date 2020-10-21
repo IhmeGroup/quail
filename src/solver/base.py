@@ -291,7 +291,7 @@ class SolverBase(ABC):
 		# TODO: Vectorize the rest of this loop (for code clarity). Only the
 		# IC.get_state was vectorized because that needs to be for the code to
 		# actually run).
-		# import code 
+		# import code
 		# code.interact(local=locals())
 		for elem_ID in range(mesh.num_elems):
 			xphys = xphys_elems[elem_ID]
@@ -345,7 +345,7 @@ class SolverBase(ABC):
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
 		for elem_ID in range(mesh.num_elems):
-			Up_old = helpers.evaluate_state(U_old[elem,:,:],
+			Uq_old = helpers.evaluate_state(U_old[elem_ID,:,:],
 					basis_old.basis_val)
 
 			if not params["L2InitialCondition"]:

@@ -663,13 +663,13 @@ class SlipWall(BCWeakPrescribed):
 		smom = physics.get_momentum_slice()
 
 		# Unit normals
-		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
+		n_hat = normals/np.linalg.norm(normals, axis=2, keepdims=True)
 
 		# Remove momentum contribution in normal direction from boundary
 		# state
-		rhoveln = np.sum(UqI[:, smom] * n_hat, axis=1, keepdims=True)
+		rhoveln = np.sum(UqI[:, :, smom] * n_hat, axis=2, keepdims=True)
 		UqB = UqI.copy()
-		UqB[:, smom] -= rhoveln * n_hat
+		UqB[:, :, smom] -= rhoveln * n_hat
 
 		return UqB
 
@@ -712,12 +712,12 @@ class PressureOutlet(BCWeakPrescribed):
 		UqB = UqI.copy()
 
 		# Unit normals
-		n_hat = normals/np.linalg.norm(normals, axis=1, keepdims=True)
+		n_hat = normals/np.linalg.norm(normals, axis=2, keepdims=True)
 
 		# Interior velocity in normal direction
-		rhoI = UqI[:, srho]
-		velI = UqI[:, smom]/rhoI
-		velnI = np.sum(velI*n_hat, axis=1, keepdims=True)
+		rhoI = UqI[:, :, srho]
+		velI = UqI[:, :, smom]/rhoI
+		velnI = np.sum(velI*n_hat, axis=2, keepdims=True)
 
 		if np.any(velnI < 0.):
 			print("Incoming flow at outlet")
@@ -742,17 +742,17 @@ class PressureOutlet(BCWeakPrescribed):
 
 		# Boundary density from interior entropy
 		rhoB = rhoI*np.power(pB/pI, 1./gamma)
-		UqB[:, srho] = rhoB
+		UqB[:, :, srho] = rhoB
 
 		# Boundary speed of sound
 		cB = np.sqrt(gamma*pB/rhoB)
 		# Boundary velocity
 		velB = (JI - 2.*cB/(gamma-1.))*n_hat + veltI
-		UqB[:, smom] = rhoB*velB
+		UqB[:, :, smom] = rhoB*velB
 
 		# Boundary energy
-		rhovel2B = rhoB*np.sum(velB**2., axis=1, keepdims=True)
-		UqB[:, srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
+		rhovel2B = rhoB*np.sum(velB**2., axis=2, keepdims=True)
+		UqB[:, :, srhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
 
 		return UqB
 

@@ -84,7 +84,7 @@ class Uniform(FcnBase):
 
 	def get_state(self, physics, x, t):
 		state = self.state
-		Uq = np.tile(state, [x.shape[0], 1])
+		Uq = np.tile(state, x.shape[:2] + (1,))
 
 		return Uq
 
@@ -179,9 +179,9 @@ class LaxFriedrichs(ConvNumFluxBase):
 		# Max wave speeds at each point
 		a = np.empty_like(n_mag)
 		aR = np.empty_like(n_mag)
-		a[:,:,0] = physics.compute_variable("MaxWaveSpeed", UqL, 
+		a[:,:,0] = physics.compute_variable("MaxWaveSpeed", UqL,
 				flag_non_physical=True)
-		aR[:,:,0] = physics.compute_variable("MaxWaveSpeed", UqR, 
+		aR[:,:,0] = physics.compute_variable("MaxWaveSpeed", UqR,
 				flag_non_physical=True)
 		idx = aR > a
 		a[idx] = aR[idx]
