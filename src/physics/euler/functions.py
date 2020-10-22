@@ -343,15 +343,15 @@ class DensityWave(FcnBase):
 		srho, srhou, srhoE = physics.get_state_slices()
 		gamma = physics.gamma
 
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
 		rho = 1.0 + 0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
 		rhoE = p/(gamma - 1.) + 0.5*rhou**2/rho
 
-		Uq[:, srho] = rho
-		Uq[:, srhou] = rhou
-		Uq[:, srhoE] = rhoE
+		Uq[:, :, srho] = rho
+		Uq[:, :, srhou] = rhou
+		Uq[:, :, srhoE] = rhoE
 
 		return Uq
 
@@ -799,9 +799,9 @@ class StiffFriction(SourceBase):
 		S = np.zeros_like(Uq)
 
 		eps = general.eps
-		S[:, irho] = 0.0
-		S[:, irhou] = nu*(Uq[:, irhou])
-		S[:, irhoE] = nu*((Uq[:, irhou])**2/(eps + Uq[:, irho]))
+		S[:, :, irho] = 0.0
+		S[:, :, irhou] = nu*(Uq[:, :, irhou])
+		S[:, :, irhoE] = nu*((Uq[:, :, irhou])**2/(eps + Uq[:, :, irho]))
 
 		return S
 
@@ -810,12 +810,12 @@ class StiffFriction(SourceBase):
 
 		irho, irhou, irhoE = physics.get_state_indices()
 
-		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
-		vel = Uq[:, 1]/(general.eps + Uq[:, 0])
+		jac = np.zeros([Uq.shape[0], Uq.shape[1], Uq.shape[-1], Uq.shape[-1]])
+		vel = Uq[:, :, 1]/(general.eps + Uq[:, :, 0])
 
-		jac[:, irhou, irhou] = nu
-		jac[:, irhoE, irho] = -nu*vel**2
-		jac[:, irhoE, irhou] = 2.0*nu*vel
+		jac[:, :, irhou, irhou] = nu
+		jac[:, :, irhoE, irho] = -nu*vel**2
+		jac[:, :, irhoE, irhou] = 2.0*nu*vel
 
 		return jac
 
@@ -905,8 +905,11 @@ class LaxFriedrichsEuler1D(ConvNumFluxBase):
 
 		# Max wave speeds at each point
 		# TODO: Flag for non-physical
-		aL = np.empty_like(n_mag)
-		aR = np.empty_like(n_mag)
+		# aL = np.empty_like(n_mag)
+		aL = np.empty(pL.shape + (1,))
+		aR = np.empty(pR.shape + (1,))
+		# aR = np.empty_like(n_mag)
+		# import code; code.interact(local=locals())
 		aL[:,:,0] = np.sqrt(u2L) + np.sqrt(physics.gamma * pL / rhoL)
 		aR[:,:,0] = np.sqrt(u2R) + np.sqrt(physics.gamma * pR / rhoR)
 		idx = aR > aL
