@@ -22,6 +22,14 @@ Numerics = {
     # "InterpolateFluxADER" : True,
 }
 
+Output = {
+    "WriteInterval" : 10,
+    "WriteInitialSolution" : True,
+    "AutoPostProcess" : True,
+    "Prefix" : "WENO",
+
+}
+
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
