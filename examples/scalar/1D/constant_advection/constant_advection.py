@@ -10,7 +10,7 @@ TimeStepping = {
 }
 
 Numerics = {
-    "SolutionOrder" : 3,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLobatto",
