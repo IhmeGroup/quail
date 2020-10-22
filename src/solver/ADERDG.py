@@ -191,9 +191,6 @@ class ADERHelpers(object):
 			self.x_elems: precomputed coordinates of the nodal points
 				in physical space [num_elems, nb, dim]
 		'''
-		# TODO: get rid of this
-		shape_name = basis.__class__.__bases__[1].__name__
-
 		dim = mesh.dim 
 		num_elems = mesh.num_elems 
 		nb = basis.nb
@@ -212,28 +209,14 @@ class ADERHelpers(object):
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID, 
 					xnodes, get_djac=True, get_jac=True, get_ijac=True)
 
-			if shape_name == 'HexShape':
-				self.jac_elems[elem_ID] = np.tile(jac,
-						(int(np.sqrt(nnodes)), 1, 1))
-				self.ijac_elems[elem_ID] = np.tile(ijac,
-						(int(np.sqrt(nnodes)), 1, 1))
-				self.djac_elems[elem_ID] = np.tile(djac, 
-						(int(np.sqrt(nnodes)), 1))
+			self.jac_elems[elem_ID] = np.tile(jac, (nnodes, 1, 1))
+			self.ijac_elems[elem_ID] = np.tile(ijac, (nnodes, 1, 1))
+			self.djac_elems[elem_ID] = np.tile(djac, (nnodes, 1))
 
-				# Physical coordinates of nodal points
-				x = mesh_tools.ref_to_phys(mesh, elem_ID, xnodes)
-				# Store
-				self.x_elems[elem_ID] = np.tile(x,(int(np.sqrt(nnodes)),1))
-
-			elif shape_name == 'QuadShape':
-				self.jac_elems[elem_ID] = np.tile(jac, (nnodes, 1, 1))
-				self.ijac_elems[elem_ID] = np.tile(ijac, (nnodes, 1, 1))
-				self.djac_elems[elem_ID] = np.tile(djac, (nnodes, 1))
-
-				# Physical coordinates of nodal points
-				x = mesh_tools.ref_to_phys(mesh, elem_ID, xnodes)
-				# Store
-				self.x_elems[elem_ID] = np.tile(x, (nnodes, 1))
+			# Physical coordinates of nodal points
+			x = mesh_tools.ref_to_phys(mesh, elem_ID, xnodes)
+			# Store
+			self.x_elems[elem_ID] = np.tile(x, (nnodes, 1))
 
 	def compute_helpers(self, mesh, physics, basis, basis_st, dt, order):
 		self.calc_ader_matrices(mesh, basis, basis_st, dt, order)
