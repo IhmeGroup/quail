@@ -294,11 +294,11 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 				'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W) - \
 				np.matmul(MM, dt*Sjac*U_pred))
 		err = U_pred_new - U_pred
-		test4 = np.matmul(MM, dt*Sjac*U_pred)
+
 		if np.amax(np.abs(err)) < 1.e-10:
 			U_pred = U_pred_new
 			break
-		import code; code.interact(local=locals())
+
 		U_pred = U_pred_new
 
 		source_coeffs = solver.source_coefficients(elem_ID, dt, order, 
