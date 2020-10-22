@@ -1070,7 +1070,7 @@ class Roe1D(ConvNumFluxBase):
 		dvel = velR - velL
 		drho = UqR[:, :, srho] - UqL[:, :, srho]
 		dp = physics.compute_variable("Pressure", UqR) - \
-			physics.compute_variable("Pressure", UqL)
+				physics.compute_variable("Pressure", UqL)
 
 		return drho, dvel, dp
 
@@ -1150,7 +1150,6 @@ class Roe1D(ConvNumFluxBase):
 		return R
 
 	def compute_flux(self, physics, UqL_std, UqR_std, normals):
-
 		# TODO: Either figure out a smarter way to do this, or get rid of the
 		# init function doing this and accept the arrays being recreated every
 		# iteration.
@@ -1238,11 +1237,11 @@ class Roe2D(Roe1D):
 	'''
 	def rotate_coord_sys(self, smom, Uq, n):
 		vel = self.vel
-		vel[:] = Uq[:,:,smom]
+		vel[:] = Uq[:, :, smom]
 
 		vel[:, :, 0] = np.sum(Uq[:, :, smom]*n, axis=2)
-		vel[:, :, 1] = np.sum(Uq[:, :, smom]*n[:, :, ::-1]*np.array([[-1., 1.]]),
-				axis=2)
+		vel[:, :, 1] = np.sum(Uq[:, :, smom]*n[:, :, ::-1]*np.array([[-1., 
+				1.]]), axis=2)
 
 		Uq[:, :, smom] = vel
 
@@ -1307,7 +1306,6 @@ class HLLC1D(ConvNumFluxBase):
 			n = 0; ns = 0; dim = 0
 
 	def compute_flux(self, physics, UqL, UqR, n):
-
 		# Indices
 		srho = physics.get_state_slice("Density")
 		smom = physics.get_momentum_slice()
