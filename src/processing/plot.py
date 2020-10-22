@@ -534,9 +534,6 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	'''
 	Uq = helpers.evaluate_state(U, basis.basis_val)
 	var_numer = physics.compute_variable(var_name, Uq)
-	print(U.shape)
-	print(Uq.shape)
-	print(var_numer.shape)
 
 	return var_numer
 
