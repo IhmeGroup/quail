@@ -14,7 +14,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 # Error
-# TotErr,_ = post.get_error(mesh, physics, solver, "Density")
+TotErr,_ = post.get_error(mesh, physics, solver, "Density")
 # Plot
 plot.prepare_plot()
 plot.plot_solution(mesh, physics, solver, "Energy", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
