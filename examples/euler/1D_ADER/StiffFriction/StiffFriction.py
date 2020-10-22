@@ -7,7 +7,7 @@ nTimeStep = int(FinalTime/(cfl*dx))
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "NumTimeSteps" : nTimeStep,
+    "NumTimeSteps" : 40,
     "TimeStepper" : "ADER",
     # "OperatorSplittingExplicit" : "SSPRK3",
     # "OperatorSplittingImplicit" : "BDF1",
@@ -41,7 +41,7 @@ Physics = {
     "SpecificHeatRatio" : 1.4,
 }
 
-nu = -100.
+nu = -1.
 InitialCondition = {
     "Function" : "DensityWave",
     "p" : 1.,
