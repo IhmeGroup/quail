@@ -248,16 +248,15 @@ class SineBurgers(FcnBase):
 	def get_state(self, physics, x, t):
 
 		def F(u):
-			x1 = np.reshape(x, x.shape[0])
+			x1 = x.reshape(x.shape[0]*x.shape[1])
 			F = u - np.sin(self.omega*(x1-u*t)) 
-
 			return F
-			
+
 		u = np.sin(self.omega*x)
-		u1 = np.reshape(u, u.shape[0])
+		u1 = u.reshape(u.shape[0]*u.shape[1])
 		sol = root(F, u1, tol=1e-12)
 		
-		Uq = sol.x.reshape(-1, 1)
+		Uq = sol.x.reshape(u.shape[0], u.shape[1], 1)
 
 		return Uq
 

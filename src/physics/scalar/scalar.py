@@ -214,9 +214,10 @@ class Burgers1D(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 
 	def get_conv_flux_interior(self, Uq):
+
 		F = np.expand_dims(Uq*Uq/2., axis=-1)
 
-		return F
+		return F, None
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[var_name].name
@@ -224,6 +225,7 @@ class Burgers1D(base.PhysicsBase):
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is u
 			scalar = np.abs(Uq)
+			# import code; code.interact(local=locals())
 		else:
 			raise NotImplementedError
 
