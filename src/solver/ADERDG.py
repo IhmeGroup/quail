@@ -432,6 +432,7 @@ class ADERDG(base.SolverBase):
 	def get_interior_face_residual(self, faceL_id, faceR_id, Uc_L, Uc_R):
 		mesh = self.mesh
 		physics = self.physics
+		ns = physics.NUM_STATE_VARS
 
 		# interior_face = mesh.interior_faces[int_face_ID]
 		# elemL = interior_face.elemL_ID
@@ -484,12 +485,13 @@ class ADERDG(base.SolverBase):
 
 		UqL = helpers.evaluate_state(Uc_L, basis_valL_st)
 		UqR = helpers.evaluate_state(Uc_R, basis_valR_st)
-
+		# import code; code.interact(local=locals())
 		normals_int_faces = int_face_helpers.normals_int_faces
 		# normals = normals_int_faces[int_face_ID]
 		if self.params["ConvFluxSwitch"] == True:
+
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces) 
-				# [nq_st, ns]
+			# [nq_st, ns]
 			RL = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valL, quad_wts_st, Fq)
 			RR = solver_tools.calculate_inviscid_flux_boundary_integral(
@@ -550,8 +552,10 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Loop over time to apply BC at each temporal quadrature point
 			for i in range(t.shape[1]):	
+				t_ = t[:, i, :]
+
 				Fq[:, i, :] = BC.get_boundary_flux(physics,
-						UqI[:, i, :].reshape([UqI.shape[0], 1, ns]), normals, x, t[:,i,:])
+						UqI[:, i, :].reshape([UqI.shape[0], 1, ns]), normals, x, t_[0])
 
 			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts_st, Fq)

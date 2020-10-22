@@ -41,7 +41,7 @@ Physics = {
     "SpecificHeatRatio" : 1.4,
 }
 
-nu = -100.
+nu = -1.
 InitialCondition = {
     "Function" : "DensityWave",
     "p" : 1.,
