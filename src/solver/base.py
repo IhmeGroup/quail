@@ -298,30 +298,6 @@ class SolverBase(ABC):
 			# L2 projection
 			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts,
 					quad_wts, f, U)
-# =======
-# 			xphys_elems[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
-# 		f_elems = physics.IC.get_state(physics, x=xphys_elems, t=self.time)
-# 		# TODO: Vectorize the rest of this loop (for code clarity). Only the
-# 		# IC.get_state was vectorized because that needs to be for the code to
-# 		# actually run).
-# 		# import code 
-# 		# code.interact(local=locals())
-# 		# NEED TO VECTORIZE the L2 Projection
-# 		solver_tools.interpolate_to_nodes(f_elems, U)
-
-
-# 		# for elem_ID in range(mesh.num_elems):
-# 		# 	xphys = xphys_elems[elem_ID]
-# 		# 	f = f_elems[elem_ID]
-
-# 		# 	if not params["L2InitialCondition"]:
-# 		# 		# Interpolate to solution nodes
-# 		# 		solver_tools.interpolate_to_nodes(f, U[elem_ID,:,:])
-# 		# 	else:
-# 		# 		# L2 projection
-# 		# 		solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis,
-# 		# 				quad_pts, quad_wts, elem_ID, f, U[elem_ID, :, :])
-# >>>>>>> Stashed changes
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		'''

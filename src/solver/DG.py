@@ -651,7 +651,6 @@ class DG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute boundary flux
 			Fq = BC.get_boundary_flux(physics, UqI, normals, x, self.time)
-
 			# Compute contribution to adjacent element residual
 			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)

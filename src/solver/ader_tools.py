@@ -233,7 +233,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	return U_pred # [nb_st, ns]
 
 
-def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
+def predictor_elem_implicit(solver, dt, W, U_pred):
 	'''
 	Calculates the predicted solution state for the ADER-DG method using a 
 	nonlinear solve of the weak form of the DG discretization in time.
@@ -269,41 +269,40 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
 	djac_elems = elem_helpers.djac_elems 
-	djac = djac_elems[elem_ID]
 	x_elems = elem_helpers.x_elems
-	x = x_elems[elem_ID]
 
 	FTR = ader_helpers.FTR
 	MM = ader_helpers.MM
-	SMS = ader_helpers.SMS_elems[elem_ID]
+	SMS_elems = ader_helpers.SMS_elems
 	K = ader_helpers.K
 
 	vol_elems = elem_helpers.vol_elems
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
-	vol = vol_elems[elem_ID]
 
-	W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
+	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
 
-	Sjac_q = np.zeros([1, ns, ns])
-	Sjac_q = physics.eval_source_term_jacobians(W_bar, x, solver.time, 
-			Sjac_q) 
-	Sjac = Sjac_q[0, :, :]
-	
-	Kp = K - MM*dt*Sjac 
+	Sjac = np.zeros([U_pred.shape[0], ns, ns])
+	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time, 
+			Sjac) 
+	Kp = K - dt * np.einsum('jk, imn -> ijk', MM, Sjac)
+
 	iK = np.linalg.inv(Kp)
-
 	U_pred[:] = W_bar
 
-	source_coeffs = solver.source_coefficients(elem_ID, dt, order, basis_st, 
+	source_coeffs = solver.source_coefficients(dt, order, basis_st, 
 			U_pred)
-	flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 			U_pred)
 
 	niter = 100
 	for i in range(niter):
-		U_pred_new = np.matmul(iK, np.matmul(MM, source_coeffs) - np.einsum(
-				'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W) - \
-				np.matmul(MM, dt*Sjac*U_pred))
+
+		U_pred_new = np.einsum('ijk, ikm -> ikm',iK, 
+				(np.einsum('jk, ijl -> ikl', MM, source_coeffs) -
+				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
+				np.einsum('jk, ikm -> ijm', FTR, W) - 
+				np.einsum('jk, ijm -> ikm', MM, dt*Sjac*U_pred)))
+
 		err = U_pred_new - U_pred
 
 		if np.amax(np.abs(err)) < 1.e-10:
@@ -312,9 +311,9 @@ def predictor_elem_implicit(solver, elem_ID, dt, W, U_pred):
 
 		U_pred = U_pred_new
 
-		source_coeffs = solver.source_coefficients(elem_ID, dt, order, 
+		source_coeffs = solver.source_coefficients(dt, order, 
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(elem_ID, dt, order, basis_st, 
+		flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 				U_pred)
 		
 		if i == niter - 1:
