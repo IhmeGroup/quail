@@ -636,8 +636,8 @@ class BasisBase(ABC):
         if ijac is None or ijac.shape != (nq, dim, dim):
             raise ValueError("basis_ref_grad and ijac shapes not compatible")
 
-        basis_phys_grad = np.transpose(np.matmul(ijac.transpose(0,2,1), 
-                basis_ref_grad.transpose(0,2,1)), (0,2,1))
+        basis_phys_grad = np.transpose(np.matmul(ijac.transpose(0, 2, 1), 
+                basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
 
         return basis_phys_grad # [nq, nb, dim]
 
