@@ -42,7 +42,7 @@ Physics = {
     "ConstVelocity" : 1.,
 }
 
-nu = -100000.
+nu = -1000.
 InitialCondition = {
     "Function" : "DampingSine",
     "omega" : 2*np.pi,
