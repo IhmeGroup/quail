@@ -1,1 +1,1 @@
-dgp p0.py; dgp p1.py; dgp p2.py -p post_process.py
+quail p0.py; quail p1.py; quail p2.py -p post_process.py
