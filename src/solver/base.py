@@ -338,16 +338,13 @@ class SolverBase(ABC):
 
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
-		for elem_ID in range(mesh.num_elems):
-			Uq_old = helpers.evaluate_state(U_old[elem_ID,:,:],
-					basis_old.basis_val)
+		Uq_old = helpers.evaluate_state(U_old, basis_old.basis_val)
 
-			if not params["L2InitialCondition"]:
-				solver_tools.interpolate_to_nodes(Uq_old, U[elem_ID,:,:])
-			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis,
-						quad_pts, quad_wts, elem_ID, Uq_old,
-						U[elem_ID, :, :])
+		if not params["L2InitialCondition"]:
+			solver_tools.interpolate_to_nodes(Uq_old, U)
+		else:
+			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts,
+					quad_wts, Uq_old, U)
 
 	def get_residual(self, U, R):
 		'''
