@@ -18,6 +18,7 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
     "SourceTreatmentADER" : "Implicit",
+    "InterpolateFluxADER" : False,
 }
 
 Output = {
