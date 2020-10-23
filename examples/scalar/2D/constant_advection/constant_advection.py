@@ -13,7 +13,7 @@ Numerics = {
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
     "InterpolateFluxADER" : False,
-    "ApplyLimiters" : None, 
+    #"ApplyLimiters" : None, 
 }
 
 Output = {
