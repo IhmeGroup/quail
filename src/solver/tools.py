@@ -83,7 +83,7 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	return R # [ne, nb, ns]
 
-def calculate_dRdU(elem_helpers, elem_ID, Sjac):
+def calculate_dRdU(elem_helpers, Sjac):
 	'''
 	Helper function for ODE solvers that calculates the derivative of
 
@@ -99,11 +99,10 @@ def calculate_dRdU(elem_helpers, elem_ID, Sjac):
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val
 	djac_elems = elem_helpers.djac_elems
-	djac = djac_elems[elem_ID]
+	# djac = djac_elems[elem_ID]
+	a = np.einsum('eijk,eil->eijk', Sjac, quad_wts*djac_elems)
 
-	a = np.einsum('ijk,il->ijk', Sjac, quad_wts*djac)
-
-	return np.einsum('bq,qts->bts',basis_val.transpose(), a) # [nb, ns, ns]
+	return np.einsum('bq,eqts->ebts',basis_val.transpose(), a) # [nb, ns, ns]
 
 
 def mult_inv_mass_matrix(mesh, solver, dt, R):

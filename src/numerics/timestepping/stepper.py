@@ -382,7 +382,6 @@ class Strang(StepperBase, ode.ODESolvers):
 		# Second: take the implicit full step for the source term.
 		solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
-
 		R2 = implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.

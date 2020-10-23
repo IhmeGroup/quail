@@ -1,26 +1,19 @@
 import numpy as np
-cfl = 0.002
-num_elems = 128
-dx = float(1./num_elems)
-dt = cfl*dx
-FinalTime = 0.5
-NumTimeSteps = int(FinalTime/dt)
-print(NumTimeSteps)
+
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : FinalTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "FinalTime" : 0.5,
+    "NumTimeSteps" : 40,
     "TimeStepper" : "Strang",
     "OperatorSplittingImplicit" : "Trapezoidal",
 
 }
 
 Numerics = {
-    "SolutionOrder" : 3,
-    "SolutionBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LegendreSeg",
     "Solver" : "DG",
     "ConvFluxSwitch" : True,
-    # "SourceTreatmentADER" : "Implicit"
 }
 
 Output = {
@@ -32,8 +25,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : num_elems,
-    # "NumElemsY" : 2,
+    "NumElemsX" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
     "PeriodicBoundariesX" : ["x1", "x2"],
@@ -54,19 +46,6 @@ InitialCondition = {
 }
 
 ExactSolution = InitialCondition.copy()
-
-BoundaryConditions = {
-    # "x1" : {
-	   #  "Function" : "DampingSine",
-	   #  "omega" : 2*np.pi,
-	   #  "nu" : nu,
-    # 	"BCType" : "StateAll",
-    # },
-    # "x2" : {
-    # 	#"Function" : None,
-    # 	"BCType" : "Extrapolate",
-    # },
-}
 
 SourceTerms = {
 	"source1" : {

@@ -8,6 +8,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
+import numerics.helpers.helpers as helpers
+
 from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
 
@@ -118,13 +120,11 @@ class ODESolvers():
 			A = np.zeros([mesh.num_elems, nb, nb, ns])
 			iA = np.zeros([mesh.num_elems, nb, nb, ns])
 
-			for elem_ID in range(mesh.num_elems):
-				A[elem_ID], iA[elem_ID] = self.get_jacobian_matrix_elem(solver, 
-						elem_ID, iMM_elems[elem_ID], U[elem_ID])
+			A, iA = self.get_jacobian_matrix_elems(solver, iMM_elems, U)
 
 			return A, iA # [nelem, nb, nb, ns]
 
-		def get_jacobian_matrix_elem(self, solver, elem_ID, iMM, Uc):
+		def get_jacobian_matrix_elems(self, solver, iMM, Uc):
 			'''
 			Calculates the Jacobian matrix of the source term and its 
 			inverse for each element. Definition of 'Jacobian' matrix:
@@ -144,8 +144,10 @@ class ODESolvers():
 				iA: inverse matrix returned for linear solve 
 					[nelem, nb, nb, ns]
 			'''
+			mesh = solver.mesh
+			nelem = mesh.num_elems
 			beta = self.BETA
-			dt = solver.Stepper.dt
+			dt = solver.stepper.dt
 			physics = solver.physics
 			source_terms = physics.source_terms
 
@@ -153,27 +155,28 @@ class ODESolvers():
 			basis_val = elem_helpers.basis_val
 			quad_wts = elem_helpers.quad_wts
 			x_elems = elem_helpers.x_elems
-			x = x_elems[elem_ID]
+
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
-			Uq = np.matmul(basis_val, Uc)
 
+			Uq = helpers.evaluate_state(Uc, basis_val)
+			
 			# evaluate the source term Jacobian [nq, ns, ns]
-			Sjac = np.zeros([nq,ns,ns])
-			Sjac = physics.eval_source_term_jacobians(Uq, x, solver.time, Sjac) 
+			Sjac = np.zeros([nelem, nq, ns, ns])
+			Sjac = physics.eval_source_term_jacobians(Uq, x_elems, solver.time, Sjac) 
 
 			# call solver helper to get dRdU (see solver/tools.py)
-			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem_ID, Sjac)
+			dRdU = solver_tools.calculate_dRdU(elem_helpers, Sjac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
-					np.einsum('ij,jkl->ijl',iMM,dRdU)
+					np.einsum('eij,ejkl->eijl',iMM,dRdU)
 			iA = np.zeros_like(A)
 
 			for s in range(ns):
-				iA[:,:,s] = np.linalg.inv(A[:,:,s])
+				iA[:, :, :, s] = np.linalg.inv(A[:, :, :, s])
 
-			return A, iA # [nb, nb, ns]
+			return A, iA # [ne, nb, nb, ns]
 
 	class Trapezoidal(BDF1):
 		'''

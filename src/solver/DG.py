@@ -676,6 +676,9 @@ class DG(base.SolverBase):
 		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) # [nf, nq, ns]
 		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) # [nf, nq, ns]
 
+		RL = np.zeros_like(self.stepper.R)
+		RR = np.zeros_like(self.stepper.R)
+
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces) # [nf, nq, ns]
