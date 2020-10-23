@@ -432,7 +432,7 @@ class RiemannProblem(FcnBase):
 
 		gamma = physics.gamma
 
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
 		def set_tanh(a, b, w, x0):
 			'''
@@ -452,15 +452,15 @@ class RiemannProblem(FcnBase):
 			return 0.5*((a+b) + (b-a)*np.tanh((x-x0)/w))
 
 		# Density
-		Uq[:, srho] =  set_tanh(rhoL, rhoR, w, xd)
+		Uq[:, :, srho] =  set_tanh(rhoL, rhoR, w, xd)
 
 		# Momentum
-		Uq[:, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xd)
+		Uq[:, :, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xd)
 
 		# Energy
 		rhoEL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
 		rhoER = pR/(gamma-1.) + 0.5*rhoR*uR*uR
-		Uq[:, srhoE] = set_tanh(rhoEL, rhoER, w, xd)
+		Uq[:, :, srhoE] = set_tanh(rhoEL, rhoER, w, xd)
 
 		return Uq
 
@@ -582,30 +582,31 @@ class ExactRiemannSolution(FcnBase):
 		u = np.zeros_like(x); p = np.zeros_like(x); rho = np.zeros_like(x);
 
 		for i in range(x.shape[0]):
-		    if x[i] <= xe1:
-		    	# Left of expansion fan (region 4)
-		        u[i] = u4; p[i] = p4; rho[i] = rho4
-		    elif x[i] > xe1 and x[i] <= xe2:
-		    	# Expansion fan
-		        u[i] = (2/(gamma+1)*((x[i]-xd)/t + (gamma-1)/2*u4 + c4))
-		        c = u[i] - (x[i]-xd)/t
-		        p[i] = p4*(c/c4)**(2*gamma/(gamma-1))
-		        rho[i] = gamma*p[i]/c**2
-		    elif x[i] > xe2 and x[i] <= xc:
-		    	# Between expansion fan and and contact discontinuity
-		    	# (region 3)
-		        u[i] = u3; p[i] = p3; rho[i] = rho3
-		    elif x[i] > xc and x[i] <= xs:
-		    	# Between the contact discontinuity and the shock (region 2)
-		        u[i] = u2; p[i] = p2; rho[i] = rho2
-		    else:
-		    	# Right of the shock (region 1)
-		        u[i] = u1; p[i] = p1; rho[i] = rho1
+			for j in range(x.shape[1]):
+				if x[i,j] <= xe1:
+					# Left of expansion fan (region 4)
+					u[i,j] = u4; p[i,j] = p4; rho[i,j] = rho4
+				elif x[i,j] > xe1 and x[i,j] <= xe2:
+					# Expansion fan
+					u[i,j] = (2/(gamma+1)*((x[i,j]-xd)/t + (gamma-1)/2*u4 + c4))
+					c = u[i,j] - (x[i,j]-xd)/t
+					p[i,j] = p4*(c/c4)**(2*gamma/(gamma-1))
+					rho[i,j] = gamma*p[i,j]/c**2
+				elif x[i,j] > xe2 and x[i,j] <= xc:
+					# Between expansion fan and and contact discontinuity
+					# (region 3)
+					u[i,j] = u3; p[i,j] = p3; rho[i,j] = rho3
+				elif x[i,j] > xc and x[i,j] <= xs:
+					# Between the contact discontinuity and the shock (region 2)
+					u[i,j] = u2; p[i,j] = p2; rho[i,j] = rho2
+				else:
+					# Right of the shock (region 1)
+					u[i,j] = u1; p[i,j] = p1; rho[i,j] = rho1
 
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-		Uq[:, srho] = rho
-		Uq[:, srhou] = rho*u
-		Uq[:, srhoE] = p/(gamma-1.) + 0.5*rho*u*u
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		Uq[:, :, srho] = rho
+		Uq[:, :, srhou] = rho*u
+		Uq[:, :, srhoE] = p/(gamma-1.) + 0.5*rho*u*u
 
 		return Uq
 
@@ -1243,7 +1244,7 @@ class Roe2D(Roe1D):
 		vel[:] = Uq[:, :, smom]
 
 		vel[:, :, 0] = np.sum(Uq[:, :, smom]*n, axis=2)
-		vel[:, :, 1] = np.sum(Uq[:, :, smom]*n[:, :, ::-1]*np.array([[-1., 
+		vel[:, :, 1] = np.sum(Uq[:, :, smom]*n[:, :, ::-1]*np.array([[-1.,
 				1.]]), axis=2)
 
 		Uq[:, :, smom] = vel

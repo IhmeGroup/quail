@@ -3,10 +3,10 @@
 #       File : src/numerics/limiting/positivitypreserving.py
 #
 #       Contains class definitions for positivity-preserving limiters.
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import numpy as np 
+import numpy as np
 
 import errors
 import general
@@ -23,15 +23,15 @@ POS_TOL = 1.e-10
 class PositivityPreserving(base.LimiterBase):
 	'''
 	This class corresponds to the positivity-preserving limiter for the
-	Euler equations. It inherits from the LimiterBase class. See 
+	Euler equations. It inherits from the LimiterBase class. See
 	See LimiterBase for detailed comments of attributes and methods. See
 	the following references:
-		[1] X. Zhang, C.-W. Shu, "On positivity-preserving high order 
-		discontinuous Galerkin schemes for compressible Euler equations 
-		on rectangular meshes," Journal of Computational Physics. 
+		[1] X. Zhang, C.-W. Shu, "On positivity-preserving high order
+		discontinuous Galerkin schemes for compressible Euler equations
+		on rectangular meshes," Journal of Computational Physics.
 		229:8918–8934, 2010.
-		[2] C. Wang, X. Zhang, C.-W. Shu, J. Ning, "Robust high order 
-		discontinuous Galerkin schemes for two-dimensional gaseous 
+		[2] C. Wang, X. Zhang, C.-W. Shu, J. Ning, "Robust high order
+		discontinuous Galerkin schemes for two-dimensional gaseous
 		detonations," Journal of Computational Physics, 231:653-665, 2012.
 
 	Attributes:
@@ -71,7 +71,7 @@ class PositivityPreserving(base.LimiterBase):
 			basis_val_faces = int_face_helpers.faces_to_basisL.copy()
 			bshape = basis_val_faces.shape
 			basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-			self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val, 
+			self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val,
 					basis_val_faces))
 		else:
 			self.basis_val_elem_faces = elem_helpers.basis_val
@@ -82,27 +82,27 @@ class PositivityPreserving(base.LimiterBase):
 		# Element quadrature weights
 		self.quad_wts_elem = elem_helpers.quad_wts
 
-	def limit_element(self, solver, elem_ID, Uc):
+	def limit_element(self, solver, Uc):
 		# Unpack
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
 
-		djac = self.djac_elems[elem_ID]
+		djac = self.djac_elems
 
 		# Interpolate state at quadrature points over element and on faces
-		u_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces, 
+		U_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces,
 				skip_interp=solver.basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
-		u_elem = u_elem_faces[:nq_elem, :]
+		U_elem = U_elem_faces[:, :nq_elem, :]
 
 		# Average value of state
-		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac, 
-				self.elem_vols[elem_ID])
+		U_bar = helpers.get_element_mean(U_elem, self.quad_wts_elem, djac,
+				self.elem_vols)
 
 		# Density and pressure from averaged state
-		rho_bar = physics.compute_variable(self.var_name1, u_bar)
-		p_bar = physics.compute_variable(self.var_name2, u_bar)
+		rho_bar = physics.compute_variable(self.var_name1, U_bar)
+		p_bar = physics.compute_variable(self.var_name2, U_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise errors.NotPhysicalError
@@ -112,33 +112,38 @@ class PositivityPreserving(base.LimiterBase):
 
 		''' Limit density '''
 		# Compute density at quadrature points
-		rho_elem_faces = physics.compute_variable(self.var_name1, 
-				u_elem_faces)
+		rho_elem_faces = physics.compute_variable(self.var_name1,
+				U_elem_faces)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
-		theta1 = np.amin([1., np.amin(theta)])
+		theta1 = np.empty(theta.shape[0])
+		for elem_ID in range(theta.shape[0]):
+			theta1[elem_ID] = np.amin([1., np.amin(theta[elem_ID])])
 
-		# Rescale
-		if theta1 < 1.:
-			irho = physics.get_state_index(self.var_name1)
-			Uc[:, irho] = theta1*Uc[:, irho] + (1. - theta1)*rho_bar
+			# Rescale
+			if theta1[elem_ID] < 1.:
+				irho = physics.get_state_index(self.var_name1)
+				Uc[elem_ID, :, irho] = theta1[elem_ID]*Uc[elem_ID, :, irho] + (1. -
+						theta1[elem_ID])*rho_bar[elem_ID]
 
+		if np.any(theta1 < 1.):
 			# Intermediate limited solution
-			u_elem_faces = helpers.evaluate_state(Uc, 
-					self.basis_val_elem_faces, 
+			U_elem_faces = helpers.evaluate_state(Uc,
+					self.basis_val_elem_faces,
 					skip_interp=solver.basis.skip_interp)
 
 		''' Limit pressure '''
 		# Compute pressure at quadrature points
-		p_elem_faces = physics.compute_variable(self.var_name2, u_elem_faces)
+		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces)
 		theta[:] = 1.
-		i_pos_p = (p_elem_faces < 0.).reshape(-1) 
-			# indices where pressure is negative
-		theta[i_pos_p] = p_bar/(p_bar - p_elem_faces[i_pos_p])
-		theta2 = np.amin(theta)
-		# Rescale
-		if theta2 < 1.:
-			Uc = theta2*Uc + (1. - theta2)*u_bar
+		for elem_ID in range(theta.shape[0]):
+			i_pos_p = (p_elem_faces[elem_ID] < 0.).reshape(-1)
+			# Indices where pressure is negative
+			theta[elem_ID, i_pos_p] = p_bar[elem_ID]/(p_bar[elem_ID] - p_elem_faces[elem_ID, i_pos_p])
+			theta2 = np.amin(theta[elem_ID])
+			# Rescale
+			if theta2 < 1.:
+				Uc[elem_ID] = theta2*Uc[elem_ID] + (1. - theta2)*U_bar[elem_ID]
 
 		np.seterr(divide='warn')
 
@@ -208,7 +213,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		# interpolate state and gradient at quadrature points over element
 		# and on faces
 		# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
-		u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+		u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces,
 				skip_interp=solver.basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
 		u_elem = u_elem_faces[:nq_elem,:]
@@ -216,7 +221,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		# Average value of state
 		vol = self.elem_vols[elem]
 		# u_bar = np.matmul(u_elem.transpose(), self.quad_wts_elem*djac).T/vol
-		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac, 
+		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac,
 				self.elem_vols[elem])
 
 		# Density and pressure
@@ -242,7 +247,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 			# Intermediate limited solution
 			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
-			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces,
 					skip_interp=solver.basis.skip_interp)
 
 		''' Limit mass fraction '''
@@ -250,14 +255,14 @@ class PositivityPreservingChem(PositivityPreserving):
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
 		theta2 = np.amin([1.,np.amin(theta)])
 
-		# Rescale 
+		# Rescale
 		if theta2 < 1.:
 			irhoY = physics.get_state_index(self.scalar3)
 			U[:,irhoY] = theta2*U[:,irhoY] + (1. - theta2)*rhoY_bar
 
 			# Intermediate limited solution
 			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
-			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces, 
+			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces,
 					skip_interp=solver.basis.skip_interp)
 		# code.interact(local=locals())
 

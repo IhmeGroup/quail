@@ -3,10 +3,10 @@
 #       File : src/numerics/limiting/base.py
 #
 #       Contains class definition for the limiter abstract base class.
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import numpy as np 
+import numpy as np
 
 import errors
 import general
@@ -21,7 +21,7 @@ class LimiterBase(ABC):
 	Abstract Constants:
 	-------------------
 	COMPATIBLE_PHYSICS_TYPES
-	    physics types compatible with the limiter; either 
+	    physics types compatible with the limiter; either
 	    general.PhysicsType enum member or iterable of enum members
 
 	Methods:
@@ -39,7 +39,7 @@ class LimiterBase(ABC):
 	@abstractmethod
 	def COMPATIBLE_PHYSICS_TYPES(self):
 		'''
-		physics types compatible with the limiter; either 
+		physics types compatible with the limiter; either
 	    general.PhysicsType enum member or iterable of enum members
 	    '''
 		pass
@@ -74,7 +74,7 @@ class LimiterBase(ABC):
 		pass
 
 	@abstractmethod
-	def limit_element(self, solver, elem_ID, Uc):
+	def limit_element(self, solver, Uc):
 		'''
 		This method element-local solution
 
@@ -93,13 +93,12 @@ class LimiterBase(ABC):
 		Inputs:
 		-------
 			solver: solver object
-			Uc: state coefficients of global solution 
+			Uc: state coefficients of global solution
 				[num_elems, nb, ns]
 
 		Outputs:
 		--------
-			Uc: state coefficients of global solution 
+			Uc: state coefficients of global solution
 				[num_elems, nb, ns] (modified)
 		'''
-		for elem in range(solver.mesh.num_elems):
-			Uc[elem] = self.limit_element(solver, elem, Uc[elem])
+		Uc = self.limit_element(solver, Uc)

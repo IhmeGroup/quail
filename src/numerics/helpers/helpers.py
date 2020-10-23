@@ -10,26 +10,21 @@ import numpy as np
 
 def get_element_mean(Uq, quad_wts, djac, vol):
 	'''
-	This function computes the mean over an element.
+	This function computes the mean over n elements.
 
 	Inputs:
 	-------
-	    Uq: values of state at the quadrature points [nq, sr]
+        Uq: values of state at the quadrature points [n, nq, ns]
 	    quad_wts: quadrature weights [nq, 1]
-	    djac: Jacobian determinants [nq, 1]
-	    vol: element volume
+	    djac: Jacobian determinants [n, nq, 1]
+	    vol: element volume [n]
 
 	Outputs:
 	--------
-	    U_mean: mean values of state variables [1, sr]
+	    U_mean: mean values of state variables [1, ns]
 	'''
-	U_mean = np.einsum('ijk, jl, ijl -> ilk', Uq, quad_wts, djac)
+	U_mean = np.einsum('ijk, jm, ijm, i -> imk', Uq, quad_wts, djac, 1/vol)
 
-	# NEED TO VECTORIZE
-	for i in range(U_mean.shape[0]):
-		U_mean[i, :, :] = U_mean[i, :, :] / vol[i]
-	# U_mean = np.matmul(Uq.transpose(), quad_wts*djac).transpose()/vol
-	
 	return U_mean
 
 
