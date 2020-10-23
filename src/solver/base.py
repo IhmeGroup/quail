@@ -482,8 +482,10 @@ class SolverBase(ABC):
 			self.min_state: minimum values of state variables
 			self.max_state: maximum values of state variables
 		'''
-		self.min_state = np.minimum(self.min_state, np.amin(Uq, axis=0))
-		self.max_state = np.maximum(self.max_state, np.amax(Uq, axis=0))
+		self.min_state = np.minimum(self.min_state, np.amin(np.amin(Uq, 
+				axis=1), axis=0))
+		self.max_state = np.maximum(self.max_state, np.amax(np.amax(Uq, 
+				axis=1), axis=0))
 
 	def print_info(self, physics, R, itime, t, dt):
 		'''
