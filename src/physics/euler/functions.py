@@ -199,19 +199,20 @@ class MovingShock(FcnBase):
 		u2 = W + u1 - uy
 
 		''' Fill state '''
-		ileft = (x <= xshock).reshape(-1)
-		iright = (x > xshock).reshape(-1)
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
-		# Density
-		Uq[iright, srho] = rho1
-		Uq[ileft, srho] = rho2
-		# Momentum
-		Uq[iright, srhou] = rho1*u1
-		Uq[ileft, srhou] = rho2*u2
-		# Energy
-		Uq[iright, srhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1
-		Uq[ileft, srhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2
+		for elem_ID in range(Uq.shape[0]):
+			ileft = (x[elem_ID] <= xshock).reshape(-1)
+			iright = (x[elem_ID] > xshock).reshape(-1)
+			# Density
+			Uq[elem_ID, iright, srho] = rho1
+			Uq[elem_ID, ileft, srho] = rho2
+			# Momentum
+			Uq[elem_ID, iright, srhou] = rho1*u1
+			Uq[elem_ID, ileft, srhou] = rho2*u2
+			# Energy
+			Uq[elem_ID, iright, srhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1
+			Uq[elem_ID, ileft, srhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2
 
 		return Uq
 
