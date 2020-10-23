@@ -14,7 +14,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 solver.time = 0.
-# TotErr,_ = post.get_error( mesh, physics, solver, "Scalar")
+TotErr,_ = post.get_error( mesh, physics, solver, "Scalar")
 # Plot
 axis = None
 # axis = [-5., 5., -5., 5.]
