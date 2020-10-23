@@ -406,32 +406,23 @@ class SolverBase(ABC):
 				contributions)
 		'''
 		mesh = self.mesh
-
-		# TODO: refactor this loop out. This loop basically vectorizes the face
-		# information every iteration. This does not need to be done every
-		# iteration.
-		elemL = np.empty(mesh.num_interior_faces, dtype=int)
-		elemR = np.empty(mesh.num_interior_faces, dtype=int)
-		faceL_id = np.empty(mesh.num_interior_faces, dtype=int)
-		faceR_id = np.empty(mesh.num_interior_faces, dtype=int)
-		for face_ID in range(mesh.num_interior_faces):
-			IFace = mesh.interior_faces[face_ID]
-			elemL[face_ID] = IFace.elemL_ID
-			elemR[face_ID] = IFace.elemR_ID
-			faceL_id[face_ID] = IFace.faceL_ID
-			faceR_id[face_ID] = IFace.faceR_ID
+		int_face_helpers = self.int_face_helpers
+		elemL_ID = int_face_helpers.elemL_ID
+		elemR_ID = int_face_helpers.elemR_ID
+		faceL_ID = int_face_helpers.faceL_ID
+		faceR_ID = int_face_helpers.faceR_ID
 
 		# Make copies of the U array of each element left and right of each face
-		UL = U[elemL]
-		UR = U[elemR]
+		UL = U[elemL_ID]
+		UR = U[elemR_ID]
 
 		# Calculate face residuals for left and right elements
-		RL, RR = self.get_interior_face_residual(faceL_id, faceR_id, UL, UR)
+		RL, RR = self.get_interior_face_residual(faceL_ID, faceR_ID, UL, UR)
 
 		# Add this residual back to the global. The np.add.at function is used
 		# to correctly handle duplicate element ID's.
-		np.add.at(R, elemL, -RL)
-		np.add.at(R, elemR,  RR)
+		np.add.at(R, elemL_ID, -RL)
+		np.add.at(R, elemR_ID,  RR)
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
@@ -450,22 +441,18 @@ class SolverBase(ABC):
 		'''
 		mesh = self.mesh
 		physics = self.physics
+		bface_helpers = self.bface_helpers
+		elem_ID = bface_helpers.elem_ID
+		face_ID = bface_helpers.face_ID
 
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
 
-			# TODO: refactor this loop out. This loop basically vectorizes the face
-			# information every iteration. This does not need to be done every
-			# iteration.
-			elem_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
-			face_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
-			for bface_ID in range(bgroup.num_boundary_faces):
-				boundary_face = bgroup.boundary_faces[bface_ID]
-				elem_ID[bface_ID] = boundary_face.elem_ID
-				face_ID[bface_ID] = boundary_face.face_ID
+			bgroup_elem_ID = elem_ID[bgroup.number]
+			bgroup_face_ID = face_ID[bgroup.number]
 
-			R[elem_ID] = self.get_boundary_face_residual(bgroup, face_ID, U[elem_ID],
-					R[elem_ID])
+			R[bgroup_elem_ID] = self.get_boundary_face_residual(bgroup,
+					bgroup_face_ID, U[bgroup_elem_ID], R[bgroup_elem_ID])
 
 	def apply_limiter(self, U):
 		'''

@@ -378,10 +378,43 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.UqR = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
+	def store_neighbor_info(self, mesh):
+		'''
+		Store the element and face ID's on the left and right of each face.
+
+		Inputs:
+		-------
+			mesh: mesh object
+
+		Outputs:
+		--------
+			self.elemL_ID: Element ID to the left of each interior face
+			[num_interior_faces]
+			self.elemR_ID: Element ID to the right of each interior face
+			[num_interior_faces]
+			self.faceL_ID: Face ID to the left of each interior face
+			[num_interior_faces]
+			self.faceR_ID: Face ID to the right of each interior face
+			[num_interior_faces]
+		'''
+		self.elemL_ID = np.empty(mesh.num_interior_faces, dtype=int)
+		self.elemR_ID = np.empty(mesh.num_interior_faces, dtype=int)
+		self.faceL_ID = np.empty(mesh.num_interior_faces, dtype=int)
+		self.faceR_ID = np.empty(mesh.num_interior_faces, dtype=int)
+		for face_ID in range(mesh.num_interior_faces):
+			IFace = mesh.interior_faces[face_ID]
+			self.elemL_ID[face_ID] = IFace.elemL_ID
+			self.elemR_ID[face_ID] = IFace.elemR_ID
+			self.faceL_ID[face_ID] = IFace.faceL_ID
+			self.faceR_ID[face_ID] = IFace.faceR_ID
+
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
+		self.store_neighbor_info(mesh)
+
+
 
 
 class BoundaryFaceHelpers(InteriorFaceHelpers):
@@ -516,10 +549,41 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqB = np.zeros([nq, ns])
 		self.Fq = np.zeros([nq, ns])
 
+	def store_neighbor_info(self, mesh):
+		'''
+		Store the element and face ID's of the neighbors of each boundary face.
+
+		Inputs:
+		-------
+			mesh: mesh object
+
+		Outputs:
+		--------
+			self.elem_ID: List containing arrays of element ID's of boundary
+			face neighbors for each boundary group
+			[num_boundary_groups][num_interior_faces]
+			self.face_ID: List containing arrays of face ID's of boundary
+			face neighbors for each boundary group
+			[num_boundary_groups][num_interior_faces]
+		'''
+		self.elem_ID = []
+		self.face_ID = []
+		# Loop through boundary groups
+		for bgroup in mesh.boundary_groups.values():
+			bgroup_elem_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
+			bgroup_face_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
+			for bface_ID in range(bgroup.num_boundary_faces):
+				boundary_face = bgroup.boundary_faces[bface_ID]
+				bgroup_elem_ID[bface_ID] = boundary_face.elem_ID
+				bgroup_face_ID[bface_ID] = boundary_face.face_ID
+			self.elem_ID.append(bgroup_elem_ID)
+			self.face_ID.append(bgroup_face_ID)
+
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
+		self.store_neighbor_info(mesh)
 
 
 class DG(base.SolverBase):
