@@ -176,14 +176,12 @@ class LaxFriedrichs(ConvNumFluxBase):
 		# Jump
 		dUq = UqR - UqL
 
-		# Max wave speeds at each point
-		a = np.empty_like(n_mag)
-		aR = np.empty_like(n_mag)
+		# Calculate max wave speeds at each point
+		a = physics.compute_variable("MaxWaveSpeed", UqL,
+				flag_non_physical=True)
+		aR = physics.compute_variable("MaxWaveSpeed", UqR,
+				flag_non_physical=True)
 
-		a[:, :, 0] = physics.compute_variable("MaxWaveSpeed", UqL,
-				flag_non_physical=True).reshape([UqL.shape[0],1])
-		aR[:, :, 0] = physics.compute_variable("MaxWaveSpeed", UqR,
-				flag_non_physical=True).reshape([UqR.shape[0],1])
 		idx = aR > a
 		a[idx] = aR[idx]
 

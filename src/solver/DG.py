@@ -639,7 +639,7 @@ class DG(base.SolverBase):
 		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
 
-		# Interpolate state and gradient at quad points
+		# Interpolate state at quad points
 		Uq = helpers.evaluate_state(Uc, basis_val,
 				skip_interp=self.basis.skip_interp) # [ne, nq, ns]
 		if self.verbose:
@@ -665,7 +665,7 @@ class DG(base.SolverBase):
 		return R_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR):
-
+		# unpack
 		mesh = self.mesh
 		physics = self.physics
 
@@ -679,6 +679,7 @@ class DG(base.SolverBase):
 		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) # [nf, nq, ns]
 		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) # [nf, nq, ns]
 
+		# allocate RL and RR (needed for operator splitting)
 		RL = np.zeros_like(self.stepper.R)
 		RR = np.zeros_like(self.stepper.R)
 
@@ -692,10 +693,10 @@ class DG(base.SolverBase):
 			RR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisR[faceR_id], quad_wts, Fq)
 
-		return RL, RR
+		return RL, RR # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, R_B):
-
+		# unpack
 		mesh = self.mesh
 		physics = self.physics
 		bgroup_num = bgroup.number

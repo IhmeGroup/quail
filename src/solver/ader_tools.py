@@ -55,32 +55,30 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 		solver: solver object
 		elem_helpers: helpers defined in ElemHelpers
 		elem_helpers_st: space-time helpers defined in ElemHelpers
-		elem_ID: element ID
-		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [ne, nq, ns, dim]
 
 	Outputs:
 	--------
 		R_elem: residual contribution (for volume integral of inviscid flux) 
-			[nb, ns]
+			[ne, nb, ns]
 	'''
-	quad_wts = elem_helpers.quad_wts
 	quad_wts_st = elem_helpers_st.quad_wts
-	basis_val = elem_helpers.basis_val 
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 	djac_elems = elem_helpers.djac_elems 
 
-	nb = basis_val.shape[1]
-	nq = quad_wts.shape[0]
+	nb = elem_helpers.basis_val.shape[1]
+	nq = elem_helpers.quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
-	# Integrate
+
 	tile_basis_phys_grads = np.tile(basis_phys_grad_elems, (1, nq, 1, 1))
 	quad_wts_st_djac = (quad_wts_st.reshape(nq, nq)*
 			djac_elems).reshape(Fq.shape[0], nq_st, 1, 1)
 
+	# integrate
 	R_elem = np.einsum('ijkl, ijml -> ikm', tile_basis_phys_grads,
-			Fq * quad_wts_st_djac)
+			Fq * quad_wts_st_djac) # [ne, nb, ns]
 
-	return R_elem # [nb, ns]
+	return R_elem # [ne, nb, ns]
 
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
@@ -452,10 +450,9 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
 	'''
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
-
-	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
-	U[:, :] = np.matmul(iMM, rhs)
-
+	rhs = np.einsum('jk, ijl -> ikl', basis.basis_val, f*quad_wts*djac) 
+			# [ne, nb, ns]
+	U[:, :, :] = np.einsum('ijk, ijl -> ikl', iMM, rhs)
 
 def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     '''

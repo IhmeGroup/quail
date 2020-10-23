@@ -74,7 +74,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
-			scalar = np.full([Uq.shape[0], 1], self.cspeed)
+			scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
 		else:
 			raise NotImplementedError
 
@@ -225,7 +225,6 @@ class Burgers1D(base.PhysicsBase):
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is u
 			scalar = np.abs(Uq)
-			# import code; code.interact(local=locals())
 		else:
 			raise NotImplementedError
 
