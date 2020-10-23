@@ -311,7 +311,7 @@ class ADER(StepperBase):
 		R = self.R
 
 		# Prediction step
-		Up = solver.calculate_predictor_step(self.dt, W, Up)
+		Up = solver.calculate_predictor_step(solver, self.dt, W, Up)
 
 		# Correction step
 		R = solver.get_residual(Up, R)
