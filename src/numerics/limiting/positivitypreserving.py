@@ -116,15 +116,13 @@ class PositivityPreserving(base.LimiterBase):
 				U_elem_faces)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
-		theta1 = np.empty(theta.shape[0])
-		for elem_ID in range(theta.shape[0]):
-			theta1[elem_ID] = np.amin([1., np.amin(theta[elem_ID])])
+		theta1 = np.minimum(1., np.min(theta, axis=1))
 
-			# Rescale
-			if theta1[elem_ID] < 1.:
-				irho = physics.get_state_index(self.var_name1)
-				Uc[elem_ID, :, irho] = theta1[elem_ID]*Uc[elem_ID, :, irho] + (1. -
-						theta1[elem_ID])*rho_bar[elem_ID]
+		# Rescale
+		irho = physics.get_state_index(self.var_name1)
+		elem_IDs = np.where(theta1 < 1)[0]
+		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + (1. -
+				theta1[elem_IDs])*rho_bar[elem_IDs]
 
 		if np.any(theta1 < 1.):
 			# Intermediate limited solution
@@ -136,14 +134,18 @@ class PositivityPreserving(base.LimiterBase):
 		# Compute pressure at quadrature points
 		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces)
 		theta[:] = 1.
-		for elem_ID in range(theta.shape[0]):
-			i_pos_p = (p_elem_faces[elem_ID] < 0.).reshape(-1)
-			# Indices where pressure is negative
-			theta[elem_ID, i_pos_p] = p_bar[elem_ID]/(p_bar[elem_ID] - p_elem_faces[elem_ID, i_pos_p])
-			theta2 = np.amin(theta[elem_ID])
-			# Rescale
-			if theta2 < 1.:
-				Uc[elem_ID] = theta2*Uc[elem_ID] + (1. - theta2)*U_bar[elem_ID]
+		# Indices where pressure is negative
+		negative_p_indices = np.where(p_elem_faces < 0.)
+		elem_IDs = negative_p_indices[0]
+		i_pos_p  = negative_p_indices[1]
+		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs]/(p_bar[elem_IDs] -
+				p_elem_faces[elem_IDs, i_pos_p])
+		theta2 = np.min(theta, axis=1)
+		elem_IDs = np.where(theta2 < 1.)[0]
+		Uc[elem_IDs] = (
+				np.einsum('im, ijk -> ijk', theta2[elem_IDs], Uc[elem_IDs]) +
+				np.einsum('im, ijk -> ijk', 1 - theta2[elem_IDs],
+						U_bar[elem_IDs]))
 
 		np.seterr(divide='warn')
 
