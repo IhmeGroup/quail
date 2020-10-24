@@ -451,8 +451,10 @@ class SolverBase(ABC):
 			bgroup_elem_ID = elem_ID[bgroup.number]
 			bgroup_face_ID = face_ID[bgroup.number]
 
-			R[bgroup_elem_ID] = self.get_boundary_face_residual(bgroup,
+			R_B = self.get_boundary_face_residual(bgroup,
 					bgroup_face_ID, U[bgroup_elem_ID], R[bgroup_elem_ID])
+		
+			np.add.at(R, bgroup_elem_ID, -R_B)
 
 	def apply_limiter(self, U):
 		'''

@@ -494,7 +494,7 @@ class ADERDG(base.SolverBase):
 						UqI[:, i, :].reshape([nbf, 1, ns]), 
 						normals, x, t_[0])
 
-			R_B -= solver_tools.calculate_inviscid_flux_boundary_integral(
+			R_B = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
 		return R_B # [nbf, nb, ns]
