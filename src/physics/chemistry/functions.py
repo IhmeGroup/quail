@@ -74,7 +74,7 @@ class SimpleDetonation1(FcnBase):
 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 		gam = physics.gamma
 		qo = physics.qo
-		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
 		b = -p_u - rho_u*qo * (gam-1.)
 		c = p_u**2 + (2.*(gam-1.) * rho_u*p_u*qo) / (gam+1.)
@@ -92,17 +92,17 @@ class SimpleDetonation1(FcnBase):
 		iright = (x > xshock).reshape(-1)
 
 		# Density
-		Uq[iright, srho] = rho_u
-		Uq[ileft, srho] = rho_b
+		Uq[:, iright, srho] = rho_u
+		Uq[:, ileft, srho] = rho_b
 		# Momentum
-		Uq[iright, srhou] = rho_u*u_u
-		Uq[ileft, srhou] = rho_b*u_b
+		Uq[:, iright, srhou] = rho_u*u_u
+		Uq[:, ileft, srhou] = rho_b*u_b
 		# Energy
-		Uq[iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
-		Uq[ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
+		Uq[:, iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
+		Uq[:, ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
 		# MixtureFraction
-		Uq[iright, srhoz] = rho_u*Y_u
-		Uq[ileft, srhoz] = rho_b*Y_b
+		Uq[:, iright, srhoz] = rho_u*Y_u
+		Uq[:, ileft, srhoz] = rho_b*Y_b
 
 		return Uq
 

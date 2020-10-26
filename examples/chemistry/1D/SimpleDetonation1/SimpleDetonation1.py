@@ -16,11 +16,10 @@ TimeStepping = {
 Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-    "InterpolateIC" : False,
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreservingChem",
-    "SourceTreatmentADER" : "Explicit",
-    "InterpolateFluxADER" : True,
+    # "SourceTreatmentADER" : "Explicit",
+    # "InterpolateFluxADER" : True,
     # "NodeType" : "GaussLobatto",
     # "ElementQuadrature" : "GaussLobatto",
     # "FaceQuadrature" : "GaussLobatto",
@@ -30,13 +29,13 @@ Numerics = {
 Output = {
     "WriteInterval" : 10,
     "WriteInitialSolution" : True,
-    "AutoProcess" : True,
+    "AutoPostProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 360,
+    "NumElemsX" : 360,
     "xmin" : 0.,
     "xmax" : 30.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
@@ -44,7 +43,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Chemistry",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
     "HeatRelease": 25.,
@@ -62,7 +61,7 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
         "BCType" : "StateAll",
 	    "Function" : "SimpleDetonation1",
         "rho_u" : 1.0,
@@ -71,7 +70,7 @@ BoundaryConditions = {
         "Y_u" : 1.0,
         "xshock" : 10.,  
     },
-    "Right" : {
+    "x2" : {
         "BCType" : "StateAll",
         "Function" : "SimpleDetonation1",
         "rho_u" : 1.0,
