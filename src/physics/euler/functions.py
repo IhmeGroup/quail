@@ -963,7 +963,7 @@ class Roe1D(ConvNumFluxBase):
 		if Uq is not None:
 			n = Uq.shape[0]
 			nq = Uq.shape[1]
-			ns = Uq.shape[2]
+			ns = Uq.shape[-1]
 			dim = ns - 2
 		else:
 			n = nq = ns = dim = 0
@@ -991,7 +991,7 @@ class Roe1D(ConvNumFluxBase):
 		--------
 		    Uq: momentum terms modified
 		'''
-		Uq[:,:,smom] *= n
+		Uq[:, :, smom] *= n
 
 		return Uq
 

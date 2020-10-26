@@ -87,25 +87,23 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 
 	Inputs:
 	-------
-		basis_val: basis function for the interior element [nq, nb]
+		basis_val: basis function for the interior element [nf, nq, nb]
 		quad_wts_st: space-time quadrature weights [nq, 1]
-		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [nf, nq, ns, dim]
 
 	Outputs:
 	--------
-		R_B: residual contribution (from boundary face) [nb, ns]
+		R_B: residual contribution (from boundary face) [nf, nb, ns]
 	'''
 	nb = basis_val.shape[1]
 	nq = quad_wts_st.shape[0]
 
-	# Integrate
+	# Calculate the flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts_st)
 	# Calculate residual
 	R_B = np.einsum('ijn, ijk -> ink', np.tile(basis_val,(nq, 1)), Fq_quad)
 
-	# R_B = np.matmul(np.tile(basis_val,(nq,1)).transpose(), Fq*quad_wts_st) 
-
-	return R_B # [nb, ns]
+	return R_B # [nf, nb, ns]
 
 
 def calculate_source_term_integral(elem_helpers, elem_helpers_st, 
@@ -117,12 +115,13 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st,
 	-------
 		elem_helpers: helpers defined in ElemHelpers
 		elem_helpers_st: space-time helpers defined in ElemHelpers
-		Sq: source term array evaluated at the quadrature points [nq, ns]
+		Sq: source term array evaluated at the quadrature points 
+			[ne, nq, ns]
 
 	Outputs:
 	--------
 		R_elem: residual contribution (from volume integral of source term) 
-			[nb, ns]
+			[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	quad_wts_st = elem_helpers_st.quad_wts
@@ -134,12 +133,12 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st,
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 
-	# Integrate
+	# Calculate residual from source term
 	R_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)), 
 			Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(Sq.shape[0], 
-			nq_st, 1))
+			nq_st, 1)) # [ne, nb, ns]
 
-	return R_elem # [nb, ns]
+	return R_elem # [ne, nb, ns]
 
 
 def predictor_elem_explicit(solver, dt, W, U_pred):
@@ -155,57 +154,55 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		solver: solver object
 		elem_ID: element ID
 		dt: time step 
-		W: previous time step solution in space only [nb, ns]
+		W: previous time step solution in space only [ne, nb, ns]
 
 	Outputs:
 	--------
-		U_pred: predicted solution in space-time [nb_st, ns]
+		U_pred: predicted solution in space-time [ne, nb_st, ns]
 	'''
+	# Unpack
 	physics = solver.physics
 	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh
 
 	basis = solver.basis
 	basis_st = solver.basis_st
-
-	order = solver.order
 	
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
 	
+	order = solver.order
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
 	djac_elems = elem_helpers.djac_elems 
-	# djac = djac_elems[elem_ID]
 
 	FTR = ader_helpers.FTR
 	MM = ader_helpers.MM
 	SMS_elems = ader_helpers.SMS_elems
-	# SMS = ader_helpers.SMS_elems[elem_ID]
 	iK = ader_helpers.iK
 
+	# Calculate the average state for each element in spatial coordinates
 	vol_elems = elem_helpers.vol_elems
-	# W_bar = np.zeros([1, ns])
-
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
-
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
+
+	# Initialize space-time coefficients with computed average
 	U_pred[:] = W_bar
 
+	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st, 
 			U_pred)
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 			U_pred)
 
+	# Iterate using a discrete Picard nonlinear solve for the 
+	# updated space-time coefficients.
 	niter = 100
 	for i in range(niter):
-		# U_pred_new = np.matmul(iK, (np.matmul(MM, source_coeffs) - np.einsum(
-				# 'ijk,jlk->il', SMS, flux_coeffs)+np.matmul(FTR, W)))
-		# test = (np.einsum('jk, ijl -> ijl', MM, source_coeffs) 
-		# 		- np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-		# 		np.einsum('jk, ikm -> ijm', FTR, W))
-		U_pred_new = np.einsum('jk, ikm -> ijm',iK, np.einsum('jk, ijl -> ijl', MM, source_coeffs) 
-				- np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
+
+		U_pred_new = np.einsum('jk, ikm -> ijm',iK, 
+				np.einsum('jk, ijl -> ijl', MM, source_coeffs) - 
+				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
 				np.einsum('jk, ikm -> ijm', FTR, W))
 
 		err = U_pred_new - U_pred
@@ -225,7 +222,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 			print('Sub-iterations not converging')
 			raise ValueError
 
-	return U_pred # [nb_st, ns]
+	return U_pred # [ne, nb_st, ns]
 
 
 def predictor_elem_implicit(solver, dt, W, U_pred):
@@ -241,12 +238,13 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 		solver: solver object
 		elem_ID: element ID
 		dt: time step 
-		W: previous time step solution in space only [nb, 1]
+		W: previous time step solution in space only [ne, nb, 1]
 
 	Outputs:
 	--------
-		U_pred: predicted solution in space-time [nb_st, 1]
+		U_pred: predicted solution in space-time [ne, nb_st, 1]
 	'''
+	# Unpack
 	physics = solver.physics
 	source_terms = physics.source_terms
 
@@ -257,7 +255,6 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	basis_st = solver.basis_st
 
 	order = solver.order
-	
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
 	
@@ -271,24 +268,30 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	SMS_elems = ader_helpers.SMS_elems
 	K = ader_helpers.K
 
+	# Calculate the average state for each element in spatial coordinates
 	vol_elems = elem_helpers.vol_elems
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
-
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
 
+	# Calculate the source term Jacobian using average state
 	Sjac = np.zeros([U_pred.shape[0], ns, ns])
 	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time, 
 			Sjac) 
 	Kp = K - dt * np.einsum('jk, imn -> ijk', MM, Sjac)
 
 	iK = np.linalg.inv(Kp)
+
+	# Initialize space-time coefficients with computed average
 	U_pred[:] = W_bar
 
+	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st, 
 			U_pred)
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 			U_pred)
 
+	# Iterate using a discrete Picard nonlinear solve for the 
+	# updated space-time coefficients.
 	niter = 100
 	for i in range(niter):
 
@@ -315,7 +318,8 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 			print('Sub-iterations not converging')
 			raise ValueError
 
-	return U_pred # [nb_st, ns]
+	return U_pred # [ne, nb_st, ns]
+
 
 def predictor_elem_sylvester(solver, dt, W, U_pred):
 	'''
@@ -335,12 +339,13 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		solver: solver object
 		elem_ID: element ID
 		dt: time step 
-		W: previous time step solution in space only [nb, ns]
+		W: previous time step solution in space only [ne, nb, ns]
 
 	Outputs:
 	--------
-		U_pred: predicted solution in space-time [nb_st, ns]
+		U_pred: predicted solution in space-time [ne, nb_st, ns]
 	'''
+	# Unpack
 	physics = solver.physics
 	source_terms = physics.source_terms
 
@@ -351,48 +356,42 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	basis_st = solver.basis_st
 
 	order = solver.order
-	
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
 	
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val 
 	djac_elems = elem_helpers.djac_elems 
-	# djac = djac_elems[elem_ID]
 	x_elems = elem_helpers.x_elems
-	# x = x_elems[elem_ID]
 
 	FTR = ader_helpers.FTR
 	iMM = ader_helpers.iMM
 	SMS_elems = ader_helpers.SMS_elems
 	K = ader_helpers.K
+
+	# Calculate the average state for each element in spatial coordinates
 	vol_elems = elem_helpers.vol_elems
-
-	# Wq = np.matmul(basis_val, W)
-
-	# vol = vol_elems[elem_ID]
-	# W_bar = helpers.get_element_mean(Wq, quad_wts, djac, vol)
-
-	# Sjac_q = np.zeros([1, ns, ns])
-	# Sjac_q = physics.eval_source_term_jacobians(W_bar, x, solver.time, 
-	# 		Sjac_q)
-	# Sjac = Sjac_q[0, :, :]
-
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
-
 	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
 
+	# Calculate the source term Jacobian using average state
 	Sjac = np.zeros([U_pred.shape[0], 1, ns, ns])
 	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time, 
 			Sjac) 
 	Sjac = Sjac[:, 0, :, :]
+
+	# Initialize space-time coefficients with computed average
 	U_pred[:] = W_bar
 
+	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
 			U_pred)
 
+	# Iterate using a nonlinear Sylvester solver for the 
+	# updated space-time coefficients. Solves for X in the form:
+	# 	AX + XB = C
 	niter = 100
 	U_pred_new = np.zeros_like(U_pred)
 	for i in range(niter):
@@ -401,15 +400,16 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		A[:] = np.matmul(iMM,K)/dt
 		B = -1.0*Sjac.transpose(0,2,1)
 
-		C = np.einsum('jk, ikm -> ijm', FTR, W) - np.einsum(
+		Q = np.einsum('jk, ikm -> ijm', FTR, W) - np.einsum(
 				'ijkl, ikml -> ijm', SMS_elems, flux_coeffs)
 
-		Q = source_coeffs/dt - np.matmul(U_pred[:], Sjac[:].transpose(0,2,1)) + \
-				np.einsum('jk, ikl -> ijl',iMM, C)/dt
+		C = source_coeffs/dt - np.matmul(U_pred[:], 
+				Sjac[:].transpose(0,2,1)) + \
+				np.einsum('jk, ikl -> ijl',iMM, Q)/dt
 
-		# NEED TO VECTORIZE
 		for i in range(U_pred.shape[0]):
-			U_pred_new[i, :, :] = solve_sylvester(A[i, :, :], B[i, :, :], Q[i, :, :])
+			U_pred_new[i, :, :] = solve_sylvester(A[i, :, :], B[i, :, :], 
+					C[i, :, :])
 
 		err = U_pred_new - U_pred
 		if np.amax(np.abs(err)) < 1.e-10:
@@ -427,7 +427,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 			print('Sub-iterations not converging')
 			raise ValueError
 
-	return U_pred
+	return U_pred # [ne, nb_st, ns]
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
@@ -450,9 +450,11 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
 	'''
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
+
 	rhs = np.einsum('jk, ijl -> ikl', basis.basis_val, f*quad_wts*djac) 
 			# [ne, nb, ns]
 	U[:, :, :] = np.einsum('ijk, ijl -> ikl', iMM, rhs)
+	
 
 def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     '''
@@ -476,6 +478,7 @@ def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     if basis is None:
     	basis = basis_defs.LagrangeSeg(gorder)
     	basis.get_basis_val_grads(tref, get_val=True)
+
     tphys = (time/2.)*(1. - tref) + (time + dt)/2.*(1. + tref)
 
     return tphys, basis

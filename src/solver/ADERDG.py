@@ -373,12 +373,12 @@ class ADERDG(base.SolverBase):
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
 
-			# get array in physical time from ref time
+			# Get array in physical time from ref time
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
 					mesh, self.time, self.stepper.dt, 
 					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 
-			# evaluate the source term at the quadrature points
+			# Evaluate the source term at the quadrature points
 			Sq = elem_helpers_st.Sq
 			Sq[:] = 0. # [ne, nq, sr, dim]
 			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq)
@@ -402,7 +402,7 @@ class ADERDG(base.SolverBase):
 		faceL_id_st[indL] = 3
 		faceR_id_st[indR] = 3
 
-		# unpack
+		# Unpack
 		int_face_helpers = self.int_face_helpers
 		int_face_helpers_st = self.int_face_helpers_st
 		quad_wts_st = int_face_helpers_st.quad_wts
@@ -425,7 +425,7 @@ class ADERDG(base.SolverBase):
 
 		normals_int_faces = int_face_helpers.normals_int_faces
 
-		# allocate RL and RR (needed for operator splitting)
+		# Allocate RL and RR (needed for operator splitting)
 		RL = np.zeros_like(self.stepper.R)
 		RR = np.zeros_like(self.stepper.R)
 
@@ -441,7 +441,7 @@ class ADERDG(base.SolverBase):
 		return RL, RR # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, R_B):
-		# unpack
+		# Unpack
 		mesh = self.mesh
 		dim = mesh.dim
 		physics = self.physics
@@ -470,7 +470,7 @@ class ADERDG(base.SolverBase):
 
 		nq_st = quad_wts_st.shape[0]
 		
-		# get array in physical time from ref time
+		# Get array in physical time from ref time
 		t, self.elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
 				mesh, self.time, self.stepper.dt, xref_st[:, :, -1:], 
 				self.elem_helpers_st.basis_time)
@@ -516,7 +516,7 @@ class ADERDG(base.SolverBase):
 			F: polynomial coefficients of the flux function 
 				[ne, nb_st, ns, dim]
 		'''
-		# unpack
+		# Unpack
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
@@ -529,18 +529,18 @@ class ADERDG(base.SolverBase):
 		elem_helpers_st = self.elem_helpers_st 
 		djac_elems = elem_helpers.djac_elems 
 
-		# allocate flux coefficients
+		# Allocate flux coefficients
 		F = np.zeros([Up.shape[0], basis.get_num_basis_coeff(order), 
 				ns, dim], dtype=Up.dtype)
 
-		# flux coefficient calc from interpolation or L2-projection
+		# Flux coefficient calc from interpolation or L2-projection
 		if params["InterpolateFluxADER"]:
-			# calculate flux
+			# Calculate flux
 			Fq = physics.get_conv_flux_interior(Up)[0]
-			# interpolate flux coefficient to nodes
+			# Interpolate flux coefficient to nodes
 			dg_tools.interpolate_to_nodes(Fq, F)
 		else:
-			# unpack for L2-projection
+			# Unpack for L2-projection
 			ader_helpers = self.ader_helpers
 			basis_val_st = elem_helpers_st.basis_val
 			quad_wts_st = elem_helpers_st.quad_wts
@@ -581,7 +581,7 @@ class ADERDG(base.SolverBase):
 		--------
 			S: polynomical coefficients of the flux function [ne, nb_st, ns]
 		'''
-		# unpack
+		# Unpack
 		mesh = self.mesh
 		dim = mesh.dim
 		physics = self.physics
@@ -600,20 +600,20 @@ class ADERDG(base.SolverBase):
 			xnodes = basis.get_nodes(order)
 			nb = xnodes.shape[0]
 		
-			# get array in physical time from ref time
+			# Get array in physical time from ref time
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
 					mesh, self.time, self.stepper.dt, 
 					xnodes[:, -1:], elem_helpers_st.basis_time)
 
-			# evaluate the source term at the quadrature points
+			# Evaluate the source term at the quadrature points
 			Sq = np.zeros([Up.shape[0], t.shape[0], ns])
 			S = np.zeros_like(Sq)
 			Sq = physics.eval_source_terms(Up, x_elems_ader, t, Sq)
 
-			# interpolate source coefficient to nodes
+			# Interpolate source coefficient to nodes
 			dg_tools.interpolate_to_nodes(Sq, S)
 		else:
-			# unpack for L2-projection
+			# Unpack for L2-projection
 			ader_helpers = self.ader_helpers
 			basis_val_st = elem_helpers_st.basis_val
 			nb_st = basis_val_st.shape[1]
@@ -627,13 +627,13 @@ class ADERDG(base.SolverBase):
 			# Interpolate state and gradient at quadrature points
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
-			# get array in physical time from ref time
+			# Get array in physical time from ref time
 			t = np.zeros([nq_st, dim])
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
 					mesh, self.time, self.stepper.dt, 
 					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
 
-			# evaluate the source term at the quadrature points
+			# Evaluate the source term at the quadrature points
 			Sq = np.zeros_like(Uq)
 			S = np.zeros([Uq.shape[0], nb_st, ns])
 			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq) 
