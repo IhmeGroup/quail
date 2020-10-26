@@ -107,7 +107,7 @@ class StepperType(Enum):
         # Simpler scheme for reacting flows
 
 
-class ODESolverType(Enum):
+class SourceSolverType(Enum):
     '''
     This enum contains the available types of implicit time stepping for 
     source terms in reacting flows. See src/numerics/timestepping for more 

@@ -1,8 +1,8 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/timestepping/ode.py
+#       File : src/numerics/timestepping/source_stepper.py
 #
-#       Contains ODE solvers for operator splitting schemes in stepper.py
+#       Contains solvers for operator splitting schemes in stepper.py
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
@@ -14,23 +14,20 @@ from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
 
 
-class ODESolvers():
+class SourceSolvers():
 	'''
-	ODESolvers is a class of classes used as a Mixin class for operator 
+	SourceSolvers is a class of classes used as a Mixin class for operator 
 	splitting approaches (see stepper.py). These methods are specifically
 	used for solving ODEs of the form:
-
 		dU/dt = S(U)
-
 	Current schemes supported include:
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
 	'''
-	class ODEBase(ABC):
+	class SourceStepperBase(ABC):
 		'''
 		This is an abstract base class used to represent a specific ODE 
 		solver for operator splitting integration schemes.
-
 		Attributes:
 		-----------
 		R: numpy array of floats (shape : [nelem, nb, ns])
@@ -63,12 +60,12 @@ class ODESolvers():
 			return '{self.__class__.__name__}(TimeStep={self.dt})'.format( \
 					self=self)
 
-	class BDF1(ODEBase):
+	class BDF1(SourceStepperBase):
 		'''
 		1st-order Backward Differencing (BDF1) method inherits attributes 
-		from ODEBase. See ODEBase for detailed comments of methods and 
-		attributes.
-
+		from SourceStepperBase. See SourceStepperBase for detailed 
+		comments of methods and attributes.
+		
 		Additional methods and attributes are commented below.
 		''' 
 
@@ -97,12 +94,10 @@ class ODESolvers():
 		def get_jacobian_matrix(self, mesh, solver):
 			'''
 			Calculates the Jacobian matrix of the source term and its inverse for all elements
-
 			Inputs:
 			-------
 				mesh: mesh object
 				solver: solver object (e.g., DG, ADERDG, etc...)
-
 			Outputs:
 			-------- 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
@@ -128,16 +123,13 @@ class ODESolvers():
 			'''
 			Calculates the Jacobian matrix of the source term and its 
 			inverse for each element. Definition of 'Jacobian' matrix:
-
 			A = I - BETA*dt*iMM^{-1}*dRdU
-
 			Inputs:
 			-------
 				solver: solver object (e.g., DG, ADERDG, etc...)
 				elem_ID: element ID
 				iMM: inverse mass matrix [nb, nb]
 				Uc: state coefficients on element [nb, ns]
-
 			Outputs:
 			-------- 
 				A: matrix returned for linear solve [nelem, nb, nb, ns]
@@ -183,7 +175,6 @@ class ODESolvers():
 		2nd-order Trapezoidal method inherits attributes 
 		from BDF1. See BDF1 for detailed comments of methods and 
 		attributes.
-
 		Note: Trapezoidal method is identical to linearized BDF1 other than 
 		the 'BETA' constant.
 		''' 

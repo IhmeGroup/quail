@@ -9,12 +9,12 @@ from abc import ABC, abstractmethod
 import numpy as np 
 from scipy.optimize import fsolve, root
 
-from general import StepperType, ODESolverType
+from general import StepperType, SourceSolverType
 
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
 import numerics.timestepping.tools as stepper_tools
-import numerics.timestepping.ode as ode
+import numerics.timestepping.source_stepper as source_solvers
 
 import solver.tools as solver_tools
 
@@ -38,7 +38,7 @@ class StepperBase(ABC):
 		- Strang Splitting (Strang)
 		- Simpler Splitting (Simpler)
 
-		ODE Solvers for Splitting Schemes:
+		Source Solvers for Splitting Schemes:
 		----------------------------------
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
@@ -324,11 +324,13 @@ class ADER(StepperBase):
 		return R # [num_elems, nb, ns]
 
 
-class Strang(StepperBase, ode.ODESolvers):
+class Strang(StepperBase, source_solvers.SourceSolvers):
 	'''
 	The Strang operator splitting scheme inherits attributes from 
-	StepperBase and ODESolvers (in ode.py). See StepperBase and ODESolvers 
-	for detailed comments of methods and attributes.
+	StepperBase and SourceSolvers (in source_stepper.py). 
+
+	See StepperBase and SourceSolvers for detailed comments of 
+	methods and attributes.
 
 	Reference: 
 
@@ -358,10 +360,10 @@ class Strang(StepperBase, ode.ODESolvers):
 		# call set_stepper from stepper tools for the explicit scheme
 		self.explicit = stepper_tools.set_stepper(param, U)
 
-		if ODESolverType[implicit] == ODESolverType.BDF1:
-			self.implicit = ode.ODESolvers.BDF1(U)
-		elif ODESolverType[implicit] == ODESolverType.Trapezoidal:
-			self.implicit = ode.ODESolvers.Trapezoidal(U)
+		if SourceSolverType[implicit] == SourceSolverType.BDF1:
+			self.implicit = source_solvers.SourceSolvers.BDF1(U)
+		elif SourceSolverType[implicit] == SourceSolverType.Trapezoidal:
+			self.implicit = source_solvers.SourceSolvers.Trapezoidal(U)
 		else:
 			raise NotImplementedError("Time scheme not supported")
 
