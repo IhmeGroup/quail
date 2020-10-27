@@ -229,7 +229,7 @@ class Chemistry1D(Chemistry):
 		F = np.empty(Uq.shape + (self.DIM,))
 		F[:, :, irho, 0] = rhou
 		F[:, :, irhou, 0] = rho * u2 + p
-		F[:, :, irhoE, 0] = rhou*H
+		F[:, :, irhoE, 0] = H * u
 		F[:, :, irhoY, 0] = rhou*rhoY/rho
 
 		rho -= eps
