@@ -174,7 +174,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 
 	def limit_element(self, solver, Uc):
-		# Unpack
+		# Unpack		
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
@@ -212,11 +212,8 @@ class PositivityPreservingChem(PositivityPreserving):
 		# Rescale
 		irho = physics.get_state_index(self.var_name1)
 		elem_IDs = np.where(theta1 < 1)[0]
-		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + \
-				np.einsum('ik, ijk -> ij', (1.-theta1[elem_IDs]), 
-				rho_bar[elem_IDs])
-		# (1. -
-				# theta1[elem_IDs])*rho_bar[elem_IDs]
+		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + (1. -
+				theta1[elem_IDs])*rho_bar[elem_IDs, 0]
 
 		if np.any(theta1 < 1.):
 			# Intermediate limited solution
@@ -234,9 +231,8 @@ class PositivityPreservingChem(PositivityPreserving):
 		irhoY = physics.get_state_index(self.var_name3)
 		elem_IDs = np.where(theta2 < 1)[0]
 
-		Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, irhoY] + \
-				np.einsum('ik, ijk -> ij', (1.-theta2[elem_IDs]), 
-				rhoY_bar[elem_IDs])
+		Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, irhoY] + (1. -
+				theta2[elem_IDs])*rhoY_bar[elem_IDs, 0]
 		# (1. - 
 				# theta2[elem_IDs]) * rhoY_bar[elem_IDs]
 
@@ -244,6 +240,7 @@ class PositivityPreservingChem(PositivityPreserving):
 			U_elem_faces = helpers.evaluate_state(Uc,
 					self.basis_val_elem_faces,
 					skip_interp=solver.basis.skip_interp)
+
 		''' Limit pressure '''
 		# Compute pressure at quadrature points
 		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces)
@@ -252,8 +249,10 @@ class PositivityPreservingChem(PositivityPreserving):
 		negative_p_indices = np.where(p_elem_faces < 0.)
 		elem_IDs = negative_p_indices[0]
 		i_pos_p  = negative_p_indices[1]
-		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :]/(p_bar[elem_IDs, :] -
-				p_elem_faces[elem_IDs, i_pos_p])
+
+		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :, 0] / (
+				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_pos_p])
+
 		theta3 = np.min(theta, axis=1)
 		elem_IDs = np.where(theta3 < 1.)[0]
 		Uc[elem_IDs] = (
@@ -262,6 +261,5 @@ class PositivityPreservingChem(PositivityPreserving):
 						U_bar[elem_IDs]))
 
 		np.seterr(divide='warn')
-		# import code; code.interact(local=locals())
 
 		return Uc

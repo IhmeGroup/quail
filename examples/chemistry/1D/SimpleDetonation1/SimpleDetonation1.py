@@ -1,6 +1,6 @@
 import numpy as np
 
-cfl = 0.005
+# cfl = 0.025
 NumTimeSteps = 30
 FinalTime = 0.01
 # FinalTime = 1.8
@@ -34,7 +34,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 60,
+    "NumElemsX" : 360,
     "xmin" : 0.,
     "xmax" : 30.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
