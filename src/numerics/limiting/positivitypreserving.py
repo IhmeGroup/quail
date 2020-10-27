@@ -95,14 +95,14 @@ class PositivityPreserving(base.LimiterBase):
 				skip_interp=solver.basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
 		U_elem = U_elem_faces[:, :nq_elem, :]
-
+		ne = self.elem_vols.shape[0]
 		# Average value of state
 		U_bar = helpers.get_element_mean(U_elem, self.quad_wts_elem, djac,
 				self.elem_vols)
 
 		# Density and pressure from averaged state
 		rho_bar = physics.compute_variable(self.var_name1, U_bar)
-		p_bar = physics.compute_variable(self.var_name2, U_bar)
+		p_bar = physics.compute_variable(self.var_name2, U_bar).reshape(ne, 1)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise errors.NotPhysicalError
@@ -138,8 +138,10 @@ class PositivityPreserving(base.LimiterBase):
 		negative_p_indices = np.where(p_elem_faces < 0.)
 		elem_IDs = negative_p_indices[0]
 		i_pos_p  = negative_p_indices[1]
+
 		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :, 0] / (
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_pos_p])
+
 		theta2 = np.min(theta, axis=1)
 		elem_IDs = np.where(theta2 < 1.)[0]
 		Uc[elem_IDs] = (
@@ -168,117 +170,99 @@ class PositivityPreservingChem(PositivityPreserving):
 		Initializes PPLimiter object
 		'''
 		super().__init__(physics_type)
-		# self.var_name1 = "Density"
-		# self.var_name2 = "Pressure"
-		self.scalar3 = "Mixture"
-		# self.elem_vols = np.zeros(0)
-		# self.basis_val_elem_faces = None
-		# self.quad_wts_elem = np.zeros(0)
-		# self.djac_elems = np.zeros(0)
+		self.var_name3 = "Mixture"
 
-	# def precompute_helpers(self, solver):
-	# 	elem_helpers = solver.elem_helpers
-	# 	int_face_helpers = solver.int_face_helpers
-	# 	_, self.elem_vols = mesh_tools.element_volumes(solver.mesh, solver)
 
-	# 	# basis values in element interior and on faces
-	# 	basis_val_faces = int_face_helpers.faces_to_basisL.copy()
-	# 	bshape = basis_val_faces.shape
-	# 	basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-	# 	self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val, basis_val_faces))
-
-	# 	# Jacobian determinant
-	# 	self.djac_elems = elem_helpers.djac_elems
-
-	# 	# Element quadrature weights
-	# 	self.quad_wts_elem = elem_helpers.quad_wts
-
-	def limit_element(self, solver, elem, U):
-		'''
-		Method: limit_element
-		------------------------
-		Limits the solution on each element
-
-		Inputs:
-			solver: type of solver (e.g., DG, ADER-DG, etc...)
-			elem: element index
-
-		Outputs:
-			U: solution array
-		'''
+	def limit_element(self, solver, Uc):
+		# Unpack
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
 
-		djac = self.djac_elems[elem]
+		djac = self.djac_elems
 
-		# interpolate state and gradient at quadrature points over element
-		# and on faces
-		# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
-		u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces,
+		# Interpolate state at quadrature points over element and on faces
+		U_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces,
 				skip_interp=solver.basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
-		u_elem = u_elem_faces[:nq_elem,:]
+		U_elem = U_elem_faces[:, :nq_elem, :]
 
 		# Average value of state
-		vol = self.elem_vols[elem]
-		# u_bar = np.matmul(u_elem.transpose(), self.quad_wts_elem*djac).T/vol
-		u_bar = helpers.get_element_mean(u_elem, self.quad_wts_elem, djac,
-				self.elem_vols[elem])
-
-		# Density and pressure
-		rho_bar = physics.compute_variable(self.var_name1, u_bar)
-		p_bar = physics.compute_variable(self.var_name2, u_bar)
-		rhoY_bar = physics.compute_variable(self.scalar3, u_bar)
+		U_bar = helpers.get_element_mean(U_elem, self.quad_wts_elem, djac,
+				self.elem_vols)
+		ne = self.elem_vols.shape[0]
+		# Density and pressure from averaged state
+		rho_bar = physics.compute_variable(self.var_name1, U_bar)
+		p_bar = physics.compute_variable(self.var_name2, U_bar)
+		rhoY_bar = physics.compute_variable(self.var_name3, U_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.) or np.any(rhoY_bar < 0.):
 			raise errors.NotPhysicalError
 
+		# Ignore divide-by-zero
 		np.seterr(divide='ignore')
 
 		''' Limit density '''
 		# Compute density
-		rho_elem_faces = physics.compute_variable(self.var_name1, u_elem_faces)
+		rho_elem_faces = physics.compute_variable(self.var_name1, U_elem_faces)
+		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
-		theta1 = np.amin([1., np.amin(theta)])
+		theta1 = np.minimum(1., np.min(theta, axis=1))
 
 		# Rescale
-		if theta1 < 1.:
-			irho = physics.get_state_index(self.var_name1)
-			U[:,irho] = theta1*U[:,irho] + (1. - theta1)*rho_bar
+		irho = physics.get_state_index(self.var_name1)
+		elem_IDs = np.where(theta1 < 1)[0]
+		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + \
+				np.einsum('ik, ijk -> ij', (1.-theta1[elem_IDs]), 
+				rho_bar[elem_IDs])
 
+		# (1. -
+				# theta1[elem_IDs])*rho_bar[elem_IDs]
+
+		if np.any(theta1 < 1.):
 			# Intermediate limited solution
-			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
-			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces,
+			U_elem_faces = helpers.evaluate_state(Uc,
+					self.basis_val_elem_faces,
 					skip_interp=solver.basis.skip_interp)
+
 
 		''' Limit mass fraction '''
-		rhoY_elem_faces = physics.compute_variable(self.scalar3, u_elem_faces)
+		rhoY_elem_faces = physics.compute_variable(self.var_name3, U_elem_faces)
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
-		theta2 = np.amin([1.,np.amin(theta)])
+		theta2 = np.minimum(1., np.amin(theta, axis=1))
 
 		# Rescale
-		if theta2 < 1.:
-			irhoY = physics.get_state_index(self.scalar3)
-			U[:,irhoY] = theta2*U[:,irhoY] + (1. - theta2)*rhoY_bar
+		irhoY = physics.get_state_index(self.var_name3)
+		elem_IDs = np.where(theta2 < 1)[0]
 
-			# Intermediate limited solution
-			# u_elem_faces = np.matmul(self.basis_val_elem_faces, U)
-			u_elem_faces = helpers.evaluate_state(U, self.basis_val_elem_faces,
+		Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, irhoY] + \
+				np.einsum('ik, ijk -> ij', (1.-theta2[elem_IDs]), 
+				rhoY_bar[elem_IDs])
+		# (1. - 
+				# theta2[elem_IDs]) * rhoY_bar[elem_IDs]
+
+		if np.any(theta2 < 1.):
+			U_elem_faces = helpers.evaluate_state(Uc,
+					self.basis_val_elem_faces,
 					skip_interp=solver.basis.skip_interp)
-		# code.interact(local=locals())
-
-
 		''' Limit pressure '''
-		p_elem_faces = physics.compute_variable(self.var_name2, u_elem_faces)
-		# theta = np.abs((p_bar - POS_TOL)/(p_bar - p_elem_faces))
+		# Compute pressure at quadrature points
+		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces)
 		theta[:] = 1.
-		i_pos_p = (p_elem_faces < 0.).reshape(-1) # indices where pressure is negative
-		theta[i_pos_p] = p_bar/(p_bar - p_elem_faces[i_pos_p])
-		thetax = np.amin(theta)
-		if thetax < 1.:
-			U = thetax*U + (1. - thetax)*u_bar
+		# Indices where pressure is negative
+		negative_p_indices = np.where(p_elem_faces < 0.)
+		elem_IDs = negative_p_indices[0]
+		i_pos_p  = negative_p_indices[1]
+		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :]/(p_bar[elem_IDs, :] -
+				p_elem_faces[elem_IDs, i_pos_p])
+		theta3 = np.min(theta, axis=1)
+		elem_IDs = np.where(theta3 < 1.)[0]
+		Uc[elem_IDs] = (
+				np.einsum('im, ijk -> ijk', theta3[elem_IDs], Uc[elem_IDs]) +
+				np.einsum('im, ijk -> ijk', 1 - theta3[elem_IDs],
+						U_bar[elem_IDs]))
 
 		np.seterr(divide='warn')
+		# import code; code.interact(local=locals())
 
-		return U
+		return Uc
