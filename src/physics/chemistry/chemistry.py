@@ -63,17 +63,9 @@ class Chemistry(base.PhysicsBase):
 			euler_BC_type.SlipWall : euler_fcns.SlipWall,
 			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
-	def set_physical_params(self, GasConstant=287., SpecificHeatRatio = 1.4, 
-			HeatRelease = 0.):
-		'''
-		This method sets physical parameters.
 
-		Inputs:
-		-------
-			GasConstant: mass-specific gas constant
-			SpecificHeatRatio: ratio of specific heats
-			HeatRelease: heat release constant
-		'''
+
+	def set_physical_params(self, GasConstant=287., SpecificHeatRatio = 1.4, HeatRelease = 0.):
 		self.R = GasConstant
 		self.gamma = SpecificHeatRatio
 		self.qo = HeatRelease
