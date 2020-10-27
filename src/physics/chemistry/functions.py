@@ -43,8 +43,6 @@ class DensityWave(FcnBase):
 		rhou = rho*1.0
 		rhoz = rho*1.0
 		rhoE = (p/(gam-1.))+0.5*rhou**2/rho + qo*rhoz
-		# rhoE = (p/(gam-1.))+0.5*rhou**2/rho
-
 
 		Uq[:,srho] = rho
 		Uq[:,srhou] = rhou
@@ -247,26 +245,32 @@ class Arrhenius(SourceBase):
 		# Unpack source term constants
 		A = self.A
 		Tign = self.Tign
+		ne = Uq.shape[0]
+		nq = Uq.shape[1]
 		
 		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
-		# Uq = self.Uq
-		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
+		jac = np.zeros([ne, nq, Uq.shape[-1], Uq.shape[-1]])
 
 		T = physics.compute_variable("Temperature", Uq)
 		K = A * np.exp(-Tign / T)
 
 		dTdU = get_temperature_jacobian(physics, Uq)
 
-		dKdrho =  (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irho].reshape([Uq.shape[0],1]))  / T**2 
-		dKdrhou = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhou].reshape([Uq.shape[0],1])) / T**2
-		dKdrhoE = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoE].reshape([Uq.shape[0],1])) / T**2
-		dKdrhoY = (A * Tign * np.exp(-Tign / T) * dTdU[:, irhoY, irhoY].reshape([Uq.shape[0],1])) / T**2
+		dKdrho =  (A * Tign * np.exp(-Tign / T) * \
+				dTdU[:, :, irhoY, irho].reshape([ne, nq, 1]))  / T**2 
+		dKdrhou = (A * Tign * np.exp(-Tign / T) * \
+				dTdU[:, :, irhoY, irhou].reshape([ne, nq, 1])) / T**2
+		dKdrhoE = (A * Tign * np.exp(-Tign / T) * \
+				dTdU[:, :, irhoY, irhoE].reshape([ne, nq, 1])) / T**2
+		dKdrhoY = (A * Tign * np.exp(-Tign / T) * \
+				dTdU[:, :, irhoY, irhoY].reshape([ne, nq, 1])) / T**2
 
-		jac[:, irhoY, irho] =  (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1])).reshape(-1)
-		jac[:, irhoY, irhou] = (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1])).reshape(-1)
-		jac[:, irhoY, irhoE] = (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1])).reshape(-1)
-		jac[:, irhoY, irhoY] = (-1.*dKdrho * Uq[:, irhoY].reshape([Uq.shape[0],1]) - K ).reshape(-1)
+		# import code; code.interact(local=locals())
+		jac[:, :, irhoY, irho] =  (-1.*dKdrho[:, :, 0] * Uq[:, :, irhoY])
+		jac[:, :, irhoY, irhou] = (-1.*dKdrhou[:, :, 0] * Uq[:, :, irhoY])
+		jac[:, :, irhoY, irhoE] = (-1.*dKdrhoE[:, :, 0] * Uq[:, :, irhoY])
+		jac[:, :, irhoY, irhoY] = (-1.*dKdrhoY[:, :, 0] * Uq[:, :, irhoY] - K[:, :, 0] )
 
 		# return jac.transpose(0,2,1)
 		return jac
@@ -279,24 +283,24 @@ def get_temperature_jacobian(physics, Uq):
 		qo = physics.qo
 		R = physics.R
 		
-		dTdU = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
+		dTdU = np.zeros([Uq.shape[0], Uq.shape[1], Uq.shape[-1], Uq.shape[-1]])
 
-		rho = Uq[:, irho]
-		rhou = Uq[:, irhou]
-		rhoE = Uq[:, irhoE]
-		rhoY = Uq[:, irhoY]
+		rho = Uq[:, :, irho]
+		rhou = Uq[:, :, irhou]
+		rhoE = Uq[:, :, irhoE]
+		rhoY = Uq[:, :, irhoY]
 
 		E = rhoE/rho
 		Y = rhoY/rho
 		u = rhou/rho
 
 		gamR = (gam - 1.) / R
-		dTdU[:, irhoY, irho] = (gamR / rho) * (-1.*E + u**2 + qo*Y)
-		dTdU[:, irhoY, irhou] = (gamR / rho) * (-1.*u)
-		dTdU[:, irhoY, irhoE] = gamR / rho
-		dTdU[:, irhoY, irhoY] = -1.*qo * (gamR / rho)
+		dTdU[:, :, irhoY, irho] = (gamR / rho) * (-1.*E + u**2 + qo*Y)
+		dTdU[:, :, irhoY, irhou] = (gamR / rho) * (-1.*u)
+		dTdU[:, :, irhoY, irhoE] = gamR / rho
+		dTdU[:, :, irhoY, irhoY] = -1.*qo * (gamR / rho)
 
-		return dTdU # [nq, ns, ns]
+		return dTdU # [ne, nq, ns, ns]
 
 class Heaviside(SourceBase):
 	def __init__(self, Da=1000., Tign=15.):
