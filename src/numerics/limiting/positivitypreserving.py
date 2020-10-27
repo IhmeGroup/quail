@@ -102,7 +102,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		# Density and pressure from averaged state
 		rho_bar = physics.compute_variable(self.var_name1, U_bar)
-		p_bar = physics.compute_variable(self.var_name2, U_bar).reshape(ne, 1)
+		p_bar = physics.compute_variable(self.var_name2, U_bar)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise errors.NotPhysicalError
@@ -140,7 +140,7 @@ class PositivityPreserving(base.LimiterBase):
 		i_pos_p  = negative_p_indices[1]
 
 		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :, 0] / (
-				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_pos_p])
+				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_pos_p, :])
 
 		theta2 = np.min(theta, axis=1)
 		elem_IDs = np.where(theta2 < 1.)[0]
