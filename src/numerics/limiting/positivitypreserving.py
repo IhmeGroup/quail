@@ -122,7 +122,7 @@ class PositivityPreserving(base.LimiterBase):
 		irho = physics.get_state_index(self.var_name1)
 		elem_IDs = np.where(theta1 < 1)[0]
 		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + (1. -
-				theta1[elem_IDs])*rho_bar[elem_IDs]
+				theta1[elem_IDs])*rho_bar[elem_IDs, 0]
 
 		if np.any(theta1 < 1.):
 			# Intermediate limited solution
@@ -138,8 +138,8 @@ class PositivityPreserving(base.LimiterBase):
 		negative_p_indices = np.where(p_elem_faces < 0.)
 		elem_IDs = negative_p_indices[0]
 		i_pos_p  = negative_p_indices[1]
-		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs]/(p_bar[elem_IDs] -
-				p_elem_faces[elem_IDs, i_pos_p])
+		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :, 0] / (
+				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_pos_p])
 		theta2 = np.min(theta, axis=1)
 		elem_IDs = np.where(theta2 < 1.)[0]
 		Uc[elem_IDs] = (
