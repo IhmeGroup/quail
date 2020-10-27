@@ -74,7 +74,6 @@ class SimpleDetonation1(FcnBase):
 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 		gam = physics.gamma
 		qo = physics.qo
-		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
 		b = -p_u - rho_u*qo * (gam-1.)
 		c = p_u**2 + (2.*(gam-1.) * rho_u*p_u*qo) / (gam+1.)
@@ -88,23 +87,23 @@ class SimpleDetonation1(FcnBase):
 		xshock += scj*t
 
 		''' Fill state '''
-		for elem_ID in range(Uq.shape[0]):
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
+		for elem_ID in range(Uq.shape[0]):
 			ileft = (x[elem_ID] <= xshock).reshape(-1)
 			iright = (x[elem_ID] > xshock).reshape(-1)
-
 			# Density
-			Uq[:, iright, srho] = rho_u
-			Uq[:, ileft, srho] = rho_b
+			Uq[elem_ID, iright, srho] = rho_u
+			Uq[elem_ID, ileft, srho] = rho_b
 			# Momentum
-			Uq[:, iright, srhou] = rho_u*u_u
-			Uq[:, ileft, srhou] = rho_b*u_b
+			Uq[elem_ID, iright, srhou] = rho_u*u_u
+			Uq[elem_ID, ileft, srhou] = rho_b*u_b
 			# Energy
-			Uq[:, iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
-			Uq[:, ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
+			Uq[elem_ID, iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
+			Uq[elem_ID, ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
 			# MixtureFraction
-			Uq[:, iright, srhoz] = rho_u*Y_u
-			Uq[:, ileft, srhoz] = rho_b*Y_b
+			Uq[elem_ID, iright, srhoz] = rho_u*Y_u
+			Uq[elem_ID, ileft, srhoz] = rho_b*Y_b
 
 		return Uq
 
@@ -238,7 +237,7 @@ class Arrhenius(SourceBase):
 		S = np.zeros_like(Uq)
 
 		S[:, :, irhoY] = -K[:, :, 0] * Uq[:, :, irhoY]
-		
+
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):

@@ -212,6 +212,7 @@ class Chemistry1D(Chemistry):
 		rhou = Uq[:, :, irhou]
 		rhoE = Uq[:, :, irhoE]
 		rhoY = Uq[:, :, irhoY]
+
 		rho += eps
 
 		# Get velocity 
@@ -219,10 +220,11 @@ class Chemistry1D(Chemistry):
 		# Get squared velocity
 		u2 = u**2
 
-		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2 - self.qo*rhoY) # [n, nq]
+		# Calculate pressure using the Ideal Gas Law
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2 
+				- rhoY * self.qo) # [n, nq]
+		# Get total enthalpy
 		H = rhoE + p
-		# p = self.compute_variable("Pressure", Uq)
-		# h = self.compute_variable("TotalEnthalpy", Uq)
 
 		F = np.empty(Uq.shape + (self.DIM,))
 		F[:, :, irho, 0] = rhou

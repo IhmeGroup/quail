@@ -231,9 +231,9 @@ class Euler1D(Euler):
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
-		F[:,:,irho,  0] = rhou         # Flux of mass
-		F[:,:,irhou, 0] = rho * u2 + p # Flux of momentum
-		F[:,:,irhoE, 0] = H * u        # Flux of energy
+		F[:, :, irho, 0] = rhou         # Flux of mass
+		F[:, :, irhou, 0] = rho * u2 + p # Flux of momentum
+		F[:, :, irhoE, 0] = H * u        # Flux of energy
 
 		rho -= eps
 

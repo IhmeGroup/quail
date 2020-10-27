@@ -14,8 +14,8 @@ ax = plt.gca()
 imgs_all = []
 j = 0
 k=0
-skip = 7
-for i in range(28):
+skip = 2
+for i in range(20):
 	print(i,k)
 	fname = "Data_" + str(k) + ".pkl"
 	solver = readwritedatafiles.read_data_file(fname)

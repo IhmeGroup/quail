@@ -102,7 +102,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		# Density and pressure from averaged state
 		rho_bar = physics.compute_variable(self.var_name1, U_bar)
-		p_bar = physics.compute_variable(self.var_name2, U_bar)
+		p_bar = physics.compute_variable(self.var_name2, U_bar).reshape(ne, 1)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise errors.NotPhysicalError
@@ -215,7 +215,6 @@ class PositivityPreservingChem(PositivityPreserving):
 		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + \
 				np.einsum('ik, ijk -> ij', (1.-theta1[elem_IDs]), 
 				rho_bar[elem_IDs])
-
 		# (1. -
 				# theta1[elem_IDs])*rho_bar[elem_IDs]
 
