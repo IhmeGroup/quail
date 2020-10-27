@@ -1,14 +1,14 @@
 import numpy as np
 
-cfl = 0.025
-# NumTimeSteps = 8000
+# cfl = 0.025
+NumTimeSteps = 30
 FinalTime = 0.01
 # FinalTime = 1.8
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : cfl,
-    # "NumTimeSteps" : NumTimeSteps,
+    # "CFL" : cfl,
+    "NumTimeSteps" : NumTimeSteps,
     "TimeStepper" : "SSPRK3",
     # "OperatorSplittingImplicit" : "Trapezoidal",
 }
@@ -35,7 +35,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 60,
+    "NumElemsX" : 360,
     "xmin" : 0.,
     "xmax" : 30.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
