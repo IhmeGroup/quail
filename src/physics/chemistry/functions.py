@@ -88,21 +88,23 @@ class SimpleDetonation1(FcnBase):
 		xshock += scj*t
 
 		''' Fill state '''
-		ileft = (x <= xshock).reshape(-1)
-		iright = (x > xshock).reshape(-1)
+		for elem_ID in range(Uq.shape[0]):
 
-		# Density
-		Uq[:, iright, srho] = rho_u
-		Uq[:, ileft, srho] = rho_b
-		# Momentum
-		Uq[:, iright, srhou] = rho_u*u_u
-		Uq[:, ileft, srhou] = rho_b*u_b
-		# Energy
-		Uq[:, iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
-		Uq[:, ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
-		# MixtureFraction
-		Uq[:, iright, srhoz] = rho_u*Y_u
-		Uq[:, ileft, srhoz] = rho_b*Y_b
+			ileft = (x[elem_ID] <= xshock).reshape(-1)
+			iright = (x[elem_ID] > xshock).reshape(-1)
+
+			# Density
+			Uq[:, iright, srho] = rho_u
+			Uq[:, ileft, srho] = rho_b
+			# Momentum
+			Uq[:, iright, srhou] = rho_u*u_u
+			Uq[:, ileft, srhou] = rho_b*u_b
+			# Energy
+			Uq[:, iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
+			Uq[:, ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
+			# MixtureFraction
+			Uq[:, iright, srhoz] = rho_u*Y_u
+			Uq[:, ileft, srhoz] = rho_b*Y_b
 
 		return Uq
 
@@ -235,7 +237,7 @@ class Arrhenius(SourceBase):
 
 		S = np.zeros_like(Uq)
 
-		S[:,irhoY] = -K[:].reshape(-1) * Uq[:,irhoY]
+		S[:, :, irhoY] = -K[:, :, 0] * Uq[:, :, irhoY]
 		
 		return S
 

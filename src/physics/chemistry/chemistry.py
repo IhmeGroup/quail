@@ -129,8 +129,6 @@ class Chemistry(base.PhysicsBase):
 		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
 					gamma*get_pressure()/rho)
-		elif vname is self.AdditionalVariables["Speed"].name:
-			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho
 		elif vname is self.AdditionalVariables["MassFraction"].name:
 			varq = rhoY/rho
 		else:
@@ -210,10 +208,10 @@ class Chemistry1D(Chemistry):
 
 		eps = general.eps
 
-		rho = Uq[:, :, srho]
-		rhou = Uq[:, :, smom]
-		rhoE = Uq[:, :, srhoE]
-		rhoY = Uq[:, :,srhoY]
+		rho = Uq[:, :, irho]
+		rhou = Uq[:, :, irhou]
+		rhoE = Uq[:, :, irhoE]
+		rhoY = Uq[:, :, irhoY]
 		rho += eps
 
 		# Get velocity 
@@ -221,14 +219,16 @@ class Chemistry1D(Chemistry):
 		# Get squared velocity
 		u2 = u**2
 
-		p = self.compute_variable("Pressure", Uq)
-		h = self.compute_variable("TotalEnthalpy", Uq)
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2 - self.qo*rhoY) # [n, nq]
+		H = rhoE + p
+		# p = self.compute_variable("Pressure", Uq)
+		# h = self.compute_variable("TotalEnthalpy", Uq)
 
 		F = np.empty(Uq.shape + (self.DIM,))
-		F[:, irho, :] = rhou
-		F[:, smom, :] = rho * u2 + p
-		F[:, irhoE, :] = rhou*h
-		F[:, irhoY, :] = rhou*rhoY/rho
+		F[:, :, irho, 0] = rhou
+		F[:, :, irhou, 0] = rho * u2 + p
+		F[:, :, irhoE, 0] = rhou*H
+		F[:, :, irhoY, 0] = rhou*rhoY/rho
 
 		rho -= eps
 
