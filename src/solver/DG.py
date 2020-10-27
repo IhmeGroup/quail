@@ -674,14 +674,18 @@ class DG(base.SolverBase):
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
 		normals_int_faces = int_face_helpers.normals_int_faces # [nf, nq, dim]
-
+		
+		ns = physics.NUM_STATE_VARS
+		nq = quad_wts.shape[0]
 		# Interpolate state and gradient at quad points
 		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) # [nf, nq, ns]
 		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) # [nf, nq, ns]
 
 		# allocate RL and RR (needed for operator splitting)
-		RL = np.zeros_like(self.stepper.R)
-		RR = np.zeros_like(self.stepper.R)
+		nifL = self.int_face_helpers.elemL_ID.shape[0]
+		nifR = self.int_face_helpers.elemR_ID.shape[0]
+		RL = np.zeros([nifL, nq, ns])
+		RR = np.zeros([nifR, nq, ns])
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
