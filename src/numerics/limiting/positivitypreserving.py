@@ -151,7 +151,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		np.seterr(divide='warn')
 
-		return Uc
+		return Uc # [ne, nq, ns]
 
 
 class PositivityPreservingChem(PositivityPreserving):
@@ -233,8 +233,6 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, irhoY] + (1. -
 				theta2[elem_IDs])*rhoY_bar[elem_IDs, 0]
-		# (1. - 
-				# theta2[elem_IDs]) * rhoY_bar[elem_IDs]
 
 		if np.any(theta2 < 1.):
 			U_elem_faces = helpers.evaluate_state(Uc,
@@ -262,4 +260,4 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		np.seterr(divide='warn')
 
-		return Uc
+		return Uc # [ne, nq, ns]
