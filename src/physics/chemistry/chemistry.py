@@ -46,13 +46,16 @@ class Chemistry(base.PhysicsBase):
 		# 	HeatRelease = 25. 
 		# )
 
-	# def set_maps(self):
-	# 	super().set_maps()
+	def set_maps(self):
+		super().set_maps()
 
 		self.BC_map.update({
+			base_BC_type.StateAll : base_fcns.StateAll,
+			base_BC_type.Extrapolate : base_fcns.Extrapolate,
 			euler_BC_type.SlipWall : euler_fcns.SlipWall,
-		# 	euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
+			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
+
 	def set_physical_params(self, GasConstant=287., SpecificHeatRatio = 1.4, HeatRelease = 0.):
 		self.R = GasConstant
 		self.gamma = SpecificHeatRatio
@@ -157,22 +160,8 @@ class Chemistry(base.PhysicsBase):
 			scalar = np.sqrt(gamma*get_pressure()/rho)
 		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
-		elif sname is self.AdditionalVariables["Speed"].name:
-			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho
 		elif sname is self.AdditionalVariables["MassFraction"].name:
 			scalar = rhoY/rho
-		elif sname is self.AdditionalVariables["SourceTerm"].name:
-			nq = Uq.shape[0]
-			x = np.zeros([nq,1])
-			Sp = np.zeros_like(Uq) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			Sp = self.eval_source_terms(Uq, x, 0., Sp) # [nq,ns]
-			scalar = Sp[:,3].reshape(7,1)
-		elif sname is self.AdditionalVariables["Jacobian"].name:
-			nq = Uq.shape[0]
-			x = np.zeros([nq,1])
-			jac = np.zeros([nq,4,4]) # eval_source_terms is an additive function so source needs to be initialized to zero for each time step
-			jac = self.eval_source_term_jacobians(Uq, x, 0., jac) # [nq,ns]
-			scalar = jac[:,3,3].reshape(7,1)
 		else:
 			raise NotImplementedError
 
@@ -181,18 +170,7 @@ class Chemistry(base.PhysicsBase):
 class Chemistry1D(Chemistry):
 
 	NUM_STATE_VARS = 4
-	dim = 1
-
-	def __init__(self, order, basis, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
-		super().__init__(order, basis, mesh)
+	DIM = 1
 
 	def set_maps(self):
 		super().set_maps()
