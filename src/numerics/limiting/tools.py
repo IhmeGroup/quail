@@ -128,7 +128,7 @@ def minmod_shock_indicator(limiter, solver, elem_ID, Uc):
 	aj = np.array([u_dtilde, deltaP_u_bar, deltaM_u_bar])
 	u_dtilde_mod = helpers.minmod(aj)
 
-
+	import code; code.interact(local=locals())
 	if u_tilde_mod != u_tilde or u_dtilde_mod != u_dtilde:
 		return True
 	else:
