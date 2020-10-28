@@ -121,7 +121,6 @@ class ScalarWENO(base.LimiterBase):
 		weno_wts[2] = self.get_nonlinearwts(p2, 0.001, basis_phys_grad, quad_wts, vol)
 
 		normal_wts = weno_wts / np.sum(weno_wts)
-		import code; code.interact(local=locals())
 		Uc = normal_wts[0]*p0_tilde + normal_wts[1]*p1 + normal_wts[2]*p2_tilde
-		import code; code.interact(local=locals())
+
 		return Uc
