@@ -1,22 +1,25 @@
 import numpy as np
 
-cfl = 0.01
-
+#cfl = 0.025
+NumTimeSteps = 7000
+# FinalTime = 0.01
 FinalTime = 1.8
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : cfl,
-    # "NumTimeSteps" : 0,
+    #"CFL" : cfl,
+    "NumTimeSteps" : NumTimeSteps,
     "TimeStepper" : "SSPRK3",
+    #"OperatorSplittingImplicit" : "Trapezoidal",
 }
 
 Numerics = {
-    "SolutionOrder" : 3,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-    "InterpolateIC" : False,
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreservingChem",
+    # "SourceTreatmentADER" : "Implicit",
+    # "InterpolateFluxADER" : True,
     # "NodeType" : "GaussLobatto",
     # "ElementQuadrature" : "GaussLobatto",
     # "FaceQuadrature" : "GaussLobatto",
@@ -24,15 +27,14 @@ Numerics = {
 }
 
 Output = {
-    "WriteInterval" : 50,
+    "WriteInterval" : 10,
     "WriteInitialSolution" : True,
-    "AutoProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 360,
+    "NumElemsX" : 360,
     "xmin" : 0.,
     "xmax" : 30.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
@@ -40,7 +42,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Chemistry",
-    "ConvFlux" : "LaxFriedrichs",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
     "HeatRelease": 25.,
@@ -58,7 +60,7 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
         "BCType" : "StateAll",
 	    "Function" : "SimpleDetonation1",
         "rho_u" : 1.0,
@@ -67,7 +69,7 @@ BoundaryConditions = {
         "Y_u" : 1.0,
         "xshock" : 10.,  
     },
-    "Right" : {
+    "x2" : {
         "BCType" : "StateAll",
         "Function" : "SimpleDetonation1",
         "rho_u" : 1.0,
@@ -86,9 +88,8 @@ SourceTerms = {
     # },
     "source1" : {
         "Function" : "Arrhenius",
-         "A" : 16418.,
-        #"A" : 0.
-        "b" : 0.0,
+        "A" : 16418.,
+        "b" : 0.,
         "Tign" : 25.,
     },
 }

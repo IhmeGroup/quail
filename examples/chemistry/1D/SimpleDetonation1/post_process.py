@@ -5,7 +5,7 @@ import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
 ### Postprocess
-fname = "Data_final.pkl"
+fname = "Data_Final.pkl"
 solver = readwritedatafiles.read_data_file(fname)
 print('Solution Final Time:', solver.time)
 

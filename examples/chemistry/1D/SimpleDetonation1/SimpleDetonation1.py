@@ -1,24 +1,24 @@
 import numpy as np
 
-cfl = 0.025
-# NumTimeSteps = 30
+#cfl = 0.025
+NumTimeSteps = 7000
 # FinalTime = 0.01
 FinalTime = 1.8
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : cfl,
-    # "NumTimeSteps" : NumTimeSteps,
-    "TimeStepper" : "Strang",
-    "OperatorSplittingImplicit" : "Trapezoidal",
+    #"CFL" : cfl,
+    "NumTimeSteps" : NumTimeSteps,
+    "TimeStepper" : "SSPRK3",
+    #"OperatorSplittingImplicit" : "Trapezoidal",
 }
 
 Numerics = {
-    "SolutionOrder" : 3,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiter" : "PositivityPreservingChem",
-    # "SourceTreatmentADER" : "Explicit",
+    # "SourceTreatmentADER" : "Implicit",
     # "InterpolateFluxADER" : True,
     # "NodeType" : "GaussLobatto",
     # "ElementQuadrature" : "GaussLobatto",
