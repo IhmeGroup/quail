@@ -33,7 +33,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 80,
+    "NumElemsX" : 25,
     "xmin" : 0.,
     "xmax" : 2*np.pi,
     "PeriodicBoundariesX" : ["x1","x2"]
