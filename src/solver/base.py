@@ -129,8 +129,12 @@ class SolverBase(ABC):
 
 		# Limiter
 		limiter_type = params["ApplyLimiter"]
+		shock_indicator_type = params["ShockIndicator"]
+
 		self.limiter = limiter_tools.set_limiter(limiter_type,
 				physics.PHYSICS_TYPE)
+		limiter_tools.set_shock_indicator(self.limiter, 
+				shock_indicator_type)
 
 		# Console output
 		self.verbose = params["Verbose"]

@@ -73,6 +73,15 @@ class LimiterType(Enum):
     '''
     PositivityPreserving = auto()
     PositivityPreservingChem = auto()
+    ScalarWENO = auto()
+
+
+class ShockIndicatorType(Enum):
+    '''
+    This enum contains the available shoock indicator 
+    types. See src/numerics/limiting/ for more info.
+    '''
+    MinMod = auto()
 
 
 class SolverType(Enum):

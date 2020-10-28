@@ -73,6 +73,10 @@ Numerics = {
         # Limiter type
         # If None, then no limiter will be applied
         # See general.LimiterType
+    "ShockIndicator" : None,
+        # Shock Indicator Type
+        # If None, then no shock indicator is applied
+        # See general.ShockIndicatorType
     "SourceTreatmentADER" : "Explicit",
         # Treatment of source terms for ADER-DG
         # Either "Explicit" or "Implicit"

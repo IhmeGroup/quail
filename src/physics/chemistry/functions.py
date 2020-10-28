@@ -1,4 +1,3 @@
-import code
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
@@ -11,11 +10,6 @@ class FcnType(Enum):
     SimpleDetonation2 = auto()
     SimpleDetonation3 = auto()
 
-# class BCType(Enum):
-	# SlipWall = auto()
-	# PressureOutlet = auto()
-
-
 class SourceType(Enum):
     Arrhenius = auto()
     Heaviside = auto()
@@ -23,7 +17,6 @@ class SourceType(Enum):
 class ConvNumFluxType(Enum):
 	Roe = auto()
 	HLLC = auto()
-
 
 '''
 State functions
@@ -103,7 +96,7 @@ class SimpleDetonation1(FcnBase):
 			Uq[elem_ID, iright, srhoz] = rho_u*Y_u
 			Uq[elem_ID, ileft, srhoz] = rho_b*Y_b
 
-		return Uq
+		return Uq # [ne, nq, ns]
 
 class SimpleDetonation2(FcnBase):
 	def __init__(self, uL=np.array([2.,4.,40.,0.]), xshock=0.):
@@ -188,7 +181,7 @@ class SimpleDetonation3(FcnBase):
 		Uq[ileft, srho] = rhoL
 		# Momentum
 		Uq[iright, srhou] = rhoR*vR
-		Uq[ileft, srhou] = rhoL*vL
+		Uq[ileft, srhou] = rhoL*vLA
 		# Energy
 		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
 		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
@@ -196,12 +189,7 @@ class SimpleDetonation3(FcnBase):
 		Uq[iright, srhoz] = rhoR*yR
 		Uq[ileft, srhoz] = rhoL*yL
 
-		return Uq
-
-'''
-Boundary conditions
-'''
-
+		return Uq 
 
 '''
 Source term functions
@@ -213,36 +201,25 @@ class Arrhenius(SourceBase):
 		self.Tign = Tign
 
 	def get_source(self, physics, Uq, x, t):
-		
-		# Unpack source term constants
+		# Unpack
 		A = self.A
 		b = self.b
 		Tign = self.Tign
 
-
 		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
-		# U = self.U
+		# Get temperature and calculate arrhenius rate constant
 		T = physics.compute_variable("Temperature", Uq)
-		# K = np.zeros_like(T)
-		# for i in range(len(T)):
-		# 	if T[i]<0.:
-		# 		K[i] = 0.
-		# 	else:
-		# 		K[i] = A * T[i]**b * np.exp(-Tign / T[i])
 		K = A * T**b * np.exp(-Tign / T)
 
+		# Calculate source term
 		S = np.zeros_like(Uq)
-
 		S[:, :, irhoY] = -K[:, :, 0] * Uq[:, :, irhoY]
 
-		return S
+		return S # [ne, nq, ns, ns]
 
 	def get_jacobian(self, physics, Uq, x, t):
-		
-		# Note: This assumes b = 0 for now.
-
-		# Unpack source term constants
+		# Unpack
 		A = self.A
 		Tign = self.Tign
 		ne = Uq.shape[0]
@@ -250,13 +227,18 @@ class Arrhenius(SourceBase):
 		
 		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
+		# Allocate jacobian matrix
 		jac = np.zeros([ne, nq, Uq.shape[-1], Uq.shape[-1]])
 
 		T = physics.compute_variable("Temperature", Uq)
 		K = A * np.exp(-Tign / T)
 
+		elem_IDs = np.where(T<0)[0]
+		K[elem_IDs] = 0.0
+		# Calculate the temperature jacobian
 		dTdU = get_temperature_jacobian(physics, Uq)
 
+		# Get dKdU
 		dKdrho =  (A * Tign * np.exp(-Tign / T) * \
 				dTdU[:, :, irhoY, irho].reshape([ne, nq, 1]))  / T**2 
 		dKdrhou = (A * Tign * np.exp(-Tign / T) * \
@@ -266,14 +248,13 @@ class Arrhenius(SourceBase):
 		dKdrhoY = (A * Tign * np.exp(-Tign / T) * \
 				dTdU[:, :, irhoY, irhoY].reshape([ne, nq, 1])) / T**2
 
-		# import code; code.interact(local=locals())
+		# Calculate jacobian of the source term
 		jac[:, :, irhoY, irho] =  (-1.*dKdrho[:, :, 0] * Uq[:, :, irhoY])
 		jac[:, :, irhoY, irhou] = (-1.*dKdrhou[:, :, 0] * Uq[:, :, irhoY])
 		jac[:, :, irhoY, irhoE] = (-1.*dKdrhoE[:, :, 0] * Uq[:, :, irhoY])
 		jac[:, :, irhoY, irhoY] = (-1.*dKdrhoY[:, :, 0] * Uq[:, :, irhoY] - K[:, :, 0] )
 
-		# return jac.transpose(0,2,1)
-		return jac
+		return jac # [ne, nq, ns, ns]
 		
 def get_temperature_jacobian(physics, Uq):
 		
