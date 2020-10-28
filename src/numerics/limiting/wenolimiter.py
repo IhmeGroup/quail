@@ -78,7 +78,7 @@ class ScalarWENO(base.LimiterBase):
 		s = 1
 		beta = vol**(2*s-1) * np.matmul((np.matmul(basis_phys_grad[:,:,0],
 				p)**2).transpose(), quad_wts)
-		import code; code.interact(local=locals())
+		# import code; code.interact(local=locals())
 		eps = 1.0e-6
 
 		return gamma / (eps + beta)**2

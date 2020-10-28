@@ -106,7 +106,7 @@ def minmod_shock_indicator(limiter, solver, elem_ID, Uc):
 	# Average value of state
 	um_bar = helpers.get_element_mean(um_elem, limiter.quad_wts_elem, djacM, 
 			limiter.elem_vols[elemM_ID])
-	import code; code.interact(local=locals())
+	# import code; code.interact(local=locals())
 	# Store the polynomial coeff values for Up, Um, and U.
 	limiter.u_elem = u_elem
 	limiter.up_elem = up_elem

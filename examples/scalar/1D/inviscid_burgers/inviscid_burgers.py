@@ -2,7 +2,7 @@ import numpy as np
 
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : 1.5,
+    "FinalTime" : 0.5,
     "CFL" : 0.1,
     # "TimeStepSize" : 0.0125,
     # "NumTimeSteps" : 40,
@@ -15,8 +15,8 @@ Numerics = {
     "Solver" : "DG",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
-#   "ApplyLimiters" : ["ScalarWENO"],
-#   "ShockIndicator" : "MinMod",
+    "ApplyLimiters" : ["ScalarWENO"],
+    "ShockIndicator" : "MinMod",
     # "NodeType" : "GaussLobatto",
     # "ColocatedPoints" : True,
     # "InterpolateFluxADER" : True,
@@ -50,10 +50,10 @@ InitialCondition = {
     "omega" : 1.,
 }
 
-# ExactSolution = {
-#     "Function" : "SineBurgers",
-#     "omega" : 1.,
-# }
+ExactSolution = {
+     "Function" : "SineBurgers",
+     "omega" : 1.,
+}
 #BoundaryConditions = {
 #    "x1" : {
 #	    "Function" : "Sine",
