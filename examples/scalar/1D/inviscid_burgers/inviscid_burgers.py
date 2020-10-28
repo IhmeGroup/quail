@@ -26,7 +26,7 @@ Output = {
     "WriteInterval" : 10,
     "WriteInitialSolution" : True,
     "AutoPostProcess" : True,
-    "Prefix" : "WENO",
+#    "Prefix" : "WENO",
 
 }
 
