@@ -103,9 +103,9 @@ def minmod_shock_indicator(limiter, solver, Uc):
 			limiter.elem_vols[elemM_IDs])
 
 	# Store the polynomial coeff values for Up, Um, and U.
-	limiter.U_elem = U_elem
-	limiter.Up_elem = Up_elem
-	limiter.Um_elem = Um_elem
+	limiter.U_elem = Uc
+	limiter.Up_elem = UcP
+	limiter.Um_elem = UcM
 
 	# Store the average values for Up, Um, and U.
 	limiter.U_bar = U_bar
@@ -130,11 +130,10 @@ def minmod_shock_indicator(limiter, solver, Uc):
 	aj[:, 2, :] = deltaM_u_bar[:, 0, :]
 	u_dtilde_mod = minmod(aj)
 
-	# flag = np.full(aj.shape[0], False)
-	shock_elems = np.where((u_tilde_mod != U_tilde) | (u_dtilde_mod != U_dtilde))[0]
+	shock_elems = np.where((u_tilde_mod != U_tilde) 
+			| (u_dtilde_mod != U_dtilde))[0]
 
-	# flag[shock_elems] = True
-
+	# import code; code.interact(local=locals())
 	return shock_elems
 
 
@@ -152,3 +151,82 @@ def minmod(a):
 		u[elemID_lt, 0, :] = s[elemID_lt, 0, :] * np.amin(np.abs(a[elemID_lt]), axis=1)
 
 	return u
+
+def get_hessian(limiter, basis, quad_pts):
+	#Unpack 
+	dim = basis.DIM
+	p = basis.order
+	nb = basis.nb
+	nq = quad_pts.shape[0]
+
+	basis_ref_hessian = np.zeros([nq, nb, dim])
+
+	if p > 0:
+		xnodes = basis.get_1d_nodes(-1., 1., p+1)
+		get_lagrange_hessian_1D(quad_pts, xnodes, 
+				basis_ref_hessian=basis_ref_hessian)
+	
+	return basis_ref_hessian
+
+def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
+	'''
+	Calculates the 1D Lagrange hessian
+
+	Inputs:
+	-------
+		xq: coordinates of quadrature points [nq, 1]
+		xnodes: coordinates of nodes in 1D ref space [nb, 1] 
+
+	Outputs:
+	-------- 
+		basis_hessian: evaluated hessian [nq, nb, dim]
+	'''
+	nnodes = xnodes.shape[0]
+
+	if basis_ref_hessian is not None:
+		basis_ref_hessian[:] = 0.
+
+	for j in range(nnodes):
+		for i in range(nnodes):
+			if i != j:
+				for k in range(nnodes):
+					if (k != i) and (k != j):
+						h = 1./(xnodes[j]-xnodes[i]) * 1./(xnodes[j]-xnodes[k])
+						for l in range(nnodes):
+							if (l != i) and (l != j) and (l !=k ):
+								h *= (xq - xnodes[l])/(xnodes[j] - xnodes[l])
+						basis_ref_hessian[:, j, :] += h
+
+	
+def get_phys_hessian(limiter, basis, ijac):
+	'''
+	Calculates the physical gradient of the hessian
+
+	Inputs:
+	-------
+		limiter: limiter object
+		basis: basis object
+		ijac: inverse of the Jacobian [nq, nb, dim]
+
+	Outputs:
+	--------
+		basis_phys_hessian: evaluated hessian of the basis function in 
+			physical space [nq, nb, dim]
+	'''
+	dim = basis.DIM
+	nb = basis.nb
+
+	basis_ref_hessian = limiter.basis_ref_hessian
+	nq = basis_ref_hessian.shape[0]
+
+	if nq == 0:
+		raise ValueError("basis_ref_hessian not evaluated")
+
+	# Check to see if ijac has been passed and has the right shape
+	if ijac is None or ijac.shape != (nq, dim, dim):
+		raise ValueError("basis_ref_hessian and ijac shapes not compatible")
+	
+	ijac2 = np.einsum('ijk,ijk->ijk',ijac,ijac)
+	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', basis_ref_hessian, ijac2)
+
+	return basis_phys_hessian
