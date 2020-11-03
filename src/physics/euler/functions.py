@@ -874,7 +874,6 @@ class LaxFriedrichsEuler2D(ConvNumFluxBase):
 		dUq = UqR - UqL
 
 		# Max wave speeds at each point
-		# TODO: Flag for non-physical
 		aL = np.empty_like(n_mag)
 		aR = np.empty_like(n_mag)
 		aL[:,:,0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
@@ -906,7 +905,6 @@ class LaxFriedrichsEuler1D(ConvNumFluxBase):
 		dUq = UqR - UqL
 
 		# Max wave speeds at each point
-		# TODO: Flag for non-physical
 		# aL = np.empty_like(n_mag)
 		aL = np.empty(pL.shape + (1,))
 		aR = np.empty(pR.shape + (1,))
@@ -1155,11 +1153,7 @@ class Roe1D(ConvNumFluxBase):
 		return R
 
 	def compute_flux(self, physics, UqL_std, UqR_std, normals):
-		# TODO: Either figure out a smarter way to do this, or get rid of the
-		# init function doing this and accept the arrays being recreated every
-		# iteration.
-		# This needs to happen because there is a different number of interior
-		# faces compared to boundary faces.
+		# Reshape arrays
 		n = UqL_std.shape[0]
 		nq = UqL_std.shape[1]
 		ns = UqL_std.shape[2]
@@ -1218,7 +1212,6 @@ class Roe1D(ConvNumFluxBase):
 		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 
 		# Form flux Jacobian matrix multiplied by dU
-		#TODO: Figure out how these indices should be labeled
 		FRoe = np.einsum('ijkl, ijl -> ijk', R, np.abs(evals)*alphas)
 
 		# Undo rotation
