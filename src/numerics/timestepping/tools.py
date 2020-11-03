@@ -12,6 +12,7 @@ import numpy as np
 from general import StepperType
 
 import numerics.basis.tools as basis_tools
+import numerics.helpers.helpers as helpers
 import numerics.timestepping.stepper as stepper_defs
 
 import solver.tools as solver_tools
@@ -39,7 +40,7 @@ def set_stepper(params, U):
 		stepper = stepper_defs.LSRK4(U)
 	elif StepperType[time_stepper] == StepperType.SSPRK3:
 		stepper = stepper_defs.SSPRK3(U)
-	# if setting a splitting scheme select solvers for the splits
+	# If setting a splitting scheme select solvers for the splits
 	elif StepperType[time_stepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
@@ -68,7 +69,7 @@ def set_time_stepping_approach(stepper, params):
 		num_time_steps: number of time steps for the solution
 	'''
 
-	# unpack time stepping settings
+	# Unpack time stepping settings
 	cfl = params["CFL"]
 	dt = params["TimeStepSize"]
 	num_time_steps = params["NumTimeSteps"]
@@ -167,13 +168,17 @@ def get_dt_from_cfl(stepper, solver):
 	elem_helpers = solver.elem_helpers
 	vol_elems = elem_helpers.vol_elems
 	a = np.zeros([mesh.num_elems, U.shape[1], 1])
+	basis_val = solver.elem_helpers.basis_val
 
-	# get the maximum wave speed per element
-	for elem_ID in range(mesh.num_elems):
-		a[elem_ID] = physics.compute_variable("MaxWaveSpeed", U[elem_ID], 
-				flag_non_physical=True)
+	# Interpolate state at quad points
+	Uq = helpers.evaluate_state(U, basis_val,
+			skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
 
-	# calculate the dt for each element
+	# Calculate max wavespeed
+	a = physics.compute_variable("MaxWaveSpeed", Uq, 
+			flag_non_physical=True)
+
+	# Calculate the dt for each element
 	dt_elems = cfl*vol_elems**(1./dim)/a
 
 	# take minimum to set appropriate dt

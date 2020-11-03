@@ -4,7 +4,7 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.5,
     "NumTimeSteps" : 40,
-    "TimeStepper" : "RK4",
+    "TimeStepper" : "SSPRK3",
 }
 
 Numerics = {
@@ -24,7 +24,7 @@ Mesh = {
     "NumElemsY" : 2,
     "xmin" : -1.,
     "xmax" : 1.,
-    # "PeriodicBoundariesX" : ["x1", "x2"],
+    "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
@@ -41,19 +41,6 @@ InitialCondition = {
 }
 
 ExactSolution = InitialCondition.copy()
-
-BoundaryConditions = {
-    "x1" : {
-	    "Function" : "DampingSine",
-	    "omega" : 2*np.pi,
-	    "nu" : nu,
-    	"BCType" : "StateAll",
-    },
-    "x2" : {
-    	#"Function" : None,
-    	"BCType" : "Extrapolate",
-    },
-}
 
 SourceTerms = {
 	"source1" : {

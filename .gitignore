@@ -49,6 +49,7 @@ Cases/Miscellaneous/Research
 Cases/Miscellaneous/SaveMeshHDF5
 Cases/Miscellaneous/Testing
 Cases/Miscellaneous/Plot
+*__pycache__
 
 ###############
 # Other files #
@@ -60,3 +61,4 @@ Cases/Miscellaneous/Plot
 *.pkl
 *.mp4
 *.png
+*.swp

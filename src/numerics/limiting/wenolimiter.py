@@ -15,22 +15,23 @@ import meshing.tools as mesh_tools
 
 import numerics.helpers.helpers as helpers
 import numerics.limiting.base as base
+import numerics.limiting.tools as limiter_tools
 
-import code
 
 class ScalarWENO(base.LimiterBase):
 	'''
 	This class corresponds to the scalar WENO limiter. It inherits from 
 	the LimiterBase class. See LimiterBase for detailed comments of 
 	attributes and methods. See the following references:
-		[1] 
+	
+		[1] X. Zhong, C. Shu, "A simple weighted essentially nonoscillatory
+			limiter for Runge-Kutta discontinuous Galerkin methods," 
+			Journal of Computational Physics. Vol. 232 pg. 397-415. 2013.
 
 	Attributes:
 	-----------
 	var_name1: str
-		name of first variable involved in limiting (density)
-	var_name2: str
-		name of second variable involved in limiting (pressure)
+		name of first variable involved in limiting (scalar)
 	elem_vols: numpy array
 		element volumes
 	basis_val_elem_faces: numpy array
@@ -39,6 +40,10 @@ class ScalarWENO(base.LimiterBase):
 		quadrature points for element
 	djac_elems: numpy array
 		stores Jacobian determinants for each element
+	elemP_IDs: numpy array
+		stores the i+1/2 neighbor index for element i
+	elemM_IDs: numpy array
+		stores the i-1/2 neighbor index for element i
 	'''
 	COMPATIBLE_PHYSICS_TYPES = general.PhysicsType.Burgers
 
@@ -49,19 +54,31 @@ class ScalarWENO(base.LimiterBase):
 		self.basis_val_elem_faces = np.zeros(0)
 		self.quad_wts_elem = np.zeros(0)
 		self.djac_elems = np.zeros(0)
+		self.elemP_IDs = np.zeros(0)
+		self.elemM_IDs = np.zeros(0)
 
 	def precompute_helpers(self, solver):
 		# Unpack
+		mesh = solver.mesh
+		basis = solver.basis
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
+
+		dim = mesh.dim
+		num_elems = mesh.num_elems
+		nb = basis.nb
+		nq = elem_helpers.quad_pts.shape[0]
+
 		self.elem_vols, _ = mesh_tools.element_volumes(solver.mesh, solver)
+		self.basis_phys_hessian_elems = np.zeros([num_elems, nq, nb, dim])
 
 		# Basis values in element interior and on faces
 		if not solver.basis.skip_interp:
 			basis_val_faces = int_face_helpers.faces_to_basisL.copy()
 			bshape = basis_val_faces.shape
 			basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
-			self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val, 
+
+			self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val,
 					basis_val_faces))
 		else:
 			self.basis_val_elem_faces = elem_helpers.basis_val
@@ -71,56 +88,115 @@ class ScalarWENO(base.LimiterBase):
 
 		# Element quadrature weights
 		self.quad_wts_elem = elem_helpers.quad_wts
-	
-	def get_nonlinearwts(self, p, gamma, basis_phys_grad, quad_wts, vol):
 
-		# calculate the smoothness indicator 
+		# identify neighboring elements and store
+		elemP_IDs = np.empty([num_elems], dtype=int)
+		elemM_IDs = np.empty([num_elems], dtype=int)
+
+		for elem_ID in range(num_elems):
+			elemP_IDs[elem_ID] = mesh.elements[elem_ID].face_to_neighbors[1]
+			elemM_IDs[elem_ID] = mesh.elements[elem_ID].face_to_neighbors[0]
+	
+		self.elemP_IDs = elemP_IDs
+		self.elemM_IDs = elemM_IDs
+
+		# Calculate hessian for higher-order weno calculation
+		self.basis_ref_hessian = limiter_tools.get_hessian(self, basis, 
+				elem_helpers.quad_pts)
+		ijac_elems = elem_helpers.ijac_elems
+
+		for elem_ID in range(num_elems):
+			self.basis_phys_hessian_elems[elem_ID] = limiter_tools.get_phys_hessian(
+					self, basis, ijac_elems[elem_ID])
+		
+
+	def get_nonlinearwts(self, order, p, gamma, basis_phys_grad, quad_wts, vol):
+		'''
+		This method calculates the smoothness indicator. (See Eq. 3.10 in [1])
+
+		Inputs:
+		-------
+			order: solution order
+			p: polynomial coeffs of of element being smoothed [ne, nb, ns]
+			gamma: weighting constants in weno scheme (See Eq. 3.11 in [1])
+			basis_phys_grad: evaluated gradient of the basis function in 
+            		physical space [nq, nb, dim]
+            quad_wts: quadrature weights [nq, 1]  
+            vol: element volumes [ne, 1]
+
+		Outputs:
+		--------
+			weno_wts: returns the linear weight for the weno reconstruction [ne] 
+		'''
+
+		# s = 1 corresponds to the first derivative of the basis function
 		s = 1
-		beta = vol**(2*s-1) * np.matmul((np.matmul(basis_phys_grad[:,:,0],
-				p)**2).transpose(), quad_wts)
-		# import code; code.interact(local=locals())
+		basis_p = (np.matmul(basis_phys_grad[:, :, :, 0], p)**2).transpose(0,2,1)
+		basis_p_qwts = np.einsum('ikj,jl -> ik',basis_p, quad_wts)
+		beta = vol**(2*s-1) * basis_p_qwts.reshape(p.shape[0])
+
 		eps = 1.0e-6
 
-		return gamma / (eps + beta)**2
+		# s = 2 corresponds to the second der. and order 2
+		if order == 2:
+			s = 2
+			#Unpack 
+			basis_phys_hessian = self.basis_phys_hessian_elems
+			hess_p = (np.matmul(basis_phys_hessian[:, :, :, 0], p)**2).transpose(0,2,1)
+			hess_p_qwts = np.einsum('ikj, jk -> ik', hess_p, quad_wts)
 
-	def limit_element(self, solver, elem_ID, Uc):
-		
+			beta += vol**(2*s-1) * hess_p_qwts.reshape(p.shape[0])
+
+		return gamma / (eps + beta)**2 # weno_wts [ne]
+
+
+	def limit_element(self, solver, Uc):
+		# Unpack		
 		elem_helpers = solver.elem_helpers
-		vol = self.elem_vols[elem_ID]
-		basis_phys_grad = elem_helpers.basis_phys_grad_elems[elem_ID]
+		vols = self.elem_vols
+		basis_phys_grads = elem_helpers.basis_phys_grad_elems
 		quad_wts = elem_helpers.quad_wts
 		
-		weno_wts = np.zeros([3])
-		# determine if the element requires limiting
-		shock_indicated = self.shock_indicator(self, solver, elem_ID, Uc)
+		weno_wts = np.zeros([Uc.shape[0], 3])
 
-		if not shock_indicated:
-			return Uc
-		# unpack limiter info
-		if self.u_elem is not None:
-			p0 = self.um_elem
-			p1 = self.u_elem
-			p2 = self.up_elem
+		# Determine if the elements requires limiting
+		shock_indicated = self.shock_indicator(self, solver, Uc)
 
-			p0_bar = self.um_bar
-			p1_bar = self.u_bar
-			p2_bar = self.up_bar
+		# Unpack limiter info from shock indicator
+		if self.U_elem is not None:
+			p0 = self.Um_elem
+			p1 = self.U_elem
+			p2 = self.Up_elem
 
+			p0_bar = self.Um_bar
+			p1_bar = self.U_bar
+			p2_bar = self.Up_bar
 		else:
 			raise NotImplementedError
 
 		p0_tilde = p0 - p0_bar + p1_bar
 		p2_tilde = p2 - p2_bar + p1_bar
-		
-		# Currently only implemented for P1 (Need to add Hessian for P2)
-		if solver.order > 1:
+	
+		# Currently only implemented up to  P2
+		if solver.order > 2:
 			raise NotImplementedError
 
-		weno_wts[0] = self.get_nonlinearwts(p0, 0.001, basis_phys_grad, quad_wts, vol)
-		weno_wts[1] = self.get_nonlinearwts(p1, 0.998, basis_phys_grad, quad_wts, vol)
-		weno_wts[2] = self.get_nonlinearwts(p2, 0.001, basis_phys_grad, quad_wts, vol)
+		# Calculate non-linear weights
+		weno_wts[:, 0] = self.get_nonlinearwts(solver.order, p0, 0.001, 
+				basis_phys_grads, quad_wts, vols)
+		weno_wts[:, 1] = self.get_nonlinearwts(solver.order, p1, 0.998, 
+				basis_phys_grads, quad_wts, vols)
+		weno_wts[:, 2] = self.get_nonlinearwts(solver.order, p2, 0.001, 
+				basis_phys_grads, quad_wts, vols)
 
-		normal_wts = weno_wts / np.sum(weno_wts)
-		Uc = normal_wts[0]*p0_tilde + normal_wts[1]*p1 + normal_wts[2]*p2_tilde
+		normal_wts = weno_wts / np.sum(weno_wts, axis=1).reshape(weno_wts.shape[0], 1)
 
-		return Uc
+		# Update state_coeffs for indicated elements
+		Uc[shock_indicated] = np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 0], 
+				p0_tilde[shock_indicated]) + \
+							  np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 1],
+				p1[shock_indicated]) + \
+							  np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 2],
+				p2_tilde[shock_indicated])
+
+		return Uc # [ne, nq, 1]

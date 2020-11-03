@@ -8,6 +8,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
+import numerics.helpers.helpers as helpers
+
 from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
 
@@ -17,9 +19,7 @@ class SourceSolvers():
 	SourceSolvers is a class of classes used as a Mixin class for operator 
 	splitting approaches (see stepper.py). These methods are specifically
 	used for solving ODEs of the form:
-
 		dU/dt = S(U)
-
 	Current schemes supported include:
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
@@ -28,7 +28,6 @@ class SourceSolvers():
 		'''
 		This is an abstract base class used to represent a specific ODE 
 		solver for operator splitting integration schemes.
-
 		Attributes:
 		-----------
 		R: numpy array of floats (shape : [nelem, nb, ns])
@@ -64,7 +63,7 @@ class SourceSolvers():
 	class BDF1(SourceStepperBase):
 		'''
 		1st-order Backward Differencing (BDF1) method inherits attributes 
-		from SourceStepperBase. See SourcStepperBase for detailed comments of methods and 
+		from SourceStepperBase. See SourceStepperBase for detailed comments of methods and 
 		attributes.
 
 		Additional methods and attributes are commented below.
@@ -90,22 +89,20 @@ class SourceSolvers():
 			solver.apply_limiter(U)
 			solver.state_coeffs = U
 
-			return R
+			return R # [ne, nb, ns]
 
 		def get_jacobian_matrix(self, mesh, solver):
 			'''
 			Calculates the Jacobian matrix of the source term and its inverse for all elements
-
 			Inputs:
 			-------
 				mesh: mesh object
 				solver: solver object (e.g., DG, ADERDG, etc...)
-
 			Outputs:
 			-------- 
-				A: matrix returned for linear solve [nelem, nb, nb, ns]
+				A: matrix returned for linear solve [ne, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
-					[nelem, nb, nb, ns]
+					[ne, nb, nb, ns]
 			'''
 			basis = solver.basis
 			nb = basis.nb
@@ -118,34 +115,31 @@ class SourceSolvers():
 			A = np.zeros([mesh.num_elems, nb, nb, ns])
 			iA = np.zeros([mesh.num_elems, nb, nb, ns])
 
-			for elem_ID in range(mesh.num_elems):
-				A[elem_ID], iA[elem_ID] = self.get_jacobian_matrix_elem(solver, 
-						elem_ID, iMM_elems[elem_ID], U[elem_ID])
+			A, iA = self.get_jacobian_matrix_elems(solver, iMM_elems, U)
 
 			return A, iA # [nelem, nb, nb, ns]
 
-		def get_jacobian_matrix_elem(self, solver, elem_ID, iMM, Uc):
+		def get_jacobian_matrix_elems(self, solver, iMM, Uc):
 			'''
 			Calculates the Jacobian matrix of the source term and its 
 			inverse for each element. Definition of 'Jacobian' matrix:
-
 			A = I - BETA*dt*iMM^{-1}*dRdU
-
 			Inputs:
 			-------
 				solver: solver object (e.g., DG, ADERDG, etc...)
 				elem_ID: element ID
-				iMM: inverse mass matrix [nb, nb]
-				Uc: state coefficients on element [nb, ns]
-
+				iMM: inverse mass matrix [ne, nb, nb]
+				Uc: state coefficients [ne, nb, ns]
 			Outputs:
 			-------- 
-				A: matrix returned for linear solve [nelem, nb, nb, ns]
+				A: matrix returned for linear solve [ne, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
-					[nelem, nb, nb, ns]
+					[ne, nb, nb, ns]
 			'''
+			mesh = solver.mesh
+			nelem = mesh.num_elems
 			beta = self.BETA
-			dt = solver.Stepper.dt
+			dt = solver.stepper.dt
 			physics = solver.physics
 			source_terms = physics.source_terms
 
@@ -153,34 +147,35 @@ class SourceSolvers():
 			basis_val = elem_helpers.basis_val
 			quad_wts = elem_helpers.quad_wts
 			x_elems = elem_helpers.x_elems
-			x = x_elems[elem_ID]
+
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
-			Uq = np.matmul(basis_val, Uc)
 
-			# evaluate the source term Jacobian [nq, ns, ns]
-			Sjac = np.zeros([nq,ns,ns])
-			Sjac = physics.eval_source_term_jacobians(Uq, x, solver.time, Sjac) 
+			Uq = helpers.evaluate_state(Uc, basis_val,
+					skip_interp=solver.basis.skip_interp) # [ne, nq, ns])
+			
+			# Evaluate the source term Jacobian [nq, ns, ns]
+			Sjac = np.zeros([nelem, nq, ns, ns])
+			Sjac = physics.eval_source_term_jacobians(Uq, x_elems, solver.time, Sjac) 
 
-			# call solver helper to get dRdU (see solver/tools.py)
-			dRdU = solver_tools.calculate_dRdU(elem_helpers, elem_ID, Sjac)
+			# Call solver helper to get dRdU (see solver/tools.py)
+			dRdU = solver_tools.calculate_dRdU(elem_helpers, Sjac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
-					np.einsum('ij,jkl->ijl',iMM,dRdU)
+					np.einsum('eij,ejkl->eijl',iMM,dRdU)
 			iA = np.zeros_like(A)
 
 			for s in range(ns):
-				iA[:,:,s] = np.linalg.inv(A[:,:,s])
+				iA[:, :, :, s] = np.linalg.inv(A[:, :, :, s])
 
-			return A, iA # [nb, nb, ns]
+			return A, iA # [ne, nb, nb, ns]
 
 	class Trapezoidal(BDF1):
 		'''
 		2nd-order Trapezoidal method inherits attributes 
 		from BDF1. See BDF1 for detailed comments of methods and 
 		attributes.
-
 		Note: Trapezoidal method is identical to linearized BDF1 other than 
 		the 'BETA' constant.
 		''' 

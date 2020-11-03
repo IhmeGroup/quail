@@ -4,8 +4,6 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.5,
     "CFL" : 0.1,
-    # "TimeStepSize" : 0.0125,
-    # "NumTimeSteps" : 40,
     "TimeStepper" : "RK4",
 }
 
@@ -46,7 +44,7 @@ ExactSolution = InitialCondition.copy()
 #    "x1" : {
 #	    "Function" : "Sine",
 #	    "omega" : 2*np.pi,
-#    	"BCType" : "StateAll",
+#   	"BCType" : "StateAll",
 #    },
 #    "x2" : {
 #    	"BCType" : "Extrapolate",

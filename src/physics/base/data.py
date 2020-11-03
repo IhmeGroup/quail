@@ -120,7 +120,7 @@ class BCWeakPrescribed(BCBase):
     '''
     def get_boundary_flux(self, physics, UqI, normals, x, t):
         UqB = self.get_boundary_state(physics, UqI, normals, x, t)
-        F = physics.get_conv_flux_projected(UqB, normals)
+        F,_ = physics.get_conv_flux_projected(UqB, normals)
 
         return F
 

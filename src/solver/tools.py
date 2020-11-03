@@ -3,16 +3,14 @@
 #       File : src/numerics/solver/tools.py
 #
 #       Contains additional methods (tools) for the DG solver class
-#      
+#
 # ------------------------------------------------------------------------ #
 import numpy as np
 
 import general
 import numerics.basis.tools as basis_tools
 
-
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID, 
-		Fq):
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the DG scheme
 
@@ -20,30 +18,26 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, elem_ID,
 	-------
 		solver: solver object
 		elem_helpers: helpers defined in ElemHelpers
-		elem_ID: element index
-		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [ne, nq, ns, dim]
 
 	Outputs:
 	--------
-		R_elem: residual contribution (for volume integral of inviscid flux)
-			[nb, ns]
-	'''	
-	# Unpack
-	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-	djac_elems = elem_helpers.djac_elems 
+		R: calculated residual array (for volume integral of all elements)
+		[ne, nb, ns]
+	'''
+	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems 
+			# [ne, nq, nb, dim]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
-	basis_phys_grad = basis_phys_grad_elems[elem_ID]
-	djac = djac_elems[elem_ID]
-	nq = quad_wts.shape[0]
+	# Calculate flux quadrature
+	F_quad = np.einsum('ijkl, jm, ijm -> ijkl', Fq, quad_wts, djac_elems) 
+			# [ne, nq, ns, dim]
+	# Calculate residual
+	R = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad) 
+			# [ne, nb, ns]
 
-	# Integrate
-	R_elem = np.tensordot(basis_phys_grad, Fq*(quad_wts*djac).reshape(nq, 
-			1, 1), axes=([0, 2], [0, 2])) # [nb, ns]
-
-	return R_elem # [nb, ns]
-
+	return R # [ne, nb, ns]
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	'''
@@ -51,63 +45,68 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	Inputs:
 	-------
-		basis_val: basis function for the interior element [nq, nb]
-		quad_wts_st: space-time quadrature weights [nq, 1]
-		Fq: flux array evaluated at the quadrature points [nq, ns, dim]
+		basis_val: basis function for the interior element [nf, nq, nb]
+		quad_wts: quadrature weights [nq, 1]
+		Fq: flux array evaluated at the quadrature points [nf, nq, ns]
 
 	Outputs:
 	--------
 		R_B: residual contribution (from boundary face) [nb, ns]
 	'''
-	R_B = np.matmul(basis_val.transpose(), Fq*quad_wts) # [nb, ns]
+	# Calculate flux quadrature
+	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts) # [nf, nq, ns]
+	# Calculate residual
+	R_B = np.einsum('ijn, ijk -> ink', basis_val, Fq_quad) # [nf, nb, ns]
 
-	return R_B # [nb, ns]
+	return R_B # [nf, nb, ns]
 
 
-def calculate_source_term_integral(elem_helpers, elem_ID, Sq):
+def calculate_source_term_integral(elem_helpers, Sq):
 	'''
 	Calculates the source term volume integral for the DG scheme
 
 	Inputs:
 	-------
 		elem_helpers: helpers defined in ElemHelpers
-		elem_ID: element index
-		Sq: source term array evaluated at the quadrature points [nq, ns]
+		Sq: source term array evaluated at the quadrature points [ne, nq, ns]
 
 	Outputs:
 	--------
-		residual contribution (from volume integral of source term) 
-			[nb, ns]
+		R: calculated residual array (for volume integral of all elements)
+		[ne, nb, ns]
 	'''
-	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
-	djac = djac_elems[elem_ID]
+	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	basis_val = elem_helpers.basis_val # [nq, nb]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
-	return np.matmul(basis_val.transpose(), Sq*quad_wts*djac) # [nb, ns]
+	# Calculate source term quadrature
+	Sq_quad = np.einsum('ijk, jm, ijm -> ijk', Sq, quad_wts, djac_elems) 
+			# [ne, nq, ns]
+	# Calculate residual
+	R = np.einsum('jn, ijk -> ink', basis_val, Sq_quad) # [ne, nb, ns]
 
+	return R # [ne, nb, ns]
 
-def calculate_dRdU(elem_helpers, elem_ID, Sjac):
+def calculate_dRdU(elem_helpers, Sjac):
 	'''
-	Helper function for ODE solvers that calculates the derivative of 
+	Helper function for ODE solvers that calculates the derivative of
 
 		integral(basis_val*S(U))dx
-	
-	with respect to the solution state 
-	
-	Inputs: 
+
+	with respect to the solution state
+
+	Inputs:
 		elem_helpers: object containing precomputed element helpers
 		elem_ID: element index
 		Sjac: element source term Jacobian [nq, ns, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
-	djac = djac_elems[elem_ID]
+	basis_val = elem_helpers.basis_val
+	djac_elems = elem_helpers.djac_elems
+	# djac = djac_elems[elem_ID]
+	a = np.einsum('eijk,eil->eijk', Sjac, quad_wts*djac_elems)
 
-	a = np.einsum('ijk,il->ijk', Sjac, quad_wts*djac)
-
-	return np.einsum('bq,qts->bts',basis_val.transpose(), a) # [nb, ns, ns]
+	return np.einsum('bq,eqts->ebts',basis_val.transpose(), a) # [nb, ns, ns]
 
 
 def mult_inv_mass_matrix(mesh, solver, dt, R):
@@ -129,7 +128,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 	return dt*np.einsum('ijk,ikl->ijl', iMM_elems, R)
 
 
-def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
+def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):
 	'''
 	Performs an L2 projection
 
@@ -140,7 +139,6 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
 		basis: basis object
 		quad_pts: quadrature coordinates in reference space
 		quad_wts: quadrature weights
-		elem_ID: element index
 		f: array of values to be projected from
 
 	Outputs:
@@ -150,11 +148,13 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, elem_ID, f, U):
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
-	djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
+	for elem_ID in range(U.shape[0]):
+		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts,
+				get_djac=True)
+		rhs = np.matmul(basis.basis_val.transpose(),
+				f[elem_ID, :, :]*quad_wts*djac) # [nb, ns]
 
-	rhs = np.matmul(basis.basis_val.transpose(), f*quad_wts*djac) # [nb, ns]
-
-	U[:,:] = np.matmul(iMM, rhs)
+		U[elem_ID, :, :] = np.matmul(iMM[elem_ID], rhs)
 
 
 def interpolate_to_nodes(f, U):
@@ -169,4 +169,4 @@ def interpolate_to_nodes(f, U):
 	--------
 		U: array of values to be interpolated onto
 	'''
-	U[:,:] = f
+	U[:, :, :] = f

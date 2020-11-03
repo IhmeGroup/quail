@@ -3,29 +3,29 @@
 #       File : src/numerics/helpers/helpers.py
 #
 #       Contains general numerics-related helper functions
-#      
+#
 # ------------------------------------------------------------------------ #
 import numpy as np
 
 
 def get_element_mean(Uq, quad_wts, djac, vol):
 	'''
-	This function computes the mean over an element.
+	This function computes the mean over n elements.
 
 	Inputs:
 	-------
-	    Uq: values of state at the quadrature points [nq, sr]
+        Uq: values of state at the quadrature points [ne, nq, ns]
 	    quad_wts: quadrature weights [nq, 1]
-	    djac: Jacobian determinants [nq, 1]
-	    vol: element volume
+	    djac: Jacobian determinants [ne, nq, 1]
+	    vol: element volume [ne]
 
 	Outputs:
 	--------
-	    U_mean: mean values of state variables [1, sr]
+	    U_mean: mean values of state variables [ne, 1, ns]
 	'''
-	U_mean = np.matmul(Uq.transpose(), quad_wts*djac).transpose()/vol
+	U_mean = np.einsum('ijk, jm, ijm, i -> imk', Uq, quad_wts, djac, 1/vol)
 
-	return U_mean
+	return U_mean # [ne, 1, ns]
 
 
 def evaluate_state(Uc, basis_val, skip_interp=False):
@@ -34,28 +34,24 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 
 	Inputs:
 	-------
-	    Uc: state coefficients [nb, sr]
-	    basis_val: basis values [nq, nb]
+	    Uc: state coefficients [ne, nb, ns]
+	    basis_val: basis values [ne, nq, nb]
 	    skip_interp: if True, then will simply copy the state coefficients;
-	    	useful for a colocated scheme, i.e. quadrature points and 
+	    	useful for a colocated scheme, i.e. quadrature points and
 	    	solution nodes (for a nodal basis) are the same
 
 	Outputs:
 	--------
-	    Uq: values of state [nq, sr]
+	    Uq: values of state [ne, nq, ns]
 	'''
 	if skip_interp:
 		Uq = Uc.copy()
 	else:
-		Uq = np.matmul(basis_val, Uc)
+		if basis_val.ndim == 3:
+			# For faces, there is a different basis_val for each face
+			Uq = np.einsum('ijn, ink -> ijk', basis_val, Uc)
+		else:
+			# For elements, all elements have the same basis_val
+			Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
 
-	return Uq
-
-def minmod(a):
-	import code
-
-	s = np.sign(a)
-	if np.all(s > 0.) or np.all(s < 0.):
-		return s[0]*np.amin(np.abs(a))
-	else:
-		return 0.
+	return Uq # [ne, nq, ns]

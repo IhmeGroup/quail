@@ -65,16 +65,16 @@ class ConstAdvScalar(base.PhysicsBase):
 
 	def get_conv_flux_interior(self, Uq):
 		c = self.c
-		F = np.expand_dims(c*Uq, axis=1)
-
-		return F
+		F = np.expand_dims(c*Uq, axis=-1)
+	
+		return F, None
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
-			scalar = np.full([Uq.shape[0], 1], self.cspeed)
+			scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
 		else:
 			raise NotImplementedError
 
@@ -168,6 +168,15 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		self.c = np.array([ConstXVelocity, ConstYVelocity])
 		self.cspeed = np.linalg.norm(self.c)
 
+	def get_conv_flux_interior(self, Uq):
+		c = self.c
+
+		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
+		F[:, :, :, 0] = c[0] * Uq
+		F[:, :, :, 1] = c[1] * Uq
+	
+		return F, None
+
 
 class Burgers1D(base.PhysicsBase):
 	'''
@@ -205,9 +214,10 @@ class Burgers1D(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 
 	def get_conv_flux_interior(self, Uq):
-		F = np.expand_dims(Uq*Uq/2., axis=2)
 
-		return F
+		F = np.expand_dims(Uq*Uq/2., axis=-1)
+
+		return F, None
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[var_name].name

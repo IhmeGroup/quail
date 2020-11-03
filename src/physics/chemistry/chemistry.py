@@ -26,25 +26,33 @@ from physics.chemistry.functions import ConvNumFluxType as chemistry_conv_num_fl
 
 
 class Chemistry(base.PhysicsBase):
+	'''
+	This class corresponds to the compressible Euler equations with a simple
+	transport equation for mass fraction. It is appropriate for testing simple
+	burned/unburned chemistry models. It inherits attributes and methods from 
+	the PhysicsBase class. See PhysicsBase for detailed comments of attributes
+	and methods. This class should not be instantiated directly. Instead,
+	the 1D and 2D variants, which inherit from this class (see below),
+	should be instantiated.	
 
+	Additional methods and attributes are commented below.
+
+	Attributes:
+	-----------
+	R: float 
+		mass-specific gas constant
+	gamma: float
+		specific heat ratio
+	qo : float
+		heat release
+	'''
 	PHYSICS_TYPE = general.PhysicsType.Chemistry
 
 	def __init__(self, mesh):
-		'''
-		Method: __init__
-		--------------------------------------------------------------------------
-		This method initializes the temperature table. The table uses a
-		piecewise linear function for the constant pressure specific heat 
-		coefficients. The coefficients are selected to retain the exact 
-		enthalpies at the table points.
-		'''
 		super().__init__(mesh)
-		# Default parameters
-		# self.params.update(
-		# 	GasConstant = 287., # specific gas constant
-		# 	SpecificHeatRatio = 1.4,
-		# 	HeatRelease = 25. 
-		# )
+		self.R = 0.
+		self.gamma = 0.
+		self.qo = 0.
 
 	def set_maps(self):
 		super().set_maps()
@@ -71,46 +79,6 @@ class Chemistry(base.PhysicsBase):
 	    MaxWaveSpeed = "\\lambda"
 	    Velocity = "u"
 	    MassFraction = "Y"
-	    SourceTerm = "S"
-	    Jacobian = "J"
-
-	def get_conv_flux_interior(self, Uq):
-		dim = self.DIM
-		
-		irho = self.get_state_index("Density")
-		irhoE = self.get_state_index("Energy")
-		irhoY = self.get_state_index("Mixture")
-		# imom = self.get_momentum_slice()
-		srho = self.get_state_slice("Density")
-		srhoE = self.get_state_slice("Energy")
-		smom = self.get_momentum_slice()
-		srhoY = self.get_state_slice("Mixture")
-
-		eps = general.eps
-
-		rho = Uq[:, srho]
-		rho += eps
-		rhoE = Uq[:,srhoE]
-		mom = Uq[:,smom]
-		rhoY = Uq[:,srhoY]
-
-		p = self.compute_variable("Pressure", Uq)
-		h = self.compute_variable("TotalEnthalpy", Uq)
-
-		pmat = np.zeros([Uq.shape[0], dim, dim])
-		idx = np.full([dim,dim],False)
-		np.fill_diagonal(idx,True)
-		pmat[:, idx] = p
-
-		F = np.empty(Uq.shape + (dim,))
-		F[:, irho, :] = mom
-		F[:, smom, :] = np.einsum('ij,ik->ijk',mom,mom)/np.expand_dims(rho, axis=2) + pmat
-		F[:, irhoE, :] = mom*h
-		F[:, irhoY, :] = mom*rhoY/rho
-
-		rho -= eps
-
-		return F
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
@@ -118,57 +86,64 @@ class Chemistry(base.PhysicsBase):
 		srhoE = self.get_state_slice("Energy")
 		srhoY = self.get_state_slice("Mixture")
 		smom = self.get_momentum_slice()
-		rho = Uq[:, srho]
-		rhoE = Uq[:, srhoE]
-		mom = Uq[:, smom]
-		rhoY = Uq[:, srhoY]
+		rho = Uq[:, :, srho]
+		rhoE = Uq[:, :, srhoE]
+		mom = Uq[:, :, smom]
+		rhoY = Uq[:, :, srhoY]
 
-		''' Common scalars '''
+		''' Unpack '''
 		gamma = self.gamma
 		R = self.R
 		qo = self.qo
 
+		''' Flag non-physical state '''
 		if flag_non_physical:
 			if np.any(rho < 0.):
 				raise errors.NotPhysicalError
 
+		''' Nested functions for common quantities '''
 		def get_pressure():
-			# scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho) # just use for storage
-			scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho - qo*rhoY) # just use for storage
-
+			varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2, 
+					keepdims=True)/rho - qo*rhoY)
 			if flag_non_physical:
-				if np.any(scalar < 0.):
+				if np.any(varq < 0.):
 					raise errors.NotPhysicalError
-			return scalar
+			return varq
 		def get_temperature():
 			return get_pressure()/(rho*R)
 
 		''' Get final scalars '''
-		sname = self.AdditionalVariables[var_name].name
-		if sname is self.AdditionalVariables["Pressure"].name:
-			scalar = get_pressure()
-		elif sname is self.AdditionalVariables["Temperature"].name:
-			# scalar = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho)/(rho*R)
-			scalar = get_temperature()
-		elif sname is self.AdditionalVariables["Entropy"].name:
-			scalar = np.log(get_pressure()/rho**gamma)
-		elif sname is self.AdditionalVariables["InternalEnergy"].name:
-			scalar = rhoE - 0.5*np.sum(mom*mom, axis=1, keepdims=True)/rho
-		elif sname is self.AdditionalVariables["TotalEnthalpy"].name:
-			scalar = (rhoE + get_pressure())/rho
-		elif sname is self.AdditionalVariables["SoundSpeed"].name:
-			scalar = np.sqrt(gamma*get_pressure()/rho)
-		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			scalar = np.linalg.norm(mom, axis=1, keepdims=True)/rho + np.sqrt(gamma*get_pressure()/rho)
-		elif sname is self.AdditionalVariables["MassFraction"].name:
-			scalar = rhoY/rho
+		vname = self.AdditionalVariables[var_name].name
+		if vname is self.AdditionalVariables["Pressure"].name:
+			varq = get_pressure()
+		elif vname is self.AdditionalVariables["Temperature"].name:
+			varq = get_temperature()
+		elif vname is self.AdditionalVariables["Entropy"].name:
+			varq = np.log(get_pressure()/rho**gamma)
+		elif vname is self.AdditionalVariables["InternalEnergy"].name:
+			varq = rhoE - 0.5*np.sum(mom*mom, axis=2, keepdims=True)/rho
+		elif vname is self.AdditionalVariables["TotalEnthalpy"].name:
+			varq = (rhoE + get_pressure())/rho
+		elif vname is self.AdditionalVariables["SoundSpeed"].name:
+			varq = np.sqrt(gamma*get_pressure()/rho)
+		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
+					gamma*get_pressure()/rho)
+		elif vname is self.AdditionalVariables["MassFraction"].name:
+			varq = rhoY/rho
 		else:
 			raise NotImplementedError
 
-		return scalar
+		return varq
 
 class Chemistry1D(Chemistry):
+	'''
+	This class corresponds to 1D Euler equations with simple chemistry.
+	It inherits attributes and methods from the Chemistry class.
+	See Chemistry for detailed comments of attributes and methods.
 
+	Additional methods and attributes are commented below.
+	'''
 	NUM_STATE_VARS = 4
 	DIM = 1
 
@@ -176,13 +151,10 @@ class Chemistry1D(Chemistry):
 		super().set_maps()
 
 		d = {
-			# euler_fcn_type.SmoothIsentropicFlow : euler_fcns.SmoothIsentropicFlow,
-			# euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			chemistry_fcn_type.DensityWave : chemistry_fcns.DensityWave,
 			chemistry_fcn_type.SimpleDetonation1 : chemistry_fcns.SimpleDetonation1,
-			chemistry_fcn_type.SimpleDetonation2 : chemistry_fcns.SimpleDetonation2,
-			chemistry_fcn_type.SimpleDetonation3 : chemistry_fcns.SimpleDetonation3,
-
+			# chemistry_fcn_type.SimpleDetonation2 : chemistry_fcns.SimpleDetonation2,
+			# chemistry_fcn_type.SimpleDetonation3 : chemistry_fcns.SimpleDetonation3,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -197,12 +169,10 @@ class Chemistry1D(Chemistry):
 
 		self.conv_num_flux_map.update({
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
-			chemistry_conv_num_flux_type.HLLC : chemistry_fcns.HLLC1D,
+			# chemistry_conv_num_flux_type.HLLC : chemistry_fcns.HLLC1D,
 		})
 
 	class StateVariables(Enum):
-		__Order__ = 'Density XMomentum Energy Mixture' # only needed in 2.x
-		# LaTeX format
 		Density = "\\rho"
 		XMomentum = "\\rho u"
 		Energy = "\\rho E"
@@ -221,6 +191,7 @@ class Chemistry1D(Chemistry):
 		srhou = self.get_state_slice("XMomentum")
 		srhoE = self.get_state_slice("Energy")
 		srhoY = self.get_state_slice("Mixture")
+
 		return srho, srhou, srhoE, srhoY
 
 	def get_momentum_slice(self):
@@ -228,3 +199,37 @@ class Chemistry1D(Chemistry):
 		smom = slice(irhou, irhou+1)
 
 		return smom
+
+	def get_conv_flux_interior(self, Uq):
+
+		irho, irhou, irhoE, irhoY = self.get_state_indices()
+
+		eps = general.eps
+
+		rho = Uq[:, :, irho]
+		rhou = Uq[:, :, irhou]
+		rhoE = Uq[:, :, irhoE]
+		rhoY = Uq[:, :, irhoY]
+
+		rho += eps
+
+		# Get velocity 
+		u = rhou / rho
+		# Get squared velocity
+		u2 = u**2
+
+		# Calculate pressure using the Ideal Gas Law
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2 
+				- rhoY * self.qo) # [n, nq]
+		# Get total enthalpy
+		H = rhoE + p
+
+		F = np.empty(Uq.shape + (self.DIM,))
+		F[:, :, irho, 0] = rhou
+		F[:, :, irhou, 0] = rho * u2 + p
+		F[:, :, irhoE, 0] = H * u
+		F[:, :, irhoY, 0] = rhou*rhoY/rho
+
+		rho -= eps
+
+		return F, (u2, rho, p)

@@ -1,26 +1,25 @@
 import numpy as np
 
-cfl = 0.05
-NumTimeSteps = 8000
-# FinalTime = 0.1
+#cfl = 0.025
+NumTimeSteps = 7000
+# FinalTime = 0.01
 FinalTime = 1.8
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : cfl,
+    #"CFL" : cfl,
     "NumTimeSteps" : NumTimeSteps,
-    "TimeStepper" : "Strang",
-    "OperatorSplittingImplicit" : "Trapezoidal",
+    "TimeStepper" : "SSPRK3",
+    #"OperatorSplittingImplicit" : "Trapezoidal",
 }
 
 Numerics = {
-    "SolutionOrder" : 2,
+    "SolutionOrder" : 0,
     "SolutionBasis" : "LagrangeSeg",
-    "InterpolateIC" : False,
     "Solver" : "DG",
-    "ApplyLimiters" : "PositivityPreservingChem",
-    "SourceTreatmentADER" : "Explicit",
-    "InterpolateFluxADER" : True,
+    "ApplyLimiter" : ["PositivityPreservingChem"],
+    # "SourceTreatmentADER" : "Implicit",
+    # "InterpolateFluxADER" : True,
     # "NodeType" : "GaussLobatto",
     # "ElementQuadrature" : "GaussLobatto",
     # "FaceQuadrature" : "GaussLobatto",
@@ -30,13 +29,12 @@ Numerics = {
 Output = {
     "WriteInterval" : 10,
     "WriteInitialSolution" : True,
-    "AutoProcess" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "nElem_x" : 360,
+    "NumElemsX" : 5000,
     "xmin" : 0.,
     "xmax" : 30.,
     # "PeriodicBoundariesX" : ["x1", "x2"],
@@ -44,7 +42,7 @@ Mesh = {
 
 Physics = {
     "Type" : "Chemistry",
-    "ConvFlux" : "HLLC",
+    "ConvFluxNumerical" : "LaxFriedrichs",
     "GasConstant" : 1.,
     "SpecificHeatRatio" : 1.4,
     "HeatRelease": 25.,
@@ -62,7 +60,7 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 BoundaryConditions = {
-    "Left" : {
+    "x1" : {
         "BCType" : "StateAll",
 	    "Function" : "SimpleDetonation1",
         "rho_u" : 1.0,
@@ -71,7 +69,7 @@ BoundaryConditions = {
         "Y_u" : 1.0,
         "xshock" : 10.,  
     },
-    "Right" : {
+    "x2" : {
         "BCType" : "StateAll",
         "Function" : "SimpleDetonation1",
         "rho_u" : 1.0,

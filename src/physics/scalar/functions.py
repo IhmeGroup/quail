@@ -148,10 +148,11 @@ class Gaussian(FcnBase):
 		self.x0 = x0 
 
 	def get_state(self, physics, x, t):
-		r = np.linalg.norm(x - self.x0 - physics.c*t, axis=1, keepdims=True)
+
+		r = np.linalg.norm(x[:] - self.x0 - physics.c*t, axis=2, keepdims=True)
 		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.DIM) * \
 				np.exp(-r**2./(2.*self.sig**2.))
-
+				
 		return Uq
 
 
@@ -247,16 +248,15 @@ class SineBurgers(FcnBase):
 	def get_state(self, physics, x, t):
 
 		def F(u):
-			x1 = np.reshape(x, x.shape[0])
+			x1 = x.reshape(x.shape[0]*x.shape[1])
 			F = u - np.sin(self.omega*(x1-u*t)) 
-
 			return F
-			
+
 		u = np.sin(self.omega*x)
-		u1 = np.reshape(u, u.shape[0])
+		u1 = u.reshape(u.shape[0]*u.shape[1])
 		sol = root(F, u1, tol=1e-12)
 		
-		Uq = sol.x.reshape(-1, 1)
+		Uq = sol.x.reshape(u.shape[0], u.shape[1], 1)
 
 		return Uq
 

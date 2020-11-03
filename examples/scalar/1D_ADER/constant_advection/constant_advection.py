@@ -49,11 +49,11 @@ ExactSolution = InitialCondition.copy()
 
 # BoundaryConditions = {
 #     "x1" : {
-# 	    "Function" : "Sine",
-# 	    "omega" : 2*np.pi,
-#     	"BCType" : "StateAll",
+#         "Function" : "Sine",
+#         "omega" : 2*np.pi,
+#         "BCType" : "StateAll",
 #     },
 #     "x2" : {
-#     	"BCType" : "Extrapolate",
+#         "BCType" : "Extrapolate",
 #     },
 # }

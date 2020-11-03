@@ -16,13 +16,14 @@ import numerics.helpers.helpers as helpers
 import numerics.timestepping.tools as stepper_tools
 import numerics.timestepping.source_stepper as source_stepper
 
+
 import solver.tools as solver_tools
 
 
 class StepperBase(ABC):
 	'''
-	This is an abstract base class used to represent time stepping schemes. The current build supports the following time
-	schemes:
+	This is an abstract base class used to represent time stepping schemes. 
+	The current build supports the following time schemes:
 
 		Explicit Schemes:
 		-----------------
@@ -38,7 +39,7 @@ class StepperBase(ABC):
 		- Strang Splitting (Strang)
 		- Simpler Splitting (Simpler)
 
-		ODE Solvers for Splitting Schemes:
+		Source Solvers for Splitting Schemes:
 		----------------------------------
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
@@ -167,7 +168,8 @@ class LSRK4(StepperBase):
 
 	Reference:
 
-	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta schemes,"" NASA Report TM 109112, NASA Langley Research Center, 1994.
+	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta 
+	schemes,"" NASA Report TM 109112, NASA Langley Research Center, 1994.
 
 	Additional methods and attributes are commented below.
 	''' 
@@ -311,7 +313,7 @@ class ADER(StepperBase):
 		R = self.R
 
 		# Prediction step
-		Up = solver.calculate_predictor_step(self.dt, W, Up)
+		Up = solver.calculate_predictor_step(solver, self.dt, W, Up)
 
 		# Correction step
 		R = solver.get_residual(Up, R)
@@ -370,6 +372,7 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		mesh  = solver.mesh
 		U = solver.state_coeffs
 
+		# Set the appropriate time steps for each operation
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
 		implicit = self.implicit
@@ -382,7 +385,6 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		# Second: take the implicit full step for the source term.
 		solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
-
 		R2 = implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
@@ -411,6 +413,7 @@ class Simpler(Strang):
 		mesh  = solver.mesh
 		U = solver.state_coeffs
 
+		# Set the appropriate time steps for each operation
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
 		implicit = self.implicit

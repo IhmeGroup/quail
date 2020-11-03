@@ -1,16 +1,16 @@
 import numpy as np
 
-# cfl = 0.025
-NumTimeSteps = 30
-FinalTime = 0.01
-# FinalTime = 1.8
+#cfl = 0.025
+NumTimeSteps = 7000
+# FinalTime = 0.01
+FinalTime = 1.8
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    # "CFL" : cfl,
+    #"CFL" : cfl,
     "NumTimeSteps" : NumTimeSteps,
     "TimeStepper" : "SSPRK3",
-    # "OperatorSplittingImplicit" : "Trapezoidal",
+    #"OperatorSplittingImplicit" : "Trapezoidal",
 }
 
 Numerics = {
@@ -18,7 +18,6 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiters" : ["PositivityPreservingChem"],
-    # "SourceTreatmentADER" : "Explicit",
     # "InterpolateFluxADER" : True,
     # "NodeType" : "GaussLobatto",
     # "ElementQuadrature" : "GaussLobatto",
@@ -29,7 +28,6 @@ Numerics = {
 Output = {
     "WriteInterval" : 10,
     "WriteInitialSolution" : True,
-    # "AutoProcess" : True,
 }
 
 Mesh = {

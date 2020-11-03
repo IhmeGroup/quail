@@ -14,8 +14,8 @@ ax = plt.gca()
 imgs_all = []
 j = 0
 k=0
-skip = 7
-for i in range(64):
+skip = 1
+for i in range(70):
 	print(i,k)
 	fname = "Data_" + str(k) + ".pkl"
 	solver = readwritedatafiles.read_data_file(fname)
@@ -25,12 +25,12 @@ for i in range(64):
 
 	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
 	# 		ignore_legend=True)
-	plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
+	plot.plot_solution(mesh, physics, solver, "Temperature", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='b', legend_label="DG", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False, ignore_legend=True)
-	plot.plot_solution(mesh, physics, solver, "Pressure", plot_exact=True, plot_numerical=False, create_new_figure=False, 
+	plot.plot_solution(mesh, physics, solver, "Temperature", plot_exact=True, plot_numerical=False, create_new_figure=False, 
 			fmt='k-', ignore_legend=True,skip=skip)
-	plot.plot_solution(mesh, physics, solver, "Pressure", plot_IC=True, plot_numerical=False, create_new_figure=False, 
+	plot.plot_solution(mesh, physics, solver, "Temperature", plot_IC=True, plot_numerical=False, create_new_figure=False, 
 			fmt='k--', ignore_legend=True)
 
 
@@ -44,8 +44,8 @@ for i in range(64):
 		nc = len(imgs_all[j-1])
 		imgs_all.append(imgs[-nc:])
 
-	j += 1
-	k +=3
+	j += 1 
+	k += 10
 
 anim = animation.ArtistAnimation(fig, imgs_all, interval=50, blit=False,
                                 repeat_delay=None)

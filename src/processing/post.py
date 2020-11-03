@@ -4,7 +4,7 @@
 #
 #       Contains functions for computing error and integrating boundary
 #		data.
-#      
+#
 # ------------------------------------------------------------------------ #
 from matplotlib import pyplot as plt
 import numpy as np
@@ -20,7 +20,7 @@ import numerics.helpers.helpers as helpers
 import processing.plot as plot_defs
 
 
-def get_error(mesh, physics, solver, var_name, ord=2, print_error=True, 
+def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 		normalize_by_volume=True):
 	'''
 	This function computes the Lp-error, where p is the "ord" input argument.
@@ -49,7 +49,7 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	if physics.exact_soln is None:
 		raise ValueError("No exact solution provided")
 
-	# Get element volumes 
+	# Get element volumes
 	if normalize_by_volume:
 		_, tot_vol = mesh_tools.element_volumes(mesh, solver)
 	else:
@@ -59,33 +59,34 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	err_elems = np.zeros([mesh.num_elems])
 	tot_err = 0.
 
+	# Get quadrature data
+	quad_order = basis.get_quadrature_order(mesh, 2*np.amax([order, 1]),
+			physics=physics)
+	gbasis = mesh.gbasis
+	quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
+
+	# Get x for each element
+	xphys = np.empty((mesh.num_elems,) + quad_pts.shape)
+	for elem_ID in range(mesh.num_elems):
+		xphys[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
+
+	# Evaluate exact solution at quadrature points
+	u_exact = physics.exact_soln.get_state(physics, x=xphys, t=time)
+
+	# Interpolate state to quadrature points
+	basis.get_basis_val_grads(quad_pts, True)
+	u = helpers.evaluate_state(U, basis.basis_val)
+
+	# Computed requested quantity
+	s = physics.compute_variable(var_name, u)
+	s_exact = physics.compute_variable(var_name, u_exact)
+
 	# Loop through elements
 	for elem_ID in range(mesh.num_elems):
-		Uc = U[elem_ID]
-
-		# Get quadrature data
-		quad_order = basis.get_quadrature_order(mesh, 2*np.amax([order, 1]), 
-				physics=physics)
-		gbasis = mesh.gbasis
-		quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
-		
-		# Evaluate exact solution at quadrature points
-		xphys = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
-		u_exact = physics.exact_soln.get_state(physics, x=xphys, t=time)
-		# u_exact = physics.call_function(physics.exact_soln, x=xphys, t=time)
-
-		# Interpolate state to quadrature points
-		basis.get_basis_val_grads(quad_pts, True)
-		u = helpers.evaluate_state(Uc, basis.basis_val)
-
-		# Computed requested quantity
-		s = physics.compute_variable(var_name, u)
-		s_exact = physics.compute_variable(var_name, u_exact)
-
 		# Calculate element-local error
-		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, 
+		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts,
 				get_djac=True)
-		err = np.sum((s - s_exact)**ord*quad_wts*djac)
+		err = np.sum((s[elem_ID] - s_exact[elem_ID])**ord*quad_wts*djac)
 		err_elems[elem_ID] = err
 		tot_err += err_elems[elem_ID]
 
@@ -98,8 +99,8 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	return tot_err, err_elems
 
 
-def get_boundary_info(solver, mesh, physics, bname, var_name, 
-		dot_normal_with_vec=False, vec=0., integrate=True, plot_vs_x=False, 
+def get_boundary_info(solver, mesh, physics, bname, var_name,
+		dot_normal_with_vec=False, vec=0., integrate=True, plot_vs_x=False,
 		plot_vs_y=False, ylabel=None, fmt='k-', legend_label=None, **kwargs):
 	'''
 	This function integrates and/or plots a given quantity over a specific
@@ -112,9 +113,9 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	    solver: solver object
 	    bname: name of boundary
 	    var_name: name of variable to compute
-	    dot_normal_with_vec: if dot_normal_with_vec is True, will multiply 
-	    	var by the dot product between the outward-pointing unit normal 
-	    	vector and vec 
+	    dot_normal_with_vec: if dot_normal_with_vec is True, will multiply
+	    	var by the dot product between the outward-pointing unit normal
+	    	vector and vec
 	    vec: vector to dot with normal (see above) [dim]
 	    integrate: if True, will integrate variable over boundary
 	    plot_vs_x: if True, will plot variable vs. x
@@ -151,9 +152,9 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	else:
 		plot = False
 	if plot:
-		bvalues = np.zeros([boundary_group.num_boundary_faces, nq]) 
+		bvalues = np.zeros([boundary_group.num_boundary_faces, nq])
 			# [num_boundary_faces, nq]
-		bpoints = x_bgroups[boundary_num][:,:,d].flatten() 
+		bpoints = x_bgroups[boundary_num][:,:,d].flatten()
 			# [num_boundary_faces, nq, dim]
 
 	integ_val = 0.
@@ -163,34 +164,31 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		vec = np.array(vec)
 		vec.shape = 1, 2
 
-	# Loop through boundary faces
-	for bface_ID in range(boundary_group.num_boundary_faces):
-		# Extract
-		boundary_face = boundary_group.boundary_faces[bface_ID]
-		elem_ID = boundary_face.elem_ID
-		face_ID = boundary_face.face_ID
-		basis_val = faces_to_basis[face_ID]
+	# Extract
+	elem_ID = bface_helpers.elem_ID[boundary_num]
+	face_ID = bface_helpers.face_ID[boundary_num]
+	basis_val = faces_to_basis[face_ID]
 
-		# Interpolate state and gradient at quad points
-		Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
+	# Interpolate state and gradient at quad points
+	Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
 
-		# Get requested variable
-		varq = physics.compute_variable(var_name, Uq) # [nq, 1]
+	# Get requested variable
+	varq = physics.compute_variable(var_name, Uq) # [nf, nq, 1]
 
-		# Normals
-		normals = normals_bgroups[boundary_num][bface_ID] # [nq, dim]
-		jac = np.linalg.norm(normals, axis=1, keepdims=True) # [nq, 1]
+	# Normals
+	normals = normals_bgroups[boundary_num] # [nf, nq, dim]
+	jac = np.linalg.norm(normals, axis=2, keepdims=True) # [nf, nq, 1]
 
-		# If requested, account for normal and dot with input dir
-		if dot_normal_with_vec:
-			varq *= np.sum(normals/jac*vec, axis=1, keepdims=True)
+	# If requested, account for normal and dot with input dir
+	if dot_normal_with_vec:
+		varq *= np.sum(normals/jac*vec, axis=2, keepdims=True)
 
-		# Integrate and add to running sum
-		if integrate:
-			integ_val += np.sum(varq*jac*quad_wts)
+	# Integrate and sum over faces
+	if integrate:
+		integ_val = np.sum(np.sum(varq*jac*quad_wts, axis=1), axis=0)
 
-		if plot:
-			bvalues[bface_ID,:] = varq.reshape(-1)
+	if plot:
+		bvalues = varq[:,:,0]
 
 	if integrate:
 		print("Boundary integral = %g" % (integ_val))
@@ -202,10 +200,3 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
 		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)
-
-
-
-
-
-
-

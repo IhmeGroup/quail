@@ -3,10 +3,10 @@
 #       File : src/numerics/solver/base.py
 #
 #       Contains class definitions for the solver base class
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import numpy as np 
+import numpy as np
 import time
 
 import errors
@@ -72,7 +72,7 @@ class SolverBase(ABC):
     	calculates the residual contribution for a specific interior face
     get_boundary_face_residual
     	calculates the residual contribution for a specific boundary face
-    
+
     Methods:
     --------
     check_compatibility
@@ -111,8 +111,8 @@ class SolverBase(ABC):
 		basis_type  = params["SolutionBasis"]
 		self.basis = basis_tools.set_basis(self.order, basis_type)
 		# State polynomial coefficients (what we're solving for)
-		self.state_coeffs = np.zeros([mesh.num_elems, 
-				self.basis.get_num_basis_coeff(self.order), 
+		self.state_coeffs = np.zeros([mesh.num_elems,
+				self.basis.get_num_basis_coeff(self.order),
 				physics.NUM_STATE_VARS])
 
 		# Node type
@@ -138,6 +138,15 @@ class SolverBase(ABC):
 					shock_indicator_type)
 			self.limiters.append(limiter)
 
+		# CHECK
+		# limiter_type = params["ApplyLimiter"]
+		# shock_indicator_type = params["ShockIndicator"]
+
+		# self.limiter = limiter_tools.set_limiter(limiter_type,
+		# 		physics.PHYSICS_TYPE)
+		# limiter_tools.set_shock_indicator(self.limiter, 
+		# 		shock_indicator_type)
+
 		# Console output
 		self.verbose = params["Verbose"]
 		self.min_state = np.zeros(physics.NUM_STATE_VARS)
@@ -155,7 +164,7 @@ class SolverBase(ABC):
 		Checks a variety of parameter combinations to ensure compatibility
 		for the specified input deck and the following simulation
 		'''
-		mesh = self.mesh 
+		mesh = self.mesh
 		params = self.params
 		basis = self.basis
 
@@ -187,10 +196,14 @@ class SolverBase(ABC):
 				and colocated_points:
 			raise errors.IncompatibleError
 
+		# Colocated points only compatible with nodal basis
+		if basis.MODAL_OR_NODAL is ModalOrNodal.Modal and colocated_points:
+			raise errors.IncompatibleError
+			
 	@abstractmethod
 	def precompute_matrix_helpers(self):
 		'''
-		Precomputes element and face helper arrays and structures that only 
+		Precomputes element and face helper arrays and structures that only
 		need to be computed once at the beginning of the simulation.
 		'''
 		pass
@@ -200,16 +213,16 @@ class SolverBase(ABC):
 		'''
 		Calculates the volume contribution to the residual for a given
 		element.
-		
+
 		Inputs:
 		-------
 			elem_ID: element index
 			Up: solution state
-			R_elem: residual array 
+			R_elem: residual array
 
 		Outputs:
 		--------
-			R_elem: calculated residual array 
+			R_elem: calculated residual array
 		'''
 		pass
 
@@ -217,7 +230,7 @@ class SolverBase(ABC):
 	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, R_L, R_R):
 		'''
 		Calculates the surface integral for the interior faces
-		
+
 		Inputs:
 		-------
 			int_face_ID: interior face ID
@@ -227,12 +240,12 @@ class SolverBase(ABC):
 				coefficients)
 			R_L: residual array (left neighboring element)
 			R_R: residual array (right neighboring element)
-			
+
 		Outputs:
 		--------
-			R_L: calculated residual array (left neighboring element 
+			R_L: calculated residual array (left neighboring element
 			contribution)
-			R_R: calculated residual array (right neighboring element 
+			R_R: calculated residual array (right neighboring element
 			contribution)
 		'''
 		pass
@@ -240,7 +253,7 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, R_B):
 		'''
-		Calculates the residual from the surface integral for each boundary 
+		Calculates the residual from the surface integral for each boundary
 		face
 
 		Inputs:
@@ -249,7 +262,7 @@ class SolverBase(ABC):
 			bface_ID: ID of boundary face
 			Uc: solution array from adjacent element
 			R_B: residual array (for adjacent element)
-			
+
 		Outputs:
 		--------
 			R_B: calculated residual array (from boundary face)
@@ -258,8 +271,8 @@ class SolverBase(ABC):
 
 	def init_state_from_fcn(self):
 		'''
-		Initializes the state (initial condition) from the specified 
-		function in the input deck. Either interpolates the state to the 
+		Initializes the state (initial condition) from the specified
+		function in the input deck. Either interpolates the state to the
 		nodes or employs L2 projection to initialize the state.
 		'''
 		# Unpack
@@ -288,19 +301,22 @@ class SolverBase(ABC):
 			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 
 			eval_pts = quad_pts
+			nq = eval_pts.shape[0]
+
+		# Compute state
+		xphys = np.empty((mesh.num_elems,) + eval_pts.shape)
 
 		for elem_ID in range(mesh.num_elems):
-			# Compute state
-			xphys = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
-			f = physics.IC.get_state(physics, x=xphys, t=self.time)
+			xphys[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, eval_pts)
+		f = physics.IC.get_state(physics, x=xphys, t=self.time)
 
-			if not params["L2InitialCondition"]:
-				# Interpolate to solution nodes
-				solver_tools.interpolate_to_nodes(f, U[elem_ID,:,:])
-			else:
-				# L2 projection
-				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis, 
-						quad_pts, quad_wts, elem_ID, f, U[elem_ID, :, :])
+		if not params["L2InitialCondition"]:
+			# Interpolate to solution nodes
+			solver_tools.interpolate_to_nodes(f, U)
+		else:
+			# L2 projection
+			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts,
+					quad_wts, f, U)
 
 	def project_state_to_new_basis(self, U_old, basis_old, order_old):
 		'''
@@ -341,25 +357,22 @@ class SolverBase(ABC):
 
 		basis_old.get_basis_val_grads(eval_pts, get_val=True)
 
-		for elem_ID in range(mesh.num_elems):
-			Uq_old = helpers.evaluate_state(U_old[elem_ID, :, :], 
-					basis_old.basis_val)
+		Uq_old = helpers.evaluate_state(U_old, basis_old.basis_val)
 
-			if not params["L2InitialCondition"]:
-				solver_tools.interpolate_to_nodes(Uq_old, U[elem_ID,:,:])
-			else:
-				solver_tools.L2_projection(mesh, iMM_elems[elem_ID], basis, 
-						quad_pts, quad_wts, elem_ID, Uq_old, 
-						U[elem_ID, :, :])
-	
+		if not params["L2InitialCondition"]:
+			solver_tools.interpolate_to_nodes(Uq_old, U)
+		else:
+			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts,
+					quad_wts, Uq_old, U)
+
 	def get_residual(self, U, R):
 		'''
 		Calculates the surface + volume integral for the DG formulation
-		
+
 		Inputs:
 		-------
 			U: solution array
-			
+
 		Outputs:
 		--------
 			R: residual array
@@ -367,7 +380,7 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 		stepper = self.stepper
-		
+
 		# Initialize residual to zero
 		if stepper.balance_const is None:
 			R[:] = 0.
@@ -382,87 +395,90 @@ class SolverBase(ABC):
 
 	def get_element_residuals(self, U, R):
 		'''
-		Loops over the elements and calls the get_element_residual 
+		Loops over the elements and calls the get_element_residual
 		function for each element
 
 		Inputs:
 		-------
 			U: solution array
-			
+
 		Outputs:
 		--------
-			R: calculated residiual array
+			R: calculated residual array
 		'''
-		mesh = self.mesh
-		physics = self.physics
 
-		for elem_ID in range(mesh.num_elems):
-			R[elem_ID] = self.get_element_residual(elem_ID, U[elem_ID], 
-					R[elem_ID])
+		R = self.get_element_residual(U, R)
 
 	def get_interior_face_residuals(self, U, R):
 		'''
-		Loops over the interior faces and calls the 
+		Loops over the interior faces and calls the
 		get_interior_face_residual function for each face
-		
+
 		Inputs:
 		-------
 			U: solution array
 			R: residual array
-			
+
 		Outputs:
 		--------
-			R: calculated residual array (includes all interior face 
+			R: calculated residual array (includes all interior face
 				contributions)
 		'''
 		mesh = self.mesh
-		physics = self.physics
+		int_face_helpers = self.int_face_helpers
+		elemL_ID = int_face_helpers.elemL_ID
+		elemR_ID = int_face_helpers.elemR_ID
+		faceL_ID = int_face_helpers.faceL_ID
+		faceR_ID = int_face_helpers.faceR_ID
 
-		for int_face_ID in range(mesh.num_interior_faces):
-			interior_face = mesh.interior_faces[int_face_ID]
-			elemL_ID = interior_face.elemL_ID
-			elemR_ID = interior_face.elemR_ID
+		# Make copies of the U array of each element left and right of each face
+		UL = U[elemL_ID]
+		UR = U[elemR_ID]
 
-			Uc_L = U[elemL_ID] # state coeffs of "left" element
-			Uc_R = U[elemR_ID] # state coeffs of "right" element
-			R_L = R[elemL_ID]
-			R_R = R[elemR_ID]
+		# Calculate face residuals for left and right elements
+		RL, RR = self.get_interior_face_residual(faceL_ID, faceR_ID, UL, UR)
 
-			R_L, R_R = self.get_interior_face_residual(int_face_ID, Uc_L, 
-					Uc_R, R_L, R_R)
+		# Add this residual back to the global. The np.add.at function is used
+		# to correctly handle duplicate element ID's.
+		np.add.at(R, elemL_ID, -RL)
+		np.add.at(R, elemR_ID,  RR)
 
 	def get_boundary_face_residuals(self, U, R):
 		'''
-		Loops over the boundary faces and calls the 
+		Loops over the boundary faces and calls the
 		get_boundary_face_residual function for each face
-		
+
 		Inputs:
 		-------
 			U: solution array
 			R: residual array
-			
+
 		Outputs:
 		--------
-			R: calculated residual array (includes all boundary face 
+			R: calculated residual array (includes all boundary face
 				contributions)
 		'''
 		mesh = self.mesh
 		physics = self.physics
+		bface_helpers = self.bface_helpers
+		elem_ID = bface_helpers.elem_ID
+		face_ID = bface_helpers.face_ID
 
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
-			# Loop through boundary faces
-			for bface_ID in range(bgroup.num_boundary_faces):
-				boundary_face = bgroup.boundary_faces[bface_ID]
-				elem_ID = boundary_face.elem_ID
 
-				R[elem_ID] = self.get_boundary_face_residual(bgroup, 
-						bface_ID, U[elem_ID], R[elem_ID])
+			bgroup_elem_ID = elem_ID[bgroup.number]
+			bgroup_face_ID = face_ID[bgroup.number]
+
+			R_B = self.get_boundary_face_residual(bgroup,
+					bgroup_face_ID, U[bgroup_elem_ID], R[bgroup_elem_ID])
+		
+			np.add.at(R, bgroup_elem_ID, -R_B)
 
 	def apply_limiter(self, U):
 		'''
 		Applies the limiter to the solution array, U.
-		
+
 		Inputs:
 		-------
 			U: solution array
@@ -478,7 +494,7 @@ class SolverBase(ABC):
 	def get_min_max_state(self, Uq):
 		'''
 		Gets min and max values of state variables.
-		
+
 		Inputs:
 		-------
 			Uq: state variables evaluated at quadrature points [nq, ns]
@@ -488,15 +504,17 @@ class SolverBase(ABC):
 			self.min_state: minimum values of state variables
 			self.max_state: maximum values of state variables
 		'''
-		self.min_state = np.minimum(self.min_state, np.amin(Uq, axis=0))
-		self.max_state = np.maximum(self.max_state, np.amax(Uq, axis=0))
+		self.min_state = np.minimum(self.min_state, np.amin(np.amin(Uq, 
+				axis=1), axis=0))
+		self.max_state = np.maximum(self.max_state, np.amax(np.amax(Uq, 
+				axis=1), axis=0))
 
 	def print_info(self, physics, R, itime, t, dt):
 		'''
 		Prints key information to console. If self.verbose is False, then
-		only time and residual info is printed; otherwise, min and max 
+		only time and residual info is printed; otherwise, min and max
 		values of the state are also reported.
-		
+
 		Inputs:
 		-------
 			physics: physics object
@@ -517,14 +535,14 @@ class SolverBase(ABC):
 				string = "    " + state_var.name + ": " + "%g | %g"
 				print(string % (self.min_state[s], self.max_state[s]))
 				s += 1
-		
+
 		print("--------------------------------------------------------" + \
 				"-----------------------")
 
 	def solve(self):
 		'''
 		Performs the main solve of the DG method. Initializes the temporal
-		loop. 
+		loop.
 		'''
 		physics = self.physics
 		mesh = self.mesh
