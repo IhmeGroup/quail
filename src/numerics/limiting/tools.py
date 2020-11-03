@@ -30,7 +30,8 @@ def set_limiter(limiter_type, physics_type):
 		return None
 	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreserving:
 		limiter_class = pp_limiter.PositivityPreserving
-	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreservingChem:
+	elif general.LimiterType[limiter_type] is \
+			general.LimiterType.PositivityPreservingChem:
 		limiter_class = pp_limiter.PositivityPreservingChem
 	elif general.LimiterType[limiter_type] is general.LimiterType.ScalarWENO:
 		limiter_class = weno_limiter.ScalarWENO
@@ -53,14 +54,26 @@ def set_shock_indicator(limiter, shock_indicator_type):
 	'''
 	if shock_indicator_type is None:
 		return None
-	elif general.ShockIndicatorType[shock_indicator_type] is general.ShockIndicatorType.MinMod:
+	elif general.ShockIndicatorType[shock_indicator_type] is \
+			general.ShockIndicatorType.MinMod:
 		limiter.shock_indicator = minmod_shock_indicator
 		
 
 def minmod_shock_indicator(limiter, solver, Uc):
+	'''
+	Minmod calculation used to determine if osciallations are large enough to require
+	limiting.
 
-	# set for 1D only currently 
+	Inputs:
+	-------
+		limiter: limiter object
+		solver: solver object
+		Uc: state coefficients [ne, nb, ns]
 
+	Outputs:
+	--------
+		shock_elems: array with indices of elements flagged for limiting
+	'''
 	# Unpack
 	physics = solver.physics
 	mesh = solver.mesh
@@ -88,14 +101,14 @@ def minmod_shock_indicator(limiter, solver, Uc):
 	U_bar = helpers.get_element_mean(U_elem, limiter.quad_wts_elem, djacs, 
 			limiter.elem_vols)
 
-	# UcP neighbor average calculation
+	# UcP neighbor evaluated at quadrature points
 	Up_elem = helpers.evaluate_state(UcP, elem_helpers.basis_val, 
 			skip_interp=solver.basis.skip_interp)
 	# Average value of state
 	Up_bar = helpers.get_element_mean(Up_elem, limiter.quad_wts_elem, djacP, 
 			limiter.elem_vols[elemP_IDs])
 
-	# UcM neighbor average calculation
+	# UcM neighbor evaluated at quadrature points
 	Um_elem = helpers.evaluate_state(UcM, elem_helpers.basis_val, 
 			skip_interp=solver.basis.skip_interp)
 	# Average value of state
@@ -133,13 +146,23 @@ def minmod_shock_indicator(limiter, solver, Uc):
 	shock_elems = np.where((u_tilde_mod != U_tilde) 
 			| (u_dtilde_mod != U_dtilde))[0]
 
-	# import code; code.interact(local=locals())
 	return shock_elems
 
 
 def minmod(a):
+	'''
+	Calculates the minmod function for the minmod shock indicator function
 
+	Inputs:
+	-------
+		a: vector used to evaluate the minmod [ne, 3, ns]
+
+	Outputs:
+	--------
+		u: evaluated minmod state [ne, 1, 1]
+	'''
 	s = np.sign(a)
+	# Allocate with a large negative number. 
 	u = -1234567.*np.ones([a.shape[0], 1, a.shape[-1]])
 
 	elemID_gt = np.where(np.all(s>0., axis=1))[0]
@@ -150,10 +173,22 @@ def minmod(a):
 	if elemID_lt.size !=0:
 		u[elemID_lt, 0, :] = s[elemID_lt, 0, :] * np.amin(np.abs(a[elemID_lt]), axis=1)
 
-	return u
+	return u # [ne, 1, 1]
 
 def get_hessian(limiter, basis, quad_pts):
-	#Unpack 
+	'''
+	Calculates the reference hessian of the basis function
+
+	Inputs:
+	-------
+		limiter: limiter object
+		basis: basis object
+		quad_pts: quadrature point coordinates [nq, dim] 
+
+	Outputs:
+	--------
+		basis_ref_hessian: reference hessian of the basis function [nq, nb, dim]
+	'''
 	dim = basis.DIM
 	p = basis.order
 	nb = basis.nb
@@ -166,7 +201,7 @@ def get_hessian(limiter, basis, quad_pts):
 		get_lagrange_hessian_1D(quad_pts, xnodes, 
 				basis_ref_hessian=basis_ref_hessian)
 	
-	return basis_ref_hessian
+	return basis_ref_hessian # [nq, nb, dim]
 
 def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 	'''
@@ -179,7 +214,7 @@ def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 
 	Outputs:
 	-------- 
-		basis_hessian: evaluated hessian [nq, nb, dim]
+		basis_hessian: evaluated reference hessian [nq, nb, dim]
 	'''
 	nnodes = xnodes.shape[0]
 
@@ -229,4 +264,4 @@ def get_phys_hessian(limiter, basis, ijac):
 	ijac2 = np.einsum('ijk,ijk->ijk',ijac,ijac)
 	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', basis_ref_hessian, ijac2)
 
-	return basis_phys_hessian
+	return basis_phys_hessian # [nq, nb, dim]

@@ -82,7 +82,7 @@ class LimiterBase(ABC):
 		-------
 			solver: solver object
 			elem_ID: element ID
-			Uc: state coefficients on element [nb, ns]
+			Uc: state coefficients on element [num_elems, nb, ns]
 		'''
 		pass
 

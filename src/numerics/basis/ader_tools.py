@@ -62,7 +62,7 @@ def get_elem_inv_mass_matrix_ader(mesh, basis, order, elem_ID=-1,
 
     Outputs:
     -------- 
-        iMM: inverse mass matrix for ADER-DG predictor step [nb, nb]
+        iMM: inverse mass matrix for ADER-DG predictor step [nb_st, nb_st]
     '''
     MM = get_elem_mass_matrix_ader(mesh, basis, order, elem_ID, 
             physical_space)
@@ -141,8 +141,8 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
     #     for j in range(nb_st):
     #         a = 0.
     #         for iq in range(nq_st):
-    #             a += basis_st_grad[iq, i, grad_dir]*basis_st_val[iq, 
-    #                    j]*quad_wts_st[iq]
+    #             a += basis_st_grad[iq, i, grad_dir]*basis_st_val[iq, j]
+    #                    * quad_wts_st[iq]
     #         SM[i,j] = a
     #
     # ------------------------------------------------------------------- #

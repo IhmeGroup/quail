@@ -26,13 +26,16 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 		[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
-	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems # [ne, nq, nb, dim]
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems 
+			# [ne, nq, nb, dim]
 	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
 	# Calculate flux quadrature
-	F_quad = np.einsum('ijkl, jm, ijm -> ijkl', Fq, quad_wts, djac_elems) # [ne, nq, ns, dim]
+	F_quad = np.einsum('ijkl, jm, ijm -> ijkl', Fq, quad_wts, djac_elems) 
+			# [ne, nq, ns, dim]
 	# Calculate residual
-	R = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad) # [ne, nb, ns]
+	R = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad) 
+			# [ne, nb, ns]
 
 	return R # [ne, nb, ns]
 
@@ -77,7 +80,8 @@ def calculate_source_term_integral(elem_helpers, Sq):
 	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
 	# Calculate source term quadrature
-	Sq_quad = np.einsum('ijk, jm, ijm -> ijk', Sq, quad_wts, djac_elems) # [ne, nq, ns]
+	Sq_quad = np.einsum('ijk, jm, ijm -> ijk', Sq, quad_wts, djac_elems) 
+			# [ne, nq, ns]
 	# Calculate residual
 	R = np.einsum('jn, ijk -> ink', basis_val, Sq_quad) # [ne, nb, ns]
 
@@ -145,7 +149,8 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
 	for elem_ID in range(U.shape[0]):
-		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts, get_djac=True)
+		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts,
+				get_djac=True)
 		rhs = np.matmul(basis.basis_val.transpose(),
 				f[elem_ID, :, :]*quad_wts*djac) # [nb, ns]
 

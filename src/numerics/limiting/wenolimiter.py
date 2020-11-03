@@ -100,7 +100,7 @@ class ScalarWENO(base.LimiterBase):
 		self.elemP_IDs = elemP_IDs
 		self.elemM_IDs = elemM_IDs
 
-		# Calculate hessian for higher-order weno
+		# Calculate hessian for higher-order weno calculation
 		self.basis_ref_hessian = limiter_tools.get_hessian(self, basis, 
 				elem_helpers.quad_pts)
 		ijac_elems = elem_helpers.ijac_elems
@@ -111,7 +111,23 @@ class ScalarWENO(base.LimiterBase):
 		
 
 	def get_nonlinearwts(self, order, p, gamma, basis_phys_grad, quad_wts, vol):
-		# calculate the smoothness indicator (Eq. 3.10 in [1])
+		'''
+		This method calculates the smoothness indicator. (See Eq. 3.10 in [1])
+
+		Inputs:
+		-------
+			order: solution order
+			p: polynomial coeffs of of element being smoothed [ne, nb, ns]
+			gamma: weighting constants in weno scheme (See Eq. 3.11 in [1])
+			basis_phys_grad: evaluated gradient of the basis function in 
+            		physical space [nq, nb, dim]
+            quad_wts: quadrature weights [nq, 1]  
+            vol: element volumes [ne, 1]
+
+		Outputs:
+		--------
+			weno_wts: returns the linear weight for the weno reconstruction [ne] 
+		'''
 
 		# s = 1 corresponds to the first derivative of the basis function
 		s = 1
@@ -131,7 +147,7 @@ class ScalarWENO(base.LimiterBase):
 
 			beta += vol**(2*s-1) * hess_p_qwts.reshape(p.shape[0])
 
-		return gamma / (eps + beta)**2
+		return gamma / (eps + beta)**2 # weno_wts [ne]
 
 
 	def limit_element(self, solver, Uc):

@@ -40,7 +40,7 @@ def set_stepper(params, U):
 		stepper = stepper_defs.LSRK4(U)
 	elif StepperType[time_stepper] == StepperType.SSPRK3:
 		stepper = stepper_defs.SSPRK3(U)
-	# if setting a splitting scheme select solvers for the splits
+	# If setting a splitting scheme select solvers for the splits
 	elif StepperType[time_stepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
@@ -69,7 +69,7 @@ def set_time_stepping_approach(stepper, params):
 		num_time_steps: number of time steps for the solution
 	'''
 
-	# unpack time stepping settings
+	# Unpack time stepping settings
 	cfl = params["CFL"]
 	dt = params["TimeStepSize"]
 	num_time_steps = params["NumTimeSteps"]

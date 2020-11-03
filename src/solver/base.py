@@ -185,6 +185,10 @@ class SolverBase(ABC):
 				and colocated_points:
 			raise errors.IncompatibleError
 
+		# Colocated points only compatible with nodal basis
+		if basis.MODAL_OR_NODAL is ModalOrNodal.Modal and colocated_points:
+			raise errors.IncompatibleError
+			
 	@abstractmethod
 	def precompute_matrix_helpers(self):
 		'''

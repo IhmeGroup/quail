@@ -151,12 +151,10 @@ class Chemistry1D(Chemistry):
 		super().set_maps()
 
 		d = {
-			# euler_fcn_type.SmoothIsentropicFlow : euler_fcns.SmoothIsentropicFlow,
-			# euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			chemistry_fcn_type.DensityWave : chemistry_fcns.DensityWave,
 			chemistry_fcn_type.SimpleDetonation1 : chemistry_fcns.SimpleDetonation1,
-			chemistry_fcn_type.SimpleDetonation2 : chemistry_fcns.SimpleDetonation2,
-			chemistry_fcn_type.SimpleDetonation3 : chemistry_fcns.SimpleDetonation3,
+			# chemistry_fcn_type.SimpleDetonation2 : chemistry_fcns.SimpleDetonation2,
+			# chemistry_fcn_type.SimpleDetonation3 : chemistry_fcns.SimpleDetonation3,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -171,7 +169,7 @@ class Chemistry1D(Chemistry):
 
 		self.conv_num_flux_map.update({
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
-			chemistry_conv_num_flux_type.HLLC : chemistry_fcns.HLLC1D,
+			# chemistry_conv_num_flux_type.HLLC : chemistry_fcns.HLLC1D,
 		})
 
 	class StateVariables(Enum):

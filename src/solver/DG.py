@@ -551,7 +551,8 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 	def store_neighbor_info(self, mesh):
 		'''
-		Store the element and face ID's of the neighbors of each boundary face.
+		Store the element and face ID's of the neighbors of each boundary 
+		face.
 
 		Inputs:
 		-------
@@ -605,7 +606,8 @@ class DG(base.SolverBase):
 			self.limiter.precompute_helpers(self)
 
 		physics.conv_flux_fcn.alloc_helpers(
-				np.zeros([mesh.num_interior_faces, self.int_face_helpers.quad_wts.shape[0],
+				np.zeros([mesh.num_interior_faces,
+				self.int_face_helpers.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
 		# Initial condition
@@ -658,9 +660,11 @@ class DG(base.SolverBase):
 			# Eval_source_terms is an additive function so source needs to be
 			# initialized to zero for each time step
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
-			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq) # [ne, nq, ns]
+			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq) 
+					# [ne, nq, ns]
 
-			R_elem += solver_tools.calculate_source_term_integral(elem_helpers, Sq) # [ne, nb, ns]
+			R_elem += solver_tools.calculate_source_term_integral(
+					elem_helpers, Sq) # [ne, nb, ns]
 
 		return R_elem # [ne, nb, ns]
 
@@ -673,13 +677,17 @@ class DG(base.SolverBase):
 		quad_wts = int_face_helpers.quad_wts
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
-		normals_int_faces = int_face_helpers.normals_int_faces # [nf, nq, dim]
+		normals_int_faces = int_face_helpers.normals_int_faces 
+				# [nf, nq, dim]
 		
 		ns = physics.NUM_STATE_VARS
 		nq = quad_wts.shape[0]
+		
 		# Interpolate state and gradient at quad points
-		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) # [nf, nq, ns]
-		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) # [nf, nq, ns]
+		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) 
+				# [nf, nq, ns]
+		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) 
+				# [nf, nq, ns]
 
 		# allocate RL and RR (needed for operator splitting)
 		nifL = self.int_face_helpers.elemL_ID.shape[0]
@@ -689,7 +697,8 @@ class DG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces) # [nf, nq, ns]
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
+					# [nf, nq, ns]
 
 			# Compute contribution to left and right element residuals
 			RL = solver_tools.calculate_inviscid_flux_boundary_integral(

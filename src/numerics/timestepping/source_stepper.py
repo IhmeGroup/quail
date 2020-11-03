@@ -89,7 +89,7 @@ class SourceSolvers():
 			solver.apply_limiter(U)
 			solver.state_coeffs = U
 
-			return R
+			return R # [ne, nb, ns]
 
 		def get_jacobian_matrix(self, mesh, solver):
 			'''
@@ -100,9 +100,9 @@ class SourceSolvers():
 				solver: solver object (e.g., DG, ADERDG, etc...)
 			Outputs:
 			-------- 
-				A: matrix returned for linear solve [nelem, nb, nb, ns]
+				A: matrix returned for linear solve [ne, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
-					[nelem, nb, nb, ns]
+					[ne, nb, nb, ns]
 			'''
 			basis = solver.basis
 			nb = basis.nb
@@ -128,13 +128,13 @@ class SourceSolvers():
 			-------
 				solver: solver object (e.g., DG, ADERDG, etc...)
 				elem_ID: element ID
-				iMM: inverse mass matrix [nb, nb]
-				Uc: state coefficients on element [nb, ns]
+				iMM: inverse mass matrix [ne, nb, nb]
+				Uc: state coefficients [ne, nb, ns]
 			Outputs:
 			-------- 
-				A: matrix returned for linear solve [nelem, nb, nb, ns]
+				A: matrix returned for linear solve [ne, nb, nb, ns]
 				iA: inverse matrix returned for linear solve 
-					[nelem, nb, nb, ns]
+					[ne, nb, nb, ns]
 			'''
 			mesh = solver.mesh
 			nelem = mesh.num_elems
@@ -152,13 +152,14 @@ class SourceSolvers():
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
 
-			Uq = helpers.evaluate_state(Uc, basis_val)
+			Uq = helpers.evaluate_state(Uc, basis_val,
+					skip_interp=solver.basis.skip_interp) # [ne, nq, ns])
 			
-			# evaluate the source term Jacobian [nq, ns, ns]
+			# Evaluate the source term Jacobian [nq, ns, ns]
 			Sjac = np.zeros([nelem, nq, ns, ns])
 			Sjac = physics.eval_source_term_jacobians(Uq, x_elems, solver.time, Sjac) 
 
-			# call solver helper to get dRdU (see solver/tools.py)
+			# Call solver helper to get dRdU (see solver/tools.py)
 			dRdU = solver_tools.calculate_dRdU(elem_helpers, Sjac)
 
 			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \

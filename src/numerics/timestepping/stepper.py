@@ -21,8 +21,8 @@ import solver.tools as solver_tools
 
 class StepperBase(ABC):
 	'''
-	This is an abstract base class used to represent time stepping schemes. The current build supports the following time
-	schemes:
+	This is an abstract base class used to represent time stepping schemes. 
+	The current build supports the following time schemes:
 
 		Explicit Schemes:
 		-----------------
@@ -167,7 +167,8 @@ class LSRK4(StepperBase):
 
 	Reference:
 
-	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta schemes,"" NASA Report TM 109112, NASA Langley Research Center, 1994.
+	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta 
+	schemes,"" NASA Report TM 109112, NASA Langley Research Center, 1994.
 
 	Additional methods and attributes are commented below.
 	''' 
@@ -372,6 +373,7 @@ class Strang(StepperBase, source_solvers.SourceSolvers):
 		mesh  = solver.mesh
 		U = solver.state_coeffs
 
+		# Set the appropriate time steps for each operation
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
 		implicit = self.implicit
@@ -412,6 +414,7 @@ class Simpler(Strang):
 		mesh  = solver.mesh
 		U = solver.state_coeffs
 
+		# Set the appropriate time steps for each operation
 		explicit = self.explicit
 		explicit.dt = self.dt/2.
 		implicit = self.implicit
