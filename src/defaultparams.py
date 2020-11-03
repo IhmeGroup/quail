@@ -62,7 +62,8 @@ Numerics = {
         # Node location type (for nodal basis functions)
         # See general.NodeType
     "ColocatedPoints" : False,
-        # If True, quadrature points will be the solution nodes. Otherwise,
+        # If True, quadrature points will be the solution nodes. This is 
+        # somtimes referred to as the DG spectral element method. If False,
         # overintegration is used, i.e. quadrature of high order, determined
         # by the physics type and the geometric order
     "L2InitialCondition" : True,
