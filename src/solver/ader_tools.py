@@ -106,8 +106,7 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	return R_B # [nf, nb, ns]
 
 
-def calculate_source_term_integral(elem_helpers, elem_helpers_st, 
-		Sq):
+def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 	'''
 	Calculates the source term volume integral for the ADERDG scheme
 
