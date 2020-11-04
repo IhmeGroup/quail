@@ -206,7 +206,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 		err = U_pred_new - U_pred
 
-		if np.amax(np.abs(err)) < 1.e-10:
+		if np.amax(np.abs(err)) < 1.e-8:
 			U_pred = U_pred_new
 			break
 
@@ -302,7 +302,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 
 		err = U_pred_new - U_pred
 
-		if np.amax(np.abs(err)) < 1.e-10:
+		if np.amax(np.abs(err)) < 1.e-8:
 			U_pred = U_pred_new
 			break
 
@@ -411,7 +411,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 					C[i, :, :])
 
 		err = U_pred_new - U_pred
-		if np.amax(np.abs(err)) < 1.e-10:
+		if np.amax(np.abs(err)) < 1.e-8:
 			U_pred = U_pred_new
 			break
 
