@@ -316,7 +316,8 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
     if get_djac and np.any(djac <= 0.):
         raise Exception("Nonpositive Jacobian (elem_ID = %d)" % (elem_ID))
 
-    return djac, jac, ijac # [nq, 1], [nq, ndims, ndims], and [nq, ndims, ndims]
+    return djac, jac, ijac 
+        # [nq, 1], [nq, ndims, ndims], and [nq, ndims, ndims]
 
 
 def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
