@@ -153,7 +153,7 @@ class Euler1D(Euler):
 	Additional methods and attributes are commented below.
 	'''
 	NUM_STATE_VARS = 3
-	DIM = 1
+	NDIMS = 1
 
 	def set_maps(self):
 		super().set_maps()
@@ -230,7 +230,7 @@ class Euler1D(Euler):
 		H = rhoE + p
 
 		# Assemble flux matrix
-		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, dim]
 		F[:, :, irho, 0] = rhou         # Flux of mass
 		F[:, :, irhou, 0] = rho * u2 + p # Flux of momentum
 		F[:, :, irhoE, 0] = H * u        # Flux of energy
@@ -249,7 +249,7 @@ class Euler2D(Euler):
 	Additional methods and attributes are commented below.
 	'''
 	NUM_STATE_VARS = 4
-	DIM = 2
+	NDIMS = 2
 
 	def __init__(self, mesh):
 		super().__init__(mesh)
@@ -328,7 +328,7 @@ class Euler2D(Euler):
 		H = rhoE + p
 
 		# Assemble flux matrix
-		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, dim]
 		F[:,:,irho,  :] = mom          # Flux of mass in all directions
 		F[:,:,irhou, 0] = rho * u2 + p # x-flux of x-momentum
 		F[:,:,irhov, 0] = rhouv        # x-flux of y-momentum

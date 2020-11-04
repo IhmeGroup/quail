@@ -189,7 +189,7 @@ def get_hessian(limiter, basis, quad_pts):
 	--------
 		basis_ref_hessian: reference hessian of the basis function [nq, nb, dim]
 	'''
-	dim = basis.DIM
+	dim = basis.NDIMS
 	p = basis.order
 	nb = basis.nb
 	nq = quad_pts.shape[0]
@@ -248,7 +248,7 @@ def get_phys_hessian(limiter, basis, ijac):
 		basis_phys_hessian: evaluated hessian of the basis function in 
 			physical space [nq, nb, dim]
 	'''
-	dim = basis.DIM
+	dim = basis.NDIMS
 	nb = basis.nb
 
 	basis_ref_hessian = limiter.basis_ref_hessian

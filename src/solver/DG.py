@@ -206,7 +206,7 @@ class ElemHelpers(object):
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		ns = physics.NUM_STATE_VARS
-		dim = physics.DIM
+		dim = physics.NDIMS
 		nelem = self.vol_elems.shape[0]
 
 		self.Uq = np.zeros([nelem, nq, ns])
@@ -499,7 +499,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 		# Allocate
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
-		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.DIM])
+		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.NDIMS])
 
 		# Get values on each face (from interior perspective)
 		for face_ID in range(nfaces_per_elem):
@@ -632,7 +632,7 @@ class DG(base.SolverBase):
 		# Unpack
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
-		dim = physics.DIM
+		dim = physics.NDIMS
 		elem_helpers = self.elem_helpers
 		basis_val = elem_helpers.basis_val
 		quad_wts = elem_helpers.quad_wts

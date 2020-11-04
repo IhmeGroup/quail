@@ -294,7 +294,7 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
         ijac: inverse Jacobian [nq, dim, dim]
     '''
     gbasis = mesh.gbasis
-    dim = gbasis.DIM
+    dim = gbasis.NDIMS
 
     # Gradients in reference space
     basis_ref_grad = gbasis.get_grads(quad_pts) # [nq, nb, dim]

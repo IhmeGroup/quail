@@ -71,7 +71,7 @@ class PhysicsBase(ABC):
 	-------------------
 	NUM_STATE_VARS
 	    number of state variables
-	DIM
+	NDIMS
 	    number of dimensions
 	PHYSICS_TYPE
 		physics type (general.PhysicsType enum member)
@@ -176,7 +176,7 @@ class PhysicsBase(ABC):
 
 	@property
 	@abstractmethod
-	def DIM(self):
+	def NDIMS(self):
 		'''
 		Number of dimensions
 		'''
@@ -218,7 +218,7 @@ class PhysicsBase(ABC):
 		self.conv_flux_fcn = None
 
 		# Compatibility check
-		if mesh.dim != self.DIM:
+		if mesh.dim != self.NDIMS:
 			raise errors.IncompatibleError
 
 		# Set indices and slices corresponding to the state variables

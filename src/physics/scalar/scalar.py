@@ -89,7 +89,7 @@ class ConstAdvScalar1D(ConstAdvScalar):
 
 	Additional methods and attributes are commented below.
 	'''
-	DIM = 1
+	NDIMS = 1
 
 	def set_maps(self):
 		super().set_maps()
@@ -130,7 +130,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 
 	Additional methods and attributes are commented below.
 	'''
-	DIM = 2
+	NDIMS = 2
 
 	def __init__(self, mesh):
 		super().__init__(mesh)
@@ -171,7 +171,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 	def get_conv_flux_interior(self, Uq):
 		c = self.c
 
-		F = np.empty(Uq.shape + (self.DIM,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, dim]
 		F[:, :, :, 0] = c[0] * Uq
 		F[:, :, :, 1] = c[1] * Uq
 	
@@ -185,7 +185,7 @@ class Burgers1D(base.PhysicsBase):
 	PhysicsBase for detailed comments of attributes and methods. 
 	'''
 	NUM_STATE_VARS = 1
-	DIM = 1
+	NDIMS = 1
 	PHYSICS_TYPE = general.PhysicsType.Burgers
 
 	def set_maps(self):

@@ -32,7 +32,7 @@ class ShapeBase(ABC):
         defines an enum from ShapeType to identify the element's face shape 
     NFACES
         defines the number of faces per element as an int
-    DIM
+    NDIMS
         defines the dimension of the shape as an int
     PRINCIPAL_NODE_COORDS
         defines coordinates of the reference element for each shape type as
@@ -98,7 +98,7 @@ class ShapeBase(ABC):
 
     @property
     @abstractmethod
-    def DIM(self):
+    def NDIMS(self):
         '''
         Stores the dimension of the element
         '''
@@ -245,7 +245,7 @@ class ShapeBase(ABC):
         --------
             qorder: quadrature order
         '''
-        dim = self.DIM
+        dim = self.NDIMS
         gorder = mesh.gorder
 
         if physics is not None:
@@ -267,7 +267,7 @@ class PointShape(ShapeBase):
     SHAPE_TYPE = ShapeType.Point
     FACE_SHAPE = None
     NFACES = 0
-    DIM = 0
+    NDIMS = 0
     PRINCIPAL_NODE_COORDS = np.array([0.])
     CENTROID = np.array([[0.]])
     
@@ -293,7 +293,7 @@ class SegShape(ShapeBase):
     SHAPE_TYPE = ShapeType.Segment
     FACE_SHAPE = PointShape()
     NFACES = 2
-    DIM = 1
+    NDIMS = 1
     PRINCIPAL_NODE_COORDS = np.array([[-1.], [1.]])
     CENTROID = np.array([[0.]])
 
@@ -302,7 +302,7 @@ class SegShape(ShapeBase):
 
     def equidistant_nodes(self, p):
         nb = self.get_num_basis_coeff(p)
-        dim = self.DIM
+        dim = self.NDIMS
 
         if p == 0:
             xnodes = np.zeros([nb, 1])
@@ -348,7 +348,7 @@ class QuadShape(ShapeBase):
     SHAPE_TYPE = ShapeType.Quadrilateral
     FACE_SHAPE = SegShape()
     NFACES = 4
-    DIM = 2
+    NDIMS = 2
     PRINCIPAL_NODE_COORDS = np.array([[-1., -1.], [1., -1.], [-1., 1.], 
             [1., 1.]])
     CENTROID = np.array([[0., 0.]])
@@ -358,7 +358,7 @@ class QuadShape(ShapeBase):
 
     def equidistant_nodes(self, p):
         nb = self.get_num_basis_coeff(p)
-        dim = self.DIM
+        dim = self.NDIMS
 
         xnodes = np.zeros([nb, dim])
         if p > 0:
@@ -420,7 +420,7 @@ class TriShape(ShapeBase):
     SHAPE_TYPE = ShapeType.Triangle
     FACE_SHAPE = SegShape()
     NFACES = 3
-    DIM = 2
+    NDIMS = 2
     PRINCIPAL_NODE_COORDS = np.array([[0., 0.], [1., 0.], [0., 1.]])
     CENTROID = np.array([[1./3., 1./3.]])
 
@@ -429,7 +429,7 @@ class TriShape(ShapeBase):
 
     def equidistant_nodes(self, p):
         nb = self.get_num_basis_coeff(p)
-        dim = self.DIM
+        dim = self.NDIMS
 
         xnodes = np.zeros([nb, dim])
         if p > 0:
@@ -623,7 +623,7 @@ class BasisBase(ABC):
             basis_phys_grad: evaluated gradient of the basis function in 
                 physical space [nq, nb, dim]
         '''
-        dim = self.DIM
+        dim = self.NDIMS
         nb = self.nb
 
         basis_ref_grad = self.basis_ref_grad 
@@ -785,7 +785,7 @@ class LagrangeSeg(BasisBase, SegShape):
             for other NodeTypes (such as GaussLobatto nodes)
         '''
         nb = self.get_num_basis_coeff(p)
-        dim = self.DIM
+        dim = self.NDIMS
 
         xnodes = np.zeros([nb, dim])
         if p > 0:
@@ -809,7 +809,7 @@ class LagrangeSeg(BasisBase, SegShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.DIM
+        dim = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
@@ -876,7 +876,7 @@ class LagrangeQuad(BasisBase, QuadShape):
             for other NodeTypes (such as GaussLobatto nodes)
         '''
         nb = self.get_num_basis_coeff(p)
-        dim = self.DIM
+        dim = self.NDIMS
 
         xnodes = np.zeros([nb, dim])
 
@@ -905,7 +905,7 @@ class LagrangeQuad(BasisBase, QuadShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.DIM
+        dim = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
@@ -985,7 +985,7 @@ class LagrangeTri(BasisBase, TriShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.DIM
+        dim = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
@@ -1070,7 +1070,7 @@ class LegendreSeg(BasisBase, SegShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.DIM
+        dim = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
@@ -1113,7 +1113,7 @@ class LegendreQuad(BasisBase, QuadShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.DIM
+        dim = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
@@ -1162,7 +1162,7 @@ class HierarchicH1Tri(BasisBase, TriShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.DIM
+        dim = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]

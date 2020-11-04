@@ -145,7 +145,7 @@ class Chemistry1D(Chemistry):
 	Additional methods and attributes are commented below.
 	'''
 	NUM_STATE_VARS = 4
-	DIM = 1
+	NDIMS = 1
 
 	def set_maps(self):
 		super().set_maps()
@@ -224,7 +224,7 @@ class Chemistry1D(Chemistry):
 		# Get total enthalpy
 		H = rhoE + p
 
-		F = np.empty(Uq.shape + (self.DIM,))
+		F = np.empty(Uq.shape + (self.NDIMS,))
 		F[:, :, irho, 0] = rhou
 		F[:, :, irhou, 0] = rho * u2 + p
 		F[:, :, irhoE, 0] = H * u
