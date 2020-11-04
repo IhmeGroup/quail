@@ -28,7 +28,8 @@ def set_limiter(limiter_type, physics_type):
 	'''
 	if limiter_type is None:
 		return None
-	elif general.LimiterType[limiter_type] is general.LimiterType.PositivityPreserving:
+	elif general.LimiterType[limiter_type] is \
+			general.LimiterType.PositivityPreserving:
 		limiter_class = pp_limiter.PositivityPreserving
 	elif general.LimiterType[limiter_type] is \
 			general.LimiterType.PositivityPreservingChem:
@@ -61,8 +62,8 @@ def set_shock_indicator(limiter, shock_indicator_type):
 
 def minmod_shock_indicator(limiter, solver, Uc):
 	'''
-	Minmod calculation used to determine if osciallations are large enough to require
-	limiting.
+	Minmod calculation used to determine if osciallations are large enough 
+	to require limiting.
 
 	Inputs:
 	-------
@@ -187,7 +188,8 @@ def get_hessian(limiter, basis, quad_pts):
 
 	Outputs:
 	--------
-		basis_ref_hessian: reference hessian of the basis function [nq, nb, dim]
+		basis_ref_hessian: reference hessian of the basis function 
+			[nq, nb, dim]
 	'''
 	dim = basis.DIM
 	p = basis.order
@@ -202,6 +204,7 @@ def get_hessian(limiter, basis, quad_pts):
 				basis_ref_hessian=basis_ref_hessian)
 	
 	return basis_ref_hessian # [nq, nb, dim]
+
 
 def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 	'''
@@ -226,7 +229,8 @@ def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 			if i != j:
 				for k in range(nnodes):
 					if (k != i) and (k != j):
-						h = 1./(xnodes[j]-xnodes[i]) * 1./(xnodes[j]-xnodes[k])
+						h = 1./(xnodes[j]-xnodes[i]) * 1./(xnodes[j]- \
+								xnodes[k])
 						for l in range(nnodes):
 							if (l != i) and (l != j) and (l !=k ):
 								h *= (xq - xnodes[l])/(xnodes[j] - xnodes[l])
@@ -262,6 +266,7 @@ def get_phys_hessian(limiter, basis, ijac):
 		raise ValueError("basis_ref_hessian and ijac shapes not compatible")
 	
 	ijac2 = np.einsum('ijk,ijk->ijk',ijac,ijac)
-	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', basis_ref_hessian, ijac2)
+	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', 
+			basis_ref_hessian, ijac2)
 
 	return basis_phys_hessian # [nq, nb, dim]
