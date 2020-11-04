@@ -3,7 +3,7 @@
 #       File : src/solver/ader_tools.py
 #
 #       Contains additional functions (tools) for the ADER-DG solver class
-#      
+#
 # ------------------------------------------------------------------------ #
 import numpy as np
 from scipy.optimize import fsolve, root
@@ -45,7 +45,7 @@ def set_source_treatment(ns, source_treatment):
 	return fcn
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, 
+def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 		elem_helpers_st, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the ADERDG scheme
@@ -59,12 +59,12 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 
 	Outputs:
 	--------
-		res_elem: residual contribution (for volume integral of inviscid flux) 
+		res_elem: residual contribution (for volume integral of inviscid flux)
 			[ne, nb, ns]
 	'''
 	quad_wts_st = elem_helpers_st.quad_wts
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-	djac_elems = elem_helpers.djac_elems 
+	djac_elems = elem_helpers.djac_elems
 
 	nb = elem_helpers.basis_val.shape[1]
 	nq = elem_helpers.quad_wts.shape[0]
@@ -114,27 +114,27 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 	-------
 		elem_helpers: helpers defined in ElemHelpers
 		elem_helpers_st: space-time helpers defined in ElemHelpers
-		Sq: source term array evaluated at the quadrature points 
+		Sq: source term array evaluated at the quadrature points
 			[ne, nq, ns]
 
 	Outputs:
 	--------
-		res_elem: residual contribution (from volume integral of source term) 
+		res_elem: residual contribution (from volume integral of source term)
 			[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	quad_wts_st = elem_helpers_st.quad_wts
 
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
+	basis_val = elem_helpers.basis_val
+	djac_elems = elem_helpers.djac_elems
 
 	nb = basis_val.shape[1]
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 
 	# Calculate residual from source term
-	res_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)), 
-			Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(Sq.shape[0], 
+	res_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)),
+			Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(Sq.shape[0],
 			nq_st, 1)) # [ne, nb, ns]
 
 	return res_elem # [ne, nb, ns]
@@ -142,17 +142,17 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 
 def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
-	Calculates the predicted solution state for the ADER-DG method using a 
+	Calculates the predicted solution state for the ADER-DG method using a
 	nonlinear solve of the weak form of the DG discretization in time.
 
-	This function treats the source term explicitly. Appropriate for 
+	This function treats the source term explicitly. Appropriate for
 	non-stiff systems.
 
 	Inputs:
 	-------
 		solver: solver object
 		elem_ID: element ID
-		dt: time step 
+		dt: time step
 		W: previous time step solution in space only [ne, nb, ns]
 
 	Outputs:
@@ -166,14 +166,14 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 	basis = solver.basis
 	basis_st = solver.basis_st
-	
+
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
-	
+
 	order = solver.order
 	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
+	basis_val = elem_helpers.basis_val
+	djac_elems = elem_helpers.djac_elems
 
 	FTR = ader_helpers.FTR
 	MM = ader_helpers.MM
@@ -189,18 +189,18 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	U_pred[:] = W_bar
 
 	# Calculate the source and flux coefficients with initial guess
-	source_coeffs = solver.source_coefficients(dt, order, basis_st, 
+	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
-	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
+	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 			U_pred)
 
-	# Iterate using a discrete Picard nonlinear solve for the 
+	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
 	niter = 100
 	for i in range(niter):
 
-		U_pred_new = np.einsum('jk, ikm -> ijm',iK, 
-				np.einsum('jk, ijl -> ijl', MM, source_coeffs) - 
+		U_pred_new = np.einsum('jk, ikm -> ijm',iK,
+				np.einsum('jk, ijl -> ijl', MM, source_coeffs) -
 				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
 				np.einsum('jk, ikm -> ijm', FTR, W))
 
@@ -211,10 +211,10 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 			break
 
 		U_pred = U_pred_new
-		
-		source_coeffs = solver.source_coefficients(dt, order, 
+
+		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
+		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 				U_pred)
 
 		if i == niter - 1:
@@ -226,17 +226,17 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 def predictor_elem_implicit(solver, dt, W, U_pred):
 	'''
-	Calculates the predicted solution state for the ADER-DG method using a 
+	Calculates the predicted solution state for the ADER-DG method using a
 	nonlinear solve of the weak form of the DG discretization in time.
 
-	This function treats the source term implicitly. Appropriate for 
+	This function treats the source term implicitly. Appropriate for
 	stiff scalar equations.
 
 	Inputs:
 	-------
 		solver: solver object
 		elem_ID: element ID
-		dt: time step 
+		dt: time step
 		W: previous time step solution in space only [ne, nb, 1]
 
 	Outputs:
@@ -256,10 +256,10 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	order = solver.order
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
-	
+
 	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
+	basis_val = elem_helpers.basis_val
+	djac_elems = elem_helpers.djac_elems
 	x_elems = elem_helpers.x_elems
 
 	FTR = ader_helpers.FTR
@@ -274,8 +274,8 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 
 	# Calculate the source term Jacobian using average state
 	Sjac = np.zeros([U_pred.shape[0], ns, ns])
-	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time, 
-			Sjac) 
+	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time,
+			Sjac)
 	Kp = K - dt * np.einsum('jk, imn -> ijk', MM, Sjac)
 
 	iK = np.linalg.inv(Kp)
@@ -284,20 +284,20 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	U_pred[:] = W_bar
 
 	# Calculate the source and flux coefficients with initial guess
-	source_coeffs = solver.source_coefficients(dt, order, basis_st, 
+	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
-	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
+	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 			U_pred)
 
-	# Iterate using a discrete Picard nonlinear solve for the 
+	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
 	niter = 100
 	for i in range(niter):
 
-		U_pred_new = np.einsum('ijk, ikm -> ikm',iK, 
+		U_pred_new = np.einsum('ijk, ikm -> ikm',iK,
 				(np.einsum('jk, ijl -> ikl', MM, source_coeffs) -
 				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-				np.einsum('jk, ikm -> ijm', FTR, W) - 
+				np.einsum('jk, ikm -> ijm', FTR, W) -
 				np.einsum('jk, ijm -> ikm', MM, dt*Sjac*U_pred)))
 
 		err = U_pred_new - U_pred
@@ -308,11 +308,11 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 
 		U_pred = U_pred_new
 
-		source_coeffs = solver.source_coefficients(dt, order, 
+		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
+		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 				U_pred)
-		
+
 		if i == niter - 1:
 			print('Sub-iterations not converging')
 			raise ValueError
@@ -322,14 +322,14 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 
 def predictor_elem_sylvester(solver, dt, W, U_pred):
 	'''
-	Calculates the predicted solution state for the ADER-DG method using a 
+	Calculates the predicted solution state for the ADER-DG method using a
 	nonlinear solve of the weak form of the DG discretization in time.
 
-	This function applies the source term implicitly. Appropriate for 
+	This function applies the source term implicitly. Appropriate for
 	stiff systems of equations. The implicit solve utilizes the Sylvester
 	equation of the form:
 
-		AX + XB = C 
+		AX + XB = C
 
 	This is a built-in function via the scipy.linalg library.
 
@@ -337,7 +337,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	-------
 		solver: solver object
 		elem_ID: element ID
-		dt: time step 
+		dt: time step
 		W: previous time step solution in space only [ne, nb, ns]
 
 	Outputs:
@@ -357,10 +357,10 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	order = solver.order
 	elem_helpers = solver.elem_helpers
 	ader_helpers = solver.ader_helpers
-	
+
 	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val 
-	djac_elems = elem_helpers.djac_elems 
+	basis_val = elem_helpers.basis_val
+	djac_elems = elem_helpers.djac_elems
 	x_elems = elem_helpers.x_elems
 
 	FTR = ader_helpers.FTR
@@ -375,8 +375,8 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 
 	# Calculate the source term Jacobian using average state
 	Sjac = np.zeros([U_pred.shape[0], 1, ns, ns])
-	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time, 
-			Sjac) 
+	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time,
+			Sjac)
 	Sjac = Sjac[:, 0, :, :]
 
 	# Initialize space-time coefficients with computed average
@@ -385,10 +385,10 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
-	flux_coeffs = solver.flux_coefficients(dt, order, basis_st, 
+	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 			U_pred)
 
-	# Iterate using a nonlinear Sylvester solver for the 
+	# Iterate using a nonlinear Sylvester solver for the
 	# updated space-time coefficients. Solves for X in the form:
 	# 	AX + XB = C
 	niter = 100
@@ -402,12 +402,12 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		Q = np.einsum('jk, ikm -> ijm', FTR, W) - np.einsum(
 				'ijkl, ikml -> ijm', SMS_elems, flux_coeffs)
 
-		C = source_coeffs/dt - np.matmul(U_pred[:], 
+		C = source_coeffs/dt - np.matmul(U_pred[:],
 				Sjac[:].transpose(0,2,1)) + \
 				np.einsum('jk, ikl -> ijl',iMM, Q)/dt
 
 		for i in range(U_pred.shape[0]):
-			U_pred_new[i, :, :] = solve_sylvester(A[i, :, :], B[i, :, :], 
+			U_pred_new[i, :, :] = solve_sylvester(A[i, :, :], B[i, :, :],
 					C[i, :, :])
 
 		err = U_pred_new - U_pred
@@ -416,8 +416,8 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 			break
 
 		U_pred = U_pred_new
-		
-		source_coeffs = solver.source_coefficients(dt, order, 
+
+		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
 		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 				U_pred)
@@ -450,10 +450,10 @@ def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, djac, f, U):
 	if basis.basis_val.shape[0] != quad_wts.shape[0]:
 		basis.get_basis_val_grads(quad_pts, get_val=True)
 
-	rhs = np.einsum('jk, ijl -> ikl', basis.basis_val, f*quad_wts*djac) 
+	rhs = np.einsum('jk, ijl -> ikl', basis.basis_val, f*quad_wts*djac)
 			# [ne, nb, ns]
 	U[:, :, :] = np.einsum('ijk, ijl -> ikl', iMM, rhs)
-	
+
 
 def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     '''
@@ -463,7 +463,7 @@ def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     Intputs:
     --------
         mesh: mesh object
-        elem_ID: element ID 
+        elem_ID: element ID
         time: current solution time
         dt: solution time step
         tref: time in reference space [nq, 1]

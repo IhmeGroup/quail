@@ -3,7 +3,7 @@
 #       File : src/processing/readwritedatafiles.py
 #
 #       Contains functions for reading and writing data files.
-#      
+#
 # ------------------------------------------------------------------------ #
 import pickle
 

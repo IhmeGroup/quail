@@ -500,8 +500,6 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	-------
 		var_plot: values of variable obtained at x [num_pts, 1]
 	'''
-	# U_plot = fcn_data.get_state(physics, x=np.reshape(x, (-1, physics.NDIMS)),
-	# 		t=time)
 	if x.ndim != 3:
 		U_plot = fcn_data.get_state(physics, x=np.expand_dims(x,0), t=time)
 	else:

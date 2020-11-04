@@ -132,7 +132,7 @@ class SolverBase(ABC):
 		shock_indicator_type = params["ShockIndicator"]
 		self.limiters = []
 		for limiter_type in limiter_types:
-			limiter = limiter_tools.set_limiter(limiter_type, 
+			limiter = limiter_tools.set_limiter(limiter_type,
 					physics.PHYSICS_TYPE)
 			limiter_tools.set_shock_indicator(limiter,
 					shock_indicator_type)
@@ -144,7 +144,7 @@ class SolverBase(ABC):
 
 		# self.limiter = limiter_tools.set_limiter(limiter_type,
 		# 		physics.PHYSICS_TYPE)
-		# limiter_tools.set_shock_indicator(self.limiter, 
+		# limiter_tools.set_shock_indicator(self.limiter,
 		# 		shock_indicator_type)
 
 		# Console output
@@ -199,7 +199,7 @@ class SolverBase(ABC):
 		# Colocated points only compatible with nodal basis
 		if basis.MODAL_OR_NODAL is ModalOrNodal.Modal and colocated_points:
 			raise errors.IncompatibleError
-			
+
 	@abstractmethod
 	def precompute_matrix_helpers(self):
 		'''
@@ -227,7 +227,7 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, resL, 
+	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, resL,
 			resR):
 		'''
 		Calculates the surface integral for the interior faces
@@ -438,10 +438,10 @@ class SolverBase(ABC):
 		UR = U[elemR_ID]
 
 		# Calculate face residuals for left and right elements
-		RL, RR = self.get_interior_face_residual(faceL_ID, faceR_ID, UL, 
+		RL, RR = self.get_interior_face_residual(faceL_ID, faceR_ID, UL,
 				UR)
 
-		# Add this residual back to the global. The np.add.at function is 
+		# Add this residual back to the global. The np.add.at function is
 		# used to correctly handle duplicate element IDs.
 		np.add.at(res, elemL_ID, -RL)
 		np.add.at(res, elemR_ID,  RR)
@@ -475,7 +475,7 @@ class SolverBase(ABC):
 
 			resB = self.get_boundary_face_residual(bgroup,
 					bgroup_face_ID, U[bgroup_elem_ID], res[bgroup_elem_ID])
-		
+
 			np.add.at(res, bgroup_elem_ID, -resB)
 
 	def apply_limiter(self, U):
@@ -507,9 +507,9 @@ class SolverBase(ABC):
 			self.min_state: minimum values of state variables
 			self.max_state: maximum values of state variables
 		'''
-		self.min_state = np.minimum(self.min_state, np.amin(np.amin(Uq, 
+		self.min_state = np.minimum(self.min_state, np.amin(np.amin(Uq,
 				axis=1), axis=0))
-		self.max_state = np.maximum(self.max_state, np.amax(np.amax(Uq, 
+		self.max_state = np.maximum(self.max_state, np.amax(np.amax(Uq,
 				axis=1), axis=0))
 
 	def print_info(self, physics, res, itime, t, dt):
@@ -528,7 +528,7 @@ class SolverBase(ABC):
 		'''
 		# Basic info: time, residual
 		print("%d: Time = %g - Time step = %g - Residual norm = %g" % (
-				itime + 1, t, dt, np.linalg.norm(np.reshape(res, -1), 
+				itime + 1, t, dt, np.linalg.norm(np.reshape(res, -1),
 				ord=1)))
 
 		# If requested, report min and max of state variables

@@ -345,7 +345,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		# Allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
-		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq, ndims])
+		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
+				ndims])
 
 		# Get values on each face (from both left and right perspectives)
 		for face_ID in range(nfaces_per_elem):
@@ -548,7 +549,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 	def store_neighbor_info(self, mesh):
 		'''
-		Store the element and face IDs of the neighbors of each boundary 
+		Store the element and face IDs of the neighbors of each boundary
 		face.
 
 		Inputs:
@@ -646,7 +647,7 @@ class DG(base.SolverBase):
 		if self.verbose:
 			# Get min and max of state variables for reporting
 			self.get_min_max_state(Uq)
-			
+
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
@@ -659,7 +660,7 @@ class DG(base.SolverBase):
 			# eval_source_terms is an additive function so source needs to be
 			# initialized to zero for each time step
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
-			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq) 
+			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq)
 					# [ne, nq, ns]
 
 			res_elem += solver_tools.calculate_source_term_integral(
@@ -676,16 +677,16 @@ class DG(base.SolverBase):
 		quad_wts = int_face_helpers.quad_wts
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
-		normals_int_faces = int_face_helpers.normals_int_faces 
+		normals_int_faces = int_face_helpers.normals_int_faces
 				# [nf, nq, ndims]
-		
+
 		ns = physics.NUM_STATE_VARS
 		nq = quad_wts.shape[0]
-		
+
 		# Interpolate state at quad points
-		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) 
+		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id])
 				# [nf, nq, ns]
-		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) 
+		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id])
 				# [nf, nq, ns]
 
 		# Allocate resL and resR (needed for operator splitting)

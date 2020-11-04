@@ -3,7 +3,7 @@
 #       File : src/physics/scalar/scalar.py
 #
 #       Contains class definitions for scalar equations.
-#      
+#
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
@@ -26,10 +26,10 @@ from physics.scalar.functions import SourceType as scalar_source_type
 class ConstAdvScalar(base.PhysicsBase):
 	'''
 	This class corresponds to scalar advection with a constant velocity.
-	It inherits attributes and methods from the PhysicsBase class. See 
-	PhysicsBase for detailed comments of attributes and methods. This 
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods. This
 	class should not be instantiated directly. Instead, the 1D and 2D
-	variants, which inherit from this class (see below), should be 
+	variants, which inherit from this class (see below), should be
 	instantiated.
 
 	Additional methods and attributes are commented below.
@@ -66,7 +66,7 @@ class ConstAdvScalar(base.PhysicsBase):
 	def get_conv_flux_interior(self, Uq):
 		c = self.c
 		F = np.expand_dims(c*Uq, axis=-1)
-	
+
 		return F, None
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
@@ -84,8 +84,8 @@ class ConstAdvScalar(base.PhysicsBase):
 class ConstAdvScalar1D(ConstAdvScalar):
 	'''
 	This class corresponds to 1D scalar advection with a constant velocity.
-	It inherits attributes and methods from the ConstAdvScalar class. See 
-	ConstAdvScalar for detailed comments of attributes and methods. 
+	It inherits attributes and methods from the ConstAdvScalar class. See
+	ConstAdvScalar for detailed comments of attributes and methods.
 
 	Additional methods and attributes are commented below.
 	'''
@@ -125,8 +125,8 @@ class ConstAdvScalar1D(ConstAdvScalar):
 class ConstAdvScalar2D(ConstAdvScalar):
 	'''
 	This class corresponds to 2D scalar advection with a constant velocity.
-	It inherits attributes and methods from the ConstAdvScalar class. See 
-	ConstAdvScalar for detailed comments of attributes and methods. 
+	It inherits attributes and methods from the ConstAdvScalar class. See
+	ConstAdvScalar for detailed comments of attributes and methods.
 
 	Additional methods and attributes are commented below.
 	'''
@@ -174,15 +174,15 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 		F[:, :, :, 0] = c[0] * Uq
 		F[:, :, :, 1] = c[1] * Uq
-	
+
 		return F, None
 
 
 class Burgers1D(base.PhysicsBase):
 	'''
 	This class corresponds to the 1D Burgers equation.
-	It inherits attributes and methods from the PhysicsBase class. See 
-	PhysicsBase for detailed comments of attributes and methods. 
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods.
 	'''
 	NUM_STATE_VARS = 1
 	NDIMS = 1
@@ -201,7 +201,7 @@ class Burgers1D(base.PhysicsBase):
 		self.IC_fcn_map.update(d)
 		self.exact_fcn_map.update(d)
 		self.BC_fcn_map.update(d)
-		
+
 		self.source_map.update({
 			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
 			scalar_source_type.StiffSource : scalar_fcns.StiffSource,

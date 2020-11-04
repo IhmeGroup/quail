@@ -12,7 +12,8 @@ from scipy.optimize import fsolve, root
 
 import general
 
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
+from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
+        SourceBase, ConvNumFluxBase)
 
 
 class FcnType(Enum):
@@ -589,7 +590,8 @@ class ExactRiemannSolution(FcnBase):
 					u[i,j] = u4; p[i,j] = p4; rho[i,j] = rho4
 				elif x[i,j] > xe1 and x[i,j] <= xe2:
 					# Expansion fan
-					u[i,j] = (2/(gamma+1)*((x[i,j]-xd)/t + (gamma-1)/2*u4 + c4))
+					u[i,j] = (2/(gamma+1)*((x[i,j]-xd)/t
+							+ (gamma-1)/2*u4 + c4))
 					c = u[i,j] - (x[i,j]-xd)/t
 					p[i,j] = p4*(c/c4)**(2*gamma/(gamma-1))
 					rho[i,j] = gamma*p[i,j]/c**2
@@ -598,7 +600,8 @@ class ExactRiemannSolution(FcnBase):
 					# (region 3)
 					u[i,j] = u3; p[i,j] = p3; rho[i,j] = rho3
 				elif x[i,j] > xc and x[i,j] <= xs:
-					# Between the contact discontinuity and the shock (region 2)
+					# Between the contact discontinuity and the shock
+					# (region 2)
 					u[i,j] = u2; p[i,j] = p2; rho[i,j] = rho2
 				else:
 					# Right of the shock (region 1)
@@ -633,7 +636,8 @@ class TaylorGreenVortex(FcnBase):
 		rho = 1.
 		u = np.sin(np.pi*x[:, :, 0])*np.cos(np.pi*x[:, :, 1])
 		v = -np.cos(np.pi*x[:, :, 0])*np.sin(np.pi*x[:, :, 1])
-		p = 0.25*(np.cos(2.*np.pi*x[:, :, 0]) + np.cos(2*np.pi*x[:, :, 1])) + 1.
+		p = 0.25*(np.cos(2.*np.pi*x[:, :, 0]) + np.cos(2*np.pi*x[:, :, 1]))\
+				+ 1.
 		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
 
 		# Store
@@ -837,8 +841,8 @@ class TaylorGreenSource(SourceBase):
 
 		S = np.zeros_like(Uq)
 
-		S[:, :, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, :, 0])* \
-				np.cos(np.pi*x[:, :, 1]) - np.cos(np.pi*x[:, :, 0])*np.cos(3.* \
+		S[:, :, irhoE] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, :, 0])*
+				np.cos(np.pi*x[:, :, 1]) - np.cos(np.pi*x[:, :, 0])*np.cos(3.*
 				np.pi*x[:, :, 1]))
 
 		return S
@@ -865,10 +869,12 @@ class LaxFriedrichsEuler2D(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat)
+		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
+				n_hat)
 
 		# Right flux
-		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat)
+		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
+				n_hat)
 
 		# Jump
 		dUq = UqR - UqL

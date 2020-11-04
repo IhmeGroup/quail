@@ -198,5 +198,6 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		plt.figure()
 		bvalues = bvalues.flatten()
 		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
-		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label)
+		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt,
+				legend_label)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)
