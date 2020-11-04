@@ -64,13 +64,13 @@ class ScalarWENO(base.LimiterBase):
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
 
-		dim = mesh.dim
+		ndims = mesh.ndims
 		num_elems = mesh.num_elems
 		nb = basis.nb
 		nq = elem_helpers.quad_pts.shape[0]
 
 		self.elem_vols, _ = mesh_tools.element_volumes(solver.mesh, solver)
-		self.basis_phys_hessian_elems = np.zeros([num_elems, nq, nb, dim])
+		self.basis_phys_hessian_elems = np.zeros([num_elems, nq, nb, ndims])
 
 		# Basis values in element interior and on faces
 		if not solver.basis.skip_interp:
@@ -120,7 +120,7 @@ class ScalarWENO(base.LimiterBase):
 			p: polynomial coeffs of of element being smoothed [ne, nb, ns]
 			gamma: weighting constants in weno scheme (See Eq. 3.11 in [1])
 			basis_phys_grad: evaluated gradient of the basis function in 
-            		physical space [nq, nb, dim]
+            		physical space [nq, nb, ndims]
             quad_wts: quadrature weights [nq, 1]  
             vol: element volumes [ne, 1]
 

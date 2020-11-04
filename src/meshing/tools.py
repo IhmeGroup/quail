@@ -23,11 +23,11 @@ def ref_to_phys(mesh, elem_ID, xref):
     -------
         mesh: mesh object
         elem_ID: element ID
-        xref: coordinates in reference space [nq, dim]
+        xref: coordinates in reference space [nq, ndims]
 
     Outputs:
     --------
-        xphys: coordinates in physical space [nq, dim]
+        xphys: coordinates in physical space [nq, ndims]
     '''
     gbasis = mesh.gbasis
     gorder = mesh.gorder
@@ -41,7 +41,7 @@ def ref_to_phys(mesh, elem_ID, xref):
     # Convert to physical space
     xphys = np.matmul(gbasis.basis_val, elem_coords)
 
-    return xphys # [nq, dim]
+    return xphys # [nq, ndims]
 
 
 def element_volumes(mesh, solver=None):
@@ -97,12 +97,12 @@ def get_element_centroid(mesh, elem_ID):
     
     Outputs:
     --------
-        xcentroid: element centroid in physical space [1, dim]
+        xcentroid: element centroid in physical space [1, ndims]
     '''
     gbasis = mesh.gbasis
     xcentroid = ref_to_phys(mesh, elem_ID, mesh.gbasis.CENTROID)  
 
-    return xcentroid # [1, dim]
+    return xcentroid # [1, ndims]
 
 
 def check_face_orientations(mesh):
@@ -118,7 +118,7 @@ def check_face_orientations(mesh):
         An error is raised if face orientations don't match up.
     '''
     gbasis = mesh.gbasis
-    if mesh.dim == 1:
+    if mesh.ndims == 1:
         # Don't need to check for 1D
         return
 
@@ -250,7 +250,7 @@ def reorder_periodic_boundary_nodes(mesh, b1, b2, icoord,
 
     start_node_ID = next_node_ID
 
-    if icoord < 0 or icoord >= mesh.dim:
+    if icoord < 0 or icoord >= mesh.ndims:
         raise ValueError
 
     ''' 
@@ -353,7 +353,7 @@ def reorder_periodic_boundary_nodes(mesh, b1, b2, icoord,
                         next_node_ID = np.amax([next_node_ID, node2_ID_new])
 
                         # Force nodes to match exactly
-                        for d in range(mesh.dim):
+                        for d in range(mesh.ndims):
                             if d == icoord: 
                                 # Skip periodic direction
                                 continue 

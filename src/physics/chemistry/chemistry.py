@@ -1,4 +1,11 @@
-import code
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/chemistry/chemistry.py
+#
+#       Contains class definitions for 1D Euler equations with a simple
+# 		transport equation for mass fraction.
+#
+# ------------------------------------------------------------------------ #
 from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
@@ -29,17 +36,17 @@ class Chemistry(base.PhysicsBase):
 	'''
 	This class corresponds to the compressible Euler equations with a simple
 	transport equation for mass fraction. It is appropriate for testing simple
-	burned/unburned chemistry models. It inherits attributes and methods from 
+	burned/unburned chemistry models. It inherits attributes and methods from
 	the PhysicsBase class. See PhysicsBase for detailed comments of attributes
 	and methods. This class should not be instantiated directly. Instead,
 	the 1D and 2D variants, which inherit from this class (see below),
-	should be instantiated.	
+	should be instantiated.
 
 	Additional methods and attributes are commented below.
 
 	Attributes:
 	-----------
-	R: float 
+	R: float
 		mass-specific gas constant
 	gamma: float
 		specific heat ratio
@@ -64,7 +71,8 @@ class Chemistry(base.PhysicsBase):
 			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
 
-	def set_physical_params(self, GasConstant=287., SpecificHeatRatio = 1.4, HeatRelease = 0.):
+	def set_physical_params(self, GasConstant=287., SpecificHeatRatio = 1.4,
+			HeatRelease = 0.):
 		self.R = GasConstant
 		self.gamma = SpecificHeatRatio
 		self.qo = HeatRelease
@@ -103,7 +111,7 @@ class Chemistry(base.PhysicsBase):
 
 		''' Nested functions for common quantities '''
 		def get_pressure():
-			varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2, 
+			varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2,
 					keepdims=True)/rho - qo*rhoY)
 			if flag_non_physical:
 				if np.any(varq < 0.):
@@ -136,6 +144,7 @@ class Chemistry(base.PhysicsBase):
 
 		return varq
 
+
 class Chemistry1D(Chemistry):
 	'''
 	This class corresponds to 1D Euler equations with simple chemistry.
@@ -145,16 +154,19 @@ class Chemistry1D(Chemistry):
 	Additional methods and attributes are commented below.
 	'''
 	NUM_STATE_VARS = 4
-	DIM = 1
+	NDIMS = 1
 
 	def set_maps(self):
 		super().set_maps()
 
 		d = {
 			chemistry_fcn_type.DensityWave : chemistry_fcns.DensityWave,
-			chemistry_fcn_type.SimpleDetonation1 : chemistry_fcns.SimpleDetonation1,
-			# chemistry_fcn_type.SimpleDetonation2 : chemistry_fcns.SimpleDetonation2,
-			# chemistry_fcn_type.SimpleDetonation3 : chemistry_fcns.SimpleDetonation3,
+			chemistry_fcn_type.SimpleDetonation1 : \
+					chemistry_fcns.SimpleDetonation1,
+			# chemistry_fcn_type.SimpleDetonation2 : \
+			#		chemistry_fcns.SimpleDetonation2,
+			# chemistry_fcn_type.SimpleDetonation3 : \
+			#		chemistry_fcns.SimpleDetonation3,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -213,18 +225,18 @@ class Chemistry1D(Chemistry):
 
 		rho += eps
 
-		# Get velocity 
+		# Get velocity
 		u = rhou / rho
 		# Get squared velocity
 		u2 = u**2
 
 		# Calculate pressure using the Ideal Gas Law
-		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2 
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2
 				- rhoY * self.qo) # [n, nq]
 		# Get total enthalpy
 		H = rhoE + p
 
-		F = np.empty(Uq.shape + (self.DIM,))
+		F = np.empty(Uq.shape + (self.NDIMS,))
 		F[:, :, irho, 0] = rhou
 		F[:, :, irhou, 0] = rho * u2 + p
 		F[:, :, irhoE, 0] = H * u

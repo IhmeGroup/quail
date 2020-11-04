@@ -91,7 +91,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
     -------- 
         SM: stiffness matrix for ADER-DG [nb_st, nb_st]
     '''
-    dim = mesh.dim
+    ndims = mesh.ndims
 
     quad_order_st = basis_st.get_quadrature_order(mesh, order*2)
     quad_order = quad_order_st
@@ -109,11 +109,11 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
         if len(djac) == 1:
             djac = np.full(nq, djac[0])
         
-        ijac_st = np.zeros([nq_st, dim+1, dim+1])
-        ijac_st[:, :dim, :dim] = ijac
+        ijac_st = np.zeros([nq_st, ndims + 1, ndims + 1])
+        ijac_st[:, :ndims, :ndims] = ijac
         
-        # Add the temporal Jacobian in the dim+1 dimension
-        ijac_st[:, dim, dim] = 2./dt 
+        # Add the temporal Jacobian in the ndims+1 dimension
+        ijac_st[:, ndims, ndims] = 2./dt 
     
     else:
         djac = np.full(nq, 1.)
@@ -188,7 +188,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order,
         basis2.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis1, 
                 get_val=True)
     else:
-        # If basis are different you are at tau_{n} in ref time
+        # If bases are different you are at tau_{n} in ref time
         # Evaluate basis at tau_{n}
         face_ID = 0
 

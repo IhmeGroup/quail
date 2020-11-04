@@ -257,7 +257,7 @@ class PhysicalGroup(object):
 
 	Attributes:
 	-----------
-	dim: int
+	ndims: int
 	    number of spatial dimensions
 	boundary_group_num: int
 	    boundary group number (in quail)
@@ -269,7 +269,7 @@ class PhysicalGroup(object):
 	    tags of entities associated with this physical group
 	'''
 	def __init__(self):
-		self.dim = 1
+		self.ndims = 1
 		self.boundary_group_num = -1
 		self.gmsh_phys_num = -1
 		self.name = ""
@@ -421,11 +421,11 @@ def import_physical_groups(fo, mesh):
 		phys_group = phys_groups[i]
 		fl = fo.readline()
 		ls = fl.split()
-		phys_group.dim = int(ls[0])
+		phys_group.ndims = int(ls[0])
 		phys_group.gmsh_phys_num = int(ls[1])
 		phys_group.name = ls[2][1:-1]
 
-		if phys_group.dim < mesh.dim-1 or phys_group.dim > mesh.dim:
+		if phys_group.ndims < mesh.ndims-1 or phys_group.ndims > mesh.ndims:
 			raise Exception("Physical groups should be created only for " +
 					"elements and boundary faces")
 
@@ -437,7 +437,7 @@ def import_physical_groups(fo, mesh):
 	# Need at least one physical group to correspond to volume elements
 	match = False
 	for phys_group in phys_groups:
-		if phys_group.dim == mesh.dim:
+		if phys_group.ndims == mesh.ndims:
 			match = True
 			break
 
@@ -597,16 +597,16 @@ def import_nodes(fo, ver, mesh):
 			ds.append(ds_all[d])
 
 	# New dimension
-	dim = len(ds)
+	ndims = len(ds)
 	node_coords = node_coords[:, ds]
 
-	if dim == 3:
+	if ndims == 3:
 		raise ValueError("3D meshes not supported")
 
 	# Store in mesh
 	mesh.node_coords = node_coords
 	mesh.num_nodes = node_coords.shape[0]
-	mesh.dim = dim
+	mesh.ndims = ndims
 
 	return mesh, old_to_new_node_IDs
 
@@ -672,7 +672,7 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 	num_volumes = ls[3]
 
 	# Read entities
-	if mesh.dim == 2:
+	if mesh.ndims == 2:
 		# Skip points
 		for _ in range(num_points):
 			fo.readline()
@@ -743,7 +743,7 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 					"faces must be assigned to a physical group")
 
 		# Process
-		if phys_group.dim == mesh.dim:
+		if phys_group.ndims == mesh.ndims:
 			# Element
 			# Make sure only one type of volume element in type
 			gorder = gmsh_element_database[etype].gorder
@@ -758,7 +758,7 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 			# Increment number of elements
 			mesh.num_elems += 1
 
-		elif phys_group.dim == mesh.dim - 1:
+		elif phys_group.ndims == mesh.ndims - 1:
 			# Boundary face
 			try:
 				bgroup = mesh.boundary_groups[phys_group.name]
@@ -799,7 +799,7 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups,
 	for _ in range(num_entity_blocks):
 		fl = fo.readline()
 		lint = [int(l) for l in fl.split()]
-		dim = lint[0]
+		ndims = lint[0]
 		entity_tag = lint[1]
 		etype = lint[2] # Gmsh element type
 		num_in_block = lint[3]
@@ -808,14 +808,14 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups,
 		found = False
 		for phys_group in phys_groups:
 			if entity_tag in phys_group.entity_tags and \
-					dim == phys_group.dim:
+					ndims == phys_group.ndims:
 				found = True
 				break
 		if not found:
 			raise errors.DoesNotExistError("All elements and boundary " +
 					"faces must be assigned to a physical group")
 
-		if dim == mesh.dim:
+		if ndims == mesh.ndims:
 			# Element
 			# Get element type data
 			gorder = gmsh_element_database[etype].gorder
@@ -835,7 +835,7 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups,
 				# Increment number of elements
 				mesh.num_elems += 1
 
-		elif dim == mesh.dim - 1:
+		elif ndims == mesh.ndims - 1:
 			# Boundary face
 
 			if phys_group.boundary_group_num >= 0:
@@ -1117,12 +1117,12 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 	for _ in range(num_entity_blocks):
 		fl = fo.readline()
 		lint = [int(l) for l in fl.split()]
-		dim = lint[0]
+		ndims = lint[0]
 		entity_tag = lint[1]
 		etype = lint[2] # Gmsh element type
 		num_in_block = lint[3]
 
-		if dim == mesh.dim:
+		if ndims == mesh.ndims:
 			# Volume element
 
 			# Get info
@@ -1144,14 +1144,14 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 				# Increment number of elements
 				num_elems += 1
 
-		elif dim == mesh.dim - 1:
+		elif ndims == mesh.ndims - 1:
 			# Boundary face
 
 			# Find physical boundary group
 			found = False
 			for phys_group in phys_groups:
 				if entity_tag in phys_group.entity_tags:
-					if phys_group.dim == dim:
+					if phys_group.ndims == ndims:
 						bgroup_num = phys_group.boundary_group_num
 						found = True
 						break

@@ -36,11 +36,12 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	'''
 	''' Create mesh and set node coordinates '''
 	num_nodes = num_elems + 1
-	mesh = mesh_defs.Mesh(dim=1, num_nodes=num_nodes)
-	mesh.node_coords = np.zeros([mesh.num_nodes, mesh.dim])
+	mesh = mesh_defs.Mesh(ndims=1, num_nodes=num_nodes)
+	mesh.node_coords = np.zeros([mesh.num_nodes, mesh.ndims])
 	mesh.node_coords[:,0] = np.linspace(xmin, xmax, mesh.num_nodes)
 	# Set parameters
-	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, num_elems=num_elems)
+	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, 
+			num_elems=num_elems)
 
 	''' Interior faces '''
 	mesh.num_interior_faces = num_elems - 1
@@ -49,7 +50,7 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 		interior_face = mesh.interior_faces[i]
 		interior_face.elemL_ID = i
 		interior_face.faceL_ID = 1
-		interior_face.elemR_ID = i+1
+		interior_face.elemR_ID = i + 1
 		interior_face.faceR_ID = 0
 
 	''' Boundary groups and faces '''
@@ -116,7 +117,7 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 	xgrid, ygrid = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(xgrid, -1), np.reshape(ygrid, -1)]).transpose()
 	# Create mesh
-	mesh = mesh_defs.Mesh(dim=2, num_nodes=xp.shape[0], 
+	mesh = mesh_defs.Mesh(ndims=2, num_nodes=xp.shape[0], 
 			num_elems=num_elems_x*num_elems_y, 
 			gbasis=basis_defs.LagrangeQuad(1),
 			gorder=1)

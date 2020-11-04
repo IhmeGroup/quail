@@ -4,7 +4,7 @@
 #
 #       Contains definitions of Functions, boundary conditions, and source
 #       terms for scalar equations.
-#      
+#
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
@@ -16,7 +16,7 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
 
 class FcnType(Enum):
 	'''
-	Enum class that stores the types of analytic functions for initial 
+	Enum class that stores the types of analytic functions for initial
 	conditions, exact solutions, and/or boundary conditions. These
 	functions are specific to the available scalar equation sets.
 	'''
@@ -50,9 +50,9 @@ class SourceType(Enum):
 ---------------
 State functions
 ---------------
-These classes inherit from the FcnBase class. See FcnBase for detailed 
-comments of attributes and methods. Information specific to the 
-corresponding child classes can be found below. These classes should 
+These classes inherit from the FcnBase class. See FcnBase for detailed
+comments of attributes and methods. Information specific to the
+corresponding child classes can be found below. These classes should
 correspond to the FcnType enum members above.
 '''
 
@@ -67,7 +67,7 @@ class Sine(FcnBase):
 	'''
 	def __init__(self, omega=2*np.pi):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -99,7 +99,7 @@ class DampingSine(FcnBase):
 	'''
 	def __init__(self, omega=2*np.pi, nu=1.):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -133,7 +133,7 @@ class Gaussian(FcnBase):
 	'''
 	def __init__(self, sig=1., x0=0.):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -145,20 +145,21 @@ class Gaussian(FcnBase):
 		    self: attributes initialized
 		'''
 		self.sig = sig
-		self.x0 = x0 
+		self.x0 = x0
 
 	def get_state(self, physics, x, t):
 
-		r = np.linalg.norm(x[:] - self.x0 - physics.c*t, axis=2, keepdims=True)
-		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.DIM) * \
+		r = np.linalg.norm(x[:] - self.x0 - physics.c*t, axis=2,
+				keepdims=True)
+		Uq = 1./(self.sig*np.sqrt(2.*np.pi))**float(physics.NDIMS) * \
 				np.exp(-r**2./(2.*self.sig**2.))
-				
+
 		return Uq
 
 
 class Paraboloid(FcnBase):
 	'''
-	Paraboloid profile. Does not take into account time dependence, so 
+	Paraboloid profile. Does not take into account time dependence, so
 	should not necessarily be used as an exact solution.
 	'''
 	def __init__(self):
@@ -186,7 +187,7 @@ class ShockBurgers(FcnBase):
 	'''
 	def __init__(self, uL=1., uR=0., xshock=0.3):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -198,7 +199,7 @@ class ShockBurgers(FcnBase):
 		--------
 		    self: attributes initialized
 		'''
-		self.uL = uL 
+		self.uL = uL
 		self.uR = uR
 		self.xshock = xshock
 
@@ -233,7 +234,7 @@ class SineBurgers(FcnBase):
 	'''
 	def __init__(self, omega=2*np.pi):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -249,13 +250,13 @@ class SineBurgers(FcnBase):
 
 		def F(u):
 			x1 = x.reshape(x.shape[0]*x.shape[1])
-			F = u - np.sin(self.omega*(x1-u*t)) 
+			F = u - np.sin(self.omega*(x1-u*t))
 			return F
 
 		u = np.sin(self.omega*x)
 		u1 = u.reshape(u.shape[0]*u.shape[1])
 		sol = root(F, u1, tol=1e-12)
-		
+
 		Uq = sol.x.reshape(u.shape[0], u.shape[1], 1)
 
 		return Uq
@@ -280,9 +281,9 @@ class LinearBurgers(FcnBase):
 ---------------------
 Source term functions
 ---------------------
-These classes inherit from the SourceBase class. See SourceBase for detailed 
-comments of attributes and methods. Information specific to the 
-corresponding child classes can be found below. These classes should 
+These classes inherit from the SourceBase class. See SourceBase for detailed
+comments of attributes and methods. Information specific to the
+corresponding child classes can be found below. These classes should
 correspond to the SourceType enum members above.
 '''
 
@@ -297,7 +298,7 @@ class SimpleSource(SourceBase):
 	'''
 	def __init__(self, nu=-1):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------
@@ -332,7 +333,7 @@ class StiffSource(SourceBase):
 	'''
 	def __init__(self, nu=-1., beta=0.5):
 		'''
-		This method initializes the attributes. 
+		This method initializes the attributes.
 
 		Inputs:
 		-------

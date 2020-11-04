@@ -2,7 +2,7 @@
 #
 #       File : src/defaultparams.py
 #
-#       Contains default inputs parameters.
+#       Contains default input parameters.
 #      
 # ------------------------------------------------------------------------ #
 

@@ -1,8 +1,19 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/chemistry/functions.py
+#
+#       Contains definitions of Functions, boundary conditions, and source
+#       terms for the 1D Euler equations with a simple transport equation
+#		for mass fraction.
+#
+# ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
 
-from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
+from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
+        SourceBase, ConvNumFluxBase)
+
 
 class FcnType(Enum):
     DensityWave = auto()
@@ -31,7 +42,7 @@ class DensityWave(FcnBase):
 		gam = physics.gamma
 		qo = physics.qo
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
-		
+
 		rho = 1.0+0.1*np.sin(2.*np.pi*x)
 		rhou = rho*1.0
 		rhoz = rho*1.0
@@ -71,7 +82,8 @@ class SimpleDetonation1(FcnBase):
 		c = p_u**2 + (2.*(gam-1.) * rho_u*p_u*qo) / (gam+1.)
 
 		p_b = -b + (b**2 - c)**0.5 # burned gas pressure
-		rho_b = rho_u * (p_b * (gam+1.) - p_u) / (gam*p_b) # burned gas density
+		rho_b = rho_u * (p_b * (gam+1.) - p_u) \
+				/ (gam*p_b) # burned gas density
 		scj = (rho_u*u_u + (gam*p_b*rho_b)**0.5) / rho_u # detonation speed
 		u_b = scj - (gam*p_b / rho_b)**0.5 # burned gas velocity
 		Y_b = 0. # burned gas mixture fraction
@@ -91,8 +103,10 @@ class SimpleDetonation1(FcnBase):
 			Uq[elem_ID, iright, srhou] = rho_u*u_u
 			Uq[elem_ID, ileft, srhou] = rho_b*u_b
 			# Energy
-			Uq[elem_ID, iright, srhoE] = p_u/(gam-1.) + 0.5*rho_u*u_u*u_u + qo*rho_u*Y_u
-			Uq[elem_ID, ileft, srhoE] = p_b/(gam-1.) + 0.5*rho_b*u_b*u_b + qo*rho_b*Y_b
+			Uq[elem_ID, iright, srhoE] = (p_u/(gam-1.) + 0.5*rho_u*u_u*u_u +
+					qo*rho_u*Y_u)
+			Uq[elem_ID, ileft, srhoE] = (p_b/(gam-1.) + 0.5*rho_b*u_b*u_b +
+					qo*rho_b*Y_b)
 			# MixtureFraction
 			Uq[elem_ID, iright, srhoz] = rho_u*Y_u
 			Uq[elem_ID, ileft, srhoz] = rho_b*Y_b
@@ -119,7 +133,7 @@ class SimpleDetonation1(FcnBase):
 # 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
 # 		gam = physics.gamma
 # 		qo = physics.qo
-# 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])		
+# 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
 
 # 		delta = np.sqrt((2.*(gam - 1.)) / (gam + 1.))
 
@@ -130,7 +144,7 @@ class SimpleDetonation1(FcnBase):
 
 # 		ileft = (x <= xshock).reshape(-1)
 # 		iright = (x > xshock).reshape(-1)
-		
+
 # 		Uq[iright, srho] = rhoR
 # 		Uq[ileft, srho] = rhoL
 # 		# Momentum
@@ -162,7 +176,7 @@ class SimpleDetonation1(FcnBase):
 # 		vL = uL[1]
 # 		pL = uL[2]
 # 		yL = uL[3]
-		
+
 # 		rhoR = uR[0]
 # 		vR = uR[1]
 # 		pR = uR[2]
@@ -173,7 +187,7 @@ class SimpleDetonation1(FcnBase):
 # 		gam = physics.gamma
 # 		qo = physics.qo
 # 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
-		
+
 # 		ileft = (x <= xshock).reshape(-1)
 # 		iright = (x > xshock).reshape(-1)
 # 		# Density
@@ -190,7 +204,7 @@ class SimpleDetonation1(FcnBase):
 # 		Uq[iright, srhoz] = rhoR*yR
 # 		Uq[ileft, srhoz] = rhoL*yL
 
-# 		return Uq 
+# 		return Uq
 
 '''
 Source term functions
@@ -225,7 +239,7 @@ class Arrhenius(SourceBase):
 		Tign = self.Tign
 		ne = Uq.shape[0]
 		nq = Uq.shape[1]
-		
+
 		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 		# Allocate jacobian matrix
@@ -241,7 +255,7 @@ class Arrhenius(SourceBase):
 
 		# Get dKdU
 		dKdrho =  (A * Tign * np.exp(-Tign / T) * \
-				dTdU[:, :, irhoY, irho].reshape([ne, nq, 1]))  / T**2 
+				dTdU[:, :, irhoY, irho].reshape([ne, nq, 1]))  / T**2
 		dKdrhou = (A * Tign * np.exp(-Tign / T) * \
 				dTdU[:, :, irhoY, irhou].reshape([ne, nq, 1])) / T**2
 		dKdrhoE = (A * Tign * np.exp(-Tign / T) * \
@@ -253,10 +267,11 @@ class Arrhenius(SourceBase):
 		jac[:, :, irhoY, irho] =  (-1.*dKdrho[:, :, 0] * Uq[:, :, irhoY])
 		jac[:, :, irhoY, irhou] = (-1.*dKdrhou[:, :, 0] * Uq[:, :, irhoY])
 		jac[:, :, irhoY, irhoE] = (-1.*dKdrhoE[:, :, 0] * Uq[:, :, irhoY])
-		jac[:, :, irhoY, irhoY] = (-1.*dKdrhoY[:, :, 0] * Uq[:, :, irhoY] - K[:, :, 0] )
+		jac[:, :, irhoY, irhoY] = (-1.*dKdrhoY[:, :, 0] * Uq[:, :, irhoY]
+				- K[:, :, 0] )
 
 		return jac # [ne, nq, ns, ns]
-		
+
 def get_temperature_jacobian(physics, Uq):
 		'''
 		This function calculates the jacobian of the temperature (dT/dU).
@@ -275,8 +290,9 @@ def get_temperature_jacobian(physics, Uq):
 		gam = physics.gamma
 		qo = physics.qo
 		R = physics.R
-		
-		dTdU = np.zeros([Uq.shape[0], Uq.shape[1], Uq.shape[-1], Uq.shape[-1]])
+
+		dTdU = np.zeros([Uq.shape[0], Uq.shape[1], Uq.shape[-1],
+				Uq.shape[-1]])
 
 		rho = Uq[:, :, irho]
 		rhou = Uq[:, :, irhou]
@@ -301,7 +317,7 @@ def get_temperature_jacobian(physics, Uq):
 # 		self.Tign = Tign
 
 # 	def get_source(self, physics, Uq, x, t):
-		
+
 # 		# Unpack source term constants
 # 		Da = self.Da
 # 		Tign = self.Tign
@@ -320,7 +336,7 @@ def get_temperature_jacobian(physics, Uq):
 
 # 		S = np.zeros_like(Uq)
 # 		S[:,irhoz] = -K[:] * Uq[:,irhoz]
-		
+
 # 		return S
 
 # 	def get_jacobian(self, physics, Uq, x, t):
@@ -330,7 +346,7 @@ def get_temperature_jacobian(physics, Uq):
 # 		Tign = self.Tign
 
 # 		# Uq = self.Uq
-		
+
 # 		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 # 		T = physics.compute_variable("Temperature", Uq)
@@ -384,7 +400,7 @@ Numerical flux functions
 # 		uR = UqR[:, smom]/rhoR
 # 		unR = uR * n1
 # 		pR = physics.compute_variable("Pressure", UqR)
-# 		cR = physics.compute_variable("SoundSpeed", UqR)	
+# 		cR = physics.compute_variable("SoundSpeed", UqR)
 
 # 		# calculate averages
 # 		rho_avg = 0.5 * (rhoL + rhoR)
@@ -400,7 +416,7 @@ Numerical flux functions
 # 		# Step 2: Get SL and SR
 # 		qL = 1.
 # 		if pspl > 1.:
-# 			qL = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspl - 1.)) 
+# 			qL = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspl - 1.))
 # 		SL = unL - cL*qL
 
 # 		qR = 1.
@@ -412,7 +428,7 @@ Numerical flux functions
 # 		raa1 = 1./(rho_avg*c_avg)
 # 		sss = 0.5*(unL+unR) + 0.5*(pL-pR)*raa1
 
-# 		# flux assembly 
+# 		# flux assembly
 
 # 		# Left State
 # 		FL = physics.get_conv_flux_projected(UqL, n1)
@@ -452,5 +468,5 @@ Numerical flux functions
 # 			Fhllc[:, smom] = FR[:, smom] + SR*(UqR[:, smom]*(cr-1.)+c1r*n1)
 # 			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UqR[:, srhoE]*(cr-1.)+c2r)
 # 			Fhllc[:, srhoY] = FR[:, srhoY] + SR*(UqR[:, srhoY]*(cr-1.))
-							  
+
 # 		return Fhllc

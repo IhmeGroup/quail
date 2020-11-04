@@ -156,7 +156,7 @@ def get_dt_from_cfl(stepper, solver):
 		dt: time step for the solver
 	'''	
 	mesh = solver.mesh
-	dim = mesh.dim
+	ndims = mesh.ndims
 
 	physics = solver.physics
 	U = solver.state_coeffs
@@ -179,7 +179,7 @@ def get_dt_from_cfl(stepper, solver):
 			flag_non_physical=True)
 
 	# Calculate the dt for each element
-	dt_elems = cfl*vol_elems**(1./dim)/a
+	dt_elems = cfl*vol_elems**(1./ndims)/a
 
 	# take minimum to set appropriate dt
 	dt = np.min(dt_elems)

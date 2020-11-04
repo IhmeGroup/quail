@@ -99,7 +99,7 @@ class Element(object):
     node_IDs: numpy array
         global IDs of the element nodes
     node_coords: numpy array
-        coordinates of the element nodes [num_nodes, dim]
+        coordinates of the element nodes [num_nodes, ndims]
     face_to_neighbors: numpy array
         maps local face ID to element ID of 
         neighbor across said face [num_faces]
@@ -117,12 +117,12 @@ class Mesh(object):
 
     Attributes:
     -----------
-    dim : int
+    ndims : int
         number of spatial dimensions
     num_nodes : int
         total number of nodes
     node_coords : numpy array
-        coordinates of nodes [num_nodes, dim]
+        coordinates of nodes [num_nodes, ndims]
     num_interior_faces : int
         number of interior faces
     interior_faces : list
@@ -159,12 +159,12 @@ class Mesh(object):
     create_elements
         creates self.elements
     '''
-    def __init__(self, dim=1, num_nodes=1, num_elems=1, gbasis=None, 
+    def __init__(self, ndims=1, num_nodes=1, num_elems=1, gbasis=None, 
             gorder=1):
         if gbasis is None:
             gbasis = basis_defs.LagrangeSeg(1)
 
-        self.dim = dim
+        self.ndims = ndims
         self.num_nodes = num_nodes
         self.node_coords = None
         self.num_interior_faces = 0

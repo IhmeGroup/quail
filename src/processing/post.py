@@ -116,7 +116,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	    dot_normal_with_vec: if dot_normal_with_vec is True, will multiply
 	    	var by the dot product between the outward-pointing unit normal
 	    	vector and vec
-	    vec: vector to dot with normal (see above) [dim]
+	    vec: vector to dot with normal (see above) [ndims]
 	    integrate: if True, will integrate variable over boundary
 	    plot_vs_x: if True, will plot variable vs. x
 	    plot_vs_y: if True, will plot variable vs. y (lower priority than
@@ -126,7 +126,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		legend_label: legend label
 		kwargs: keyword arguments (see plot_defs.finalize_plot)
 	'''
-	if mesh.dim != 2:
+	if mesh.ndims != 2:
 		raise errors.IncompatibleError
 
 	# Extract boundary group
@@ -155,7 +155,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		bvalues = np.zeros([boundary_group.num_boundary_faces, nq])
 			# [num_boundary_faces, nq]
 		bpoints = x_bgroups[boundary_num][:,:,d].flatten()
-			# [num_boundary_faces, nq, dim]
+			# [num_boundary_faces, nq, ndims]
 
 	integ_val = 0.
 
@@ -169,14 +169,14 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	face_ID = bface_helpers.face_ID[boundary_num]
 	basis_val = faces_to_basis[face_ID]
 
-	# Interpolate state and gradient at quad points
+	# Interpolate state at quad points
 	Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
 
 	# Get requested variable
 	varq = physics.compute_variable(var_name, Uq) # [nf, nq, 1]
 
 	# Normals
-	normals = normals_bgroups[boundary_num] # [nf, nq, dim]
+	normals = normals_bgroups[boundary_num] # [nf, nq, ndims]
 	jac = np.linalg.norm(normals, axis=2, keepdims=True) # [nf, nq, 1]
 
 	# If requested, account for normal and dot with input dir
@@ -198,5 +198,6 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 		plt.figure()
 		bvalues = bvalues.flatten()
 		ylabel = plot_defs.get_ylabel(physics, var_name, ylabel)
-		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt, legend_label)
+		plot_defs.plot_1D(physics, bpoints, bvalues, ylabel, fmt,
+				legend_label)
 		plot_defs.finalize_plot(xlabel=xlabel, **kwargs)

@@ -47,7 +47,7 @@ class StepperBase(ABC):
 
 	Attributes:
 	-----------
-	R: numpy array [num_elems, nb, ns]
+	res: numpy array [num_elems, nb, ns]
 		residual array
 	dt: float
 		time-step for the solution
@@ -56,7 +56,7 @@ class StepperBase(ABC):
 	get_time_step: method
 		method to obtain dt given input decks logic (CFL-based vs # of 
 		timesteps, etc...)
-	balance_const: numpy array (shaped like R)
+	balance_const: numpy array (shaped like res)
 		balancing constant array used only with the Simpler splitting scheme
 	
 	Abstract Methods:
@@ -66,7 +66,7 @@ class StepperBase(ABC):
 		selected time-stepping scheme
 	'''
 	def __init__(self, U):
-		self.R = np.zeros_like(U)
+		self.res = np.zeros_like(U)
 		self.dt = 0.
 		self.num_time_steps = 0
 		self.get_time_step = None
@@ -88,7 +88,7 @@ class StepperBase(ABC):
 
 		Outputs:
 		-------- 
-			R: Updated residual vector [num_elems, nb, ns]
+			res: Updated residual vector [num_elems, nb, ns]
 			U: Updates the solution vector [num_elems, nb, ns]
 		'''
 		pass
@@ -106,14 +106,14 @@ class FE(StepperBase):
 		mesh = solver.mesh
 		U = solver.state_coeffs
 
-		R = self.R 
-		R = solver.get_residual(U, R)
-		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		res = self.res 
+		res = solver.get_residual(U, res)
+		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		U += dU
 
 		solver.apply_limiter(U)
 
-		return R # [num_elems, nb, ns]
+		return res # [num_elems, nb, ns]
 
 
 class RK4(StepperBase):
@@ -128,36 +128,36 @@ class RK4(StepperBase):
 		mesh = solver.mesh
 		U = solver.state_coeffs
 
-		R = self.R
+		res = self.res
 
 		# First stage
-		R = solver.get_residual(U, R)
-		dU1 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		res = solver.get_residual(U, res)
+		dU1 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		Utemp = U + 0.5*dU1
 		solver.apply_limiter(Utemp)
 
 		# Second stage
 		solver.time += self.dt/2.
-		R = solver.get_residual(Utemp, R)
-		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		res = solver.get_residual(Utemp, res)
+		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		Utemp = U + 0.5*dU2
 		solver.apply_limiter(Utemp)
 
 		# Third stage
-		R = solver.get_residual(Utemp, R)
-		dU3 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		res = solver.get_residual(Utemp, res)
+		dU3 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		Utemp = U + dU3
 		solver.apply_limiter(Utemp)
 
 		# Fourth stage
 		solver.time += self.dt/2.
-		R = solver.get_residual(Utemp, R)
-		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, R)
+		res = solver.get_residual(Utemp, res)
+		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
 		U += dU
 		solver.apply_limiter(U)
 
-		return R # [num_elems, nb, ns]
+		return res # [num_elems, nb, ns]
 
 
 class LSRK4(StepperBase):
@@ -211,23 +211,23 @@ class LSRK4(StepperBase):
 		mesh = solver.mesh
 		U = solver.state_coeffs
 
-		R = self.R
+		res = self.res
 		dU = self.dU
 
 		Time = solver.time
 		for istage in range(self.nstages):
 			dt = self.dt
 			solver.time = Time + self.rk4c[istage]*dt
-			R = solver.get_residual(U, R)
+			res = solver.get_residual(U, res)
 
-			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
+			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
 			dU *= self.rk4a[istage]
 			dU += dUtemp
 
 			U += self.rk4b[istage]*dU
 			solver.apply_limiter(U)
 
-		return R # [num_elems, nb, ns]
+		return res # [num_elems, nb, ns]
 
 
 class SSPRK3(StepperBase):
@@ -238,7 +238,7 @@ class SSPRK3(StepperBase):
 
 	Reference: 
 
-	R. J. Spiteri, S., Ruuth, "A new class of optimal high-order 
+	res. J. Spiteri, S., Ruuth, "A new class of optimal high-order 
 	strong-stability-preserving time discrtization methods". SIAM Journal on 
 	Numerical Analysis. Vol. 2, Num. 2, pp. 469-491. 2002
 
@@ -271,22 +271,22 @@ class SSPRK3(StepperBase):
 		mesh = solver.mesh
 		U = solver.state_coeffs
 
-		R = self.R
+		res = self.res
 		dU = self.dU
 
 		Time = solver.time
 		for istage in range(self.nstages):
 			dt = self.dt
 			solver.time = Time + dt
-			R = solver.get_residual(U, R)
-			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, R)
+			res = solver.get_residual(U, res)
+			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
 			dU *= self.ssprk3a[istage]
 			dU += dUtemp
 
 			U += self.ssprk3b[istage]*dU
 			solver.apply_limiter(U)
 
-		return R # [num_elems, nb, ns]
+		return res # [num_elems, nb, ns]
 
 
 class ADER(StepperBase):
@@ -310,20 +310,20 @@ class ADER(StepperBase):
 		W = solver.state_coeffs
 		Up = solver.state_coeffs_pred
 
-		R = self.R
+		res = self.res
 
 		# Prediction step
 		Up = solver.calculate_predictor_step(solver, self.dt, W, Up)
 
 		# Correction step
-		R = solver.get_residual(Up, R)
+		res = solver.get_residual(Up, res)
 
-		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt/2., R)
+		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt/2., res)
 
 		W += dU
 		solver.apply_limiter(W)
 
-		return R # [num_elems, nb, ns]
+		return res # [num_elems, nb, ns]
 
 
 class Strang(StepperBase, source_stepper.SourceSolvers):
@@ -420,13 +420,13 @@ class Simpler(Strang):
 		implicit.dt = self.dt
 		
 		solver.params["SourceSwitch"] = False
-		R = self.R 
+		res = self.res 
 
 		# First: calculate the balance constant
 		# Note: we skip the first explicit step as it is in equilibrium by 
 		# definition
 		self.balance_const = None
-		balance_const = -1.*solver.get_residual(U, R)
+		balance_const = -1.*solver.get_residual(U, res)
 		self.balance_const = -1.*balance_const
 
 		# Second: take the implicit full step for the source term.
