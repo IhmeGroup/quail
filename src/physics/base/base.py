@@ -218,7 +218,7 @@ class PhysicsBase(ABC):
 		self.conv_flux_fcn = None
 
 		# Compatibility check
-		if mesh.dim != self.NDIMS:
+		if mesh.ndims != self.NDIMS:
 			raise errors.IncompatibleError
 
 		# Set indices and slices corresponding to the state variables
@@ -486,7 +486,7 @@ class PhysicsBase(ABC):
 
 		Outputs:
 		--------
-			Fq: flux values [nq, ns, dim]
+			Fq: flux values [nq, ns, ndims]
 		'''
 		pass
 
@@ -499,14 +499,14 @@ class PhysicsBase(ABC):
 		-------
 			Uq: values of the state variables (typically at the quadrature
 				points) [nf, nq, ns]
-			normals: directions in which to project flux [nf, nq, dim]
+			normals: directions in which to project flux [nf, nq, ndims]
 
 		Outputs:
 		--------
 			projected flux values [nf, nq, ns]
 			tuple of extra variables computed by interior flux
 		'''
-		Fq, vars = self.get_conv_flux_interior(Uq) # [nf, nq, ns, dim]
+		Fq, vars = self.get_conv_flux_interior(Uq) # [nf, nq, ns, ndims]
 
 		return np.einsum('ijkl, ijl -> ijk', Fq, normals), vars
 
@@ -520,7 +520,7 @@ class PhysicsBase(ABC):
 				quadrature points) [nf, nq, ns]
 			UqR: right values of the state variables (typically at the
 				quadrature points) [nf, nq, ns]
-			normals: directions from left to right [nf, nq, dim]
+			normals: directions from left to right [nf, nq, ndims]
 
 		Outputs:
 		--------
@@ -538,7 +538,7 @@ class PhysicsBase(ABC):
 		-------
 			Uq: values of the state variables (typically at the quadrature
 				points) [ne, nq, ns]
-			xphys: coordinates in physical space [ne, nq, dim]
+			xphys: coordinates in physical space [ne, nq, ndims]
 			time: time
 			Sq: initial values of the sum of the source term(s) (typically
 				initialized to zero) [ne, nq, ns]
@@ -560,7 +560,7 @@ class PhysicsBase(ABC):
 		-------
 			Uq: values of the state variables (typically at the quadrature
 				points) [nq, ns]
-			xphys: coordinates in physical space [nq, dim]
+			xphys: coordinates in physical space [nq, ndims]
 			time: time
 			jac: initial values of the sum of the Jacobian(s) (typically
 				initialized to zero) [nq, ns, ns]

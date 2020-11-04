@@ -290,16 +290,16 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
     Outputs:
     --------
         djac: determinant of the Jacobian [nq, 1]
-        jac: Jacobian [nq, dim, dim]
-        ijac: inverse Jacobian [nq, dim, dim]
+        jac: Jacobian [nq, ndims, ndims]
+        ijac: inverse Jacobian [nq, ndims, ndims]
     '''
     gbasis = mesh.gbasis
-    dim = gbasis.NDIMS
+    ndims = gbasis.NDIMS
 
     # Gradients in reference space
-    basis_ref_grad = gbasis.get_grads(quad_pts) # [nq, nb, dim]
+    basis_ref_grad = gbasis.get_grads(quad_pts) # [nq, nb, ndims]
     
-    if dim != mesh.dim:
+    if ndims != mesh.ndims:
         raise Exception("Dimensions don't match")
 
     elem_coords = mesh.elements[elem_ID].node_coords
@@ -316,7 +316,7 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
     if get_djac and np.any(djac <= 0.):
         raise Exception("Nonpositive Jacobian (elem_ID = %d)" % (elem_ID))
 
-    return djac, jac, ijac # [nq, 1], [nq, dim, dim], and [nq, dim, dim]
+    return djac, jac, ijac # [nq, 1], [nq, ndims, ndims], and [nq, ndims, ndims]
 
 
 def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
@@ -333,11 +333,11 @@ def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
 
     Outputs:
     --------
-        normals: normal vector [nq, dim]
+        normals: normal vector [nq, ndims]
     '''
     nq = quad_pts.shape[0]
 
-    normals = np.zeros([nq, mesh.dim])
+    normals = np.zeros([nq, mesh.ndims])
     
     # 1D normals calculation
     if face_ID == 0:
@@ -347,7 +347,7 @@ def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
     else:
         raise ValueError
 
-    return normals # [nq, dim]
+    return normals # [nq, ndims]
 
     
 def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
@@ -363,7 +363,7 @@ def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
 
     Outputs:
     --------
-        normals: normal vector [nq, dim]
+        normals: normal vector [nq, ndims]
     '''
     gbasis = mesh.gbasis
     gorder = mesh.gorder
@@ -385,7 +385,7 @@ def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
     normals = xphys_grad[:, ::-1]
     normals[:, 1] *= -1.
 
-    return normals # [nq, dim]
+    return normals # [nq, ndims]
 
 
 def get_lagrange_basis_1D(xq, xnodes, basis_val=None, basis_ref_grad=None):
@@ -400,7 +400,7 @@ def get_lagrange_basis_1D(xq, xnodes, basis_val=None, basis_ref_grad=None):
     Outputs:
     -------- 
         basis_val: evaluated basis [nq, nb]
-        basis_ref_grad: evaluated gradient of basis [nq, nb, dim]
+        basis_ref_grad: evaluated gradient of basis [nq, nb, ndims]
     '''
     nnodes = xnodes.shape[0]
     mask = np.ones(nnodes, bool)
@@ -440,13 +440,13 @@ def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 
     Inputs:
     -------
-        xq: coordinates of quadrature points [nq, dim]
-        xnodes: coordinates of nodes in 1D ref space [nb, dim]
+        xq: coordinates of quadrature points [nq, ndims]
+        xnodes: coordinates of nodes in 1D ref space [nb, ndims]
         
     Outputs:
     -------- 
         basis_val: evaluated basis [nq, nb]
-        basis_ref_grad: evaluated gradient of basis [nq, nb, dim]
+        basis_ref_grad: evaluated gradient of basis [nq, nb, ndims]
     '''
     if basis_ref_grad is not None:
         gradx = np.zeros((xq.shape[0], xnodes.shape[0], 1))
@@ -482,10 +482,10 @@ def get_lagrange_basis_tri(xq, p, xnodes, basis_val):
 
     Inputs:
     -------
-        xq: coordinate of quadrature points [nq, dim]
+        xq: coordinate of quadrature points [nq, ndims]
         p: polynomial solution order
         xnodes: coordinates of nodes in 1D equidistant ref space 
-            [nb, dim]
+            [nb, ndims]
         
     Outputs:
     -------- 
@@ -550,14 +550,14 @@ def get_lagrange_grad_tri(xq, p, xnodes, basis_ref_grad):
 
     Inputs:
     -------
-        xq: coordinate of quadrature points [nq, dim]
+        xq: coordinate of quadrature points [nq, ndims]
         p: polynomial solution order
         xnodes: coordinates of nodes in 1D equidistant ref space 
-            [nb, dim]
+            [nb, ndims]
         
     Outputs:
     -------- 
-        basis_ref_grad: evaluated gradient of basis function [nq, nb, dim]
+        basis_ref_grad: evaluated gradient of basis function [nq, nb, ndims]
     '''
     nb = xnodes.shape[0]
     grad_dir = np.zeros((xq.shape[0], nb, 3))
@@ -575,7 +575,7 @@ def get_lagrange_grad_tri(xq, p, xnodes, basis_ref_grad):
     basis_ref_grad[:, :, 0] = grad_dir[:, :, 1] - grad_dir[:, :, 0]
     basis_ref_grad[:, :, 1] = grad_dir[:, :, 2] - grad_dir[:, :, 0]
 
-    return basis_ref_grad # [nq, nb, dim]
+    return basis_ref_grad # [nq, nb, ndims]
 
 
 def get_tri_grad_area_coordinates(p, alpha, l):
@@ -605,13 +605,13 @@ def get_legendre_basis_1D(xq, p, basis_val=None, basis_ref_grad=None):
 
     Inputs:
     -------
-        xq: coordinate of current node [nq, dim]
+        xq: coordinate of current node [nq, ndims]
         p: order of polynomial space
         
     Outputs:
     -------- 
         basis_val: evaluated basis [nq, nb]
-        basis_ref_grad: evaluated physical gradient of basis [nq, nb, dim]
+        basis_ref_grad: evaluated physical gradient of basis [nq, nb, ndims]
     '''
     # Use numpy legendre polynomials
     leg_poly = np.polynomial.legendre.Legendre
@@ -638,13 +638,13 @@ def get_legendre_basis_2D(xq, p, basis_val=None, basis_ref_grad=None):
 
     Inputs:
     -------
-        xq: coordinate of current node [nq, dim]
+        xq: coordinate of current node [nq, ndims]
         p: order of polynomial space
         
     Outputs:
     -------- 
         basis_val: evaluated basis [nq, nb]
-        basis_ref_grad: evaluated physical gradient of basis [nq, nb, dim]
+        basis_ref_grad: evaluated physical gradient of basis [nq, nb, ndims]
     '''
     nq = xq.shape[0]
     if basis_ref_grad is not None:
@@ -676,10 +676,10 @@ def get_modal_basis_tri(xi, p, xnodes, basis_val):
 
     Inputs:
     -------
-        xi: coordinate of quadrature points [nq, dim]
+        xi: coordinate of quadrature points [nq, ndims]
         p: polynomial solution order
         xnodes: coordinates of nodes in 1D equidistant ref space 
-            [nb, dim]
+            [nb, ndims]
         
     Outputs:
     -------- 
@@ -802,14 +802,14 @@ def get_modal_grad_tri(xi, p, xnodes, basis_ref_grad):
 
     Inputs:
     -------
-        xi: coordinates of quadrature points [nq, dim]
+        xi: coordinates of quadrature points [nq, ndims]
         p: polynomial solution order
         xnodes: coordinates of nodes in 1D equidistant ref space 
-            [nb, dim]
+            [nb, ndims]
         
     Outputs:
     -------- 
-        basis_ref_grad: evaluated gradient of basis function [nq, nb, dim]
+        basis_ref_grad: evaluated gradient of basis function [nq, nb, ndims]
     '''
     nb = xnodes.shape[0]
 
@@ -876,7 +876,7 @@ def get_modal_grad_tri(xi, p, xnodes, basis_ref_grad):
 
     basis_ref_grad[:,:,:] = grad_reorder[:,index,:]
 
-    return basis_ref_grad # [nq, nb, dim]
+    return basis_ref_grad # [nq, nb, ndims]
 
 
 def get_edge_grad(p, dxdxi, gl, gr, ll, lr):

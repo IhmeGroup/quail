@@ -936,7 +936,7 @@ class Roe1D(ConvNumFluxBase):
 	UqR: numpy array
 		helper array for right state [nf, nq, ns]
 	vel: numpy array
-		helper array for velocity [nf, nq, dim]
+		helper array for velocity [nf, nq, ndims]
 	alphas: numpy array
 		helper array: left eigenvectors multipled by dU [nf, nq, ns]
 	evals: numpy array
@@ -962,13 +962,13 @@ class Roe1D(ConvNumFluxBase):
 			n = Uq.shape[0]
 			nq = Uq.shape[1]
 			ns = Uq.shape[-1]
-			dim = ns - 2
+			ndims = ns - 2
 		else:
-			n = nq = ns = dim = 0
+			n = nq = ns = ndims = 0
 
 		self.UqL = np.zeros_like(Uq)
 		self.UqR = np.zeros_like(Uq)
-		self.vel = np.zeros([n, nq, dim])
+		self.vel = np.zeros([n, nq, ndims])
 		self.alphas = np.zeros_like(Uq)
 		self.evals = np.zeros_like(Uq)
 		self.R = np.zeros([n, nq, ns, ns])
@@ -983,7 +983,7 @@ class Roe1D(ConvNumFluxBase):
 			smom: momentum slice
 			Uq: values of the state variable (typically at the quadrature
 				points) [nf, nq, ns]
-			n: normals (typically at the quadrature points) [nf, nq, dim]
+			n: normals (typically at the quadrature points) [nf, nq, ndims]
 
 		Outputs:
 		--------
@@ -1003,7 +1003,7 @@ class Roe1D(ConvNumFluxBase):
 			smom: momentum slice
 			Uq: values of the state variable (typically at the quadrature
 				points) [nf, nq, ns]
-			n: normals (typically at the quadrature points) [nf, nq, dim]
+			n: normals (typically at the quadrature points) [nf, nq, ndims]
 
 		Outputs:
 		--------
@@ -1022,9 +1022,9 @@ class Roe1D(ConvNumFluxBase):
 			physics: physics object
 			srho: density slice
 			velL: left velocity (typically evaluated at the quadrature
-				points) [nf, nq, dim]
+				points) [nf, nq, ndims]
 			velR: right velocity (typically evaluated at the quadrature
-				points) [nf, nq, dim]
+				points) [nf, nq, ndims]
 			UqL: left state (typically evaluated at the quadrature
 				points) [nf, nq, ns]
 			UqR: right state (typically evaluated at the quadrature
@@ -1033,7 +1033,7 @@ class Roe1D(ConvNumFluxBase):
 		Outputs:
 		--------
 		    rhoRoe: Roe-averaged density [nf, nq, 1]
-		    velRoe: Roe-averaged velocity [nf, nq, dim]
+		    velRoe: Roe-averaged velocity [nf, nq, ndims]
 		    HRoe: Roe-averaged total enthalpy [nf, nq, 1]
 		'''
 		rhoL_sqrt = np.sqrt(UqL[:, :, srho])
@@ -1056,9 +1056,9 @@ class Roe1D(ConvNumFluxBase):
 			physics: physics object
 			srho: density slice
 			velL: left velocity (typically evaluated at the quadrature
-				points) [nf, nq, dim]
+				points) [nf, nq, ndims]
 			velR: right velocity (typically evaluated at the quadrature
-				points) [nf, nq, dim]
+				points) [nf, nq, ndims]
 			UqL: left state (typically evaluated at the quadrature
 				points) [nf, nq, ns]
 			UqR: right state (typically evaluated at the quadrature
@@ -1067,7 +1067,7 @@ class Roe1D(ConvNumFluxBase):
 		Outputs:
 		--------
 		    drho: density jump [nf, nq, 1]
-		    dvel: velocity jump [nf, nq, dim]
+		    dvel: velocity jump [nf, nq, ndims]
 		    dp: pressure jump [nf, nq, 1]
 		'''
 		dvel = velR - velL
@@ -1086,7 +1086,7 @@ class Roe1D(ConvNumFluxBase):
 			c: speed of sound [nf, nq, 1]
 			c2: speed of sound squared [nf, nq, 1]
 			dp: pressure jump [nf, nq, 1]
-			dvel: velocity jump [nf, nq, dim]
+			dvel: velocity jump [nf, nq, ndims]
 			drho: density jump [nf, nq, 1]
 			rhoRoe: Roe-averaged density [nf, nq, 1]
 
@@ -1108,7 +1108,7 @@ class Roe1D(ConvNumFluxBase):
 
 		Inputs:
 		-------
-			velRoe: Roe-averaged velocity [nf, nq, dim]
+			velRoe: Roe-averaged velocity [nf, nq, ndims]
 			c: speed of sound [nf, nq, 1]
 
 		Outputs:
@@ -1131,7 +1131,7 @@ class Roe1D(ConvNumFluxBase):
 		-------
 			c: speed of sound [nf, nq, 1]
 			evals: eigenvalues [nf, nq, ns]
-			velRoe: Roe-averaged velocity [nf, nq, dim]
+			velRoe: Roe-averaged velocity [nf, nq, ndims]
 			HRoe: Roe-averaged total enthalpy [nf, nq, 1]
 
 		Outputs:
@@ -1157,10 +1157,10 @@ class Roe1D(ConvNumFluxBase):
 		n = UqL_std.shape[0]
 		nq = UqL_std.shape[1]
 		ns = UqL_std.shape[2]
-		dim = ns - 2
+		ndims = ns - 2
 		self.UqL_stdL = np.zeros_like(UqL_std)
 		self.UqL_stdR = np.zeros_like(UqL_std)
-		self.vel = np.zeros([n, nq, dim])
+		self.vel = np.zeros([n, nq, ndims])
 		self.alphas = np.zeros_like(UqL_std)
 		self.evals = np.zeros_like(UqL_std)
 		self.R = np.zeros([n, nq, ns, ns])
@@ -1299,9 +1299,9 @@ class HLLC1D(ConvNumFluxBase):
 		if Uq is not None:
 			n = Uq.shape[0]
 			ns = Uq.shape[1]
-			dim = ns - 2
+			ndims = ns - 2
 		else:
-			n = 0; ns = 0; dim = 0
+			n = 0; ns = 0; ndims = 0
 
 	def compute_flux(self, physics, UqL, UqR, n):
 		# Indices

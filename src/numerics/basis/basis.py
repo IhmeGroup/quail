@@ -147,7 +147,7 @@ class ShapeBase(ABC):
 
         Outputs:
         -------- 
-            xnodes: array of nodes equidistantly spaced [nb, dim]
+            xnodes: array of nodes equidistantly spaced [nb, ndims]
         '''
         pass
 
@@ -165,7 +165,7 @@ class ShapeBase(ABC):
 
         Outputs:
         --------
-            quad_pts: quadrature point coordinates [nq, dim]
+            quad_pts: quadrature point coordinates [nq, ndims]
             quad_wts: quadrature weights [nq, 1]
         '''        
         pass
@@ -245,7 +245,7 @@ class ShapeBase(ABC):
         --------
             qorder: quadrature order
         '''
-        dim = self.NDIMS
+        ndims = self.NDIMS
         gorder = mesh.gorder
 
         if physics is not None:
@@ -253,7 +253,7 @@ class ShapeBase(ABC):
         else:
             qorder = order
         if gorder > 1:
-            qorder += dim * (gorder-1)
+            qorder += ndims * (gorder-1)
         return qorder
 
 
@@ -280,7 +280,7 @@ class PointShape(ShapeBase):
         quad_pts = np.zeros([1, 1])
         quad_wts = np.ones([1, 1])
 
-        return quad_pts, quad_wts # [nq, dim] and [nq, 1]
+        return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
 
 class SegShape(ShapeBase):
@@ -302,14 +302,14 @@ class SegShape(ShapeBase):
 
     def equidistant_nodes(self, p):
         nb = self.get_num_basis_coeff(p)
-        dim = self.NDIMS
+        ndims = self.NDIMS
 
         if p == 0:
             xnodes = np.zeros([nb, 1])
         else:
             xnodes = basis_tools.equidistant_nodes_1D_range(-1., 1., nb) \
                     .reshape(-1, 1)
-        return xnodes  # [nb, dim]
+        return xnodes  # [nb, ndims]
 
     def get_local_face_principal_node_nums(self, p, face_ID):
         if face_ID == 0:
@@ -335,7 +335,7 @@ class SegShape(ShapeBase):
         quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
                 self.quadrature_type, self.num_pts_colocated)
 
-        return quad_pts, quad_wts # [nq, dim], [nq, 1]
+        return quad_pts, quad_wts # [nq, ndims], [nq, 1]
 
 
 class QuadShape(ShapeBase):
@@ -358,16 +358,16 @@ class QuadShape(ShapeBase):
 
     def equidistant_nodes(self, p):
         nb = self.get_num_basis_coeff(p)
-        dim = self.NDIMS
+        ndims = self.NDIMS
 
-        xnodes = np.zeros([nb, dim])
+        xnodes = np.zeros([nb, ndims])
         if p > 0:
             xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
 
             xnodes[:, 0] = np.tile(xseg, (p+1, 1)).reshape(-1)
             xnodes[:, 1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
 
-        return xnodes # [nb, dim]
+        return xnodes # [nb, ndims]
 
     def get_local_face_principal_node_nums(self, p, face_ID):
         if face_ID == 0:
@@ -394,10 +394,10 @@ class QuadShape(ShapeBase):
 
         elem_pts = xf0*xn0 + xf1*xn1
 
-        return elem_pts # [face_pts.shape[0], dim]
+        return elem_pts # [face_pts.shape[0], ndims]
     
     def get_quadrature_order(self, mesh, order, physics=None):
-        # Add two to qorder for dim = 2 with quads
+        # Add two to qorder for ndims = 2 with quads
         qorder = super().get_quadrature_order(mesh, order, physics)
         qorder += 2 
 
@@ -407,7 +407,7 @@ class QuadShape(ShapeBase):
         quad_pts, quad_wts = quadrilateral.get_quadrature_points_weights(
                 order, self.quadrature_type, self.num_pts_colocated)
 
-        return quad_pts, quad_wts # [nq, dim] and [nq, 1]
+        return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
 
 class TriShape(ShapeBase):
@@ -429,9 +429,9 @@ class TriShape(ShapeBase):
 
     def equidistant_nodes(self, p):
         nb = self.get_num_basis_coeff(p)
-        dim = self.NDIMS
+        ndims = self.NDIMS
 
-        xnodes = np.zeros([nb, dim])
+        xnodes = np.zeros([nb, ndims])
         if p > 0:
             n = 0
             xseg = basis_tools.equidistant_nodes_1D_range(0., 1., p+1)
@@ -440,7 +440,7 @@ class TriShape(ShapeBase):
                 xnodes[n:n+p+1-j, 1] = xseg[j]
                 n += p+1-j
 
-        return xnodes # [nb, dim]
+        return xnodes # [nb, ndims]
 
     def get_local_face_principal_node_nums(self, p, face_ID):
         '''
@@ -471,7 +471,7 @@ class TriShape(ShapeBase):
 
         elem_pts = xf0*xn0 + xf1*xn1
 
-        return elem_pts # [face_pts.shape[0], dim]
+        return elem_pts # [face_pts.shape[0], ndims]
 
     def get_quadrature_data(self, order):
         '''
@@ -482,7 +482,7 @@ class TriShape(ShapeBase):
         quad_pts, quad_wts = triangle.get_quadrature_points_weights(order, 
                 self.quadrature_type)
 
-        return quad_pts, quad_wts # [nq, dim] and [nq, 1]
+        return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
 
 class BasisBase(ABC): 
@@ -586,7 +586,7 @@ class BasisBase(ABC):
 
         Inputs:
         -------
-            quad_pts: coordinates of quadrature points [nb, dim]
+            quad_pts: coordinates of quadrature points [nb, ndims]
 
         Outputs:
         -------- 
@@ -601,12 +601,12 @@ class BasisBase(ABC):
 
         Inputs:
         -------
-            quad_pts: coordinates of quadrature points [nb, dim]
+            quad_pts: coordinates of quadrature points [nb, ndims]
 
         Outputs:
         -------- 
             basis_ref_grad: evaluated gradient of basis function in 
-                reference space [nq, nb, dim]
+                reference space [nq, nb, ndims]
         '''
         pass
 
@@ -616,14 +616,14 @@ class BasisBase(ABC):
 
         Inputs:
         -------
-            ijac: inverse of the Jacobian [nq, dim, dim]
+            ijac: inverse of the Jacobian [nq, ndims, ndims]
 
         Outputs:
         --------
             basis_phys_grad: evaluated gradient of the basis function in 
-                physical space [nq, nb, dim]
+                physical space [nq, nb, ndims]
         '''
-        dim = self.NDIMS
+        ndims = self.NDIMS
         nb = self.nb
 
         basis_ref_grad = self.basis_ref_grad 
@@ -633,13 +633,13 @@ class BasisBase(ABC):
             raise ValueError("basis_ref_grad not evaluated")
 
         # check to see if ijac has been passed and has the right shape
-        if ijac is None or ijac.shape != (nq, dim, dim):
+        if ijac is None or ijac.shape != (nq, ndims, ndims):
             raise ValueError("basis_ref_grad and ijac shapes not compatible")
 
         basis_phys_grad = np.transpose(np.matmul(ijac.transpose(0, 2, 1), 
                 basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
 
-        return basis_phys_grad # [nq, nb, dim]
+        return basis_phys_grad # [nq, nb, ndims]
 
     def get_basis_val_grads(self, quad_pts, get_val=True, get_ref_grad=False,
             get_phys_grad=False, ijac=None):
@@ -656,7 +656,7 @@ class BasisBase(ABC):
             get_phys_grad: [OPTIONAL] flag to calculate gradient of basis 
                 functions in phys space
             ijac: [OPTIONAL] inverse Jacobian (needed if calculating 
-                physical gradients) [nq, dim, dim]
+                physical gradients) [nq, ndims, ndims]
         
         Outputs:
         --------
@@ -664,9 +664,9 @@ class BasisBase(ABC):
 
             basis_val: evaluated basis function [nq, nb]
             basis_ref_grad: evaluated gradient of the basis function in 
-                reference space [nq, nb, dim]
+                reference space [nq, nb, ndims]
             basis_phys_grad: evaluated gradient of the basis function in 
-                physical space [nq, nb, dim]
+                physical space [nq, nb, ndims]
         '''
         if get_val:
             self.basis_val = self.get_values(quad_pts)
@@ -696,7 +696,7 @@ class BasisBase(ABC):
             get_phys_grad: [OPTIONAL] flag to calculate gradient of basis 
                 functions in phys space
             ijac: [OPTIONAL] inverse Jacobian (needed if calculating 
-                physical gradients) [nq, nq, dim]
+                physical gradients) [nq, nq, ndims]
         
         Outputs:
         --------
@@ -704,9 +704,9 @@ class BasisBase(ABC):
 
             basis_val: evaluated basis function [nq, nb]
             basis_ref_grad: evaluated gradient of the basis function in 
-                reference space [nq, nb, dim]
+                reference space [nq, nb, ndims]
             basis_phys_grad: evaluated gradient of the basis function in 
-                physical space [nq, nb, dim]            
+                physical space [nq, nb, ndims]            
         '''
         if basis is None:
             basis = self
@@ -777,7 +777,7 @@ class LagrangeSeg(BasisBase, SegShape):
             
         Outputs:
         -------- 
-            xnodes: coordinates of nodes in ref space [nb, dim]
+            xnodes: coordinates of nodes in ref space [nb, ndims]
 
         Notes:
         ------
@@ -785,13 +785,13 @@ class LagrangeSeg(BasisBase, SegShape):
             for other NodeTypes (such as GaussLobatto nodes)
         '''
         nb = self.get_num_basis_coeff(p)
-        dim = self.NDIMS
+        ndims = self.NDIMS
 
-        xnodes = np.zeros([nb, dim])
+        xnodes = np.zeros([nb, ndims])
         if p > 0:
             xnodes[:, 0] = self.get_1d_nodes(-1., 1., nb)
 
-        return xnodes # [nb, dim]
+        return xnodes # [nb, ndims]
 
     def get_values(self, quad_pts):
         p = self.order
@@ -809,19 +809,19 @@ class LagrangeSeg(BasisBase, SegShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.NDIMS
+        ndims = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
 
-        basis_ref_grad = np.zeros([nq, nb, dim])
+        basis_ref_grad = np.zeros([nq, nb, ndims])
 
         if p > 0:
             xnodes = self.get_1d_nodes(-1., 1., p+1)
             basis_tools.get_lagrange_basis_1D(quad_pts, xnodes, 
                     basis_ref_grad=basis_ref_grad)
 
-        return basis_ref_grad # [nq, nb, dim]
+        return basis_ref_grad # [nq, nb, ndims]
 
     def get_local_face_node_nums(self, p, face_ID):
         '''
@@ -868,7 +868,7 @@ class LagrangeQuad(BasisBase, QuadShape):
             
         Outputs:
         -------- 
-            xnodes: coordinates of nodes in ref space [nb, dim]
+            xnodes: coordinates of nodes in ref space [nb, ndims]
 
         Notes:
         ------
@@ -876,9 +876,9 @@ class LagrangeQuad(BasisBase, QuadShape):
             for other NodeTypes (such as GaussLobatto nodes)
         '''
         nb = self.get_num_basis_coeff(p)
-        dim = self.NDIMS
+        ndims = self.NDIMS
 
-        xnodes = np.zeros([nb, dim])
+        xnodes = np.zeros([nb, ndims])
 
         if p > 0:
             xseg = self.get_1d_nodes(-1., 1., p+1)
@@ -886,7 +886,7 @@ class LagrangeQuad(BasisBase, QuadShape):
             xnodes[:,0] = np.tile(xseg, (p+1, 1)).reshape(-1)
             xnodes[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
 
-        return xnodes # [nb, dim]
+        return xnodes # [nb, ndims]
 
     def get_values(self, quad_pts):
         p = self.order
@@ -905,19 +905,19 @@ class LagrangeQuad(BasisBase, QuadShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.NDIMS
+        ndims = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
 
-        basis_ref_grad = np.zeros([nq, nb, dim])
+        basis_ref_grad = np.zeros([nq, nb, ndims])
 
         if p > 0:
             xnodes = self.get_1d_nodes(-1., 1., p + 1)
             basis_tools.get_lagrange_basis_2D(quad_pts, xnodes, 
                     basis_ref_grad=basis_ref_grad)
 
-        return basis_ref_grad # [nq, nb, dim]
+        return basis_ref_grad # [nq, nb, ndims]
 
     def get_local_face_node_nums(self, p, face_ID):
         '''
@@ -985,19 +985,19 @@ class LagrangeTri(BasisBase, TriShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.NDIMS
+        ndims = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
 
-        basis_ref_grad = np.zeros([nq, nb, dim])
+        basis_ref_grad = np.zeros([nq, nb, ndims])
 
         if p > 0:
             xnodes = self.equidistant_nodes(p)
             basis_tools.get_lagrange_grad_tri(quad_pts, p, xnodes, 
                     basis_ref_grad)
 
-        return basis_ref_grad # [nq, nb, dim]
+        return basis_ref_grad # [nq, nb, ndims]
 
     def get_local_face_node_nums(self, p, face_ID):
         '''
@@ -1070,18 +1070,18 @@ class LegendreSeg(BasisBase, SegShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.NDIMS
+        ndims = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
 
-        basis_ref_grad = np.zeros([nq, nb, dim])
+        basis_ref_grad = np.zeros([nq, nb, ndims])
 
         if p > 0:
             basis_tools.get_legendre_basis_1D(quad_pts, p, 
                     basis_ref_grad=basis_ref_grad)
 
-        return basis_ref_grad # [nq, nb, dim]
+        return basis_ref_grad # [nq, nb, ndims]
 
 
 class LegendreQuad(BasisBase, QuadShape):
@@ -1113,18 +1113,18 @@ class LegendreQuad(BasisBase, QuadShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.NDIMS
+        ndims = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
 
-        basis_ref_grad = np.zeros([nq, nb, dim])
+        basis_ref_grad = np.zeros([nq, nb, ndims])
 
         if p > 0:
             basis_tools.get_legendre_basis_2D(quad_pts, p, 
                     basis_ref_grad=basis_ref_grad)
 
-        return basis_ref_grad # [nq, nb, dim]
+        return basis_ref_grad # [nq, nb, ndims]
 
 
 class HierarchicH1Tri(BasisBase, TriShape):
@@ -1162,12 +1162,12 @@ class HierarchicH1Tri(BasisBase, TriShape):
         return basis_val # [nq, nb]
 
     def get_grads(self, quad_pts):
-        dim = self.NDIMS
+        ndims = self.NDIMS
         p = self.order
         nb = self.nb
         nq = quad_pts.shape[0]
 
-        basis_ref_grad = np.zeros([nq, nb, dim])
+        basis_ref_grad = np.zeros([nq, nb, ndims])
 
         if p > 0:
             xnodes = self.equidistant_nodes(p)
@@ -1176,4 +1176,4 @@ class HierarchicH1Tri(BasisBase, TriShape):
 
             basis_ref_grad = 2.*basis_ref_grad
 
-        return basis_ref_grad # [nq, nb, dim]
+        return basis_ref_grad # [nq, nb, ndims]

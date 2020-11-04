@@ -40,21 +40,21 @@ def set_physics(mesh, physics_type):
 	--------
 		physics: physics object
 	'''
-	dim = mesh.dim 
+	ndims = mesh.ndims 
 
 	if PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and \
-			dim == 1:
+			ndims == 1:
 	    physics_class = scalar.ConstAdvScalar1D
 	elif PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and \
-			dim == 2:
+			ndims == 2:
 	    physics_class = scalar.ConstAdvScalar2D
-	elif PhysicsType[physics_type] == PhysicsType.Burgers and dim == 1:
+	elif PhysicsType[physics_type] == PhysicsType.Burgers and ndims == 1:
 	    physics_class = scalar.Burgers1D
-	elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 1:
+	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 1:
 	    physics_class = euler.Euler1D
-	elif PhysicsType[physics_type] == PhysicsType.Euler and dim == 2:
+	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 2:
 	    physics_class = euler.Euler2D
-	elif PhysicsType[physics_type] == PhysicsType.Chemistry and dim ==1:
+	elif PhysicsType[physics_type] == PhysicsType.Chemistry and ndims ==1:
 		physics_class = chemistry.Chemistry1D
 	else:
 	    raise NotImplementedError

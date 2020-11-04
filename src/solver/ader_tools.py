@@ -55,7 +55,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 		solver: solver object
 		elem_helpers: helpers defined in ElemHelpers
 		elem_helpers_st: space-time helpers defined in ElemHelpers
-		Fq: flux array evaluated at the quadrature points [ne, nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [ne, nq, ns, ndims]
 
 	Outputs:
 	--------
@@ -89,7 +89,7 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	-------
 		basis_val: basis function for the interior element [nf, nq, nb]
 		quad_wts_st: space-time quadrature weights [nq, 1]
-		Fq: flux array evaluated at the quadrature points [nf, nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [nf, nq, ns, ndims]
 
 	Outputs:
 	--------

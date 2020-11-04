@@ -126,9 +126,9 @@ class ADERHelpers(object):
 			self.K: space-time matrix FTL - SMT [nb_st, nb_st]
 			self.iK: inverse of space-time matrix K [nb_st, nb_st]
 		'''		
-		dim = mesh.dim
+		ndims = mesh.ndims
 		nb = basis_st.nb
-		SMS_elems = np.zeros([mesh.num_elems, nb, nb, dim])
+		SMS_elems = np.zeros([mesh.num_elems, nb, nb, ndims])
 		iMM_elems = np.zeros([mesh.num_elems, nb, nb])
 
 		# Get flux matrices in time
@@ -183,15 +183,15 @@ class ADERHelpers(object):
 		Outputs:
 		--------
 			self.jac_elems: precomputed Jacobian for each element 
-				[num_elems, nb, dim, dim]
+				[num_elems, nb, ndims, ndims]
 			self.ijac_elems: precomputed inverse Jacobian for each element
-				[num_elems, nb, dim, dim]
+				[num_elems, nb, ndims, ndims]
 			self.djac_elems: precomputed determinant of the Jacobian for each
 				element [num_elems, nb, 1]
 			self.x_elems: precomputed coordinates of the nodal points
-				in physical space [num_elems, nb, dim]
+				in physical space [num_elems, nb, ndims]
 		'''
-		dim = mesh.dim 
+		ndims = mesh.ndims 
 		num_elems = mesh.num_elems 
 		nb = basis.nb
 		gbasis = mesh.gbasis
@@ -199,10 +199,10 @@ class ADERHelpers(object):
 		nnodes = xnodes.shape[0]
 
 		# Allocate
-		self.jac_elems = np.zeros([num_elems, nb, dim, dim])
-		self.ijac_elems = np.zeros([num_elems, nb, dim, dim])
+		self.jac_elems = np.zeros([num_elems, nb, ndims, ndims])
+		self.ijac_elems = np.zeros([num_elems, nb, ndims, ndims])
 		self.djac_elems = np.zeros([num_elems, nb, 1])
-		self.x_elems = np.zeros([num_elems, nb, dim])
+		self.x_elems = np.zeros([num_elems, nb, ndims])
 
 		for elem_ID in range(mesh.num_elems):
 			# Jacobian
@@ -343,7 +343,7 @@ class ADERDG(base.SolverBase):
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
-		dim = physics.NDIMS
+		ndims = physics.NDIMS
 
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
@@ -367,7 +367,7 @@ class ADERDG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral.
-			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
+			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
 			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, elem_helpers_st, Fq) # [ne, nb, ns]
 
@@ -381,7 +381,7 @@ class ADERDG(base.SolverBase):
 
 			# Evaluate the source term at the quadrature points
 			Sq = elem_helpers_st.Sq
-			Sq[:] = 0. # [ne, nq, sr, dim]
+			Sq[:] = 0. # [ne, nq, sr, ndims]
 			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq)
 
 			res_elem += solver_tools.calculate_source_term_integral(
@@ -444,7 +444,7 @@ class ADERDG(base.SolverBase):
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
 		# Unpack
 		mesh = self.mesh
-		dim = mesh.dim
+		ndims = mesh.ndims
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		bgroup_num = bgroup.number
@@ -515,13 +515,13 @@ class ADERDG(base.SolverBase):
 		Outputs:
 		--------
 			F: polynomial coefficients of the flux function 
-				[ne, nb_st, ns, dim]
+				[ne, nb_st, ns, ndims]
 		'''
 		# Unpack
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
-		dim = physics.NDIMS
+		ndims = physics.NDIMS
 		params = self.params
 
 		InterpolateFluxADER = params["InterpolateFluxADER"]
@@ -532,7 +532,7 @@ class ADERDG(base.SolverBase):
 
 		# Allocate flux coefficients
 		F = np.zeros([Up.shape[0], basis.get_num_basis_coeff(order), 
-				ns, dim], dtype=Up.dtype)
+				ns, ndims], dtype=Up.dtype)
 
 		# Flux coefficient calc from interpolation or L2-projection
 		if params["InterpolateFluxADER"]:
@@ -563,7 +563,7 @@ class ADERDG(base.SolverBase):
 					quad_wts_st, np.tile(djac_elems, (nq, 1)), 
 					Fq[:, :, :, 0], F[:, :, :, 0])
 
-		return F*dt/2.0 # [ne, nb_st, ns, dim] 
+		return F*dt/2.0 # [ne, nb_st, ns, ndims] 
 
 	def source_coefficients(self, dt, order, basis, Up):
 		'''
@@ -584,7 +584,7 @@ class ADERDG(base.SolverBase):
 		'''
 		# Unpack
 		mesh = self.mesh
-		dim = mesh.dim
+		ndims = mesh.ndims
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		params = self.params
@@ -629,7 +629,7 @@ class ADERDG(base.SolverBase):
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			# Get array in physical time from ref time
-			t = np.zeros([nq_st, dim])
+			t = np.zeros([nq_st, ndims])
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
 					mesh, self.time, self.stepper.dt, 
 					quad_pts_st[:, -1:], elem_helpers_st.basis_time)
@@ -638,7 +638,7 @@ class ADERDG(base.SolverBase):
 			Sq = np.zeros_like(Uq)
 			S = np.zeros([Uq.shape[0], nb_st, ns])
 			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq) 
-				# [ne, nq, ns, dim]		
+				# [ne, nq, ns, ndims]		
 
 			# Project Sq to the space-time basis coefficients
 			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts_st, 

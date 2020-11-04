@@ -25,7 +25,7 @@ def get_quadrature_points_weights(order, quad_type, num_pts_colocated=0):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
         qwts: quadrature weights [nq, 1]
     '''
     # Get quadrature points and weights for segment		

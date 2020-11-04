@@ -31,7 +31,7 @@ class FcnBase(ABC):
         -------
             physics: physics object
             x: coordinates in physical space (typically the quadrature 
-                points) [nq, dim]
+                points) [nq, ndims]
             t: time
 
         Outputs:
@@ -62,8 +62,8 @@ class BCBase(ABC):
             physics: physics object
             UqI: interior values of the state variables (typically 
                 at the quadrature points) [nq, ns]
-            normals: outward-pointing normals [nq, dim]
-            x: coordinates in physical space [nq, dim]
+            normals: outward-pointing normals [nq, ndims]
+            x: coordinates in physical space [nq, ndims]
             t: time
 
         Outputs:
@@ -82,8 +82,8 @@ class BCBase(ABC):
             physics: physics object
             UqI: interior values of the state variables (typically 
                 at the quadrature points) [nq, ns]
-            normals: outward-pointing normals [nq, dim]
-            x: coordinates in physical space [nq, dim]
+            normals: outward-pointing normals [nq, ndims]
+            x: coordinates in physical space [nq, ndims]
             t: time
 
         Outputs:
@@ -149,7 +149,7 @@ class SourceBase(ABC):
             physics: physics object
             Uq: values of the state variables (typically at the 
                 quadrature points) [nq, ns]
-            x: coordinates in physical space [nq, dim]
+            x: coordinates in physical space [nq, ndims]
             t: time
 
         Outputs:
@@ -167,7 +167,7 @@ class SourceBase(ABC):
             physics: physics object
             Uq: values of the state variables (typically at the 
                 quadrature points) [nq, ns]
-            x: coordinates in physical space [nq, dim]
+            x: coordinates in physical space [nq, ndims]
             t: time
 
         Outputs:
@@ -236,7 +236,7 @@ class ConvNumFluxBase(ABC):
                 quadrature points) [nq, ns]
             UqR: right values of the state variables (typically at the 
                 quadrature points) [nq, ns]
-            normals: directions from left to right [nq, dim]
+            normals: directions from left to right [nq, ndims]
 
         Outputs:
         --------

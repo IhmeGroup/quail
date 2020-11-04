@@ -171,7 +171,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 	def get_conv_flux_interior(self, Uq):
 		c = self.c
 
-		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 		F[:, :, :, 0] = c[0] * Uq
 		F[:, :, :, 1] = c[1] * Uq
 	

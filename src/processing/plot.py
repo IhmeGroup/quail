@@ -33,7 +33,7 @@ def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12.,
     	font: font
     	linewidth: line width
     	markersize: size of markers
-    	axis: axis limits [2*dim]
+    	axis: axis limits [2*ndims]
     	cmap: colormap
     	equal_AR: if True, will set equal aspect ratio (only affects 2D)
 	'''
@@ -382,7 +382,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	    kwargs: keyword arguments (see below)
 	'''
 	''' Compatibility checks '''
-	if mesh.dim != 2:
+	if mesh.ndims != 2:
 		raise ValueError
 
 	plot_sum = plot_numerical + plot_exact + plot_IC
@@ -451,11 +451,11 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 
 	Outputs:
 	-------
-		x: sample points [num_elems, num_pts, dim], where num_pts is the
+		x: sample points [num_elems, num_pts, ndims], where num_pts is the
 			number of sample points per element
 	'''
 	# Extract
-	dim = mesh.dim
+	ndims = mesh.ndims
 	U = solver.state_coeffs
 	order = solver.order
 
@@ -470,7 +470,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 
 	# Allocate
 	num_pts = xref.shape[0]
-	x = np.zeros([mesh.num_elems, num_pts, dim])
+	x = np.zeros([mesh.num_elems, num_pts, ndims])
 
 	# Evaluate basis at reference-space points
 	basis.get_basis_val_grads(xref, True, False, False, None)
@@ -522,7 +522,7 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	    U: state polynomial coefficients
 	    	[num_elems, num_basis_coeffs, num_state_vars]
 	    x: coordinates at which to evaluate solution
-	    	[num_elems, num_pts, dim], where num_pts is the number of sample
+	    	[num_elems, num_pts, ndims], where num_pts is the number of sample
 	    	points per element
 	    basis: basis object
 	    var_name: name of variable to get
@@ -579,9 +579,9 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 		For curved faces, line segments are plotted in between each node.
 	'''
 	gbasis = mesh.gbasis
-	dim = mesh.dim
+	ndims = mesh.ndims
 
-	if dim == 1:
+	if ndims == 1:
 		y = plt.ylim()
 
 	'''
@@ -605,7 +605,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 			# Get coordinates
 			elem = mesh.elements[elem_ID]
 			coords = elem.node_coords[local_node_IDs]
-			if dim == 1:
+			if ndims == 1:
 				x = np.full(2, coords[:, 0])
 			else:
 				x = coords[:, 0]; y = coords[:, 1]
@@ -629,7 +629,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 			# Get coordinates
 			elem = mesh.elements[elem_ID]
 			coords = elem.node_coords[local_node_IDs]
-			if dim == 1:
+			if ndims == 1:
 				x = np.full(2, coords[:, 0])
 			else:
 				x = coords[:, 0]; y = coords[:, 1]
@@ -643,7 +643,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	if "show_elem_IDs" in kwargs and kwargs["show_elem_IDs"]:
 		for elem_ID in range(mesh.num_elems):
 			xc = mesh_tools.get_element_centroid(mesh, elem_ID)
-			if dim == 1:
+			if ndims == 1:
 				yc = np.mean(y)
 			else:
 				yc = xc[0,1]
@@ -651,7 +651,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 
 	# Labels, aspect ratio
 	plt.xlabel("$x$")
-	if dim == 2: plt.ylabel("$y$")
+	if ndims == 2: plt.ylabel("$y$")
 	if equal_AR:
 		plt.gca().set_aspect('equal', adjustable='box')
 
@@ -700,7 +700,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 
 	# Extract params
 	time = solver.time
-	dim = mesh.dim
+	ndims = mesh.ndims
 
 	# Get sample points
 	x = get_sample_points(mesh, solver, physics, solver.basis,
@@ -730,7 +730,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 	if create_new_figure:
 		plt.figure()
 
-	if dim == 1:
+	if ndims == 1:
 		plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip)
 	else:
 		plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR, **kwargs)

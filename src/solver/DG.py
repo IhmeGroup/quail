@@ -113,7 +113,7 @@ class ElemHelpers(object):
 
 		Outputs:
 		--------
-			self.quad_pts: precomputed quadrature points [nq, dim]
+			self.quad_pts: precomputed quadrature points [nq, ndims]
 			self.quad_wts: precomputed quadrature weights [nq, 1]
 		'''
 		gbasis = mesh.gbasis
@@ -135,30 +135,30 @@ class ElemHelpers(object):
 		--------
 			self.basis_val: precomputed basis value [nq, nb]
 			self.basis_ref_grad: precomputed basis gradient for the
-				reference element [nq, nb, dim]
+				reference element [nq, nb, ndims]
 			self.basis_phys_grad_elems: precomputed basis gradient for each
-				physical element [num_elems, nq, nb, dim]
+				physical element [num_elems, nq, nb, ndims]
 			self.jac_elems: precomputed Jacobian for each element
-				[num_elems, nq, dim, dim]
+				[num_elems, nq, ndims, ndims]
 			self.ijac_elems: precomputed inverse Jacobian for each element
-				[num_elems, nq, dim, dim]
+				[num_elems, nq, ndims, ndims]
 			self.djac_elems: precomputed determinant of the Jacobian for each
 				element [num_elems, nq, 1]
 			self.x_elems: precomputed coordinates of the quadrature points
-				in physical space [num_elems, nq, dim]
+				in physical space [num_elems, nq, ndims]
 		'''
-		dim = mesh.dim
+		ndims = mesh.ndims
 		num_elems = mesh.num_elems
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 
 		# Allocate
-		self.jac_elems = np.zeros([num_elems, nq, dim, dim])
-		self.ijac_elems = np.zeros([num_elems, nq, dim, dim])
+		self.jac_elems = np.zeros([num_elems, nq, ndims, ndims])
+		self.ijac_elems = np.zeros([num_elems, nq, ndims, ndims])
 		self.djac_elems = np.zeros([num_elems, nq, 1])
-		self.x_elems = np.zeros([num_elems, nq, dim])
-		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, dim])
+		self.x_elems = np.zeros([num_elems, nq, ndims])
+		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, ndims])
 
 		# Basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True,
@@ -186,7 +186,7 @@ class ElemHelpers(object):
 				basis.get_basis_val_grads(quad_pts, get_phys_grad=True,
 						ijac=ijac)
 				self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad
-					# [nq, nb, dim]
+					# [nq, nb, ndims]
 
 		# Volumes
 		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)
@@ -206,11 +206,11 @@ class ElemHelpers(object):
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		ns = physics.NUM_STATE_VARS
-		dim = physics.NDIMS
+		ndims = physics.NDIMS
 		nelem = self.vol_elems.shape[0]
 
 		self.Uq = np.zeros([nelem, nq, ns])
-		self.Fq = np.zeros([nelem, nq, ns, dim])
+		self.Fq = np.zeros([nelem, nq, ns, ndims])
 		self.Sq = np.zeros([nelem, nq, ns])
 
 	def compute_helpers(self, mesh, physics, basis, order):
@@ -306,7 +306,7 @@ class InteriorFaceHelpers(ElemHelpers):
 
 		Outputs:
 		--------
-			self.quad_pts: precomputed quadrature points [nq, dim]
+			self.quad_pts: precomputed quadrature points [nq, ndims]
 			self.quad_wts: precomputed quadrature weights [nq, 1]
 		'''
 		gbasis = mesh.gbasis
@@ -334,9 +334,9 @@ class InteriorFaceHelpers(ElemHelpers):
 				points of each face for right element
 				[nfaces_per_elem, nq, nb]
 			self.normals_int_faces: precomputed normal vectors at each
-				interior face [num_interior_faces, nq, dim]
+				interior face [num_interior_faces, nq, ndims]
 		'''
-		dim = mesh.dim
+		ndims = mesh.ndims
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
 		nb = basis.nb
@@ -345,7 +345,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		# Allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
-		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq, dim])
+		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq, ndims])
 
 		# Get values on each face (from both left and right perspectives)
 		for face_ID in range(nfaces_per_elem):
@@ -377,7 +377,7 @@ class InteriorFaceHelpers(ElemHelpers):
 
 	def store_neighbor_info(self, mesh):
 		'''
-		Store the element and face ID's on the left and right of each face.
+		Store the element and face IDs on the left and right of each face.
 
 		Inputs:
 		-------
@@ -399,11 +399,11 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.faceL_ID = np.empty(mesh.num_interior_faces, dtype=int)
 		self.faceR_ID = np.empty(mesh.num_interior_faces, dtype=int)
 		for face_ID in range(mesh.num_interior_faces):
-			IFace = mesh.interior_faces[face_ID]
-			self.elemL_ID[face_ID] = IFace.elemL_ID
-			self.elemR_ID[face_ID] = IFace.elemR_ID
-			self.faceL_ID[face_ID] = IFace.faceL_ID
-			self.faceR_ID[face_ID] = IFace.faceR_ID
+			int_face = mesh.interior_faces[face_ID]
+			self.elemL_ID[face_ID] = int_face.elemL_ID
+			self.elemR_ID[face_ID] = int_face.elemR_ID
+			self.faceL_ID[face_ID] = int_face.faceL_ID
+			self.faceR_ID[face_ID] = int_face.faceR_ID
 
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
@@ -485,13 +485,13 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 				of each face [nfaces_per_elem, nq, nb]
 			self.faces_to_xref: coordinates of quadrature points of each
 				face converted to element reference space
-				[nfaces_per_elem, nq, dim]
+				[nfaces_per_elem, nq, ndims]
 			self.normals_bgroups: precomputed normal vectors at each
-				boundary face [num_boundary_faces, nq, dim]
+				boundary face [num_boundary_faces, nq, ndims]
 			self.x_bgroups: precomputed physical coordinates of the
-				quadrature points [num_boundary_faces, nq, dim]
+				quadrature points [num_boundary_faces, nq, ndims]
 		'''
-		dim = mesh.dim
+		ndims = mesh.ndims
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
 		nb = basis.nb
@@ -513,9 +513,9 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		i = 0
 		for bgroup in mesh.boundary_groups.values():
 			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,
-					nq, dim]))
+					nq, ndims]))
 			self.x_bgroups.append(np.zeros([bgroup.num_boundary_faces,
-					nq, dim]))
+					nq, ndims]))
 			normal_bgroup = self.normals_bgroups[i]
 			x_bgroup = self.x_bgroups[i]
 
@@ -548,7 +548,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 	def store_neighbor_info(self, mesh):
 		'''
-		Store the element and face ID's of the neighbors of each boundary 
+		Store the element and face IDs of the neighbors of each boundary 
 		face.
 
 		Inputs:
@@ -557,10 +557,10 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 		Outputs:
 		--------
-			self.elem_ID: List containing arrays of element ID's of boundary
+			self.elem_ID: List containing arrays of element IDs of boundary
 			face neighbors for each boundary group
 			[num_boundary_groups][num_interior_faces]
-			self.face_ID: List containing arrays of face ID's of boundary
+			self.face_ID: List containing arrays of face IDs of boundary
 			face neighbors for each boundary group
 			[num_boundary_groups][num_interior_faces]
 		'''
@@ -632,7 +632,7 @@ class DG(base.SolverBase):
 		# Unpack
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
-		dim = physics.NDIMS
+		ndims = physics.NDIMS
 		elem_helpers = self.elem_helpers
 		basis_val = elem_helpers.basis_val
 		quad_wts = elem_helpers.quad_wts
@@ -649,7 +649,7 @@ class DG(base.SolverBase):
 			
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral
-			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
+			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
 
 			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, Fq) # [ne, nb, ns]
@@ -677,7 +677,7 @@ class DG(base.SolverBase):
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
 		normals_int_faces = int_face_helpers.normals_int_faces 
-				# [nf, nq, dim]
+				# [nf, nq, ndims]
 		
 		ns = physics.NUM_STATE_VARS
 		nq = quad_wts.shape[0]
@@ -723,8 +723,8 @@ class DG(base.SolverBase):
 		# Interpolate state at quad points
 		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
 
-		normals = normals_bgroups[bgroup_num] # [nbf, nq, dim]
-		x = x_bgroups[bgroup_num] # [nbf, nq, dim]
+		normals = normals_bgroups[bgroup_num] # [nbf, nq, ndims]
+		x = x_bgroups[bgroup_num] # [nbf, nq, ndims]
 		BC = physics.BCs[bgroup.name]
 
 		# Interpolate state at quadrature points

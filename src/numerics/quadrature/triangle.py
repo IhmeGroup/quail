@@ -26,7 +26,7 @@ def get_quadrature_points_weights(order, quad_type):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
         qwts: quadrature weights [nq, 1]
     '''
     if quad_type == general.QuadratureType.Dunavant:
@@ -58,7 +58,7 @@ def get_quadrature_gauss_legendre(order):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
         qwts: quadrature weights [nq, 1]
     '''
     # Get quadrature points and weights for quadrilateral
@@ -90,7 +90,7 @@ def get_quadrature_dunavant(order):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
         qwts: quadrature weights [nq, 1]
 
     Notes:

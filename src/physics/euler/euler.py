@@ -230,7 +230,7 @@ class Euler1D(Euler):
 		H = rhoE + p
 
 		# Assemble flux matrix
-		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 		F[:, :, irho, 0] = rhou         # Flux of mass
 		F[:, :, irhou, 0] = rho * u2 + p # Flux of momentum
 		F[:, :, irhoE, 0] = H * u        # Flux of energy
@@ -310,7 +310,7 @@ class Euler2D(Euler):
 		rhou = Uq[:, :, irhou] # [n, nq]
 		rhov = Uq[:, :, irhov] # [n, nq]
 		rhoE = Uq[:, :, irhoE] # [n, nq]
-		mom  = Uq[:, :, smom]  # [n, nq, dim]
+		mom  = Uq[:, :, smom]  # [n, nq, ndims]
 		rho += eps # prevent rare division-by-zero errors
 
 		# Get velocity in each dimension
@@ -328,7 +328,7 @@ class Euler2D(Euler):
 		H = rhoE + p
 
 		# Assemble flux matrix
-		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, dim]
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 		F[:,:,irho,  :] = mom          # Flux of mass in all directions
 		F[:,:,irhou, 0] = rho * u2 + p # x-flux of x-momentum
 		F[:,:,irhov, 0] = rhouv        # x-flux of y-momentum

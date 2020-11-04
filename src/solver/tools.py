@@ -18,7 +18,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	-------
 		solver: solver object
 		elem_helpers: helpers defined in ElemHelpers
-		Fq: flux array evaluated at the quadrature points [ne, nq, ns, dim]
+		Fq: flux array evaluated at the quadrature points [ne, nq, ns, ndims]
 
 	Outputs:
 	--------
@@ -27,12 +27,12 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems 
-			# [ne, nq, nb, dim]
+			# [ne, nq, nb, ndims]
 	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
 
 	# Calculate flux quadrature
 	F_quad = np.einsum('ijkl, jm, ijm -> ijkl', Fq, quad_wts, djac_elems) 
-			# [ne, nq, ns, dim]
+			# [ne, nq, ns, ndims]
 	# Calculate residual
 	R = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad) 
 			# [ne, nb, ns]

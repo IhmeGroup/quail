@@ -24,7 +24,7 @@ def get_quadrature_points_weights(order, quad_type, num_pts_colocated=0):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
         qwts: quadrature weights [nq, 1]
     '''
     if quad_type == general.QuadratureType.GaussLegendre:
@@ -48,7 +48,7 @@ def get_quadrature_gauss_legendre(order):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
         qwts: quadrature weights [nq, 1]
     '''
     if order % 2 == 0: # if order is even, add 1
@@ -79,8 +79,8 @@ def get_quadrature_gauss_lobatto(order, num_pts_colocated):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
-        qwts: quadrature weights [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
+        qwts: quadrature weights [nq, ndims]
     '''
     if order == 1: # Gauss-Lobatto quadrature not defined for order = 1
         qpts, qwts = get_quadrature_points_weights(order, 
@@ -164,8 +164,8 @@ def get_lobatto_pts_wts(n, tol):
 
     Outputs:
     --------
-        qpts: quadrature point coordinates [nq, dim]
-        qwts: quadrature weights [nq, dim]
+        qpts: quadrature point coordinates [nq, ndims]
+        qwts: quadrature weights [nq, ndims]
     '''
     leg_poly = np.polynomial.legendre.Legendre
 

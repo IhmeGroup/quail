@@ -183,25 +183,25 @@ def get_hessian(limiter, basis, quad_pts):
 	-------
 		limiter: limiter object
 		basis: basis object
-		quad_pts: quadrature point coordinates [nq, dim] 
+		quad_pts: quadrature point coordinates [nq, ndims] 
 
 	Outputs:
 	--------
-		basis_ref_hessian: reference hessian of the basis function [nq, nb, dim]
+		basis_ref_hessian: reference hessian of the basis function [nq, nb, ndims]
 	'''
-	dim = basis.NDIMS
+	ndims = basis.NDIMS
 	p = basis.order
 	nb = basis.nb
 	nq = quad_pts.shape[0]
 
-	basis_ref_hessian = np.zeros([nq, nb, dim])
+	basis_ref_hessian = np.zeros([nq, nb, ndims])
 
 	if p > 0:
 		xnodes = basis.get_1d_nodes(-1., 1., p+1)
 		get_lagrange_hessian_1D(quad_pts, xnodes, 
 				basis_ref_hessian=basis_ref_hessian)
 	
-	return basis_ref_hessian # [nq, nb, dim]
+	return basis_ref_hessian # [nq, nb, ndims]
 
 def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 	'''
@@ -214,7 +214,7 @@ def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 
 	Outputs:
 	-------- 
-		basis_hessian: evaluated reference hessian [nq, nb, dim]
+		basis_hessian: evaluated reference hessian [nq, nb, ndims]
 	'''
 	nnodes = xnodes.shape[0]
 
@@ -241,14 +241,14 @@ def get_phys_hessian(limiter, basis, ijac):
 	-------
 		limiter: limiter object
 		basis: basis object
-		ijac: inverse of the Jacobian [nq, nb, dim]
+		ijac: inverse of the Jacobian [nq, nb, ndims]
 
 	Outputs:
 	--------
 		basis_phys_hessian: evaluated hessian of the basis function in 
-			physical space [nq, nb, dim]
+			physical space [nq, nb, ndims]
 	'''
-	dim = basis.NDIMS
+	ndims = basis.NDIMS
 	nb = basis.nb
 
 	basis_ref_hessian = limiter.basis_ref_hessian
@@ -258,10 +258,10 @@ def get_phys_hessian(limiter, basis, ijac):
 		raise ValueError("basis_ref_hessian not evaluated")
 
 	# Check to see if ijac has been passed and has the right shape
-	if ijac is None or ijac.shape != (nq, dim, dim):
+	if ijac is None or ijac.shape != (nq, ndims, ndims):
 		raise ValueError("basis_ref_hessian and ijac shapes not compatible")
 	
 	ijac2 = np.einsum('ijk,ijk->ijk',ijac,ijac)
 	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', basis_ref_hessian, ijac2)
 
-	return basis_phys_hessian # [nq, nb, dim]
+	return basis_phys_hessian # [nq, nb, ndims]
