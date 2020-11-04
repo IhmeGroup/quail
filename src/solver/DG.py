@@ -628,7 +628,7 @@ class DG(base.SolverBase):
 		self.bface_helpers.compute_helpers(mesh, physics, basis,
 				self.order)
 
-	def get_element_residual(self, Uc, R_elem):
+	def get_element_residual(self, Uc, res_elem):
 		# Unpack
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
@@ -651,24 +651,24 @@ class DG(base.SolverBase):
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
 
-			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
-			# Eval_source_terms is an additive function so source needs to be
+			# eval_source_terms is an additive function so source needs to be
 			# initialized to zero for each time step
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
 			Sq = physics.eval_source_terms(Uq, x_elems, self.time, Sq) 
 					# [ne, nq, ns]
 
-			R_elem += solver_tools.calculate_source_term_integral(
+			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, Sq) # [ne, nb, ns]
 
-		return R_elem # [ne, nb, ns]
+		return res_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR):
-		# unpack
+		# Unpack
 		mesh = self.mesh
 		physics = self.physics
 
@@ -682,17 +682,17 @@ class DG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		nq = quad_wts.shape[0]
 		
-		# Interpolate state and gradient at quad points
+		# Interpolate state at quad points
 		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id]) 
 				# [nf, nq, ns]
 		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id]) 
 				# [nf, nq, ns]
 
-		# allocate RL and RR (needed for operator splitting)
+		# Allocate resL and resR (needed for operator splitting)
 		nifL = self.int_face_helpers.elemL_ID.shape[0]
 		nifR = self.int_face_helpers.elemR_ID.shape[0]
-		RL = np.zeros([nifL, nq, ns])
-		RR = np.zeros([nifR, nq, ns])
+		resL = np.zeros([nifL, nq, ns])
+		resR = np.zeros([nifR, nq, ns])
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
@@ -700,14 +700,14 @@ class DG(base.SolverBase):
 					# [nf, nq, ns]
 
 			# Compute contribution to left and right element residuals
-			RL = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisL[faceL_id], quad_wts, Fq)
-			RR = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					faces_to_basisR[faceR_id], quad_wts, Fq)
 
-		return RL, RR # [nif, nb, ns]
+		return resL, resR # [nif, nb, ns]
 
-	def get_boundary_face_residual(self, bgroup, face_ID, Uc, R_B):
+	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
 		# unpack
 		mesh = self.mesh
 		physics = self.physics
@@ -718,24 +718,23 @@ class DG(base.SolverBase):
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
 
-		nq = quad_wts.shape[0]
 		basis_val = bface_helpers.faces_to_basis[face_ID] # [nbf, nq, nb]
 
-		# interpolate state and gradient at quad points
+		# Interpolate state at quad points
 		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
 
 		normals = normals_bgroups[bgroup_num] # [nbf, nq, dim]
 		x = x_bgroups[bgroup_num] # [nbf, nq, dim]
 		BC = physics.BCs[bgroup.name]
 
-		# Interpolate state and gradient at quadrature points
+		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val)
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute boundary flux
 			Fq = BC.get_boundary_flux(physics, UqI, normals, x, self.time)
 			# Compute contribution to adjacent element residual
-			R_B = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)
 
-		return R_B
+		return resB

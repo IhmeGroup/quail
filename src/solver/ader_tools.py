@@ -59,7 +59,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 
 	Outputs:
 	--------
-		R_elem: residual contribution (for volume integral of inviscid flux) 
+		res_elem: residual contribution (for volume integral of inviscid flux) 
 			[ne, nb, ns]
 	'''
 	quad_wts_st = elem_helpers_st.quad_wts
@@ -75,10 +75,10 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 			djac_elems).reshape(Fq.shape[0], nq_st, 1, 1)
 
 	# integrate
-	R_elem = np.einsum('ijkl, ijml -> ikm', tile_basis_phys_grads,
+	res_elem = np.einsum('ijkl, ijml -> ikm', tile_basis_phys_grads,
 			Fq * quad_wts_st_djac) # [ne, nb, ns]
 
-	return R_elem # [ne, nb, ns]
+	return res_elem # [ne, nb, ns]
 
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
@@ -119,7 +119,7 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 
 	Outputs:
 	--------
-		R_elem: residual contribution (from volume integral of source term) 
+		res_elem: residual contribution (from volume integral of source term) 
 			[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
@@ -133,11 +133,11 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 	nq_st = quad_wts_st.shape[0]
 
 	# Calculate residual from source term
-	R_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)), 
+	res_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)), 
 			Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(Sq.shape[0], 
 			nq_st, 1)) # [ne, nb, ns]
 
-	return R_elem # [ne, nb, ns]
+	return res_elem # [ne, nb, ns]
 
 
 def predictor_elem_explicit(solver, dt, W, U_pred):

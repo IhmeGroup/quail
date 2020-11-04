@@ -30,7 +30,7 @@ class SourceSolvers():
 		solver for operator splitting integration schemes.
 		Attributes:
 		-----------
-		R: numpy array of floats (shape : [nelem, nb, ns])
+		res: numpy array of floats (shape : [nelem, nb, ns])
 			solution's residaul array
 		dt: float
 			time-step for the solution
@@ -39,7 +39,7 @@ class SourceSolvers():
 		get_time_step: method
 			method to obtain dt given input decks logic (CFL-based vs # of 
 			timesteps, etc...)
-		balance_const: numpy array of floats (shaped like R)
+		balance_const: numpy array of floats (shaped like res)
 			balancing constant array used only with the Simpler splitting 
 			scheme
 		
@@ -50,7 +50,7 @@ class SourceSolvers():
 			the selected time-stepping scheme
 		'''
 		def __init__(self, U):
-			self.R = np.zeros_like(U)
+			self.res = np.zeros_like(U)
 			self.dt = 0.
 			self.num_time_steps = 0
 			self.get_time_step = None
@@ -76,20 +76,20 @@ class SourceSolvers():
 			mesh = solver.mesh
 			U = solver.state_coeffs
 
-			R = self.R
+			res = self.res
 
-			R = solver.get_residual(U, R)
-			dU = mult_inv_mass_matrix(mesh, solver, self.dt, R)
+			res = solver.get_residual(U, res)
+			dU = mult_inv_mass_matrix(mesh, solver, self.dt, res)
 
 			A, iA = self.get_jacobian_matrix(mesh, solver)
 
-			R = np.einsum('ijkl,ikl->ijl',A,U) + dU
-			U = np.einsum('ijkl,ikl->ijl',iA,R)
+			res = np.einsum('ijkl,ikl->ijl', A, U) + dU
+			U = np.einsum('ijkl,ikl->ijl', iA, res)
 
 			solver.apply_limiter(U)
 			solver.state_coeffs = U
 
-			return R # [ne, nb, ns]
+			return res # [ne, nb, ns]
 
 		def get_jacobian_matrix(self, mesh, solver):
 			'''

@@ -169,7 +169,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	face_ID = bface_helpers.face_ID[boundary_num]
 	basis_val = faces_to_basis[face_ID]
 
-	# Interpolate state and gradient at quad points
+	# Interpolate state at quad points
 	Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
 
 	# Get requested variable

@@ -339,7 +339,7 @@ class ADERDG(base.SolverBase):
 		self.ader_helpers.compute_helpers(mesh, physics, basis, 
 				basis_st, dt, order)
 
-	def get_element_residual(self, Uc, R_elem):
+	def get_element_residual(self, Uc, res_elem):
 		physics = self.physics
 		mesh = self.mesh
 		ns = physics.NUM_STATE_VARS
@@ -358,7 +358,7 @@ class ADERDG(base.SolverBase):
 		nq = quad_wts.shape[0]
 		nq_st = quad_wts_st.shape[0]
 
-		# Interpolate state and gradient at quad points
+		# Interpolate state at quad points
 		Uq = helpers.evaluate_state(Uc, basis_val_st) # [ne, nq_st, ns]
 
 		if self.verbose:
@@ -368,7 +368,7 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, dim]
-			R_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, elem_helpers_st, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
@@ -384,10 +384,10 @@ class ADERDG(base.SolverBase):
 			Sq[:] = 0. # [ne, nq, sr, dim]
 			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq)
 
-			R_elem += solver_tools.calculate_source_term_integral(
+			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, elem_helpers_st, Sq) # [ne, nb, ns]
 
-		return R_elem # [ne, nb, ns]
+		return res_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_id, faceR_id, Uc_L, Uc_R):
 		mesh = self.mesh
@@ -420,28 +420,28 @@ class ADERDG(base.SolverBase):
 		basis_valL_st = faces_to_basisL_st[faceL_id_st]
 		basis_valR_st = faces_to_basisR_st[faceR_id_st]
 
-		# Interpolate state and gradient at quad points
+		# Interpolate state at quad points
 		UqL = helpers.evaluate_state(Uc_L, basis_valL_st) # [nf, nq_st, ns]
 		UqR = helpers.evaluate_state(Uc_R, basis_valR_st) # [nf, nq_st, ns]
 
 		normals_int_faces = int_face_helpers.normals_int_faces
 
-		# Allocate RL and RR (needed for operator splitting)
-		RL = np.zeros_like(self.stepper.R)
-		RR = np.zeros_like(self.stepper.R)
+		# Allocate resL and resR (needed for operator splitting)
+		resL = np.zeros_like(self.stepper.res)
+		resR = np.zeros_like(self.stepper.res)
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq_st, ns]
-			RL = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valL, quad_wts_st, Fq)
-			RR = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_valR, quad_wts_st, Fq)
 
-		return RL, RR # [nif, nb, ns]
+		return resL, resR # [nif, nb, ns]
 
-	def get_boundary_face_residual(self, bgroup, face_ID, Uc, R_B):
+	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
 		# Unpack
 		mesh = self.mesh
 		dim = mesh.dim
@@ -476,7 +476,7 @@ class ADERDG(base.SolverBase):
 				mesh, self.time, self.stepper.dt, xref_st[:, :, -1:], 
 				self.elem_helpers_st.basis_time)
 
-		# Interpolate state and gradient at quadrature points
+		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val_st) # [nbf, nq, ns]
 
 		normals = normals_bgroups[bgroup_num]
@@ -495,10 +495,10 @@ class ADERDG(base.SolverBase):
 						UqI[:, i, :].reshape([nbf, 1, ns]), 
 						normals, x, t_[0])
 
-			R_B = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
-		return R_B # [nbf, nb, ns]
+		return resB # [nbf, nb, ns]
 
 	def flux_coefficients(self, dt, order, basis, Up):
 		'''
@@ -552,7 +552,7 @@ class ADERDG(base.SolverBase):
 			nq = quad_wts.shape[0]
 			iMM_elems = ader_helpers.iMM_elems
 
-			# Interpolate state and gradient at quadrature points
+			# Interpolate state at quadrature points
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 			
 			# Evaluate the inviscid flux
@@ -625,7 +625,7 @@ class ADERDG(base.SolverBase):
 			nq = quad_wts.shape[0]
 			iMM_elems = ader_helpers.iMM_elems
 
-			# Interpolate state and gradient at quadrature points
+			# Interpolate state at quadrature points
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			# Get array in physical time from ref time
