@@ -40,7 +40,8 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	mesh.node_coords = np.zeros([mesh.num_nodes, mesh.dim])
 	mesh.node_coords[:,0] = np.linspace(xmin, xmax, mesh.num_nodes)
 	# Set parameters
-	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, num_elems=num_elems)
+	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, 
+			num_elems=num_elems)
 
 	''' Interior faces '''
 	mesh.num_interior_faces = num_elems - 1

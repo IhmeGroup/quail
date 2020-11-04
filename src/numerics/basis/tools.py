@@ -296,8 +296,6 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
     gbasis = mesh.gbasis
     dim = gbasis.DIM
 
-    nq = quad_pts.shape[0]
-
     # Gradients in reference space
     basis_ref_grad = gbasis.get_grads(quad_pts) # [nq, nb, dim]
     
@@ -338,10 +336,6 @@ def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
         normals: normal vector [nq, dim]
     '''
     nq = quad_pts.shape[0]
-
-    # nq should be 1
-    # if nq != 1:
-    #     raise ValueError
 
     normals = np.zeros([nq, mesh.dim])
     
@@ -386,8 +380,8 @@ def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
     face_coords = elem_coords[fnodes]
 
     ''' Calculate 2D normals '''
-    xphys_grad = np.matmul(face_coords.transpose(), basis_ref_grad)[:, 
-            :, 0] # gradient of physical space w.r.t ref space
+    xphys_grad = np.matmul(face_coords.transpose(), basis_ref_grad)[
+            :, :, 0] # gradient of physical space w.r.t ref space
     normals = xphys_grad[:, ::-1]
     normals[:, 1] *= -1.
 

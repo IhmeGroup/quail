@@ -44,8 +44,6 @@ class ElemHelpers(object):
 	basis_phys_grad_elems: numpy array
 		stores the evaluated basis function's gradient for each individual
 		physical element
-	gbasis_val: numpy array
-		stores the evaluated geometric basis function
 	jac_elems: numpy array
 		stores the evaluated geometric Jacobian for each element
 	ijac_elems: numpy array
@@ -89,7 +87,6 @@ class ElemHelpers(object):
 		self.basis_val = np.zeros(0)
 		self.basis_ref_grad = np.zeros(0)
 		self.basis_phys_grad_elems = np.zeros(0)
-		self.gbasis_val = np.zeros(0)
 		self.jac_elems = np.zeros(0)
 		self.ijac_elems = np.zeros(0)
 		self.djac_elems = np.zeros(0)

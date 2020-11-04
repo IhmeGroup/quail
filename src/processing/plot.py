@@ -478,7 +478,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	# Convert reference-space points to physical space
 	for elem_ID in range(mesh.num_elems):
 		xphys = mesh_tools.ref_to_phys(mesh, elem_ID, xref)
-		x[elem_ID,:,:] = xphys
+		x[elem_ID, :, :] = xphys
 
 	return x
 

@@ -188,7 +188,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order,
         basis2.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis1, 
                 get_val=True)
     else:
-        # If basis are different you are at tau_{n} in ref time
+        # If bases are different you are at tau_{n} in ref time
         # Evaluate basis at tau_{n}
         face_ID = 0
 
