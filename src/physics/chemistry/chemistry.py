@@ -1,4 +1,11 @@
-import code
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/chemistry/chemistry.py
+#
+#       Contains class definitions for 1D Euler equations with a simple
+# 		transport equation for mass fraction.
+#
+# ------------------------------------------------------------------------ #
 from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
@@ -135,6 +142,7 @@ class Chemistry(base.PhysicsBase):
 			raise NotImplementedError
 
 		return varq
+
 
 class Chemistry1D(Chemistry):
 	'''

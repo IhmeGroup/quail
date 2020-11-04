@@ -1,8 +1,8 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/solver/ader_tools.py
+#       File : src/solver/ader_tools.py
 #
-#       Contains additional functions (tools) for the ADERDG solver class
+#       Contains additional functions (tools) for the ADER-DG solver class
 #      
 # ------------------------------------------------------------------------ #
 import numpy as np

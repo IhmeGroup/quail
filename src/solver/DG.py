@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/solver/DG.py
+#       File : src/solver/DG.py
 #
 #       Contains class definitions for the DG solver.
 #

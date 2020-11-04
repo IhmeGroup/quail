@@ -1,8 +1,18 @@
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/chemistry/functions.py
+#
+#       Contains definitions of Functions, boundary conditions, and source
+#       terms for the 1D Euler equations with a simple transport equation
+#		for mass fraction.
+#
+# ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
 
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, SourceBase, ConvNumFluxBase
+
 
 class FcnType(Enum):
     DensityWave = auto()

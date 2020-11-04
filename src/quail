@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+# ------------------------------------------------------------------------ #
+#
+#       File : src/quail.py
+#
+#       Contains driver and helper functions for Quail.
+#      
+# ------------------------------------------------------------------------ #
 import argparse
 import importlib
 import numpy as np

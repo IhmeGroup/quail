@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/solver/tools.py
+#       File : src/solver/tools.py
 #
 #       Contains additional methods (tools) for the DG solver class
 #

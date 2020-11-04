@@ -1,8 +1,8 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/solver/ADERDG.py
+#       File : src/solver/ADERDG.py
 #
-#       Contains class definitions for the ADER-DG solver.
+#       Contains class definitions for the ADER-DG solver
 #      
 # ------------------------------------------------------------------------ #
 import numpy as np

@@ -905,11 +905,8 @@ class LaxFriedrichsEuler1D(ConvNumFluxBase):
 		dUq = UqR - UqL
 
 		# Max wave speeds at each point
-		# aL = np.empty_like(n_mag)
 		aL = np.empty(pL.shape + (1,))
 		aR = np.empty(pR.shape + (1,))
-		# aR = np.empty_like(n_mag)
-		# import code; code.interact(local=locals())
 		aL[:,:,0] = np.sqrt(u2L) + np.sqrt(physics.gamma * pL / rhoL)
 		aR[:,:,0] = np.sqrt(u2R) + np.sqrt(physics.gamma * pR / rhoR)
 		idx = aR > aL

@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/numerics/solver/base.py
+#       File : src/solver/base.py
 #
 #       Contains class definitions for the solver base class
 #
