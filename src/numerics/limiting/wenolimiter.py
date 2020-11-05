@@ -2,7 +2,7 @@
 #
 #       File : src/numerics/limiting/wenolimiter.py
 #
-#       Contains class definitions for weno limiters.
+#       Contains class definitions for WENO limiters.
 #      
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
@@ -194,9 +194,9 @@ class ScalarWENO(base.LimiterBase):
 		# Update state_coeffs for indicated elements
 		Uc[shock_indicated] = np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 0], 
 				p0_tilde[shock_indicated]) + \
-							  np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 1],
+				np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 1],
 				p1[shock_indicated]) + \
-							  np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 2],
+				np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 2],
 				p2_tilde[shock_indicated])
 
 		return Uc # [ne, nq, 1]

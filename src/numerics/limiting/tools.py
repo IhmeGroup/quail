@@ -62,7 +62,7 @@ def set_shock_indicator(limiter, shock_indicator_type):
 
 def minmod_shock_indicator(limiter, solver, Uc):
 	'''
-	Minmod calculation used to determine if osciallations are large enough 
+	Minmod calculation used to determine if oscillations are large enough 
 	to require limiting.
 
 	Inputs:
@@ -73,7 +73,7 @@ def minmod_shock_indicator(limiter, solver, Uc):
 
 	Outputs:
 	--------
-		shock_elems: array with indices of elements flagged for limiting
+		shock_elems: array with IDs of elements flagged for limiting
 	'''
 	# Unpack
 	physics = solver.physics
@@ -166,13 +166,15 @@ def minmod(a):
 	# Allocate with a large negative number. 
 	u = -1234567.*np.ones([a.shape[0], 1, a.shape[-1]])
 
-	elemID_gt = np.where(np.all(s>0., axis=1))[0]
-	elemID_lt = np.where(np.all(s<0., axis=1))[0]
+	elemID_gt = np.where(np.all(s > 0., axis=1))[0]
+	elemID_lt = np.where(np.all(s < 0., axis=1))[0]
 
 	if elemID_gt.size != 0:
-		u[elemID_gt, 0, :] = s[elemID_gt, 0, :] * np.amin(np.abs(a[elemID_gt]), axis=1)
+		u[elemID_gt, 0, :] = s[elemID_gt, 0, :] * np.amin(
+				np.abs(a[elemID_gt]), axis=1)
 	if elemID_lt.size !=0:
-		u[elemID_lt, 0, :] = s[elemID_lt, 0, :] * np.amin(np.abs(a[elemID_lt]), axis=1)
+		u[elemID_lt, 0, :] = s[elemID_lt, 0, :] * np.amin(
+				np.abs(a[elemID_lt]), axis=1)
 
 	return u # [ne, 1, 1]
 
@@ -265,7 +267,7 @@ def get_phys_hessian(limiter, basis, ijac):
 	if ijac is None or ijac.shape != (nq, ndims, ndims):
 		raise ValueError("basis_ref_hessian and ijac shapes not compatible")
 	
-	ijac2 = np.einsum('ijk,ijk->ijk',ijac,ijac)
+	ijac2 = np.einsum('ijk,ijk->ijk', ijac, ijac)
 	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', 
 			basis_ref_hessian, ijac2)
 
