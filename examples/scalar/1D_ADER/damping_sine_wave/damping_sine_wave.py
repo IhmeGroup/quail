@@ -1,20 +1,14 @@
 import numpy as np
 
-cfl = 0.1
-num_elems = 16
-dx = float(1./num_elems)
-dt = cfl*dx
-FinalTime = 0.5
-NumTimeSteps = int(FinalTime/dt)
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : FinalTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "FinalTime" : 0.5,
+    "NumTimeSteps" : 80,
     "TimeStepper" : "ADER",
 }
 
 Numerics = {
-    "SolutionOrder" : 3,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
     "SourceTreatmentADER" : "Implicit",
@@ -30,8 +24,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : num_elems,
-    # "NumElemsY" : 2,
+    "NumElemsX" : 16,
     "xmin" : -1.,
     "xmax" : 1.,
     "PeriodicBoundariesX" : ["x1", "x2"],
@@ -44,6 +37,7 @@ Physics = {
 }
 
 nu = -1000.
+
 InitialCondition = {
     "Function" : "DampingSine",
     "omega" : 2*np.pi,
@@ -52,21 +46,8 @@ InitialCondition = {
 
 ExactSolution = InitialCondition.copy()
 
-# BoundaryConditions = {
-#     "x1" : {
-# 	    "Function" : "DampingSine",
-# 	    "omega" : 2*np.pi,
-# 	    "nu" : nu,
-#     	"BCType" : "StateAll",
-#     },
-#     "x2" : {
-#     	#"Function" : None,
-#     	"BCType" : "Extrapolate",
-#     },
-# }
-
 SourceTerms = {
-	"source1" : {
+	"source1" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "SimpleSource",
 		"nu" : nu,
 	},

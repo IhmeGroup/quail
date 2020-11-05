@@ -294,7 +294,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	niter = 100
 	for i in range(niter):
 
-		U_pred_new = np.einsum('ijk, ikm -> ikm',iK,
+		U_pred_new = np.einsum('ijk, ikm -> ijm',iK,
 				(np.einsum('jk, ijl -> ikl', MM, source_coeffs) -
 				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
 				np.einsum('jk, ikm -> ijm', FTR, W) -
