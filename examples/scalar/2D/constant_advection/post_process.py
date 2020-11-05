@@ -16,7 +16,7 @@ post.get_error( mesh, physics, solver, "Scalar")
 
 ''' Plot '''
 # Scalar contour
-plot.prepare_plot(axis=axis, linewidth=0.5)
+plot.prepare_plot(linewidth=0.5)
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, 
 		create_new_figure=True, include_mesh=True, regular_2D=True, 
 		equal_AR=False, show_elem_IDs=True)
