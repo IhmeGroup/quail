@@ -10,6 +10,7 @@ from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
 
+import errors
 import general
 
 from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
