@@ -1,9 +1,6 @@
-import numpy as np
-
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.1,
-    # "CFL" : 0.05,
     "NumTimeSteps" : 100,
     "TimeStepper" : "RK4",
 }
@@ -24,7 +21,6 @@ Mesh = {
     "NumElemsX" : 25,
     "xmin" : -1.,
     "xmax" : 1.,
-    # "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {

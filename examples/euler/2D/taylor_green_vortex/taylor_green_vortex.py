@@ -1,32 +1,19 @@
-n_elem = 1
-
-CFL = 0.0025
-dx = 1./n_elem
-u = 1.
-dt = CFL*dx/u
-tfinal = 0.4
-nt = int(tfinal/dt + 1.e-12)
-
 TimeStepping = {
-    "FinalTime" : tfinal,
-    "NumTimeSteps" : nt,
+    "FinalTime" : 0.4,
+    "NumTimeSteps" : 160,
     "TimeStepper" : "FE",
 }
 
 Numerics = {
     "SolutionOrder" : 8,
-    # "SolutionBasis" : "LagrangeEqQuad",
     "SolutionBasis" : "LegendreQuad",
-    # "SolutionBasis" : "LagrangeEqTri",
-    # "ElementQuadrature" : "Dunavant",
-    # "FaceQuadrature" : "GaussLegendre",
 }
 
+num_elem_x = 1
 Mesh = {
     "ElementShape" : "Quadrilateral",
-     # "ElementShape" : "Triangle",
-    "NumElemsX" : n_elem,
-    "NumElemsY" : n_elem,
+    "NumElemsX" : num_elem_x,
+    "NumElemsY" : num_elem_x,
     "xmin" : 0.,
     "xmax" : 1.,
     "ymin" : 0.,
@@ -38,19 +25,16 @@ Mesh = {
 Physics = {
     "Type" : "Euler",
     "ConvFluxNumerical" : "Roe",
-    # "GasConstant" : 1.,
 }
 
 InitialCondition = {
     "Function" : "TaylorGreenVortex",
-    # "State" : [1.0],
-    # "SetAsExact" : False,
 }
 
 ExactSolution = InitialCondition.copy()
 
 SourceTerms = {
-    "Source1" : {
+    "Source1" : { # Name of source term ("Source1") doesn't matter
         "Function" : "TaylorGreenSource",
     },
 }

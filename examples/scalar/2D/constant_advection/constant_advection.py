@@ -1,4 +1,3 @@
-
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 10.,
@@ -13,7 +12,6 @@ Numerics = {
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
     "InterpolateFluxADER" : False,
-    #"ApplyLimiters" : None, 
 }
 
 Output = {
@@ -51,16 +49,3 @@ InitialCondition = {
 }
 
 ExactSolution = InitialCondition.copy()
-
-
-bparams = {
-    "Function" : "Gaussian",
-    "x0" : x0,
-    "BCType" : "StateAll"
-}
-BoundaryConditions = {
-    # "x1" : bparams,
-    # "x2" : bparams,
-    # "y1" : bparams,
-    # "y2" : bparams,
-}
