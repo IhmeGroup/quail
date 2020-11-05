@@ -858,43 +858,11 @@ Information specific to the corresponding child classes can be found below.
 These classes should correspond to the ConvNumFluxType enum members above.
 '''
 
-class LaxFriedrichsEuler2D(ConvNumFluxBase):
+class LaxFriedrichs1D(ConvNumFluxBase):
 	'''
-	This class corresponds to the local Lax-Friedrichs flux function for Euler
-    2D.
-	'''
-	def compute_flux(self, physics, UqL, UqR, normals):
-		# Normalize the normal vectors
-		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
-		n_hat = normals/n_mag
-
-		# Left flux
-		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
-				n_hat)
-
-		# Right flux
-		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
-				n_hat)
-
-		# Jump
-		dUq = UqR - UqL
-
-		# Max wave speeds at each point
-		aL = np.empty_like(n_mag)
-		aR = np.empty_like(n_mag)
-		aL[:,:,0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
-		aR[:,:,0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
-		idx = aR > aL
-		aL[idx] = aR[idx]
-
-		# Put together
-		return .5 * n_mag * (FqL + FqR - aL*dUq)
-
-
-class LaxFriedrichsEuler1D(ConvNumFluxBase):
-	'''
-	This class corresponds to the local Lax-Friedrichs flux function for Euler
-    1D.
+	This class corresponds to the local Lax-Friedrichs flux function for the 
+	Euler1D class. This replaces the generalized, less efficient version of 
+	the Lax-Friedrichs flux found in base.
 	'''
 	def compute_flux(self, physics, UqL, UqR, normals):
 		# Normalize the normal vectors
@@ -913,13 +881,47 @@ class LaxFriedrichsEuler1D(ConvNumFluxBase):
 		# Max wave speeds at each point
 		aL = np.empty(pL.shape + (1,))
 		aR = np.empty(pR.shape + (1,))
-		aL[:,:,0] = np.sqrt(u2L) + np.sqrt(physics.gamma * pL / rhoL)
-		aR[:,:,0] = np.sqrt(u2R) + np.sqrt(physics.gamma * pR / rhoR)
+		aL[:, :, 0] = np.sqrt(u2L) + np.sqrt(physics.gamma * pL / rhoL)
+		aR[:, :, 0] = np.sqrt(u2R) + np.sqrt(physics.gamma * pR / rhoR)
 		idx = aR > aL
 		aL[idx] = aR[idx]
 
 		# Put together
-		return .5 * n_mag * (FqL + FqR - aL*dUq)
+		return 0.5 * n_mag * (FqL + FqR - aL*dUq)
+
+
+class LaxFriedrichs2D(ConvNumFluxBase):
+	'''
+	This class corresponds to the local Lax-Friedrichs flux function for the 
+	Euler2D class. This replaces the generalized, less efficient version of 
+	the Lax-Friedrichs flux found in base.
+	'''
+	def compute_flux(self, physics, UqL, UqR, normals):
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+
+		# Left flux
+		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, 
+				n_hat)
+
+		# Right flux
+		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
+				n_hat)
+
+		# Jump
+		dUq = UqR - UqL
+
+		# Max wave speeds at each point
+		aL = np.empty(pL.shape + (1,))
+		aR = np.empty(pR.shape + (1,))
+		aL[:, :, 0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
+		aR[:, :, 0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
+		idx = aR > aL
+		aL[idx] = aR[idx]
+
+		# Put together
+		return 0.5 * n_mag * (FqL + FqR - aL*dUq)
 
 
 class Roe1D(ConvNumFluxBase):

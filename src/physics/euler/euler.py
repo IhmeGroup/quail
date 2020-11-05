@@ -178,7 +178,7 @@ class Euler1D(Euler):
 
 		self.conv_num_flux_map.update({
 			base_conv_num_flux_type.LaxFriedrichs :
-					euler_fcns.LaxFriedrichsEuler1D,
+					euler_fcns.LaxFriedrichs1D,
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
 			euler_conv_num_flux_type.HLLC : euler_fcns.HLLC1D,
 		})
@@ -274,7 +274,7 @@ class Euler2D(Euler):
 
 		self.conv_num_flux_map.update({
 			base_conv_num_flux_type.LaxFriedrichs :
-				euler_fcns.LaxFriedrichsEuler2D,
+				euler_fcns.LaxFriedrichs2D,
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe2D,
 		})
 
