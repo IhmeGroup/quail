@@ -7,9 +7,9 @@ Quail is a lightweight, open-source discontinuous Galerkin code written in Pytho
 
 ### Setup
 Python 3.7 or higher is required. The following libraries should also be installed (tested version number provided):
-  - NumPy 1.19.1
+  - NumPy 1.17.4
   - Matplotlib 3.3.1
-  - SciPy 1.5.2
+  - SciPy 1.4.1
 
 For convenience, your Quail directory (where this file is located) can be added to your PATH.
 ```sh
