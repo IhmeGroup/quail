@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/ericjching/DG_Python"><img alt="quail_logo" src="https://user-images.githubusercontent.com/10471417/98285446-8dc18400-1f70-11eb-8572-67cc56aabb7b.png" width="20%"></a>
+  <a href="https://github.com/ericjching/DG_Python"><img alt="quail_logo" src="https://user-images.githubusercontent.com/10471417/98285446-8dc18400-1f70-11eb-8572-67cc56aabb7b.png" width="50%"></a>
 </p>
 
 Quail is a lightweight, open-source discontinuous Galerkin code written in Python for teaching and prototyping. Currently, Quail solves first-order nonlinear hyperbolic systems of partial differential equations.
