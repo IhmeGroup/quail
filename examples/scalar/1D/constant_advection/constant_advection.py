@@ -14,8 +14,7 @@ Numerics = {
     "ElementQuadrature" : "GaussLobatto",
     "FaceQuadrature" : "GaussLobatto",
     "NodeType" : "GaussLobatto",
-    "ColocatedPoints" : True,
-    "InterpolateFluxADER" : True,
+    "ColocatedPoints" : False,
 }
 
 Mesh = {
