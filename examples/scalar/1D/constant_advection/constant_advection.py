@@ -32,6 +32,10 @@ Physics = {
     "ConstVelocity" : 1.,
 }
 
+Output = {
+    "AutoPostProcess" : False,
+}
+
 InitialCondition = {
     "Function" : "Sine",
     "omega" : 2*np.pi,
