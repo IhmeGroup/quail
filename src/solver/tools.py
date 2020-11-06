@@ -10,6 +10,7 @@ import numpy as np
 import general
 import numerics.basis.tools as basis_tools
 
+
 def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	'''
 	Calculates the inviscid flux volume integral for the DG scheme
@@ -22,7 +23,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 
 	Outputs:
 	--------
-		R: calculated residual array (for volume integral of all elements)
+		res_elem: calculated residual array (for volume integral of all elements)
 		[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
@@ -34,10 +35,11 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	F_quad = np.einsum('ijkl, jm, ijm -> ijkl', Fq, quad_wts, djac_elems)
 			# [ne, nq, ns, ndims]
 	# Calculate residual
-	R = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad)
+	res_elem = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad)
 			# [ne, nb, ns]
 
-	return R # [ne, nb, ns]
+	return res_elem # [ne, nb, ns]
+
 
 def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	'''
@@ -51,14 +53,14 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	Outputs:
 	--------
-		R_B: residual contribution (from boundary face) [nb, ns]
+		resB: residual contribution (from boundary face) [nb, ns]
 	'''
 	# Calculate flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts) # [nf, nq, ns]
 	# Calculate residual
-	R_B = np.einsum('ijn, ijk -> ink', basis_val, Fq_quad) # [nf, nb, ns]
+	resB = np.einsum('ijn, ijk -> ink', basis_val, Fq_quad) # [nf, nb, ns]
 
-	return R_B # [nf, nb, ns]
+	return resB # [nf, nb, ns]
 
 
 def calculate_source_term_integral(elem_helpers, Sq):
@@ -72,7 +74,7 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	Outputs:
 	--------
-		R: calculated residual array (for volume integral of all elements)
+		res_elem: calculated residual array (for volume integral of all elements)
 		[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
@@ -83,9 +85,9 @@ def calculate_source_term_integral(elem_helpers, Sq):
 	Sq_quad = np.einsum('ijk, jm, ijm -> ijk', Sq, quad_wts, djac_elems)
 			# [ne, nq, ns]
 	# Calculate residual
-	R = np.einsum('jn, ijk -> ink', basis_val, Sq_quad) # [ne, nb, ns]
+	res_elem = np.einsum('jn, ijk -> ink', basis_val, Sq_quad) # [ne, nb, ns]
 
-	return R # [ne, nb, ns]
+	return res_elem # [ne, nb, ns]
 
 def calculate_dRdU(elem_helpers, Sjac):
 	'''
@@ -103,13 +105,12 @@ def calculate_dRdU(elem_helpers, Sjac):
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val
 	djac_elems = elem_helpers.djac_elems
-	# djac = djac_elems[elem_ID]
 	a = np.einsum('eijk,eil->eijk', Sjac, quad_wts*djac_elems)
 
 	return np.einsum('bq,eqts->ebts',basis_val.transpose(), a) # [nb, ns, ns]
 
 
-def mult_inv_mass_matrix(mesh, solver, dt, R):
+def mult_inv_mass_matrix(mesh, solver, dt, res):
 	'''
 	Multiplies the residual array with the inverse mass matrix
 
@@ -117,7 +118,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 		mesh: mesh object
 		solver: solver object (e.g., DG, ADER-DG, etc...)
 		dt: time step
-		R: residual array
+		res: residual array
 
 	Outputs:
 		U: solution array
@@ -125,7 +126,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, R):
 	physics = solver.physics
 	iMM_elems = solver.elem_helpers.iMM_elems
 
-	return dt*np.einsum('ijk,ikl->ijl', iMM_elems, R)
+	return dt*np.einsum('ijk,ikl->ijl', iMM_elems, res)
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):
