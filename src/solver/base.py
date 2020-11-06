@@ -427,24 +427,24 @@ class SolverBase(ABC):
 		'''
 		mesh = self.mesh
 		int_face_helpers = self.int_face_helpers
-		elemL_ID = int_face_helpers.elemL_ID
-		elemR_ID = int_face_helpers.elemR_ID
-		faceL_ID = int_face_helpers.faceL_ID
-		faceR_ID = int_face_helpers.faceR_ID
+		elemL_IDs = int_face_helpers.elemL_IDs
+		elemR_IDs = int_face_helpers.elemR_IDs
+		faceL_IDs = int_face_helpers.faceL_IDs
+		faceR_IDs = int_face_helpers.faceR_IDs
 
 		# Extract state coefficients of elements to the left and right of
 		# this interior face
-		UL = U[elemL_ID]
-		UR = U[elemR_ID]
+		UL = U[elemL_IDs]
+		UR = U[elemR_IDs]
 
 		# Calculate face residuals for left and right elements
-		RL, RR = self.get_interior_face_residual(faceL_ID, faceR_ID, UL,
+		RL, RR = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
 				UR)
 
 		# Add this residual back to the global. The np.add.at function is
 		# used to correctly handle duplicate element IDs.
-		np.add.at(res, elemL_ID, -RL)
-		np.add.at(res, elemR_ID,  RR)
+		np.add.at(res, elemL_IDs, -RL)
+		np.add.at(res, elemR_IDs,  RR)
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
@@ -464,19 +464,20 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 		bface_helpers = self.bface_helpers
-		elem_ID = bface_helpers.elem_ID
-		face_ID = bface_helpers.face_ID
+		elem_IDs = bface_helpers.elem_IDs
+		face_IDs = bface_helpers.face_IDs
 
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
 
-			bgroup_elem_ID = elem_ID[bgroup.number]
-			bgroup_face_ID = face_ID[bgroup.number]
+			bgroup_elem_IDs = elem_IDs[bgroup.number]
+			bgroup_face_IDs = face_IDs[bgroup.number]
 
 			resB = self.get_boundary_face_residual(bgroup,
-					bgroup_face_ID, U[bgroup_elem_ID], res[bgroup_elem_ID])
+					bgroup_face_IDs, U[bgroup_elem_IDs],
+					res[bgroup_elem_IDs])
 
-			np.add.at(res, bgroup_elem_ID, -resB)
+			np.add.at(res, bgroup_elem_IDs, -resB)
 
 	def apply_limiter(self, U):
 		'''

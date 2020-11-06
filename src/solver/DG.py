@@ -291,6 +291,10 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.UqL = np.zeros(0)
 		self.UqR = np.zeros(0)
 		self.Fq = np.zeros(0)
+		self.elemL_IDs = np.empty(0, dtype=int)
+		self.elemR_IDs = np.empty(0, dtype=int)
+		self.faceL_IDs = np.empty(0, dtype=int)
+		self.faceR_IDs = np.empty(0, dtype=int)
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -386,33 +390,31 @@ class InteriorFaceHelpers(ElemHelpers):
 
 		Outputs:
 		--------
-			self.elemL_ID: Element ID to the left of each interior face
+			self.elemL_IDs: Element IDs to the left of each interior face
 			[num_interior_faces]
-			self.elemR_ID: Element ID to the right of each interior face
+			self.elemR_IDs: Element IDs to the right of each interior face
 			[num_interior_faces]
-			self.faceL_ID: Face ID to the left of each interior face
+			self.faceL_IDs: Face IDs to the left of each interior face
 			[num_interior_faces]
-			self.faceR_ID: Face ID to the right of each interior face
+			self.faceR_IDs: Face IDs to the right of each interior face
 			[num_interior_faces]
 		'''
-		self.elemL_ID = np.empty(mesh.num_interior_faces, dtype=int)
-		self.elemR_ID = np.empty(mesh.num_interior_faces, dtype=int)
-		self.faceL_ID = np.empty(mesh.num_interior_faces, dtype=int)
-		self.faceR_ID = np.empty(mesh.num_interior_faces, dtype=int)
+		self.elemL_IDs = np.empty(mesh.num_interior_faces, dtype=int)
+		self.elemR_IDs = np.empty(mesh.num_interior_faces, dtype=int)
+		self.faceL_IDs = np.empty(mesh.num_interior_faces, dtype=int)
+		self.faceR_IDs = np.empty(mesh.num_interior_faces, dtype=int)
 		for face_ID in range(mesh.num_interior_faces):
 			int_face = mesh.interior_faces[face_ID]
-			self.elemL_ID[face_ID] = int_face.elemL_ID
-			self.elemR_ID[face_ID] = int_face.elemR_ID
-			self.faceL_ID[face_ID] = int_face.faceL_ID
-			self.faceR_ID[face_ID] = int_face.faceR_ID
+			self.elemL_IDs[face_ID] = int_face.elemL_ID
+			self.elemR_IDs[face_ID] = int_face.elemR_ID
+			self.faceL_IDs[face_ID] = int_face.faceL_ID
+			self.faceR_IDs[face_ID] = int_face.faceR_ID
 
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
 		self.store_neighbor_info(mesh)
-
-
 
 
 class BoundaryFaceHelpers(InteriorFaceHelpers):
@@ -469,6 +471,8 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqI = np.zeros(0)
 		self.UqB = np.zeros(0)
 		self.Fq = np.zeros(0)
+		self.elem_IDs = []
+		self.face_IDs = []
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -558,25 +562,23 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 		Outputs:
 		--------
-			self.elem_ID: List containing arrays of element IDs of boundary
+			self.elem_IDs: List containing arrays of element IDs of boundary
 			face neighbors for each boundary group
 			[num_boundary_groups][num_interior_faces]
-			self.face_ID: List containing arrays of face IDs of boundary
+			self.face_IDs: List containing arrays of face IDs of boundary
 			face neighbors for each boundary group
 			[num_boundary_groups][num_interior_faces]
 		'''
-		self.elem_ID = []
-		self.face_ID = []
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
-			bgroup_elem_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
-			bgroup_face_ID = np.empty(bgroup.num_boundary_faces, dtype=int)
+			bgroup_elem_IDs = np.empty(bgroup.num_boundary_faces, dtype=int)
+			bgroup_face_IDs = np.empty(bgroup.num_boundary_faces, dtype=int)
 			for bface_ID in range(bgroup.num_boundary_faces):
 				boundary_face = bgroup.boundary_faces[bface_ID]
-				bgroup_elem_ID[bface_ID] = boundary_face.elem_ID
-				bgroup_face_ID[bface_ID] = boundary_face.face_ID
-			self.elem_ID.append(bgroup_elem_ID)
-			self.face_ID.append(bgroup_face_ID)
+				bgroup_elem_IDs[bface_ID] = boundary_face.elem_ID
+				bgroup_face_IDs[bface_ID] = boundary_face.face_ID
+			self.elem_IDs.append(bgroup_elem_IDs)
+			self.face_IDs.append(bgroup_face_IDs)
 
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
@@ -587,10 +589,10 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 class DG(base.SolverBase):
 	'''
-    DG inherits attributes and methods from the SolverBase class.
-    See SolverBase for detailed comments of attributes and methods.
+	DG inherits attributes and methods from the SolverBase class.
+	See SolverBase for detailed comments of attributes and methods.
 
-    Additional methods and attributes are commented below.
+	Additional methods and attributes are commented below.
 	'''
 	def __init__(self, params, physics, mesh):
 		super().__init__(params, physics, mesh)
@@ -668,7 +670,7 @@ class DG(base.SolverBase):
 
 		return res_elem # [ne, nb, ns]
 
-	def get_interior_face_residual(self, faceL_id, faceR_id, UpL, UpR):
+	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		# Unpack
 		mesh = self.mesh
 		physics = self.physics
@@ -684,14 +686,14 @@ class DG(base.SolverBase):
 		nq = quad_wts.shape[0]
 
 		# Interpolate state at quad points
-		UqL = helpers.evaluate_state(UpL, faces_to_basisL[faceL_id])
+		UqL = helpers.evaluate_state(UcL, faces_to_basisL[faceL_IDs])
 				# [nf, nq, ns]
-		UqR = helpers.evaluate_state(UpR, faces_to_basisR[faceR_id])
+		UqR = helpers.evaluate_state(UcR, faces_to_basisR[faceR_IDs])
 				# [nf, nq, ns]
 
 		# Allocate resL and resR (needed for operator splitting)
-		nifL = self.int_face_helpers.elemL_ID.shape[0]
-		nifR = self.int_face_helpers.elemR_ID.shape[0]
+		nifL = self.int_face_helpers.elemL_IDs.shape[0]
+		nifR = self.int_face_helpers.elemR_IDs.shape[0]
 		resL = np.zeros([nifL, nq, ns])
 		resR = np.zeros([nifR, nq, ns])
 
@@ -702,13 +704,13 @@ class DG(base.SolverBase):
 
 			# Compute contribution to left and right element residuals
 			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
-					faces_to_basisL[faceL_id], quad_wts, Fq)
+					faces_to_basisL[faceL_IDs], quad_wts, Fq)
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
-					faces_to_basisR[faceR_id], quad_wts, Fq)
+					faces_to_basisR[faceR_IDs], quad_wts, Fq)
 
 		return resL, resR # [nif, nb, ns]
 
-	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
+	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		# unpack
 		mesh = self.mesh
 		physics = self.physics
@@ -719,7 +721,7 @@ class DG(base.SolverBase):
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
 
-		basis_val = bface_helpers.faces_to_basis[face_ID] # [nbf, nq, nb]
+		basis_val = bface_helpers.faces_to_basis[face_IDs] # [nbf, nq, nb]
 
 		# Interpolate state at quad points
 		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
