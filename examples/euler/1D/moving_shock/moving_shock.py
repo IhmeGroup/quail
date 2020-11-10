@@ -3,8 +3,7 @@ import numpy as np
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 2.e-4,
-    # "CFL" : 0.1,
-    "NumTimeSteps" : 500,
+    "CFL" : 0.1,
     "TimeStepper" : "SSPRK3",
 }
 
