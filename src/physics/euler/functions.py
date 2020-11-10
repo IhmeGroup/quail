@@ -861,8 +861,8 @@ These classes should correspond to the ConvNumFluxType enum members above.
 
 class LaxFriedrichs1D(ConvNumFluxBase):
 	'''
-	This class corresponds to the local Lax-Friedrichs flux function for the 
-	Euler1D class. This replaces the generalized, less efficient version of 
+	This class corresponds to the local Lax-Friedrichs flux function for the
+	Euler1D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
 	def compute_flux(self, physics, UqL, UqR, normals):
@@ -893,8 +893,8 @@ class LaxFriedrichs1D(ConvNumFluxBase):
 
 class LaxFriedrichs2D(ConvNumFluxBase):
 	'''
-	This class corresponds to the local Lax-Friedrichs flux function for the 
-	Euler2D class. This replaces the generalized, less efficient version of 
+	This class corresponds to the local Lax-Friedrichs flux function for the
+	Euler2D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
 	def compute_flux(self, physics, UqL, UqR, normals):
@@ -903,7 +903,7 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, 
+		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
 				n_hat)
 
 		# Right flux

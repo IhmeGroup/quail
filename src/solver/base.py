@@ -209,38 +209,36 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_element_residual(self, elem_ID, Uc, res_elem):
+	def get_element_residual(self, Uc, res_elem):
 		'''
-		Calculates the volume contribution to the residual for a given
-		element.
+		Calculates the volume contribution to the residual for all elements.
 
 		Inputs:
 		-------
-			elem_ID: element index
-			Up: solution state
-			res_elem: residual array
+			Uc: solution array for all elements (polynomial coefficients)
+			res_elem: residual array for all elements
 
 		Outputs:
 		--------
-			res_elem: calculated residual array
+			res_elem: calculated residual array for all elements
 		'''
 		pass
 
 	@abstractmethod
-	def get_interior_face_residual(self, int_face_ID, Uc_L, Uc_R, resL,
-			resR):
+	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		'''
-		Calculates the surface integral for the interior faces
+		Calculates the surface integral for the interior faces.
 
 		Inputs:
 		-------
-			int_face_ID: interior face ID
-			Uc_L: solution array for left neighboring element (polynomial
+			faceL_IDs: face IDs for each interior face from the perspective of
+				each left neighboring element
+			faceR_IDs: face IDs for each interior face from the perspective of
+				each right neighboring element
+			UcL: solution array for left neighboring element (polynomial
 				coefficients)
-			Uc_R: solution array for right neighboring element (polynomial
+			UcR: solution array for right neighboring element (polynomial
 				coefficients)
-			resL: residual array (left neighboring element)
-			resR: residual array (right neighboring element)
 
 		Outputs:
 		--------
@@ -252,15 +250,15 @@ class SolverBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_face_residual(self, bgroup, bface_ID, Uc, resB):
+	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		'''
-		Calculates the residual from the surface integral for each boundary
-		face
+		Calculates the residual from the surface integral for all boundary faces
+		within a boundary group.
 
 		Inputs:
 		-------
 			bgroup: boundary group object
-			bface_ID: ID of boundary face
+			face_IDs: IDs of boundary faces
 			Uc: solution array from adjacent element
 			resB: residual array (for adjacent element)
 
@@ -427,24 +425,24 @@ class SolverBase(ABC):
 		'''
 		mesh = self.mesh
 		int_face_helpers = self.int_face_helpers
-		elemL_ID = int_face_helpers.elemL_ID
-		elemR_ID = int_face_helpers.elemR_ID
-		faceL_ID = int_face_helpers.faceL_ID
-		faceR_ID = int_face_helpers.faceR_ID
+		elemL_IDs = int_face_helpers.elemL_IDs
+		elemR_IDs = int_face_helpers.elemR_IDs
+		faceL_IDs = int_face_helpers.faceL_IDs
+		faceR_IDs = int_face_helpers.faceR_IDs
 
 		# Extract state coefficients of elements to the left and right of
 		# this interior face
-		UL = U[elemL_ID]
-		UR = U[elemR_ID]
+		UL = U[elemL_IDs]
+		UR = U[elemR_IDs]
 
 		# Calculate face residuals for left and right elements
-		RL, RR = self.get_interior_face_residual(faceL_ID, faceR_ID, UL,
+		RL, RR = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
 				UR)
 
 		# Add this residual back to the global. The np.add.at function is
 		# used to correctly handle duplicate element IDs.
-		np.add.at(res, elemL_ID, -RL)
-		np.add.at(res, elemR_ID,  RR)
+		np.add.at(res, elemL_IDs, -RL)
+		np.add.at(res, elemR_IDs,  RR)
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
@@ -464,19 +462,20 @@ class SolverBase(ABC):
 		mesh = self.mesh
 		physics = self.physics
 		bface_helpers = self.bface_helpers
-		elem_ID = bface_helpers.elem_ID
-		face_ID = bface_helpers.face_ID
+		elem_IDs = bface_helpers.elem_IDs
+		face_IDs = bface_helpers.face_IDs
 
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
 
-			bgroup_elem_ID = elem_ID[bgroup.number]
-			bgroup_face_ID = face_ID[bgroup.number]
+			bgroup_elem_IDs = elem_IDs[bgroup.number]
+			bgroup_face_IDs = face_IDs[bgroup.number]
 
 			resB = self.get_boundary_face_residual(bgroup,
-					bgroup_face_ID, U[bgroup_elem_ID], res[bgroup_elem_ID])
+					bgroup_face_IDs, U[bgroup_elem_IDs],
+					res[bgroup_elem_IDs])
 
-			np.add.at(res, bgroup_elem_ID, -resB)
+			np.add.at(res, bgroup_elem_IDs, -resB)
 
 	def apply_limiter(self, U):
 		'''
