@@ -1,17 +1,10 @@
 import numpy as np
 import copy
 
-FinalTime = 0.25
-nTimeSteps = 4000
-# FinalTime = 6.2500e-03
-# nTimeSteps = 100
-#nTimeSteps = 0
-
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : FinalTime,
-    "NumTimeSteps" : nTimeSteps,
-    #"CFL" : 0.025,
+    "FinalTime" : 0.25,
+    "NumTimeSteps" : 4000,
     "TimeStepper" : "RK4",
 }
 
@@ -20,18 +13,14 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiters" : ["PositivityPreserving"],
-    #"NodeType" : "GaussLobatto",
-    #"ElementQuadrature" : "GaussLobatto",
-    #"FaceQuadrature" : "GaussLobatto",
-    #"ColocatedPoints" : True,
-
+    "NodeType" : "GaussLobatto",
+    "ElementQuadrature" : "GaussLobatto",
+    "FaceQuadrature" : "GaussLobatto",
 }
 
 Output = {
-    # "WriteInterval" : 2,
-    # "WriteInitialSolution" : True,
     "AutoPostProcess" : True,
-    "Prefix" : "Test2",
+    "Prefix" : "Data",
 }
 
 Mesh = {
@@ -40,7 +29,6 @@ Mesh = {
     "NumElemsX" : 60,
     "xmin" : 0.,
     "xmax" : 1.,
-    # "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
@@ -50,10 +38,6 @@ Physics = {
     "SpecificHeatRatio" : 1.4,
 }
 
-# a = 0.9
-uL = np.array([1.,0.,1.])
-uR = np.array([0.125,0.,0.1])
-
 state = { 
     "Function" : "RiemannProblem",
     "rhoL" : 1., 
@@ -62,7 +46,6 @@ state = {
     "rhoR" : 0.125, 
     "uR" : 0.,
     "pR" : 0.1,
-    # "w" : 0.05,
     "xd" : 0.5,
 }
 
@@ -74,15 +57,12 @@ state_exact = {
     "rhoR" : 0.125,
     "uR" : 0.,
     "pR" : 0.1,
-#    "xmin" : 0.,
-#    "xmax" : 1.,
     "xd" : 0.5,
 }
 InitialCondition = state
 state2 = state.copy()
 state2.update({"BCType":"StateAll"})
 ExactSolution = state_exact
-# ExactSolution = state_exact
 
 BoundaryConditions = {
     "x1" : {

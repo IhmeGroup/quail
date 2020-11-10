@@ -136,8 +136,6 @@ class Euler(base.PhysicsBase):
 			# |u| + c
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
 					gamma*get_pressure()/rho)
-		elif vname is self.AdditionalVariables["Speed"].name:
-			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho
 		else:
 			raise NotImplementedError
 
