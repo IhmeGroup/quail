@@ -27,9 +27,7 @@ physics1 = solver1.physics
 # Plot
 plot.prepare_plot()
 skip=7
-plot.plot_solution(mesh1, physics1, solver1, "Speed", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
-			ylabel=None, fmt='bx-', legend_label="DG", equidistant_pts=True, 
-			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
+
 plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=True, 
 			ylabel=None, fmt='bx-', legend_label="DG", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False,skip=skip)
@@ -38,7 +36,7 @@ plot.plot_solution(mesh1, physics1, solver1, "Density", plot_numerical=True, plo
 # 			include_mesh=False, regular_2D=False, equal_AR=False, skip=7)
 
 
-# plot.plot_solution(mesh, physics, solver, "Energy", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
+plot.plot_solution(mesh1, physics1, solver1, "Density", plot_exact=True, plot_numerical=False, create_new_figure=False, fmt='k-')
 # plot.plot_solution(mesh, physics, solver, "Energy", plot_IC=True, plot_numerical=False, create_new_figure=False, fmt='k--')
 # plot.save_figure(file_name='Velocity', file_type='pdf', crop_level=2)
 

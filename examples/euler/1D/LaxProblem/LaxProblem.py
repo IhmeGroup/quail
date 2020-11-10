@@ -1,18 +1,10 @@
 import numpy as np
 import copy
-cfl = 0.02
-u = 1.8
-dx = 0.1
 
-dt = cfl*dx/u
-FinalTime = 1.3
-nTimeSteps =int(FinalTime/dt)
-print(nTimeSteps)
-NumTimeSteps = 4000
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : FinalTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "FinalTime" : 1.3,
+    "NumTimeSteps" : 4000,
     "TimeStepper" : "RK4",
 }
 
@@ -20,19 +12,12 @@ Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "ApplyLimiters" : "PositivityPreserving",
-    "L2InitialCondition" : False,
-    "NodeType" : "Equidistant",
+    "ApplyLimiters" : ["PositivityPreserving"],
+    # "NodeType" : "Equidistant",
 #    "ElementQuadrature" : "GaussLobatto",
 #    "FaceQuadrature" : "GaussLobatto",
 #    "ColocatedPoints" : True,
 
-}
-
-Output = {
-    # "WriteInterval" : 1,
-    # "WriteInitialSolution" : True,
-    "AutoPostProcess" : False,
 }
 
 Mesh = {
@@ -41,7 +26,6 @@ Mesh = {
     "NumElemsX" : 200,
     "xmin" : 0.,
     "xmax" : 1.,
-    # "PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
@@ -51,24 +35,38 @@ Physics = {
     "SpecificHeatRatio" : 1.4,
 }
 
-uL = np.array([0.445, 0.698, 3.528])
-uR = np.array([0.5, 0., 0.571])
+state = { 
+    "Function" : "RiemannProblem",
+    "rhoL" : .445, 
+    "uL" : 0.698,
+    "pL" : 3.528,
+    "rhoR" : 0.5, 
+    "uR" : 0.,
+    "pR" : 0.571,
+    "xd" : 0.5,
+}
 
-state = {
+state_exact = {
     "Function" : "ExactRiemannSolution",
-    "uL" : uL,
-    "uR" : uR,
-    "xmin" : -5.,
-    "xmax" : 5.,
-    "xd" : 0.0,
+    "rhoL" : .445, 
+    "uL" : 0.698,
+    "pL" : 3.528,
+    "rhoR" : 0.5, 
+    "uR" : 0.,
+    "pR" : 0.571,
+    "xd" : 0.5,
 }
 InitialCondition = state
 
 state2 = state.copy()
 state2.update({"BCType":"StateAll"})
-ExactSolution = InitialCondition.copy()
+ExactSolution = state_exact
 
 BoundaryConditions = {
-    "x1" : state2,
-    "x2" : state2,
+    "x1" : {
+        "BCType" : "SlipWall"
+        },
+    "x2" : { 
+        "BCType" : "SlipWall"
+        }
 }
