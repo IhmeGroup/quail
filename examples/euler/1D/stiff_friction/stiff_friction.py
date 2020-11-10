@@ -1,23 +1,21 @@
 import numpy as np
 
-cfl = 0.1
-dx = 0.05
-FinalTime = 0.5
-NumTimeSteps = int(FinalTime/(cfl*dx))
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : FinalTime,
+    "FinalTime" : 0.5,
     "NumTimeSteps" : 100,
-    "TimeStepper" : "Strang",
-    # "OperatorSplittingExplicit" : "SSPRK3",
-    "OperatorSplittingImplicit" : "BDF1",
+    "TimeStepper" : "SSPRK3",
+    # "TimeStepper" : "Simpler",
+    # "TimeStepper" : "ADER",
 }
 
 Numerics = {
-    "SolutionOrder" : 1,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    # "SourceTreatmentADER" : "Implicit"
+    # "Solver" : "ADERDG",
+    # "SourceTreatmentADER" : "Implicit",
+
 }
 
 Output = {
@@ -42,6 +40,7 @@ Physics = {
 }
 
 nu = -100.
+
 InitialCondition = {
     "Function" : "DensityWave",
     "p" : 1.,
