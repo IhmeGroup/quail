@@ -4,20 +4,22 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : 0.5,
     "NumTimeSteps" : 40,
-    "TimeStepper" : "SSPRK3",
+    "TimeStepper" : "ADER",
 }
 
 Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LegendreSeg",
-    "Solver" : "DG",
+    "Solver" : "ADERDG",
+    "SourceTreatmentADER" : "Explicit",
+    # "SourceTreatmentADER" : "Implicit",
+    "InterpolateFluxADER" : False,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
     "NumElemsX" : 16,
-    "NumElemsY" : 2,
     "xmin" : -1.,
     "xmax" : 1.,
     "PeriodicBoundariesX" : ["x1", "x2"],
@@ -42,7 +44,7 @@ InitialCondition = {
 ExactSolution = InitialCondition.copy()
 
 SourceTerms = {
-	"Source1" : { # Name of source term ("Source1") doesn't matter
+	"source1" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "SimpleSource",
 		"nu" : nu,
 	},

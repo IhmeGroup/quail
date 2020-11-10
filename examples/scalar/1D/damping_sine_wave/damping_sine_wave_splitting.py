@@ -5,20 +5,12 @@ TimeStepping = {
     "FinalTime" : 0.5,
     "NumTimeSteps" : 40,
     "TimeStepper" : "Strang",
-    "OperatorSplittingImplicit" : "Trapezoidal",
-
 }
 
 Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LegendreSeg",
     "Solver" : "DG",
-}
-
-Output = {
-    # "WriteInterval" : 2,
-    # "WriteInitialSolution" : True,
-    "AutoPostProcess" : True,
 }
 
 Mesh = {
@@ -36,18 +28,20 @@ Physics = {
     "ConstVelocity" : 1.,
 }
 
+# Stiffness parameter
 nu = -3.
+# nu = -1000.
+
 InitialCondition = {
     "Function" : "DampingSine",
     "omega" : 2*np.pi,
     "nu" : nu ,
-    # "state" : [1.0],
 }
 
 ExactSolution = InitialCondition.copy()
 
 SourceTerms = {
-	"source1" : {
+	"Source1" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "SimpleSource",
 		"nu" : nu,
 	},
