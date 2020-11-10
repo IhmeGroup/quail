@@ -1,4 +1,4 @@
-This case involves subsonic flow over a cosine-shaped bump.
+This case involves steady subsonic flow over a cosine-shaped bump.
   - Gmsh mesh file with quadratic approximation of geometry
   - Zero entropy generation in exact solution
   - Should run longer for "true" steady-state, but error should not change significantly
