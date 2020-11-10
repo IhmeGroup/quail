@@ -2,22 +2,22 @@ import numpy as np
 
 cfl = 0.1
 dx = 0.05
-FinalTime = 0.2
+FinalTime = 0.5
 NumTimeSteps = int(FinalTime/(cfl*dx))
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "NumTimeSteps" : NumTimeSteps,
+    "NumTimeSteps" : 100,
     "TimeStepper" : "Strang",
     # "OperatorSplittingExplicit" : "SSPRK3",
-    # "OperatorSplittingImplicit" : "BDF1",
+    "OperatorSplittingImplicit" : "BDF1",
 }
 
 Numerics = {
-    "SolutionOrder" : 2,
+    "SolutionOrder" : 1,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "SourceTreatmentADER" : "Implicit"
+    # "SourceTreatmentADER" : "Implicit"
 }
 
 Output = {

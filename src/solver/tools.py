@@ -24,7 +24,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	Outputs:
 	--------
 		res_elem: calculated residual array (for volume integral of all elements)
-		[ne, nb, ns]
+			[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
@@ -57,6 +57,7 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	'''
 	# Calculate flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts) # [nf, nq, ns]
+	
 	# Calculate residual
 	resB = np.einsum('ijn, ijk -> ink', basis_val, Fq_quad) # [nf, nb, ns]
 
@@ -84,30 +85,37 @@ def calculate_source_term_integral(elem_helpers, Sq):
 	# Calculate source term quadrature
 	Sq_quad = np.einsum('ijk, jm, ijm -> ijk', Sq, quad_wts, djac_elems)
 			# [ne, nq, ns]
+
 	# Calculate residual
 	res_elem = np.einsum('jn, ijk -> ink', basis_val, Sq_quad) # [ne, nb, ns]
 
 	return res_elem # [ne, nb, ns]
 
+
 def calculate_dRdU(elem_helpers, Sjac):
 	'''
 	Helper function for ODE solvers that calculates the derivative of
-
-		integral(basis_val*S(U))dx
-
-	with respect to the solution state
+	the source term integral with respect to the solution state.
 
 	Inputs:
+	-------
 		elem_helpers: object containing precomputed element helpers
-		elem_ID: element index
-		Sjac: element source term Jacobian [nq, ns, ns]
+		Sjac: element source term Jacobian [ne, nq, ns, ns]
+
+	Outputs:
+	--------
+		dRdU: derivative of the source term integral
+			[ne, nb, nb, ns, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val
 	djac_elems = elem_helpers.djac_elems
-	a = np.einsum('eijk,eil->eijk', Sjac, quad_wts*djac_elems)
 
-	return np.einsum('bq,eqts->ebts',basis_val.transpose(), a) # [nb, ns, ns]
+	a = np.einsum('eijk, il, eil -> eijk', Sjac, quad_wts, djac_elems)
+
+	return np.einsum('bq, ql, eqts -> eblts', basis_val.transpose(),
+			basis_val, a) 
+		# [ne, nb, nb, ns, ns]
 
 
 def mult_inv_mass_matrix(mesh, solver, dt, res):
@@ -126,7 +134,7 @@ def mult_inv_mass_matrix(mesh, solver, dt, res):
 	physics = solver.physics
 	iMM_elems = solver.elem_helpers.iMM_elems
 
-	return dt*np.einsum('ijk,ikl->ijl', iMM_elems, res)
+	return dt*np.einsum('ijk, ikl -> ijl', iMM_elems, res)
 
 
 def L2_projection(mesh, iMM, basis, quad_pts, quad_wts, f, U):

@@ -380,19 +380,24 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 
 		# First: take the half-step for the inviscid flux only
 		solver.params["SourceSwitch"] = False
-		R1 = explicit.take_time_step(solver)
+		solver.params["ConvFluxSwitch"] = True
+
+		explicit.take_time_step(solver)
 
 		# Second: take the implicit full step for the source term.
 		solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
-		R2 = implicit.take_time_step(solver)
+		implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
 		solver.params["SourceSwitch"] = False
 		solver.params["ConvFluxSwitch"] = True
-		R3 = explicit.take_time_step(solver)
+		R = explicit.take_time_step(solver)
 
-		return R3 # [num_elems, nb, ns]
+		# Uq = helpers.evaluate_state(solver.state_coeffs, solver.elem_helpers.basis_val)
+		# import code; code.interact(local=locals())
+
+		return R # [num_elems, nb, ns]
 
 
 class Simpler(Strang):

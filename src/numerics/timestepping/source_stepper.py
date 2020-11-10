@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------ #
+ # ------------------------------------------------------------------------ #
 #
 #       File : src/numerics/timestepping/source_stepper.py
 #
@@ -83,8 +83,8 @@ class SourceSolvers():
 
 			A, iA = self.get_jacobian_matrix(mesh, solver)
 
-			res = np.einsum('ijkl,ikl->ijl', A, U) + dU
-			U = np.einsum('ijkl,ikl->ijl', iA, res)
+			res = np.einsum('ijkll, ijl -> ikl', A, U) + dU
+			U = np.einsum('ijkll, ijl -> ikl', iA, res)
 
 			solver.apply_limiter(U)
 			solver.state_coeffs = U
@@ -100,9 +100,9 @@ class SourceSolvers():
 				solver: solver object (e.g., DG, ADERDG, etc...)
 			Outputs:
 			-------- 
-				A: matrix returned for linear solve [ne, nb, nb, ns]
+				A: matrix returned for linear solve [ne, nb, nb, ns, ns]
 				iA: inverse matrix returned for linear solve 
-					[ne, nb, nb, ns]
+					[ne, nb, nb, ns, ns]
 			'''
 			basis = solver.basis
 			nb = basis.nb
@@ -111,19 +111,17 @@ class SourceSolvers():
 			ns = physics.NUM_STATE_VARS
 
 			iMM_elems = solver.elem_helpers.iMM_elems
-			
-			A = np.zeros([mesh.num_elems, nb, nb, ns])
-			iA = np.zeros([mesh.num_elems, nb, nb, ns])
 
 			A, iA = self.get_jacobian_matrix_elems(solver, iMM_elems, U)
 
 			return A, iA # [nelem, nb, nb, ns]
 
-		def get_jacobian_matrix_elems(self, solver, iMM, Uc):
+		def get_jacobian_matrix_elems(self, solver, iMM_elems, Uc):
 			'''
 			Calculates the Jacobian matrix of the source term and its 
 			inverse for each element. Definition of 'Jacobian' matrix:
 			A = I - BETA*dt*iMM^{-1}*dRdU
+
 			Inputs:
 			-------
 				solver: solver object (e.g., DG, ADERDG, etc...)
@@ -132,9 +130,9 @@ class SourceSolvers():
 				Uc: state coefficients [ne, nb, ns]
 			Outputs:
 			-------- 
-				A: matrix returned for linear solve [ne, nb, nb, ns]
+				A: matrix returned for linear solve [ne, nb, nb, ns, ns]
 				iA: inverse matrix returned for linear solve 
-					[ne, nb, nb, ns]
+					[ne, nb, nb, ns, ns]
 			'''
 			mesh = solver.mesh
 			nelem = mesh.num_elems
@@ -147,7 +145,7 @@ class SourceSolvers():
 			basis_val = elem_helpers.basis_val
 			quad_wts = elem_helpers.quad_wts
 			x_elems = elem_helpers.x_elems
-
+			djac_elems = elem_helpers.djac_elems
 			nq = quad_wts.shape[0]
 			ns = physics.NUM_STATE_VARS
 			nb = basis_val.shape[1]
@@ -155,21 +153,28 @@ class SourceSolvers():
 			Uq = helpers.evaluate_state(Uc, basis_val,
 					skip_interp=solver.basis.skip_interp) # [ne, nq, ns])
 			
-			# Evaluate the source term Jacobian [nq, ns, ns]
+			# Evaluate the source term Jacobian [ne, nq, ns, ns]
 			Sjac = np.zeros([nelem, nq, ns, ns])
-			Sjac = physics.eval_source_term_jacobians(Uq, x_elems, solver.time, Sjac) 
+			Sjac = physics.eval_source_term_jacobians(Uq, x_elems, 
+					solver.time, Sjac) 
 
 			# Call solver helper to get dRdU (see solver/tools.py)
 			dRdU = solver_tools.calculate_dRdU(elem_helpers, Sjac)
+				# [ne, nb, nb, ns, ns]
 
-			A = np.expand_dims(np.eye(nb), axis=2) - beta*dt * \
-					np.einsum('eij,ejkl->eijl',iMM,dRdU)
+			# Define the identity matrix
+			I = np.expand_dims(np.expand_dims(np.eye(nb), axis=2), axis=3)
+
+			A = I - beta*dt * \
+					np.einsum('eij, ejklm -> eiklm', iMM_elems, dRdU)
+
 			iA = np.zeros_like(A)
+			for i in range(ns):
+				for s in range(ns):
+					iA[:, :, :, i, s] = np.linalg.inv(A[:, :, :, i, s])
+			
+			return A, iA # [ne, nb, nb, ns, ns]
 
-			for s in range(ns):
-				iA[:, :, :, s] = np.linalg.inv(A[:, :, :, s])
-
-			return A, iA # [ne, nb, nb, ns]
 
 	class Trapezoidal(BDF1):
 		'''

@@ -43,8 +43,6 @@ class SourceType(Enum):
 	source terms are specific to the available scalar equation sets.
 	'''
 	SimpleSource = auto()
-	StiffSource = auto()
-
 
 '''
 ---------------
@@ -318,48 +316,3 @@ class SimpleSource(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
-
-
-class StiffSource(SourceBase):
-	'''
-	Stiff source term of the form S = -nu*U*(U-1)*(U-beta)
-
-	Attributes:
-	-----------
-	nu: float
-		source term parameter 1
-	beta: float
-		source term parameter 2
-	'''
-	def __init__(self, nu=-1., beta=0.5):
-		'''
-		This method initializes the attributes.
-
-		Inputs:
-		-------
-		    nu: source term parameter 1
-		    beta: source term parameter 2
-
-		Outputs:
-		--------
-		    self: attributes initialized
-		'''
-		self.nu = nu
-		self.beta = beta
-
-	def get_source(self, physics, Uq, x, t):
-		nu = self.nu
-		beta = self.beta
-
-		S = -nu * Uq * (Uq-1.) * (Uq-beta)
-
-		return S
-
-	def get_jacobian(self, physics, Uq, x, t):
-		jac = np.zeros([Uq.shape[0], Uq.shape[-1], Uq.shape[-1]])
-		nu = self.nu
-		beta = self.beta
-		jac[:, 0, 0] = -nu*(3.*Uq[:, 0]**2 - 2.*Uq[:, 0] \
-				- 2.*beta*Uq[:, 0] + beta)
-
-		return jac
