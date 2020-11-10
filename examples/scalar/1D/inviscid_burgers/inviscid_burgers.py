@@ -2,7 +2,7 @@ import numpy as np
 
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : 1.5, 
+    "FinalTime" : 0.5, 
     "CFL" : 0.1,
     "TimeStepper" : "SSPRK3",
 }
@@ -11,10 +11,6 @@ Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "ElementQuadrature" : "GaussLegendre",
-    "FaceQuadrature" : "GaussLegendre",
-    "ApplyLimiters" : ["ScalarWENO"],
-    "ShockIndicator" : "MinMod",
 }
 
 Mesh = {
@@ -23,7 +19,6 @@ Mesh = {
     "NumElemsX" : 80,
     "xmin" : 0.,
     "xmax" : 2*np.pi,
-    # "PeriodicBoundariesX" : ["x1","x2"]
 }
 
 Physics = {
