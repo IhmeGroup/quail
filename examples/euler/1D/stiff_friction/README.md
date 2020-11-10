@@ -10,3 +10,9 @@ it is large, the system is stiff.
   running it `Implicit`. By default, it is `Explicit`.
   -  What does each case calculate for the steady-state energy? What
   should it be?
+  - After running each case, create an animation to observe the 
+  simulation dynamics with the following command
+
+```sh
+$ quail -p create_anim.py
+```
