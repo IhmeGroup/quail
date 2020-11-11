@@ -195,7 +195,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
-	niter = 20
+	niter = 100
 	for i in range(niter):
 
 		U_pred_new = np.einsum('jk, ikm -> ijm',iK,
@@ -292,7 +292,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
-	niter = 20
+	niter = 100
 	for i in range(niter):
 
 		U_pred_new = np.einsum('ijk, ikm -> ijm',iK,
@@ -395,7 +395,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# Iterate using a nonlinear Sylvester solver for the
 	# updated space-time coefficients. Solves for X in the form:
 	# 	AX + XB = C
-	niter = 20
+	niter = 100
 	U_pred_new = np.zeros_like(U_pred)
 	for i in range(niter):
 
