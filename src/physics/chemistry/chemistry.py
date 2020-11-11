@@ -175,7 +175,7 @@ class Chemistry1D(Chemistry):
 
 		self.source_map.update({
 			chemistry_source_type.Arrhenius : chemistry_fcns.Arrhenius,
-			chemistry_source_type.Heaviside : chemistry_fcns.Heaviside,
+			# chemistry_source_type.Heaviside : chemistry_fcns.Heaviside,
 
 		})
 
