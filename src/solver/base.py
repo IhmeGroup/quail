@@ -11,7 +11,8 @@ import time
 
 import errors
 
-from general import ModalOrNodal, NodeType, ShapeType, QuadratureType
+from general import ModalOrNodal, NodeType, ShapeType, QuadratureType, \
+		StepperType
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
@@ -138,15 +139,6 @@ class SolverBase(ABC):
 					shock_indicator_type)
 			self.limiters.append(limiter)
 
-		# CHECK
-		# limiter_type = params["ApplyLimiter"]
-		# shock_indicator_type = params["ShockIndicator"]
-
-		# self.limiter = limiter_tools.set_limiter(limiter_type,
-		# 		physics.PHYSICS_TYPE)
-		# limiter_tools.set_shock_indicator(self.limiter,
-		# 		shock_indicator_type)
-
 		# Console output
 		self.verbose = params["Verbose"]
 		self.min_state = np.zeros(physics.NUM_STATE_VARS)
@@ -198,6 +190,20 @@ class SolverBase(ABC):
 
 		# Colocated points only compatible with nodal basis
 		if basis.MODAL_OR_NODAL is ModalOrNodal.Modal and colocated_points:
+			raise errors.IncompatibleError
+
+		# Check if ConvFluxSwitch or SourceSwitch are being used with 
+		# Strang/Simpler splitting
+		source_switch = params["SourceSwitch"]
+		convflux_switch = params["ConvFluxSwitch"]
+		stepper_type = params["TimeStepper"]
+		if not source_switch and \
+				( StepperType[stepper_type] == StepperType.Strang or \
+				  StepperType[stepper_type] == StepperType.Simpler ) :
+			raise errors.IncompatibleError
+		if not convflux_switch and \
+				( StepperType[stepper_type] == StepperType.Strang or \
+				  StepperType[stepper_type] == StepperType.Simpler ) :
 			raise errors.IncompatibleError
 
 	@abstractmethod
