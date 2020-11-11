@@ -151,7 +151,6 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	Inputs:
 	-------
 		solver: solver object
-		elem_ID: element ID
 		dt: time step
 		W: previous time step solution in space only [ne, nb, ns]
 
@@ -200,7 +199,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	for i in range(niter):
 
 		U_pred_new = np.einsum('jk, ikm -> ijm',iK,
-				np.einsum('jk, ijl -> ijl', MM, source_coeffs) -
+				np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
 				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
 				np.einsum('jk, ikm -> ijm', FTR, W))
 
@@ -209,7 +208,6 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		# This could be resolved by evaluating at the quadrature points
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
-
 		if np.amax(np.abs(err)) < 1.e-8:
 			U_pred = U_pred_new
 			break
@@ -239,7 +237,6 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	Inputs:
 	-------
 		solver: solver object
-		elem_ID: element ID
 		dt: time step
 		W: previous time step solution in space only [ne, nb, 1]
 
@@ -295,7 +292,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
-	niter = 100
+	niter = 20
 	for i in range(niter):
 
 		U_pred_new = np.einsum('ijk, ikm -> ijm',iK,
@@ -344,7 +341,6 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	Inputs:
 	-------
 		solver: solver object
-		elem_ID: element ID
 		dt: time step
 		W: previous time step solution in space only [ne, nb, ns]
 
@@ -399,7 +395,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# Iterate using a nonlinear Sylvester solver for the
 	# updated space-time coefficients. Solves for X in the form:
 	# 	AX + XB = C
-	niter = 100
+	niter = 20
 	U_pred_new = np.zeros_like(U_pred)
 	for i in range(niter):
 
@@ -414,9 +410,9 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 				Sjac[:].transpose(0,2,1)) + \
 				np.einsum('jk, ikl -> ijl',iMM, Q)/dt
 
-		for i in range(U_pred.shape[0]):
-			U_pred_new[i, :, :] = solve_sylvester(A[i, :, :], B[i, :, :],
-					C[i, :, :])
+		for ie in range(U_pred.shape[0]):
+			U_pred_new[ie, :, :] = solve_sylvester(A[ie, :, :], B[ie, :, :],
+					C[ie, :, :])
 
 		# We check when the coefficients are no longer changing.
 		# This can lead to differences between NODAL and MODAL solutions.
@@ -437,7 +433,6 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		if i == niter - 1:
 			print('Sub-iterations not converging')
 			raise ValueError
-
 	return U_pred # [ne, nb_st, ns]
 
 
