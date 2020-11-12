@@ -32,6 +32,7 @@ from physics.chemistry.functions import SourceType as chemistry_source_type
 from physics.chemistry.functions import ConvNumFluxType as chemistry_conv_num_flux_type
 
 
+# REMOVE FOR MASTER
 class Chemistry(base.PhysicsBase):
 	'''
 	This class corresponds to the compressible Euler equations with a simple

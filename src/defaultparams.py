@@ -74,6 +74,7 @@ Numerics = {
         # Limiter type
         # If None, then no limiter will be applied
         # See general.LimiterType
+    # REMOVE FOR MASTER
     "ShockIndicator" : None,
         # Shock Indicator Type
         # If None, then no shock indicator is applied

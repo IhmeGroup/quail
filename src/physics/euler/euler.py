@@ -237,6 +237,83 @@ class Euler1D(Euler):
 
 		return F, (u2, rho, p)
 
+	# REMOVE FOR MASTER
+	def get_conv_eigenvectors(self, U_bar):
+		'''
+		This function defines the convective eigenvectors for the 
+		1D euler equations.
+
+		Inputs:
+		------- 
+			U_bar: Average state [ne, 1, ns]
+
+		Outputs:
+		--------
+			right_eigen: Right eigenvector matrix [ne, 1, ns, ns]
+			left_eigen: Left eigenvector matrix [ne, 1, ns, ns]
+		'''
+
+		# Unpack
+		ne = U_bar.shape[0]
+		eps = general.eps
+		
+		ns = self.NUM_STATE_VARS
+		
+		irho, irhou, irhoE = self.get_state_indices()
+
+		rho = U_bar[:, :, irho]
+		rhou = U_bar[:, :, irhou]
+		rhoE = U_bar[:, :, irhoE]
+		rho += eps # prevent rare division-by-zero errors
+		
+		# Get velocity
+		u = rhou / rho
+		# Get squared velocity
+		u2 = u**2
+		# Calculate pressure using the Ideal Gasd Law
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2) # [n, nq]
+		# Get total enthalpy
+		H = rhoE/rho + p/rho # CHECK : do I need to divide by rho here?
+
+		# Get sound speed
+		a = np.sqrt(self.gamma * p / rho)
+
+		gm1oa2 = (self.gamma - 1.) / (a * a)
+
+		# Allocate the right and left eigenvectors
+		right_eigen = np.zeros([ne, 1, ns, ns])
+		left_eigen = np.zeros([ne, 1, ns, ns])
+
+		# Calculate the right and left eigenvectors
+		right_eigen[:, :, irho, irho]  = 1.
+		right_eigen[:, :, irho, irhou] = 1.
+		right_eigen[:, :, irho, irhoE] = 1.
+
+		right_eigen[:, :, irhou, irho]  = u - a
+		right_eigen[:, :, irhou, irhou] = u + a
+		right_eigen[:, :, irhou, irhoE] = u
+
+		right_eigen[:, :, irhoE, irho]  = H - u*a
+		right_eigen[:, :, irhoE, irhou] = H + u*a
+		right_eigen[:, :, irhoE, irhoE] = 0.5 * u2
+
+		left_eigen[:, :, irho, irho]  = 0.5 * (0.5*gm1oa2 * u2 + u/a)
+		left_eigen[:, :, irho, irhou] = -0.5 * (gm1oa2 * u + 1./a)
+		left_eigen[:, :, irho, irhoE] = 0.5 * gm1oa2
+
+		left_eigen[:, :, irhou, irho]  = 0.5 * (0.5*gm1oa2 * u2 - u/a)
+		left_eigen[:, :, irhou, irhou] = -0.5 * (gm1oa2 * u - 1./a)
+		left_eigen[:, :, irhou, irhoE] = 0.5 * gm1oa2
+
+		left_eigen[:, :, irhoE, irho]  = 1. - 0.5 * gm1oa2 * u2
+		left_eigen[:, :, irhoE, irhou] = gm1oa2 * u
+		left_eigen[:, :, irhoE, irhoE] = -1.*gm1oa2
+
+		# Can uncomment line below to test l dot r = kronecker delta
+		# test = np.einsum('elij,eljk->elik', left_eigen, right_eigen)
+
+		return right_eigen, left_eigen # [ne, 1, ns, ns]
+
 
 class Euler2D(Euler):
 	'''

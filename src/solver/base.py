@@ -496,7 +496,7 @@ class SolverBase(ABC):
 			U: limited solution array
 		'''
 		for limiter in self.limiters:
-			if limiter is not None:
+			if limiter is not None:	
 				limiter.limit_solution(self, U)
 
 	def get_min_max_state(self, Uq):
