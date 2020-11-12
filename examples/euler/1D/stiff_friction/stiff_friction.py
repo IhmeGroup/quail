@@ -1,49 +1,49 @@
 import numpy as np
 
 TimeStepping = {
-    "InitialTime" : 0.,
-    "FinalTime" : 0.5,
-    "NumTimeSteps" : 100,
-    "TimeStepper" : "SSPRK3",
-    # "TimeStepper" : "Simpler",
-    # "TimeStepper" : "ADER",
+	"InitialTime" : 0.,
+	"FinalTime" : 0.5,
+	"NumTimeSteps" : 100,
+	"TimeStepper" : "SSPRK3",
+	# "TimeStepper" : "Simpler",
+	# "TimeStepper" : "ADER",
 }
 
 Numerics = {
-    "SolutionOrder" : 2,
-    "SolutionBasis" : "LagrangeSeg",
-    "Solver" : "DG",
-    # "Solver" : "ADERDG",
-    # "SourceTreatmentADER" : "Implicit",
+	"SolutionOrder" : 2,
+	"SolutionBasis" : "LagrangeSeg",
+	"Solver" : "DG",
+	# "Solver" : "ADERDG",
+	# "SourceTreatmentADER" : "Implicit",
 
 }
 
 Output = {
-    "WriteInterval" : 1,
-    "WriteInitialSolution" : True,
-    "AutoPostProcess" : True,
+	"WriteInterval" : 1,
+	"WriteInitialSolution" : True,
+	"AutoPostProcess" : True,
 }
 
 Mesh = {
-    "File" : None,
-    "ElementShape" : "Segment",
-    "NumElemsX" : 20,
-    "xmin" : 0.,
-    "xmax" : 1.,
-    "PeriodicBoundariesX" : ["x1", "x2"],
+	"File" : None,
+	"ElementShape" : "Segment",
+	"NumElemsX" : 20,
+	"xmin" : 0.,
+	"xmax" : 1.,
+	"PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
-    "Type" : "Euler",
-    "ConvFluxNumerical" : "LaxFriedrichs",
-    "SpecificHeatRatio" : 1.4,
+	"Type" : "Euler",
+	"ConvFluxNumerical" : "LaxFriedrichs",
+	"SpecificHeatRatio" : 1.4,
 }
 
 nu = -100.
 
 InitialCondition = {
-    "Function" : "DensityWave",
-    "p" : 1.,
+	"Function" : "DensityWave",
+	"p" : 1.,
 }
 
 SourceTerms = {

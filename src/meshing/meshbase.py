@@ -3,7 +3,7 @@
 #       File : src/meshing/meshbase.py
 #
 #       Contains class definitions for mesh structures.
-#      
+#
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
@@ -28,10 +28,10 @@ class InteriorFace(object):
         local ID of face from perspective of right element
     '''
     def __init__(self):
-        self.elemL_ID = 0 
-        self.faceL_ID = 0 
-        self.elemR_ID = 0 
-        self.faceR_ID = 0 
+        self.elemL_ID = 0
+        self.faceL_ID = 0
+        self.elemR_ID = 0
+        self.faceR_ID = 0
 
 
 class BoundaryFace(object):
@@ -46,8 +46,8 @@ class BoundaryFace(object):
         local ID of face from perspective of adjacent element
     '''
     def __init__(self):
-        self.elem_ID = 0 
-        self.face_ID = 0 
+        self.elem_ID = 0
+        self.face_ID = 0
 
 
 class BoundaryGroup(object):
@@ -64,7 +64,7 @@ class BoundaryGroup(object):
         number of faces in boundary group
     boundary_faces : list
         list of BoundaryFace objects
-    
+
     Methods:
     ---------
     allocate_boundary_faces
@@ -73,7 +73,7 @@ class BoundaryGroup(object):
     def __init__(self):
         self.name = ""
         self.number = -1
-        self.num_boundary_faces = 0 
+        self.num_boundary_faces = 0
         self.boundary_faces = []
 
     def allocate_boundary_faces(self):
@@ -101,7 +101,7 @@ class Element(object):
     node_coords: numpy array
         coordinates of the element nodes [num_nodes, ndims]
     face_to_neighbors: numpy array
-        maps local face ID to element ID of 
+        maps local face ID to element ID of
         neighbor across said face [num_faces]
     '''
     def __init__(self, elem_ID=-1):
@@ -141,11 +141,11 @@ class Mesh(object):
     num_nodes_per_elem : int
         number of nodes per element
     elem_to_node_IDs : numpy array
-        maps element ID to global node IDs 
+        maps element ID to global node IDs
         [num_elems, num_nodes_per_elem]
     elements : list
         list of Element objects
-    
+
     Methods:
     ---------
     set_params
@@ -159,7 +159,7 @@ class Mesh(object):
     create_elements
         creates self.elements
     '''
-    def __init__(self, ndims=1, num_nodes=1, num_elems=1, gbasis=None, 
+    def __init__(self, ndims=1, num_nodes=1, num_elems=1, gbasis=None,
             gorder=1):
         if gbasis is None:
             gbasis = basis_defs.LagrangeSeg(1)
@@ -206,12 +206,12 @@ class Mesh(object):
 
         Outputs:
         --------
-            self.elem_to_node_IDs: maps element ID to global node IDs 
+            self.elem_to_node_IDs: maps element ID to global node IDs
                 [num_elems, num_nodes_per_elem]
 
         Notes:
         ------
-            elem_to_node_IDs[elem_ID][i] = ith node of elem_ID, 
+            elem_to_node_IDs[elem_ID][i] = ith node of elem_ID,
                 where i = 1, 2, ..., num_nodes_per_elem
         '''
         self.elem_to_node_IDs = np.zeros([self.num_elems,

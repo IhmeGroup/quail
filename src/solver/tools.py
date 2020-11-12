@@ -57,7 +57,7 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	'''
 	# Calculate flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts) # [nf, nq, ns]
-	
+
 	# Calculate residual
 	resB = np.einsum('ijn, ijk -> ink', basis_val, Fq_quad) # [nf, nb, ns]
 
@@ -114,7 +114,7 @@ def calculate_dRdU(elem_helpers, Sjac):
 	a = np.einsum('eijk, il, eil -> eijk', Sjac, quad_wts, djac_elems)
 
 	return np.einsum('bq, ql, eqts -> eblts', basis_val.transpose(),
-			basis_val, a) 
+			basis_val, a)
 		# [ne, nb, nb, ns, ns]
 
 

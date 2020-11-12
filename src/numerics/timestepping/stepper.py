@@ -3,10 +3,10 @@
 #       File : src/numerics/timestepping/stepper.py
 #
 #       Contains class definitions for timestepping methods.
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import numpy as np 
+import numpy as np
 from scipy.optimize import fsolve, root
 
 from general import StepperType, SourceStepperType
@@ -22,7 +22,7 @@ import solver.tools as solver_tools
 
 class StepperBase(ABC):
 	'''
-	This is an abstract base class used to represent time stepping schemes. 
+	This is an abstract base class used to represent time stepping schemes.
 	The current build supports the following time schemes:
 
 		Explicit Schemes:
@@ -31,9 +31,9 @@ class StepperBase(ABC):
 		- 4th-order Runge Kutta (RK4)
 		- Low storage 4th-order Runge Kutta (LSRK4)
 		- Strong-stability preserving 3rd-order Runge Kutta (SSPRK3)
-		- Arbitrary DERivatives in space and time (ADER) 
+		- Arbitrary DERivatives in space and time (ADER)
 			-> used in tandem with ADERDG solver
-		
+
 		Operator Splitting Type Schemes:
 		--------------------------------
 		- Strang Splitting (Strang)
@@ -54,15 +54,15 @@ class StepperBase(ABC):
 	num_time_steps: int
 		number of time steps for the given solution's FinalTime
 	get_time_step: method
-		method to obtain dt given input decks logic (CFL-based vs # of 
+		method to obtain dt given input decks logic (CFL-based vs # of
 		timesteps, etc...)
 	balance_const: numpy array (shaped like res)
 		balancing constant array used only with the Simpler splitting scheme
-	
+
 	Abstract Methods:
 	-----------------
 	take_time_step
-		method that takes a given time step for the solver depending on the 
+		method that takes a given time step for the solver depending on the
 		selected time-stepping scheme
 	'''
 	def __init__(self, U):
@@ -75,7 +75,7 @@ class StepperBase(ABC):
 	def __repr__(self):
 		return '{self.__class__.__name__}(TimeStep={self.dt})'.format( \
 			self=self)
-	
+
 	@abstractmethod
 	def take_time_step(self, solver):
 		'''
@@ -87,7 +87,7 @@ class StepperBase(ABC):
 		    solver: solver object (e.g., DG, ADERDG, etc...)
 
 		Outputs:
-		-------- 
+		--------
 			res: Updated residual vector [num_elems, nb, ns]
 			U: Updates the solution vector [num_elems, nb, ns]
 		'''
@@ -96,17 +96,17 @@ class StepperBase(ABC):
 
 class FE(StepperBase):
 	'''
-	Forward Euler (FE) method inherits attributes from StepperBase. See 
+	Forward Euler (FE) method inherits attributes from StepperBase. See
 	StepperBase for detailed comments of methods and attributes.
 
 	Additional methods and attributes are commented below.
-	''' 
+	'''
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = solver.state_coeffs
 
-		res = self.res 
+		res = self.res
 		res = solver.get_residual(U, res)
 		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		U += dU
@@ -118,11 +118,11 @@ class FE(StepperBase):
 
 class RK4(StepperBase):
 	'''
-	4th-order Runge Kutta (RK4) method inherits attributes from StepperBase. 
+	4th-order Runge Kutta (RK4) method inherits attributes from StepperBase.
 	See StepperBase for detailed comments of methods and attributes.
 
 	Additional methods and attributes are commented below.
-	''' 
+	'''
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
@@ -162,17 +162,17 @@ class RK4(StepperBase):
 
 class LSRK4(StepperBase):
 	'''
-	Low storage 4th-order Runge Kutta (RK4) method inherits attributes from 
-	StepperBase. See StepperBase for detailed comments of methods and 
+	Low storage 4th-order Runge Kutta (RK4) method inherits attributes from
+	StepperBase. See StepperBase for detailed comments of methods and
 	attributes.
 
 	Reference:
 
-	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta 
+	M. H. Carpenter, C. Kennedy, "Fourth-order 2N-storage Runge-Kutta
 	schemes,"" NASA Report TM 109112, NASA Langley Research Center, 1994.
 
 	Additional methods and attributes are commented below.
-	''' 
+	'''
 	def __init__(self, U):
 		super().__init__(U)
 		'''
@@ -190,8 +190,8 @@ class LSRK4(StepperBase):
 			change in solution array in each stage
 				(shape: [num_elems, nb, ns])
 		'''
-		self.rk4a = np.array([0.0, -567301805773.0/1357537059087.0, 
-		    -2404267990393.0/2016746695238.0, 
+		self.rk4a = np.array([0.0, -567301805773.0/1357537059087.0,
+		    -2404267990393.0/2016746695238.0,
 		    -3550918686646.0/2091501179385.0,
 		    -1275806237668.0/842570457699.0])
 		self.rk4b = np.array([1432997174477.0/9575080441755.0,
@@ -199,9 +199,9 @@ class LSRK4(StepperBase):
 		    1720146321549.0/2090206949498.0,
 		    3134564353537.0/4481467310338.0,
 		    2277821191437.0/14882151754819.0])
-		self.rk4c = np.array([0.0, 1432997174477.0/9575080441755.0, 
-		    2526269341429.0/6820363962896.0, 
-		    2006345519317.0/3224310063776.0, 
+		self.rk4c = np.array([0.0, 1432997174477.0/9575080441755.0,
+		    2526269341429.0/6820363962896.0,
+		    2006345519317.0/3224310063776.0,
 		    2802321613138.0/2924317926251.0])
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
@@ -232,18 +232,18 @@ class LSRK4(StepperBase):
 
 class SSPRK3(StepperBase):
 	'''
-	Low storage 3rd-order strong stability preserving Runge Kutta (SSPRK3) 
-	method inherits attributes from StepperBase. See StepperBase for 
+	Low storage 3rd-order strong stability preserving Runge Kutta (SSPRK3)
+	method inherits attributes from StepperBase. See StepperBase for
 	detailed comments of methods and attributes.
 
-	Reference: 
+	Reference:
 
-	res. J. Spiteri, S., Ruuth, "A new class of optimal high-order 
-	strong-stability-preserving time discrtization methods". SIAM Journal on 
+	res. J. Spiteri, S., Ruuth, "A new class of optimal high-order
+	strong-stability-preserving time discrtization methods". SIAM Journal on
 	Numerical Analysis. Vol. 2, Num. 2, pp. 469-491. 2002
 
 	Additional methods and attributes are commented below.
-	''' 
+	'''
 	def __init__(self, U):
 		super().__init__(U)
 		'''
@@ -251,7 +251,7 @@ class SSPRK3(StepperBase):
 		----------------------
 		ssprk3a: numpy array
 			coefficients for SSPRK3 scheme
-		ssprk3b: numpy array 
+		ssprk3b: numpy array
 			coefficients for SSPRK3 scheme
 		nstages: int
 			number of stages in scheme
@@ -259,9 +259,9 @@ class SSPRK3(StepperBase):
 			change in solution array in each stage
 				(shape: [num_elems, nb, ns])
 		'''
-		self.ssprk3a = np.array([0.0, -2.60810978953486, -0.08977353434746, 
+		self.ssprk3a = np.array([0.0, -2.60810978953486, -0.08977353434746,
 				-0.60081019321053, -0.72939715170280])
-		self.ssprk3b = np.array([0.67892607116139, 0.20654657933371, 
+		self.ssprk3b = np.array([0.67892607116139, 0.20654657933371,
 				0.27959340290485, 0.31738259840613, 0.30319904778284])
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
@@ -291,19 +291,19 @@ class SSPRK3(StepperBase):
 
 class ADER(StepperBase):
 	'''
-	Arbitrary DERivatives in space and time (ADER) scheme inherits 
-	attributes from StepperBase. See StepperBase for detailed comments of 
+	Arbitrary DERivatives in space and time (ADER) scheme inherits
+	attributes from StepperBase. See StepperBase for detailed comments of
 	methods and attributes.
 
-	Reference: 
+	Reference:
 
-	Dumbser, M., Enaux, C., and Toro, E.F., "Finite volume schemes of very 
-	high order of accuracy for stiff hyperbolic balance laws". Journal of 
+	Dumbser, M., Enaux, C., and Toro, E.F., "Finite volume schemes of very
+	high order of accuracy for stiff hyperbolic balance laws". Journal of
 	Computational Physics. Vol. 227, Num. 8, pp. 3971 - 4001, 2008.
 
-	Additional methods and attributes are commented below. Additional 
+	Additional methods and attributes are commented below. Additional
 	information on the ADER scheme can be found in the documentation.
-	''' 	
+	'''
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
@@ -328,17 +328,17 @@ class ADER(StepperBase):
 
 class Strang(StepperBase, source_stepper.SourceSolvers):
 	'''
-	The Strang operator splitting scheme inherits attributes from 
-	StepperBase and SourceSolvers (in source_stepper.py). See StepperBase 
+	The Strang operator splitting scheme inherits attributes from
+	StepperBase and SourceSolvers (in source_stepper.py). See StepperBase
 	and SourceSolvers for detailed comments of methods and attributes.
 
-	Reference: 
+	Reference:
 
-	Strang, G. "On the Construction and Comparison of Difference Schemes". 
+	Strang, G. "On the Construction and Comparison of Difference Schemes".
 	SIAM Journal of Numerical Analysis. Vol. 5, Num. 3, 1968.
 
 	Additional methods and attributes are commented below.
-	''' 	
+	'''
 	def set_split_schemes(self, explicit, implicit, U):
 		'''
 		Specifies the explicit and implicit schemes to be used in the
@@ -348,14 +348,14 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		-------
 		    explicit: name of chosen explicit scheme from params
 		    implicit: name of chosen implicit (ODE) solver from params
-		    U: solution state vector used to initialize solver 
+		    U: solution state vector used to initialize solver
 		    	[num_elems, nb, ns]
 
 		Outputs:
-		-------- 
+		--------
 		    explicit: stepper object instantiation for explicit scheme
 		    implicit: stepper object instantiation for ODE solver
-		'''		
+		'''
 		param = {"TimeStepper":explicit}
 		# call set_stepper from stepper tools for the explicit scheme
 		self.explicit = stepper_tools.set_stepper(param, U)
@@ -402,17 +402,17 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 
 class Simpler(Strang):
 	'''
-	The Simpler balanced operator splitting scheme inherits attributes from 
+	The Simpler balanced operator splitting scheme inherits attributes from
 	Strang. See Strang for detailed comments of methods and attributes.
 
-	Reference: 
+	Reference:
 
-	Wu, H., Ma, P. and Ihme, M. "Efficient time-stepping techniques for 
-	simulating turbulent reactive flows with stiff chemistry". Computer 
+	Wu, H., Ma, P. and Ihme, M. "Efficient time-stepping techniques for
+	simulating turbulent reactive flows with stiff chemistry". Computer
 	Physics Communications. Vol. 243, pp. 81 - 96, 2019.
 
 	Additional methods and attributes are commented below.
-	''' 	
+	'''
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
@@ -423,12 +423,12 @@ class Simpler(Strang):
 		explicit.dt = self.dt/2.
 		implicit = self.implicit
 		implicit.dt = self.dt
-		
+
 		solver.params["SourceSwitch"] = False
-		res = self.res 
+		res = self.res
 
 		# First: calculate the balance constant
-		# Note: we skip the first explicit step as it is in equilibrium by 
+		# Note: we skip the first explicit step as it is in equilibrium by
 		# definition
 		self.balance_const = None
 		balance_const = -1.*solver.get_residual(U, res)

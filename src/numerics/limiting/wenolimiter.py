@@ -3,10 +3,10 @@
 #       File : src/numerics/limiting/wenolimiter.py
 #
 #       Contains class definitions for WENO limiters.
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
-import numpy as np 
+import numpy as np
 
 import errors
 import general
@@ -20,12 +20,12 @@ import numerics.limiting.tools as limiter_tools
 # REMOVE FOR MASTER
 class ScalarWENO(base.LimiterBase):
 	'''
-	This class corresponds to the scalar WENO limiter. It inherits from 
-	the LimiterBase class. See LimiterBase for detailed comments of 
+	This class corresponds to the scalar WENO limiter. It inherits from
+	the LimiterBase class. See LimiterBase for detailed comments of
 	attributes and methods. See the following references:
-	
+
 		[1] X. Zhong, C. Shu, "A simple weighted essentially nonoscillatory
-			limiter for Runge-Kutta discontinuous Galerkin methods," 
+			limiter for Runge-Kutta discontinuous Galerkin methods,"
 			Journal of Computational Physics. Vol. 232 pg. 397-415. 2013.
 
 	Attributes:
@@ -93,19 +93,19 @@ class ScalarWENO(base.LimiterBase):
 		for elem_ID in range(num_elems):
 			elemP_IDs[elem_ID] = mesh.elements[elem_ID].face_to_neighbors[1]
 			elemM_IDs[elem_ID] = mesh.elements[elem_ID].face_to_neighbors[0]
-	
+
 		self.elemP_IDs = elemP_IDs
 		self.elemM_IDs = elemM_IDs
 
 		# Calculate hessian for higher-order weno calculation
-		self.basis_ref_hessian = limiter_tools.get_hessian(self, basis, 
+		self.basis_ref_hessian = limiter_tools.get_hessian(self, basis,
 				elem_helpers.quad_pts)
 		ijac_elems = elem_helpers.ijac_elems
 
 		for elem_ID in range(num_elems):
 			self.basis_phys_hessian_elems[elem_ID] = limiter_tools.get_phys_hessian(
 					self, basis, ijac_elems[elem_ID])
-		
+
 
 	def get_nonlinearwts(self, order, p, gamma, basis_phys_grad, quad_wts, vol):
 		'''
@@ -116,14 +116,14 @@ class ScalarWENO(base.LimiterBase):
 			order: solution order
 			p: polynomial coeffs of of element being smoothed [ne, nb, ns]
 			gamma: weighting constants in weno scheme (See Eq. 3.11 in [1])
-			basis_phys_grad: evaluated gradient of the basis function in 
+			basis_phys_grad: evaluated gradient of the basis function in
             		physical space [nq, nb, ndims]
-            quad_wts: quadrature weights [nq, 1]  
+            quad_wts: quadrature weights [nq, 1]
             vol: element volumes [ne, 1]
 
 		Outputs:
 		--------
-			weno_wts: returns the linear weight for the weno reconstruction [ne] 
+			weno_wts: returns the linear weight for the weno reconstruction [ne]
 		'''
 
 		# s = 1 corresponds to the first derivative of the basis function
@@ -138,7 +138,7 @@ class ScalarWENO(base.LimiterBase):
 		# s = 2 corresponds to the second der. and order 2
 		if order == 2:
 			s = 2
-			#Unpack 
+			#Unpack
 			basis_phys_hessian = self.basis_phys_hessian_elems
 			hess_p = (np.matmul(basis_phys_hessian[:, :, :, 0], p)**2).transpose(0,2,1)
 			hess_p_qwts = np.einsum('ikj, jk -> ik', hess_p, quad_wts)
@@ -149,12 +149,12 @@ class ScalarWENO(base.LimiterBase):
 
 
 	def limit_element(self, solver, Uc):
-		# Unpack		
+		# Unpack
 		elem_helpers = solver.elem_helpers
 		vols = self.elem_vols
 		basis_phys_grads = elem_helpers.basis_phys_grad_elems
 		quad_wts = elem_helpers.quad_wts
-		
+
 		weno_wts = np.zeros([Uc.shape[0], 3])
 
 		# Determine if the elements requires limiting
@@ -174,23 +174,23 @@ class ScalarWENO(base.LimiterBase):
 
 		p0_tilde = p0 - p0_bar + p1_bar
 		p2_tilde = p2 - p2_bar + p1_bar
-	
+
 		# Currently only implemented up to  P2
 		if solver.order > 2:
 			raise NotImplementedError
 
 		# Calculate non-linear weights
-		weno_wts[:, 0] = self.get_nonlinearwts(solver.order, p0, 0.001, 
+		weno_wts[:, 0] = self.get_nonlinearwts(solver.order, p0, 0.001,
 				basis_phys_grads, quad_wts, vols)
-		weno_wts[:, 1] = self.get_nonlinearwts(solver.order, p1, 0.998, 
+		weno_wts[:, 1] = self.get_nonlinearwts(solver.order, p1, 0.998,
 				basis_phys_grads, quad_wts, vols)
-		weno_wts[:, 2] = self.get_nonlinearwts(solver.order, p2, 0.001, 
+		weno_wts[:, 2] = self.get_nonlinearwts(solver.order, p2, 0.001,
 				basis_phys_grads, quad_wts, vols)
 
 		normal_wts = weno_wts / np.sum(weno_wts, axis=1).reshape(weno_wts.shape[0], 1)
 
 		# Update state_coeffs for indicated elements
-		Uc[shock_indicated] = np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 0], 
+		Uc[shock_indicated] = np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 0],
 				p0_tilde[shock_indicated]) + \
 				np.einsum('i, ijk -> ijk', normal_wts[shock_indicated, 1],
 				p1[shock_indicated]) + \
@@ -198,6 +198,7 @@ class ScalarWENO(base.LimiterBase):
 				p2_tilde[shock_indicated])
 
 		return Uc # [ne, nq, 1]
+
 
 class EulerWENO(base.LimiterBase):
 	'''
