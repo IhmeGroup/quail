@@ -1,7 +1,7 @@
 This case involves steady subsonic flow over a cosine-shaped bump.
   - Gmsh mesh file with quadratic approximation of geometry
   - Zero entropy generation in exact solution
-  - Should run longer for "true" steady-state, but error should not change significantly
+  - Should run longer for "true" steady-state, but error should not change significantly for prescribed runtime
   - Polynomial order sequencing
     - p = 0 calculation (`p0.py`)
     - p = 1 calculation restarting from final p = 0 solution (`p1.py`)

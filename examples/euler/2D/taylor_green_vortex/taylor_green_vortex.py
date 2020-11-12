@@ -6,7 +6,11 @@ TimeStepping = {
 
 Numerics = {
     "SolutionOrder" : 8,
-    "SolutionBasis" : "LegendreQuad",
+    "SolutionBasis" : "LagrangeQuad",
+    "ElementQuadrature" : "GaussLobatto",
+    "FaceQuadrature" : "GaussLobatto",
+    "NodeType" : "GaussLobatto",
+    "ColocatedPoints" : True,
 }
 
 num_elem_x = 1

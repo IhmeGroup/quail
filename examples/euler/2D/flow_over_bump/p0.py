@@ -9,7 +9,7 @@ TimeStepping = {
 
 Numerics = {
     "SolutionOrder" : 0,
-    "SolutionBasis" : "LagrangeQuad",
+    "SolutionBasis" : "LegendreQuad",
     "Solver" : "DG",
 }
 
