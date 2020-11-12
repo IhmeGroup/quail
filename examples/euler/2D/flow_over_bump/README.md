@@ -2,7 +2,7 @@ This case involves steady subsonic flow over a cosine-shaped bump.
   - Gmsh mesh file with quadratic approximation of geometry
   - Zero entropy generation in exact solution
   - Should run longer for "true" steady-state, but error should not change significantly for prescribed runtime
-  - Can use `bump.geo` to create a finer mesh to obtain better results
+  - Can use `bump.geo` to create a finer mesh in Gmsh to obtain better results
     - `Reverse Surface` command needed to maintain a positive Jacobian determinant, i.e. normals should point in the +z-direction
     - Remember to set order 2
     - Will likely need to run for longer
