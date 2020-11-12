@@ -1,4 +1,4 @@
-This case involves a shock wave propogating at Mach 5.0
+This case involves a shock wave propagating at Mach 5.0
   - Post-processing
     - Total energy profile
   - Additional Notes:
