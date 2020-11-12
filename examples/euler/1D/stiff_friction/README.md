@@ -19,6 +19,6 @@ $ quail -p create_anim.py
 
 
 <p align="center">
-  <a href="https://github.com/ericjching/DG_Python"><img alt="anim.mp4" src="https://user-images.githubusercontent.com/55554103/98711814-5705b800-233a-11eb-893c-b272f39bc349.gif" width="50%"></a>
+  <img alt="anim.mp4" src="https://user-images.githubusercontent.com/55554103/98711814-5705b800-233a-11eb-893c-b272f39bc349.gif" width="50%"></a>
 </p>
 
