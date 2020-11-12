@@ -295,7 +295,7 @@ def split_quadrils_into_tris(mesh_old):
 	tri1_node_IDs, tri2_node_IDs = convert_nodes(mesh.gorder, 
 			mesh_old.num_nodes_per_elem, mesh.num_nodes_per_elem)
 
-	# Array to maps old (quadrilateral) local face ID to new (triangle) 
+	# Array to map old (quadrilateral) local face ID to new (triangle) 
 	# local face ID
 	old_to_new_face = np.array([2, 1, 2, 1])
 
