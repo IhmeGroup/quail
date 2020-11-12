@@ -3,7 +3,7 @@
 #       File : src/numerics/limiting/tools.py
 #
 #       Contains helpers functions related to limiters.
-#      
+#
 # ------------------------------------------------------------------------ #
 import numpy as np
 
@@ -47,7 +47,7 @@ def set_limiter(limiter_type, physics_type):
 
 def set_shock_indicator(limiter, shock_indicator_type):
 	'''
-	This function sets the appropriate shock indicator. 
+	This function sets the appropriate shock indicator.
 
 	Inputs:
 	-------
@@ -58,11 +58,11 @@ def set_shock_indicator(limiter, shock_indicator_type):
 	elif general.ShockIndicatorType[shock_indicator_type] is \
 			general.ShockIndicatorType.MinMod:
 		limiter.shock_indicator = minmod_shock_indicator
-		
+
 
 def minmod_shock_indicator(limiter, solver, Uc):
 	'''
-	Minmod calculation used to determine if oscillations are large enough 
+	Minmod calculation used to determine if oscillations are large enough
 	to require limiting.
 
 	Inputs:
@@ -81,7 +81,7 @@ def minmod_shock_indicator(limiter, solver, Uc):
 
 	elem_helpers = solver.elem_helpers
 	int_face_helpers = solver.int_face_helpers
-	
+
 	elemP_IDs = limiter.elemP_IDs
 	elemM_IDs = limiter.elemM_IDs
 	djacs = limiter.djac_elems
@@ -92,28 +92,28 @@ def minmod_shock_indicator(limiter, solver, Uc):
 	UcM = solver.state_coeffs[elemM_IDs]
 
 	# Interpolate state at quadrature points over element and on faces
-	U_elem_faces = helpers.evaluate_state(Uc, limiter.basis_val_elem_faces, 
+	U_elem_faces = helpers.evaluate_state(Uc, limiter.basis_val_elem_faces,
 			skip_interp=solver.basis.skip_interp)
 	nq_elem = limiter.quad_wts_elem.shape[0]
 	U_elem = U_elem_faces[:, :nq_elem, :]
 	U_face = U_elem_faces[:, nq_elem:, :]
-		
+
 	# Average value of states
-	U_bar = helpers.get_element_mean(U_elem, limiter.quad_wts_elem, djacs, 
+	U_bar = helpers.get_element_mean(U_elem, limiter.quad_wts_elem, djacs,
 			limiter.elem_vols)
 
 	# UcP neighbor evaluated at quadrature points
-	Up_elem = helpers.evaluate_state(UcP, elem_helpers.basis_val, 
+	Up_elem = helpers.evaluate_state(UcP, elem_helpers.basis_val,
 			skip_interp=solver.basis.skip_interp)
 	# Average value of state
-	Up_bar = helpers.get_element_mean(Up_elem, limiter.quad_wts_elem, djacP, 
+	Up_bar = helpers.get_element_mean(Up_elem, limiter.quad_wts_elem, djacP,
 			limiter.elem_vols[elemP_IDs])
 
 	# UcM neighbor evaluated at quadrature points
-	Um_elem = helpers.evaluate_state(UcM, elem_helpers.basis_val, 
+	Um_elem = helpers.evaluate_state(UcM, elem_helpers.basis_val,
 			skip_interp=solver.basis.skip_interp)
 	# Average value of state
-	Um_bar = helpers.get_element_mean(Um_elem, limiter.quad_wts_elem, djacM, 
+	Um_bar = helpers.get_element_mean(Um_elem, limiter.quad_wts_elem, djacM,
 			limiter.elem_vols[elemM_IDs])
 
 	# Store the polynomial coeff values for Up, Um, and U.
@@ -144,7 +144,7 @@ def minmod_shock_indicator(limiter, solver, Uc):
 	aj[:, 2, :] = deltaM_u_bar[:, 0, :]
 	u_dtilde_mod = minmod(aj)
 
-	shock_elems = np.where((u_tilde_mod != U_tilde) 
+	shock_elems = np.where((u_tilde_mod != U_tilde)
 			| (u_dtilde_mod != U_dtilde))[0]
 
 	return shock_elems
@@ -163,7 +163,7 @@ def minmod(a):
 		u: evaluated minmod state [ne, 1, 1]
 	'''
 	s = np.sign(a)
-	# Allocate with a large negative number. 
+	# Allocate with a large negative number.
 	u = -1234567.*np.ones([a.shape[0], 1, a.shape[-1]])
 
 	elemID_gt = np.where(np.all(s > 0., axis=1))[0]
@@ -186,11 +186,11 @@ def get_hessian(limiter, basis, quad_pts):
 	-------
 		limiter: limiter object
 		basis: basis object
-		quad_pts: quadrature point coordinates [nq, ndims] 
+		quad_pts: quadrature point coordinates [nq, ndims]
 
 	Outputs:
 	--------
-		basis_ref_hessian: reference hessian of the basis function 
+		basis_ref_hessian: reference hessian of the basis function
 			[nq, nb, dim]
 	'''
 	ndims = basis.NDIMS
@@ -202,9 +202,9 @@ def get_hessian(limiter, basis, quad_pts):
 
 	if p > 0:
 		xnodes = basis.get_1d_nodes(-1., 1., p+1)
-		get_lagrange_hessian_1D(quad_pts, xnodes, 
+		get_lagrange_hessian_1D(quad_pts, xnodes,
 				basis_ref_hessian=basis_ref_hessian)
-	
+
 	return basis_ref_hessian # [nq, nb, ndims]
 
 
@@ -215,10 +215,10 @@ def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 	Inputs:
 	-------
 		xq: coordinates of quadrature points [nq, 1]
-		xnodes: coordinates of nodes in 1D ref space [nb, 1] 
+		xnodes: coordinates of nodes in 1D ref space [nb, 1]
 
 	Outputs:
-	-------- 
+	--------
 		basis_hessian: evaluated reference hessian [nq, nb, ndims]
 	'''
 	nnodes = xnodes.shape[0]
@@ -238,7 +238,7 @@ def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 								h *= (xq - xnodes[l])/(xnodes[j] - xnodes[l])
 						basis_ref_hessian[:, j, :] += h
 
-	
+
 def get_phys_hessian(limiter, basis, ijac):
 	'''
 	Calculates the physical gradient of the hessian
@@ -251,7 +251,7 @@ def get_phys_hessian(limiter, basis, ijac):
 
 	Outputs:
 	--------
-		basis_phys_hessian: evaluated hessian of the basis function in 
+		basis_phys_hessian: evaluated hessian of the basis function in
 			physical space [nq, nb, ndims]
 	'''
 	ndims = basis.NDIMS
@@ -266,9 +266,9 @@ def get_phys_hessian(limiter, basis, ijac):
 	# Check to see if ijac has been passed and has the right shape
 	if ijac is None or ijac.shape != (nq, ndims, ndims):
 		raise ValueError("basis_ref_hessian and ijac shapes not compatible")
-	
+
 	ijac2 = np.einsum('ijk,ijk->ijk', ijac, ijac)
-	basis_phys_hessian = np.einsum('ijk, ikk -> ijk', 
+	basis_phys_hessian = np.einsum('ijk, ikk -> ijk',
 			basis_ref_hessian, ijac2)
 
 	return basis_phys_hessian # [nq, nb, ndims]

@@ -3,7 +3,7 @@
 #       File : src/meshing/common.py
 #
 #       Contains functions for creating and modifying structured meshes.
-#      
+#
 # ------------------------------------------------------------------------ #
 import copy
 import numpy as np
@@ -40,7 +40,7 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	mesh.node_coords = np.zeros([mesh.num_nodes, mesh.ndims])
 	mesh.node_coords[:,0] = np.linspace(xmin, xmax, mesh.num_nodes)
 	# Set parameters
-	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1, 
+	mesh.set_params(gbasis=basis_defs.LagrangeSeg(1), gorder=1,
 			num_elems=num_elems)
 
 	''' Interior faces '''
@@ -81,10 +81,10 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 	return mesh
 
 
-def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1., 
+def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 		ymin=-1., ymax=1.):
 	'''
-	This function creates a uniform 2D quadrilateral mesh. 
+	This function creates a uniform 2D quadrilateral mesh.
 
 	Inputs:
 	-------
@@ -117,8 +117,8 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 	xgrid, ygrid = np.meshgrid(xcoords, ycoords)
 	xp = np.array([np.reshape(xgrid, -1), np.reshape(ygrid, -1)]).transpose()
 	# Create mesh
-	mesh = mesh_defs.Mesh(ndims=2, num_nodes=xp.shape[0], 
-			num_elems=num_elems_x*num_elems_y, 
+	mesh = mesh_defs.Mesh(ndims=2, num_nodes=xp.shape[0],
+			num_elems=num_elems_x*num_elems_y,
 			gbasis=basis_defs.LagrangeQuad(1),
 			gorder=1)
 	# Store coordinates
@@ -219,7 +219,7 @@ def split_quadrils_into_tris(mesh_old):
 	'''
 	def convert_nodes(gorder, num_nodes_per_quad, num_nodes_per_tri):
 		'''
-		This nested function converts the local node IDs of a quadrilateral 
+		This nested function converts the local node IDs of a quadrilateral
 		element	into two sets of local node IDs for the resulting two
 		triangular elements.
 
@@ -284,7 +284,7 @@ def split_quadrils_into_tris(mesh_old):
 		return elem_ID, face_ID
 
 	# New number of elements
-	num_elems_old = mesh_old.num_elems 
+	num_elems_old = mesh_old.num_elems
 	num_elems = num_elems_old*2
 
 	# Create deep copy of mesh
@@ -292,10 +292,10 @@ def split_quadrils_into_tris(mesh_old):
 	mesh.set_params(num_elems=num_elems, gbasis=basis_defs.LagrangeTri(1))
 
 	# Convert local quadrilateral node IDs to triangle node IDs
-	tri1_node_IDs, tri2_node_IDs = convert_nodes(mesh.gorder, 
+	tri1_node_IDs, tri2_node_IDs = convert_nodes(mesh.gorder,
 			mesh_old.num_nodes_per_elem, mesh.num_nodes_per_elem)
 
-	# Array to map old (quadrilateral) local face ID to new (triangle) 
+	# Array to map old (quadrilateral) local face ID to new (triangle)
 	# local face ID
 	old_to_new_face = np.array([2, 1, 2, 1])
 
@@ -326,7 +326,7 @@ def split_quadrils_into_tris(mesh_old):
 	mesh.allocate_elem_to_node_IDs_map()
 	for elem_ID in range(num_elems_old):
 		# First triangle
-		mesh.elem_to_node_IDs[elem_ID] = mesh_old.elem_to_node_IDs[elem_ID, 
+		mesh.elem_to_node_IDs[elem_ID] = mesh_old.elem_to_node_IDs[elem_ID,
 				tri1_node_IDs]
 		# Second triangle
 		mesh.elem_to_node_IDs[elem_ID+num_elems_old] = \

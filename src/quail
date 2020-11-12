@@ -4,7 +4,7 @@
 #       File : src/quail.py
 #
 #       Contains driver and helper functions for Quail.
-#      
+#
 # ------------------------------------------------------------------------ #
 import argparse
 import importlib
@@ -47,7 +47,7 @@ def set_physics(mesh, physics_type):
 	--------
 		physics: physics object
 	'''
-	ndims = mesh.ndims 
+	ndims = mesh.ndims
 
 	if PhysicsType[physics_type] == PhysicsType.ConstAdvScalar and \
 			ndims == 1:
@@ -89,7 +89,7 @@ def overwrite_params(params, params_new, allow_new_keys=False):
 		return params
 
 	for key in params_new:
-		if not allow_new_keys and key not in params.keys(): 
+		if not allow_new_keys and key not in params.keys():
 			raise KeyError
 		params[key] = params_new[key]
 
@@ -98,7 +98,7 @@ def overwrite_params(params, params_new, allow_new_keys=False):
 
 def read_inputs(deck):
 	'''
-	This function reads in the input deck and overwrites the default 
+	This function reads in the input deck and overwrites the default
 	parameters.
 
 	Inputs:
@@ -122,48 +122,48 @@ def read_inputs(deck):
 	output_params = default_deck.Output
 
 	# Overwrite
-	try: 
+	try:
 		restart_params = overwrite_params(restart_params, deck.Restart)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
 		stepper_params = overwrite_params(stepper_params, deck.TimeStepping)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
 		numerics_params = overwrite_params(numerics_params, deck.Numerics)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
 		mesh_params = overwrite_params(mesh_params, deck.Mesh)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
 		physics_params = overwrite_params(physics_params, deck.Physics, True)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
 		IC_params = overwrite_params(IC_params, deck.InitialCondition, True)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
-		exact_params = overwrite_params(exact_params, deck.ExactSolution, 
+		exact_params = overwrite_params(exact_params, deck.ExactSolution,
 				True)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
-		BC_params = overwrite_params(BC_params, deck.BoundaryConditions, 
+		BC_params = overwrite_params(BC_params, deck.BoundaryConditions,
 				True)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
-		source_params = overwrite_params(source_params, deck.SourceTerms, 
+		source_params = overwrite_params(source_params, deck.SourceTerms,
 				True)
-	except AttributeError: 
+	except AttributeError:
 		pass
 	try:
 		output_params = overwrite_params(output_params, deck.Output)
-	except AttributeError: 
+	except AttributeError:
 		pass
 
 	return restart_params, stepper_params, numerics_params, mesh_params, \
@@ -171,7 +171,7 @@ def read_inputs(deck):
 			source_params, output_params
 
 
-def print_info(restart_params, stepper_params, numerics_params, mesh_params, 
+def print_info(restart_params, stepper_params, numerics_params, mesh_params,
 		physics_params, IC_params, exact_params, BC_params, source_params,
 		output_params):
 	print()
@@ -246,8 +246,8 @@ def driver(deck):
 			physics_params, IC_params, exact_params, BC_params, \
 			source_params, output_params = read_inputs(deck)
 	# Print info
-	print_info(restart_params, stepper_params, numerics_params, mesh_params, 
-			physics_params, IC_params, exact_params, BC_params, 
+	print_info(restart_params, stepper_params, numerics_params, mesh_params,
+			physics_params, IC_params, exact_params, BC_params,
 			source_params, output_params)
 
 	'''
@@ -271,14 +271,14 @@ def driver(deck):
 		# Create mesh
 		if shape is ShapeType.Segment:
 			# 1D - segments
-			mesh = mesh_common.mesh_1D(num_elems=num_elems_x, 
+			mesh = mesh_common.mesh_1D(num_elems=num_elems_x,
 					xmin=xmin, xmax=xmax)
 		else:
 			# 2D - quads or tris
 
 			# First start with quads
-			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x, 
-					num_elems_y=num_elems_y, xmin=xmin, xmax=xmax, 
+			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x,
+					num_elems_y=num_elems_y, xmin=xmin, xmax=xmax,
 					ymin=ymin, ymax=ymax)
 			# Split into tris if required
 			if shape is ShapeType.Triangle:
@@ -295,9 +295,9 @@ def driver(deck):
 	if pb_y != []:
 		pb[2:] = pb_y
 
-	# Make periodic	
+	# Make periodic
 	if pb != [None]*4:
-		mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1], 
+		mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1],
 				y1=pb[2], y2=pb[3])
 
 
@@ -359,7 +359,7 @@ def driver(deck):
 		solver = DG.DG(solver_params, physics, mesh)
 	elif SolverType[solver_type] is SolverType.ADERDG:
 		solver = ADERDG.ADERDG(solver_params, physics, mesh)
-	else: 
+	else:
 		raise NotImplementedError
 
 
@@ -374,7 +374,7 @@ def driver(deck):
 		if order != solver_old.order or solver.basis.BASIS_TYPE != \
 				solver_old.basis.BASIS_TYPE:
 			print("Projecting to a different solution basis and/or order")
-			solver.project_state_to_new_basis(solver_old.state_coeffs, 
+			solver.project_state_to_new_basis(solver_old.state_coeffs,
 					solver_old.basis, solver_old.order)
 		else:
 			solver.state_coeffs = solver_old.state_coeffs
@@ -382,7 +382,7 @@ def driver(deck):
 		if restart_params["StartFromFileTime"]:
 			solver.time = solver_old.time
 			solver.stepper.dt = 0.
-			stepper_tools.set_time_stepping_approach(solver.stepper, 
+			stepper_tools.set_time_stepping_approach(solver.stepper,
 					solver.params)
 
 
@@ -429,7 +429,7 @@ def main(argv):
 		argv: command-line arguments (run "quail -h" or see below for info)
 	'''
 	''' Parser '''
-	my_parser = argparse.ArgumentParser(conflict_handler="resolve", 
+	my_parser = argparse.ArgumentParser(conflict_handler="resolve",
 			description="This script is the driver for Stanford\'s Quail " +
 			"solver")
 

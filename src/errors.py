@@ -3,7 +3,7 @@
 #       File : src/errors.py
 #
 #       Contains user-defined errors.
-#      
+#
 # ------------------------------------------------------------------------ #
 
 class Error(Exception):

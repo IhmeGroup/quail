@@ -174,7 +174,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 
 	def limit_element(self, solver, Uc):
-		# Unpack		
+		# Unpack
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers

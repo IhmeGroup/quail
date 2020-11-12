@@ -3,11 +3,11 @@
 #       File : src/numerics/timestepping/tools.py
 #
 #       Contains helper functions for the stepper class.
-#      
+#
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import math
-import numpy as np 
+import numpy as np
 
 from general import StepperType
 
@@ -28,7 +28,7 @@ def set_stepper(params, U):
 		U: solution vector for instantiaing stepper class [num_elems, nb, ns]
 
 	Outputs:
-	-------- 
+	--------
 	    stepper: instantiated stepper object
 	'''
 	time_stepper = params["TimeStepper"]
@@ -43,11 +43,11 @@ def set_stepper(params, U):
 	# If setting a splitting scheme select solvers for the splits
 	elif StepperType[time_stepper] == StepperType.Strang:
 		stepper = stepper_defs.Strang(U)
-		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
+		stepper.set_split_schemes(params["OperatorSplittingExplicit"],
 			params["OperatorSplittingImplicit"], U)
 	elif StepperType[time_stepper] == StepperType.Simpler:
 		stepper = stepper_defs.Simpler(U)
-		stepper.set_split_schemes(params["OperatorSplittingExplicit"], 
+		stepper.set_split_schemes(params["OperatorSplittingExplicit"],
 			params["OperatorSplittingImplicit"], U)
 	else:
 		raise NotImplementedError("Time scheme not supported")
@@ -64,7 +64,7 @@ def set_time_stepping_approach(stepper, params):
 		params: list of parameters for solver
 
 	Outputs:
-	-------- 
+	--------
 		get_time_step: method selected to calculate dt
 		num_time_steps: number of time steps for the solution
 	'''
@@ -102,7 +102,7 @@ def get_dt_from_num_time_steps(stepper, solver):
 		solver: solver object (e.g., DG, ADERDG, etc...)
 
 	Outputs:
-	-------- 
+	--------
 		dt: time step for the solver
 	'''
 	num_time_steps = stepper.num_time_steps
@@ -118,7 +118,7 @@ def get_dt_from_num_time_steps(stepper, solver):
 
 def get_dt_from_timestepsize(stepper, solver):
 	'''
-	Sets dt directly based on input deck specification of 
+	Sets dt directly based on input deck specification of
 	params["TimeStepSize"].
 
 	Inputs:
@@ -127,7 +127,7 @@ def get_dt_from_timestepsize(stepper, solver):
 		solver: solver object (e.g., DG, ADERDG, etc...)
 
 	Outputs:
-	-------- 
+	--------
 		dt: time step for the solver
 	'''
 	time = solver.time
@@ -143,7 +143,7 @@ def get_dt_from_timestepsize(stepper, solver):
 
 def get_dt_from_cfl(stepper, solver):
 	'''
-	Calculates dt using a specified CFL number. Updates at everytime step to 
+	Calculates dt using a specified CFL number. Updates at everytime step to
 	ensure solution remains within the CFL bound.
 
 	Inputs:
@@ -152,9 +152,9 @@ def get_dt_from_cfl(stepper, solver):
 		solver: solver object (e.g., DG, ADERDG, etc...)
 
 	Outputs:
-	-------- 
+	--------
 		dt: time step for the solver
-	'''	
+	'''
 	mesh = solver.mesh
 	ndims = mesh.ndims
 
@@ -164,7 +164,7 @@ def get_dt_from_cfl(stepper, solver):
 	time = solver.time
 	tfinal = solver.params["FinalTime"]
 	cfl = solver.params["CFL"]
-	
+
 	elem_helpers = solver.elem_helpers
 	vol_elems = elem_helpers.vol_elems
 	a = np.zeros([mesh.num_elems, U.shape[1], 1])
@@ -175,7 +175,7 @@ def get_dt_from_cfl(stepper, solver):
 			skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
 
 	# Calculate max wavespeed
-	a = physics.compute_variable("MaxWaveSpeed", Uq, 
+	a = physics.compute_variable("MaxWaveSpeed", Uq,
 			flag_non_physical=True)
 
 	# Calculate the dt for each element

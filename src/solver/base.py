@@ -192,7 +192,7 @@ class SolverBase(ABC):
 		if basis.MODAL_OR_NODAL is ModalOrNodal.Modal and colocated_points:
 			raise errors.IncompatibleError
 
-		# Check if ConvFluxSwitch or SourceSwitch are being used with 
+		# Check if ConvFluxSwitch or SourceSwitch are being used with
 		# Strang/Simpler splitting
 		source_switch = params["SourceSwitch"]
 		convflux_switch = params["ConvFluxSwitch"]
