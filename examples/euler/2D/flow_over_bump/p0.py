@@ -14,7 +14,7 @@ Numerics = {
 }
 
 Mesh = {
-	"File" : "bump0.msh",
+	"File" : "bump.msh",
 }
 
 Physics = {
