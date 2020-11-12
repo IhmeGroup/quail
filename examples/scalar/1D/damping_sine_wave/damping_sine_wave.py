@@ -1,32 +1,32 @@
 import numpy as np
 
 TimeStepping = {
-    "InitialTime" : 0.,
-    "FinalTime" : 0.5,
-    "NumTimeSteps" : 40,
-    "TimeStepper" : "SSPRK3",
+	"InitialTime" : 0.,
+	"FinalTime" : 0.5,
+	"NumTimeSteps" : 40,
+	"TimeStepper" : "SSPRK3",
 }
 
 Numerics = {
-    "SolutionOrder" : 2,
-    "SolutionBasis" : "LegendreSeg",
-    "Solver" : "DG",
+	"SolutionOrder" : 2,
+	"SolutionBasis" : "LegendreSeg",
+	"Solver" : "DG",
 }
 
 Mesh = {
-    "File" : None,
-    "ElementShape" : "Segment",
-    "NumElemsX" : 16,
-    "NumElemsY" : 2,
-    "xmin" : -1.,
-    "xmax" : 1.,
-    "PeriodicBoundariesX" : ["x1", "x2"],
+	"File" : None,
+	"ElementShape" : "Segment",
+	"NumElemsX" : 16,
+	"NumElemsY" : 2,
+	"xmin" : -1.,
+	"xmax" : 1.,
+	"PeriodicBoundariesX" : ["x1", "x2"],
 }
 
 Physics = {
-    "Type" : "ConstAdvScalar",
-    "ConvFluxNumerical" : "LaxFriedrichs",
-    "ConstVelocity" : 1.,
+	"Type" : "ConstAdvScalar",
+	"ConvFluxNumerical" : "LaxFriedrichs",
+	"ConstVelocity" : 1.,
 }
 
 # Stiffness parameter
@@ -34,9 +34,9 @@ nu = -3.
 # nu = -1000.
 
 InitialCondition = {
-    "Function" : "DampingSine",
-    "omega" : 2*np.pi,
-    "nu" : nu,
+	"Function" : "DampingSine",
+	"omega" : 2*np.pi,
+	"nu" : nu,
 }
 
 ExactSolution = InitialCondition.copy()
