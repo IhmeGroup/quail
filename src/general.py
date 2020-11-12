@@ -64,34 +64,27 @@ class BasisType(Enum):
 		# Legendre basis polynomials for quadrilaterals
 	HierarchicH1Tri = auto()
 		# Modal basis functions for triangles
-		
+
 
 class LimiterType(Enum):
-    '''
-    This enum contains the available limiter types. See
-    src/numerics/limiting/ for more information.
-    '''
-    PositivityPreserving = auto()
-    # REMOVE FOR MASTER
-    PositivityPreservingChem = auto()
-    ScalarWENO = auto()
-    EulerWENO = auto()
-
-# REMOVE FOR MASTER
-class ShockIndicatorType(Enum):
-    '''
-    This enum contains the available shoock indicator 
-    types. See src/numerics/limiting/ for more info.
-    '''
-    MinMod = auto()
-    MinModEuler = auto()
 	'''
 	This enum contains the available limiter types. See
 	src/numerics/limiting/ for more information.
 	'''
 	PositivityPreserving = auto()
+	# REMOVE FOR MASTER
 	PositivityPreservingChem = auto()
 	ScalarWENO = auto()
+	EulerWENO = auto()
+
+# REMOVE FOR MASTER
+class ShockIndicatorType(Enum):
+	'''
+	This enum contains the available shoock indicator 
+	types. See src/numerics/limiting/ for more info.
+	'''
+	MinMod = auto()
+	MinModEuler = auto()
 
 
 class SolverType(Enum):
