@@ -11,7 +11,7 @@ This case involves steady subsonic flow over a cosine-shaped bump.
     - p = 1 calculation restarting from final p = 0 solution (`p1.py`)
     - p = 2 calculation restarting from final p = 1 solution (`p2.py`)
   - Post-processing (on final p = 2 solution)
-    - Pressure contour with mesh and element IDs displayed
+    - Pressure contour with mesh and element IDs displayed (see below)
     - Entropy contour with mesh displayed
     - Pressure in x-direction along wall plotted
       - Boundary integral gives drag force in x-direction
