@@ -44,7 +44,7 @@ for i in range(101):
 	j += 1
 
 anim = animation.ArtistAnimation(fig, imgs_all, interval=50, blit=False,
-                                repeat_delay=None)
+		repeat_delay=None)
 
 plt.show()
 

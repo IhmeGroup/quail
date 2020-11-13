@@ -1,10 +1,8 @@
-import code
-
 import processing.post as post
 import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 
-### Postprocess
+# Read data file
 fname = "Data_final.pkl"
 solver = readwritedatafiles.read_data_file(fname)
 
@@ -12,25 +10,26 @@ solver = readwritedatafiles.read_data_file(fname)
 mesh = solver.mesh
 physics = solver.physics
 
-### Postprocess
+''' Plot '''
+### Density
 plot.prepare_plot()
-
-# Density
+# Exact solution
 plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=False, 
-			plot_exact=True, plot_IC=False, create_new_figure=True, 
-			fmt='k-.', legend_label="Exact")
-
+		plot_exact=True, plot_IC=False, create_new_figure=True, 
+		fmt='k-.', legend_label="Exact")
+# DG solution
 plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=True, 
-			plot_exact=False, plot_IC=False, create_new_figure=False,
-            fmt='bo', legend_label="Numerical")
+		plot_exact=False, plot_IC=False, create_new_figure=False,
+        fmt='bo', legend_label="Numerical")
 
-# Pressure
+### Pressure
+# Exact solution
 plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=False, 
-			plot_exact=True, plot_IC=False, create_new_figure=True, 
-			fmt='k-.', legend_label="Exact")
-
+		plot_exact=True, plot_IC=False, create_new_figure=True, 
+		fmt='k-.', legend_label="Exact")
+# DG solution
 plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=True, 
-			plot_exact=False, plot_IC=False, create_new_figure=False,
-            fmt='bo', legend_label="Numerical")
+		plot_exact=False, plot_IC=False, create_new_figure=False,
+        fmt='bo', legend_label="Numerical")
 
 plot.show_plot()
