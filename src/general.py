@@ -8,8 +8,6 @@
 from enum import Enum, auto
 import numpy as np
 
-import defaultparams
-
 
 '''
 --------
@@ -164,23 +162,3 @@ class NodeType(Enum):
 		# Equidistant nodes
 	GaussLobatto = auto()
 		# Gauss-Lobatto nodes (segments and quadrilaterals only)
-
-
-INTERIORFACE = -1
-NULLFACE = -2
-
-solver_params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
-
-
-def set_solver_params(params=None, **kwargs):
-	if params is None:
-		params = solver_params
-		params["RestartFile"] = solver_params["File"]
-	for key in kwargs:
-		if key not in params.keys():
-			raise KeyError
-		params[key] = kwargs[key]
-	return params
-
-
-
