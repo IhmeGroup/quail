@@ -1,10 +1,6 @@
-dt = 0.05
-tfinal = 1.0
-nt = int(tfinal/dt + 1.e-12)
-
 TimeStepping = {
-	"FinalTime" : tfinal,
-	"NumTimeSteps" : nt,
+	"FinalTime" : 1.0,
+	"TimeStepSize" : 0.05,
 	"TimeStepper" : "LSRK4",
 }
 
