@@ -120,7 +120,6 @@ class ConstAdvScalar1D(ConstAdvScalar):
 		self.c = ConstVelocity
 		self.cspeed = np.abs(self.c)
 
-
 class ConstAdvScalar2D(ConstAdvScalar):
 	'''
 	This class corresponds to 2D scalar advection with a constant velocity.
