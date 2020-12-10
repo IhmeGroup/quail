@@ -177,7 +177,6 @@ class Euler1D(Euler):
 			base_conv_num_flux_type.LaxFriedrichs :
 					euler_fcns.LaxFriedrichs1D,
 			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
-			euler_conv_num_flux_type.HLLC : euler_fcns.HLLC1D,
 		})
 
 	class StateVariables(Enum):
