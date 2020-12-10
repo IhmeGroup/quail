@@ -28,9 +28,8 @@ class FcnType(Enum):
 	IsentropicVortex = auto()
 	DensityWave = auto()
 	RiemannProblem = auto()
-	ExactRiemannSolution = auto()
 	TaylorGreenVortex = auto()
-
+	ShuOsherProblem = auto()
 
 class BCType(Enum):
 	'''
@@ -56,7 +55,6 @@ class ConvNumFluxType(Enum):
 	numerical fluxes are specific to the available Euler equation sets.
 	'''
 	Roe = auto()
-	HLLC = auto()
 
 
 '''
@@ -141,7 +139,7 @@ class SmoothIsentropicFlow(FcnBase):
 			Uq[elem_ID, :, irhou] = den*u
 			Uq[elem_ID, :, irhoE] = rhoE
 
-		return Uq
+		return Uq # [ne, nq, ns]
 
 
 class MovingShock(FcnBase):
@@ -216,7 +214,7 @@ class MovingShock(FcnBase):
 			Uq[elem_ID, iright, srhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1
 			Uq[elem_ID, ileft, srhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2
 
-		return Uq
+		return Uq # [ne, nq, ns]
 
 
 class IsentropicVortex(FcnBase):
@@ -315,7 +313,7 @@ class IsentropicVortex(FcnBase):
 		Uq[:, :, 2] = rhov
 		Uq[:, :, 3] = rhoE
 
-		return Uq
+		return Uq # [ne, nq, ns]
 
 
 class DensityWave(FcnBase):
@@ -356,119 +354,10 @@ class DensityWave(FcnBase):
 		Uq[:, :, srhou] = rhou
 		Uq[:, :, srhoE] = rhoE
 
-		return Uq
+		return Uq # [ne, nq, ns]
 
 
 class RiemannProblem(FcnBase):
-	'''
-	Riemann problem. Initial condition only.
-
-	Attributes:
-	-----------
-	rhoL: float
-		left density
-	uL: float
-		left velocity
-	pL: float
-		left pressure
-	rhoR: float
-		right density
-	uR: float
-		right velocity
-	pR: float
-		right pressure
-	xd: float
-		location of initial discontinuity
-	w: float
-		parameter that controls smearing of initial discontinuity; larger w
-		results in more smearing.
-	'''
-	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
-				xd=0., w=1.e-30):
-		'''
-		This method initializes the attributes.
-
-		Inputs:
-		-------
-			rhoL: left density
-			uL: left velocity
-			pL: left pressure
-			rhoR: right density
-			uR: right velocity
-			pR: right pressure
-			xd: location of initial discontinuity
-			w: parameter that controls smearing of initial discontinuity;
-				larger w results in more smearing
-
-		Outputs:
-		--------
-		    self: attributes initialized
-
-		Notes:
-		------
-			Default values set up for Sod problem (without smearing).
-		'''
-		self.rhoL = rhoL
-		self.uL = uL
-		self.pL = pL
-		self.rhoR = rhoR
-		self.uR = uR
-		self.pR = pR
-		self.xd = xd
-		if w <= 0:
-			# For zero smearing, make w close to zero but not equal to zero
-			raise ValueError
-		self.w = w
-
-	def get_state(self, physics, x, t):
-		# Unpack
-		rhoL = self.rhoL
-		uL = self.uL
-		pL = self.pL
-		rhoR = self.rhoR
-		uR = self.uR
-		pR = self.pR
-		xd = self.xd
-		w = self.w
-
-		srho, srhou, srhoE = physics.get_state_slices()
-
-		gamma = physics.gamma
-
-		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
-
-		def set_tanh(a, b, w, x0):
-			'''
-			This function prescribes a tanh profile.
-
-			Inputs:
-			-------
-				a: left value
-				b: right value
-				w: characteristic width
-				x0: center
-
-			Outputs:
-			--------
-			    tanh profile
-			'''
-			return 0.5*((a+b) + (b-a)*np.tanh((x-x0)/w))
-
-		# Density
-		Uq[:, :, srho] =  set_tanh(rhoL, rhoR, w, xd)
-
-		# Momentum
-		Uq[:, :, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xd)
-
-		# Energy
-		rhoEL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
-		rhoER = pR/(gamma-1.) + 0.5*rhoR*uR*uR
-		Uq[:, :, srhoE] = set_tanh(rhoEL, rhoER, w, xd)
-
-		return Uq
-
-
-class ExactRiemannSolution(FcnBase):
 	'''
 	Riemann problem. Exact solution included (with time dependence),
 	obtained using the method of characteristics. Detailed derivation not
@@ -613,7 +502,7 @@ class ExactRiemannSolution(FcnBase):
 		Uq[:, :, srhou] = rho*u
 		Uq[:, :, srhoE] = p/(gamma-1.) + 0.5*rho*u*u
 
-		return Uq
+		return Uq # [ne, nq, ns]
 
 
 class TaylorGreenVortex(FcnBase):
@@ -647,7 +536,76 @@ class TaylorGreenVortex(FcnBase):
 		Uq[:, :, irhov] = rho*v
 		Uq[:, :, irhoE] = rho*E
 
-		return Uq
+		return Uq # [ne, nq, ns]
+
+class ShuOsherProblem(FcnBase):
+	'''
+	This test case is used to show the advantages of higher-order methods.
+	The case is defined with a Mach 3 shock interacting with a density wave.
+	A reference solution is obtained by running a P2 simulation with a large
+	element count (~12000).
+
+	It can be found in the following reference:
+
+		[1] Zhong, X., and Shu, C.-W., “A simple weighted essentially 
+			nonoscillatory limiter for Runge-Kutta discontinuous Galerkin
+			methods,” JCP, Vol. 232, No. 1, 2013.
+
+	Attributes:
+	-----------
+	xshock: float
+		initial location of shock
+	'''
+	def __init__(self, xshock=-4.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    xshock: initial location of shock
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.xshock = xshock
+
+	def get_state(self, physics, x, t):
+		# Unpack
+		xshock = self.xshock
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		gamma = physics.gamma
+
+		''' Pre-shock state '''
+		rhoL = 3.857143
+		pL = 10.333333
+		uL = 2.629369
+
+		''' Post-shock state '''
+		rho_sin = 1. + 0.2 * np.sin(5.*x)
+		uR = 0.
+		pR = 1.
+
+		''' Fill state '''
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		for elem_ID in range(Uq.shape[0]):
+			ileft = (x[elem_ID] < xshock).reshape(-1)
+			iright = (x[elem_ID] >= xshock).reshape(-1)
+			rhoR = rho_sin[elem_ID, iright]
+			# Density
+			Uq[elem_ID, iright, srho] = rhoR
+			Uq[elem_ID, ileft, srho] = rhoL
+			# Momentum
+			Uq[elem_ID, iright, srhou] = rhoR*uR
+			Uq[elem_ID, ileft, srhou] = rhoL*uL
+			# Energy
+			Uq[elem_ID, iright, srhoE] = pR/(gamma - 1.) + 0.5*rhoR*uR*uR
+			Uq[elem_ID, ileft, srhoE] = pL/(gamma - 1.) + 0.5*rhoL*uL*uL
+
+		return Uq # [ne, nq, ns]
 
 
 '''
@@ -1298,104 +1256,3 @@ class Roe2D(Roe1D):
 		R[:, :, i, -1] = velRoe[:, :, -1]; R[:, :, i, i] = 1.
 
 		return R
-
-
-class HLLC1D(ConvNumFluxBase):
-	def __init__(self, Uq=None):
-		if Uq is not None:
-			n = Uq.shape[0]
-			ns = Uq.shape[1]
-			ndims = ns - 2
-		else:
-			n = 0; ns = 0; ndims = 0
-
-	def compute_flux(self, physics, UqL, UqR, n):
-		# Indices
-		srho = physics.get_state_slice("Density")
-		smom = physics.get_momentum_slice()
-		srhoE = physics.get_state_slice("Energy")
-
-		NN = np.linalg.norm(n, axis=1, keepdims=True)
-		n1 = n/NN
-
-		gamma = physics.gamma
-
-		# unpack left hand state
-		rhoL = UqL[:, srho]
-		uL = UqL[:, smom]/rhoL
-		unL = uL * n1
-		pL = physics.compute_variable("Pressure", UqL)
-		cL = physics.compute_variable("SoundSpeed", UqL)
-		# unpack right hand state
-		rhoR = UqR[:, srho]
-		uR = UqR[:, smom]/rhoR
-		unR = uR * n1
-		pR = physics.compute_variable("Pressure", UqR)
-		cR = physics.compute_variable("SoundSpeed", UqR)
-
-		# calculate averages
-		rho_avg = 0.5 * (rhoL + rhoR)
-		c_avg = 0.5 * (cL + cR)
-
-		# Step 1: Get pressure estimate in the star region
-		pvrs = 0.5 * ((pL + pR) - (unR - unL)*rho_avg*c_avg)
-		p_star = max(0., pvrs)
-
-		pspl = p_star / pL
-		pspr = p_star / pR
-
-		# Step 2: Get SL and SR
-		qL = 1.
-		if pspl > 1.:
-			qL = np.sqrt(1. + (gamma + 1.) / (2.*gamma) * (pspl - 1.))
-		SL = unL - cL*qL
-
-		qR = 1.
-		if pspr > 1.:
-			qR = np.sqrt(1. + (gamma + 1.) / (2.*gamma) * (pspr - 1.))
-		SR = unR + cR*qR
-
-		# Step 3: Get shear wave speed
-		raa1 = 1./(rho_avg*c_avg)
-		sss = 0.5*(unL+unR) + 0.5*(pL-pR)*raa1
-
-		# flux assembly
-
-		# Left State
-		FL = physics.get_conv_flux_projected(UqL, n1)
-		# Right State
-		FR = physics.get_conv_flux_projected(UqR, n1)
-
-		Fhllc = np.zeros_like(FL)
-
-		if SL >= 0.:
-			Fhllc = FL
-		elif SR <= 0.:
-			Fhllc = FR
-		elif (SL <= 0.) and (sss >= 0.):
-			slul = SL - unL
-			cl = slul/(SL - sss)
-			sssul = sss - unL
-			sssel = pL / (rhoL*slul)
-			ssstl = sss+sssel
-			c1l = rhoL*cl*sssul
-			c2l = rhoL*cl*sssul*ssstl
-
-			Fhllc[:, srho] = FL[:, srho] + SL*(UqL[:, srho]*(cl-1.))
-			Fhllc[:, smom] = FL[:, smom] + SL*(UqL[:, smom]*(cl-1.)+c1l*n1)
-			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UqL[:, srhoE]*(cl-1.)+c2l)
-
-		elif (sss <= 0.) and (SR >= 0.):
-			slur = SR - unR
-			cr = slur/(SR - sss)
-			sssur = sss - unR
-			ssser = pR / (rhoR*slur)
-			ssstr = sss+ssser
-			c1r = rhoR*cr*sssur
-			c2r = rhoR*cr*sssur*ssstr
-
-			Fhllc[:, srho] = FR[:, srho] + SR*(UqR[:, srho]*(cr-1.))
-			Fhllc[:, smom] = FR[:, smom] + SR*(UqR[:, smom]*(cr-1.)+c1r*n1)
-			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UqR[:, srhoE]*(cr-1.)+c2r)
-
-		return Fhllc
