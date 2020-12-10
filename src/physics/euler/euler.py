@@ -84,7 +84,6 @@ class Euler(base.PhysicsBase):
 	    TotalEnthalpy = "H"
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
-	    Velocity = "u"
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
@@ -162,8 +161,8 @@ class Euler1D(Euler):
 			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
 			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
-			euler_fcn_type.ExactRiemannSolution :
-					euler_fcns.ExactRiemannSolution,
+			euler_fcn_type.ShuOsherProblem : 
+					euler_fcns.ShuOsherProblem,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -237,11 +236,12 @@ class Euler1D(Euler):
 
 		return F, (u2, rho, p)
 
-	# REMOVE FOR MASTER
 	def get_conv_eigenvectors(self, U_bar):
 		'''
 		This function defines the convective eigenvectors for the 
-		1D euler equations.
+		1D euler equations. This is used with the WENO limiter to 
+		transform the system of equations from physical space to
+		characteristic space.
 
 		Inputs:
 		------- 
@@ -273,7 +273,7 @@ class Euler1D(Euler):
 		# Calculate pressure using the Ideal Gasd Law
 		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2) # [n, nq]
 		# Get total enthalpy
-		H = rhoE/rho + p/rho # CHECK : do I need to divide by rho here?
+		H = rhoE/rho + p/rho
 
 		# Get sound speed
 		a = np.sqrt(self.gamma * p / rho)
@@ -284,7 +284,7 @@ class Euler1D(Euler):
 		right_eigen = np.zeros([ne, 1, ns, ns])
 		left_eigen = np.zeros([ne, 1, ns, ns])
 
-		# Calculate the right and left eigenvectors
+		# # Calculate the right and left eigenvectors
 		right_eigen[:, :, irho, irho]  = 1.
 		right_eigen[:, :, irho, irhou] = 1.
 		right_eigen[:, :, irho, irhoE] = 1.
