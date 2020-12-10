@@ -43,6 +43,6 @@ def read_data_file(fname):
 	'''
 	# Open and get solver
 	with open(fname, 'rb') as fo:
-	    solver = pickle.load(fo)
+		solver = pickle.load(fo)
 
 	return solver
