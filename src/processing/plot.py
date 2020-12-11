@@ -520,8 +520,8 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	    U: state polynomial coefficients
 	    	[num_elems, num_basis_coeffs, num_state_vars]
 	    x: coordinates at which to evaluate solution
-	    	[num_elems, num_pts, ndims], where num_pts is the number of sample
-	    	points per element
+	    	[num_elems, num_pts, ndims], where num_pts is the 
+	    	number of sample points per element
 	    basis: basis object
 	    var_name: name of variable to get
 
@@ -534,6 +534,55 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	var_numer = physics.compute_variable(var_name, Uq)
 
 	return var_numer
+
+def get_average_solution(physics, solver, x, basis, var_name):
+	'''
+	This function evaluates the average numerical solution
+	at a set of points and plots them on the average x location of
+	each element.
+
+	Inputs:
+	-------
+	    physics: physics object
+	    U: state polynomial coefficients
+	    	[num_elems, num_basis_coeffs, num_state_vars]
+	    x: coordinates at which to evaluate solution
+	    	[num_elems, num_pts, ndims], where num_pts is the number of 
+	    	sample points per element
+	    basis: basis object
+	    var_name: name of variable to get
+
+	Outputs:
+	-------
+		var_numer: values of variable obtained at x
+			[num_elems, num_pts, 1]
+		x_bar: average coordinates for each element [num_elems, 1, 1]
+	'''
+	mesh = solver.mesh
+	order = solver.order
+	U = solver.state_coeffs
+
+	if physics.NDIMS > 1:
+		print("Plotting average state not available for 2D")
+		raise NotImplementedError
+
+	#Additions for Ubar
+	solver.elem_helpers.get_gaussian_quadrature(mesh, physics, basis, 
+			3*order)
+	solver.elem_helpers.get_basis_and_geom_data(mesh, basis, 3*order)
+
+	elem_helpers = solver.elem_helpers
+	quad_wts = elem_helpers.quad_wts
+	djacs = elem_helpers.djac_elems
+	vols = elem_helpers.vol_elems
+	Uq = helpers.evaluate_state(U, basis.basis_val)
+
+	Ubar = helpers.get_element_mean(Uq, quad_wts, djacs, vols)
+	var_numer = physics.compute_variable(var_name, Ubar)
+
+	x_bar = np.sum(x, axis=1).reshape([x.shape[0], 1, 1])/x.shape[1]
+
+	return var_numer, x_bar
 
 
 def get_ylabel(physics, var_name, ylabel=None):
@@ -655,10 +704,10 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 
 
 def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
-		plot_exact=False, plot_IC=False, create_new_figure=True, ylabel=None,
-		fmt='k-', legend_label=None, equidistant_pts=True,
-		include_mesh=False, regular_2D=False, equal_AR=False, skip=None,
-		**kwargs):
+		plot_exact=False, plot_average=False, plot_IC=False, 
+		create_new_figure=True, ylabel=None, fmt='k-', legend_label=None,
+		equidistant_pts=True, include_mesh=False, regular_2D=False, 
+		equal_AR=False, skip=None, **kwargs):
 	'''
 	This function plots the solution. For 2D calculations, the solution will
 	be plotted using a triangulation.
@@ -670,6 +719,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 	    solver: solver object
 	    var_name: name of variable to plot
 	    plot_numerical: plot numerical solution
+	    plot_average: plot average solution
 	    plot_exact: plot exact solution
 	    plot_IC: plot initial condition
 	    create_new_figure: if True, will create new figure before plotting
@@ -690,7 +740,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 	    kwargs: keyword arguments (see below)
 	'''
 	''' Compatibility check '''
-	plot_sum = plot_numerical + plot_exact + plot_IC
+	plot_sum = plot_numerical + plot_exact + plot_IC + plot_average
 	if plot_sum >= 2:
 		raise ValueError("Can only plot one solution at a time")
 	elif plot_sum == 0:
@@ -719,7 +769,10 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 				var_name)
 		var_plot.shape = x.shape[0], x.shape[1], -1
 		default_label = "Initial"
-
+	elif plot_average:
+		var_plot, x = get_average_solution(physics, solver, x,
+				solver.basis, var_name)
+		default_label = "Average"
 	if legend_label is None:
 		legend_label = default_label
 
