@@ -77,20 +77,23 @@ def set_time_stepping_approach(stepper, params):
 
 	'''
 	Hierarchy for cases goes:
-		1. number of time steps
-		2. time step size
+		1. number of time steps and tfinal
+		2. time step size and tfinal
 		3. CFL number
+		4. number of time steps and time step size
 	'''
-	if num_time_steps != None:
+	if num_time_steps != None and tfinal != None:
 		stepper.get_time_step = get_dt_from_num_time_steps
 		stepper.num_time_steps = num_time_steps
-	elif dt != None:
+	elif dt != None and tfinal != None:
 		stepper.get_time_step = get_dt_from_timestepsize
 		stepper.num_time_steps = math.ceil(tfinal/dt)
 	elif cfl != None:
 		stepper.get_time_step = get_dt_from_cfl
 		stepper.num_time_steps = 1
-
+	elif num_time_steps != None and tfinal == None:
+		stepper.get_time_step = get_dt_from_timestepsize_and_numtimesteps
+		stepper.num_time_steps = num_time_steps
 
 def get_dt_from_num_time_steps(stepper, solver):
 	'''
@@ -177,7 +180,6 @@ def get_dt_from_cfl(stepper, solver):
 	# Calculate max wavespeed
 	a = physics.compute_variable("MaxWaveSpeed", Uq,
 			flag_non_physical=True)
-
 	# Calculate the dt for each element
 	dt_elems = cfl*vol_elems**(1./ndims)/a
 
@@ -187,6 +189,31 @@ def get_dt_from_cfl(stepper, solver):
 	# logic to ensure final time step yields FinalTime
 	if time + dt < tfinal:
 		stepper.num_time_steps += 1
+		return dt
+	else:
+		return tfinal - time
+
+def get_dt_from_timestepsize_and_numtimesteps(stepper, solver):
+	'''
+	Sets dt directly based on input deck specification of
+	params["TimeStepSize"].
+
+	Inputs:
+	-------
+		stepper: stepper object (e.g., FE, RK4, etc...)
+		solver: solver object (e.g., DG, ADERDG, etc...)
+
+	Outputs:
+	--------
+		dt: time step for the solver
+	'''
+	time = solver.time
+	dt = solver.params["TimeStepSize"]
+	num_time_steps = stepper.num_time_steps
+
+	tfinal = dt*num_time_steps
+	# logic to ensure final time step yields FinalTime
+	if time + dt < tfinal:
 		return dt
 	else:
 		return tfinal - time
