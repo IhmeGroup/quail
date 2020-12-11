@@ -28,7 +28,6 @@ class SourceType(Enum):
 
 class ConvNumFluxType(Enum):
 	Roe = auto()
-	# HLLC = auto()
 
 
 '''
