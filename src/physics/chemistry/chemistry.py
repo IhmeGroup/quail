@@ -22,26 +22,27 @@ from physics.base.functions import FcnType as base_fcn_type
 
 import physics.euler.functions as euler_fcns
 from physics.euler.functions import BCType as euler_BC_type
-from physics.euler.functions import ConvNumFluxType as euler_conv_num_flux_type
+from physics.euler.functions import ConvNumFluxType as \
+		euler_conv_num_flux_type
 from physics.euler.functions import FcnType as euler_fcn_type
 from physics.euler.functions import SourceType as euler_source_type
 
 import physics.chemistry.functions as chemistry_fcns
 from physics.chemistry.functions import FcnType as chemistry_fcn_type
 from physics.chemistry.functions import SourceType as chemistry_source_type
-from physics.chemistry.functions import ConvNumFluxType as chemistry_conv_num_flux_type
+from physics.chemistry.functions import ConvNumFluxType as \
+		chemistry_conv_num_flux_type
 
 
-# REMOVE FOR MASTER
 class Chemistry(base.PhysicsBase):
 	'''
 	This class corresponds to the compressible Euler equations with a simple
-	transport equation for mass fraction. It is appropriate for testing simple
-	burned/unburned chemistry models. It inherits attributes and methods from
-	the PhysicsBase class. See PhysicsBase for detailed comments of attributes
-	and methods. This class should not be instantiated directly. Instead,
-	the 1D and 2D variants, which inherit from this class (see below),
-	should be instantiated.
+	transport equation for mass fraction. It is appropriate for testing 
+	simple single-species gas mixture chemistry models. It inherits 
+	attributes and methods from the PhysicsBase class. See PhysicsBase for 
+	detailed comments of attributes and methods. This class should not be 
+	instantiated directly. Instead,the 1D and 2D variants, which inherit 
+	from this class (see below), should be instantiated.
 
 	Additional methods and attributes are commented below.
 
@@ -140,6 +141,9 @@ class Chemistry(base.PhysicsBase):
 					gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["MassFraction"].name:
 			varq = rhoY/rho
+		#NOTE: 1D only right now.
+		elif vname is self.AdditionalVariables["Velocity"].name:
+			varq = mom/rho
 		else:
 			raise NotImplementedError
 
@@ -164,10 +168,8 @@ class Chemistry1D(Chemistry):
 			chemistry_fcn_type.DensityWave : chemistry_fcns.DensityWave,
 			chemistry_fcn_type.SimpleDetonation1 : \
 					chemistry_fcns.SimpleDetonation1,
-			# chemistry_fcn_type.SimpleDetonation2 : \
-			#		chemistry_fcns.SimpleDetonation2,
-			# chemistry_fcn_type.SimpleDetonation3 : \
-			#		chemistry_fcns.SimpleDetonation3,
+			chemistry_fcn_type.OverdrivenDetonation : \
+					chemistry_fcns.OverdrivenDetonation,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -181,8 +183,6 @@ class Chemistry1D(Chemistry):
 		})
 
 		self.conv_num_flux_map.update({
-			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
-			# chemistry_conv_num_flux_type.HLLC : chemistry_fcns.HLLC1D,
 		})
 
 	class StateVariables(Enum):
@@ -246,3 +246,117 @@ class Chemistry1D(Chemistry):
 		rho -= eps
 
 		return F, (u2, rho, p)
+
+	def get_conv_eigenvectors(self, U_bar):
+		'''
+		This function defines the convective eigenvectors for the 
+		1D euler equations with single-species chemistry.
+
+		Note: These eigenvectors are defined based on the equation
+			  of state chosen (see get_pressure in chemistry.py).
+
+		A more general definition of multicomponent reacting flow 
+		eigenvectors can be found in the following thesis by Fedkiw:
+
+		[1] Fedkiw, R., “A survey of chemically reacting, compressible 
+			flows,” Ph.D. Thesis, University of California Los Angeles,
+			1997. 
+
+		Inputs:
+		------- 
+			U_bar: Average state [ne, 1, ns]
+
+		Outputs:
+		--------
+			right_eigen: Right eigenvector matrix [ne, 1, ns, ns]
+			left_eigen: Left eigenvector matrix [ne, 1, ns, ns]
+		'''
+
+		# Unpack
+		ne = U_bar.shape[0]
+		eps = general.eps
+		
+		ns = self.NUM_STATE_VARS
+		
+		irho, irhou, irhoE, irhoY = self.get_state_indices()
+
+		rho = U_bar[:, :, irho]
+		rhou = U_bar[:, :, irhou]
+		rhoE = U_bar[:, :, irhoE]
+		rhoY = U_bar[:, :, irhoY]
+		rho += eps # prevent rare division-by-zero errors
+		
+		# Get mass fraction
+		Y = rhoY / rho
+
+		# Get velocity
+		u = rhou / rho
+		# Get squared velocity
+		u2 = u**2
+		# Calculate pressure using the Ideal Gasd Law
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2 \
+				- rhoY * self.qo) # [n, nq]
+		# Get total enthalpy
+		H = rhoE/rho + p/rho # CHECK : do I need to divide by rho here?
+
+		# Get sound speed
+		a = np.sqrt(self.gamma * p / rho)
+
+		gm1oa2 = (self.gamma - 1.) / (a * a)
+
+		# Allocate the right and left eigenvectors
+		right_eigen = np.zeros([ne, 1, ns, ns])
+		left_eigen = np.zeros([ne, 1, ns, ns])
+
+		# Calculate the right and left eigenvectors
+		right_eigen[:, :, irho, irho]  = 1.
+		right_eigen[:, :, irho, irhou] = 1.
+		right_eigen[:, :, irho, irhoE] = 1.
+		right_eigen[:, :, irho, irhoY] = 0.
+
+		right_eigen[:, :, irhou, irho]  = u - a
+		right_eigen[:, :, irhou,irhou] = u + a
+		right_eigen[:, :, irhou, irhoE] = u
+		right_eigen[:, :, irhou, irhoY] = 0.
+
+		right_eigen[:, :, irhoE, irho]  = H - u*a
+		right_eigen[:, :, irhoE, irhou] = H + u*a
+		right_eigen[:, :, irhoE, irhoE] = H - (1./gm1oa2)
+		right_eigen[:, :, irhoE, irhoY] = -self.qo
+
+		right_eigen[:, :, irhoY, irho]  = Y
+		right_eigen[:, :, irhoY, irhou] = Y
+		right_eigen[:, :, irhoY, irhoE] = Y
+		right_eigen[:, :, irhoY, irhoY] = 1.
+
+		b1 = gm1oa2
+		b2 = 1.+b1*u2-b1*H
+		b3 = b1*Y*(-self.qo)
+
+		left_eigen[:, :, irho, irho]  = (b2/2.)+(u/(2.*a))+(b3/2.)
+		left_eigen[:, :, irho, irhou] = (b2/2.)-(u/(2.*a))+(b3/2.)
+		left_eigen[:, :, irho, irhoE] = 1-b2-b3
+		left_eigen[:, :, irho, irhoY] = -Y
+
+		left_eigen[:, :, irhou, irho]  = -b1*u/2. - 1./(2.*a)
+		left_eigen[:, :, irhou, irhou] = -b1*u/2. + 1./(2.*a)
+		left_eigen[:, :, irhou, irhoE] = b1*u
+		left_eigen[:, :, irhou, irhoY] = 0.
+
+		left_eigen[:, :, irhoE, irho]  = b1/2.
+		left_eigen[:, :, irhoE, irhou] = b1/2.
+		left_eigen[:, :, irhoE, irhoE] = -b1
+		left_eigen[:, :, irhoE, irhoY] = 0.
+
+		left_eigen[:, :, irhoY, irho]  = -b1*(-self.qo)/2.
+		left_eigen[:, :, irhoY, irhou] = -b1*(-self.qo)/2.
+		left_eigen[:, :, irhoY, irhoE] = b1*(-self.qo)
+		left_eigen[:, :, irhoY, irhoY] = 1.
+
+		left_eigen = left_eigen.transpose(0,1,3,2)
+
+		# Can uncomment line below to test l dot r = kronecker delta
+		# test = np.einsum('elij,eljk->elik', left_eigen, right_eigen)
+		# import code; code.interact(local=locals())
+
+		return right_eigen, left_eigen # [ne, 1, ns, ns]

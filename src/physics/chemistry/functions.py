@@ -18,16 +18,18 @@ from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
 class FcnType(Enum):
     DensityWave = auto()
     SimpleDetonation1 = auto()
-    # SimpleDetonation2 = auto()
-    # SimpleDetonation3 = auto()
+    OverdrivenDetonation = auto()
+
 
 class SourceType(Enum):
     Arrhenius = auto()
     # Heaviside = auto()
 
+
 class ConvNumFluxType(Enum):
 	Roe = auto()
 	# HLLC = auto()
+
 
 '''
 State functions
@@ -113,98 +115,193 @@ class SimpleDetonation1(FcnBase):
 
 		return Uq # [ne, nq, ns]
 
-# class SimpleDetonation2(FcnBase):
-# 	def __init__(self, uL=np.array([2.,4.,40.,0.]), xshock=0.):
-# 		# These values represent the unburned state.
-# 		self.uL = uL
-# 		self.xshock = xshock
+class OverdrivenDetonation(FcnBase):
+	'''
+	The one dimensional overdriven detonation case is a temporally evolving
+	unsteady wave. The gas mixture is considered calorically perfect.
 
-# 	def get_state(self, physics, x, t):
+	The chemical kinetics are governed by a single-step irreversible 
+	reaction (see Arrhenius in source terms below).
 
-# 		uL = self.uL
-# 		xshock = self.xshock
+	A single species mass fraction characterizes the conversion from the
+	unburnt to burnt state for the single step chemistry. The initial 
+	conditions are determined from the Zeldovich, Neumann, and Doering (ZND) 
+	profiles by specifying an overdrive factor of 1.6. Details of solving 
+	for the ZND initial condition can be found in Fickett and Davis:
 
-# 		rhoL = uL[0]
-# 		vL = uL[1]
-# 		pL = uL[2]
-# 		yL = uL[3]
+		[1] Fickett, W., and Davis, W., Detonation - Theory and Experiment, 
+			Dover Publications, 2000.
 
-# 		# Unpack relevant constants from physics class.
-# 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
-# 		gam = physics.gamma
-# 		qo = physics.qo
-# 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+	Further details of this case can be found in the following references:
 
-# 		delta = np.sqrt((2.*(gam - 1.)) / (gam + 1.))
+		[2] Hwang, P., Fedkiw, R., Merriman, B., Aslam, T., Karagozian, A., 
+			and Osher, S., “Numerical resolution of pulsating detonation
+			waves,” Combustion Theory and Modeling, Vol. 4, 2000, pp. 
+			217–240.
 
-# 		rhoR = gam / (1. + delta)
-# 		vR = -1.*delta
-# 		pR = 1. - gam * delta
-# 		yR = 1.
+		[3] Lv, Y., and Ihme, M., “Discontinuous Galerkin method for 
+			multicomponent chemically reacting flows and combustion,” 
+			Journal of Computational Physics, Vol. 270, 2014, pp. 105–137.
 
-# 		ileft = (x <= xshock).reshape(-1)
-# 		iright = (x > xshock).reshape(-1)
+		[4] Bornhoft, B., Ching, E., and Ihme, M., "Time integration 
+			considerations for the solution of reacting flows using 
+			discontinuous Galerkin methods". AIAA SciTech, 2021.
 
-# 		Uq[iright, srho] = rhoR
-# 		Uq[ileft, srho] = rhoL
-# 		# Momentum
-# 		Uq[iright, srhou] = rhoR*vR
-# 		Uq[ileft, srhou] = rhoL*vL
-# 		# Energy
-# 		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
-# 		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
-# 		# MixtureFraction
-# 		Uq[iright, srhoz] = rhoR*yR
-# 		Uq[ileft, srhoz] = rhoL*yL
+	Attributes:
+	-----------
+	xshock: float
+		initial location of shock
+	'''
+	def __init__(self, xshock=75.0):
+		'''
+		This method initializes the attributes.
 
-# 		return Uq
+		Inputs:
+		-------
+		    xshock: initial location of shock
 
-# class SimpleDetonation3(FcnBase):
-# 	def __init__(self, uL=np.array([2.,4.,40.,0.]), uR=np.array([0.,0.,0.,0.]), xshock=0.):
-# 		# These values represent the unburned state.
-# 		self.uL = uL
-# 		self.uR = uR
-# 		self.xshock = xshock
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.xshock = xshock
+		self.lam = None
 
-# 	def get_state(self, physics, x, t):
+	def get_state(self, physics, x, t):
+		# Unpack
+		xshock = self.xshock
 
-# 		uL = self.uL
-# 		uR = self.uR
-# 		xshock = self.xshock
+		srho, srhou, srhoE, srhoY = physics.get_state_slices()
 
-# 		rhoL = uL[0]
-# 		vL = uL[1]
-# 		pL = uL[2]
-# 		yL = uL[3]
+		gamma = physics.gamma
+		qo = physics.qo
+		R = physics.R
 
-# 		rhoR = uR[0]
-# 		vR = uR[1]
-# 		pR = uR[2]
-# 		yR = uR[3]
+		# Source term constants
+		Ta = physics.source_terms[0].Tign
+		A = physics.source_terms[0].A
 
-# 		# Unpack relevant constants from physics class.
-# 		srho, srhou, srhoE, srhoz = physics.get_state_slices()
-# 		gam = physics.gamma
-# 		qo = physics.qo
-# 		Uq = np.zeros([x.shape[0], physics.NUM_STATE_VARS])
+		# Normalized Pre-shock state 
+		rho1 = 1.
+		p1 = 1.
+		u1 = 0.
+		y1 = 1.
 
-# 		ileft = (x <= xshock).reshape(-1)
-# 		iright = (x > xshock).reshape(-1)
-# 		# Density
-# 		rhoR = 1. + 0.5*np.sin(2.*x[iright])
-# 		Uq[iright, srho] = rhoR
-# 		Uq[ileft, srho] = rhoL
-# 		# Momentum
-# 		Uq[iright, srhou] = rhoR*vR
-# 		Uq[ileft, srhou] = rhoL*vLA
-# 		# Energy
-# 		Uq[iright, srhoE] = pR/(gam-1.) + 0.5*rhoR*vR*vR + qo*rhoR*yR
-# 		Uq[ileft, srhoE] = pL/(gam-1.) + 0.5*rhoL*vL*vL + qo*rhoL*yL
-# 		# MixtureFraction
-# 		Uq[iright, srhoz] = rhoR*yR
-# 		Uq[ileft, srhoz] = rhoL*yL
+		# Sound speed and M calc
+		a1 = np.sqrt(gamma*p1/rho1)
 
-# 		return Uq
+		# Specify overdriven shock speed from Ref. [2]
+		W = 8.6134
+
+		# Calculate Mach number
+		M = W / a1
+
+		dt = 0.5
+		tfinal = 2.0 * A # Two times A is enough to get to steady region.
+		NumTimeSteps = int(tfinal/dt)
+		t = 0.
+		if self.lam is None: # Only compute on initialization.
+			# Allocate arrays
+			lam = np.zeros([NumTimeSteps])
+			xref = np.zeros([NumTimeSteps])
+			p = np.zeros([NumTimeSteps])
+			rho = np.zeros([NumTimeSteps])
+			u = np.zeros([NumTimeSteps])
+			T = np.zeros([NumTimeSteps])
+
+			# Use Forward Euler integration to solve for reaction layer 
+			# properties.
+			for i in range(NumTimeSteps-1):
+				alpha = np.sqrt(((M-(1./M))**2 - 2.*(gamma**2-1.)* \
+				(lam[i]*qo/gamma))/((gamma+1.)**2*M**2))
+				p[i] = (gamma*M**2 + 1.)/(gamma+1.) + gamma*M**2 * alpha
+				v = (gamma + (1./M**2))/(gamma+1.) - alpha
+				rho[i] = 1./v
+				u[i] = ((M - (1/M))/(gamma+1.) + M*alpha)*np.sqrt(gamma)
+				T[i] = p[i]/(rho[i]*R)
+				
+				rhs = (1 - lam[i]) * np.exp(-Ta/(R*T[i]))
+
+				lam[i+1] = lam[i] + dt * rhs
+				t = t + dt
+				xref[i+1] = xref[i] + (W-u[i])*dt/A
+
+			# Store properties
+			self.lam = lam
+			self.p = p
+			self.rho = rho
+			self.u = u
+			self.T = T
+			self.xref = xref
+
+		else:
+
+			# Unpack
+			lam = self.lam
+			p = self.p
+			rho = self.rho
+			u = self.u
+			T = self.T
+			xref = self.xref
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		for elem_ID in range(Uq.shape[0]):
+
+			# Determine left, right, and middle (reacting layer) locations
+			ileft = (x[elem_ID] <= xshock - 3.0).reshape(-1)
+			iright = (x[elem_ID] > xshock).reshape(-1)
+			imiddle = np.logical_and(x[elem_ID] <= xshock,
+					x[elem_ID] > xshock- 3.0).reshape(-1)
+			if np.any(imiddle) == True:
+				
+				for j in range(Uq.shape[1]):
+					if imiddle[j] == True:
+						xdist = xshock - xref
+						index = (np.abs(xdist - x[elem_ID,j])).argmin()
+
+						# Density
+						Uq[elem_ID, j, srho] = rho[index]
+						# Momentum
+						Uq[elem_ID, j, srhou] = rho[index]*(u[index])
+						# Energy
+						Uq[elem_ID, j, srhoE] = p[index]/(gamma - 1.) + \
+								0.5*rho[index]*(u[index])**2 + \
+								qo*rho[index]*(1.-lam[index])
+						# Mass fraction
+						Uq[elem_ID, j, srhoY] = rho[index]*(1.-lam[index])
+
+			else:
+					# Density
+				Uq[elem_ID, iright, srho] = rho1
+				# Momentum
+				Uq[elem_ID, iright, srhou] = rho1*u1
+				# Energy (Mass Fraction is one at iright state)
+				Uq[elem_ID, iright, srhoE] = p1/(gamma - 1.) + \
+						0.5*rho1*u1*u1 + qo*rho1*1.
+				# Mass fraction (Mass Fraction is one at iright state)
+				Uq[elem_ID, iright, srhoY] = rho1*1.
+
+
+				# Calculate post-detonation properties.
+				alpha = np.sqrt(((M-(1./M))**2 - 2*(gamma**2-1.)* \
+				(1.*qo/gamma))/((gamma+1.)**2*M**2))
+				p3 = (gamma*M**2 + 1.)/(gamma+1.) + gamma*M**2 * alpha
+				v3 = (gamma + (1./M**2))/(gamma+1.) - alpha
+				rho3 = 1./v3
+				u3 = ((M - (1/M))/(gamma+1.) + M*alpha)*np.sqrt(gamma)
+
+				# Density
+				Uq[elem_ID, ileft, srho] = rho3
+				# Momentum
+				Uq[elem_ID, ileft, srhou] = rho3*(u3)
+				# Energy (Mass Fraction is zero at ileft state)
+				Uq[elem_ID, ileft, srhoE] = p3/(gamma - 1.) + \
+						0.5*rho3*(u3)**2 + qo*rho3*0.
+				# Mass fraction (Mass Fraction is zero at ileft state)
+				Uq[elem_ID, ileft, srhoY] = rho3*0.						
+
+		return Uq # [ne, nq, ns]
+
 
 '''
 Source term functions
@@ -366,107 +463,3 @@ def get_temperature_jacobian(physics, Uq):
 '''
 Numerical flux functions
 '''
-# class HLLC1D(ConvNumFluxBase):
-# 	def __init__(self, Uq=None):
-# 		if Uq is not None:
-# 			n = Uq.shape[0]
-# 			ns = Uq.shape[1]
-# 			dim = ns - 2
-# 		else:
-# 			n = 0; ns = 0; dim = 0
-
-# 	def compute_flux(self, physics, UqL, UqR, n):
-
-# 		# Indices
-# 		srho = physics.get_state_slice("Density")
-# 		smom = physics.get_momentum_slice()
-# 		srhoE = physics.get_state_slice("Energy")
-# 		srhoY = physics.get_state_slice("Mixture")
-
-
-# 		NN = np.linalg.norm(n, axis=1, keepdims=True)
-# 		n1 = n/NN
-
-# 		gam = physics.gamma
-
-# 		# unpack left hand state
-# 		rhoL = UqL[:, srho]
-# 		uL = UqL[:, smom]/rhoL
-# 		unL = uL * n1
-# 		pL = physics.compute_variable("Pressure", UqL)
-# 		cL = physics.compute_variable("SoundSpeed", UqL)
-# 		# unpack right hand state
-# 		rhoR = UqR[:, srho]
-# 		uR = UqR[:, smom]/rhoR
-# 		unR = uR * n1
-# 		pR = physics.compute_variable("Pressure", UqR)
-# 		cR = physics.compute_variable("SoundSpeed", UqR)
-
-# 		# calculate averages
-# 		rho_avg = 0.5 * (rhoL + rhoR)
-# 		c_avg = 0.5 * (cL + cR)
-
-# 		# Step 1: Get pressure estimate in the star region
-# 		pvrs = 0.5 * ((pL + pR) - (unR - unL)*rho_avg*c_avg)
-# 		p_star = max(0., pvrs)
-
-# 		pspl = p_star / pL
-# 		pspr = p_star / pR
-
-# 		# Step 2: Get SL and SR
-# 		qL = 1.
-# 		if pspl > 1.:
-# 			qL = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspl - 1.))
-# 		SL = unL - cL*qL
-
-# 		qR = 1.
-# 		if pspr > 1.:
-# 			qR = np.sqrt(1. + (gam + 1.) / (2.*gam) * (pspr - 1.))
-# 		SR = unR + cR*qR
-
-# 		# Step 3: Get shear wave speed
-# 		raa1 = 1./(rho_avg*c_avg)
-# 		sss = 0.5*(unL+unR) + 0.5*(pL-pR)*raa1
-
-# 		# flux assembly
-
-# 		# Left State
-# 		FL = physics.get_conv_flux_projected(UqL, n1)
-# 		# Right State
-# 		FR = physics.get_conv_flux_projected(UqR, n1)
-
-# 		Fhllc = np.zeros_like(FL)
-
-# 		if SL >= 0.:
-# 			Fhllc = FL
-# 		elif SR <= 0.:
-# 			Fhllc = FR
-# 		elif (SL <= 0.) and (sss >= 0.):
-# 			slul = SL - unL
-# 			cl = slul/(SL - sss)
-# 			sssul = sss - unL
-# 			sssel = pL / (rhoL*slul)
-# 			ssstl = sss+sssel
-# 			c1l = rhoL*cl*sssul
-# 			c2l = rhoL*cl*sssul*ssstl
-
-# 			Fhllc[:, srho] = FL[:, srho] + SL*(UqL[:, srho]*(cl-1.))
-# 			Fhllc[:, smom] = FL[:, smom] + SL*(UqL[:, smom]*(cl-1.)+c1l*n1)
-# 			Fhllc[:, srhoE] = FL[:, srhoE] + SL*(UqL[:, srhoE]*(cl-1.)+c2l)
-# 			Fhllc[:, srhoY] = FL[:, srhoY] + SL*(UqL[:, srhoY]*(cl-1.))
-
-# 		elif (sss <= 0.) and (SR >= 0.):
-# 			slur = SR - unR
-# 			cr = slur/(SR - sss)
-# 			sssur = sss - unR
-# 			ssser = pR / (rhoR*slur)
-# 			ssstr = sss+ssser
-# 			c1r = rhoR*cr*sssur
-# 			c2r = rhoR*cr*sssur*ssstr
-
-# 			Fhllc[:, srho] = FR[:, srho] + SR*(UqR[:, srho]*(cr-1.))
-# 			Fhllc[:, smom] = FR[:, smom] + SR*(UqR[:, smom]*(cr-1.)+c1r*n1)
-# 			Fhllc[:, srhoE] = FR[:, srhoE] + SR*(UqR[:, srhoE]*(cr-1.)+c2r)
-# 			Fhllc[:, srhoY] = FR[:, srhoY] + SR*(UqR[:, srhoY]*(cr-1.))
-
-# 		return Fhllc
