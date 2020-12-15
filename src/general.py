@@ -72,20 +72,17 @@ class LimiterType(Enum):
 	src/numerics/limiting/ for more information.
 	'''
 	PositivityPreserving = auto()
-	# REMOVE FOR MASTER
 	PositivityPreservingChem = auto()
-	ScalarWENO = auto()
-	EulerWENO = auto()
+	WENO = auto()
 
-# REMOVE FOR MASTER
 class ShockIndicatorType(Enum):
 	'''
 	This enum contains the available shoock indicator 
 	types. See src/numerics/limiting/ for more info.
 	'''
 	MinMod = auto()
-	MinModEuler = auto()
-
+		# Uses a TVB modified minmod to tag troubled elements.
+	
 
 class SolverType(Enum):
 	'''
