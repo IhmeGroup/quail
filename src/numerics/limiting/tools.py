@@ -9,7 +9,6 @@ import numpy as np
 
 import general
 import numerics.limiting.positivitypreserving as pp_limiter
-# REMOVE FOR MASTER
 import numerics.limiting.wenolimiter as weno_limiter
 import numerics.helpers.helpers as helpers
 
@@ -32,14 +31,11 @@ def set_limiter(limiter_type, physics_type):
 	elif general.LimiterType[limiter_type] is \
 			general.LimiterType.PositivityPreserving:
 		limiter_class = pp_limiter.PositivityPreserving
-	# REMOVE FOR MASTER
 	elif general.LimiterType[limiter_type] is \
 			general.LimiterType.PositivityPreservingChem:
 		limiter_class = pp_limiter.PositivityPreservingChem
-	elif general.LimiterType[limiter_type] is general.LimiterType.ScalarWENO:
-		limiter_class = weno_limiter.ScalarWENO
-	elif general.LimiterType[limiter_type] is general.LimiterType.EulerWENO:
-		limiter_class = weno_limiter.EulerWENO
+	elif general.LimiterType[limiter_type] is general.LimiterType.WENO:
+		limiter_class = weno_limiter.WENO
 	else:
 		raise NotImplementedError
 
@@ -48,7 +44,6 @@ def set_limiter(limiter_type, physics_type):
 
 	return limiter
 
-# REMOVE FOR MASTER
 def set_shock_indicator(limiter, shock_indicator_type):
 	'''
 	This function sets the appropriate shock indicator.
@@ -62,15 +57,11 @@ def set_shock_indicator(limiter, shock_indicator_type):
 	elif general.ShockIndicatorType[shock_indicator_type] is \
 			general.ShockIndicatorType.MinMod:
 		limiter.shock_indicator = minmod_shock_indicator
-	elif general.ShockIndicatorType[shock_indicator_type] is \
-			general.ShockIndicatorType.MinModEuler:
-		limiter.shock_indicator = minmod_shock_indicator_euler
 		
-# REMOVE FOR MASTER
+
 def minmod_shock_indicator(limiter, solver, Uc):
 	'''
-	Minmod calculation used to determine if oscillations are large enough
-	to require limiting.
+	TVB modified Minmod calculation used to detect shocks
 
 	Inputs:
 	-------
@@ -85,97 +76,7 @@ def minmod_shock_indicator(limiter, solver, Uc):
 	# Unpack
 	physics = solver.physics
 	mesh = solver.mesh
-
-	elem_helpers = solver.elem_helpers
-	int_face_helpers = solver.int_face_helpers
-
-	elemP_IDs = limiter.elemP_IDs
-	elemM_IDs = limiter.elemM_IDs
-	djacs = limiter.djac_elems
-	djacP = limiter.djac_elems[elemP_IDs]
-	djacM = limiter.djac_elems[elemM_IDs]
-
-	UcP = solver.state_coeffs[elemP_IDs]
-	UcM = solver.state_coeffs[elemM_IDs]
-
-	# Interpolate state at quadrature points over element and on faces
-	U_elem_faces = helpers.evaluate_state(Uc, limiter.basis_val_elem_faces,
-			skip_interp=solver.basis.skip_interp)
-	nq_elem = limiter.quad_wts_elem.shape[0]
-	U_elem = U_elem_faces[:, :nq_elem, :]
-	U_face = U_elem_faces[:, nq_elem:, :]
-
-	# Average value of states
-	U_bar = helpers.get_element_mean(U_elem, limiter.quad_wts_elem, djacs,
-			limiter.elem_vols)
-
-	# UcP neighbor evaluated at quadrature points
-	Up_elem = helpers.evaluate_state(UcP, elem_helpers.basis_val,
-			skip_interp=solver.basis.skip_interp)
-	# Average value of state
-	Up_bar = helpers.get_element_mean(Up_elem, limiter.quad_wts_elem, djacP,
-			limiter.elem_vols[elemP_IDs])
-
-	# UcM neighbor evaluated at quadrature points
-	Um_elem = helpers.evaluate_state(UcM, elem_helpers.basis_val,
-			skip_interp=solver.basis.skip_interp)
-	# Average value of state
-	Um_bar = helpers.get_element_mean(Um_elem, limiter.quad_wts_elem, djacM,
-			limiter.elem_vols[elemM_IDs])
-
-	# Store the polynomial coeff values for Up, Um, and U.
-	limiter.U_elem = Uc
-	limiter.Up_elem = UcP
-	limiter.Um_elem = UcM
-
-	# Store the average values for Up, Um, and U.
-	limiter.U_bar = U_bar
-	limiter.Up_bar = Up_bar
-	limiter.Um_bar = Um_bar
-
-	U_tilde = (U_face[:, 1, :] - U_bar[:, 0, :]).reshape(U_bar.shape)
-	U_dtilde = (U_bar[:, 0, :] - U_face[:, 0, :]).reshape(U_bar.shape)
-
-	deltaP_u_bar = Up_bar - U_bar
-	deltaM_u_bar = U_bar - Um_bar
-
-	aj = np.zeros([U_tilde.shape[0], 3, 1])
-	aj[:, 0, :] = U_tilde[:, 0, :]
-	aj[:, 1, :] = deltaP_u_bar[:, 0, :]
-	aj[:, 2, :] = deltaM_u_bar[:, 0, :]
-	u_tilde_mod = minmod(aj)
-
-	aj = np.zeros([U_dtilde.shape[0], 3, 1])
-	aj[:, 0, :] = U_dtilde[:, 0, :]
-	aj[:, 1, :] = deltaP_u_bar[:, 0, :]
-	aj[:, 2, :] = deltaM_u_bar[:, 0, :]
-	u_dtilde_mod = minmod(aj)
-
-	shock_elems = np.where((u_tilde_mod != U_tilde)
-			| (u_dtilde_mod != U_dtilde))[0]
-
-	return shock_elems
-
-# REMOVE FOR MASTER
-def minmod_shock_indicator_euler(limiter, solver, Uc):
-	'''
-	Minmod calculation used to determine if oscillations are large enough 
-	to require limiting.
-
-	Inputs:
-	-------
-		limiter: limiter object
-		solver: solver object
-		Uc: state coefficients [ne, nb, ns]
-
-	Outputs:
-	--------
-		shock_elems: array with IDs of elements flagged for limiting
-	'''
-	# Unpack
-	physics = solver.physics
-	mesh = solver.mesh
-
+	tvb_param = limiter.tvb_param
 	ns = physics.NUM_STATE_VARS
 
 	elem_helpers = solver.elem_helpers
@@ -196,7 +97,12 @@ def minmod_shock_indicator_euler(limiter, solver, Uc):
 	nq_elem = limiter.quad_wts_elem.shape[0]
 	U_elem = U_elem_faces[:, :nq_elem, :]
 	U_face = U_elem_faces[:, nq_elem:, :]
-		
+	
+	if solver.basis.skip_interp is True:
+		U_face = np.zeros([U_elem.shape[0], 2, ns])
+		U_face[:, 0, :] = U_elem[:, 0, :]
+		U_face[:, 1, :] = U_elem[:, -1, :]
+
 	# Average value of states
 	U_bar = helpers.get_element_mean(U_elem, limiter.quad_wts_elem, djacs, 
 			limiter.elem_vols)
@@ -234,39 +140,37 @@ def minmod_shock_indicator_euler(limiter, solver, Uc):
 
 	deltaP_u_bar = Up_bar - U_bar
 	deltaM_u_bar = U_bar - Um_bar
+	
+	aj = np.zeros([U_tilde.shape[0], 3, ns])
+	aj[:, 0, :] = U_tilde[:, 0, :]
+	aj[:, 1, :] = deltaP_u_bar[:, 0, :]
+	aj[:, 2, :] = deltaM_u_bar[:, 0, :]
+	u_tilde_mod = minmod(aj)
 
-	v_tilde = np.einsum('elij, elj -> eli', left_eigen, U_tilde)
-	v_dtilde = np.einsum('elij, elj -> eli', left_eigen, U_dtilde)
+	tvb = np.where(np.abs(aj[:, 0, :]) <= tvb_param * \
+			limiter.elem_vols[0]**2)[0]
+	u_tilde_mod[tvb, 0] = aj[tvb, 0, :]
 
-	deltaP_v_bar = np.einsum('elij, elj -> eli', left_eigen, deltaP_u_bar)
-	deltaM_v_bar = np.einsum('elij, elj -> eli', left_eigen, deltaM_u_bar)
+	aj = np.zeros([U_dtilde.shape[0], 3, ns])
+	aj[:, 0, :] = U_dtilde[:, 0, :]
+	aj[:, 1, :] = deltaP_u_bar[:, 0, :]
+	aj[:, 2, :] = deltaM_u_bar[:, 0, :]
+	u_dtilde_mod = minmod(aj)
+	tvd = np.where(np.abs(aj[:, 0, :]) <= tvb_param * \
+			limiter.elem_vols[0]**2)[0]
+	u_dtilde_mod[tvd, 0] = aj[tvd, 0, :]
 
-	aj = np.zeros([v_tilde.shape[0], 3, ns])
-	aj[:, 0, :] = v_tilde[:, 0, :]
-	aj[:, 1, :] = deltaP_v_bar[:, 0, :]
-	aj[:, 2, :] = deltaM_v_bar[:, 0, :]
-	v_tilde_mod = minmod(aj)
-	test = np.where(np.abs(aj[:, 0, :]) <= 0.01* limiter.elem_vols[0]**2)[0]
-	v_tilde_mod[test] = aj[test, 0, :].reshape([test.shape[0],1,3])
-	aj = np.zeros([v_dtilde.shape[0], 3, ns])
-	aj[:, 0, :] = v_dtilde[:, 0, :]
-	aj[:, 1, :] = deltaP_v_bar[:, 0, :]
-	aj[:, 2, :] = deltaM_v_bar[:, 0, :]
-	v_dtilde_mod = minmod(aj)
-	test = np.where(np.abs(aj[:, 0, :]) <= 0.01* limiter.elem_vols[0]**2)[0]
-	v_dtilde_mod[test] = aj[test, 0, :].reshape([test.shape[0],1,3])
 
-	check1 = np.abs(v_tilde_mod) - np.abs(v_tilde)
-	check2 = np.abs(v_dtilde_mod) - np.abs(v_dtilde)
+	check1 = u_tilde_mod - U_tilde
+	check2 = u_dtilde_mod - U_dtilde
 
-	shock_elems = np.where((np.abs(check1) > 1.e-12)
-			| (np.abs(check2) > 1.e-12))[0]
+	shock_elems = np.where((np.abs(check1[:,:,0]) > 1.e-12)
+			| (np.abs(check2[:,:,0]) > 1.e-12))[0]
 
-	# shock_elems = np.where((v_tilde_mod != v_tilde) 
-	# 		| (v_dtilde_mod != v_dtilde))[0]
+	# print(shock_elems)
 	return shock_elems
 
-# REMOVE FOR MASTER
+
 def minmod(a):
 	'''
 	Calculates the minmod function for the minmod shock indicator function
@@ -279,25 +183,23 @@ def minmod(a):
 	--------
 		u: evaluated minmod state [ne, 1, 1]
 	'''
-	s_hold = np.sign(a)
-	a += general.eps
-	s = np.sign(a)
-	a -= general.eps
-	# Allocate with a large negative number. 
-	u = -1234567.*np.ones([a.shape[0], 1, a.shape[-1]])
 
-	elemID_gt = np.where(np.all(s > 0., axis=1))[0]
-	elemID_lt = np.where(np.all(s < 0., axis=1))[0]
-	if elemID_gt.size != 0:
-		u[elemID_gt, 0, :] = s_hold[elemID_gt, 0, :] * np.amin(
-				np.abs(a[elemID_gt]), axis=1)
-	if elemID_lt.size !=0:
-		u[elemID_lt, 0, :] = s_hold[elemID_lt, 0, :] * np.amin(
-				np.abs(a[elemID_lt]), axis=1)
+	ns = a.shape[2]
+	nelem = a.shape[0]
+	u = np.zeros([nelem, 1, ns])
+
+	for i in range(ns):
+		s1 = np.sign(a[:, 0, i])
+		s2 = np.sign(a[:, 1, i])
+		s3 = np.sign(a[:, 2, i])
+		sign_agreement = np.where(np.logical_and(s1 == s2, s2 == s3))[0]
+		if sign_agreement.size !=0:
+			u[sign_agreement, 0, i] = s1[sign_agreement] * \
+					np.min(np.abs(a[sign_agreement, :, i]))
 
 	return u # [ne, 1, 1]
 
-# REMOVE FOR MASTER
+
 def get_hessian(limiter, basis, quad_pts):
 	'''
 	Calculates the reference hessian of the basis function
@@ -321,14 +223,45 @@ def get_hessian(limiter, basis, quad_pts):
 	basis_ref_hessian = np.zeros([nq, nb, ndims])
 
 	if p > 0:
-		xnodes = basis.get_1d_nodes(-1., 1., p+1)
-		get_lagrange_hessian_1D(quad_pts, xnodes,
+		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
+			get_legendre_hessian_1D(quad_pts, p, 
 				basis_ref_hessian=basis_ref_hessian)
+		else:
+			xnodes = basis.get_1d_nodes(-1., 1., p+1)
+			get_lagrange_hessian_1D(quad_pts, xnodes,
+					basis_ref_hessian=basis_ref_hessian)
 
 	return basis_ref_hessian # [nq, nb, ndims]
 
 
-# REMOVE FOR MASTER
+def get_legendre_hessian_1D(xq, p, basis_ref_hessian=None):
+	'''
+	Calculates the 1D Lagrange hessian
+
+	Inputs:
+	-------
+		xq: coordinates of quadrature points [nq, 1]
+		xnodes: coordinates of nodes in 1D ref space [nb, 1]
+
+	Outputs:
+	--------
+		basis_hessian: evaluated reference hessian [nq, nb, ndims]
+	'''
+	# Use numpy legendre polynomials
+	leg_poly = np.polynomial.legendre.Legendre
+
+	xq.shape = -1
+
+	xq.shape = -1, 1
+
+	if basis_ref_hessian is not None:
+		basis_ref_hessian[:,:] = 0.
+
+		for it in range(p+1):
+			dleg = leg_poly.basis(it).deriv(2)
+			basis_ref_hessian[:,it] = dleg(xq)
+
+
 def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 	'''
 	Calculates the 1D Lagrange hessian
@@ -360,7 +293,6 @@ def get_lagrange_hessian_1D(xq, xnodes, basis_ref_hessian=None):
 						basis_ref_hessian[:, j, :] += h
 
 
-# REMOVE FOR MASTER
 def get_phys_hessian(limiter, basis, ijac):
 	'''
 	Calculates the physical gradient of the hessian
