@@ -6,6 +6,7 @@
 #
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
+import importlib
 import numpy as np
 import time
 
@@ -131,6 +132,7 @@ class SolverBase(ABC):
 		# Limiter
 		limiter_types = params["ApplyLimiters"]
 		shock_indicator_type = params["ShockIndicator"]
+		tvb_param = params["TVBParameter"]
 		self.limiters = []
 		for limiter_type in limiter_types:
 			limiter = limiter_tools.set_limiter(limiter_type,
@@ -138,11 +140,25 @@ class SolverBase(ABC):
 			limiter_tools.set_shock_indicator(limiter,
 					shock_indicator_type)
 			self.limiters.append(limiter)
+			# Set TVB Parameter
+			limiter.tvb_param = tvb_param
 
 		# Console output
 		self.verbose = params["Verbose"]
 		self.min_state = np.zeros(physics.NUM_STATE_VARS)
 		self.max_state = np.zeros(physics.NUM_STATE_VARS)
+
+
+		# Search for custom_user_function in case directory
+		custom_user_function = self.params["CustomFunctionFilename"]
+		try:
+			user_fcn = importlib.import_module(custom_user_function)
+			self.custom_user_function = \
+					user_fcn.custom_user_function
+		except ModuleNotFoundError:
+			pass # Not an error, just pass as the user provided
+				 # custom function file is not in the current 
+				 # directory.
 
 		# Compatibility checks
 		self.check_compatibility()
@@ -575,11 +591,19 @@ class SolverBase(ABC):
 		print("--------------------------------------------------------" + \
 				"-----------------------")
 
+
 		itime = 0
 		while itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
 			self.min_state[:] = np.inf
+
+			# Check to see if custom user function is available
+			custom_user_function = getattr(self, 
+					"custom_user_function", None)
+			# Call custom function if available
+			if callable(custom_user_function):
+				self.custom_user_function(self)
 
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
@@ -593,6 +617,7 @@ class SolverBase(ABC):
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
+
 
 			# Write data file
 			if (itime + 1) % write_interval == 0:
