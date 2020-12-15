@@ -20,7 +20,7 @@ Restart = {
 TimeStepping = {
 	"InitialTime" : 0.,
 		# Initial time
-	"FinalTime" : 1.,
+	"FinalTime" : None,
 		# Final time
 	"NumTimeSteps" : None,
 		# Number of time steps (1st priority)
@@ -78,6 +78,11 @@ Numerics = {
 		# Shock Indicator Type
 		# If None, then no shock indicator is applied
 		# See general.ShockIndicatorType
+	"TVBParameter" : 100.,
+		# TVB MinMod Indicator
+		# Default is set to 100. 
+		# This parameter modifies the sensitivity of the MinMod shock
+		# indicator. It is problem dependent.
 	"SourceTreatmentADER" : "Explicit",
 		# Treatment of source terms for ADER-DG
 		# Either "Explicit" or "Implicit"
@@ -196,4 +201,6 @@ Output = {
 		# time step and residual information
 		# If True, will also print out the input deck and the min/max of
 		# the state variables
+	"CustomFunctionFilename" : "custom_user_function"
+		# Name of the user's custom function definitions.
 }
