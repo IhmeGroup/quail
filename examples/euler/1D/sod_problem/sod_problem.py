@@ -4,7 +4,7 @@ import copy
 TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : 0.25,
-	"NumTimeSteps" : 4000,
+	"NumTimeSteps" : 2000,
 	"TimeStepper" : "RK4",
 }
 
@@ -12,7 +12,7 @@ Numerics = {
 	"SolutionOrder" : 2,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
-	"ApplyLimiters" : ["PositivityPreserving"],
+	#"ApplyLimiters" : ["PositivityPreserving"],
 	"NodeType" : "GaussLobatto",
 	"ElementQuadrature" : "GaussLobatto",
 	"FaceQuadrature" : "GaussLobatto",
@@ -49,20 +49,8 @@ state = {
 	"xd" : 0.5,
 }
 
-state_exact = {
-	"Function" : "ExactRiemannSolution",
-	"rhoL" : 1.,
-	"uL" : 0.,
-	"pL" : 1.,
-	"rhoR" : 0.125,
-	"uR" : 0.,
-	"pR" : 0.1,
-	"xd" : 0.5,
-}
 InitialCondition = state
-state2 = state.copy()
-state2.update({"BCType":"StateAll"})
-ExactSolution = state_exact
+ExactSolution = state
 
 BoundaryConditions = {
 	"x1" : {
