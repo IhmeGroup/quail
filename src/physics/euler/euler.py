@@ -84,6 +84,7 @@ class Euler(base.PhysicsBase):
 	    TotalEnthalpy = "H"
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
+	    Velocity = "|u|"
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
@@ -135,6 +136,8 @@ class Euler(base.PhysicsBase):
 			# |u| + c
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
 					gamma*get_pressure()/rho)
+		elif vname is self.AdditionalVariables["Velocity"].name:
+			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho 
 		else:
 			raise NotImplementedError
 
