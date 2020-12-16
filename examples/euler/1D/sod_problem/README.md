@@ -4,7 +4,7 @@ The Sod problem is a specific type of Riemann problem.
     - `uL = [1., 0., 1.]` and `uR = [0., .1, .5]` 
     (`rho, u, p` respectively)
   - Post-processing plots the exact solution against the 
-  density, pressure, anvd velocity.
+  density, pressure, and velocity.
 
 
 <p align="left">
