@@ -5,3 +5,8 @@ The Sod problem is a specific type of Riemann problem.
     (`rho, u, p` respectively)
   - Post-processing plots the exact solution against the 
   pressure and density.
+
+
+<p align="left">
+  <img alt="Density" src="https://github.com/IhmeGroup/quail_dev/files/5704280/Density.pdf" width="50%"></a>
+</p>
