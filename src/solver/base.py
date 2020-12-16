@@ -17,7 +17,6 @@ from general import ModalOrNodal, NodeType, ShapeType, QuadratureType, \
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
-import meshing.adapt as mesh_adapt
 
 import numerics.basis.tools as basis_tools
 
@@ -164,7 +163,7 @@ class SolverBase(ABC):
 					user_fcn.custom_user_function
 		except ModuleNotFoundError:
 			pass # Not an error, just pass as the user provided
-				 # custom function file is not in the current 
+				 # custom function file is not in the current
 				 # directory.
 
 		# Compatibility checks
@@ -264,14 +263,14 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		'''
-		Calculates the surface integral for the interior faces, divided 
+		Calculates the surface integral for the interior faces, divided
 		between left and right contributions.
 
 		Inputs:
 		-------
 			faceL_IDs: face IDs for each interior face from the perspective
 				of each left neighboring element
-			faceR_IDs: face IDs for each interior face from the perspective 
+			faceR_IDs: face IDs for each interior face from the perspective
 				of each right neighboring element
 			UcL: solution array for left neighboring element (polynomial
 				coefficients)
@@ -290,7 +289,7 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		'''
-		Calculates the residual from the surface integral for all boundary 
+		Calculates the residual from the surface integral for all boundary
 		faces within a boundary group.
 
 		Inputs:
@@ -306,11 +305,11 @@ class SolverBase(ABC):
 		'''
 		pass
 
-  
+
 	def custom_user_function(self, solver):
 		'''
 		Placeholder for the custom_user_function. Users can specify the
-		custom_user_function in an additional file. This would then be 
+		custom_user_function in an additional file. This would then be
 		called each iteration.
 		'''
 		pass
@@ -492,7 +491,7 @@ class SolverBase(ABC):
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
-		Computes interior face residual contributions for all boundary 
+		Computes interior face residual contributions for all boundary
 		groups.
 
 		Inputs:
@@ -536,7 +535,7 @@ class SolverBase(ABC):
 			U: limited solution array
 		'''
 		for limiter in self.limiters:
-			if limiter is not None:	
+			if limiter is not None:
 				limiter.limit_solution(self, U)
 
 	def get_min_max_state(self, Uq):
@@ -650,9 +649,6 @@ class SolverBase(ABC):
 				iwrite += 1
 
 			itime += 1
-
-			# Perform mesh adaptation
-			mesh_adapt.adapt(self, self.physics, mesh, Stepper)
 
 
 
