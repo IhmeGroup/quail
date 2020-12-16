@@ -8,12 +8,12 @@ The Sod problem is a specific type of Riemann problem.
 
 
 <p align="left">
-  <img alt="Density" src="https://user-images.githubusercontent.com/55554103/102403873-84362d80-3fac-11eb-9685-0d585e428238.png" width="50%"></a>
+  <img alt="Density" src="https://user-images.githubusercontent.com/55554103/102403873-84362d80-3fac-11eb-9685-0d585e428238.png" width="33%"></a>
 </p>
 
 <p align="center">
-  <img alt="Pressure" src="https://user-images.githubusercontent.com/55554103/102403987-b34c9f00-3fac-11eb-9490-5a957eacd3e5.png" width="50%"></a>
+  <img alt="Pressure" src="https://user-images.githubusercontent.com/55554103/102403987-b34c9f00-3fac-11eb-9490-5a957eacd3e5.png" width="33%"></a>
 </p>
 <p align="right">
-  <img alt="Velocity" src="https://user-images.githubusercontent.com/55554103/102404108-da0ad580-3fac-11eb-81fa-1ae0837ec73d.png" width="50%"></a>
+  <img alt="Velocity" src="https://user-images.githubusercontent.com/55554103/102404108-da0ad580-3fac-11eb-81fa-1ae0837ec73d.png" width="33%"></a>
 </p>
