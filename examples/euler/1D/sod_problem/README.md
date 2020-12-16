@@ -8,5 +8,5 @@ The Sod problem is a specific type of Riemann problem.
 
 
 <p align="left">
-  <img alt="Density" src="https://github.com/IhmeGroup/quail_dev/files/5704280/Density.pdf" width="50%"></a>
+  <img alt="Density" src="https://user-images.githubusercontent.com/55554103/102403649-34effd00-3fac-11eb-991f-99130ac01bb2.png" width="50%"></a>
 </p>
