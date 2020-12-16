@@ -9,6 +9,6 @@ The Sod problem is a specific type of Riemann problem.
 
 <p align="left">
   <img alt="Density" src="https://user-images.githubusercontent.com/55554103/102403873-84362d80-3fac-11eb-9685-0d585e428238.png" width="33%"></a>
-  <img alt="Pressure" src="https://user-images.githubusercontent.com/55554103/102403987-b34c9f00-3fac-11eb-9490-5a957eacd3e5.png" width="33%"></a>
-  <img alt="Velocity" src="https://user-images.githubusercontent.com/55554103/102404108-da0ad580-3fac-11eb-81fa-1ae0837ec73d.png" width="33%"></a>
+  <img alt="Pressure" src="https://user-images.githubusercontent.com/55554103/102404414-53a2c380-3fad-11eb-990b-3c4fa6283c0d.png" width="33%"></a>
+  <img alt="Velocity" src="https://user-images.githubusercontent.com/55554103/102404491-6ae1b100-3fad-11eb-9be0-ffee7c27046a.png" width="33%"></a>
 </p>
