@@ -1,5 +1,7 @@
 import numpy as np
 
+import numerics.adaptation.tools as adapter_tools
+
 class Adapter():
 
     # -- Constant matrices -- #
@@ -35,25 +37,34 @@ class Adapter():
         for j in range(2):
             T_J_inv[i, j] = np.linalg.inv(T_J[i, j])
 
-    def __init__(self, xn_ref, xq_ref, phi_xq_ref, grad_phi_g, w,
-            elem_to_adaptation_group = None, adaptation_groups = None):
+    def __init__(self, solver, elem_to_adaptation_group = None,
+            adaptation_groups = None):
         if elem_to_adaptation_group is None: elem_to_adaptation_group = {}
         if adaptation_groups is None: adaptation_groups = set()
-        self.xn_ref = xn_ref
-        self.xq_ref = xq_ref
-        self.phi_xq_ref = phi_xq_ref
-        self.grad_phi_g = grad_phi_g
-        self.w = w
+        # Nodes in reference space
+        self.xn_ref = solver.mesh.gbasis.get_nodes(solver.mesh.gbasis.order)
+        # Quadrature points in reference space and quadrature weights
+        self.xq_ref, self.w = \
+                solver.basis.get_quadrature_data(solver.basis.order)
+        self.w = self.w.flatten()
+        # Basis evaluated at quadrature points
+        # TODO: This may not need to be called
+        solver.basis.get_basis_val_grads(self.xq_ref)
+        self.phi_xq_ref = solver.basis.basis_val
+        # Reference gradient of geometric basis on reference quadrature points
+        solver.mesh.gbasis.get_basis_val_grads(self.xq_ref, get_ref_grad=True)
+        self.grad_phi_g = solver.mesh.gbasis.basis_ref_grad
+        # Adaptation groups
         self.elem_to_adaptation_group = elem_to_adaptation_group
         self.adaptation_groups = adaptation_groups
         # Precompute matrices
-        self.A = numerics.calculate_A(phi_xq_ref, w)
-        self.B = numerics.calculate_B(phi_xq_ref, w)
+        self.A = adapter_tools.calculate_A(self.phi_xq_ref, self.w)
+        self.B = adapter_tools.calculate_B(self.phi_xq_ref, self.w)
 
         # Figure out which quad points go in which element during coarsening
         self.xq_indices = [[[] for _ in range(3)] for _ in range(2)]
-        for j in range(xq_ref.shape[0]):
-            x, y = xq_ref[j]
+        for j in range(self.xq_ref.shape[0]):
+            x, y = self.xq_ref[j]
             # For splitting face 0
             if y >= x:
                 self.xq_indices[0][0].append(j)
@@ -69,6 +80,7 @@ class Adapter():
                 self.xq_indices[0][2].append(j)
             else:
                 self.xq_indices[1][2].append(j)
+        breakpoint()
 
     def adapt(self, dJ_old, Uc_old, iMM_old, neighbors_old, xn_old, coarsen_IDs,
             refine_IDs, split_face_IDs):
