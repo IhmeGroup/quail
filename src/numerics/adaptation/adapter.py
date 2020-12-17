@@ -44,16 +44,15 @@ class Adapter():
         # Nodes in reference space
         self.xn_ref = solver.mesh.gbasis.get_nodes(solver.mesh.gbasis.order)
         # Quadrature points in reference space and quadrature weights
-        self.xq_ref, self.w = \
-                solver.basis.get_quadrature_data(solver.basis.order)
-        self.w = self.w.flatten()
+        # TODO: This may not work. You have to use order * 2 to do the quadrature
+        # accurately for calculating the mass matrix, unsure if this has been
+        # accounted for.
+        self.xq_ref = solver.elem_helpers.quad_pts
+        self.w = solver.elem_helpers.quad_wts.flatten()
         # Basis evaluated at quadrature points
-        # TODO: This may not need to be called
-        solver.basis.get_basis_val_grads(self.xq_ref)
-        self.phi_xq_ref = solver.basis.basis_val
+        self.phi_xq_ref = solver.basis.get_values(self.xq_ref)
         # Reference gradient of geometric basis on reference quadrature points
-        solver.mesh.gbasis.get_basis_val_grads(self.xq_ref, get_ref_grad=True)
-        self.grad_phi_g = solver.mesh.gbasis.basis_ref_grad
+        self.grad_phi_g = solver.mesh.gbasis.get_grads(self.xq_ref)
         # Adaptation groups
         self.elem_to_adaptation_group = elem_to_adaptation_group
         self.adaptation_groups = adaptation_groups
@@ -229,7 +228,7 @@ class Adapter():
                 old_elem_IDs = old_elem_IDs[:2]
 
             # Create new triangles
-            self.refine_triangles(xn, iMM, dJ, Uc, new_elem_IDs,
+            self.refine_triangles(solver, xn, iMM, dJ, Uc, new_elem_IDs,
                     old_elem_IDs, face_pair)
 
             # Map possible neighbors
@@ -280,8 +279,8 @@ class Adapter():
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
-    def refine_triangles(self, xn, iMM, dJ, Uc, new_elem_IDs, old_elem_IDs,
-            face_pair):
+    def refine_triangles(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
+            old_elem_IDs, face_pair):
         # Create new adaptation group and add to set. If it's a boundary
         # refinement, then don't add the boundary (-1) elements/faces.
         if old_elem_IDs.shape[0] == 4:
@@ -302,8 +301,12 @@ class Adapter():
         # The nodes of the new triangles, transformed from the parent reference
         # space to physical space. This requires eval'ing the geometric basis of the
         # parent element at the new points.
-        xn[new_elem_IDs] = np.einsum('ipn, inl -> ipl',
-                numerics.calculate_geom_basis(xn_ref_new, self.xn_ref),
+        # TODO: vectorize this
+        gbasis_xn_ref_new = np.empty((4, solver.mesh.num_nodes_per_elem,
+                solver.mesh.num_nodes_per_elem))
+        for i in range(4):
+            gbasis_xn_ref_new[i] = solver.mesh.gbasis.get_values(xn_ref_new[i])
+        xn[new_elem_IDs] = np.einsum('ipn, inl -> ipl', gbasis_xn_ref_new,
                 xn[old_elem_IDs])
 
         # Compute Jacobian matrix
@@ -312,12 +315,16 @@ class Adapter():
         dJ[new_elem_IDs] = np.linalg.det(J)
 
         # Compute and store inverse mass matrix
-        iMM[new_elem_IDs] = numerics.inverse_mass_matrix(self.A, dJ[new_elem_IDs])
+        iMM[new_elem_IDs] = np.linalg.inv(np.einsum('jsn, ij -> isn', self.A,
+            dJ[new_elem_IDs]))
 
         # Old basis on new quad points
-        phi_old_on_xq_new = numerics.calculate_phi(xq_ref_new)
+        # TODO: vectorize this
+        phi_old_on_xq_new = np.empty((4, xq_ref_new.shape[1], solver.basis.nb))
+        for i in range(4):
+            phi_old_on_xq_new[i] = solver.basis.get_values(xq_ref_new[i])
         # Do L2 projection
-        Uc[new_elem_IDs] = np.einsum('isn, js, ijt, it, ij -> in',
+        Uc[new_elem_IDs] = np.einsum('isn, js, ijt, itk, ij -> ink',
                 iMM[new_elem_IDs], self.B, phi_old_on_xq_new, Uc[old_elem_IDs],
                 dJ[new_elem_IDs])
 

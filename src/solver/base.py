@@ -24,7 +24,6 @@ import numerics.helpers.helpers as helpers
 
 import numerics.limiting.tools as limiter_tools
 
-import numerics.adaptation.adapter as adapter_defs
 import numerics.timestepping.tools as stepper_tools
 import numerics.timestepping.stepper as stepper_defs
 import numerics.quadrature.segment as segment
@@ -169,9 +168,6 @@ class SolverBase(ABC):
 
 		# Compatibility checks
 		self.check_compatibility()
-
-		# Initialize adapter
-		self.adapter = adapter_defs.Adapter(self)
 
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \

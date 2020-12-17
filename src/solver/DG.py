@@ -14,6 +14,7 @@ import errors
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
+import numerics.adaptation.adapter as adapter_defs
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
 
@@ -615,6 +616,9 @@ class DG(base.SolverBase):
 		# Initial condition
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()
+
+		# Initialize adapter
+		self.adapter = adapter_defs.Adapter(self)
 
 	def precompute_matrix_helpers(self):
 		mesh = self.mesh
