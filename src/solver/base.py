@@ -652,7 +652,7 @@ class SolverBase(ABC):
 				iwrite += 1
 
 			# Perform adaptation
-			self.adapter.adapt()
+			self.adapter.adapt(self)
 
 			itime += 1
 

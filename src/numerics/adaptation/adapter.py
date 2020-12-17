@@ -80,12 +80,29 @@ class Adapter():
                 self.xq_indices[0][2].append(j)
             else:
                 self.xq_indices[1][2].append(j)
-        breakpoint()
 
-    def adapt(self, dJ_old, Uc_old, iMM_old, neighbors_old, xn_old, coarsen_IDs,
-            refine_IDs, split_face_IDs):
+    def adapt(self, solver):
         """Perform h-adaptation.
         """
+
+        # Extract needed data from the solver object
+        # TODO: Maybe wrap this?
+        # The old function took as arguments:
+        # dJ_old, Uc_old, iMM_old, neighbors_old, xn_old, coarsen_IDs,
+        #         refine_IDs, split_face_IDs
+        dJ_old = solver.elem_helpers.djac_elems[:, :, 0]
+        Uc_old = solver.state_coeffs
+        iMM_old = solver.elem_helpers.iMM_elems
+        # TODO: Better way to do this. Either change how Quail stores neighbors
+        # or change how this code uses them.
+        neighbors_old = np.empty((Uc_old.shape[0], 3))
+        for i in range(neighbors_old.shape[0]):
+            neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
+        xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
+        # TODO: Get an indicator.
+        coarsen_IDs = set()
+        refine_IDs = np.array([0])
+        split_face_IDs = np.array([0])
 
         # == Coarsening == #
 
