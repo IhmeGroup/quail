@@ -130,11 +130,15 @@ class SolverBase(ABC):
 
 		# Limiter
 		limiter_types = params["ApplyLimiters"]
+		# Cast to list
+		if not isinstance(limiter_types, list):
+			limiter_types = [limiter_types]
 		self.limiters = []
 		for limiter_type in limiter_types:
 			limiter = limiter_tools.set_limiter(limiter_type,
 					physics.PHYSICS_TYPE)
-			self.limiters.append(limiter)
+			if limiter:
+				self.limiters.append(limiter)
 
 		# Console output
 		self.verbose = params["Verbose"]

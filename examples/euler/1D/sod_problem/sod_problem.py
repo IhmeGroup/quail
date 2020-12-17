@@ -12,7 +12,7 @@ Numerics = {
 	"SolutionOrder" : 2,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
-	"ApplyLimiters" : ["PositivityPreserving"],
+	"ApplyLimiters" : "PositivityPreserving",
 	"NodeType" : "GaussLobatto",
 	"ElementQuadrature" : "GaussLobatto",
 	"FaceQuadrature" : "GaussLobatto",

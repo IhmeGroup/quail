@@ -12,7 +12,7 @@ Numerics = {
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
 	"L2InitialCondition" : True,
-	"ApplyLimiters" : ["PositivityPreserving"],
+	"ApplyLimiters" : "PositivityPreserving",
 }
 
 Output = {

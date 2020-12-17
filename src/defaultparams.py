@@ -63,7 +63,7 @@ Numerics = {
 		# See general.NodeType
 	"ColocatedPoints" : False,
 		# If True, quadrature points will be the solution nodes. This is
-		# somtimes referred to as the DG spectral element method. If False,
+		# sometimes referred to as the DG spectral element method. If False,
 		# overintegration is used, i.e. quadrature of high order, determined
 		# by the physics type and the geometric order
 	"L2InitialCondition" : True,
@@ -72,7 +72,9 @@ Numerics = {
 		# basis).
 	"ApplyLimiters" : [],
 		# Limiter type
-		# If None, then no limiter will be applied
+		# By default, no limiter will be applied; otherwise, the name
+		# of the limiter should be entered. A list of limiter name(s)
+		# can also be used, allowing for multiple limiters.
 		# See general.LimiterType
 	"SourceTreatmentADER" : "Explicit",
 		# Treatment of source terms for ADER-DG
