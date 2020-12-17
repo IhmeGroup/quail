@@ -318,13 +318,13 @@ def driver(deck):
 	# Initial condition
 	iparams = IC_params.copy()
 	IC_type = iparams.pop("Function")
-	physics.set_IC(IC_type=IC_type,**iparams)
+	physics.set_IC(IC_type=IC_type, **iparams)
 
 	# Exact solution
 	if bool(exact_params): # checks if dictionary is not empty
 		eparams = exact_params.copy()
 		exact_type = eparams.pop("Function")
-		physics.set_exact(exact_type=exact_type,**eparams)
+		physics.set_exact(exact_type=exact_type, **eparams)
 
 	# Boundary conditions
 	for bname, bparams in BC_params.items():
