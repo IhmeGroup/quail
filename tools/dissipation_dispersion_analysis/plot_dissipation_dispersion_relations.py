@@ -24,7 +24,6 @@ import meshing.common as mesh_common
 import physics.scalar.scalar as scalar
 import processing.plot as plot
 import solver.DG as DG
-import numerics.basis.basis as basis_defs
 
 
 def get_physical_modes(mesh, params, order, nL):
@@ -123,7 +122,8 @@ def get_physical_modes(mesh, params, order, nL):
 Parameters
 '''
 # Initialize params dictionary using default parameters (don't change)
-params = {**defaultparams.TimeStepping, **defaultparams.Numerics, **defaultparams.Output, **defaultparams.Restart}
+params = {**defaultparams.TimeStepping, **defaultparams.Numerics, 
+		**defaultparams.Output, **defaultparams.Restart}
 params["RestartFile"] = params["File"] # necessary step to avoid error
 
 # The below parameters can be modified

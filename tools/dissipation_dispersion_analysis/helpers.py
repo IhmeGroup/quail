@@ -1,6 +1,5 @@
 import numpy as np
 
-import general
 import numerics.basis.tools as basis_tools
 
 
