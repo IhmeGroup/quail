@@ -277,6 +277,16 @@ class Adapter():
                     neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
                             elem_L_ID)] = new_elem_IDs[j]
 
+        # TODO: Maybe wrap this?
+        solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
+        solver.state_coeffs = Uc
+        solver.elem_helpers.iMM_elems = iMM
+        # TODO: Better way to do this
+        for i in range(neighbors.shape[0]):
+            solver.mesh.elements[i].face_to_neighbors = neighbors[i]
+        # TODO: This definitely won't work
+        solver.mesh.node_coords[solver.mesh.elem_to_node_IDs] = xn
+
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
     def refine_triangles(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
