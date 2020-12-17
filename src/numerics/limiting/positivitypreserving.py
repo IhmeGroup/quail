@@ -79,7 +79,7 @@ class PositivityPreserving(base.LimiterBase):
 		# Element quadrature weights
 		self.quad_wts_elem = elem_helpers.quad_wts
 
-	def limit_element(self, solver, Uc):
+	def limit_solution(self, solver, Uc):
 		# Unpack
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
@@ -134,10 +134,10 @@ class PositivityPreserving(base.LimiterBase):
 		# Indices where pressure is negative
 		negative_p_indices = np.where(p_elem_faces < 0.)
 		elem_IDs = negative_p_indices[0]
-		i_pos_p  = negative_p_indices[1]
+		i_neg_p  = negative_p_indices[1]
 
-		theta[elem_IDs, i_pos_p] = p_bar[elem_IDs, :, 0] / (
-				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_pos_p, :])
+		theta[elem_IDs, i_neg_p] = p_bar[elem_IDs, :, 0] / (
+				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p, :])
 
 		theta2 = np.min(theta, axis=1)
 		elem_IDs = np.where(theta2 < 1.)[0]
