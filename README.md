@@ -11,7 +11,7 @@ Python 3.7 or higher is required. The following libraries should also be install
   - Matplotlib 3.3.1
   - SciPy 1.4.1
 
-For convenience, the Quail src directory can be added to PATH.
+For convenience, the Quail src directory can be added to PATH. The driver script (`quail`) is located in this directory.
 ```sh
 $ export PATH=$PATH:/your/quail/directory/src
 ```
