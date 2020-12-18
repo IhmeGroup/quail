@@ -13,7 +13,7 @@ Python 3.7 or higher is required. The following libraries should also be install
 
 For convenience, the Quail src directory can be added to PATH. The driver script (`quail`) is located in this directory.
 ```sh
-$ export PATH=$PATH:/your/quail/directory
+$ export PATH=$PATH:/your/quail/directory/src
 ```
 The above line can also be added to the appropriate file (e.g., `~/.bashrc`, `~/.bash_profile`, `~/.profile`) and sourced.
 
