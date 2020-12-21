@@ -36,7 +36,7 @@ plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=False,
 
 plot.save_figure(file_name='Pressure', file_type='png')
 
-### Pressure
+### Velocity 
 # Exact solution
 plot.plot_solution(mesh, physics, solver, "Velocity", plot_numerical=False, 
 		plot_exact=True, plot_IC=False, create_new_figure=True, 
