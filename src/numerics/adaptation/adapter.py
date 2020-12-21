@@ -295,9 +295,6 @@ class Adapter():
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
         solver.state_coeffs = Uc
         solver.elem_helpers.iMM_elems = iMM
-        # TODO: Better way to do this
-        #for i in range(neighbors.shape[0]):
-        #    solver.mesh.elements[i].face_to_neighbors = neighbors[i]
         unique_nodes = []
         # TODO: generalize
         solver.mesh.num_nodes += 1 + 4 * (solver.mesh.gbasis.order - 1)
@@ -324,8 +321,11 @@ class Adapter():
                 # Otherwise, just use the ID that was found
                 else:
                     solver.mesh.elem_to_node_IDs[i, j] = node_ID[0]
-
+        # Create elements and update neighbors
+        # TODO: Better way to do this
         solver.mesh.create_elements()
+        for i in range(neighbors.shape[0]):
+            solver.mesh.elements[i].face_to_neighbors = neighbors[i]
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
