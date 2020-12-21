@@ -30,8 +30,6 @@ class LimiterBase(ABC):
 		checks for compatibility between physics and limiter
 	precompute_helpers
 		precomputes helper arrays
-	limit_element
-		applies limiter to individual element
 	limit_solution
 		applies limiter to global solution
 	'''
