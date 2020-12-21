@@ -87,12 +87,13 @@ class PositivityPreserving(base.LimiterBase):
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
+		basis = solver.basis
 
 		djac = self.djac_elems
 
 		# Interpolate state at quadrature points over element and on faces
 		U_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces,
-				skip_interp=solver.basis.skip_interp)
+				skip_interp=basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
 		U_elem = U_elem_faces[:, :nq_elem, :]
 		ne = self.elem_vols.shape[0]
@@ -118,17 +119,25 @@ class PositivityPreserving(base.LimiterBase):
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		theta1 = np.minimum(1., np.min(theta, axis=1))
 
-		# Rescale
 		irho = physics.get_state_index(self.var_name1)
-		elem_IDs = np.where(theta1 < 1)[0]
-		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + (1. -
-				theta1[elem_IDs])*rho_bar[elem_IDs, 0]
+		# Get IDs of elements that need limiting
+		elem_IDs = np.where(theta1 < 1.)[0]
+		# Modify density coefficients
+		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
+			Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] \
+					+ (1. - theta1[elem_IDs])*rho_bar[elem_IDs, 0]
+		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
+			Uc[elem_IDs, :, irho] *= theta1[elem_IDs]
+			Uc[elem_IDs, 0, irho] += (1. - theta1[elem_IDs, 0])*rho_bar[
+					elem_IDs, 0, 0]
+		else:
+			raise NotImplementedError
 
 		if np.any(theta1 < 1.):
 			# Intermediate limited solution
 			U_elem_faces = helpers.evaluate_state(Uc,
 					self.basis_val_elem_faces,
-					skip_interp=solver.basis.skip_interp)
+					skip_interp=basis.skip_interp)
 
 		''' Limit pressure '''
 		# Compute pressure at quadrature points
@@ -143,11 +152,19 @@ class PositivityPreserving(base.LimiterBase):
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p, :])
 
 		theta2 = np.min(theta, axis=1)
+		# Get IDs of elements that need limiting
 		elem_IDs = np.where(theta2 < 1.)[0]
-		Uc[elem_IDs] = (
-				np.einsum('im, ijk -> ijk', theta2[elem_IDs], Uc[elem_IDs]) +
-				np.einsum('im, ijk -> ijk', 1 - theta2[elem_IDs],
-						U_bar[elem_IDs]))
+		# Modify coefficients
+		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
+			Uc[elem_IDs] = np.einsum('im, ijk -> ijk', theta2[elem_IDs], 
+					Uc[elem_IDs]) + np.einsum('im, ijk -> ijk', 1 - theta2[
+					elem_IDs], U_bar[elem_IDs])
+		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
+			Uc[elem_IDs] *= np.expand_dims(theta2[elem_IDs], axis=2)
+			Uc[elem_IDs, 0] += np.einsum('im, ijk -> ik', 1 - theta2[
+					elem_IDs], U_bar[elem_IDs])
+		else:
+			raise NotImplementedError
 
 		np.seterr(divide='warn')
 
@@ -178,12 +195,13 @@ class PositivityPreservingChem(PositivityPreserving):
 		physics = solver.physics
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
+		basis = solver.basis
 
 		djac = self.djac_elems
 
 		# Interpolate state at quadrature points over element and on faces
 		U_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces,
-				skip_interp=solver.basis.skip_interp)
+				skip_interp=basis.skip_interp)
 		nq_elem = self.quad_wts_elem.shape[0]
 		U_elem = U_elem_faces[:, :nq_elem, :]
 
@@ -196,7 +214,8 @@ class PositivityPreservingChem(PositivityPreserving):
 		p_bar = physics.compute_variable(self.var_name2, U_bar)
 		rhoY_bar = physics.compute_variable(self.var_name3, U_bar)
 
-		if np.any(rho_bar < 0.) or np.any(p_bar < 0.) or np.any(rhoY_bar < 0.):
+		if np.any(rho_bar < 0.) or np.any(p_bar < 0.) or np.any(
+				rhoY_bar < 0.):
 			raise errors.NotPhysicalError
 
 		# Ignore divide-by-zero
@@ -204,22 +223,31 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		''' Limit density '''
 		# Compute density
-		rho_elem_faces = physics.compute_variable(self.var_name1, U_elem_faces)
+		rho_elem_faces = physics.compute_variable(self.var_name1,
+				U_elem_faces)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		theta1 = np.minimum(1., np.min(theta, axis=1))
 
-		# Rescale
 		irho = physics.get_state_index(self.var_name1)
-		elem_IDs = np.where(theta1 < 1)[0]
-		Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] + (1. -
-				theta1[elem_IDs])*rho_bar[elem_IDs, 0]
+		# Get IDs of elements that need limiting
+		elem_IDs = np.where(theta1 < 1.)[0]
+		# Modify density coefficients
+		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
+			Uc[elem_IDs, :, irho] = theta1[elem_IDs]*Uc[elem_IDs, :, irho] \
+					+ (1. - theta1[elem_IDs])*rho_bar[elem_IDs, 0]
+		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
+			Uc[elem_IDs, :, irho] *= theta1[elem_IDs]
+			Uc[elem_IDs, 0, irho] += (1. - theta1[elem_IDs, 0])*rho_bar[
+					elem_IDs, 0, 0]
+		else:
+			raise NotImplementedError
 
 		if np.any(theta1 < 1.):
 			# Intermediate limited solution
 			U_elem_faces = helpers.evaluate_state(Uc,
 					self.basis_val_elem_faces,
-					skip_interp=solver.basis.skip_interp)
+					skip_interp=basis.skip_interp)
 
 
 		''' Limit mass fraction '''
@@ -227,17 +255,24 @@ class PositivityPreservingChem(PositivityPreserving):
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
 		theta2 = np.minimum(1., np.amin(theta, axis=1))
 
-		# Rescale
 		irhoY = physics.get_state_index(self.var_name3)
-		elem_IDs = np.where(theta2 < 1)[0]
-
-		Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, irhoY] + (1. -
-				theta2[elem_IDs])*rhoY_bar[elem_IDs, 0]
+		# Get IDs of elements that need limiting
+		elem_IDs = np.where(theta2 < 1.)[0]
+		# Modify density coefficients
+		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
+			Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, 
+					irhoY] + (1. - theta2[elem_IDs])*rho_bar[elem_IDs, 0]
+		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
+			Uc[elem_IDs, :, irhoY] *= theta2[elem_IDs]
+			Uc[elem_IDs, 0, irhoY] += (1. - theta2[elem_IDs, 0])*rho_bar[
+					elem_IDs, 0, 0]
+		else:
+			raise NotImplementedError
 
 		if np.any(theta2 < 1.):
 			U_elem_faces = helpers.evaluate_state(Uc,
 					self.basis_val_elem_faces,
-					skip_interp=solver.basis.skip_interp)
+					skip_interp=basis.skip_interp)
 
 		''' Limit pressure '''
 		# Compute pressure at quadrature points
@@ -252,11 +287,19 @@ class PositivityPreservingChem(PositivityPreserving):
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p])
 
 		theta3 = np.min(theta, axis=1)
+		# Get IDs of elements that need limiting
 		elem_IDs = np.where(theta3 < 1.)[0]
-		Uc[elem_IDs] = (
-				np.einsum('im, ijk -> ijk', theta3[elem_IDs], Uc[elem_IDs]) +
-				np.einsum('im, ijk -> ijk', 1 - theta3[elem_IDs],
-						U_bar[elem_IDs]))
+		# Modify coefficients
+		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
+			Uc[elem_IDs] = np.einsum('im, ijk -> ijk', theta3[elem_IDs], 
+					Uc[elem_IDs]) + np.einsum('im, ijk -> ijk', 1 - theta3[
+					elem_IDs], U_bar[elem_IDs])
+		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
+			Uc[elem_IDs] *= np.expand_dims(theta3[elem_IDs], axis=2)
+			Uc[elem_IDs, 0] += np.einsum('im, ijk -> ik', 1 - theta3[
+					elem_IDs], U_bar[elem_IDs])
+		else:
+			raise NotImplementedError
 
 		np.seterr(divide='warn')
 
