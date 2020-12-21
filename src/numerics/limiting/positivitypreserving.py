@@ -30,6 +30,9 @@ class PositivityPreserving(base.LimiterBase):
 		discontinuous Galerkin schemes for compressible Euler equations
 		on rectangular meshes," Journal of Computational Physics.
 		229:8918–8934, 2010.
+		[2] C. Wang, X. Zhang, C.-W. Shu, J. Ning, "Robust high order
+		discontinuous Galerkin schemes for two-dimensional gaseous
+		detonations," Journal of Computational Physics, 231:653-665, 2012.
 
 	Attributes:
 	-----------
