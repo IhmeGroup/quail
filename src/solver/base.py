@@ -13,7 +13,7 @@ import time
 import errors
 
 from general import ModalOrNodal, NodeType, ShapeType, QuadratureType, \
-		StepperType
+		StepperType, LimiterType, BasisType
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
@@ -227,6 +227,12 @@ class SolverBase(ABC):
 				( StepperType[stepper_type] == StepperType.Strang or \
 				  StepperType[stepper_type] == StepperType.Simpler ) :
 			raise errors.IncompatibleError
+
+		# Currently, positivity-preserving limiter not compatible with
+		# modal triangular basis
+		if LimiterType.PositivityPreserving.name in params["ApplyLimiters"]:
+			if basis.BASIS_TYPE == BasisType.HierarchicH1Tri:
+				raise errors.IncompatibleError
 
 	@abstractmethod
 	def precompute_matrix_helpers(self):

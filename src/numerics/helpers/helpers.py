@@ -10,7 +10,7 @@ import numpy as np
 
 def get_element_mean(Uq, quad_wts, djac, vol):
 	'''
-	This function computes the mean over n elements.
+	This function computes element averages of the state.
 
 	Inputs:
 	-------
