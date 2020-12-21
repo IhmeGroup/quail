@@ -1,7 +1,7 @@
 This case involves 1D constant advection of a sine wave.
   - Periodic boundaries in the x-direction
   	- Optional `BoundaryConditions` can be uncommented (`PeriodicBoundariesX` would also need to be commented)
-  - 3rd order nodal basis using Gauss Lobatto quadrature with colocated nodes. 
+  - 3rd-order colocated scheme with Gauss-Lobatto points, i.e. solution nodes and quadrature points are prescribed to be the same
   	- `ColocatedPoints` can be set to `False` if desired
   - Post-processing
   	- Total error printed to display
