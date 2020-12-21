@@ -16,7 +16,7 @@ Numerics = {
     "SolutionOrder" : 1,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    #"ApplyLimiters" : ["PositivityPreserving"],
+    "ApplyLimiters" : "PositivityPreserving",
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",

@@ -133,15 +133,21 @@ class SolverBase(ABC):
 		limiter_types = params["ApplyLimiters"]
 		shock_indicator_type = params["ShockIndicator"]
 		tvb_param = params["TVBParameter"]
+		# Cast to list
+		if not isinstance(limiter_types, list):
+			limiter_types = [limiter_types]
+			params["ApplyLimiters"] = limiter_types
 		self.limiters = []
 		for limiter_type in limiter_types:
 			limiter = limiter_tools.set_limiter(limiter_type,
 					physics.PHYSICS_TYPE)
-			limiter_tools.set_shock_indicator(limiter,
-					shock_indicator_type)
-			self.limiters.append(limiter)
-			# Set TVB Parameter
-			limiter.tvb_param = tvb_param
+			if limiter:
+				# Set shock indicator
+				limiter_tools.set_shock_indicator(limiter,
+						shock_indicator_type)
+				# Set TVB Parameter
+				limiter.tvb_param = tvb_param
+				self.limiters.append(limiter)
 
 		# Console output
 		self.verbose = params["Verbose"]
