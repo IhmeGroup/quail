@@ -38,7 +38,7 @@ Physics = {
 	"SpecificHeatRatio" : 1.4,
 }
 
-state = {
+InitialCondition = {
 	"Function" : "RiemannProblem",
 	"rhoL" : 1.,
 	"uL" : 0.,
@@ -49,20 +49,9 @@ state = {
 	"xd" : 0.5,
 }
 
-state_exact = {
-	"Function" : "ExactRiemannSolution",
-	"rhoL" : 1.,
-	"uL" : 0.,
-	"pL" : 1.,
-	"rhoR" : 0.125,
-	"uR" : 0.,
-	"pR" : 0.1,
-	"xd" : 0.5,
-}
-InitialCondition = state
-state2 = state.copy()
-state2.update({"BCType":"StateAll"})
-ExactSolution = state_exact
+ExactSolution = InitialCondition.copy()
+# Update function
+ExactSolution["Function"] = "ExactRiemannSolution"
 
 BoundaryConditions = {
 	"x1" : {
