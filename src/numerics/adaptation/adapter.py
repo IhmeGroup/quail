@@ -1,5 +1,6 @@
 import numpy as np
 
+import meshing.meshbase as mesh_defs
 import numerics.adaptation.tools as adapter_tools
 
 class Adapter():
@@ -102,6 +103,9 @@ class Adapter():
         coarsen_IDs = set()
         refine_IDs = np.array([0])
         split_face_IDs = np.array([0])
+        # Set of nodes to add or delete
+        delete_nodes = set()
+        add_nodes = set()
 
         # == Coarsening == #
 
@@ -229,7 +233,7 @@ class Adapter():
 
             # Create new triangles
             self.refine_triangles(solver, xn, iMM, dJ, Uc, new_elem_IDs,
-                    old_elem_IDs, face_pair)
+                    old_elem_IDs, face_pair, add_nodes)
 
             # Map possible neighbors
             if elem_R_ID != -1:
@@ -277,26 +281,65 @@ class Adapter():
                     neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
                             elem_L_ID)] = new_elem_IDs[j]
 
+            # TODO: resize at end
+            #IDs, node_IDs, midpoint_coords = elem_params
+            #solver.mesh.elem_to_node_IDs =\
+            #        np.append(solver.mesh.elem_to_node_IDs, np.empty((2,3),
+            #        dtype=int), axis=0)
+            #solver.mesh.node_coords = np.append(solver.mesh.node_coords, np.empty((1,2)), axis=0)
+            #solver.mesh.node_coords[-1] = midpoint_coords
+            #solver.mesh.elem_to_node_IDs[IDs] = node_IDs
+
+
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
         solver.state_coeffs = Uc
         solver.elem_helpers.iMM_elems = iMM
         # TODO: Better way to do this
-        for i in range(neighbors.shape[0]):
-            solver.mesh.elements[i].face_to_neighbors = neighbors[i]
-        # TODO: This definitely won't work
-        solver.mesh.node_coords[solver.mesh.elem_to_node_IDs] = xn
+        #for i in range(neighbors.shape[0]):
+        #    solver.mesh.elements[i].face_to_neighbors = neighbors[i]
+        unique_nodes = []
+        # TODO: generalize
+        solver.mesh.num_nodes += 1 + 4 * (solver.mesh.gbasis.order - 1)
+        solver.mesh.node_coords = np.empty((solver.mesh.num_nodes,
+            solver.mesh.ndims))
+        solver.mesh.node_coords[:] = np.nan
+        solver.mesh.elem_to_node_IDs = np.empty((solver.mesh.num_nodes,
+            solver.mesh.num_nodes_per_elem), dtype=int)
+        next_ID = 0
+        # Loop over elements
+        for i in range(solver.mesh.num_elems):
+            # Loop over nodes
+            for j in range(solver.mesh.num_nodes_per_elem):
+                # Check if this node exists yet
+                node_ID = np.where(np.all(np.isclose(solver.mesh.node_coords,
+                        xn[i, j]), axis=1))[0]
+                node_doesnt_exist = node_ID.size == 0
+                # If the node doesn't exist yet, then create it and add it to
+                # the current element
+                if node_doesnt_exist:
+                    solver.mesh.node_coords[next_ID] = xn[i, j]
+                    solver.mesh.elem_to_node_IDs[i, j] = next_ID
+                    next_ID += 1
+                # Otherwise, just use the ID that was found
+                else:
+                    solver.mesh.elem_to_node_IDs[i, j] = node_ID[0]
+
+        solver.mesh.create_elements()
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
     def refine_triangles(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
-            old_elem_IDs, face_pair):
+            old_elem_IDs, face_pair, add_nodes):
         # Create new adaptation group and add to set. If it's a boundary
         # refinement, then don't add the boundary (-1) elements/faces.
+        # Also updates the number of elements accordingly.
         if old_elem_IDs.shape[0] == 4:
             group_old_elem_IDs = old_elem_IDs[[0, 2]]
+            solver.mesh.num_elems += 2
         else:
             group_old_elem_IDs = old_elem_IDs[[0]]
+            solver.mesh.num_elems += 1
         new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
                 [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
                 iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
@@ -412,13 +455,6 @@ class AdaptationGroup():
 # --------------------- OLD IMPLEMENTATION: TO BE REMOVED -------------------- #
 
 
-#import numpy as np
-#import meshing.meshbase as mesh_defs
-#import meshing.tools as mesh_tools
-#import numerics.helpers.helpers as numerics_helpers
-#import random
-#
-## TODO: This whole thing only works for triangles. Generalize this.
 #def adapt(solver, physics, mesh, stepper):
 #    """Adapt the mesh by refining or coarsening it.
 #    For now, this does very little - just splits an element in half.
