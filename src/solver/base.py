@@ -245,10 +245,10 @@ class SolverBase(ABC):
 
 		Inputs:
 		-------
-			faceL_IDs: face IDs for each interior face from the perspective of
-				each left neighboring element
-			faceR_IDs: face IDs for each interior face from the perspective of
-				each right neighboring element
+			faceL_IDs: face IDs for each interior face from the perspective 
+				of each left neighboring element
+			faceR_IDs: face IDs for each interior face from the perspective 
+				of each right neighboring element
 			UcL: solution array for left neighboring element (polynomial
 				coefficients)
 			UcR: solution array for right neighboring element (polynomial
@@ -266,8 +266,8 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		'''
-		Calculates the residual from the surface integral for all boundary faces
-		within a boundary group.
+		Calculates the residual from the surface integral for all boundary 
+		faces within a boundary group.
 
 		Inputs:
 		-------
