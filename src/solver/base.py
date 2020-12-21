@@ -29,7 +29,7 @@ import numerics.timestepping.stepper as stepper_defs
 import numerics.quadrature.segment as segment
 
 import processing.post as post_defs
-import processing.readwritedatafiles as ReadWriteDataFiles
+import processing.readwritedatafiles as readwritedatafiles
 
 import solver.tools as solver_tools
 
@@ -588,7 +588,7 @@ class SolverBase(ABC):
 		write_initial_solution = self.params["WriteInitialSolution"]
 
 		if write_initial_solution:
-			ReadWriteDataFiles.write_data_file(self, 0)
+			readwritedatafiles.write_data_file(self, 0)
 
 		t0 = time.time()
 		iwrite = 1
@@ -627,7 +627,7 @@ class SolverBase(ABC):
 
 			# Write data file
 			if (itime + 1) % write_interval == 0:
-				ReadWriteDataFiles.write_data_file(self, iwrite)
+				readwritedatafiles.write_data_file(self, iwrite)
 				iwrite += 1
 
 			itime += 1
@@ -638,4 +638,4 @@ class SolverBase(ABC):
 				"-----------------------")
 
 		if write_final_solution:
-			ReadWriteDataFiles.write_data_file(self, -1)
+			readwritedatafiles.write_data_file(self, -1)
