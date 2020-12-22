@@ -100,19 +100,28 @@ class Adapter():
         for i in range(neighbors_old.shape[0]):
             neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
-        # TODO: Get an indicator.
+        # TODO: Get an indicator. Right now, this is specific to the isentropic
+        # vortex case.
         coarsen_IDs = set()
         #refine_IDs = np.array([0])
         #split_face_IDs = np.array([0])
         refine_IDs = set()
         Uq = helpers.evaluate_state(Uc_old, self.phi_xq_ref,
                 skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
+        min_volume = 1
         for i in range(solver.mesh.num_elems):
-            if np.any(Uq[i, :, 0] < .8):
+            if np.any(Uq[i, :, 0] < .8) and solver.elem_helpers.vol_elems[i] > min_volume:
                 refine_IDs.add(i)
                 break
         refine_IDs = np.array(list(refine_IDs), dtype=int)
-        split_face_IDs = np.zeros(refine_IDs.size, dtype=int)
+        split_face_IDs = np.empty(refine_IDs.size, dtype=int)
+        for i, ID in enumerate(refine_IDs):
+            lengths = np.empty(3)
+            nodes = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs[ID]]
+            lengths[0] = np.linalg.norm(nodes[2] - nodes[1])
+            lengths[1] = np.linalg.norm(nodes[0] - nodes[2])
+            lengths[2] = np.linalg.norm(nodes[1] - nodes[0])
+            split_face_IDs[i] = np.argmax(lengths)
 
         # == Coarsening == #
 

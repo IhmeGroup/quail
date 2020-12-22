@@ -63,3 +63,4 @@ Cases/Miscellaneous/Plot
 *.png
 *.swp
 test_case_[0-9]*.py
+*.svg
