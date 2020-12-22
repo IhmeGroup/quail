@@ -27,11 +27,11 @@ class InteriorFace(object):
     faceR_ID : int
         local ID of face from perspective of right element
     '''
-    def __init__(self):
-        self.elemL_ID = 0
-        self.faceL_ID = 0
-        self.elemR_ID = 0
-        self.faceR_ID = 0
+    def __init__(self, elemL_ID = 0, faceL_ID = 0, elemR_ID = 0, faceR_ID = 0):
+        self.elemL_ID = elemL_ID
+        self.faceL_ID = faceL_ID
+        self.elemR_ID = elemR_ID
+        self.faceR_ID = faceR_ID
 
 
 class BoundaryFace(object):
@@ -45,9 +45,9 @@ class BoundaryFace(object):
     face_ID : int
         local ID of face from perspective of adjacent element
     '''
-    def __init__(self):
-        self.elem_ID = 0
-        self.face_ID = 0
+    def __init__(self, elem_ID = 0, face_ID = 0):
+        self.elem_ID = elem_ID
+        self.face_ID = face_ID
 
 
 class BoundaryGroup(object):

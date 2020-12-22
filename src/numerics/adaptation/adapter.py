@@ -2,6 +2,7 @@ import numpy as np
 
 import meshing.meshbase as mesh_defs
 import numerics.adaptation.tools as adapter_tools
+import numerics.helpers.helpers as helpers
 
 class Adapter():
 
@@ -101,11 +102,17 @@ class Adapter():
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
         # TODO: Get an indicator.
         coarsen_IDs = set()
-        refine_IDs = np.array([0])
-        split_face_IDs = np.array([0])
-        # Set of nodes to add or delete
-        delete_nodes = set()
-        add_nodes = set()
+        #refine_IDs = np.array([0])
+        #split_face_IDs = np.array([0])
+        refine_IDs = set()
+        Uq = helpers.evaluate_state(Uc_old, self.phi_xq_ref,
+                skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
+        for i in range(solver.mesh.num_elems):
+            if np.any(Uq[i, :, 0] < .8):
+                refine_IDs.add(i)
+                break
+        refine_IDs = np.array(list(refine_IDs), dtype=int)
+        split_face_IDs = np.zeros(refine_IDs.size, dtype=int)
 
         # == Coarsening == #
 
@@ -233,7 +240,7 @@ class Adapter():
 
             # Create new triangles
             self.refine_triangles(solver, xn, iMM, dJ, Uc, new_elem_IDs,
-                    old_elem_IDs, face_pair, add_nodes)
+                    old_elem_IDs, face_pair)
 
             # Map possible neighbors
             if elem_R_ID != -1:
@@ -281,27 +288,15 @@ class Adapter():
                     neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
                             elem_L_ID)] = new_elem_IDs[j]
 
-            # TODO: resize at end
-            #IDs, node_IDs, midpoint_coords = elem_params
-            #solver.mesh.elem_to_node_IDs =\
-            #        np.append(solver.mesh.elem_to_node_IDs, np.empty((2,3),
-            #        dtype=int), axis=0)
-            #solver.mesh.node_coords = np.append(solver.mesh.node_coords, np.empty((1,2)), axis=0)
-            #solver.mesh.node_coords[-1] = midpoint_coords
-            #solver.mesh.elem_to_node_IDs[IDs] = node_IDs
-
-
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
         solver.state_coeffs = Uc
         solver.elem_helpers.iMM_elems = iMM
         unique_nodes = []
-        # TODO: generalize
-        solver.mesh.num_nodes += 1 + 4 * (solver.mesh.gbasis.order - 1)
         solver.mesh.node_coords = np.empty((solver.mesh.num_nodes,
             solver.mesh.ndims))
         solver.mesh.node_coords[:] = np.nan
-        solver.mesh.elem_to_node_IDs = np.empty((solver.mesh.num_nodes,
+        solver.mesh.elem_to_node_IDs = np.empty((solver.mesh.num_elems,
             solver.mesh.num_nodes_per_elem), dtype=int)
         next_ID = 0
         # Loop over elements
@@ -326,24 +321,57 @@ class Adapter():
         solver.mesh.create_elements()
         for i in range(neighbors.shape[0]):
             solver.mesh.elements[i].face_to_neighbors = neighbors[i]
+        # Reshape residual array
+        solver.stepper.res = np.zeros_like(Uc)
+        # TODO: Probably don't need to call all of this
+        solver.elem_helpers.get_basis_and_geom_data(solver.mesh, solver.basis,
+                solver.order)
+        solver.elem_helpers.alloc_other_arrays(solver.physics, solver.basis,
+                solver.order)
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
     def refine_triangles(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
-            old_elem_IDs, face_pair, add_nodes):
-        # Create new adaptation group and add to set. If it's a boundary
-        # refinement, then don't add the boundary (-1) elements/faces.
-        # Also updates the number of elements accordingly.
+            old_elem_IDs, face_pair):
+        # Get the element IDs in the group and update the number of elements and
+        # nodes. This is different depending on whether a boundary is refined or
+        # not.
         if old_elem_IDs.shape[0] == 4:
             group_old_elem_IDs = old_elem_IDs[[0, 2]]
             solver.mesh.num_elems += 2
+            solver.mesh.num_nodes += 1 + 4 * (solver.mesh.gbasis.order - 1)
         else:
             group_old_elem_IDs = old_elem_IDs[[0]]
             solver.mesh.num_elems += 1
+            solver.mesh.num_nodes += 1 + 3 * (solver.mesh.gbasis.order - 1)
+
+        # Find the old face between the two elements of the pair by iterating
+        # through and searching for it.
+        # TODO: simpler way to do this
+        middle_face = None
+        for int_face in solver.mesh.interior_faces:
+            if (int_face.elemL_ID in group_old_elem_IDs and int_face.elemR_ID in
+                    group_old_elem_IDs):
+                middle_face = int_face
+                break
+
+        # Create the four new faces
+        # TODO: This won't work for boundary refinement
+        solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[0],
+                2, new_elem_IDs[1], 1))
+        solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[1],
+                0, new_elem_IDs[2], 0))
+        solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[2],
+                1, new_elem_IDs[3], 2))
+        solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[3],
+                0, new_elem_IDs[0], 0))
+
+        # Create new adaptation group and add to set. If it's a boundary
+        # refinement, then don't add the boundary (-1) elements/faces.
         new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
                 [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
                 iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
-                dJ[group_old_elem_IDs], face_pair)
+                dJ[group_old_elem_IDs], face_pair, middle_face)
         self.adaptation_groups.add(new_group)
         self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
 
@@ -439,7 +467,7 @@ class Adapter():
 class AdaptationGroup():
 
     def __init__(self, elem_IDs, parent_elem_IDs, parent_groups, parent_iMM,
-            parent_xn, parent_dJ, face_pair):
+            parent_xn, parent_dJ, face_pair, middle_face):
         self.elem_IDs = elem_IDs
         self.parent_elem_IDs = parent_elem_IDs
         self.parent_groups = parent_groups
@@ -447,6 +475,7 @@ class AdaptationGroup():
         self.parent_xn = parent_xn
         self.parent_dJ = parent_dJ
         self.face_pair = face_pair
+        self.middle_face = middle_face
 
 
 
