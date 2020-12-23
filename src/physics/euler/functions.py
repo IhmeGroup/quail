@@ -30,6 +30,7 @@ class FcnType(Enum):
 	RiemannProblem = auto()
 	TaylorGreenVortex = auto()
 	ShuOsherProblem = auto()
+	GravityRiemann = auto()
 
 class BCType(Enum):
 	'''
@@ -47,6 +48,7 @@ class SourceType(Enum):
 	'''
 	StiffFriction = auto()
 	TaylorGreenSource = auto()
+	GravitySource = auto()
 
 
 class ConvNumFluxType(Enum):
@@ -608,6 +610,52 @@ class ShuOsherProblem(FcnBase):
 		return Uq # [ne, nq, ns]
 
 
+class GravityRiemann(FcnBase):
+	'''
+	2D time dependent riemann problem to test the PPL on a low density
+	and pressure case. For more details see the following reference:
+		[1] X. Zhang, C.-W. Shu, "Positivity-preserving high-order 
+		discontinuous Galerkin schemes for compressible Euler equations
+		with source terms, Journal of Computational Physics 230 
+		(2011) 1238–1248.
+	'''
+	def get_state(self, physics, x, t):
+		# Unpack
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		gamma = physics.gamma
+		Rg = physics.R
+
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		# State 1
+		rhoL = 7.
+		uL = -1.
+		pL = .2
+
+		# State 2 
+		rhoR = 7.
+		uR = 1.
+		pR = .2
+
+		for elem_ID in range(Uq.shape[0]):
+			ileft = (x[elem_ID, :, 0] <= 1.).reshape(-1)
+			iright = (x[elem_ID, :, 0] > 1.).reshape(-1)
+			# Density
+			Uq[elem_ID, ileft, irho] = rhoL
+			Uq[elem_ID, iright, irho] = rhoR
+			# XMomentum
+			Uq[elem_ID, ileft, irhou] = rhoL*uL
+			Uq[elem_ID, iright, irhou] = rhoR*uR
+			# YMomentum
+			Uq[elem_ID, ileft, irhov] = 0.
+			Uq[elem_ID, iright, irhov] = 0.
+			# Energy
+			Uq[elem_ID, ileft, irhoE] = pL/(gamma - 1.) + 0.5*rhoL*uL*uL
+			Uq[elem_ID, iright, irhoE] = pR/(gamma - 1.) + 0.5*rhoR*uR*uR
+
+		return Uq # [ne, nq, ns]
+
+
 '''
 -------------------
 Boundary conditions
@@ -805,6 +853,48 @@ class TaylorGreenSource(SourceBase):
 				np.pi*x[:, :, 1]))
 
 		return S
+
+
+class GravitySource(SourceBase):
+	'''
+	Gravity source term used with the GravityRiemann problem defined above. 
+	Adds gravity to the inviscid Euler equations. See the following reference
+	for further details:
+		[1] X. Zhang, C.-W. Shu, "Positivity-preserving high-order 
+		discontinuous Galerkin schemes for compressible Euler equations
+		with source terms, Journal of Computational Physics 230 
+		(2011) 1238–1248.
+	'''
+	def __init__(self, gravity=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+			gravity: gravity constant
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.gravity = gravity
+
+	def get_source(self, physics, Uq, x, t):
+		# Unpack
+		gamma = physics.gamma
+		g = self.gravity
+		
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		S = np.zeros_like(Uq)
+
+		rho = Uq[:, :, irho]
+		rhov = Uq[:, :, irhov]
+
+		S[:, :, irhov] = -rho * g
+		S[:, :, irhoE] = -rhov * g
+
+		return S # [ne, nq, ns]
 
 
 '''
