@@ -6,4 +6,5 @@ case_dirs = [
         'scalar/1D/damping_sine_wave/dg',
         'scalar/1D/damping_sine_wave/ader',
         'scalar/1D/damping_sine_wave/splitting',
+        'scalar/2D/constant_advection',
         ]

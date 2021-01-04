@@ -22,3 +22,11 @@ Conventions for component-level tests are as follows.
  - The test files in directory `test/component/` should look identical to the `src/`
    directory. For example, to test something in `src/numerics/basis/basis.py`,
    this test should be placed in `test/component/numerics/basis/test_basis.py`.
+
+### End-to-End Tests
+Conventions for end-to-end tests are as follows.
+ - Each test case directory must be added to `list_of_cases.py`.
+ - Each test case directory should contain only one input file, and it should be
+   named `input_file.py`.
+ - When a new test case is added or existing cases are modified,
+   `generate_test_data.py` must be run to regenerate the regression test data.
