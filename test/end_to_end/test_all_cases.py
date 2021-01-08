@@ -17,6 +17,7 @@ import solver.ADERDG as ADERDG
 rtol = 1e-15
 atol = 1e-15
 
+@pytest.mark.e2e
 @pytest.mark.parametrize('case_dir', list_of_cases.case_dirs)
 def test_case(test_data, case_dir):
 
