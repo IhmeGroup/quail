@@ -15,6 +15,7 @@ from general import ModalOrNodal, StepperType
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
+import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 import numerics.basis.ader_tools as basis_st_tools
 
@@ -42,6 +43,106 @@ class ElemHelpersADER(DG.ElemHelpers):
 		super().__init__()
 		self.need_phys_grad = False
 		self.basis_time = None
+		self.nq_tile_constant = None
+		self.nn_tile_constant = None
+		self.nb_tile_constant = None
+
+
+class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
+	'''
+    InteriorFaceHelpersADER inherits attributes and methods from the 
+    DG.InteriorFaceHelpers class. See DG.InteriorFaceHelpers for detailed 
+    comments of attributes and methods.
+
+    Additional methods and attributes are commented below.
+	'''
+	def __init__(self):
+		super().__init__()
+		self.faceL_IDs_st = np.empty(0, dtype=int)
+		self.faceR_IDs_st = np.empty(0, dtype=int)
+
+	def store_neighbor_info(self, mesh):
+		'''
+		Store the element and face IDs on the left and right of each face.
+
+		Inputs:
+		-------
+			mesh: mesh object
+
+		Outputs:
+		--------
+			self.elemL_IDs: Element IDs to the left of each interior face
+			[num_interior_faces]
+			self.elemR_IDs: Element IDs to the right of each interior face
+			[num_interior_faces]
+			self.faceL_IDs: Face IDs to the left of each interior face
+			[num_interior_faces]
+			self.faceR_IDs: Face IDs to the right of each interior face
+			[num_interior_faces]
+		'''
+		super().store_neighbor_info(mesh)
+
+		# Convert spacial face numbering to space-time
+		if mesh.ndims == 1:
+			self.faceL_IDs_st = np.ones(mesh.num_interior_faces, dtype=int)
+			self.faceR_IDs_st = np.ones(mesh.num_interior_faces, dtype=int)
+
+			indL = np.where(self.faceL_IDs == 0)[0]
+			indR = np.where(self.faceR_IDs == 0)[0]
+			self.faceL_IDs_st[indL] = 3
+			self.faceR_IDs_st[indR] = 3
+
+		elif mesh.ndims == 2:
+			self.faceL_IDs_st = self.faceL_IDs
+			self.faceR_IDs_st = self.faceR_IDs
+		else:
+			raise NotImplementedError
+
+
+class BoundaryFaceHelpersADER(DG.BoundaryFaceHelpers):
+	'''
+    BoundaryFaceHelpersADER inherits attributes and methods from the 
+    DG.BoundaryFaceHelpers class. See DG.BoundaryFaceHelpers for detailed 
+    comments of attributes and methods.
+
+    Additional methods and attributes are commented below.
+	'''
+	def __init__(self):
+		super().__init__()
+		self.face_IDs_st = []
+
+	def store_neighbor_info(self, mesh):
+		'''
+		Store the element and face IDs on the left and right of each face.
+
+		Inputs:
+		-------
+			mesh: mesh object
+
+		Outputs:
+		--------
+			self.elemL_IDs: Element IDs to the left of each interior face
+			[num_interior_faces]
+			self.elemR_IDs: Element IDs to the right of each interior face
+			[num_interior_faces]
+			self.faceL_IDs: Face IDs to the left of each interior face
+			[num_interior_faces]
+			self.faceR_IDs: Face IDs to the right of each interior face
+			[num_interior_faces]
+		'''
+		super().store_neighbor_info(mesh)
+		# Convert spacial boundary face numbering to space-time
+		for bgroup in mesh.boundary_groups.values():	
+			bgroup_face_IDs_st = np.ones(bgroup.num_boundary_faces, 
+					dtype=int)
+			if mesh.ndims == 1:
+				ind = np.where(self.face_IDs[bgroup.number] == 0)[0]
+				bgroup_face_IDs_st[ind] = 3
+			elif mesh.ndims == 2:
+				bgroup_face_IDs_st = self.face_IDs[bgroup.number]
+			else:
+				raise NotImplementedError
+			self.face_IDs_st.append(bgroup_face_IDs_st)
 
 
 class ADERHelpers(object):
@@ -139,15 +240,16 @@ class ADERHelpers(object):
 
 		# Get stiffness matrix in time
 		SMT = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st,
-				order, dt, elem_ID=0, grad_dir=1, physical_space=False)
+				order, dt, elem_ID=0, grad_dir=-1, physical_space=False)
 
 		# Get stiffness matrices in space and inverse mass matrices
 		# (physical space)
 		for elem_ID in range(mesh.num_elems):
-			SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis,
-					basis_st, order, dt, elem_ID, grad_dir=0,
-					physical_space=True)
-			SMS_elems[elem_ID, :, :, 0] = SMS.transpose()
+			for nd in range(ndims):
+				SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis,
+						basis_st, order, dt, elem_ID, grad_dir=nd,
+						physical_space=True)
+				SMS_elems[elem_ID, :, :, nd] = SMS.transpose()
 
 			iMM = basis_st_tools.get_elem_inv_mass_matrix_ader(mesh,
 					basis_st, order, elem_ID, physical_space=True)
@@ -195,8 +297,13 @@ class ADERHelpers(object):
 		num_elems = mesh.num_elems
 		nb = basis.nb
 		gbasis = mesh.gbasis
+		tile_basis = basis_defs.LagrangeSeg(order)
+
 		xnodes = gbasis.get_nodes(order)
 		nnodes = xnodes.shape[0]
+
+		tile_xnodes = tile_basis.get_nodes(order)
+		tile_nnodes = tile_xnodes.shape[0]
 
 		# Allocate
 		self.jac_elems = np.zeros([num_elems, nb, ndims, ndims])
@@ -209,14 +316,25 @@ class ADERHelpers(object):
 			djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID,
 					xnodes, get_djac=True, get_jac=True, get_ijac=True)
 
-			self.jac_elems[elem_ID] = np.tile(jac, (nnodes, 1, 1))
-			self.ijac_elems[elem_ID] = np.tile(ijac, (nnodes, 1, 1))
-			self.djac_elems[elem_ID] = np.tile(djac, (nnodes, 1))
+			self.jac_elems[elem_ID] = np.tile(jac, (tile_nnodes, 1, 1))
+			self.ijac_elems[elem_ID] = np.tile(ijac, (tile_nnodes, 1, 1))
+			self.djac_elems[elem_ID] = np.tile(djac, (tile_nnodes, 1))
 
 			# Physical coordinates of nodal points
 			x = mesh_tools.ref_to_phys(mesh, elem_ID, xnodes)
 			# Store
-			self.x_elems[elem_ID] = np.tile(x, (nnodes, 1))
+			self.x_elems[elem_ID] = np.tile(x, (tile_nnodes, 1))
+
+	def set_tiling_constants(self, basis, elem_helpers_st, bface_helpers_st):
+		
+		bface_quad_pts_st = bface_helpers_st.quad_pts
+		nq_t, nb_t, time_skip, time_tile = basis.get_tiling_constants(
+				bface_quad_pts_st)
+
+		elem_helpers_st.nq_tile_constant = nq_t
+		elem_helpers_st.nb_tile_constant = nb_t
+		elem_helpers_st.time_skip = time_skip
+		elem_helpers_st.time_tile = time_tile
 
 	def compute_helpers(self, mesh, physics, basis, basis_st, dt, order):
 		self.calc_ader_matrices(mesh, basis, basis_st, dt, order)
@@ -326,10 +444,10 @@ class ADERDG(base.SolverBase):
 		self.elem_helpers_st = ElemHelpersADER()
 		self.elem_helpers_st.compute_helpers(mesh, physics, basis_st,
 				order)
-		self.int_face_helpers_st = DG.InteriorFaceHelpers()
+		self.int_face_helpers_st = InteriorFaceHelpersADER()
 		self.int_face_helpers_st.compute_helpers(mesh, physics, basis_st,
 				order)
-		self.bface_helpers_st = DG.BoundaryFaceHelpers()
+		self.bface_helpers_st = BoundaryFaceHelpersADER()
 		self.bface_helpers_st.compute_helpers(mesh, physics, basis_st,
 				order)
 
@@ -338,6 +456,10 @@ class ADERDG(base.SolverBase):
 		self.ader_helpers = ADERHelpers()
 		self.ader_helpers.compute_helpers(mesh, physics, basis,
 				basis_st, dt, order)
+
+		self.ader_helpers.set_tiling_constants(basis,
+				self.elem_helpers_st, self.bface_helpers_st)
+
 
 	def get_element_residual(self, Uc, res_elem):
 		physics = self.physics
@@ -390,22 +512,19 @@ class ADERDG(base.SolverBase):
 		return res_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_id, faceR_id, Uc_L, Uc_R):
+		# Unpack
 		mesh = self.mesh
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 
-		# Convert 1D face numbering to "2D" face numbering
-		faceL_id_st = np.ones(mesh.num_interior_faces, dtype=int)
-		faceR_id_st = np.ones(mesh.num_interior_faces, dtype=int)
+		nq_t = self.elem_helpers_st.nq_tile_constant
 
-		indL = np.where(faceL_id == 0)[0]
-		indR = np.where(faceR_id == 0)[0]
-		faceL_id_st[indL] = 3
-		faceR_id_st[indR] = 3
-
-		# Unpack
 		int_face_helpers = self.int_face_helpers
 		int_face_helpers_st = self.int_face_helpers_st
+
+		faceL_id_st = int_face_helpers_st.faceL_IDs_st
+		faceR_id_st = int_face_helpers_st.faceR_IDs_st
+
 		quad_wts_st = int_face_helpers_st.quad_wts
 
 		faces_to_basisL = int_face_helpers.faces_to_basisL
@@ -425,6 +544,8 @@ class ADERDG(base.SolverBase):
 		UqR = helpers.evaluate_state(Uc_R, basis_valR_st) # [nf, nq_st, ns]
 
 		normals_int_faces = int_face_helpers.normals_int_faces
+		normals_int_faces = np.tile(normals_int_faces, 
+				(normals_int_faces.shape[1], 1))
 
 		# Allocate resL and resR (needed for operator splitting)
 		resL = np.zeros_like(self.stepper.res)
@@ -435,9 +556,9 @@ class ADERDG(base.SolverBase):
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq_st, ns]
 			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
-					basis_valL, quad_wts_st, Fq)
+					nq_t, basis_valL, quad_wts_st, Fq)
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
-					basis_valR, quad_wts_st, Fq)
+					nq_t, basis_valR, quad_wts_st, Fq)
 
 		return resL, resR # [nif, nb, ns]
 
@@ -448,6 +569,10 @@ class ADERDG(base.SolverBase):
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 		bgroup_num = bgroup.number
+		nq_t = self.elem_helpers_st.nq_tile_constant 
+		nb_t = self.elem_helpers_st.nb_tile_constant 
+		time_skip = self.elem_helpers_st.time_skip
+		time_tile = self.elem_helpers_st.time_tile
 
 		bface_helpers = self.bface_helpers
 		bface_helpers_st = self.bface_helpers_st
@@ -459,11 +584,7 @@ class ADERDG(base.SolverBase):
 
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
-
-		# Convert 1D face ID to "2D" face ID
-		face_ID_st = np.ones(bgroup.num_boundary_faces, dtype=int)
-		ind = np.where(face_ID == 0)[0]
-		face_ID_st[ind] = 3
+		face_ID_st = bface_helpers_st.face_IDs_st[bgroup_num] 
 
 		basis_val = faces_to_basis[face_ID]
 		basis_val_st = faces_to_basis_st[face_ID_st]
@@ -476,11 +597,24 @@ class ADERDG(base.SolverBase):
 				mesh, self.time, self.stepper.dt, xref_st[:, :, -1:],
 				self.elem_helpers_st.basis_time)
 
+		''' 
+		Define time slice to make time arrays one dimensional cases even
+		in the 2D case.
+		'''
+
+		# 
+		time_slice = slice(0, t.shape[1], time_skip)
+		time = t[:, time_slice]
+		time_t = np.tile(time,(1, time_tile, 1))
+
 		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val_st) # [nbf, nq, ns]
 
 		normals = normals_bgroups[bgroup_num]
 		x = x_bgroups[bgroup_num]
+
+		normals = np.tile(normals, (time_tile, 1))
+		x = np.tile(x, (time_tile, 1))
 
 		# Get boundary state
 		BC = physics.BCs[bgroup.name]
@@ -489,14 +623,17 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Loop over time to apply BC at each temporal quadrature point
 			for i in range(t.shape[1]):
-				# Compute boundary flux
-				t_ = t[:, i, :]
+
+				t_ = time_t[:, i][0, 0]
+				x_ = x[:, i].reshape([nbf, 1, ndims])
+				normals_ = normals[:, i].reshape([nbf, 1, ndims])
+
 				Fq[:, i, :] = BC.get_boundary_flux(physics,
 						UqI[:, i, :].reshape([nbf, 1, ns]),
-						normals, x, t_[0])
+						normals_, x_, t_).reshape([nbf, ns])
 
 			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
-					basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
+					nq_t, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
 		return resB # [nbf, nb, ns]
 
