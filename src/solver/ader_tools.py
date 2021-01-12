@@ -70,18 +70,21 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 	nq = elem_helpers.quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 
-	tile_basis_phys_grads = np.tile(basis_phys_grad_elems, (1, nq, 1, 1))
-	quad_wts_st_djac = (quad_wts_st.reshape(nq, nq)*
-			djac_elems).reshape(Fq.shape[0], nq_st, 1, 1)
+	nq_t = elem_helpers_st.nq_tile_constant
+
+	tile_basis_phys_grads = np.tile(basis_phys_grad_elems, (1, nq_t, 1, 1))
+
+	quad_wts_st_djac = quad_wts_st * np.tile(djac_elems, (nq_t, 1))
 
 	# integrate
 	res_elem = np.einsum('ijkl, ijml -> ikm', tile_basis_phys_grads,
-			Fq * quad_wts_st_djac) # [ne, nb, ns]
+			Fq * np.expand_dims(quad_wts_st_djac, axis=3))# [ne, nb, ns]
 
 	return res_elem # [ne, nb, ns]
 
 
-def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
+def calculate_inviscid_flux_boundary_integral(nq_t, basis_val, 
+		quad_wts_st, Fq):
 	'''
 	Calculates the inviscid flux boundary integral for the ADERDG scheme
 
@@ -98,6 +101,8 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts_st, Fq):
 	nb = basis_val.shape[1]
 	nq = quad_wts_st.shape[0]
 
+	#TEST
+	nq = int(np.sqrt(nq))
 	# Calculate the flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts_st)
 	# Calculate residual
@@ -132,10 +137,13 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 	nq = quad_wts.shape[0]
 	nq_st = quad_wts_st.shape[0]
 
+	nq_t = elem_helpers_st.nq_tile_constant
+
+	quad_wts_st_djac = quad_wts_st * np.tile(djac_elems, (nq_t, 1))
+
 	# Calculate residual from source term
-	res_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq, 1)),
-			Sq*(quad_wts_st.reshape(nq, nq)*djac_elems).reshape(Sq.shape[0],
-			nq_st, 1)) # [ne, nb, ns]
+	res_elem = np.einsum('jk, ijl -> ikl', np.tile(basis_val, (nq_t, 1)),
+			Sq*quad_wts_st_djac) # [ne, nb, ns]
 
 	return res_elem # [ne, nb, ns]
 
