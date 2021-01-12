@@ -40,6 +40,8 @@ def set_basis_spacetime(mesh, order, basis_name):
 		basis_st = basis_defs.LagrangeQuad(order)
 	elif BasisType[basis_name] == BasisType.LegendreSeg:
 		basis_st = basis_defs.LegendreQuad(order)
+	elif BasisType[basis_name] == BasisType.LagrangeQuad:
+		basis_st = basis_defs.LagrangeHex(order)
 	else:
 		raise NotImplementedError
 
@@ -130,7 +132,6 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
 				basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
 	else:
 		basis_st_grad = basis_st.basis_ref_grad
-
 	# ------------------------------------------------------------------- #
 	# Example of ADER Stiffness Matrix calculation using for-loops
 	# ------------------------------------------------------------------- #
@@ -183,14 +184,14 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order,
 	if basis1 == basis2:
 		# If both bases are space-time you are at tau_{n+1} in ref time
 		# Evaluate basis functions at tau_{n+1}
-		face_ID = 2
+		face_ID = basis1.FACE_TIME_MAPPING[1]
 
 		basis2.get_basis_face_val_grads(mesh, face_ID, quad_pts, basis1,
 				get_val=True)
 	else:
 		# If bases are different you are at tau_{n} in ref time
 		# Evaluate basis at tau_{n}
-		face_ID = 0
+		face_ID = basis1.FACE_TIME_MAPPING[0]
 
 		basis2.get_basis_val_grads(quad_pts, get_val=True,
 				get_ref_grad=False)
