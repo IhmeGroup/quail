@@ -351,6 +351,26 @@ class SegShape(ShapeBase):
 		return quad_pts, quad_wts # [nq, ndims], [nq, 1]
 	
 	def get_tiling_constants(self, null):
+		'''
+		Precomputes the tiling constants for the ADER-DG scheme. Tiling
+		constants are used with the numpy 'tile' function to build arrays
+		to maintain consistency for the tensor multiplications throughout
+		the solver.
+
+		Inputs:
+		-------
+			null: passed input not needed for SegShape class
+
+		Outputs:
+		--------
+			nq_t: quadrature points tiling constant
+			nb_t: basis coefficients tiling constant
+			time_skip: Value to skip when building time
+					array for each bface in get_boundary_face_residual
+					in src/solver/ADERDG.py
+			time_tile: time array tiling constant for each bface in 
+					get_boundary_face_residual in src/solver/ADERDG.py
+		'''
 		return self.basis_val.shape[0], self.basis_val.shape[1], 1, \
 				self.basis_val.shape[1]
 
@@ -426,7 +446,29 @@ class QuadShape(ShapeBase):
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
-	def get_tiling_constants(self, bface_quad_pts_st):\
+	def get_tiling_constants(self, bface_quad_pts_st):
+		'''
+		Precomputes the tiling constants for the ADER-DG scheme. Tiling
+		constants are used with the numpy 'tile' function to build arrays
+		to maintain consistency for the tensor multiplications throughout
+		the solver.
+
+		Inputs:
+		-------
+			bface_quad_pts_st: boundary face quad_pts used to define
+					the time_skip and time_tile value for 2D ADER 
+					approaches using Quads [nq_st, ndims]
+
+		Outputs:
+		--------
+			nq_t: quadrature points tiling constant
+			nb_t: basis coefficients tiling constant
+			time_skip: Value to skip when building time
+					array for each bface in get_boundary_face_residual
+					in src/solver/ADERDG.py
+			time_tile: time array tiling constant for each bface in 
+					get_boundary_face_residual in src/solver/ADERDG.py
+		'''
 		return int(np.sqrt(self.basis_val.shape[0])), \
 				int(np.sqrt(self.basis_val.shape[1])), \
 				int(np.sqrt(bface_quad_pts_st.shape[0])), \

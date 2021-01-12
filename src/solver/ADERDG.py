@@ -63,7 +63,8 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 
 	def store_neighbor_info(self, mesh):
 		'''
-		Store the element and face IDs on the left and right of each face.
+		Store the element and face IDs on the left and right of each face
+		for the space-time faces.
 
 		Inputs:
 		-------
@@ -113,7 +114,8 @@ class BoundaryFaceHelpersADER(DG.BoundaryFaceHelpers):
 
 	def store_neighbor_info(self, mesh):
 		'''
-		Store the element and face IDs on the left and right of each face.
+		Store the element and face IDs on the left and right of each face
+		for the space-time boundary faces.
 
 		Inputs:
 		-------
@@ -299,6 +301,7 @@ class ADERHelpers(object):
 		gbasis = mesh.gbasis
 		tile_basis = basis_defs.LagrangeSeg(order)
 
+		# Define geometric basis for tiling jac, ijac, and djac
 		xnodes = gbasis.get_nodes(order)
 		nnodes = xnodes.shape[0]
 
@@ -326,7 +329,22 @@ class ADERHelpers(object):
 			self.x_elems[elem_ID] = np.tile(x, (tile_nnodes, 1))
 
 	def set_tiling_constants(self, basis, elem_helpers_st, bface_helpers_st):
-		
+		'''
+		Sets the tiling constants for the ADER-DG scheme. Tiling
+		constants are used with the numpy 'tile' function to build arrays
+		to maintain consistency for the tensor multiplications throughout
+		the solver.
+
+		Inputs:
+		-------
+			basis: basis object
+			elem_helpers_st: element helper object in space-time
+			bface_helpers_st: boundary face helper object in space-time
+
+		Outputs:
+		--------
+			Sets the tiling constants in elem_helpers_st
+		'''
 		bface_quad_pts_st = bface_helpers_st.quad_pts
 		nq_t, nb_t, time_skip, time_tile = basis.get_tiling_constants(
 				bface_quad_pts_st)
@@ -602,7 +620,7 @@ class ADERDG(base.SolverBase):
 		in the 2D case.
 		'''
 
-		# 
+		# Build tiled time array. Removes unnecessary extra data.
 		time_slice = slice(0, t.shape[1], time_skip)
 		time = t[:, time_slice]
 		time_t = np.tile(time,(1, time_tile, 1))
@@ -610,9 +628,11 @@ class ADERDG(base.SolverBase):
 		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val_st) # [nbf, nq, ns]
 
+		# Unpack normals and x on boundary faces
 		normals = normals_bgroups[bgroup_num]
 		x = x_bgroups[bgroup_num]
 
+		# Tile normals and x to prepare for looping over elements in time
 		normals = np.tile(normals, (time_tile, 1))
 		x = np.tile(x, (time_tile, 1))
 
@@ -623,7 +643,8 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Loop over time to apply BC at each temporal quadrature point
 			for i in range(t.shape[1]):
-
+				# Need time to be constant not an array to work with 
+				# get_boundary_flux appropriately
 				t_ = time_t[:, i][0, 0]
 				x_ = x[:, i].reshape([nbf, 1, ndims])
 				normals_ = normals[:, i].reshape([nbf, 1, ndims])
