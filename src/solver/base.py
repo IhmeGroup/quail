@@ -290,6 +290,14 @@ class SolverBase(ABC):
 		'''
 		pass
 
+	def custom_user_function(self):
+		'''
+		Placeholder for the custom_user_function. Users can specify the
+		custom_user_function in an additional file. This would then be 
+		called each iteration.
+		'''
+		pass
+
 	def init_state_from_fcn(self):
 		'''
 		Initializes the state (initial condition) from the specified
@@ -591,19 +599,14 @@ class SolverBase(ABC):
 		print("--------------------------------------------------------" + \
 				"-----------------------")
 
+		# Custom user function initial iteration
+		self.custom_user_function()
 
 		itime = 0
 		while itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
 			self.min_state[:] = np.inf
-
-			# Check to see if custom user function is available
-			custom_user_function = getattr(self, 
-					"custom_user_function", None)
-			# Call custom function if available
-			if callable(custom_user_function):
-				self.custom_user_function(self)
 
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
@@ -614,6 +617,9 @@ class SolverBase(ABC):
 			# Increment time
 			t += stepper.dt
 			self.time = t
+
+			# Custom user function definition
+			self.custom_user_function()
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
