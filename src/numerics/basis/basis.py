@@ -16,7 +16,8 @@ import meshing.gmsh as mesh_gmsh
 import numerics.basis.tools as basis_tools
 import numerics.basis.basis as basis_defs
 
-from numerics.quadrature import segment, quadrilateral, triangle
+from numerics.quadrature import segment, quadrilateral, triangle, \
+		hexahedral
 
 
 class ShapeBase(ABC):
@@ -40,6 +41,8 @@ class ShapeBase(ABC):
 	CENTROID
 		defines a coordinate (as a numpy array) for the centroid of the
 		reference element
+	FACE_TIME_MAPPING
+		maps the face ID from the spacial element to the temporal frame
 
 	Attributes:
 	-----------
@@ -117,6 +120,14 @@ class ShapeBase(ABC):
 	def CENTROID(self):
 		'''
 		Stores the coordinate for the reference element's centroid
+		'''
+		pass
+
+	@property
+	@abstractmethod
+	def FACE_TIME_MAPPING(self):
+		'''
+		Stores the mapping to reference time for ADERDG
 		'''
 		pass
 
@@ -270,6 +281,7 @@ class PointShape(ShapeBase):
 	NDIMS = 0
 	PRINCIPAL_NODE_COORDS = np.array([0.])
 	CENTROID = np.array([[0.]])
+	FACE_TIME_MAPPING = None
 
 	def get_num_basis_coeff(self, p):
 		return 1
@@ -296,6 +308,7 @@ class SegShape(ShapeBase):
 	NDIMS = 1
 	PRINCIPAL_NODE_COORDS = np.array([[-1.], [1.]])
 	CENTROID = np.array([[0.]])
+	FACE_TIME_MAPPING = None
 
 	def get_num_basis_coeff(self, p):
 		return p + 1
@@ -336,7 +349,10 @@ class SegShape(ShapeBase):
 				self.quadrature_type, self.num_pts_colocated)
 
 		return quad_pts, quad_wts # [nq, ndims], [nq, 1]
-
+	
+	def get_tiling_constants(self, null):
+		return self.basis_val.shape[0], self.basis_val.shape[1], 1, \
+				self.basis_val.shape[1]
 
 class QuadShape(ShapeBase):
 	'''
@@ -352,7 +368,8 @@ class QuadShape(ShapeBase):
 	PRINCIPAL_NODE_COORDS = np.array([[-1., -1.], [1., -1.], [-1., 1.],
 			[1., 1.]])
 	CENTROID = np.array([[0., 0.]])
-
+	FACE_TIME_MAPPING = np.array([0, 2])
+	
 	def get_num_basis_coeff(self, p):
 		return (p + 1)**2
 
@@ -409,6 +426,16 @@ class QuadShape(ShapeBase):
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
+	def get_tiling_constants(self, bface_quad_pts_st):
+
+		# import code; code.interact(local=locals())
+
+
+		return int(np.sqrt(self.basis_val.shape[0])), \
+				int(np.sqrt(self.basis_val.shape[1])), \
+				int(np.sqrt(bface_quad_pts_st.shape[0])), \
+				int(np.sqrt(bface_quad_pts_st.shape[0]))
+
 
 class TriShape(ShapeBase):
 	'''
@@ -423,6 +450,7 @@ class TriShape(ShapeBase):
 	NDIMS = 2
 	PRINCIPAL_NODE_COORDS = np.array([[0., 0.], [1., 0.], [0., 1.]])
 	CENTROID = np.array([[1./3., 1./3.]])
+	FACE_TIME_MAPPING = None
 
 	def get_num_basis_coeff(self, p):
 		return (p + 1)*(p + 2)//2
@@ -484,6 +512,136 @@ class TriShape(ShapeBase):
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
+
+class HexShape(ShapeBase):
+	'''
+	QuadShape inherits attributes and methods from the ShapeBase class.
+	See ShapeBase for detailed comments of attributes and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	SHAPE_TYPE = ShapeType.Hexahedral
+	FACE_SHAPE = QuadShape()
+	NFACES = 6
+	NDIMS = 3
+	PRINCIPAL_NODE_COORDS = np.array([[-1.,-1.,-1.],[1.,-1.,-1.],
+			[-1.,1.,-1.],[1.,1.,-1.],[-1.,-1.,1.],[1.,-1.,1.],
+			[-1.,1.,1.],[1.,1.,1.]])
+	CENTROID = np.array([[0., 0., 0.]])
+	FACE_TIME_MAPPING = np.array([4, 5])
+
+	def get_num_basis_coeff(self, p):
+		return (p + 1)**3
+
+	def equidistant_nodes(self, p):
+		nb = self.get_num_basis_coeff(p)
+		ndims = self.NDIMS
+
+		xnodes = np.zeros([nb, ndims])
+		if p > 0:
+			xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+
+			xnodes[:,0] = np.tile(xseg, (p+1,p+1)).reshape(-1)
+			xnodes_hold = np.zeros([xseg.shape[0]*xseg.shape[0],1])
+			xnodes_hold = np.tile(xseg, (xseg.shape[0],1)).reshape(-1)
+
+			xnodes[:,1] = np.repeat(xn_hold, xseg.shape[0], 
+					axis=0).reshape(-1)
+			xnodes[:,2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
+					axis=0).reshape(-1)
+
+		return xnodes # [nb, ndims]
+
+	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
+		
+		nq = face_pts.shape[0]
+		ndims = self.NDIMS
+
+		# Instantiate a lagrange quad basis for face_ID 0-3
+		lagrange_eq_quad = LagrangeQuad(self.order)
+		
+		# Face_ID's 4-5 are prescriptive since face_ID 4 is 
+		# always when tau=-1 and face_ID 5 is always when
+		# tau=1 in reference time.
+		if face_ID < 4:
+			fnodes = lagrange_eq_quad.get_local_face_principal_node_nums(1, face_ID)
+
+			xn0_quad = lagrange_eq_quad.PRINCIPAL_NODE_COORDS[fnodes[0]]
+			xn1_quad = lagrange_eq_quad.PRINCIPAL_NODE_COORDS[fnodes[1]]
+
+			x0 = np.append(xn0_quad, -1.)
+			x1 = np.append(xn1_quad, -1.)
+			x2 = np.append(xn1_quad, 1.)
+			x3 = np.append(xn0_quad, 1.)
+
+		elem_pts = np.zeros([face_pts.shape[0], ndims])
+		if face_ID == 0:
+			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+					face_pts[:, 0] * x0[0]) / 2., nq)
+			elem_pts[:, 1] = -1.
+			elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
+					face_pts[:, 1] * x0[2]) / 2., nq)
+		elif face_ID == 1:
+			elem_pts[:, 1] = np.reshape((face_pts[:, 0] * x1[1] - \
+					face_pts[:, 0] * x0[1]) / 2., nq)
+			elem_pts[:, 0] = 1.
+			elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
+					face_pts[:, 1] * x0[2]) / 2., nq)
+		elif face_ID == 2:
+			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+					face_pts[:, 0] * x0[0]) / 2., nq)
+			elem_pts[:, 1] = 1.
+			elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
+					face_pts[:, 1] * x0[2]) / 2., nq)
+		elif face_ID == 3:
+			elem_pts[:, 1] = np.reshape((face_pts[:, 0] * x1[1] - \
+					face_pts[:, 0] * x0[1]) / 2., nq)
+			elem_pts[:, 0] = -1.
+			elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
+					face_pts[:, 1] * x0[2]) / 2., nq)
+
+		else:
+			# Bottom and top face (in time)
+			if face_ID == 4:
+
+				x0 = [-1., -1., -1.]
+				x1 = [1., -1., -1.]
+				x2 = [1., 1., -1.]
+				x3 = [-1., 1., -1.]
+				elem_pts[:, 2] = -1.
+				elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+						face_pts[:, 0] * x0[0]) / 2., nq)
+				elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
+						face_pts[:, 1] * x0[1]) / 2., nq)
+
+			elif face_ID == 5: 
+				x0 = [-1., -1., 1.]
+				x1 = [1., -1., 1.]
+				x2 = [1., 1., 1.]
+				x3 = [-1., 1., 1.]
+				elem_pts[:, 2] = 1.
+				elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+						face_pts[: , 0] * x0[0]) / 2., nq)
+				elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
+						face_pts[:, 1] * x0[1]) / 2., nq)
+			else:
+				raise NotImplementedError
+
+		return elem_pts # [face_pts.shape[0], ndims]
+
+	def get_quadrature_order(self, mesh, order, physics=None):
+		# Add three to qorder for ndims = 3 with hexes? 
+		# HACKY REVISIT THIS!!!
+		qorder = super().get_quadrature_order(mesh, order, physics)
+		# qorder += 3
+
+		return qorder
+
+	def get_quadrature_data(self, order):
+		quad_pts, quad_wts = hexahedral.get_quadrature_points_weights(
+				order, self.quadrature_type, self.num_pts_colocated)
+
+		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
 class BasisBase(ABC):
 	'''
@@ -1039,6 +1197,123 @@ class LagrangeTri(BasisBase, TriShape):
 			j += k
 
 		return fnode_nums
+
+class LagrangeHex(BasisBase, HexShape):
+	'''
+	LagrangeHex inherits attributes and methods from the BasisBase class
+	and HexShape class. See BaseShape and HexShape for detailed comments
+	of attributes and methods.
+
+	Additional methods and attributes are commented below.
+
+	Note: This basis is only appropriate for use with 2D ADERDG. It 
+		  is not general for a 3D implentation of the DG solver.
+	'''
+	BASIS_TYPE = BasisType.LagrangeHex
+	MODAL_OR_NODAL = ModalOrNodal.Nodal
+
+	def __init__(self, order):
+		super().__init__(order)
+		self.calculate_normals = basis_tools.calculate_2D_normals
+
+	def get_nodes(self, p):
+		'''
+		Method: get_nodes
+		--------------------
+		Calculate the coordinates in ref space for a Lagrange hex
+
+		Inputs:
+		-------
+			p: order of polynomial space
+
+		Outputs:
+		--------
+			xnodes: coordinates of nodes in ref space [nb, ndims]
+
+		Notes:
+		------
+			This function differs from get_equidistant_nodes by also allowing
+			for other NodeTypes (such as GaussLobatto nodes)
+		'''
+		nb = self.get_num_basis_coeff(p)
+		ndims = self.NDIMS
+
+		xnodes = np.zeros([nb, ndims])
+
+		if p > 0:
+			xseg = self.get_1d_nodes(-1., 1., p+1)
+
+			xnodes[:,0] = np.tile(xseg, (p+1,p+1)).reshape(-1)
+			xnodes_hold = np.zeros([xseg.shape[0]*xseg.shape[0],1])
+			xnodes_hold = np.tile(xseg, (xseg.shape[0],1)).reshape(-1)
+
+			xnodes[:,1] = np.repeat(xnodes_hold, xseg.shape[0], 
+					axis=0).reshape(-1)
+			xnodes[:,2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
+					axis=0).reshape(-1)
+
+		return xnodes # [nb, ndims]
+
+
+	def get_values(self, quad_pts):
+		p = self.order
+		nb = self.nb
+		nq = quad_pts.shape[0]
+
+		basis_val = np.zeros([nq, nb])
+
+		if p == 0:
+			basis_val[:] = 1.
+		else:
+			xnodes = self.get_1d_nodes(-1., 1., p+1)
+
+			basis_tools.get_lagrange_basis_3D(quad_pts, xnodes, basis_val)
+
+		return basis_val # [nq, nb]
+
+	def get_grads(self, quad_pts):
+		ndims = self.NDIMS
+		p = self.order
+		nb = self.nb
+		nq = quad_pts.shape[0]
+
+		basis_ref_grad = np.zeros([nq, nb, ndims])
+
+		if p > 0:
+			xnodes = self.get_1d_nodes(-1., 1., p + 1)
+			basis_tools.get_lagrange_basis_3D(quad_pts, xnodes,
+					basis_ref_grad=basis_ref_grad)
+
+		return basis_ref_grad # [nq, nb, ndims]
+
+	# def get_local_face_node_nums(self, p, face_ID):
+	# 	'''
+	# 	Returns local IDs of all nodes on face
+
+	# 	Inputs:
+	# 	-------
+	# 		p: order of polynomial space
+	# 		face_ID: reference element face value
+
+	# 	Outputs:
+	# 	--------
+	# 		fnode_nums: local IDs of all nodes on face
+	# 	'''
+	# 	if p < 1:
+	# 		raise ValueError
+
+	# 	if face_ID == 0:
+	# 		fnode_nums = np.arange(p+1, dtype=int)
+	# 	elif face_ID == 1:
+	# 		fnode_nums = p + (p+1)*np.arange(p+1, dtype=int)
+	# 	elif face_ID == 2:
+	# 		fnode_nums = p*(p+2) - np.arange(p+1, dtype=int)
+	# 	elif face_ID == 3:
+	# 		fnode_nums = p*(p+1) - (p+1)*np.arange(p+1, dtype=int)
+	# 	else:
+	# 		 raise IndexError
+
+	# 	return fnode_nums
 
 
 class LegendreSeg(BasisBase, SegShape):
