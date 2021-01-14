@@ -30,6 +30,7 @@ class FcnType(Enum):
 	RiemannProblem = auto()
 	ExactRiemannSolution = auto()
 	TaylorGreenVortex = auto()
+	GravityRiemann = auto()
 
 
 class BCType(Enum):
@@ -48,6 +49,7 @@ class SourceType(Enum):
 	'''
 	StiffFriction = auto()
 	TaylorGreenSource = auto()
+	GravitySource = auto()
 
 
 class ConvNumFluxType(Enum):
@@ -360,115 +362,6 @@ class DensityWave(FcnBase):
 
 class RiemannProblem(FcnBase):
 	'''
-	Riemann problem. Initial condition only.
-
-	Attributes:
-	-----------
-	rhoL: float
-		left density
-	uL: float
-		left velocity
-	pL: float
-		left pressure
-	rhoR: float
-		right density
-	uR: float
-		right velocity
-	pR: float
-		right pressure
-	xd: float
-		location of initial discontinuity
-	w: float
-		parameter that controls smearing of initial discontinuity; larger w
-		results in more smearing.
-	'''
-	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
-				xd=0., w=1.e-30):
-		'''
-		This method initializes the attributes.
-
-		Inputs:
-		-------
-			rhoL: left density
-			uL: left velocity
-			pL: left pressure
-			rhoR: right density
-			uR: right velocity
-			pR: right pressure
-			xd: location of initial discontinuity
-			w: parameter that controls smearing of initial discontinuity;
-				larger w results in more smearing
-
-		Outputs:
-		--------
-		    self: attributes initialized
-
-		Notes:
-		------
-			Default values set up for Sod problem (without smearing).
-		'''
-		self.rhoL = rhoL
-		self.uL = uL
-		self.pL = pL
-		self.rhoR = rhoR
-		self.uR = uR
-		self.pR = pR
-		self.xd = xd
-		if w <= 0:
-			# For zero smearing, make w close to zero but not equal to zero
-			raise ValueError
-		self.w = w
-
-	def get_state(self, physics, x, t):
-		# Unpack
-		rhoL = self.rhoL
-		uL = self.uL
-		pL = self.pL
-		rhoR = self.rhoR
-		uR = self.uR
-		pR = self.pR
-		xd = self.xd
-		w = self.w
-
-		srho, srhou, srhoE = physics.get_state_slices()
-
-		gamma = physics.gamma
-
-		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
-
-		def set_tanh(a, b, w, x0):
-			'''
-			This function prescribes a tanh profile.
-
-			Inputs:
-			-------
-				a: left value
-				b: right value
-				w: characteristic width
-				x0: center
-
-			Outputs:
-			--------
-			    tanh profile
-			'''
-			return 0.5*((a+b) + (b-a)*np.tanh((x-x0)/w))
-
-		# Density
-		Uq[:, :, srho] =  set_tanh(rhoL, rhoR, w, xd)
-
-		# Momentum
-		Uq[:, :, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xd)
-
-		# Energy
-		rhoEL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
-		rhoER = pR/(gamma-1.) + 0.5*rhoR*uR*uR
-		Uq[:, :, srhoE] = set_tanh(rhoEL, rhoER, w, xd)
-
-		return Uq
-
-
-class ExactRiemannSolution(FcnBase):
-	'''
 	Riemann problem. Exact solution included (with time dependence),
 	obtained using the method of characteristics. Detailed derivation not
 	discussed here. Region 1 is to the right of the shock, region 2 between
@@ -647,6 +540,52 @@ class TaylorGreenVortex(FcnBase):
 		Uq[:, :, irhoE] = rho*E
 
 		return Uq
+
+
+class GravityRiemann(FcnBase):
+	'''
+	2D time dependent riemann problem to test the PPL on a low density
+	and pressure case. For more details see the following reference:
+		[1] X. Zhang, C.-W. Shu, "Positivity-preserving high-order 
+		discontinuous Galerkin schemes for compressible Euler equations
+		with source terms, Journal of Computational Physics 230 
+		(2011) 1238–1248.
+	'''
+	def get_state(self, physics, x, t):
+		# Unpack
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		gamma = physics.gamma
+		Rg = physics.R
+
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		# State 1
+		rhoL = 7.
+		uL = -1.
+		pL = .2
+
+		# State 2 
+		rhoR = 7.
+		uR = 1.
+		pR = .2
+
+		for elem_ID in range(Uq.shape[0]):
+			ileft = (x[elem_ID, :, 0] <= 1.).reshape(-1)
+			iright = (x[elem_ID, :, 0] > 1.).reshape(-1)
+			# Density
+			Uq[elem_ID, ileft, irho] = rhoL
+			Uq[elem_ID, iright, irho] = rhoR
+			# XMomentum
+			Uq[elem_ID, ileft, irhou] = rhoL*uL
+			Uq[elem_ID, iright, irhou] = rhoR*uR
+			# YMomentum
+			Uq[elem_ID, ileft, irhov] = 0.
+			Uq[elem_ID, iright, irhov] = 0.
+			# Energy
+			Uq[elem_ID, ileft, irhoE] = pL/(gamma - 1.) + 0.5*rhoL*uL*uL
+			Uq[elem_ID, iright, irhoE] = pR/(gamma - 1.) + 0.5*rhoR*uR*uR
+
+		return Uq # [ne, nq, ns]
 
 
 '''
@@ -847,6 +786,47 @@ class TaylorGreenSource(SourceBase):
 
 		return S
 
+		
+class GravitySource(SourceBase):
+	'''
+	Gravity source term used with the GravityRiemann problem defined above. 
+	Adds gravity to the inviscid Euler equations. See the following reference
+	for further details:
+		[1] X. Zhang, C.-W. Shu, "Positivity-preserving high-order 
+		discontinuous Galerkin schemes for compressible Euler equations
+		with source terms, Journal of Computational Physics 230 
+		(2011) 1238–1248.
+	'''
+	def __init__(self, gravity=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+			gravity: gravity constant
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.gravity = gravity
+
+	def get_source(self, physics, Uq, x, t):
+		# Unpack
+		gamma = physics.gamma
+		g = self.gravity
+		
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		S = np.zeros_like(Uq)
+
+		rho = Uq[:, :, irho]
+		rhov = Uq[:, :, irhov]
+
+		S[:, :, irhov] = -rho * g
+		S[:, :, irhoE] = -rhov * g
+
+		return S # [ne, nq, ns]
 
 '''
 ------------------------
