@@ -17,15 +17,13 @@ import solver.ADERDG as ADERDG
 rtol = 1e-15
 atol = 1e-15
 
-@pytest.mark.e2e
+
+# Markers distinguish tests into different categories
 @pytest.mark.parametrize('case_dir', list_of_cases.case_dirs)
 def test_case(test_data, case_dir):
 
     # Unpack test data
     Uc_expected, quail_dir, datafile_name = test_data
-
-    # Move to the test case directory
-    os.chdir(f'{quail_dir}/test/end_to_end/{case_dir}')
 
     # Call the Quail executable
     result = subprocess.check_output([
@@ -41,6 +39,3 @@ def test_case(test_data, case_dir):
         Uc = solver.state_coeffs
         # Assert
         np.testing.assert_allclose(Uc, Uc_expected, rtol, atol)
-
-    # Move back to top-level directory
-    os.chdir(quail_dir)
