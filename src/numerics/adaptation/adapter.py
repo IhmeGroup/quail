@@ -115,7 +115,7 @@ class Adapter():
                 break
         # TODO: This is a hack
         if solver.time > .001: refine_IDs = set()
-        if solver.time > .001: breakpoint()
+        #if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
         for i, ID in enumerate(refine_IDs):
