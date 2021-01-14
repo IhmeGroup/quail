@@ -113,6 +113,9 @@ class Adapter():
             if np.any(Uq[i, :, 0] < .8) and solver.elem_helpers.vol_elems[i] > min_volume:
                 refine_IDs.add(i)
                 break
+        # TODO: This is a hack
+        if solver.time > .001: refine_IDs = set()
+        if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
         for i, ID in enumerate(refine_IDs):
@@ -296,6 +299,14 @@ class Adapter():
                     # update it
                     neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
                             elem_L_ID)] = new_elem_IDs[j]
+            # Update elem_R if refinement wasn't at a boundary
+            if new_elem_IDs.size == 4:
+                for j, elem_ID in enumerate(possible_neighbors[:2]):
+                    if elem_ID != -1:
+                        # Find which face of the neighbor's neighbor used to be elem_L, then
+                        # update it
+                        neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
+                                elem_R_ID)] = new_elem_IDs[j]
 
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
@@ -337,6 +348,9 @@ class Adapter():
                 solver.order)
         solver.elem_helpers.alloc_other_arrays(solver.physics, solver.basis,
                 solver.order)
+        solver.int_face_helpers.store_neighbor_info(solver.mesh)
+        solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
+                solver.basis, solver.order)
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
@@ -374,6 +388,8 @@ class Adapter():
                 1, new_elem_IDs[3], 2))
         solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[3],
                 0, new_elem_IDs[0], 0))
+        # Update number of faces
+        solver.mesh.num_interior_faces += 4
 
         # Create new adaptation group and add to set. If it's a boundary
         # refinement, then don't add the boundary (-1) elements/faces.
