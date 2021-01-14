@@ -696,7 +696,7 @@ class ADERDG(base.SolverBase):
 				ns, ndims], dtype=Up.dtype)
 
 		# Flux coefficient calc from interpolation or L2-projection
-		if InterpolateFluxADER is True:
+		if InterpolateFluxADER:
 			# Calculate flux
 			Fq = physics.get_conv_flux_interior(Up)[0]
 			# Interpolate flux coefficient to nodes
@@ -757,6 +757,9 @@ class ADERDG(base.SolverBase):
 		djac_elems = elem_helpers.djac_elems
 		x_elems = elem_helpers.x_elems
 
+		nq_t = self.elem_helpers_st.nq_tile_constant 
+		nb_t = self.elem_helpers_st.nb_tile_constant 
+
 		ader_helpers = self.ader_helpers
 		x_elems_ader = ader_helpers.x_elems
 
@@ -805,6 +808,6 @@ class ADERDG(base.SolverBase):
 
 			# Project Sq to the space-time basis coefficients
 			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts_st,
-					quad_wts_st, np.tile(djac_elems, (nq, 1)), Sq, S)
+					quad_wts_st, np.tile(djac_elems, (nq_t, 1)), Sq, S)
 
 		return S*dt/2.0 # [ne, nb_st, ns]
