@@ -3,7 +3,7 @@ This case involves an isentropic vortex propagating through a square domain.
   - Uniform triangular elements or curved quadrilateral elements (in meshes directory)
   - Verbose console output 
   - Post-processing
-    - Density contour with mesh and element IDs displayed
+    - Density contour with mesh
     - Line probe at y = 1
 
   - Input deck has instructions to run either the triangular mesh or the curved meshes.
