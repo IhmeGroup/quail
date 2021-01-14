@@ -2,7 +2,7 @@ import os
 import pickle
 import subprocess
 import sys
-sys.path.append('src')
+sys.path.append('../src')
 
 import numpy as np
 import pytest
@@ -47,5 +47,5 @@ def test_case(test_data):
         # Assert
         np.testing.assert_allclose(Uc, Uc_expected, rtol, atol)
 
-    # Return to Quail directory
-    os.chdir(quail_dir)
+    # Return to test directory
+    os.chdir(f'{quail_dir}/test')

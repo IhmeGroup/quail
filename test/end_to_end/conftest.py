@@ -7,9 +7,8 @@ import list_of_cases
 
 @pytest.fixture
 def test_data():
-    # Get current working directory
-    # TODO: This assumes that you call Pytest from the Quail directory
-    quail_dir = os.getcwd()
+    # Get Quail directory
+    quail_dir = os.path.dirname(os.getcwd())
 
     # Name and path of data file which stores the regression test data
     datafile_name = f'{quail_dir}/test/end_to_end/regression_data.npy'
