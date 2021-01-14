@@ -19,6 +19,7 @@ atol = 1e-15
 
 
 # Markers distinguish tests into different categories
+@pytest.mark.e2e
 def test_case(test_data):
 
     # Unpack test data

@@ -12,7 +12,7 @@ case_dirs = {
         'cases/scalar/1D/inviscid_burgers' : [dg],
         'cases/scalar/1D/damping_sine_wave/dg' : [dg, source],
         'cases/scalar/1D/damping_sine_wave/ader' : [ader, source],
-        'cases/scalar/1D/damping_sine_wave/splitting' : [splitting, source],
+        'cases/scalar/1D/damping_sine_wave/splitting' : [dg, splitting, source],
         'cases/scalar/2D/constant_advection' : [dg],
         'cases/euler/1D/moving_shock' : [dg],
         'cases/euler/1D/smooth_isentropic_flow' : [dg],
