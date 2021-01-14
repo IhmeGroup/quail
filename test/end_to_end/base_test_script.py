@@ -19,11 +19,18 @@ atol = 1e-15
 
 
 # Markers distinguish tests into different categories
-@pytest.mark.parametrize('case_dir', list_of_cases.case_dirs)
-def test_case(test_data, case_dir):
+def test_case(test_data):
 
     # Unpack test data
-    Uc_expected, quail_dir, datafile_name = test_data
+    Uc_expected_list, quail_dir, datafile_name = test_data
+
+    # Get test case name
+    test_name = sys.path[0].split('_end/')[-1]
+    # Get expected solution for this test case
+    Uc_expected = Uc_expected_list[test_name]
+
+    # Enter case directory
+    os.chdir(sys.path[0])
 
     # Call the Quail executable
     result = subprocess.check_output([
@@ -39,3 +46,6 @@ def test_case(test_data, case_dir):
         Uc = solver.state_coeffs
         # Assert
         np.testing.assert_allclose(Uc, Uc_expected, rtol, atol)
+
+    # Return to Quail directory
+    os.chdir(quail_dir)

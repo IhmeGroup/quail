@@ -20,7 +20,7 @@ def generate_tests():
     n_cases = len(case_dirs)
 
     # Read in base test script
-    with open ("base_test.py", "r") as base_test_file:
+    with open ("base_test_script.py", "r") as base_test_file:
         base_test = base_test_file.readlines()
 
     # Find which line to add markers to
@@ -31,7 +31,7 @@ def generate_tests():
             break
 
     # Loop over all case directories
-    for case_dir, marker_list in zip(case_dirs, markers):
+    for i, (case_dir, marker_list) in enumerate(zip(case_dirs, markers)):
         # Move to the test case directory
         os.chdir(case_dir)
 
@@ -41,10 +41,9 @@ def generate_tests():
             test_script.insert(line_of_markers, f'@pytest.mark.{marker}\n')
 
         # Create test script
-        with open('test_case.py', 'w') as test_case_file:
+        with open(f'test_case_{i}.py', 'w') as test_case_file:
             for line in test_script:
-                test_case_file.write("%s" % line)
-
+                test_case_file.write(line)
 
 
 if __name__ == "__main__":
