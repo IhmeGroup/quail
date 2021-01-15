@@ -146,6 +146,18 @@ class SolverBase(ABC):
 		self.min_state = np.zeros(physics.NUM_STATE_VARS)
 		self.max_state = np.zeros(physics.NUM_STATE_VARS)
 
+
+		# Search for custom_user_function in case directory
+		custom_user_function = self.params["CustomFunctionFilename"]
+		try:
+			user_fcn = importlib.import_module(custom_user_function)
+			self.custom_user_function = \
+					user_fcn.custom_user_function
+		except ModuleNotFoundError:
+			pass # Not an error, just pass as the user provided
+				 # custom function file is not in the current 
+				 # directory.
+
 		# Compatibility checks
 		self.check_compatibility()
 
@@ -279,6 +291,14 @@ class SolverBase(ABC):
 		Outputs:
 		--------
 			resB: calculated residual array (from boundary face)
+		'''
+		pass
+		
+	def custom_user_function(self):
+		'''
+		Placeholder for the custom_user_function. Users can specify the
+		custom_user_function in an additional file. This would then be 
+		called each iteration.
 		'''
 		pass
 
@@ -576,6 +596,9 @@ class SolverBase(ABC):
 		if write_initial_solution:
 			readwritedatafiles.write_data_file(self, 0)
 
+		# Custom user function initial iteration
+		self.custom_user_function()
+
 		t0 = time.time()
 		iwrite = 1
 
@@ -598,6 +621,9 @@ class SolverBase(ABC):
 			# Increment time
 			t += stepper.dt
 			self.time = t
+
+			# Custom user function definition
+			self.custom_user_function()
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
