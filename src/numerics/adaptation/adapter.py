@@ -91,12 +91,13 @@ class Adapter():
         # The old function took as arguments:
         # dJ_old, Uc_old, iMM_old, neighbors_old, xn_old, coarsen_IDs,
         #         refine_IDs, split_face_IDs
+        num_nodes_old = solver.mesh.num_nodes
         dJ_old = solver.elem_helpers.djac_elems[:, :, 0]
         Uc_old = solver.state_coeffs
         iMM_old = solver.elem_helpers.iMM_elems
         # TODO: Better way to do this. Either change how Quail stores neighbors
         # or change how this code uses them.
-        neighbors_old = np.empty((Uc_old.shape[0], 3))
+        neighbors_old = np.empty((Uc_old.shape[0], 3), dtype=int)
         for i in range(neighbors_old.shape[0]):
             neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
@@ -114,9 +115,9 @@ class Adapter():
                 refine_IDs.add(i)
                 break
         # TODO: This is a hack
-        refine_IDs = {18}
+        #refine_IDs = {18}
         refine_IDs = {next(iter(refine_IDs))}
-        if solver.time > .02: refine_IDs = set()
+        if solver.time > .03: refine_IDs = set()
         #if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
@@ -312,8 +313,7 @@ class Adapter():
                                 elem_R_ID)] = new_elem_IDs[j]
             # Update old faces, by searching through and finding it
             # TODO: Add the reverse mapping (elem face ID to face object)
-            neighbor_face_IDs = [face_ID % 3 for face_ID in [face_L_ID - 2,
-                face_L_ID - 1, face_R_ID - 2, face_R_ID - 1]]
+            neighbor_face_IDs = [1, 2, 1, 2]
             for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
                     old_elem_IDs, possible_neighbors, new_elem_IDs,
                     neighbor_face_IDs):
@@ -331,13 +331,13 @@ class Adapter():
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
         solver.state_coeffs = Uc
         solver.elem_helpers.iMM_elems = iMM
-        unique_nodes = []
+        node_coords_old = solver.mesh.node_coords.copy()
         solver.mesh.node_coords = np.empty((solver.mesh.num_nodes,
             solver.mesh.ndims))
-        solver.mesh.node_coords[:] = np.nan
+        solver.mesh.node_coords[:num_nodes_old] = node_coords_old
         solver.mesh.elem_to_node_IDs = np.empty((solver.mesh.num_elems,
             solver.mesh.num_nodes_per_elem), dtype=int)
-        next_ID = 0
+        next_ID = num_nodes_old
         # Loop over elements
         for i in range(solver.mesh.num_elems):
             # Loop over nodes
