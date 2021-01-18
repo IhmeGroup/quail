@@ -108,13 +108,15 @@ class Adapter():
         refine_IDs = set()
         Uq = helpers.evaluate_state(Uc_old, self.phi_xq_ref,
                 skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
-        min_volume = 1
+        min_volume = .25
         for i in range(solver.mesh.num_elems):
             if np.any(Uq[i, :, 0] < .8) and solver.elem_helpers.vol_elems[i] > min_volume:
                 refine_IDs.add(i)
                 break
         # TODO: This is a hack
-        if solver.time > .001: refine_IDs = set()
+        refine_IDs = {18}
+        refine_IDs = {next(iter(refine_IDs))}
+        if solver.time > .02: refine_IDs = set()
         #if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
@@ -292,6 +294,7 @@ class Adapter():
                 # Find new neighbors using this mapping
                 neighbors[new_elem_IDs, :] = possible_neighbors[self.boundary_neighbor_change]
 
+
             # Update neighbors of neighbors
             for j, elem_ID in enumerate(possible_neighbors[:2]):
                 if elem_ID != -1:
@@ -301,12 +304,28 @@ class Adapter():
                             elem_L_ID)] = new_elem_IDs[j]
             # Update elem_R if refinement wasn't at a boundary
             if new_elem_IDs.size == 4:
-                for j, elem_ID in enumerate(possible_neighbors[:2]):
+                for j, elem_ID in enumerate(possible_neighbors[2:4]):
                     if elem_ID != -1:
-                        # Find which face of the neighbor's neighbor used to be elem_L, then
+                        # Find which face of the neighbor's neighbor used to be elem_R, then
                         # update it
                         neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
                                 elem_R_ID)] = new_elem_IDs[j]
+            # Update old faces, by searching through and finding it
+            # TODO: Add the reverse mapping (elem face ID to face object)
+            neighbor_face_IDs = [face_ID % 3 for face_ID in [face_L_ID - 2,
+                face_L_ID - 1, face_R_ID - 2, face_R_ID - 1]]
+            for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
+                    old_elem_IDs, possible_neighbors, new_elem_IDs,
+                    neighbor_face_IDs):
+                for int_face in solver.mesh.interior_faces:
+                    if (int_face.elemL_ID == elem_ID and int_face.elemR_ID ==
+                            neighbor_ID):
+                        int_face.elemL_ID = new_ID
+                        int_face.faceL_ID = neighbor_face_ID
+                    elif (int_face.elemL_ID == neighbor_ID and
+                            int_face.elemR_ID == elem_ID):
+                        int_face.elemR_ID = new_ID
+                        int_face.faceR_ID = neighbor_face_ID
 
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
@@ -352,6 +371,9 @@ class Adapter():
         solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
                 solver.basis, solver.order)
 
+        # TODO: Remove this eventually
+        #solver.precompute_matrix_helpers()
+
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
     def refine_triangles(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
@@ -385,20 +407,25 @@ class Adapter():
         solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[1],
                 0, new_elem_IDs[2], 0))
         solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[2],
-                1, new_elem_IDs[3], 2))
+                2, new_elem_IDs[3], 1))
         solver.mesh.interior_faces.append(mesh_defs.InteriorFace(new_elem_IDs[3],
                 0, new_elem_IDs[0], 0))
-        # Update number of faces
-        solver.mesh.num_interior_faces += 4
+        # Update number of faces - 4 new ones, 1 middle face removed
+        solver.mesh.num_interior_faces += 3
 
         # Create new adaptation group and add to set. If it's a boundary
         # refinement, then don't add the boundary (-1) elements/faces.
+        # TODO: middle face is removed later. Should it be copied before being
+        # passed in, or no?
         new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
                 [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
                 iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
                 dJ[group_old_elem_IDs], face_pair, middle_face)
         self.adaptation_groups.add(new_group)
         self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
+
+        # Remove middle face
+        solver.mesh.interior_faces.remove(middle_face)
 
         # Transform reference nodes into new nodes on reference element
         xn_ref_new = self.refinement_transformation(self.xn_ref, self.T_J, self.T_const, face_pair)

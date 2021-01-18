@@ -1,6 +1,6 @@
 TimeStepping = {
-	"FinalTime" : .0003,
-	"TimeStepSize" : .0001,
+	"FinalTime" : .001,
+	"TimeStepSize" : .001,
 	"TimeStepper" : "FE",
 }
 
@@ -19,7 +19,7 @@ Mesh = {
 	"xmax" : 5.,
 	"ymin" : -5.,
 	"ymax" : 5.,
-	"PeriodicBoundariesX" : ["x2", "x1"],
+	"PeriodicBoundariesX" : ["x2", "x1", "y2", "y1"],
 }
 
 Physics = {
@@ -39,10 +39,10 @@ d = {
 		"Function" : "IsentropicVortex",
 }
 
-BoundaryConditions = {
-	"y1" : d,
-	"y2" : d,
-}
+#BoundaryConditions = {
+#	"y1" : d,
+#	"y2" : d,
+#}
 
 Output = {
 	"AutoPostProcess" : False,
