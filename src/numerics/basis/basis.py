@@ -553,7 +553,7 @@ class TriShape(ShapeBase):
 
 class HexShape(ShapeBase):
 	'''
-	QuadShape inherits attributes and methods from the ShapeBase class.
+	HexShape inherits attributes and methods from the ShapeBase class.
 	See ShapeBase for detailed comments of attributes and methods.
 
 	Additional methods and attributes are commented below.
