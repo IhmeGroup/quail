@@ -394,9 +394,6 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		solver.params["ConvFluxSwitch"] = True
 		R = explicit.take_time_step(solver)
 
-		# Uq = helpers.evaluate_state(solver.state_coeffs, solver.elem_helpers.basis_val)
-		# import code; code.interact(local=locals())
-
 		return R # [num_elems, nb, ns]
 
 
