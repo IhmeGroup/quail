@@ -43,6 +43,9 @@ class SourceType(Enum):
 	source terms are specific to the available scalar equation sets.
 	'''
 	SimpleSource = auto()
+	ScalarArrhenius = auto()
+	ScalarMixing = auto()
+
 
 '''
 ---------------
@@ -319,3 +322,62 @@ class SimpleSource(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
+
+
+class ScalarMixing(SourceBase):
+	'''
+	Mixing source term for scalar PSR model problem
+
+	Attributes:
+	-----------
+	Da: float
+		Dahmkohler number
+	'''
+	def __init__(self, Da=15.89):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    Da: Dahmkohler number
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.Da = Da
+
+	def get_source(self, physics, Uq, x, t):
+		Da = self.Da
+		T_in = physics.T_in
+
+		S = 1.*(1./Da) * (T_in - Uq) 
+
+		return S
+
+	def get_jacobian(self, physics, Uq, x, t):
+		Da = self.Da
+
+		return -1./Da
+
+
+class ScalarArrhenius(SourceBase):
+	'''
+	Arrhenius source term for scalar PSR model problem
+	'''
+	def __init__(self):
+		pass
+
+	def get_source(self, physics, Uq, x, t):
+		T_ad = physics.T_ad
+		T_a = physics.T_a
+		S = 1.*(T_ad - Uq) * np.exp(-T_a/Uq) 
+
+		return S
+
+	def get_jacobian(self, physics, Uq, x, t):
+		T_ad = physics.T_ad
+		T_a = physics.T_a
+
+		jac = -np.exp(-T_a/Uq) * (Uq**2 - T_a*T_ad + T_a*Uq)/Uq**2
+		return np.expand_dims(jac, axis=-1)
