@@ -664,10 +664,7 @@ class HexShape(ShapeBase):
 		return elem_pts # [face_pts.shape[0], ndims]
 
 	def get_quadrature_order(self, mesh, order, physics=None):
-		# Add three to qorder for ndims = 3 with hexes? 
-		# HACKY REVISIT THIS!!!
 		qorder = super().get_quadrature_order(mesh, order, physics)
-		# qorder += 3
 
 		return qorder
 
