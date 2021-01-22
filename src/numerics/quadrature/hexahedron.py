@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#		File : src/numerics/hexahedral/hexahedral.py
+#		File : src/numerics/quadrature/hexahedron.py
 #
 #		Contains functions to evaluate quadrature for hexahedral shapes
 #

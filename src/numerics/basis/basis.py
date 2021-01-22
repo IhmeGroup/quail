@@ -17,7 +17,7 @@ import numerics.basis.tools as basis_tools
 import numerics.basis.basis as basis_defs
 
 from numerics.quadrature import segment, quadrilateral, triangle, \
-		hexahedral
+		hexahedron
 
 
 class ShapeBase(ABC):
@@ -308,7 +308,7 @@ class SegShape(ShapeBase):
 	NDIMS = 1
 	PRINCIPAL_NODE_COORDS = np.array([[-1.], [1.]])
 	CENTROID = np.array([[0.]])
-	FACE_TIME_MAPPING = None
+	FACE_TIME_MAPPING = np.empty([2])
 
 	def get_num_basis_coeff(self, p):
 		return p + 1
@@ -371,8 +371,7 @@ class SegShape(ShapeBase):
 			time_tile: time array tiling constant for each bface in 
 					get_boundary_face_residual in src/solver/ADERDG.py
 		'''
-		return self.basis_val.shape[0], self.basis_val.shape[1], 1, \
-				self.basis_val.shape[1]
+		return self.basis_val.shape[0], 1, self.basis_val.shape[1]
 
 class QuadShape(ShapeBase):
 	'''
@@ -462,15 +461,14 @@ class QuadShape(ShapeBase):
 		Outputs:
 		--------
 			nq_t: quadrature points tiling constant
-			nb_t: basis coefficients tiling constant
 			time_skip: Value to skip when building time
 					array for each bface in get_boundary_face_residual
-					in src/solver/ADERDG.py
+					in src/solver/ADERDG.py. Also used for tiling
+					in the interior and boundary face integral.
 			time_tile: time array tiling constant for each bface in 
 					get_boundary_face_residual in src/solver/ADERDG.py
 		'''
 		return int(np.sqrt(self.basis_val.shape[0])), \
-				int(np.sqrt(self.basis_val.shape[1])), \
 				int(np.sqrt(bface_quad_pts_st.shape[0])), \
 				int(np.sqrt(bface_quad_pts_st.shape[0]))
 
@@ -488,7 +486,7 @@ class TriShape(ShapeBase):
 	NDIMS = 2
 	PRINCIPAL_NODE_COORDS = np.array([[0., 0.], [1., 0.], [0., 1.]])
 	CENTROID = np.array([[1./3., 1./3.]])
-	FACE_TIME_MAPPING = None
+	FACE_TIME_MAPPING = np.empty([2])
 
 	def get_num_basis_coeff(self, p):
 		return (p + 1)*(p + 2)//2
@@ -558,13 +556,13 @@ class HexShape(ShapeBase):
 
 	Additional methods and attributes are commented below.
 	'''
-	SHAPE_TYPE = ShapeType.Hexahedral
+	SHAPE_TYPE = ShapeType.Hexahedron
 	FACE_SHAPE = QuadShape()
 	NFACES = 6
 	NDIMS = 3
-	PRINCIPAL_NODE_COORDS = np.array([[-1.,-1.,-1.],[1.,-1.,-1.],
-			[-1.,1.,-1.],[1.,1.,-1.],[-1.,-1.,1.],[1.,-1.,1.],
-			[-1.,1.,1.],[1.,1.,1.]])
+	PRINCIPAL_NODE_COORDS = np.array([[-1., -1., -1.],[1., -1., -1.],
+			[-1., 1., -1.],[1., 1., -1.],[-1., -1., 1.],[1., -1., 1.],
+			[-1., 1., 1.],[1., 1., 1.]])
 	CENTROID = np.array([[0., 0., 0.]])
 	FACE_TIME_MAPPING = np.array([4, 5])
 
@@ -579,13 +577,13 @@ class HexShape(ShapeBase):
 		if p > 0:
 			xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
 
-			xnodes[:,0] = np.tile(xseg, (p+1,p+1)).reshape(-1)
+			xnodes[:, 0] = np.tile(xseg, (p+1, p+1)).reshape(-1)
 			xnodes_hold = np.zeros([xseg.shape[0]*xseg.shape[0],1])
 			xnodes_hold = np.tile(xseg, (xseg.shape[0],1)).reshape(-1)
 
-			xnodes[:,1] = np.repeat(xn_hold, xseg.shape[0], 
+			xnodes[:, 1] = np.repeat(xn_hold, xseg.shape[0], 
 					axis=0).reshape(-1)
-			xnodes[:,2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
+			xnodes[:, 2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
 					axis=0).reshape(-1)
 
 		return xnodes # [nb, ndims]
@@ -637,33 +635,31 @@ class HexShape(ShapeBase):
 			elem_pts[:, 0] = -1.
 			elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
 					face_pts[:, 1] * x0[2]) / 2., nq)
+		# Bottom face (tau = -1 in ref time)
+		elif face_ID == 4:
 
+			x0 = [-1., -1., -1.]
+			x1 = [1., -1., -1.]
+			x2 = [1., 1., -1.]
+			x3 = [-1., 1., -1.]
+			elem_pts[:, 2] = -1.
+			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+					face_pts[:, 0] * x0[0]) / 2., nq)
+			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
+					face_pts[:, 1] * x0[1]) / 2., nq)
+		# Top face (tau = 1 in ref time)
+		elif face_ID == 5: 
+			x0 = [-1., -1., 1.]
+			x1 = [1., -1., 1.]
+			x2 = [1., 1., 1.]
+			x3 = [-1., 1., 1.]
+			elem_pts[:, 2] = 1.
+			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+					face_pts[: , 0] * x0[0]) / 2., nq)
+			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
+					face_pts[:, 1] * x0[1]) / 2., nq)
 		else:
-			# Bottom and top face (in time)
-			if face_ID == 4:
-
-				x0 = [-1., -1., -1.]
-				x1 = [1., -1., -1.]
-				x2 = [1., 1., -1.]
-				x3 = [-1., 1., -1.]
-				elem_pts[:, 2] = -1.
-				elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
-						face_pts[:, 0] * x0[0]) / 2., nq)
-				elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
-						face_pts[:, 1] * x0[1]) / 2., nq)
-
-			elif face_ID == 5: 
-				x0 = [-1., -1., 1.]
-				x1 = [1., -1., 1.]
-				x2 = [1., 1., 1.]
-				x3 = [-1., 1., 1.]
-				elem_pts[:, 2] = 1.
-				elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
-						face_pts[: , 0] * x0[0]) / 2., nq)
-				elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
-						face_pts[:, 1] * x0[1]) / 2., nq)
-			else:
-				raise NotImplementedError
+			raise NotImplementedError
 
 		return elem_pts # [face_pts.shape[0], ndims]
 
@@ -676,7 +672,7 @@ class HexShape(ShapeBase):
 		return qorder
 
 	def get_quadrature_data(self, order):
-		quad_pts, quad_wts = hexahedral.get_quadrature_points_weights(
+		quad_pts, quad_wts = hexahedron.get_quadrature_points_weights(
 				order, self.quadrature_type, self.num_pts_colocated)
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
@@ -1079,8 +1075,8 @@ class LagrangeQuad(BasisBase, QuadShape):
 		if p > 0:
 			xseg = self.get_1d_nodes(-1., 1., p+1)
 
-			xnodes[:,0] = np.tile(xseg, (p+1, 1)).reshape(-1)
-			xnodes[:,1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
+			xnodes[:, 0] = np.tile(xseg, (p+1, 1)).reshape(-1)
+			xnodes[:, 1] = np.repeat(xseg, p+1, axis=0).reshape(-1)
 
 		return xnodes # [nb, ndims]
 
@@ -1281,13 +1277,13 @@ class LagrangeHex(BasisBase, HexShape):
 		if p > 0:
 			xseg = self.get_1d_nodes(-1., 1., p+1)
 
-			xnodes[:,0] = np.tile(xseg, (p+1,p+1)).reshape(-1)
+			xnodes[:, 0] = np.tile(xseg, (p+1, p+1)).reshape(-1)
 			xnodes_hold = np.zeros([xseg.shape[0]*xseg.shape[0],1])
 			xnodes_hold = np.tile(xseg, (xseg.shape[0],1)).reshape(-1)
 
-			xnodes[:,1] = np.repeat(xnodes_hold, xseg.shape[0], 
+			xnodes[:, 1] = np.repeat(xnodes_hold, xseg.shape[0], 
 					axis=0).reshape(-1)
-			xnodes[:,2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
+			xnodes[:, 2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
 					axis=0).reshape(-1)
 
 		return xnodes # [nb, ndims]

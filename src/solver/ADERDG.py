@@ -45,7 +45,6 @@ class ElemHelpersADER(DG.ElemHelpers):
 		self.basis_time = None
 		self.nq_tile_constant = None
 		self.nn_tile_constant = None
-		self.nb_tile_constant = None
 
 
 class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
@@ -346,11 +345,10 @@ class ADERHelpers(object):
 			Sets the tiling constants in elem_helpers_st
 		'''
 		bface_quad_pts_st = bface_helpers_st.quad_pts
-		nq_t, nb_t, time_skip, time_tile = basis.get_tiling_constants(
+		nq_t, time_skip, time_tile = basis.get_tiling_constants(
 				bface_quad_pts_st)
 
 		elem_helpers_st.nq_tile_constant = nq_t
-		elem_helpers_st.nb_tile_constant = nb_t
 		elem_helpers_st.time_skip = time_skip
 		elem_helpers_st.time_tile = time_tile
 
@@ -535,7 +533,7 @@ class ADERDG(base.SolverBase):
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 
-		nq_t = self.elem_helpers_st.nq_tile_constant
+		time_skip = self.elem_helpers_st.time_skip
 
 		int_face_helpers = self.int_face_helpers
 		int_face_helpers_st = self.int_face_helpers_st
@@ -574,9 +572,9 @@ class ADERDG(base.SolverBase):
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq_st, ns]
 			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
-					nq_t, basis_valL, quad_wts_st, Fq)
+					time_skip, basis_valL, quad_wts_st, Fq)
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
-					nq_t, basis_valR, quad_wts_st, Fq)
+					time_skip, basis_valR, quad_wts_st, Fq)
 
 		return resL, resR # [nif, nb, ns]
 
@@ -588,7 +586,6 @@ class ADERDG(base.SolverBase):
 		ns = physics.NUM_STATE_VARS
 		bgroup_num = bgroup.number
 		nq_t = self.elem_helpers_st.nq_tile_constant 
-		nb_t = self.elem_helpers_st.nb_tile_constant 
 		time_skip = self.elem_helpers_st.time_skip
 		time_tile = self.elem_helpers_st.time_tile
 
@@ -653,8 +650,9 @@ class ADERDG(base.SolverBase):
 						UqI[:, i, :].reshape([nbf, 1, ns]),
 						normals_, x_, t_).reshape([nbf, ns])
 
+			# import code; code.interact(local=locals())
 			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
-					nq_t, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
+					time_skip, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
 		return resB # [nbf, nb, ns]
 
@@ -689,7 +687,6 @@ class ADERDG(base.SolverBase):
 		djac_elems = elem_helpers.djac_elems
 
 		nq_t = self.elem_helpers_st.nq_tile_constant 
-		nb_t = self.elem_helpers_st.nb_tile_constant 
 
 		# Allocate flux coefficients
 		F = np.zeros([Up.shape[0], basis.get_num_basis_coeff(order),
@@ -758,7 +755,6 @@ class ADERDG(base.SolverBase):
 		x_elems = elem_helpers.x_elems
 
 		nq_t = self.elem_helpers_st.nq_tile_constant 
-		nb_t = self.elem_helpers_st.nb_tile_constant 
 
 		ader_helpers = self.ader_helpers
 		x_elems_ader = ader_helpers.x_elems

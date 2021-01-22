@@ -98,15 +98,10 @@ def calculate_inviscid_flux_boundary_integral(nq_t, basis_val,
 	--------
 		resB: residual contribution (from boundary face) [nf, nb, ns]
 	'''
-	nb = basis_val.shape[1]
-	nq = quad_wts_st.shape[0]
-
-	#TEST
-	nq = int(np.sqrt(nq))
 	# Calculate the flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts_st)
 	# Calculate residual
-	resB = np.einsum('ijn, ijk -> ink', np.tile(basis_val,(nq, 1)), Fq_quad)
+	resB = np.einsum('ijn, ijk -> ink', np.tile(basis_val,(nq_t, 1)), Fq_quad)
 
 	return resB # [nf, nb, ns]
 

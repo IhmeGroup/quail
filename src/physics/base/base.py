@@ -510,7 +510,7 @@ class PhysicsBase(ABC):
 		
 		# Check needed for ADER shapes to be consistent. This appears to 
 		# be a minimally invasive approach.
-		if normals.shape[1]<Fq.shape[1]:
+		if normals.shape[1] < Fq.shape[1]:
 			normals = np.tile(normals, (normals.shape[1], 1))
 
 		return np.einsum('ijkl, ijl -> ijk', Fq, normals), vars
