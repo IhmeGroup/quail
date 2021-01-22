@@ -57,6 +57,9 @@ def set_physics(mesh, physics_type):
 	    physics_class = scalar.ConstAdvScalar2D
 	elif PhysicsType[physics_type] == PhysicsType.Burgers and ndims == 1:
 	    physics_class = scalar.Burgers1D
+	elif PhysicsType[physics_type] == PhysicsType.ModelPSRScalar and \
+			ndims == 1:
+		physics_class = scalar.ModelPSRScalar
 	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 1:
 	    physics_class = euler.Euler1D
 	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 2:

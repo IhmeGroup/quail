@@ -226,3 +226,73 @@ class Burgers1D(base.PhysicsBase):
 			raise NotImplementedError
 
 		return scalar
+
+class ModelPSRScalar(base.PhysicsBase):
+	'''
+	This class corresponds to the 0D model of a partially stirred reactor.
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods.
+	'''
+	NUM_STATE_VARS = 1
+	NDIMS = 1
+	PHYSICS_TYPE = general.PhysicsType.ModelPSRScalar
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+
+		self.source_map.update({
+			scalar_source_type.ScalarArrhenius : scalar_fcns.ScalarArrhenius,
+			scalar_source_type.ScalarMixing : scalar_fcns.ScalarMixing,
+		})
+
+	class StateVariables(Enum):
+		Scalar = "T"
+
+	class AdditionalVariables(Enum):
+	    MaxWaveSpeed = "\\lambda"
+
+	def get_conv_flux_interior(self, Uq):
+
+		# This can be zero or the mixing function.
+		F = np.zeros_like(Uq)
+		F = np.expand_dims(F, axis=-1)
+
+		return F, None
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		sname = self.AdditionalVariables[var_name].name
+
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is u
+			scalar = np.abs(Uq)
+		else:
+			raise NotImplementedError
+		
+		return scalar
+
+	def set_physical_params(self, T_ad=1.15, T_in=0.15, T_a=1.8):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			T_in: Inlet temperature of the unburned gas
+			T_ad: Adiabatic flame temperature
+			T_a:  Activation temperature
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.T_ad = T_ad
+		self.T_in = T_in
+		self.T_a = T_a
+
