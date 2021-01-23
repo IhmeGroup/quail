@@ -3,6 +3,9 @@ This case involves 1D advection of a damping sine wave.
   - Post-processing
   	- Total error printed to display
     - Scalar profile with initial and exact solution displayed
+  - Custom user function to print out (max-min) value at each time step
+    - See `custom_user_function.py`
+    - Will automatically run
   - Additional Notes:
     - The parameter `nu` can force this equation to be stiff if a
     larger value is used.
