@@ -268,10 +268,10 @@ class SolverBase(ABC):
 
 		Inputs:
 		-------
-			faceL_IDs: face IDs for each interior face from the perspective of
-				each left neighboring element
-			faceR_IDs: face IDs for each interior face from the perspective of
-				each right neighboring element
+			faceL_IDs: face IDs for each interior face from the perspective
+				of each left neighboring element
+			faceR_IDs: face IDs for each interior face from the perspective 
+				of each right neighboring element
 			UcL: solution array for left neighboring element (polynomial
 				coefficients)
 			UcR: solution array for right neighboring element (polynomial
