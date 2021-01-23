@@ -304,6 +304,14 @@ class SolverBase(ABC):
 		'''
 		pass
 
+	def custom_user_function(self):
+		'''
+		Placeholder for the custom_user_function. Users can specify the
+		custom_user_function in an additional file. This would then be 
+		called each iteration.
+		'''
+		pass
+
 	def init_state_from_fcn(self):
 		'''
 		Initializes the state (initial condition) from the specified
