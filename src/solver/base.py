@@ -598,6 +598,9 @@ class SolverBase(ABC):
 		if write_initial_solution:
 			readwritedatafiles.write_data_file(self, 0)
 
+		# Custom user function initial iteration
+		self.custom_user_function()
+
 		t0 = time.time()
 		iwrite = 1
 
@@ -612,13 +615,6 @@ class SolverBase(ABC):
 			self.max_state[:] = -np.inf
 			self.min_state[:] = np.inf
 
-			# Check to see if custom user function is available
-			custom_user_function = getattr(self, 
-					"custom_user_function", None)
-			# Call custom function if available
-			if callable(custom_user_function):
-				self.custom_user_function(self)
-
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
 
@@ -628,6 +624,9 @@ class SolverBase(ABC):
 			# Increment time
 			t += stepper.dt
 			self.time = t
+
+			# Custom user function definition
+			self.custom_user_function()
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
