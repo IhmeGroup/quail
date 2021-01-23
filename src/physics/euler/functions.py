@@ -362,6 +362,115 @@ class DensityWave(FcnBase):
 
 class RiemannProblem(FcnBase):
 	'''
+	Riemann problem. Initial condition only.
+
+	Attributes:
+	-----------
+	rhoL: float
+		left density
+	uL: float
+		left velocity
+	pL: float
+		left pressure
+	rhoR: float
+		right density
+	uR: float
+		right velocity
+	pR: float
+		right pressure
+	xd: float
+		location of initial discontinuity
+	w: float
+		parameter that controls smearing of initial discontinuity; larger w
+		results in more smearing.
+	'''
+	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
+				xd=0., w=1.e-30):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+			rhoL: left density
+			uL: left velocity
+			pL: left pressure
+			rhoR: right density
+			uR: right velocity
+			pR: right pressure
+			xd: location of initial discontinuity
+			w: parameter that controls smearing of initial discontinuity;
+				larger w results in more smearing
+
+		Outputs:
+		--------
+		    self: attributes initialized
+
+		Notes:
+		------
+			Default values set up for Sod problem (without smearing).
+		'''
+		self.rhoL = rhoL
+		self.uL = uL
+		self.pL = pL
+		self.rhoR = rhoR
+		self.uR = uR
+		self.pR = pR
+		self.xd = xd
+		if w <= 0:
+			# For zero smearing, make w close to zero but not equal to zero
+			raise ValueError
+		self.w = w
+
+	def get_state(self, physics, x, t):
+		# Unpack
+		rhoL = self.rhoL
+		uL = self.uL
+		pL = self.pL
+		rhoR = self.rhoR
+		uR = self.uR
+		pR = self.pR
+		xd = self.xd
+		w = self.w
+
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		gamma = physics.gamma
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		def set_tanh(a, b, w, x0):
+			'''
+			This function prescribes a tanh profile.
+
+			Inputs:
+			-------
+				a: left value
+				b: right value
+				w: characteristic width
+				x0: center
+
+			Outputs:
+			--------
+			    tanh profile
+			'''
+			return 0.5*((a+b) + (b-a)*np.tanh((x-x0)/w))
+
+		# Density
+		Uq[:, :, srho] =  set_tanh(rhoL, rhoR, w, xd)
+
+		# Momentum
+		Uq[:, :, srhou] = set_tanh(rhoL*uL, rhoR*uR, w, xd)
+
+		# Energy
+		rhoEL = pL/(gamma-1.) + 0.5*rhoL*uL*uL
+		rhoER = pR/(gamma-1.) + 0.5*rhoR*uR*uR
+		Uq[:, :, srhoE] = set_tanh(rhoEL, rhoER, w, xd)
+
+		return Uq
+
+
+class ExactRiemannSolution(FcnBase):
+	'''
 	Riemann problem. Exact solution included (with time dependence),
 	obtained using the method of characteristics. Detailed derivation not
 	discussed here. Region 1 is to the right of the shock, region 2 between
