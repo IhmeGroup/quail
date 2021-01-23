@@ -11,7 +11,6 @@ Numerics = {
 	"Solver" : "DG",
 	"ElementQuadrature" : "GaussLegendre",
 	"FaceQuadrature" : "GaussLegendre",
-	"InterpolateFluxADER" : False,
 }
 
 Output = {
