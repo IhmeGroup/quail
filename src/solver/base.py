@@ -304,7 +304,7 @@ class SolverBase(ABC):
 		'''
 		pass
 
-	def custom_user_function(self):
+	def custom_user_function(self, solver):
 		'''
 		Placeholder for the custom_user_function. Users can specify the
 		custom_user_function in an additional file. This would then be 
@@ -607,7 +607,7 @@ class SolverBase(ABC):
 			readwritedatafiles.write_data_file(self, 0)
 
 		# Custom user function initial iteration
-		self.custom_user_function()
+		self.custom_user_function(self)
 
 		t0 = time.time()
 		iwrite = 1
@@ -634,7 +634,7 @@ class SolverBase(ABC):
 			self.time = t
 
 			# Custom user function definition
-			self.custom_user_function()
+			self.custom_user_function(self)
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
