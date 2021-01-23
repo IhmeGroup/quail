@@ -40,4 +40,4 @@ Settings can be changed directly in `plot_segment_basis_fcn.py`. Basis functions
 
 
 ### Additional information
-Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation (`docs/documentation.pdf`). Please submit issues and questions on the github page.
+Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation (`docs/documentation.pdf`). Links to video tutorials are provided as well. Please submit issues and questions on the github page.
