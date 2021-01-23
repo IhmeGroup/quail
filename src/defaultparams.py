@@ -194,4 +194,7 @@ Output = {
 		# time step and residual information
 		# If True, will also print out the input deck and the min/max of
 		# the state variables
+	"CustomFunctionFilename" : "custom_user_function"
+		# Name of the user's custom function definitions.
 }
+
