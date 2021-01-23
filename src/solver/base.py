@@ -294,16 +294,8 @@ class SolverBase(ABC):
 			resB: calculated residual array (from boundary face)
 		'''
 		pass
-		
-	def custom_user_function(self):
-		'''
-		Placeholder for the custom_user_function. Users can specify the
-		custom_user_function in an additional file. This would then be 
-		called each iteration.
-		'''
-		pass
 
-	def custom_user_function(self):
+	def custom_user_function(self, solver):
 		'''
 		Placeholder for the custom_user_function. Users can specify the
 		custom_user_function in an additional file. This would then be 
@@ -549,10 +541,8 @@ class SolverBase(ABC):
 			self.min_state: minimum values of state variables
 			self.max_state: maximum values of state variables
 		'''
-		self.min_state = np.minimum(self.min_state, np.amin(np.amin(Uq,
-				axis=1), axis=0))
-		self.max_state = np.maximum(self.max_state, np.amax(np.amax(Uq,
-				axis=1), axis=0))
+		self.min_state = np.amin(np.amin(Uq, axis=1), axis=0)
+		self.max_state = np.amax(np.amax(Uq, axis=1), axis=0)
 
 	def print_info(self, physics, res, itime, t, dt):
 		'''
@@ -606,7 +596,7 @@ class SolverBase(ABC):
 			readwritedatafiles.write_data_file(self, 0)
 
 		# Custom user function initial iteration
-		self.custom_user_function()
+		self.custom_user_function(self)
 
 		t0 = time.time()
 		iwrite = 1
@@ -617,9 +607,6 @@ class SolverBase(ABC):
 
 		itime = 0
 		while itime < stepper.num_time_steps:
-			# Reset min and max state
-			self.max_state[:] = -np.inf
-			self.min_state[:] = np.inf
 
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
@@ -632,7 +619,7 @@ class SolverBase(ABC):
 			self.time = t
 
 			# Custom user function definition
-			self.custom_user_function()
+			self.custom_user_function(self)
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
