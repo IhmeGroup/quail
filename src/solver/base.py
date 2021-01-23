@@ -69,11 +69,11 @@ class SolverBase(ABC):
     	precomputes a variety of functions and methods prior to running the
     	simulation
     get_element_residual
-    	calculates the residual contribution for  a given element interior
+    	calculates the residual contribution for elements
     get_interior_face_residual
-    	calculates the residual contribution for a specific interior face
+    	calculates the residual contribution for interior faces
     get_boundary_face_residual
-    	calculates the residual contribution for a specific boundary face
+    	calculates the residual contribution for boundary faces
 
     Methods:
     --------
@@ -254,7 +254,8 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		'''
-		Calculates the surface integral for the interior faces.
+		Calculates the surface integral for the interior faces, divided
+		between left and right element contributions.
 
 		Inputs:
 		-------
@@ -429,8 +430,8 @@ class SolverBase(ABC):
 
 	def get_element_residuals(self, U, res):
 		'''
-		Loops over the elements and calls the get_element_residual
-		function for each element
+		Wrapper for get_element_residual (just for consistency with how
+		interior/boundary face contributions are computed).
 
 		Inputs:
 		-------
@@ -445,8 +446,7 @@ class SolverBase(ABC):
 
 	def get_interior_face_residuals(self, U, res):
 		'''
-		Loops over the interior faces and calls the
-		get_interior_face_residual function for each face
+		Computes interior face residual contributions.
 
 		Inputs:
 		-------
@@ -481,8 +481,8 @@ class SolverBase(ABC):
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
-		Loops over the boundary faces and calls the
-		get_boundary_face_residual function for each face
+		Computes boundary face residual contributions for all boundary 
+		groups.
 
 		Inputs:
 		-------
