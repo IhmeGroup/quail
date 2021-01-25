@@ -233,31 +233,29 @@ class SineBurgers(FcnBase):
 	omega: float
 		frequency
 	'''
-	def __init__(self, omega=2*np.pi, y_shift=0.5):
+	def __init__(self, omega=2*np.pi):
 		'''
 		This method initializes the attributes.
 
 		Inputs:
 		-------
-		    omega: frequency
-		    y_shift: shift the centerline of the sine wave
-		    	up or down on the verticle axis.
+			omega: frequency
+
 
 		Outputs:
 		--------
-		    self: attributes initialized
+			self: attributes initialized
 		'''
 		self.omega = omega
-		self.y_shift = y_shift
 
 	def get_state(self, physics, x, t):
 
 		def F(u):
 			x1 = x.reshape(x.shape[0]*x.shape[1])
-			F = u - np.sin(self.omega*(x1-u*t))-self.y_shift
+			F = u - np.sin(self.omega*(x1-u*t))
 			return F
 
-		u = np.sin(self.omega*x) + self.y_shift
+		u = np.sin(self.omega*x)
 		u1 = u.reshape(u.shape[0]*u.shape[1])
 		sol = root(F, u1, tol=1e-12)
 

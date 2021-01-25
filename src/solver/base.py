@@ -69,11 +69,11 @@ class SolverBase(ABC):
     	precomputes a variety of functions and methods prior to running the
     	simulation
     get_element_residual
-    	calculates the residual contribution for  a given element interior
+    	calculates the residual contribution for elements
     get_interior_face_residual
-    	calculates the residual contribution for a specific interior face
+    	calculates the residual contribution for interior faces
     get_boundary_face_residual
-    	calculates the residual contribution for a specific boundary face
+    	calculates the residual contribution for boundary faces
 
     Methods:
     --------
@@ -263,14 +263,15 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		'''
-		Calculates the surface integral for the interior faces.
+		Calculates the surface integral for the interior faces, divided 
+		between left and right contributions.
 
 		Inputs:
 		-------
-			faceL_IDs: face IDs for each interior face from the perspective of
-				each left neighboring element
-			faceR_IDs: face IDs for each interior face from the perspective of
-				each right neighboring element
+			faceL_IDs: face IDs for each interior face from the perspective
+				of each left neighboring element
+			faceR_IDs: face IDs for each interior face from the perspective 
+				of each right neighboring element
 			UcL: solution array for left neighboring element (polynomial
 				coefficients)
 			UcR: solution array for right neighboring element (polynomial
@@ -288,8 +289,8 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		'''
-		Calculates the residual from the surface integral for all boundary faces
-		within a boundary group.
+		Calculates the residual from the surface integral for all boundary 
+		faces within a boundary group.
 
 		Inputs:
 		-------
@@ -301,6 +302,15 @@ class SolverBase(ABC):
 		Outputs:
 		--------
 			resB: calculated residual array (from boundary face)
+		'''
+		pass
+
+  
+	def custom_user_function(self, solver):
+		'''
+		Placeholder for the custom_user_function. Users can specify the
+		custom_user_function in an additional file. This would then be 
+		called each iteration.
 		'''
 		pass
 
@@ -430,8 +440,8 @@ class SolverBase(ABC):
 
 	def get_element_residuals(self, U, res):
 		'''
-		Loops over the elements and calls the get_element_residual
-		function for each element
+		Wrapper for get_element_residual (just for consistency with how
+		interior/boundary face contributions are computed).
 
 		Inputs:
 		-------
@@ -446,8 +456,7 @@ class SolverBase(ABC):
 
 	def get_interior_face_residuals(self, U, res):
 		'''
-		Loops over the interior faces and calls the
-		get_interior_face_residual function for each face
+		Computes interior face residual contributions.
 
 		Inputs:
 		-------
@@ -482,8 +491,8 @@ class SolverBase(ABC):
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
-		Loops over the boundary faces and calls the
-		get_boundary_face_residual function for each face
+		Computes interior face residual contributions for all boundary 
+		groups.
 
 		Inputs:
 		-------
@@ -598,6 +607,9 @@ class SolverBase(ABC):
 		if write_initial_solution:
 			readwritedatafiles.write_data_file(self, 0)
 
+		# Custom user function initial iteration
+		self.custom_user_function(self)
+
 		t0 = time.time()
 		iwrite = 1
 
@@ -605,19 +617,14 @@ class SolverBase(ABC):
 		print("--------------------------------------------------------" + \
 				"-----------------------")
 
+		# Custom user function initial iteration
+		self.custom_user_function(self)
 
 		itime = 0
 		while itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
 			self.min_state[:] = np.inf
-
-			# Check to see if custom user function is available
-			custom_user_function = getattr(self, 
-					"custom_user_function", None)
-			# Call custom function if available
-			if callable(custom_user_function):
-				self.custom_user_function(self)
 
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
@@ -628,6 +635,9 @@ class SolverBase(ABC):
 			# Increment time
 			t += stepper.dt
 			self.time = t
+
+			# Custom user function definition
+			self.custom_user_function(self)
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)

@@ -477,6 +477,56 @@ def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 					grady[i, :, 0]), (-1, ), 'F')
 
 
+def get_lagrange_basis_3D(xq, xnodes, basis_val=None, basis_ref_grad=None):
+	'''
+	Calculates the 3D Lagrange basis functions
+
+	Inputs:
+	-------
+		xq: coordinates of quadrature points [nq, ndims]
+		xnodes: coordinates of nodes in 1D ref space [nb, ndims]
+
+	Outputs:
+	--------
+		basis_val: evaluated basis [nq, nb]
+		basis_ref_grad: evaluated gradient of basis [nq, nb, ndims]
+	'''
+	if basis_ref_grad is not None:
+		gradx = np.zeros((xq.shape[0], xnodes.shape[0], 1))
+		grady = np.zeros_like(gradx)
+		gradz = np.zeros_like(gradx)
+	else:
+		gradx = None; grady = None; gradz = None
+	# Always need basis_val
+	valx = np.zeros((xq.shape[0], xnodes.shape[0]))
+	valy = np.zeros_like(valx)
+	valz = np.zeros_like(valx)
+
+	# Get 1D basis values first
+	nnodes_1D = xnodes.shape[0]
+	lagrange_eq_seg = basis_defs.LagrangeSeg(nnodes_1D-1)
+	get_lagrange_basis_1D(xq[:, 0].reshape(-1, 1), xnodes, valx, gradx)
+	get_lagrange_basis_1D(xq[:, 1].reshape(-1, 1), xnodes, valy, grady)
+	get_lagrange_basis_1D(xq[:, 2].reshape(-1, 1), xnodes, valz, gradz)
+
+	# Tensor products to get 3D basis values
+	if basis_val is not None:
+		for i in range(xq.shape[0]):
+			basis_val[i, :] = np.reshape(np.outer(np.outer(valx[i, :], 
+					valy[i, :]), valz[i, :]), (-1, ), 'F')
+	if basis_ref_grad is not None:
+		for i in range(xq.shape[0]):
+			basis_ref_grad[i, :, 0] = np.reshape(np.outer(
+					np.outer(gradx[i, :, 0], valy[i, :]),
+					valz[i, :]), (-1,), 'F')
+			basis_ref_grad[i, :, 1] = np.reshape(np.outer(
+					np.outer(valx[i, :], grady[i, :, 0]),
+					valz[i, :]), (-1,), 'F')
+			basis_ref_grad[i, :, 2] = np.reshape(np.outer(
+					np.outer(valx[i, :], valy[i, :]),
+					gradz[i, :, 0]), (-1,), 'F')
+
+
 def get_lagrange_basis_tri(xq, p, xnodes, basis_val):
 	'''
 	Calculates the value for Lagrange triangle basis function
