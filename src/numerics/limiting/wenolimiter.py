@@ -161,7 +161,7 @@ class WENO(base.LimiterBase):
 
 		return gamma / (eps + beta)**2 # weno_wts [ne]
 
-	def limit_element(self, solver, Uc):
+	def limit_solution(self, solver, Uc):
 		# Unpack	
 		ns = solver.physics.NUM_STATE_VARS	
 		physics = solver.physics

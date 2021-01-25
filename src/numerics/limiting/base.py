@@ -30,8 +30,6 @@ class LimiterBase(ABC):
 		checks for compatibility between physics and limiter
 	precompute_helpers
 		precomputes helper arrays
-	limit_element
-		applies limiter to individual element
 	limit_solution
 		applies limiter to global solution
 	'''
@@ -74,18 +72,6 @@ class LimiterBase(ABC):
 		pass
 
 	@abstractmethod
-	def limit_element(self, solver, Uc):
-		'''
-		This method element-local solution
-
-		Inputs:
-		-------
-			solver: solver object
-			elem_ID: element ID
-			Uc: state coefficients on element [num_elems, nb, ns]
-		'''
-		pass
-
 	def limit_solution(self, solver, Uc):
 		'''
 		This method limits the global solution
@@ -101,4 +87,4 @@ class LimiterBase(ABC):
 			Uc: state coefficients of global solution
 				[num_elems, nb, ns] (modified)
 		'''
-		Uc = self.limit_element(solver, Uc)
+		pass

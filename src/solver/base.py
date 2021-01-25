@@ -13,7 +13,7 @@ import time
 import errors
 
 from general import ModalOrNodal, NodeType, ShapeType, QuadratureType, \
-		StepperType
+		StepperType, LimiterType, BasisType
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
@@ -29,7 +29,7 @@ import numerics.timestepping.stepper as stepper_defs
 import numerics.quadrature.segment as segment
 
 import processing.post as post_defs
-import processing.readwritedatafiles as ReadWriteDataFiles
+import processing.readwritedatafiles as readwritedatafiles
 
 import solver.tools as solver_tools
 
@@ -69,11 +69,11 @@ class SolverBase(ABC):
     	precomputes a variety of functions and methods prior to running the
     	simulation
     get_element_residual
-    	calculates the residual contribution for  a given element interior
+    	calculates the residual contribution for elements
     get_interior_face_residual
-    	calculates the residual contribution for a specific interior face
+    	calculates the residual contribution for interior faces
     get_boundary_face_residual
-    	calculates the residual contribution for a specific boundary face
+    	calculates the residual contribution for boundary faces
 
     Methods:
     --------
@@ -133,15 +133,21 @@ class SolverBase(ABC):
 		limiter_types = params["ApplyLimiters"]
 		shock_indicator_type = params["ShockIndicator"]
 		tvb_param = params["TVBParameter"]
+		# Cast to list
+		if not isinstance(limiter_types, list):
+			limiter_types = [limiter_types]
+			params["ApplyLimiters"] = limiter_types
 		self.limiters = []
 		for limiter_type in limiter_types:
 			limiter = limiter_tools.set_limiter(limiter_type,
 					physics.PHYSICS_TYPE)
-			limiter_tools.set_shock_indicator(limiter,
-					shock_indicator_type)
-			self.limiters.append(limiter)
-			# Set TVB Parameter
-			limiter.tvb_param = tvb_param
+			if limiter:
+				# Set shock indicator
+				limiter_tools.set_shock_indicator(limiter,
+						shock_indicator_type)
+				# Set TVB Parameter
+				limiter.tvb_param = tvb_param
+				self.limiters.append(limiter)
 
 		# Console output
 		self.verbose = params["Verbose"]
@@ -222,6 +228,14 @@ class SolverBase(ABC):
 				  StepperType[stepper_type] == StepperType.Simpler ) :
 			raise errors.IncompatibleError
 
+		# Currently, positivity-preserving limiter not compatible with
+		# modal triangular basis
+		if LimiterType.PositivityPreserving.name in params["ApplyLimiters"] \
+				or LimiterType.PositivityPreservingChem.name in params[
+				"ApplyLimiters"]:
+			if basis.BASIS_TYPE == BasisType.HierarchicH1Tri:
+				raise errors.IncompatibleError
+
 	@abstractmethod
 	def precompute_matrix_helpers(self):
 		'''
@@ -249,14 +263,15 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		'''
-		Calculates the surface integral for the interior faces.
+		Calculates the surface integral for the interior faces, divided 
+		between left and right contributions.
 
 		Inputs:
 		-------
-			faceL_IDs: face IDs for each interior face from the perspective of
-				each left neighboring element
-			faceR_IDs: face IDs for each interior face from the perspective of
-				each right neighboring element
+			faceL_IDs: face IDs for each interior face from the perspective
+				of each left neighboring element
+			faceR_IDs: face IDs for each interior face from the perspective 
+				of each right neighboring element
 			UcL: solution array for left neighboring element (polynomial
 				coefficients)
 			UcR: solution array for right neighboring element (polynomial
@@ -274,8 +289,8 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		'''
-		Calculates the residual from the surface integral for all boundary faces
-		within a boundary group.
+		Calculates the residual from the surface integral for all boundary 
+		faces within a boundary group.
 
 		Inputs:
 		-------
@@ -290,7 +305,8 @@ class SolverBase(ABC):
 		'''
 		pass
 
-	def custom_user_function(self):
+  
+	def custom_user_function(self, solver):
 		'''
 		Placeholder for the custom_user_function. Users can specify the
 		custom_user_function in an additional file. This would then be 
@@ -424,8 +440,8 @@ class SolverBase(ABC):
 
 	def get_element_residuals(self, U, res):
 		'''
-		Loops over the elements and calls the get_element_residual
-		function for each element
+		Wrapper for get_element_residual (just for consistency with how
+		interior/boundary face contributions are computed).
 
 		Inputs:
 		-------
@@ -440,8 +456,7 @@ class SolverBase(ABC):
 
 	def get_interior_face_residuals(self, U, res):
 		'''
-		Loops over the interior faces and calls the
-		get_interior_face_residual function for each face
+		Computes interior face residual contributions.
 
 		Inputs:
 		-------
@@ -476,8 +491,8 @@ class SolverBase(ABC):
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
-		Loops over the boundary faces and calls the
-		get_boundary_face_residual function for each face
+		Computes interior face residual contributions for all boundary 
+		groups.
 
 		Inputs:
 		-------
@@ -590,7 +605,10 @@ class SolverBase(ABC):
 		write_initial_solution = self.params["WriteInitialSolution"]
 
 		if write_initial_solution:
-			ReadWriteDataFiles.write_data_file(self, 0)
+			readwritedatafiles.write_data_file(self, 0)
+
+		# Custom user function initial iteration
+		self.custom_user_function(self)
 
 		t0 = time.time()
 		iwrite = 1
@@ -600,7 +618,7 @@ class SolverBase(ABC):
 				"-----------------------")
 
 		# Custom user function initial iteration
-		self.custom_user_function()
+		self.custom_user_function(self)
 
 		itime = 0
 		while itime < stepper.num_time_steps:
@@ -619,7 +637,7 @@ class SolverBase(ABC):
 			self.time = t
 
 			# Custom user function definition
-			self.custom_user_function()
+			self.custom_user_function(self)
 
 			# Print info
 			self.print_info(physics, res, itime, t, stepper.dt)
@@ -627,7 +645,7 @@ class SolverBase(ABC):
 
 			# Write data file
 			if (itime + 1) % write_interval == 0:
-				ReadWriteDataFiles.write_data_file(self, iwrite)
+				readwritedatafiles.write_data_file(self, iwrite)
 				iwrite += 1
 
 			itime += 1
@@ -638,4 +656,4 @@ class SolverBase(ABC):
 				"-----------------------")
 
 		if write_final_solution:
-			ReadWriteDataFiles.write_data_file(self, -1)
+			readwritedatafiles.write_data_file(self, -1)

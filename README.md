@@ -11,7 +11,7 @@ Python 3.7 or higher is required. The following libraries should also be install
   - Matplotlib 3.3.1
   - SciPy 1.4.1
 
-For convenience, the Quail src directory can be added to PATH.
+For convenience, the Quail src directory can be added to PATH. The driver script (`quail`) is located in this directory.
 ```sh
 $ export PATH=$PATH:/your/quail/directory/src
 ```
@@ -40,4 +40,4 @@ Settings can be changed directly in `plot_segment_basis_fcn.py`. Basis functions
 
 
 ### Additional information
-Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation (`docs/documentation.pdf`). Please submit issues and questions on the github page.
+Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation (`docs/documentation.pdf`). Links to video tutorials are provided as well. Please submit issues and questions on the github page.

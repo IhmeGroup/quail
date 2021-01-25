@@ -756,7 +756,7 @@ def get_modal_basis_tri(xi, p, xnodes, basis_val):
 		basis_val[:] = 1.
 		return
 
-	val_reorder[:,[0, 1, 2]] = l[:,[1, 2, 0]]
+	val_reorder[:, [0, 1, 2]] = l[:, [1, 2, 0]]
 
 	e1 = np.arange(3, p-1+3, 1)
 	e2 = np.arange(p-1+3, 2*p-2+3, 1)
@@ -774,7 +774,7 @@ def get_modal_basis_tri(xi, p, xnodes, basis_val):
 
 	basis_val[:, :] = val_reorder[:, index]
 
-	return basis_val # [nb, nb]
+	return basis_val # [nq, nb]
 
 
 def get_edge_basis(p, ll, lr):

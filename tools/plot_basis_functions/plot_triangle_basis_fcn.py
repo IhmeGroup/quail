@@ -10,7 +10,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 
-import general
 import numerics.basis.basis as basis_defs
 import processing.plot as plot
 
