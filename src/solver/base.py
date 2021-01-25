@@ -305,6 +305,7 @@ class SolverBase(ABC):
 		'''
 		pass
 
+  
 	def custom_user_function(self, solver):
 		'''
 		Placeholder for the custom_user_function. Users can specify the
@@ -616,6 +617,8 @@ class SolverBase(ABC):
 		print("--------------------------------------------------------" + \
 				"-----------------------")
 
+		# Custom user function initial iteration
+		self.custom_user_function(self)
 
 		itime = 0
 		while itime < stepper.num_time_steps:
