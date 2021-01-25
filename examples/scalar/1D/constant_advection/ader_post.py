@@ -12,7 +12,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 # Compute L2 error
-TotErr, _ = post.get_error(mesh, physics, solver, "Scalar")
+post.get_error(mesh, physics, solver, "Scalar")
 
 # Plot
 plot.prepare_plot()
@@ -30,7 +30,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 # Compute L2 error
-TotErr, _ = post.get_error(mesh, physics, solver, "Scalar")
+post.get_error(mesh, physics, solver, "Scalar")
 
 # Plot
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True,
