@@ -2,6 +2,7 @@ import sys
 sys.path.append('../src')
 import numpy as np
 import pytest
+
 import numerics.basis.basis as basis_defs
 
 rtol = 1e-15

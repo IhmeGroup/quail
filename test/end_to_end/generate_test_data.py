@@ -3,7 +3,6 @@ import pickle
 import subprocess
 import sys
 sys.path.append('../../src')
-
 import numpy as np
 
 import list_of_cases
