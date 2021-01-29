@@ -6,4 +6,4 @@ import pytest
 
 @pytest.fixture
 def basis(Basis, order):
-    yield Basis(order)
+	yield Basis(order)
