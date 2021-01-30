@@ -1,7 +1,7 @@
 TimeStepping = {
-	"FinalTime" : .06,
+	"FinalTime" : .002,
 	"TimeStepSize" : .002,
-	"TimeStepper" : "RK4",
+	"TimeStepper" : "FE",
 }
 
 Numerics = {
@@ -13,8 +13,8 @@ Numerics = {
 
 Mesh = {
 	"ElementShape" : "Triangle",
-	"NumElemsX" : 5,
-	"NumElemsY" : 5,
+	"NumElemsX" : 1,
+	"NumElemsY" : 1,
 	"xmin" : -5.,
 	"xmax" : 5.,
 	"ymin" : -5.,

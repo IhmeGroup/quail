@@ -111,13 +111,13 @@ class Adapter():
                 skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
         min_volume = .25
         for i in range(solver.mesh.num_elems):
-            if np.any(Uq[i, :, 0] < .8) and solver.elem_helpers.vol_elems[i] > min_volume:
+            if np.any(Uq[i, :, 0] < .9) and solver.elem_helpers.vol_elems[i] > min_volume:
                 refine_IDs.add(i)
                 break
         # TODO: This is a hack
         #refine_IDs = {18}
-        refine_IDs = {next(iter(refine_IDs))}
-        if solver.time > .03: refine_IDs = set()
+        if refine_IDs != set(): refine_IDs = {next(iter(refine_IDs))}
+        #if solver.time > .03: refine_IDs = set()
         #if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
@@ -216,7 +216,7 @@ class Adapter():
                 # Only do this for elements not refined at a boundary
                 if elem_pairs[i, 1] != -1:
                     face_pairs[i, 1] = np.argwhere(neighbors_old[elem_pairs[i, 1]]
-                            == elem_pairs[i, 0])
+                            == elem_pairs[i, 0])[0]
                 # Otherwise, set to -1 to indicate boundary face
                 else: face_pairs[i, -1] = -1
 
@@ -295,7 +295,6 @@ class Adapter():
                 # Find new neighbors using this mapping
                 neighbors[new_elem_IDs, :] = possible_neighbors[self.boundary_neighbor_change]
 
-
             # Update neighbors of neighbors
             for j, elem_ID in enumerate(possible_neighbors[:2]):
                 if elem_ID != -1:
@@ -310,7 +309,7 @@ class Adapter():
                         # Find which face of the neighbor's neighbor used to be elem_R, then
                         # update it
                         neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
-                                elem_R_ID)] = new_elem_IDs[j]
+                                elem_R_ID)] = new_elem_IDs[j+2]
             # Update old faces, by searching through and finding it
             # TODO: Add the reverse mapping (elem face ID to face object)
             neighbor_face_IDs = [1, 2, 1, 2]
