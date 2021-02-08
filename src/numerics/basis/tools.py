@@ -512,7 +512,7 @@ def get_lagrange_basis_3D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 	# Tensor products to get 3D basis values
 	if basis_val is not None:
 		for i in range(xq.shape[0]):
-			basis_val[i, :] = np.reshape(np.outer(np.outer(valx[i, :], 
+			basis_val[i, :] = np.reshape(np.outer(np.outer(valx[i, :],
 					valy[i, :]), valz[i, :]), (-1, ), 'F')
 	if basis_ref_grad is not None:
 		for i in range(xq.shape[0]):

@@ -122,11 +122,11 @@ class Adapter():
         #refine_IDs = {18}
         if refine_IDs != set(): refine_IDs = {next(iter(refine_IDs))}
         if solver.time < .02:
-            refine_IDs = {18}
+            refine_IDs = {4}
             coarsen_IDs = set()
         else:
             refine_IDs = set()
-            coarsen_IDs = {18, 50, 51, 43}
+            coarsen_IDs = {4, 18, 13, 19}
         #if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
@@ -161,7 +161,7 @@ class Adapter():
             old_neighbors = neighbors_old[group.elem_IDs]
             # Get exterior neighbor of each triangle (the neighbor that is
             # not one of the old triangles)
-            exterior_neighbors = np.empty(group.elem_IDs.size)
+            exterior_neighbors = np.empty(group.elem_IDs.size, dtype=int)
             for i in range(exterior_neighbors.size):
                 exterior_neighbors[i] = np.setdiff1d(old_neighbors[i], group.elem_IDs)[0]
             # Set neighbors of new elements
@@ -184,6 +184,42 @@ class Adapter():
             else:
                 n_elems_coarsened -= 1
                 delete_elems.update(group.elem_IDs[[1]])
+
+            # Update old faces, by searching through and finding it
+            # TODO: Add the reverse mapping (elem face ID to face object)
+            new_elem_IDs = [
+                    group.parent_elem_IDs[0],
+                    group.parent_elem_IDs[0],
+                    group.parent_elem_IDs[1],
+                    group.parent_elem_IDs[1],
+                    ]
+            neighbor_face_IDs = [ID % 3 for ID in [
+                    group.face_pair[0] + 1,
+                    group.face_pair[0] + 2,
+                    group.face_pair[1] + 1,
+                    group.face_pair[1] + 2,
+                    ]]
+            for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
+                    group.elem_IDs, exterior_neighbors, new_elem_IDs,
+                    neighbor_face_IDs):
+                for int_face in solver.mesh.interior_faces:
+                    if (int_face.elemL_ID == elem_ID and int_face.elemR_ID ==
+                            neighbor_ID):
+                        int_face.elemL_ID = new_ID
+                        int_face.faceL_ID = neighbor_face_ID
+                    elif (int_face.elemL_ID == neighbor_ID and
+                            int_face.elemR_ID == elem_ID):
+                        int_face.elemR_ID = new_ID
+                        int_face.faceR_ID = neighbor_face_ID
+
+            # Update neighbors of neighbors
+            #TODO: Wont work at a boundary
+            for j, elem_ID in enumerate(exterior_neighbors):
+                if elem_ID != -1:
+                    # Find which face of the neighbor's neighbor used to be elem_L, then
+                    # update it
+                    neighbors_old[elem_ID, np.argwhere(neighbors_old[elem_ID] ==
+                            group.elem_IDs[j])] = new_elem_IDs[j]
 
         # -- Array sizing and allocation -- #
         # Create new arrays
