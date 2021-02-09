@@ -109,24 +109,31 @@ class Adapter():
         refine_IDs = set()
         Uq = helpers.evaluate_state(Uc_old, self.phi_xq_ref,
                 skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
-        min_volume = .25
-        for i in range(solver.mesh.num_elems):
-            if np.any(Uq[i, :, 0] < .6) and solver.elem_helpers.vol_elems[i] > min_volume:
-                refine_IDs.add(i)
-                break
-        for i in range(solver.mesh.num_elems):
-            if np.any(Uq[i, :, 0] > .7) and solver.elem_helpers.vol_elems[i] > min_volume:
-                #coarsen_IDs.add(i)
-                break
+        min_volume = .1
+        if solver.time < .07:
+            for i in range(solver.mesh.num_elems):
+                if np.mean(np.linalg.norm(xn_old[i], axis=1)) < 2 and solver.elem_helpers.vol_elems[i] > min_volume:
+                    refine_IDs.add(i)
+        else:
+            for i in range(solver.mesh.num_elems):
+                coarsen_IDs.add(i)
+
+        #for i in range(solver.mesh.num_elems):
+        #    if np.any(Uq[i, :, 0] < .6) and solver.elem_helpers.vol_elems[i] > min_volume:
+        #        refine_IDs.add(i)
+        #        break
+        #for i in range(solver.mesh.num_elems):
+        #    if np.any(Uq[i, :, 0] > .95) and solver.elem_helpers.vol_elems[i] > min_volume:
+        #        coarsen_IDs.add(i)
         # TODO: This is a hack
         #refine_IDs = {18}
         if refine_IDs != set(): refine_IDs = {next(iter(refine_IDs))}
-        if solver.time < .02:
-            refine_IDs = {4}
-            coarsen_IDs = set()
-        else:
-            refine_IDs = set()
-            coarsen_IDs = {4, 18, 13, 19}
+        #if solver.time < .02:
+        #    refine_IDs = {4}
+        #    coarsen_IDs = set()
+        #else:
+        #    refine_IDs = set()
+        #    coarsen_IDs = {4, 18, 13, 19}
         #if solver.time > .001: breakpoint()
         refine_IDs = np.array(list(refine_IDs), dtype=int)
         split_face_IDs = np.empty(refine_IDs.size, dtype=int)
@@ -150,76 +157,82 @@ class Adapter():
         delete_elems = set()
         # Loop over adaptation groups
         for group in self.adaptation_groups:
-            # If not all members of the group need to be coarsened, then skip this
-            # group
-            if not all([elem_ID in coarsen_IDs for elem_ID in group.elem_IDs]):
-                continue
-            # Coarsen triangles
-            self.coarsen_triangles(solver, xn_old, iMM_old, dJ_old, Uc_old,
-                    group, delete_groups)
-            # Neighbors of the old triangles in the group
-            old_neighbors = neighbors_old[group.elem_IDs]
-            # Get exterior neighbor of each triangle (the neighbor that is
-            # not one of the old triangles)
-            exterior_neighbors = np.empty(group.elem_IDs.size, dtype=int)
-            for i in range(exterior_neighbors.size):
-                exterior_neighbors[i] = np.setdiff1d(old_neighbors[i], group.elem_IDs)[0]
-            # Set neighbors of new elements
-            for i in range(group.parent_elem_IDs.size):
-                if group.parent_elem_IDs.size != 1:
-                    other_side = group.parent_elem_IDs[1 - i]
+            # Only do coarsening if all members of the group need to be
+            # coarsened and the group has no child groups
+            if (all([elem_ID in coarsen_IDs for elem_ID in group.elem_IDs])
+                    and len(group.child_groups) == 0):
+                print("Coarsening:")
+                print(group.elem_IDs)
+
+                # Coarsen triangles
+                self.coarsen_triangles(solver, xn_old, iMM_old, dJ_old, Uc_old,
+                        group, delete_groups)
+                # Neighbors of the old triangles in the group
+                old_neighbors = neighbors_old[group.elem_IDs]
+                # Get exterior neighbor of each triangle (the neighbor that is
+                # not one of the old triangles)
+                exterior_neighbors = np.empty(group.elem_IDs.size, dtype=int)
+                for i in range(exterior_neighbors.size):
+                    exterior_neighbors[i] = np.setdiff1d(old_neighbors[i], group.elem_IDs)[0]
+                # Set neighbors of new elements
+                for i in range(group.parent_elem_IDs.size):
+                    if group.parent_elem_IDs.size != 1:
+                        other_side = group.parent_elem_IDs[1 - i]
+                    else:
+                        other_side = -1
+                    neighbors_old[group.parent_elem_IDs[i],
+                            group.face_pair[i]] = other_side
+                    neighbors_old[group.parent_elem_IDs[i],
+                            group.face_pair[i] - 1] = exterior_neighbors[1 + 2*i]
+                    neighbors_old[group.parent_elem_IDs[i],
+                            group.face_pair[i] - 2] = exterior_neighbors[2*i]
+                # Decrease total count of elements
+                n_elems_to_delete = int(len(group.elem_IDs) / 2)
+                if n_elems_to_delete == 2:
+                    n_elems_coarsened -= 2
+                    delete_elems.update(group.elem_IDs[[1, 3]])
                 else:
-                    other_side = -1
-                neighbors_old[group.parent_elem_IDs[i],
-                        group.face_pair[i]] = other_side
-                neighbors_old[group.parent_elem_IDs[i],
-                        group.face_pair[i] - 1] = exterior_neighbors[1 + 2*i]
-                neighbors_old[group.parent_elem_IDs[i],
-                        group.face_pair[i] - 2] = exterior_neighbors[2*i]
-            # Decrease total count of elements
-            n_elems_to_delete = int(len(group.elem_IDs) / 2)
-            if n_elems_to_delete == 2:
-                n_elems_coarsened -= 2
-                delete_elems.update(group.elem_IDs[[1, 3]])
-            else:
-                n_elems_coarsened -= 1
-                delete_elems.update(group.elem_IDs[[1]])
+                    n_elems_coarsened -= 1
+                    delete_elems.update(group.elem_IDs[[1]])
 
-            # Update old faces, by searching through and finding it
-            # TODO: Add the reverse mapping (elem face ID to face object)
-            new_elem_IDs = [
-                    group.parent_elem_IDs[0],
-                    group.parent_elem_IDs[0],
-                    group.parent_elem_IDs[1],
-                    group.parent_elem_IDs[1],
-                    ]
-            neighbor_face_IDs = [ID % 3 for ID in [
-                    group.face_pair[0] + 1,
-                    group.face_pair[0] + 2,
-                    group.face_pair[1] + 1,
-                    group.face_pair[1] + 2,
-                    ]]
-            for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
-                    group.elem_IDs, exterior_neighbors, new_elem_IDs,
-                    neighbor_face_IDs):
-                for int_face in solver.mesh.interior_faces:
-                    if (int_face.elemL_ID == elem_ID and int_face.elemR_ID ==
-                            neighbor_ID):
-                        int_face.elemL_ID = new_ID
-                        int_face.faceL_ID = neighbor_face_ID
-                    elif (int_face.elemL_ID == neighbor_ID and
-                            int_face.elemR_ID == elem_ID):
-                        int_face.elemR_ID = new_ID
-                        int_face.faceR_ID = neighbor_face_ID
+                # Update old faces, by searching through and finding it
+                # TODO: Add the reverse mapping (elem face ID to face object)
+                new_elem_IDs = [
+                        group.parent_elem_IDs[0],
+                        group.parent_elem_IDs[0],
+                        group.parent_elem_IDs[1],
+                        group.parent_elem_IDs[1],
+                        ]
+                neighbor_face_IDs = [ID % 3 for ID in [
+                        group.face_pair[0] + 1,
+                        group.face_pair[0] + 2,
+                        group.face_pair[1] + 1,
+                        group.face_pair[1] + 2,
+                        ]]
+                for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
+                        group.elem_IDs, exterior_neighbors, new_elem_IDs,
+                        neighbor_face_IDs):
+                    for int_face in solver.mesh.interior_faces:
+                        if (int_face.elemL_ID == elem_ID and int_face.elemR_ID ==
+                                neighbor_ID):
+                            int_face.elemL_ID = new_ID
+                            int_face.faceL_ID = neighbor_face_ID
+                        elif (int_face.elemL_ID == neighbor_ID and
+                                int_face.elemR_ID == elem_ID):
+                            int_face.elemR_ID = new_ID
+                            int_face.faceR_ID = neighbor_face_ID
 
-            # Update neighbors of neighbors
-            #TODO: Wont work at a boundary
-            for j, elem_ID in enumerate(exterior_neighbors):
-                if elem_ID != -1:
-                    # Find which face of the neighbor's neighbor used to be elem_L, then
-                    # update it
-                    neighbors_old[elem_ID, np.argwhere(neighbors_old[elem_ID] ==
-                            group.elem_IDs[j])] = new_elem_IDs[j]
+                # Update neighbors of neighbors
+                #TODO: Wont work at a boundary
+                for j, elem_ID in enumerate(exterior_neighbors):
+                    if elem_ID != -1:
+                        # Find which face of the neighbor's neighbor used to be elem_L, then
+                        # update it
+                        neighbors_old[elem_ID, np.argwhere(neighbors_old[elem_ID] ==
+                                group.elem_IDs[j])] = new_elem_IDs[j]
+                # Hack to only coarsen one group per iteration
+                # TODO: get rid of this
+                break
 
         # -- Array sizing and allocation -- #
         # Create new arrays
@@ -241,7 +254,13 @@ class Adapter():
                 i += 1
 
         # Delete groups that are no longer needed
-        for group in delete_groups: self.adaptation_groups.remove(group)
+        for group in delete_groups:
+            # Remove this group as a child group of its parent
+            for i in range(len(group.parent_groups)):
+                if group.parent_groups[i] is not None:
+                    group.parent_groups[i].child_groups.remove(group)
+            # Remove the group
+            self.adaptation_groups.remove(group)
 
         # == Refinement == #
 
@@ -289,8 +308,8 @@ class Adapter():
             # Get IDs
             elem_L_ID, elem_R_ID = elem_pair
             face_L_ID, face_R_ID = face_pair
-            new_elem_IDs = np.array([elem_L_ID, n_elems_old + i,
-                    elem_R_ID, n_elems_old + i + 1])
+            new_elem_IDs = np.array([elem_L_ID, n_elems_coarsened + i,
+                    elem_R_ID, n_elems_coarsened + i + 1])
             old_elem_IDs = np.array([elem_L_ID, elem_L_ID,
                     elem_R_ID, elem_R_ID])
             # For boundary refinement, only produce two elements
@@ -376,8 +395,8 @@ class Adapter():
         solver.state_coeffs = Uc
         solver.elem_helpers.iMM_elems = iMM
         node_coords_old = solver.mesh.node_coords.copy()
-        solver.mesh.node_coords = np.empty((solver.mesh.num_nodes,
-            solver.mesh.ndims))
+        solver.mesh.node_coords = 1e300 * np.ones((solver.mesh.num_nodes,
+            solver.mesh.ndims), dtype=float)
         solver.mesh.elem_to_node_IDs = np.empty((solver.mesh.num_elems,
             solver.mesh.num_nodes_per_elem), dtype=int)
         next_ID = 0
@@ -398,8 +417,12 @@ class Adapter():
                 # Otherwise, just use the ID that was found
                 else:
                     solver.mesh.elem_to_node_IDs[i, j] = node_ID[0]
+            #if np.unique(solver.mesh.elem_to_node_IDs[i]).size != 3: breakpoint()
+        #if np.unique(solver.mesh.node_coords, axis=0).shape[0] != 16:  breakpoint()
+        #breakpoint()
         # Create elements and update neighbors
         # TODO: Better way to do this
+        #breakpoint()
         solver.mesh.create_elements()
         for i in range(neighbors.shape[0]):
             solver.mesh.elements[i].face_to_neighbors = neighbors[i]
@@ -413,9 +436,6 @@ class Adapter():
         solver.int_face_helpers.store_neighbor_info(solver.mesh)
         solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
                 solver.basis, solver.order)
-
-        # TODO: Remove this eventually
-        #solver.precompute_matrix_helpers()
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
@@ -466,6 +486,10 @@ class Adapter():
                 [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
                 iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
                 dJ[group_old_elem_IDs], face_pair, middle_face, refined_faces)
+        # Add this group as child groups of its parent
+        for i in range(len(new_group.parent_groups)):
+            if new_group.parent_groups[i] is not None:
+                new_group.parent_groups[i].child_groups.append(new_group)
         self.adaptation_groups.add(new_group)
         self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
 
@@ -584,3 +608,4 @@ class AdaptationGroup():
         self.face_pair = face_pair
         self.middle_face = middle_face
         self.refined_faces = refined_faces
+        self.child_groups = []
