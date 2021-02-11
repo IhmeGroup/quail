@@ -1,5 +1,5 @@
 TimeStepping = {
-	"FinalTime" : .02,
+	"FinalTime" : .12,
 	"TimeStepSize" : .01,
 	"TimeStepper" : "RK4",
 }
@@ -45,5 +45,10 @@ d = {
 #}
 
 Output = {
-	"AutoPostProcess" : False,
+		"WriteInterval" : 1,
+		"Prefix" : "Data",
+		"AutoPostProcess" : False,
+		"WriteInitialSolution" : True,
+		"WriteFinalSolution" : True,
+		"Verbose" : True,
 }

@@ -40,10 +40,21 @@ def test_case():
     with open('Data_final.pkl', 'rb') as f:
         # Read final solution from file
         solver = pickle.load(f)
-        Uc = solver.state_coeffs
-        breakpoint()
+
+        # Correct final neighbors of affected elements
+        affected_elems = np.array([4, 13, 12, 10, 5, 7], dtype=int)
+        neighbors_expected = np.array([
+                [13, 12, 10],
+                [4, 5, 7],
+                [3, 4, 6],
+                [1, 2, 4],
+                [14, 13, 11],
+                [16, 15, 13],
+                ])
         # Assert
-        #np.testing.assert_allclose(Uc, Uc_expected, rtol, atol)
+        neighbors = np.array([solver.mesh.elements[i].face_to_neighbors for i in
+                affected_elems])
+        np.testing.assert_array_equal(neighbors, neighbors_expected)
 
     # Return to test directory
     os.chdir(f'{quail_dir}/test')
