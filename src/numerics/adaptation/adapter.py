@@ -101,49 +101,17 @@ class Adapter():
         for i in range(neighbors_old.shape[0]):
             neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
-        # TODO: Get an indicator. Right now, this is specific to the isentropic
-        # vortex case.
-        coarsen_IDs = set()
-        #refine_IDs = np.array([0])
-        #split_face_IDs = np.array([0])
-        refine_IDs = set()
-        Uq = helpers.evaluate_state(Uc_old, self.phi_xq_ref,
-                skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
-        min_volume = .1
-        if solver.time < .07:
-            for i in range(solver.mesh.num_elems):
-                if np.mean(np.linalg.norm(xn_old[i], axis=1)) < 2 and solver.elem_helpers.vol_elems[i] > min_volume:
-                    refine_IDs.add(i)
-        else:
-            for i in range(solver.mesh.num_elems):
-                coarsen_IDs.add(i)
 
-        #for i in range(solver.mesh.num_elems):
-        #    if np.any(Uq[i, :, 0] < .6) and solver.elem_helpers.vol_elems[i] > min_volume:
-        #        refine_IDs.add(i)
-        #        break
-        #for i in range(solver.mesh.num_elems):
-        #    if np.any(Uq[i, :, 0] > .95) and solver.elem_helpers.vol_elems[i] > min_volume:
-        #        coarsen_IDs.add(i)
-        # TODO: This is a hack
-        #refine_IDs = {18}
-        if refine_IDs != set(): refine_IDs = {next(iter(refine_IDs))}
-        #if solver.time < .02:
-        #    refine_IDs = {4}
-        #    coarsen_IDs = set()
-        #else:
-        #    refine_IDs = set()
-        #    coarsen_IDs = {4, 18, 13, 19}
-        #if solver.time > .001: breakpoint()
-        refine_IDs = np.array(list(refine_IDs), dtype=int)
-        split_face_IDs = np.empty(refine_IDs.size, dtype=int)
-        for i, ID in enumerate(refine_IDs):
-            lengths = np.empty(3)
-            nodes = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs[ID]]
-            lengths[0] = np.linalg.norm(nodes[2] - nodes[1])
-            lengths[1] = np.linalg.norm(nodes[0] - nodes[2])
-            lengths[2] = np.linalg.norm(nodes[1] - nodes[0])
-            split_face_IDs[i] = np.argmax(lengths)
+        # == Indicator == #
+
+        # TODO: Implement some default indicators aside from custom ones
+        # Run custom user adaptation function
+        refine_IDs, split_face_IDs, coarsen_IDs =\
+                solver.custom_user_adaptation(solver)
+        # If no adaptation needs to happen, skip the rest of the function
+        if (refine_IDs.size == 0 and split_face_IDs.size == 0 and
+                len(coarsen_IDs) == 0):
+            return
 
         # == Coarsening == #
 

@@ -82,7 +82,7 @@ Numerics = {
 		# See general.ShockIndicatorType
 	"TVBParameter" : 100.,
 		# TVB MinMod Indicator
-		# Default is set to 100. 
+		# Default is set to 100.
 		# This parameter modifies the sensitivity of the MinMod shock
 		# indicator. It is problem dependent.
 	"SourceTreatmentADER" : "Explicit",
@@ -99,6 +99,8 @@ Numerics = {
 	"SourceSwitch" : True,
 		# If False, will ignore the source terms
 		# Useful for debugging
+	"CustomAdaptationFilename" : "custom_user_adaptation"
+		# Name of the user's custom adaptation function definitions
 }
 
 

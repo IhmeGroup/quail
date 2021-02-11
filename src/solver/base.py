@@ -165,6 +165,16 @@ class SolverBase(ABC):
 			pass # Not an error, just pass as the user provided
 				 # custom function file is not in the current
 				 # directory.
+		# Search for custom_user_adaptation in case directory
+		custom_user_adaptation = self.params["CustomAdaptationFilename"]
+		try:
+			user_adapt = importlib.import_module(custom_user_adaptation)
+			self.custom_user_adaptation = \
+					user_adapt.custom_user_adaptation
+		except ModuleNotFoundError:
+			pass # Not an error, just pass as the user provided
+				 # custom function file is not in the current
+				 # directory.
 
 		# Compatibility checks
 		self.check_compatibility()
@@ -313,6 +323,14 @@ class SolverBase(ABC):
 		called each iteration.
 		'''
 		pass
+
+	def custom_user_adaptation(self, solver):
+		'''
+		Placeholder for the custom_user_adaptation. Users can specify the
+		custom_user_adaptation in an additional file. This would then be
+		called during adaptation.
+		'''
+		return np.array([]), np.array([]), set()
 
 	def init_state_from_fcn(self):
 		'''
