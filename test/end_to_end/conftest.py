@@ -6,15 +6,15 @@ import list_of_cases
 
 @pytest.fixture
 def test_data():
-	"""
+	'''
 	This fixture reads in the regression test data and yields it, along with
 	the Quail directory.
 
 	Outputs:
 	--------
-			Uc_expected_list: list of solution vectors for each test case
-			quail_dir: the absolute path of the Quail directory
-	"""
+		Uc_expected_list: list of solution vectors for each test case
+		quail_dir: the absolute path of the Quail directory
+	'''
 	# Get Quail directory
 	quail_dir = os.path.dirname(os.getcwd())
 

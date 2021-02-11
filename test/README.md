@@ -57,12 +57,12 @@ Guidelines for end-to-end tests are as follows.
  - Each test case directory should contain only one input file, and it should be
    named `input_file.py`.
  - When a new test case is added or existing cases are modified,
-   `generate_test_data.py` must be run to regenerate the regression test data,
-   and `generate_tests.py` must be rerun to recreate the test scripts.
+   `regression_data_generator.py` must be run to regenerate the regression test
+   data, and `generate_tests.py` must be rerun to recreate the test scripts.
  - If a future update to Quail changes the solution in any existing test case
    such that it does not pass the regression test, it is likely that a bug may
    have been introduced to the code (this is how new bugs are caught by
    regression tests). However, if you make a change to the code that changes
    solutions and you are comfortable with this change (for example, fixing a bug
    in Quail) then the regression test data should be updated by rerunning
-   `generate_test_data.py`.
+   `regression_data_generator.py`.

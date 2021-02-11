@@ -1,7 +1,7 @@
-import sys
-sys.path.append('../src')
 import numpy as np
 import pytest
+import sys
+sys.path.append('../src')
 
 import numerics.basis.basis as basis_defs
 
@@ -24,8 +24,8 @@ def test_lagrange_basis_should_be_nodal(basis, order):
 
 	Inputs:
 	-------
-			basis: Pytest fixture containing the basis object to be tested
-			order: polynomial order of Lagrange basis being tested
+		basis: Pytest fixture containing the basis object to be tested
+		order: polynomial order of Lagrange basis being tested
 	'''
 	# Evaluate Lagrange basis at nodes
 	phi = basis.get_values(basis.get_nodes(order))

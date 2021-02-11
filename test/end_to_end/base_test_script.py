@@ -1,10 +1,10 @@
+import numpy as np
+import pytest
 import os
 import pickle
 import subprocess
 import sys
 sys.path.append('../src')
-import numpy as np
-import pytest
 
 import list_of_cases
 import physics.euler.euler as euler
@@ -20,7 +20,7 @@ atol = 1e-15
 # Markers distinguish tests into different categories
 @pytest.mark.e2e
 def test_case(test_data):
-	"""
+	'''
 	This function runs Quail by calling the executable with an input file and
 	asserts that the result matches the output from previous versions of the
 	code by comparing with a previously generated regression data file. The
@@ -28,9 +28,9 @@ def test_case(test_data):
 
 	Inputs:
 	-------
-			test_data: Pytest fixture containing the expected solution as well
-					as the root Quail directory
-	"""
+		test_data: Pytest fixture containing the expected solution as well
+			as the root Quail directory
+	'''
 
 	# Unpack test data
 	Uc_expected_list, quail_dir = test_data

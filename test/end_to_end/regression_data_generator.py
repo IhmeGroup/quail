@@ -14,13 +14,22 @@ import solver.ADERDG as ADERDG
 
 
 def generate_regression_test_data():
-	"""
+	'''
 	This function runs Quail for each regression test and saves the final
-	solution array into a binary Numpy data file. In general, this function
+	solution array into a binary NumPy data file. In general, this function
 	should only be executed if 1) there are changes made to the test cases, or
 	2) there are changes to Quail which affect the solution (for example, a
 	bug being discovered and fixed).
-	"""
+	'''
+
+	if input('''
+        Warning: running this script will overwrite the currently existing
+        regression test data. This script should only be run if:
+            1.) a new test has been added, or an old test was modified
+            2.) a bug has been found and fixed in Quail
+        Are you sure that you want to continue? (y/n)
+			>''') != "y":
+		exit()
 
 	# Get script directory
 	script_dir = sys.path[0]
