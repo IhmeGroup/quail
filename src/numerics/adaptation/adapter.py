@@ -210,8 +210,13 @@ class Adapter():
         iMM_coarsened = np.empty((n_elems_coarsened,) + iMM_old.shape[1:])
         Uc_coarsened = np.empty((n_elems_coarsened,) + Uc_old.shape[1:])
         # Loop over to reorder elements into these arrays
+        # TODO: This reordering will probably cause problems for the IDs
+        # assigned as neighbors of elements and faces.
         i = 0
+        reordered_IDs = np.empty(n_elems_old, dtype=int)
         for i_old in range(n_elems_old):
+            # Store the new ID after reordering
+            reordered_IDs[i_old] = i
             # Only add elements that are not deleted
             if i_old not in delete_elems:
                 xn_coarsened[i] = xn_old[i_old]
@@ -220,6 +225,13 @@ class Adapter():
                 iMM_coarsened[i] = iMM_old[i_old]
                 Uc_coarsened[i] = Uc_old[i_old]
                 i += 1
+        # Update IDs in the neighbors and faces after reordering
+        # TODO: Add the same thing, but for boundary faces
+        for i_old in range(n_elems_old):
+            neighbors_coarsened[neighbors_coarsened == i_old] = reordered_IDs[i_old]
+            for face in solver.mesh.interior_faces:
+                if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
+                if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
 
         # Delete groups that are no longer needed
         for group in delete_groups:
