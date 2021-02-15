@@ -272,7 +272,7 @@ class ModelPSRScalar(base.PhysicsBase):
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is u
-			scalar = np.abs(Uq)
+			scalar = np.zeros_like(Uq)
 		else:
 			raise NotImplementedError
 		
