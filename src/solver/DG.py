@@ -408,6 +408,7 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.elemL_IDs[face_ID] = int_face.elemL_ID
 			self.elemR_IDs[face_ID] = int_face.elemR_ID
 			self.faceL_IDs[face_ID] = int_face.faceL_ID
+			self.faceL_IDs[face_ID] = int_face.faceL_ID
 			self.faceR_IDs[face_ID] = int_face.faceR_ID
 
 	def compute_helpers(self, mesh, physics, basis, order):
@@ -599,7 +600,7 @@ class DG(base.SolverBase):
 
 		self.stepper = stepper_tools.set_stepper(params, self.state_coeffs)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
-
+		stepper_tools.set_source_treatment(physics)
 		# Precompute helpers
 		self.precompute_matrix_helpers()
 

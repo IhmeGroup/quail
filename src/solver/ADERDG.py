@@ -376,6 +376,7 @@ class ADERDG(base.SolverBase):
 
 		self.stepper = stepper_defs.ADER(self.state_coeffs)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
+		stepper_tools.set_source_treatment(physics)
 
 		# Set the space-time basis functions for the solver
 		basis_name = params["SolutionBasis"]
@@ -650,7 +651,6 @@ class ADERDG(base.SolverBase):
 						UqI[:, i, :].reshape([nbf, 1, ns]),
 						normals_, x_, t_).reshape([nbf, ns])
 
-			# import code; code.interact(local=locals())
 			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
 					time_skip, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
@@ -758,8 +758,9 @@ class ADERDG(base.SolverBase):
 
 		ader_helpers = self.ader_helpers
 		x_elems_ader = ader_helpers.x_elems
+		InterpolateFluxADER = params["InterpolateFluxADER"]
+		if InterpolateFluxADER:
 
-		if params["InterpolateFluxADER"]:
 			xnodes = basis.get_nodes(order)
 			nb = xnodes.shape[0]
 
@@ -805,5 +806,6 @@ class ADERDG(base.SolverBase):
 			# Project Sq to the space-time basis coefficients
 			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts_st,
 					quad_wts_st, np.tile(djac_elems, (nq_t, 1)), Sq, S)
+			
 
 		return S*dt/2.0 # [ne, nb_st, ns]
