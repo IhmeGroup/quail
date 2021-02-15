@@ -139,6 +139,12 @@ class SourceBase(ABC):
 	get_jacobian
 		computes the Jacobian of the source term
 	'''
+	def __init__(self, kwargs):
+		if kwargs:
+			self.source_treatment = kwargs['source_treatment']
+		else:
+			self.source_treatment = 'Implicit'
+
 	@abstractmethod
 	def get_source(self, physics, Uq, x, t):
 		'''
