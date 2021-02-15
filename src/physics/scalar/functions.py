@@ -298,7 +298,8 @@ class SimpleSource(SourceBase):
 	nu: float
 		source term parameter
 	'''
-	def __init__(self, nu=-1):
+	def __init__(self, nu=-1, **kwargs):
+		super().__init__(kwargs)
 		'''
 		This method initializes the attributes.
 
@@ -331,7 +332,8 @@ class ScalarMixing(SourceBase):
 	Da: float
 		Dahmkohler number
 	'''
-	def __init__(self, Da=15.89):
+	def __init__(self, Da=15.89, **kwargs):
+		super().__init__(kwargs)
 		'''
 		This method initializes the attributes.
 
@@ -349,7 +351,7 @@ class ScalarMixing(SourceBase):
 		Da = self.Da
 		T_in = physics.T_in
 
-		S = 1.*(1./Da) * (T_in - Uq) 
+		S = (1./Da) * (T_in - Uq) 
 
 		return S
 
@@ -363,13 +365,14 @@ class ScalarArrhenius(SourceBase):
 	'''
 	Arrhenius source term for scalar PSR model problem
 	'''
-	def __init__(self):
-		pass
+	def __init__(self, **kwargs):
+		super().__init__(kwargs)
 
 	def get_source(self, physics, Uq, x, t):
 		T_ad = physics.T_ad
 		T_a = physics.T_a
-		S = 1.*(T_ad - Uq) * np.exp(-T_a/Uq) 
+
+		S = (T_ad - Uq) * np.exp(-T_a/Uq) 
 
 		return S
 
@@ -378,4 +381,5 @@ class ScalarArrhenius(SourceBase):
 		T_a = physics.T_a
 
 		jac = -np.exp(-T_a/Uq) * (Uq**2 - T_a*T_ad + T_a*Uq)/Uq**2
+
 		return np.expand_dims(jac, axis=-1)
