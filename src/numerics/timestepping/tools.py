@@ -53,6 +53,14 @@ def set_stepper(params, U):
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
 
+def set_source_treatment(physics):
+	physics.explicit_sources = []
+	physics.implicit_sources = []
+	for source in physics.source_terms:
+		if source.source_treatment is 'Explicit':
+			physics.explicit_sources.append(source)
+		elif source.source_treatment is 'Implicit':
+			physics.implicit_sources.append(source)
 
 def set_time_stepping_approach(stepper, params):
 	'''

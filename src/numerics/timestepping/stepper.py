@@ -364,6 +364,8 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 			self.implicit = source_stepper.SourceSolvers.BDF1(U)
 		elif SourceStepperType[implicit] == SourceStepperType.Trapezoidal:
 			self.implicit = source_stepper.SourceSolvers.Trapezoidal(U)
+		elif SourceStepperType[implicit] == SourceStepperType.Scipy:
+			self.implicit = source_stepper.SourceSolvers.Scipy(U)
 		else:
 			raise NotImplementedError("Time scheme not supported")
 
@@ -379,18 +381,21 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		implicit.dt = self.dt
 
 		# First: take the half-step for the inviscid flux only
-		solver.params["SourceSwitch"] = False
+		solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = True
-
+		physics.source_terms = physics.explicit_sources.copy()
 		explicit.take_time_step(solver)
 
 		# Second: take the implicit full step for the source term.
-		solver.params["SourceSwitch"] = True
+		# solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
+		physics.source_terms = physics.implicit_sources.copy()
 		implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
-		solver.params["SourceSwitch"] = False
+		# solver.params["SourceSwitch"] = False
+		physics.source_terms = physics.explicit_sources.copy()
+
 		solver.params["ConvFluxSwitch"] = True
 		R = explicit.take_time_step(solver)
 
@@ -421,24 +426,28 @@ class Simpler(Strang):
 		implicit = self.implicit
 		implicit.dt = self.dt
 
-		solver.params["SourceSwitch"] = False
+		solver.params["SourceSwitch"] = True
 		res = self.res
 
 		# First: calculate the balance constant
 		# Note: we skip the first explicit step as it is in equilibrium by
 		# definition
+		physics.source_terms = physics.explicit_sources.copy()
+
 		self.balance_const = None
 		balance_const = -1.*solver.get_residual(U, res)
 		self.balance_const = -1.*balance_const
 
 		# Second: take the implicit full step for the source term.
-		solver.params["SourceSwitch"] = True
+		# solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
-		R2 = implicit.take_time_step(solver)
+		physics.source_terms = physics.implicit_sources.copy()
+		implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
-		solver.params["SourceSwitch"] = False
+		# solver.params["SourceSwitch"] = False
 		solver.params["ConvFluxSwitch"] = True
+		physics.source_terms = physics.explicit_sources.copy()
 		self.balance_const = balance_const
 		R3 = explicit.take_time_step(solver)
 
