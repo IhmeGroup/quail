@@ -2,17 +2,27 @@ import numpy as np
 
 TimeStepping = {
 	"InitialTime" : 0.,
-	"FinalTime" : 2000,
-	"TimeStepSize" : 1.589,
+	# "FinalTime" : 2000.,
+	"FinalTime" : 330000.,
+	# "TimeStepSize" : 1.589,
+	"TimeStepSize" : 83.3/16.,
 	"TimeStepper" : "Strang",
-	"OperatorSplittingImplicit" : "BDF1",
+	# "TimeStepper" : "ADER", 
+	# "OperatorSplittingImplicit" : "Scipy",
+	"OperatorSplittingImplicit" : "Trapezoidal",
+	# "OperatorSplittingExplicit" : "RK4",
 }
 
 Numerics = {
-	"SolutionOrder" : 0,
+	"SolutionOrder" : 1,
 	"SolutionBasis" : "LagrangeSeg",
+	# "Solver" : "ADERDG",
 	"Solver" : "DG",
-	#"ConvFluxSwitch" : False,
+	"SourceTreatmentADER" : "Testing",
+	# "ElementQuadrature" : "GaussLobatto",
+	# "FaceQuadrature" : "GaussLobatto",
+
+	"InterpolateFluxADER" : False,
 }
 
 Mesh = {
@@ -30,18 +40,22 @@ Physics = {
 }
 
 # Dahmkohler Number
-Da = 15.89
+Da = 833.0
+# Da = 15.89
 InitialCondition = {
 	"Function" : "Uniform",
-	"state" : 1.,
+	"state" : .15,
+	# "state" : 1.,
 }
 
 SourceTerms = {
 	"Mixing" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "ScalarMixing",
 		"Da" : Da,
+		"source_treatment" : "Explicit",	
 	},
 	"Arrhenius" : {
 		"Function" : "ScalarArrhenius",
+		"source_treatment" : "Implicit",
 	},
 }
