@@ -13,6 +13,8 @@ import numerics.helpers.helpers as helpers
 from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
 
+from scipy.integrate import ode
+
 
 class SourceSolvers():
 	'''
@@ -187,4 +189,61 @@ class SourceSolvers():
 		BETA = 0.5
 
 		def take_time_step(self, solver):
-			super().take_time_step(solver)
+			res = super().take_time_step(solver)
+			return res
+
+
+	class Scipy(SourceStepperBase):
+		'''
+		Scipy solver ... add some details
+
+		Additional methods and attributes are commented below.
+		'''
+		def take_time_step(self, solver):
+			mesh = solver.mesh
+			elem_helpers = solver.elem_helpers
+			basis_val = elem_helpers.basis_val
+			iMM_elems = elem_helpers.iMM_elems
+			quad_pts = elem_helpers.quad_pts
+			quad_wts = elem_helpers.quad_wts
+			x_elems = elem_helpers.x_elems
+
+			U = solver.state_coeffs
+
+			Uq = helpers.evaluate_state(U, basis_val,
+					skip_interp=solver.basis.skip_interp) # [ne, nq, ns])
+
+			res = self.res
+
+			U0, t0 = Uq.reshape(-1), solver.time
+			dt = self.dt
+
+			def func(t, y, x, res):
+				tvals.append(t) 
+
+				y = y.reshape([U.shape[0],U.shape[1],U.shape[2]])
+				Sq = np.zeros([U.shape[0], x.shape[1], U.shape[2]])
+				y = y.reshape(res.shape)
+				Sq = solver.physics.eval_source_terms(y, x, t, Sq)
+
+				# res = solver.get_residual(y, res)
+				# dU = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
+				return Sq.reshape(-1)
+
+			r = ode(func, jac=None)	
+			r.set_integrator('lsoda', atol=1e-14, rtol=1e-12)
+			r.set_initial_value(U0, t0).set_f_params(x_elems, res)
+			
+			tvals = []
+			value = r.integrate(r.t+dt).reshape([res.shape[0],res.shape[1],res.shape[2]])
+			tvals = np.unique(tvals)
+
+			print("len(tvals) =", len(tvals))
+
+			solver_tools.L2_projection(mesh, iMM_elems, solver.basis, quad_pts,
+					quad_wts, value, U)
+
+			solver.apply_limiter(U)
+			solver.state_coeffs = U 
+
+			return res # [ne, nb, ns]
