@@ -47,5 +47,6 @@ def custom_user_adaptation(solver):
     # TODO: This is a hack to only refine one at a time, since doing more is
     # untested.
     #if refine_IDs != set(): refine_IDs = {next(iter(refine_IDs))}
+    #if solver.time > 1e-5: refine_IDs = split_face_IDs = np.array([])
 
     return refine_IDs, split_face_IDs, coarsen_IDs

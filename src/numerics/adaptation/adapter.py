@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 
 import meshing.meshbase as mesh_defs
@@ -209,6 +210,8 @@ class Adapter():
         dJ_coarsened = np.empty((n_elems_coarsened,) + dJ_old.shape[1:])
         iMM_coarsened = np.empty((n_elems_coarsened,) + iMM_old.shape[1:])
         Uc_coarsened = np.empty((n_elems_coarsened,) + Uc_old.shape[1:])
+
+        # -- ID reordering -- #
         # Loop over to reorder elements into these arrays
         # TODO: This reordering will probably cause problems for the IDs
         # assigned as neighbors of elements and faces.
@@ -225,10 +228,11 @@ class Adapter():
                 iMM_coarsened[i] = iMM_old[i_old]
                 Uc_coarsened[i] = Uc_old[i_old]
                 i += 1
-        # Update IDs in the neighbors and faces after reordering
+        # Update IDs in the neighbors, faces, and refine IDs after reordering
         # TODO: Add the same thing, but for boundary faces
         for i_old in range(n_elems_old):
             neighbors_coarsened[neighbors_coarsened == i_old] = reordered_IDs[i_old]
+            refine_IDs[refine_IDs == i_old] = reordered_IDs[i_old]
             for face in solver.mesh.interior_faces:
                 if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
                 if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
@@ -254,12 +258,12 @@ class Adapter():
             elem_pairs[:, 0] = refine_IDs
             face_pairs[:, 0] = split_face_IDs
             # The right element is the neighbor across the face being split
-            elem_pairs[:, 1] = neighbors_old[refine_IDs, split_face_IDs]
+            elem_pairs[:, 1] = neighbors_coarsened[refine_IDs, split_face_IDs]
             # The right face is whichever is neighboring the left element
             for i in range(n_refined):
                 # Only do this for elements not refined at a boundary
                 if elem_pairs[i, 1] != -1:
-                    face_pairs[i, 1] = np.argwhere(neighbors_old[elem_pairs[i, 1]]
+                    face_pairs[i, 1] = np.argwhere(neighbors_coarsened[elem_pairs[i, 1]]
                             == elem_pairs[i, 0])[0]
                 # Otherwise, set to -1 to indicate boundary face
                 else: face_pairs[i, -1] = -1
@@ -465,7 +469,7 @@ class Adapter():
         new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
                 [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
                 iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
-                dJ[group_old_elem_IDs], face_pair, middle_face, refined_faces)
+                dJ[group_old_elem_IDs], face_pair, copy.deepcopy(middle_face), refined_faces)
         # Add this group as child groups of its parent
         for i in range(len(new_group.parent_groups)):
             if new_group.parent_groups[i] is not None:
