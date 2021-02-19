@@ -87,6 +87,19 @@ class Adapter():
         """Perform h-adaptation.
         """
 
+        # == Indicator == #
+
+        # TODO: Implement some default indicators aside from custom ones
+        # Run custom user adaptation function
+        refine_IDs, split_face_IDs, coarsen_IDs =\
+                solver.custom_user_adaptation(solver)
+        # If no adaptation needs to happen, skip the rest of the function
+        if (refine_IDs.size == 0 and split_face_IDs.size == 0 and
+                len(coarsen_IDs) == 0):
+            return
+
+        # == Interface to Quail == #
+
         # Extract needed data from the solver object
         # TODO: Maybe wrap this?
         # The old function took as arguments:
@@ -102,17 +115,6 @@ class Adapter():
         for i in range(neighbors_old.shape[0]):
             neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
-
-        # == Indicator == #
-
-        # TODO: Implement some default indicators aside from custom ones
-        # Run custom user adaptation function
-        refine_IDs, split_face_IDs, coarsen_IDs =\
-                solver.custom_user_adaptation(solver)
-        # If no adaptation needs to happen, skip the rest of the function
-        if (refine_IDs.size == 0 and split_face_IDs.size == 0 and
-                len(coarsen_IDs) == 0):
-            return
 
         # == Coarsening == #
 
@@ -213,8 +215,6 @@ class Adapter():
 
         # -- ID reordering -- #
         # Loop over to reorder elements into these arrays
-        # TODO: This reordering will probably cause problems for the IDs
-        # assigned as neighbors of elements and faces.
         i = 0
         reordered_IDs = np.empty(n_elems_old, dtype=int)
         for i_old in range(n_elems_old):
@@ -228,7 +228,8 @@ class Adapter():
                 iMM_coarsened[i] = iMM_old[i_old]
                 Uc_coarsened[i] = Uc_old[i_old]
                 i += 1
-        # Update IDs in the neighbors, faces, and refine IDs after reordering
+        # Update IDs in the neighbors, faces, refine IDs, adaptation groups,
+        # elem_to_adaptation_group after reordering
         # TODO: Add the same thing, but for boundary faces
         for i_old in range(n_elems_old):
             neighbors_coarsened[neighbors_coarsened == i_old] = reordered_IDs[i_old]
@@ -236,6 +237,16 @@ class Adapter():
             for face in solver.mesh.interior_faces:
                 if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
                 if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
+            # Update IDs in adaptation groups
+            for group in self.adaptation_groups:
+                group.elem_IDs[group.elem_IDs == i_old] = reordered_IDs[i_old]
+                group.parent_elem_IDs[group.parent_elem_IDs == i_old] = reordered_IDs[i_old]
+                for face in [group.middle_face, *group.refined_faces]:
+                    if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
+                    if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
+            # Update elem_to_adaptation_group
+            self.elem_to_adaptation_group[reordered_IDs[i_old]] = \
+                    self.elem_to_adaptation_group.pop(i_old, None)
 
         # Delete groups that are no longer needed
         for group in delete_groups:
