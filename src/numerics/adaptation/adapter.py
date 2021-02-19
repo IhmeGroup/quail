@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 
 import meshing.meshbase as mesh_defs
@@ -480,7 +479,7 @@ class Adapter():
         new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
                 [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
                 iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
-                dJ[group_old_elem_IDs], face_pair, copy.deepcopy(middle_face), refined_faces)
+                dJ[group_old_elem_IDs], face_pair, middle_face, refined_faces)
         # Add this group as child groups of its parent
         for i in range(len(new_group.parent_groups)):
             if new_group.parent_groups[i] is not None:
