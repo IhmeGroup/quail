@@ -145,6 +145,7 @@ class Extrapolate(BCWeakPrescribed):
 	'''
 	def __init__(self, **kwargs):
 		pass
+		
 	def get_boundary_state(self, physics, UqI, normals, x, t):
 		return UqI.copy()
 
