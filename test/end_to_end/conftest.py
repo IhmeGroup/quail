@@ -4,6 +4,7 @@ import pytest
 
 import list_of_cases
 
+
 @pytest.fixture
 def test_data():
 	'''

@@ -21,7 +21,6 @@ def generate_regression_test_data():
 	2) there are changes to Quail which affect the solution (for example, a
 	bug being discovered and fixed).
 	'''
-
 	if input('''
         Warning: running this script will overwrite the currently existing
         regression test data. This script should only be run if:

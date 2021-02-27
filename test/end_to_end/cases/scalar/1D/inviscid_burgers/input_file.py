@@ -42,12 +42,12 @@ Output = {
 }
 
 BoundaryConditions = {
-   "x1" : {
+	"x1" : {
 		"Function" : "SineBurgers",
 		"omega" : 2*np.pi,
-	"BCType" : "StateAll",
-   },
-   "x2" : {
-	"BCType" : "Extrapolate",
-   },
+		"BCType" : "StateAll",
+	},
+	"x2" : {
+		"BCType" : "Extrapolate",
+	},
 }
