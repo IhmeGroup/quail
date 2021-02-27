@@ -19,11 +19,12 @@ for fname in files:
     post.get_error(mesh, physics, solver, "Density")
     ''' Plot '''
     # Density contour
-    plot.prepare_plot(linewidth=0.5)
+    plot.prepare_plot(linewidth=0.5, cmap="Greys")
     plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=True,
             plot_exact=False, plot_IC=False, create_new_figure=True, fmt='bo',
             legend_label="DG", include_mesh=True, regular_2D=True,
-            show_elem_IDs=True, levels=np.linspace(.5, 1.2, 10))
+            show_elem_IDs=True, levels=np.linspace(10, 11, 2),
+            ignore_colorbar=True)#.5, 1.2, 10))
     # Save figure
     plot.save_figure(file_name = fname.split('/')[-1].split('.')[0],
             file_type='png', crop_level=2)
