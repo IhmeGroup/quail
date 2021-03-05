@@ -200,7 +200,7 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 		# If the user defines levels force the plot to extend and set limits
 		# according to the user defined levels beginning and end.
 		levels = kwargs["levels"]
-		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both') 
+		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both')
 		if isinstance(levels, np.ndarray):
 			tcf.set_clim(levels[0],levels[-1])
 	else:
@@ -640,47 +640,23 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	Loop through interior_faces and plot interior faces
 	'''
 	for interior_face in mesh.interior_faces:
-		# Loop through both connected elements to account for periodic
-		# boundaries
-		for e in range(2):
-			if e == 0:
-				elem_ID = interior_face.elemL_ID
-				face_ID = interior_face.faceL_ID
-			else:
-				elem_ID = interior_face.elemR_ID
-				face_ID = interior_face.faceR_ID
+		# Get coordinates of face nodes
+		coords = mesh.node_coords[interior_face.node_IDs]
+		if ndims == 1:
+			x = np.full(2, coords[:, 0])
+		else:
+			x = coords[:, 0]; y = coords[:, 1]
 
-			# Get local node IDs on face
-			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder,
-					face_ID)
-
-			# Get coordinates
-			elem = mesh.elements[elem_ID]
-			coords = elem.node_coords[local_node_IDs]
-			if ndims == 1:
-				x = np.full(2, coords[:, 0])
-			else:
-				x = coords[:, 0]; y = coords[:, 1]
-
-			# Plot face
-			plt.plot(x, y, 'k-')
+		# Plot face
+		plt.plot(x, y, 'k-')
 
 	'''
 	Loop through boundary_groups and plot boundary faces
 	'''
 	for boundary_group in mesh.boundary_groups.values():
 		for boundary_face in boundary_group.boundary_faces:
-			# Get adjacent element info
-			elem_ID = boundary_face.elem_ID
-			face_ID = boundary_face.face_ID
-
-			# Get local node IDs on face
-			local_node_IDs = gbasis.get_local_face_node_nums(mesh.gorder,
-					face_ID)
-
-			# Get coordinates
-			elem = mesh.elements[elem_ID]
-			coords = elem.node_coords[local_node_IDs]
+			# Get coordinates of face nodes
+			coords = mesh.node_coords[boundary_face.node_IDs]
 			if ndims == 1:
 				x = np.full(2, coords[:, 0])
 			else:
