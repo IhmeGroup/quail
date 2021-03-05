@@ -367,7 +367,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		# Normals
 		for i, interior_face in enumerate(mesh.interior_faces):
 			normals = mesh.gbasis.calculate_normals(mesh,
-					interior_face.node_IDs, quad_pts)
+					interior_face.node_IDs, interior_face.faceL_ID, quad_pts)
 			self.normals_int_faces[i] = normals
 
 	def alloc_other_arrays(self, physics, basis, order):
@@ -525,7 +525,8 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			for j, boundary_face in enumerate(bgroup.boundary_faces):
 				# Normals
 				normals = mesh.gbasis.calculate_normals(mesh,
-						boundary_face.node_IDs, quad_pts)
+						boundary_face.node_IDs, boundary_face.face_ID,
+						quad_pts)
 				normal_bgroup[j] = normals
 
 				# Physical coordinates of quadrature points

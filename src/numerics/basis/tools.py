@@ -320,7 +320,7 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
 		# [nq, 1], [nq, ndims, ndims], and [nq, ndims, ndims]
 
 
-def calculate_1D_normals(mesh, node_IDs, quad_pts):
+def calculate_1D_normals(mesh, node_IDs, face_ID, quad_pts):
 
 	'''
 	Calculate the normals for a 1D face
@@ -335,17 +335,22 @@ def calculate_1D_normals(mesh, node_IDs, quad_pts):
 	--------
 		normals: normal vector [nq, ndims]
 	'''
+	nq = quad_pts.shape[0]
 
-	# In 1D, normals always point to the right, so the normal direction is 1.
-	# Also, this array generally has shape [nq, ndims], but in 1D there is
-	# only one quadrature point on the face and only one dimension, so this
-	# array needs to have shape [1, 1].
-	normals = np.array([[1.]])
+	normals = np.zeros([nq, mesh.ndims])
+
+	# 1D normals calculation
+	if face_ID == 0:
+		normals[0] = -1.
+	elif face_ID == 1:
+		normals[0] = 1.
+	else:
+		raise ValueError
 
 	return normals # [nq, ndims]
 
 
-def calculate_2D_normals(mesh, node_IDs, quad_pts):
+def calculate_2D_normals(mesh, node_IDs, face_ID, quad_pts):
 	'''
 	Calculate the normals for 2D shapes (triangles and quadrilaterals).
 
