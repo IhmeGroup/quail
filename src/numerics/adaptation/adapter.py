@@ -41,6 +41,8 @@ class Adapter():
 
     def __init__(self, solver, elem_to_adaptation_group = None,
             adaptation_groups = None):
+        # TODO: Make work for 1D.
+        if solver.mesh.ndims == 1: return
         if elem_to_adaptation_group is None: elem_to_adaptation_group = {}
         if adaptation_groups is None: adaptation_groups = set()
         # Nodes in reference space

@@ -320,7 +320,7 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
 		# [nq, 1], [nq, ndims, ndims], and [nq, ndims, ndims]
 
 
-def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
+def calculate_1D_normals(mesh, node_IDs, quad_pts):
 
 	'''
 	Calculate the normals for a 1D face
@@ -328,38 +328,31 @@ def calculate_1D_normals(mesh, elem_ID, face_ID, quad_pts):
 	Inputs:
 	-------
 		mesh: mesh object
-		elem_ID: element index
-		face_ID: face index
+		node_IDs: global node IDs of face
 		quad_pts: points in reference space at which to calculate normals
 
 	Outputs:
 	--------
 		normals: normal vector [nq, ndims]
 	'''
-	nq = quad_pts.shape[0]
 
-	normals = np.zeros([nq, mesh.ndims])
-
-	# 1D normals calculation
-	if face_ID == 0:
-		normals[0] = -1.
-	elif face_ID == 1:
-		normals[0] = 1.
-	else:
-		raise ValueError
+	# In 1D, normals always point to the right, so the normal direction is 1.
+	# Also, this array generally has shape [nq, ndims], but in 1D there is
+	# only one quadrature point on the face and only one dimension, so this
+	# array needs to have shape [1, 1].
+	normals = np.array([[1.]])
 
 	return normals # [nq, ndims]
 
 
-def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
+def calculate_2D_normals(mesh, node_IDs, quad_pts):
 	'''
 	Calculate the normals for 2D shapes (triangles and quadrilaterals).
 
 	Inputs:
 	-------
 		mesh: mesh object
-		elem_ID: element index
-		face_ID: face index
+		node_IDs: global node IDs of face
 		quad_pts: points in reference space at which to calculate normals
 
 	Outputs:
@@ -368,17 +361,14 @@ def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
 	'''
 	gbasis = mesh.gbasis
 	gorder = mesh.gorder
-	elem_coords = mesh.elements[elem_ID].node_coords
 
-	''' Get face coordinates '''
-	# Get local IDs of face nodes
-	fnodes = gbasis.get_local_face_node_nums(gorder, face_ID)
+	''' Get face coordinates and basis gradient '''
+	# Extract coordinates of face nodes
+	face_coords = mesh.node_coords[node_IDs]
 	# Instantiate segment basis
 	basis_seg = basis_defs.LagrangeSeg(gorder)
 	# Compute basis values
 	basis_ref_grad = basis_seg.get_grads(quad_pts)
-	# Extract coordinates of face nodes
-	face_coords = elem_coords[fnodes]
 
 	''' Calculate 2D normals '''
 	xphys_grad = np.matmul(face_coords.transpose(), basis_ref_grad)[

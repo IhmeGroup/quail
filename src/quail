@@ -288,8 +288,6 @@ def driver(deck):
 			# Split into tris if required
 			if shape is ShapeType.Triangle:
 				mesh = mesh_common.split_quadrils_into_tris(mesh)
-	# Get the global node IDs of each face
-	mesh.get_face_global_node_IDs()
 
 	''' Impose periodicity if requested '''
 	pb_x = mesh_params["PeriodicBoundariesX"]
@@ -306,6 +304,9 @@ def driver(deck):
 	if pb != [None]*4:
 		mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1],
 				y1=pb[2], y2=pb[3])
+
+	# Get the global node IDs of each face
+	mesh.get_face_global_node_IDs()
 
 	# If doing a restart, start from the old mesh
 	if restart_params["File"] is not None:
