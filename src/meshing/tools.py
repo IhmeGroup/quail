@@ -171,17 +171,8 @@ def verify_periodic_compatibility(mesh, boundary_group, icoord):
     coord = np.nan
     gbasis = mesh.gbasis
     for boundary_face in boundary_group.boundary_faces:
-        # Extract info
-        elem_ID = boundary_face.elem_ID
-        face_ID = boundary_face.face_ID
-
-        # Get local IDs of nodes on face
-        local_node_IDs = gbasis.get_local_face_node_nums(
-                mesh.gorder, face_ID)
-
         # Physical coordinates of nodes
-        elem_coords = mesh.elements[elem_ID].node_coords
-        coords = elem_coords[local_node_IDs]
+        coords = mesh.node_coords[boundary_face.node_IDs]
 
         # Make sure all nodes have same icoord-position (within TOL)
         if np.isnan(coord):
