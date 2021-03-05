@@ -115,6 +115,7 @@ class Adapter():
             neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
 
+        breakpoint()
         # == Coarsening == #
 
         # -- Loop through adaptation groups and perform coarsening -- #

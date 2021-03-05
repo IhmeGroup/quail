@@ -250,6 +250,11 @@ def driver(deck):
 			physics_params, IC_params, exact_params, BC_params,
 			source_params, output_params)
 
+	# Solver parameters
+	solver_params = {**stepper_params, **numerics_params, **output_params,
+            **restart_params}
+	solver_params["RestartFile"] = restart_params["File"]
+
 	'''
 	Mesh
 	'''
@@ -299,6 +304,13 @@ def driver(deck):
 	if pb != [None]*4:
 		mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1],
 				y1=pb[2], y2=pb[3])
+
+	# If doing a restart, start from the old mesh
+	if restart_params["File"] is not None:
+		# Old solver
+		solver_old = readwritedatafiles.read_data_file(solver_params[
+				"RestartFile"])
+		mesh = solver_old.mesh
 
 
 	'''
@@ -352,8 +364,6 @@ def driver(deck):
 	Solver
 	'''
 	# Merge solver-related params
-	solver_params = {**stepper_params, **numerics_params, **output_params}
-	solver_params["RestartFile"] = restart_params["File"]
 	solver_type = solver_params.pop("Solver")
 	if SolverType[solver_type] is SolverType.DG:
 		solver = DG.DG(solver_params, physics, mesh)
@@ -367,23 +377,20 @@ def driver(deck):
 	Restart file
 	'''
 	if restart_params["File"] is not None:
-		# Old solver
-		solver_old = readwritedatafiles.read_data_file(solver_params[
-				"RestartFile"])
-		# Project if different basis and/or order
-		if order != solver_old.order or solver.basis.BASIS_TYPE != \
-				solver_old.basis.BASIS_TYPE:
-			print("Projecting to a different solution basis and/or order")
-			solver.project_state_to_new_basis(solver_old.state_coeffs,
-					solver_old.basis, solver_old.order)
-		else:
-			solver.state_coeffs = solver_old.state_coeffs
-			# Time
-		if restart_params["StartFromFileTime"]:
-			solver.time = solver_old.time
-			solver.stepper.dt = 0.
-			stepper_tools.set_time_stepping_approach(solver.stepper,
-					solver.params)
+		if not restart_params["StartFromInitialCondition"]:
+			if order != solver_old.order or solver.basis.BASIS_TYPE != \
+					solver_old.basis.BASIS_TYPE:
+				print("Projecting to a different solution basis and/or order")
+				solver.project_state_to_new_basis(solver_old.state_coeffs,
+						solver_old.basis, solver_old.order)
+			else:
+				solver.state_coeffs = solver_old.state_coeffs
+				# Time
+			if restart_params["StartFromFileTime"]:
+				solver.time = solver_old.time
+				solver.stepper.dt = 0.
+				stepper_tools.set_time_stepping_approach(solver.stepper,
+						solver.params)
 
 
 	'''

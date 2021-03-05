@@ -614,7 +614,7 @@ class DG(base.SolverBase):
 				physics.NUM_STATE_VARS]))
 
 		# Initial condition
-		if params["RestartFile"] is None:
+		if params["RestartFile"] is None or params["StartFromInitialCondition"]:
 			self.init_state_from_fcn()
 
 		# Initialize adapter

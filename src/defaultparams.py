@@ -11,8 +11,11 @@ Restart = {
 	"File" : None,
 		# If file name provided (str), then will restart from said data file
 		# (pickle format)
-	"StartFromFileTime" : True
+	"StartFromFileTime" : True,
 		# If True, then will restart from time saved in restart file
+	"StartFromInitialCondition" : False,
+		# If True, then will reinitialize the initial condition instead of using
+		# the solution from the restart file
 }
 
 
