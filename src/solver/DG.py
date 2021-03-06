@@ -348,24 +348,23 @@ class InteriorFaceHelpers(ElemHelpers):
 		nfaces_per_elem = basis.NFACES
 
 		# Allocate
-		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
-		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
+		self.faces_to_basisL = np.zeros([mesh.num_interior_faces, nq, nb])
+		self.faces_to_basisR = np.zeros([mesh.num_interior_faces, nq, nb])
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
 				ndims])
 
-		# Get values on each face (from both left and right perspectives)
-		for face_ID in range(nfaces_per_elem):
-			# Left
-			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts,
-					get_val=True)
-			self.faces_to_basisL[face_ID] = basis.basis_val
-			# Right
-			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts[::-1],
-					get_val=True)
-			self.faces_to_basisR[face_ID] = basis.basis_val
-
-		# Normals
+		# Get values on each face (from both left and right perspectives) and
+		# compute normals
 		for i, interior_face in enumerate(mesh.interior_faces):
+			# Left
+			basis.get_basis_face_val_grads(mesh, interior_face.elemL_ID,
+					interior_face.node_IDs, quad_pts, get_val=True)
+			self.faces_to_basisL[i] = basis.basis_val
+			# Right
+			basis.get_basis_face_val_grads(mesh, interior_face.elemR_ID,
+					interior_face.node_IDs, quad_pts[::-1], get_val=True)
+			self.faces_to_basisR[i] = basis.basis_val
+			# Normals
 			normals = mesh.gbasis.calculate_normals(mesh,
 					interior_face.node_IDs, interior_face.faceL_ID, quad_pts)
 			self.normals_int_faces[i] = normals
@@ -434,9 +433,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		values for the weights of each quadrature point
 	faces_to_basis: numpy array
 		basis values evaluated at quadrature points of each face
-	faces_to_xref: numpy array
-		coordinates of quadrature points of each face converted to
-		element reference space
 	normals_bgroups: numpy array
 		normal vector array for each boundary face
 	x: numpy array
@@ -463,8 +459,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 	def __init__(self):
 		self.quad_pts = np.zeros(0)
 		self.quad_wts = np.zeros(0)
-		self.faces_to_basis = np.zeros(0)
-		self.faces_to_xref = np.zeros(0)
+		self.faces_to_basis = {}
 		self.normals_bgroups = []
 		self.x_bgroups = []
 		self.UqI = np.zeros(0)
@@ -501,20 +496,14 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		nb = basis.nb
 		nfaces_per_elem = basis.NFACES
 
-		# Allocate
-		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
-		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.NDIMS])
 
-		# Get values on each face (from interior perspective)
-		for face_ID in range(nfaces_per_elem):
-			self.faces_to_xref[face_ID] = basis.get_elem_ref_from_face_ref(
-					face_ID, quad_pts)
-			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts,
-					get_val=True)
-			self.faces_to_basis[face_ID] = basis.basis_val
-
-		# Get boundary information
-		for i, bgroup in enumerate(mesh.boundary_groups.values()):
+		# Get values on each face (from interior perspective) and get boundary
+		# information
+		for i, bgroup_name in enumerate(mesh.boundary_groups):
+			bgroup = mesh.boundary_groups[bgroup_name]
+			# Allocate
+			self.faces_to_basis[bgroup_name] = np.zeros(
+					[bgroup.num_boundary_faces, nq, nb])
 			self.normals_bgroups.append(np.zeros([bgroup.num_boundary_faces,
 					nq, ndims]))
 			self.x_bgroups.append(np.zeros([bgroup.num_boundary_faces,
@@ -523,6 +512,14 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			x_bgroup = self.x_bgroups[i]
 
 			for j, boundary_face in enumerate(bgroup.boundary_faces):
+				# Coordinates of face quadrature points on reference element
+				ref_quad_pts = basis.get_elem_ref_from_face_ref(mesh,
+						boundary_face.elem_ID, boundary_face.node_IDs,
+						quad_pts)
+				basis.get_basis_face_val_grads(mesh, boundary_face.elem_ID,
+						boundary_face.node_IDs, quad_pts, get_val=True)
+				self.faces_to_basis[bgroup_name][j] = basis.basis_val
+
 				# Normals
 				normals = mesh.gbasis.calculate_normals(mesh,
 						boundary_face.node_IDs, boundary_face.face_ID,
@@ -531,7 +528,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 				# Physical coordinates of quadrature points
 				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID,
-						self.faces_to_xref[boundary_face.face_ID])
+						ref_quad_pts)
 				# Store
 				x_bgroup[j] = x
 
@@ -717,7 +714,7 @@ class DG(base.SolverBase):
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
 
-		basis_val = bface_helpers.faces_to_basis[face_IDs] # [nbf, nq, nb]
+		basis_val = bface_helpers.faces_to_basis[bgroup.name] # [nbf, nq, nb]
 
 		# Interpolate state at quad points
 		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]

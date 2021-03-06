@@ -275,7 +275,7 @@ class Mesh(object):
 			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
 			elem.node_coords = self.node_coords[elem.node_IDs]
 			elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
-			elem.ref_node_coords = self.gbasis.PRINCIPAL_NODE_COORDS.copy()
+			elem.ref_node_coords = self.gbasis.get_nodes(self.gorder)
 
 		# Fill in information about neighbors
 		for int_face in self.interior_faces:
@@ -289,7 +289,6 @@ class Mesh(object):
 
 			elemL.face_to_neighbors[faceL_ID] = elemR_ID
 			elemR.face_to_neighbors[faceR_ID] = elemL_ID
-		breakpoint()
 
 
 	def get_face_global_node_IDs(self):
@@ -307,27 +306,23 @@ class Mesh(object):
 
 		# Loop over InteriorFaces
 		for int_face in self.interior_faces:
-			# Get principal node numbers on the element to the left of this
-			# face
-			principal_node_nums = \
-					self.gbasis.get_local_face_principal_node_nums(
-					self.gorder, int_face.faceL_ID)
+			# Get node numbers on the element to the left of this face
+			node_nums = self.gbasis.get_local_face_node_nums(self.gorder,
+					int_face.faceL_ID)
 			# Assign the global node IDs of this face to be the global node
-			# IDs associated with the principal node numbers on the element
+			# IDs associated with the node numbers on the element
 			int_face.node_IDs = self.elements[int_face.elemL_ID].node_IDs[
-					principal_node_nums]
+					node_nums]
 
 		# Loop over BoundaryGroups
 		for bgroup in self.boundary_groups.values():
 			# Loop over BoundaryFaces
 			for boundary_face in bgroup.boundary_faces:
-				# Get principal node numbers on the element adjacent to this
-				# face
-				principal_node_nums = \
-						self.gbasis.get_local_face_principal_node_nums(
-								self.gorder, boundary_face.face_ID)
-				# Assign the global node IDs of this face to be the global
-				# node IDs associated with the principal node numbers on the
-				# element
-				boundary_face.node_IDs = self.elements[boundary_face.elem_ID
-						].node_IDs[principal_node_nums]
+				# Get node numbers on the element adjacent to this face
+				node_nums = self.gbasis.get_local_face_node_nums(self.gorder,
+						boundary_face.face_ID)
+
+				# Assign the global node IDs of this face to be the global node
+				# IDs associated with the node numbers on the element
+				boundary_face.node_IDs = self.elements[
+						boundary_face.elem_ID].node_IDs[node_nums]

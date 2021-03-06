@@ -61,6 +61,8 @@ class ShapeBase(ABC):
 
 	Methods:
 	--------
+	get_local_face_node_nums
+		get local IDs of nodes on face
 	get_local_face_principal_node_nums
 		get local IDs of principal nodes on face
 	get_elem_ref_from_face_ref
@@ -181,6 +183,21 @@ class ShapeBase(ABC):
 		'''
 		pass
 
+	def get_local_face_node_nums(self, p, face_ID):
+		'''
+		Gets local IDs of nodes on face
+
+		Inputs:
+		-------
+			p: order of polynomial space
+			face_ID: reference element face value
+
+		Outputs:
+		--------
+			fnode_nums: local IDs of nodes on face
+		'''
+		pass
+
 	def get_local_face_principal_node_nums(self, p, face_ID):
 		'''
 		Gets local IDs of principal nodes on face
@@ -196,20 +213,37 @@ class ShapeBase(ABC):
 		'''
 		pass
 
-	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
+	def get_elem_ref_from_face_ref(self, mesh, elem_ID, face_node_IDs,
+			face_pts):
 		'''
 		Defines element reference nodes
 
 		Inputs:
 		-------
-			face_ID: face value
+			mesh: Mesh object
+			elem_ID: ID of element adjacent to face
+			face_node_IDs: global node IDs of face
 			face_pts: coordinates for face pts
 
 		Outputs:
 		--------
 			elem_pts: coordinates in element reference space
 		'''
-		pass
+		# Get element from mesh
+		elem = mesh.elements[elem_ID]
+		# Coordinates on the reference element of the local q = 1 nodes of
+		# the face
+		index0 = np.argwhere(elem.node_IDs == face_node_IDs[0])[0]
+		xn0 = elem.ref_node_coords[index0]
+		index1 = np.argwhere(elem.node_IDs == face_node_IDs[-1])[0]
+		xn1 = elem.ref_node_coords[index1]
+
+		xf1 = (face_pts + 1.) / 2.
+		xf0 = 1. - xf1
+
+		elem_pts = xf0*xn0 + xf1*xn1
+
+		return elem_pts # [face_pts.shape[0], ndims]
 
 	def set_elem_quadrature_type(self, quadrature_name):
 		'''
@@ -324,6 +358,9 @@ class SegShape(ShapeBase):
 					.reshape(-1, 1)
 		return xnodes  # [nb, ndims]
 
+	def get_local_face_node_nums(self, p, face_ID):
+		return self.get_local_face_principal_node_nums(p, face_ID)
+
 	def get_local_face_principal_node_nums(self, p, face_ID):
 		if face_ID == 0:
 			fnode_nums = np.zeros(1, dtype=int)
@@ -333,16 +370,6 @@ class SegShape(ShapeBase):
 			raise ValueError
 
 		return fnode_nums
-
-	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
-		if face_ID == 0:
-			elem_pts = -np.ones([1, 1])
-		elif face_ID == 1:
-			elem_pts = np.ones([1, 1])
-		else:
-			raise ValueError
-
-		return elem_pts # [1, 1]
 
 	def get_quadrature_data(self, order):
 		quad_pts, quad_wts = segment.get_quadrature_points_weights(order,
@@ -405,6 +432,20 @@ class QuadShape(ShapeBase):
 
 		return xnodes # [nb, ndims]
 
+	def get_local_face_node_nums(self, p, face_ID):
+		if face_ID == 0:
+			fnode_nums = np.arange(p+1)
+		elif face_ID == 1:
+			fnode_nums = np.arange(p, (p+1)**2, p+1)
+		elif face_ID == 2:
+			fnode_nums = np.arange((p+2)*p, (p+1)*p - 1, -1)
+		elif face_ID == 3:
+			fnode_nums = np.arange((p+1)*p, -1, -p-1)
+		else:
+			 raise ValueError
+
+		return fnode_nums
+
 	def get_local_face_principal_node_nums(self, p, face_ID):
 		if face_ID == 0:
 			fnode_nums = np.array([0, p])
@@ -418,19 +459,6 @@ class QuadShape(ShapeBase):
 			 raise ValueError
 
 		return fnode_nums
-
-	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
-		fnodes = self.get_local_face_principal_node_nums(1, face_ID)
-
-		xn0 = self.PRINCIPAL_NODE_COORDS[fnodes[0]]
-		xn1 = self.PRINCIPAL_NODE_COORDS[fnodes[1]]
-
-		xf1 = (face_pts + 1.)/2.
-		xf0 = 1. - xf1
-
-		elem_pts = xf0*xn0 + xf1*xn1
-
-		return elem_pts # [face_pts.shape[0], ndims]
 
 	def get_quadrature_order(self, mesh, order, physics=None):
 		# Add two to qorder for ndims = 2 with quads
@@ -506,6 +534,24 @@ class TriShape(ShapeBase):
 
 		return xnodes # [nb, ndims]
 
+	def get_local_face_node_nums(self, p, face_ID):
+		if face_ID == 0:
+			fnode_nums = np.empty(p+1, dtype=int)
+			fnode_nums[0] = p
+			for i in range(1, p+1):
+				fnode_nums[i] = fnode_nums[i-1] + p + 1 - i
+		elif face_ID == 1:
+			fnode_nums = np.empty(p+1, dtype=int)
+			fnode_nums[p] = 0 #(p+1)*(p+2)//2 - 1
+			for i in range(p-1, -1, -1):
+				fnode_nums[i] = fnode_nums[i+1] + 2 + i
+		elif face_ID == 2:
+			fnode_nums = np.arange(p+1)
+		else:
+			 raise ValueError
+
+		return fnode_nums
+
 	def get_local_face_principal_node_nums(self, p, face_ID):
 		'''
 		Additional Notes:
@@ -522,20 +568,6 @@ class TriShape(ShapeBase):
 			raise ValueError
 
 		return fnode_nums
-
-	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
-		fnodes = self.get_local_face_principal_node_nums(1, face_ID)
-
-		# coordinates of local q = 1 nodes on face
-		xn0 = self.PRINCIPAL_NODE_COORDS[fnodes[0]]
-		xn1 = self.PRINCIPAL_NODE_COORDS[fnodes[1]]
-
-		xf1 = (face_pts + 1.) / 2.
-		xf0 = 1. - xf1
-
-		elem_pts = xf0*xn0 + xf1*xn1
-
-		return elem_pts # [face_pts.shape[0], ndims]
 
 	def get_quadrature_data(self, order):
 		'''
@@ -588,7 +620,8 @@ class HexShape(ShapeBase):
 
 		return xnodes # [nb, ndims]
 
-	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
+	def get_elem_ref_from_face_ref(self, mesh, elem_ID, face_node_IDs,
+			face_pts):
 
 		nq = face_pts.shape[0]
 		ndims = self.NDIMS
@@ -866,8 +899,8 @@ class BasisBase(ABC):
 				raise Exception("Need Jacobian data")
 			self.basis_phys_grad = self.get_physical_grads(ijac)
 
-	def get_basis_face_val_grads(self, mesh, face_ID, face_pts, basis=None,
-			get_val=True, get_ref_grad=False, get_phys_grad=False,
+	def get_basis_face_val_grads(self, mesh, elem_ID, face_node_IDs, face_pts,
+			basis=None, get_val=True, get_ref_grad=False, get_phys_grad=False,
 			ijac=None):
 		'''
 		Evaluates the basis function and if applicable evaluates the
@@ -901,7 +934,8 @@ class BasisBase(ABC):
 			basis = self
 
 		# Convert from face ref space to element ref space
-		elem_pts = basis.get_elem_ref_from_face_ref(face_ID, face_pts)
+		elem_pts = basis.get_elem_ref_from_face_ref(mesh, elem_ID,
+				face_node_IDs, face_pts)
 
 		self.get_basis_val_grads(elem_pts, get_val, get_ref_grad,
 				get_phys_grad, ijac)

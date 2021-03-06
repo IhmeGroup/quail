@@ -19,7 +19,7 @@ Mesh = {
 	"xmax" : 5.,
 	"ymin" : -5.,
 	"ymax" : 5.,
-	"PeriodicBoundariesX" : ["x2", "x1"],
+	#"PeriodicBoundariesX" : ["x2", "x1"],
 }
 
 Physics = {
@@ -40,6 +40,8 @@ d = {
 }
 
 BoundaryConditions = {
+	"x1" : d,
+	"x2" : d,
 	"y1" : d,
 	"y2" : d,
 }
