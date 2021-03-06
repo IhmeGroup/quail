@@ -96,7 +96,7 @@ class Element(object):
 
 	Attributes:
 	-----------
-	id: int
+	ID: int
 		element ID
 	node_IDs: numpy array
 		global IDs of the element nodes
@@ -105,12 +105,15 @@ class Element(object):
 	face_to_neighbors: numpy array
 		maps local face ID to element ID of
 		neighbor across said face [num_faces]
+	ref_node_coords: numpy array
+		coordinates of nodes in reference space
 	'''
 	def __init__(self, elem_ID=-1):
 		self.ID = elem_ID
 		self.node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
 		self.face_to_neighbors = np.zeros(0, dtype=int)
+		self.ref_node_coords = {}
 
 
 class Mesh(object):
@@ -272,6 +275,7 @@ class Mesh(object):
 			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
 			elem.node_coords = self.node_coords[elem.node_IDs]
 			elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
+			elem.ref_node_coords = self.gbasis.PRINCIPAL_NODE_COORDS.copy()
 
 		# Fill in information about neighbors
 		for int_face in self.interior_faces:
@@ -285,6 +289,7 @@ class Mesh(object):
 
 			elemL.face_to_neighbors[faceL_ID] = elemR_ID
 			elemR.face_to_neighbors[faceR_ID] = elemL_ID
+		breakpoint()
 
 
 	def get_face_global_node_IDs(self):
