@@ -349,7 +349,7 @@ class SegShape(ShapeBase):
 				self.quadrature_type, self.num_pts_colocated)
 
 		return quad_pts, quad_wts # [nq, ndims], [nq, 1]
-	
+
 	def get_tiling_constants(self, null):
 		'''
 		Precomputes the tiling constants for the ADER-DG scheme. Tiling
@@ -368,7 +368,7 @@ class SegShape(ShapeBase):
 			time_skip: Value to skip when building time
 					array for each bface in get_boundary_face_residual
 					in src/solver/ADERDG.py
-			time_tile: time array tiling constant for each bface in 
+			time_tile: time array tiling constant for each bface in
 					get_boundary_face_residual in src/solver/ADERDG.py
 		'''
 		return self.basis_val.shape[0], 1, self.basis_val.shape[1]
@@ -388,7 +388,7 @@ class QuadShape(ShapeBase):
 			[1., 1.]])
 	CENTROID = np.array([[0., 0.]])
 	FACE_TIME_MAPPING = np.array([0, 2])
-	
+
 	def get_num_basis_coeff(self, p):
 		return (p + 1)**2
 
@@ -455,7 +455,7 @@ class QuadShape(ShapeBase):
 		Inputs:
 		-------
 			bface_quad_pts_st: boundary face quad_pts used to define
-					the time_skip and time_tile value for 2D ADER 
+					the time_skip and time_tile value for 2D ADER
 					approaches using Quads [nq_st, ndims]
 
 		Outputs:
@@ -465,7 +465,7 @@ class QuadShape(ShapeBase):
 					array for each bface in get_boundary_face_residual
 					in src/solver/ADERDG.py. Also used for tiling
 					in the interior and boundary face integral.
-			time_tile: time array tiling constant for each bface in 
+			time_tile: time array tiling constant for each bface in
 					get_boundary_face_residual in src/solver/ADERDG.py
 		'''
 		return int(np.sqrt(self.basis_val.shape[0])), \
@@ -581,22 +581,22 @@ class HexShape(ShapeBase):
 			xnodes_hold = np.zeros([xseg.shape[0]*xseg.shape[0],1])
 			xnodes_hold = np.tile(xseg, (xseg.shape[0],1)).reshape(-1)
 
-			xnodes[:, 1] = np.repeat(xn_hold, xseg.shape[0], 
+			xnodes[:, 1] = np.repeat(xn_hold, xseg.shape[0],
 					axis=0).reshape(-1)
-			xnodes[:, 2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
+			xnodes[:, 2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0],
 					axis=0).reshape(-1)
 
 		return xnodes # [nb, ndims]
 
 	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
-		
+
 		nq = face_pts.shape[0]
 		ndims = self.NDIMS
 
 		# Instantiate a lagrange quad basis for face_ID 0-3
 		lagrange_eq_quad = LagrangeQuad(self.order)
-		
-		# Face_ID's 4-5 are prescriptive since face_ID 4 is 
+
+		# Face_ID's 4-5 are prescriptive since face_ID 4 is
 		# always when tau=-1 and face_ID 5 is always when
 		# tau=1 in reference time.
 		if face_ID < 4:
@@ -648,7 +648,7 @@ class HexShape(ShapeBase):
 			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
 					face_pts[:, 1] * x0[1]) / 2., nq)
 		# Top face (tau = 1 in ref time)
-		elif face_ID == 5: 
+		elif face_ID == 5:
 			x0 = [-1., -1., 1.]
 			x1 = [1., -1., 1.]
 			x2 = [1., 1., 1.]
@@ -1012,23 +1012,6 @@ class LagrangeSeg(BasisBase, SegShape):
 
 		return basis_ref_grad # [nq, nb, ndims]
 
-	def get_local_face_node_nums(self, p, face_ID):
-		'''
-		Returns local IDs of all nodes on face
-
-		Inputs:
-		-------
-			p: order of polynomial space
-			face_ID: reference element face value
-
-		Outputs:
-		--------
-			fnode_nums: local IDs of all nodes on face
-		'''
-		fnode_nums = self.get_local_face_principal_node_nums(p, face_ID)
-
-		return fnode_nums
-
 
 class LagrangeQuad(BasisBase, QuadShape):
 	'''
@@ -1108,35 +1091,6 @@ class LagrangeQuad(BasisBase, QuadShape):
 
 		return basis_ref_grad # [nq, nb, ndims]
 
-	def get_local_face_node_nums(self, p, face_ID):
-		'''
-		Returns local IDs of all nodes on face
-
-		Inputs:
-		-------
-			p: order of polynomial space
-			face_ID: reference element face value
-
-		Outputs:
-		--------
-			fnode_nums: local IDs of all nodes on face
-		'''
-		if p < 1:
-			raise ValueError
-
-		if face_ID == 0:
-			fnode_nums = np.arange(p+1, dtype=int)
-		elif face_ID == 1:
-			fnode_nums = p + (p+1)*np.arange(p+1, dtype=int)
-		elif face_ID == 2:
-			fnode_nums = p*(p+2) - np.arange(p+1, dtype=int)
-		elif face_ID == 3:
-			fnode_nums = p*(p+1) - (p+1)*np.arange(p+1, dtype=int)
-		else:
-			 raise IndexError
-
-		return fnode_nums
-
 
 class LagrangeTri(BasisBase, TriShape):
 	'''
@@ -1188,46 +1142,6 @@ class LagrangeTri(BasisBase, TriShape):
 
 		return basis_ref_grad # [nq, nb, ndims]
 
-	def get_local_face_node_nums(self, p, face_ID):
-		'''
-		Returns local IDs of all nodes on face
-
-		Inputs:
-		-------
-			p: order of polynomial space
-			face_ID: reference element face value
-
-		Outputs:
-		--------
-			fnode_nums: local IDs of all nodes on face
-		'''
-		if p < 1:
-			raise ValueError
-
-		nn = p + 1
-		fnode_nums = np.zeros(nn, dtype=int)
-
-		if face_ID == 0:
-			nstart = p
-			j = p
-			k = -1
-		elif face_ID == 1:
-			nstart = (p+1)*(p+2)//2 - 1
-			j = -2
-			k = -1
-		elif face_ID == 2:
-			nstart = 0
-			j = 1
-			k = 0
-		else:
-			raise ValueError
-
-		fnode_nums[0] = nstart
-		for i in range(1, p+1):
-			fnode_nums[i] = fnode_nums[i-1] + j
-			j += k
-
-		return fnode_nums
 
 class LagrangeHex(BasisBase, HexShape):
 	'''
@@ -1237,7 +1151,7 @@ class LagrangeHex(BasisBase, HexShape):
 
 	Additional methods and attributes are commented below.
 
-	Note: This basis is only appropriate for use with 2D ADERDG. It 
+	Note: This basis is only appropriate for use with 2D ADERDG. It
 		  is not general for a 3D implentation of the DG solver.
 	'''
 	BASIS_TYPE = BasisType.LagrangeHex
@@ -1278,9 +1192,9 @@ class LagrangeHex(BasisBase, HexShape):
 			xnodes_hold = np.zeros([xseg.shape[0]*xseg.shape[0],1])
 			xnodes_hold = np.tile(xseg, (xseg.shape[0],1)).reshape(-1)
 
-			xnodes[:, 1] = np.repeat(xnodes_hold, xseg.shape[0], 
+			xnodes[:, 1] = np.repeat(xnodes_hold, xseg.shape[0],
 					axis=0).reshape(-1)
-			xnodes[:, 2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0], 
+			xnodes[:, 2] = np.repeat(xseg, xseg.shape[0]*xseg.shape[0],
 					axis=0).reshape(-1)
 
 		return xnodes # [nb, ndims]
