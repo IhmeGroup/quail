@@ -110,14 +110,8 @@ class Adapter():
         dJ_old = solver.elem_helpers.djac_elems[:, :, 0]
         Uc_old = solver.state_coeffs
         iMM_old = solver.elem_helpers.iMM_elems
-        # TODO: Better way to do this. Either change how Quail stores neighbors
-        # or change how this code uses them.
-        neighbors_old = np.empty((Uc_old.shape[0], 3), dtype=int)
-        for i in range(neighbors_old.shape[0]):
-            neighbors_old[i] = solver.mesh.elements[i].face_to_neighbors
         xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
 
-        breakpoint()
         # == Coarsening == #
 
         # -- Loop through adaptation groups and perform coarsening -- #
@@ -210,7 +204,6 @@ class Adapter():
         # -- Array sizing and allocation -- #
         # Create new arrays
         xn_coarsened = np.empty((n_elems_coarsened,) + xn_old.shape[1:])
-        neighbors_coarsened = np.empty((n_elems_coarsened,) + neighbors_old.shape[1:], dtype=int)
         dJ_coarsened = np.empty((n_elems_coarsened,) + dJ_old.shape[1:])
         iMM_coarsened = np.empty((n_elems_coarsened,) + iMM_old.shape[1:])
         Uc_coarsened = np.empty((n_elems_coarsened,) + Uc_old.shape[1:])
@@ -225,16 +218,14 @@ class Adapter():
             # Only add elements that are not deleted
             if i_old not in delete_elems:
                 xn_coarsened[i] = xn_old[i_old]
-                neighbors_coarsened[i] = neighbors_old[i_old]
                 dJ_coarsened[i] = dJ_old[i_old]
                 iMM_coarsened[i] = iMM_old[i_old]
                 Uc_coarsened[i] = Uc_old[i_old]
                 i += 1
-        # Update IDs in the neighbors, faces, refine IDs, adaptation groups,
+        # Update IDs in the faces, refine IDs, adaptation groups,
         # elem_to_adaptation_group after reordering
         # TODO: Add the same thing, but for boundary faces
         for i_old in range(n_elems_old):
-            neighbors_coarsened[neighbors_coarsened == i_old] = reordered_IDs[i_old]
             refine_IDs[refine_IDs == i_old] = reordered_IDs[i_old]
             for face in solver.mesh.interior_faces:
                 if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
@@ -261,131 +252,29 @@ class Adapter():
 
         # == Refinement == #
 
-        # -- Create refinement pairs of elements and faces -- #
-        n_refined = refine_IDs.shape[0]
-        # Create arrays
-        elem_pairs = np.empty((n_refined, 2), dtype=int)
-        face_pairs = np.empty(n_refined, dtype=(int, 2))
-        if n_refined != 0:
-            # The left element is always the one that was marked for refinement
-            elem_pairs[:, 0] = refine_IDs
-            face_pairs[:, 0] = split_face_IDs
-            # The right element is the neighbor across the face being split
-            elem_pairs[:, 1] = neighbors_coarsened[refine_IDs, split_face_IDs]
-            # The right face is whichever is neighboring the left element
-            for i in range(n_refined):
-                # Only do this for elements not refined at a boundary
-                if elem_pairs[i, 1] != -1:
-                    face_pairs[i, 1] = np.argwhere(neighbors_coarsened[elem_pairs[i, 1]]
-                            == elem_pairs[i, 0])[0]
-                # Otherwise, set to -1 to indicate boundary face
-                else: face_pairs[i, -1] = -1
-
         # -- Array sizing and allocation -- #
-        # Number of elements being refined at a boundary face. If the element
-        # pair is -1, then it's a boundary refinement.
-        n_refined_boundary = np.argwhere(elem_pairs == -1).shape[0]
-        n_elems = n_elems_coarsened + 2*n_refined - n_refined_boundary
+        n_refined = refine_IDs.shape[0]
+        n_elems = n_elems_coarsened + n_refined
         # Create new arrays
         xn = np.empty((n_elems,) + xn_coarsened.shape[1:])
-        neighbors = np.empty((n_elems,) + neighbors_coarsened.shape[1:], dtype=int)
         dJ = np.empty((n_elems,) + dJ_coarsened.shape[1:])
         iMM = np.empty((n_elems,) + iMM_coarsened.shape[1:])
         Uc = np.empty((n_elems,) + Uc_coarsened.shape[1:])
         # Copy old data into new arrays
         xn[:n_elems_coarsened] = xn_coarsened
-        neighbors[:n_elems_coarsened, :] = neighbors_coarsened
         dJ[:n_elems_coarsened, :] = dJ_coarsened
         iMM[:n_elems_coarsened, :] = iMM_coarsened
         Uc[:n_elems_coarsened, :] = Uc_coarsened
 
-        # -- Loop through refinement pairs and perform refinement -- #
-        for i, (elem_pair, face_pair) in enumerate(zip(elem_pairs, face_pairs)):
-            face_pair = tuple(face_pair)
-            # Get IDs
-            elem_L_ID, elem_R_ID = elem_pair
-            face_L_ID, face_R_ID = face_pair
-            new_elem_IDs = np.array([elem_L_ID, n_elems_coarsened + i,
-                    elem_R_ID, n_elems_coarsened + i + 1])
-            old_elem_IDs = np.array([elem_L_ID, elem_L_ID,
-                    elem_R_ID, elem_R_ID])
-            # For boundary refinement, only produce two elements
-            if elem_pair[1] == -1:
-                new_elem_IDs = new_elem_IDs[:2]
-                old_elem_IDs = old_elem_IDs[:2]
+        # -- Loop through tagged elements and perform refinement -- #
+        for i, (elem_ID, face_ID) in enumerate(zip(refine_IDs, split_face_IDs)):
+            # TODO: Do I even need these anymore?
+            new_elem_IDs = np.array([elem_ID, n_elems_coarsened + i])
+            old_elem_IDs = np.array([elem_ID, elem_ID])
 
-            # Create new triangles
-            self.refine_triangles(solver, xn, iMM, dJ, Uc, new_elem_IDs,
-                    old_elem_IDs, face_pair)
-
-            # Map possible neighbors
-            if elem_R_ID != -1:
-                possible_neighbors = np.array([
-                        # Neighbor 0 is counterclockwise of the split face of elem L
-                        neighbors[elem_L_ID, face_L_ID - 2],
-                        # Neighbor 1 is clockwise of the split face of elem L
-                        neighbors[elem_L_ID, face_L_ID - 1],
-                        # Neighbor 2 is counterclockwise of the split face of elem R
-                        neighbors[elem_R_ID, face_R_ID - 2],
-                        # Neighbor 3 is clockwise of the split face of elem R
-                        neighbors[elem_R_ID, face_R_ID - 1],
-                        # Neighbor 4 is elem L
-                        new_elem_IDs[0],
-                        # Neighbor 5 is appended to the end
-                        new_elem_IDs[1],
-                        # Neighbor 6 is elem R
-                        new_elem_IDs[2],
-                        # Neighbor 7 is appended to the end
-                        new_elem_IDs[3],
-                        ])
-                # Find new neighbors using this mapping
-                neighbors[new_elem_IDs, :] = possible_neighbors[self.neighbor_change]
-            else:
-                possible_neighbors = np.array([
-                        # Neighbor 0 is counterclockwise of the split face of elem L
-                        neighbors[elem_L_ID, face_L_ID - 2],
-                        # Neighbor 1 is clockwise of the split face of elem L
-                        neighbors[elem_L_ID, face_L_ID - 1],
-                        # Neighbor 2 is the boundary
-                        -1,
-                        # Neighbor 3 is elem L
-                        new_elem_IDs[0],
-                        # Neighbor 4 is appended to the end
-                        new_elem_IDs[1],
-                        ])
-                # Find new neighbors using this mapping
-                neighbors[new_elem_IDs, :] = possible_neighbors[self.boundary_neighbor_change]
-
-            # Update neighbors of neighbors
-            for j, elem_ID in enumerate(possible_neighbors[:2]):
-                if elem_ID != -1:
-                    # Find which face of the neighbor's neighbor used to be elem_L, then
-                    # update it
-                    neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
-                            elem_L_ID)] = new_elem_IDs[j]
-            # Update elem_R if refinement wasn't at a boundary
-            if new_elem_IDs.size == 4:
-                for j, elem_ID in enumerate(possible_neighbors[2:4]):
-                    if elem_ID != -1:
-                        # Find which face of the neighbor's neighbor used to be elem_R, then
-                        # update it
-                        neighbors[elem_ID, np.argwhere(neighbors[elem_ID] ==
-                                elem_R_ID)] = new_elem_IDs[j+2]
-            # Update old faces, by searching through and finding it
-            # TODO: Add the reverse mapping (elem face ID to face object)
-            neighbor_face_IDs = [1, 2, 1, 2]
-            for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
-                    old_elem_IDs, possible_neighbors, new_elem_IDs,
-                    neighbor_face_IDs):
-                for int_face in solver.mesh.interior_faces:
-                    if (int_face.elemL_ID == elem_ID and int_face.elemR_ID ==
-                            neighbor_ID):
-                        int_face.elemL_ID = new_ID
-                        int_face.faceL_ID = neighbor_face_ID
-                    elif (int_face.elemL_ID == neighbor_ID and
-                            int_face.elemR_ID == elem_ID):
-                        int_face.elemR_ID = new_ID
-                        int_face.faceR_ID = neighbor_face_ID
+            # Create new elements and update faces
+            self.refine_element(solver, xn, iMM, dJ, Uc, new_elem_IDs,
+                    old_elem_IDs)
 
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
@@ -414,12 +303,8 @@ class Adapter():
                 # Otherwise, just use the ID that was found
                 else:
                     solver.mesh.elem_to_node_IDs[i, j] = node_ID[0]
-            #if np.unique(solver.mesh.elem_to_node_IDs[i]).size != 3: breakpoint()
-        #if np.unique(solver.mesh.node_coords, axis=0).shape[0] != 16:  breakpoint()
-        #breakpoint()
         # Create elements and update neighbors
         # TODO: Better way to do this
-        #breakpoint()
         solver.mesh.create_elements()
         for i in range(neighbors.shape[0]):
             solver.mesh.elements[i].face_to_neighbors = neighbors[i]
@@ -436,8 +321,8 @@ class Adapter():
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
-    def refine_triangles(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
-            old_elem_IDs, face_pair):
+    def refine_element(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
+            old_elem_IDs):
         # Get the element IDs in the group and update the number of elements and
         # nodes. This is different depending on whether a boundary is refined or
         # not.

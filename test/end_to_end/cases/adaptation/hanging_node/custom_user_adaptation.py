@@ -6,8 +6,8 @@ def custom_user_adaptation(solver):
     '''
     '''
 
-    refine_IDs = np.array([])
-    split_face_IDs = np.array([])
+    refine_IDs = np.array([1])
+    split_face_IDs = np.array([0])
     coarsen_IDs = set()
 
     return refine_IDs, split_face_IDs, coarsen_IDs
