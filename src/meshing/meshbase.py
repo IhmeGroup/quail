@@ -102,9 +102,9 @@ class Element(object):
 		global IDs of the element nodes
 	node_coords: numpy array
 		coordinates of the element nodes [num_nodes, ndims]
-	face_to_neighbors: numpy array
-		maps local face ID to element ID of
-		neighbor across said face [num_faces]
+	faces: set
+		set of faces (both InteriorFaces and BoundaryFaces) which border this
+		element
 	ref_node_coords: numpy array
 		coordinates of nodes in reference space
 	'''
@@ -112,7 +112,7 @@ class Element(object):
 		self.ID = elem_ID
 		self.node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
-		self.face_to_neighbors = np.zeros(0, dtype=int)
+		self.faces = set()
 		self.ref_node_coords = {}
 
 
@@ -274,21 +274,25 @@ class Mesh(object):
 			elem.ID = elem_ID
 			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
 			elem.node_coords = self.node_coords[elem.node_IDs]
-			elem.face_to_neighbors = np.full(self.gbasis.NFACES, -1)
 			elem.ref_node_coords = self.gbasis.get_nodes(self.gorder)
 
-		# Fill in information about neighbors
+		# Add interior faces to each element
 		for int_face in self.interior_faces:
 			elemL_ID = int_face.elemL_ID
 			elemR_ID = int_face.elemR_ID
-			faceL_ID = int_face.faceL_ID
-			faceR_ID = int_face.faceR_ID
 
 			elemL = self.elements[elemL_ID]
 			elemR = self.elements[elemR_ID]
 
-			elemL.face_to_neighbors[faceL_ID] = elemR_ID
-			elemR.face_to_neighbors[faceR_ID] = elemL_ID
+			elemL.faces.add(int_face)
+			elemR.faces.add(int_face)
+
+		# Add boundary faces to each element
+		for bgroup in self.boundary_groups.values():
+			for boundary_face in bgroup.boundary_faces:
+				elem_ID = boundary_face.elem_ID
+				elem = self.elements[elem_ID]
+				elem.faces.add(boundary_face)
 
 
 	def get_face_global_node_IDs(self):
