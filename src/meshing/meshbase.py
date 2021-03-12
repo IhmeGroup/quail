@@ -113,7 +113,7 @@ class Element(object):
 		self.node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
 		self.faces = []
-		self.ref_node_coords = {}
+		self.ref_node_coords = np.empty((0,0))
 
 
 class Mesh(object):

@@ -1,6 +1,7 @@
 import numpy as np
 
 import meshing.meshbase as mesh_defs
+import meshing.tools as mesh_tools
 import numerics.adaptation.tools as adapter_tools
 import numerics.helpers.helpers as helpers
 
@@ -270,6 +271,7 @@ class Adapter():
         Uc[:n_elems_coarsened, :] = Uc_coarsened
 
         # -- Loop through tagged elements and perform refinement -- #
+        new_nodes = {}
         for i, (elem_ID, face_ID) in enumerate(zip(refine_IDs, split_face_IDs)):
             # Refinement always takes one element and turns it into two. The
             # element which retains the parent ID is called the left element.
@@ -278,40 +280,31 @@ class Adapter():
             elemR_ID = n_elems_coarsened + i
             # Create new elements and update faces
             self.refine_element(solver, xn, iMM, dJ, Uc, elemL_ID, elemR_ID,
-                    face_ID)
+                    face_ID, new_nodes)
 
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
         solver.state_coeffs = Uc
         solver.elem_helpers.iMM_elems = iMM
+        # Extend node_coords array
         node_coords_old = solver.mesh.node_coords.copy()
-        solver.mesh.node_coords = 1e300 * np.ones((solver.mesh.num_nodes,
+        solver.mesh.node_coords = np.empty((solver.mesh.num_nodes,
             solver.mesh.ndims), dtype=float)
+        solver.mesh.node_coords[:num_nodes_old] = node_coords_old
         solver.mesh.elem_to_node_IDs = np.empty((solver.mesh.num_elems,
             solver.mesh.num_nodes_per_elem), dtype=int)
-        next_ID = 0
-        # Loop over elements
-        for i in range(solver.mesh.num_elems):
-            # Loop over nodes
-            for j in range(solver.mesh.num_nodes_per_elem):
-                # Check if this node exists yet
-                node_ID = np.where(np.all(np.isclose(solver.mesh.node_coords,
-                        xn[i, j]), axis=1))[0]
-                node_doesnt_exist = node_ID.size == 0
-                # If the node doesn't exist yet, then create it and add it to
-                # the current element
-                if node_doesnt_exist:
-                    solver.mesh.node_coords[next_ID] = xn[i, j]
-                    solver.mesh.elem_to_node_IDs[i, j] = next_ID
-                    next_ID += 1
-                # Otherwise, just use the ID that was found
-                else:
-                    solver.mesh.elem_to_node_IDs[i, j] = node_ID[0]
+        # Add new node coords
+        for i, coords in new_nodes.items():
+            solver.mesh.node_coords[i] = coords
+        # Update elem_to_node_IDs
+        # TODO: get nodes on each element after refinement, this is a hack
+        #for i in range(solver.mesh.num_elems):
+        #    solver.mesh.elem_to_node_IDs[i] = elem_node_IDs
+        solver.mesh.elem_to_node_IDs = np.array(
+                [[0, 1, 2], [3, 4, 1], [3, 2, 4]])
         # Create elements and update neighbors
         # TODO: Better way to do this
         solver.mesh.create_elements()
-        for i in range(neighbors.shape[0]):
-            solver.mesh.elements[i].face_to_neighbors = neighbors[i]
         # Reshape residual array
         solver.stepper.res = np.zeros_like(Uc)
         # TODO: Probably don't need to call all of this
@@ -320,18 +313,21 @@ class Adapter():
         solver.elem_helpers.alloc_other_arrays(solver.physics, solver.basis,
                 solver.order)
         solver.int_face_helpers.store_neighbor_info(solver.mesh)
+        breakpoint()
         solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
                 solver.basis, solver.order)
 
-        return (xn, neighbors, n_elems, dJ, Uc, iMM)
+        return (xn, n_elems, dJ, Uc, iMM)
 
     def refine_element(self, solver, xn, iMM, dJ, Uc, elemL_ID, elemR_ID,
-            face_ID):
+            face_ID, new_nodes):
         """
         Split an element into two elements.
         """
+        # Get elem being split
+        elem = solver.mesh.elements[elemL_ID]
         # Get face being split
-        face = solver.mesh.elements[elemL_ID].faces[face_ID]
+        face = elem.faces[face_ID]
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
@@ -354,6 +350,37 @@ class Adapter():
             solver.mesh.interior_faces.append(new_faceR)
             # Make new faces children of old face
             face.children = [new_faceL, new_faceR]
+            # Local node IDs of face end points on the element
+            _, local_node_IDs, _ = np.intersect1d(elem.node_IDs,
+                    face.node_IDs[[0, -1]], return_indices=True)
+            # Coordinates of face end points on reference element
+            xn_ref_endpoints = elem.ref_node_coords[local_node_IDs]
+            # New nodes on reference element
+            xn_ref = np.empty((2*face.node_IDs.size - 1, solver.mesh.ndims))
+            for i in range(solver.mesh.ndims):
+                xn_ref[:, i] = np.linspace(xn_ref_endpoints[0, i],
+                        xn_ref_endpoints[1, i], xn_ref.shape[0])
+            # New nodes in physical space
+            new_xn = mesh_tools.ref_to_phys(solver.mesh, elemL_ID, xn_ref)
+            # Add endpoint nodes to faces
+            # TODO: This depends on the orientation!!!
+            new_faceL.node_IDs = np.empty_like(face.node_IDs)
+            new_faceL.node_IDs[0] = face.node_IDs[0]
+            new_faceR.node_IDs = np.empty_like(face.node_IDs)
+            new_faceR.node_IDs[-1] = face.node_IDs[-1]
+            # Add to new_nodes, but without the end points (those already exist)
+            for i in range(xn.shape[0] - 2):
+                new_node_ID = solver.mesh.num_nodes + i
+                new_nodes[new_node_ID] = new_xn[i + 1]
+                # Add to faces
+                # TODO: This depends on the orientation!!! (maybe?)
+                if i < (xn.shape[0] - 2) // 2:
+                    new_faceL.node_IDs[i + 1] = new_node_ID
+                elif i > (xn.shape[0] - 2) // 2:
+                    new_faceR.node_IDs[i] = new_node_ID
+                else:
+                    new_faceL.node_IDs[i + 1] = new_node_ID
+                    new_faceR.node_IDs[i] = new_node_ID
             # Update number of faces and nodes
             solver.mesh.num_interior_faces += 1
             solver.mesh.num_nodes += solver.mesh.gbasis.order
@@ -368,6 +395,8 @@ class Adapter():
         solver.mesh.interior_faces.append(middle_face)
         # Update number of faces
         solver.mesh.num_interior_faces += 1
+        # TODO: This is a quick hack to test two triangles
+        middle_face.node_IDs = np.array([3, 4])
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary
