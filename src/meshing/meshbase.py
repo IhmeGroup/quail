@@ -102,9 +102,9 @@ class Element(object):
 		global IDs of the element nodes
 	node_coords: numpy array
 		coordinates of the element nodes [num_nodes, ndims]
-	faces: set
-		set of faces (both InteriorFaces and BoundaryFaces) which border this
-		element
+	faces: list
+		list of faces (both InteriorFaces and BoundaryFaces) which border this
+		element, ordered by local face ID
 	ref_node_coords: numpy array
 		coordinates of nodes in reference space
 	'''
@@ -112,7 +112,7 @@ class Element(object):
 		self.ID = elem_ID
 		self.node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
-		self.faces = set()
+		self.faces = []
 		self.ref_node_coords = {}
 
 
@@ -284,15 +284,15 @@ class Mesh(object):
 			elemL = self.elements[elemL_ID]
 			elemR = self.elements[elemR_ID]
 
-			elemL.faces.add(int_face)
-			elemR.faces.add(int_face)
+			elemL.faces.append(int_face)
+			elemR.faces.append(int_face)
 
 		# Add boundary faces to each element
 		for bgroup in self.boundary_groups.values():
 			for boundary_face in bgroup.boundary_faces:
 				elem_ID = boundary_face.elem_ID
 				elem = self.elements[elem_ID]
-				elem.faces.add(boundary_face)
+				elem.faces.append(boundary_face)
 
 
 	def get_face_global_node_IDs(self):

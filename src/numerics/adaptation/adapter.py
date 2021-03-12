@@ -45,6 +45,9 @@ class Adapter():
         if solver.mesh.ndims == 1: return
         if elem_to_adaptation_group is None: elem_to_adaptation_group = {}
         if adaptation_groups is None: adaptation_groups = set()
+        # Create list of children of each face, initially empty
+        for face in solver.mesh.interior_faces:
+            face.children = []
         # Nodes in reference space
         self.xn_ref = solver.mesh.gbasis.get_nodes(solver.mesh.gbasis.order)
         # Quadrature points in reference space and quadrature weights
@@ -268,13 +271,14 @@ class Adapter():
 
         # -- Loop through tagged elements and perform refinement -- #
         for i, (elem_ID, face_ID) in enumerate(zip(refine_IDs, split_face_IDs)):
-            # TODO: Do I even need these anymore?
-            new_elem_IDs = np.array([elem_ID, n_elems_coarsened + i])
-            old_elem_IDs = np.array([elem_ID, elem_ID])
-
+            # Refinement always takes one element and turns it into two. The
+            # element which retains the parent ID is called the left element.
+            # The new element is called the right element.
+            elemL_ID = elem_ID
+            elemR_ID = n_elems_coarsened + i
             # Create new elements and update faces
-            self.refine_element(solver, xn, iMM, dJ, Uc, new_elem_IDs,
-                    old_elem_IDs)
+            self.refine_element(solver, xn, iMM, dJ, Uc, elemL_ID, elemR_ID,
+                    face_ID)
 
         # TODO: Maybe wrap this?
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
@@ -321,75 +325,89 @@ class Adapter():
 
         return (xn, neighbors, n_elems, dJ, Uc, iMM)
 
-    def refine_element(self, solver, xn, iMM, dJ, Uc, new_elem_IDs,
-            old_elem_IDs):
-        # Get the element IDs in the group and update the number of elements and
-        # nodes. This is different depending on whether a boundary is refined or
-        # not.
-        if old_elem_IDs.shape[0] == 4:
-            group_old_elem_IDs = old_elem_IDs[[0, 2]]
-            solver.mesh.num_elems += 2
-            solver.mesh.num_nodes += 1 + 4 * (solver.mesh.gbasis.order - 1)
+    def refine_element(self, solver, xn, iMM, dJ, Uc, elemL_ID, elemR_ID,
+            face_ID):
+        """
+        Split an element into two elements.
+        """
+        # Get face being split
+        face = solver.mesh.elements[elemL_ID].faces[face_ID]
+        # Figure out:
+        # 1. the element ID of the neighbor across the face being split
+        # 2. the local face ID on the neighbor of the face being split
+        if face.elemL_ID == elemL_ID:
+            neighbor_ID = face.elemR_ID
+            neighbor_face_ID = face.faceR_ID
         else:
-            group_old_elem_IDs = old_elem_IDs[[0]]
-            solver.mesh.num_elems += 1
-            solver.mesh.num_nodes += 1 + 3 * (solver.mesh.gbasis.order - 1)
+            neighbor_ID = face.elemL_ID
+            neighbor_face_ID = face.faceL_ID
+        # If the face has no children
+        if not face.children:
+            # Make a face between elemL and neighbor
+            new_faceL = mesh_defs.InteriorFace(elemL_ID, 0, neighbor_ID,
+                    neighbor_face_ID)
+            # Make a face between elemR and neighbor
+            new_faceR = mesh_defs.InteriorFace(elemR_ID, 0, neighbor_ID,
+                    neighbor_face_ID)
+            # Add new faces to the mesh
+            solver.mesh.interior_faces.append(new_faceL)
+            solver.mesh.interior_faces.append(new_faceR)
+            # Make new faces children of old face
+            face.children = [new_faceL, new_faceR]
+            # Update number of faces and nodes
+            solver.mesh.num_interior_faces += 1
+            solver.mesh.num_nodes += solver.mesh.gbasis.order
+        # If the face does have children
+        else:
+            # Implement this
+            pass
 
-        # Find the old face between the two elements of the pair by iterating
-        # through and searching for it.
-        # TODO: simpler way to do this
-        middle_face = None
-        for int_face in solver.mesh.interior_faces:
-            if (int_face.elemL_ID in group_old_elem_IDs and int_face.elemR_ID in
-                    group_old_elem_IDs):
-                middle_face = int_face
-                break
+        # Make a face between elemL and elemR
+        middle_face = mesh_defs.InteriorFace(elemL_ID, 2, elemR_ID, 1)
+        # Add new face to the mesh
+        solver.mesh.interior_faces.append(middle_face)
+        # Update number of faces
+        solver.mesh.num_interior_faces += 1
 
-        # Create the four new faces
-        # TODO: This won't work for boundary refinement
-        refined_faces = [
-                mesh_defs.InteriorFace(new_elem_IDs[0], 2, new_elem_IDs[1], 1),
-                mesh_defs.InteriorFace(new_elem_IDs[1], 0, new_elem_IDs[2], 0),
-                mesh_defs.InteriorFace(new_elem_IDs[2], 2, new_elem_IDs[3], 1),
-                mesh_defs.InteriorFace(new_elem_IDs[3], 0, new_elem_IDs[0], 0),
-                ]
-        solver.mesh.interior_faces.append(refined_faces[0])
-        solver.mesh.interior_faces.append(refined_faces[1])
-        solver.mesh.interior_faces.append(refined_faces[2])
-        solver.mesh.interior_faces.append(refined_faces[3])
-        # Update number of faces - 4 new ones, 1 middle face removed
-        solver.mesh.num_interior_faces += 3
-
+        # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary
         # refinement, then don't add the boundary (-1) elements/faces.
         # TODO: middle face is removed later. Should it be copied before being
         # passed in, or no?
-        new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
-                [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
-                iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
-                dJ[group_old_elem_IDs], face_pair, middle_face, refined_faces)
-        # Add this group as child groups of its parent
-        for i in range(len(new_group.parent_groups)):
-            if new_group.parent_groups[i] is not None:
-                new_group.parent_groups[i].child_groups.append(new_group)
-        self.adaptation_groups.add(new_group)
-        self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
+        #new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
+        #        [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
+        #        iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
+        #        dJ[group_old_elem_IDs], face_pair, middle_face, refined_faces)
+        ## Add this group as child groups of its parent
+        #for i in range(len(new_group.parent_groups)):
+        #    if new_group.parent_groups[i] is not None:
+        #        new_group.parent_groups[i].child_groups.append(new_group)
+        #self.adaptation_groups.add(new_group)
+        #self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
+        # ---- End old stuff, before hanging nodes ---- #
 
-        # Remove middle face
-        solver.mesh.interior_faces.remove(middle_face)
+        # Remove the old face
+        solver.mesh.interior_faces.remove(face)
 
         # Transform reference nodes into new nodes on reference element
-        xn_ref_new = self.refinement_transformation(self.xn_ref, self.T_J, self.T_const, face_pair)
-        xq_ref_new = self.refinement_transformation(self.xq_ref, self.T_J, self.T_const, face_pair)
+        xn_ref_new = self.refinement_transformation(self.xn_ref, self.T_J,
+                self.T_const, face_ID)
+        xq_ref_new = self.refinement_transformation(self.xq_ref, self.T_J,
+                self.T_const, face_ID)
 
-        # The nodes of the new triangles, transformed from the parent reference
-        # space to physical space. This requires eval'ing the geometric basis of the
-        # parent element at the new points.
-        # TODO: vectorize this
-        gbasis_xn_ref_new = np.empty((4, solver.mesh.num_nodes_per_elem,
+        # Update number of elements and nodes
+        solver.mesh.num_elems += 1
+        solver.mesh.num_nodes += solver.mesh.gbasis.order - 1
+
+        # The geometric basis of the parent element evaluated at the new nodes
+        gbasis_xn_ref_new = np.empty((2, solver.mesh.num_nodes_per_elem,
                 solver.mesh.num_nodes_per_elem))
-        for i in range(4):
+        for i in range(2):
             gbasis_xn_ref_new[i] = solver.mesh.gbasis.get_values(xn_ref_new[i])
+        # The nodes of the new triangles, transformed from the parent reference
+        # space to physical space
+        new_elem_IDs = [elemL_ID, elemR_ID]
+        old_elem_IDs = [elemL_ID, elemL_ID]
         xn[new_elem_IDs] = np.einsum('ipn, inl -> ipl', gbasis_xn_ref_new,
                 xn[old_elem_IDs])
 
@@ -402,10 +420,10 @@ class Adapter():
         iMM[new_elem_IDs] = np.linalg.inv(np.einsum('jsn, ij -> isn', self.A,
             dJ[new_elem_IDs]))
 
-        # Old basis on new quad points
-        # TODO: vectorize this
-        phi_old_on_xq_new = np.empty((4, xq_ref_new.shape[1], solver.basis.nb))
-        for i in range(4):
+        # The basis functions of the parent element evaluated at the new quad
+        # points
+        phi_old_on_xq_new = np.empty((2, xq_ref_new.shape[1], solver.basis.nb))
+        for i in range(2):
             phi_old_on_xq_new[i] = solver.basis.get_values(xq_ref_new[i])
         # Do L2 projection
         Uc[new_elem_IDs] = np.einsum('isn, js, ijt, itk, ij -> ink',
@@ -464,16 +482,12 @@ class Adapter():
         Uc[new_elem_IDs] = np.einsum('isn, js, ijk, ij -> ink', iMM[new_elem_IDs],
                 self.B, U_new, dJ[new_elem_IDs])
 
-    def refinement_transformation(self, x_ref, T_J, T_const, face_pair):
+    def refinement_transformation(self, x_ref, T_J, T_const, face_ID):
         """Transform from the old element reference space to the two new elements
         during refinement.
         """
-        if face_pair[1] != -1: n_elems_split = 2
-        else: n_elems_split = 1
-        x = np.empty((2 * n_elems_split, x_ref.shape[0], x_ref.shape[1]))
-        for i in range(n_elems_split):
-            x[2*i : 2*i + 2] = np.einsum('ilr, pr -> ipl', T_J[face_pair[i]],
-                    x_ref) + T_const[face_pair[i]]
+        x = np.einsum('ilr, pr -> ipl', T_J[face_ID],
+                x_ref) + T_const[face_ID]
         return x
 
 
