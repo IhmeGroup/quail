@@ -1,11 +1,13 @@
+import numpy as np
+
 TimeStepping = {
-	"FinalTime" : .01,
-	"TimeStepSize" : .01,
-	"TimeStepper" : "RK4",
+	"FinalTime" : 5,
+	"TimeStepSize" : 2.5,
+	"TimeStepper" : "FE",
 }
 
 Numerics = {
-	"SolutionOrder" : 2,
+	"SolutionOrder" : 0,
 	"SolutionBasis" : "LagrangeTri",
 	"ElementQuadrature" : "Dunavant",
 	"FaceQuadrature" : "GaussLegendre",
@@ -28,16 +30,23 @@ Physics = {
 	"GasConstant" : 1.,
 }
 
+U = np.array([1.0, 0.0, 0.0, 2])
 InitialCondition = {
-	"Function" : "IsentropicVortex",
+	"Function" : "Uniform",
+	"state" : U,
 }
+
+#InitialCondition = {
+#	"Function" : "IsentropicVortex",
+#}
 
 ExactSolution = InitialCondition.copy()
 
-d = {
-	"BCType" : "StateAll",
-	"Function" : "IsentropicVortex",
-}
+#d = {
+#	"BCType" : "StateAll",
+#	"Function" : "IsentropicVortex",
+#}
+d = {"BCType" : "SlipWall"}
 
 BoundaryConditions = {
 	"x1" : d,
@@ -47,7 +56,7 @@ BoundaryConditions = {
 }
 
 Output = {
-	"WriteInterval" : 10,
+	"WriteInterval" : 1,
 	"Prefix" : "Data",
 	"AutoPostProcess" : False,
 	"WriteInitialSolution" : True,

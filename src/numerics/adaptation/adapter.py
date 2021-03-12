@@ -304,7 +304,7 @@ class Adapter():
         solver.mesh.create_elements()
         # TODO: Hack: This adds the node to the old element.
         elem0 = solver.mesh.elements[0]
-        elem0.node_IDs = np.append(elem0.node_IDs, 4)
+        elem0.all_node_IDs = np.append(elem0.node_IDs, 4)
         elem0.ref_node_coords = np.append(elem0.ref_node_coords, [[.5, .5]], axis=0)
         # Reshape residual array
         solver.stepper.res = np.zeros_like(Uc)
@@ -316,6 +316,7 @@ class Adapter():
         solver.int_face_helpers.store_neighbor_info(solver.mesh)
         solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
                 solver.basis, solver.order)
+        breakpoint()
 
         return (xn, n_elems, dJ, Uc, iMM)
 
@@ -340,11 +341,9 @@ class Adapter():
         # If the face has no children
         if not face.children:
             # Make a face between elemL and neighbor
-            new_faceL = mesh_defs.InteriorFace(elemL_ID, 0, neighbor_ID,
-                    neighbor_face_ID)
+            new_faceL = mesh_defs.InteriorFace()
             # Make a face between elemR and neighbor
-            new_faceR = mesh_defs.InteriorFace(elemR_ID, 0, neighbor_ID,
-                    neighbor_face_ID)
+            new_faceR = mesh_defs.InteriorFace()
             # Add new faces to the mesh
             solver.mesh.interior_faces.append(new_faceL)
             solver.mesh.interior_faces.append(new_faceR)
@@ -381,6 +380,27 @@ class Adapter():
                 else:
                     new_faceL.node_IDs[i + 1] = new_node_ID
                     new_faceR.node_IDs[i] = new_node_ID
+            # Figure out the orientation
+            if face.elemL_ID == elemL_ID:
+                # The "positive" orientation
+                new_faceL.elemL_ID = elemR_ID
+                new_faceL.elemR_ID = neighbor_ID
+                new_faceL.faceL_ID = 0
+                new_faceL.faceR_ID = neighbor_face_ID
+                new_faceR.elemL_ID = elemL_ID
+                new_faceR.elemR_ID = neighbor_ID
+                new_faceR.faceL_ID = 0
+                new_faceR.faceR_ID = neighbor_face_ID
+            else:
+                # The "negative" orientation
+                new_faceL.elemL_ID = neighbor_ID
+                new_faceL.elemR_ID = elemL_ID
+                new_faceL.faceL_ID = neighbor_face_ID
+                new_faceL.faceR_ID = 0
+                new_faceR.elemL_ID = neighbor_ID
+                new_faceR.elemR_ID = elemR_ID
+                new_faceR.faceL_ID = neighbor_face_ID
+                new_faceR.faceR_ID = 0
             # Update number of faces and nodes
             solver.mesh.num_interior_faces += 1
             solver.mesh.num_nodes += solver.mesh.gbasis.order

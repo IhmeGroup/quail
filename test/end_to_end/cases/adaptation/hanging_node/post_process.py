@@ -49,4 +49,4 @@ for fname in files:
 
 #plot.show_plot()
 
-os.system('feh *.png')
+os.system('feh $(ls -v *.png)')

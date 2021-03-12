@@ -104,6 +104,8 @@ class Element(object):
 		element ID
 	node_IDs: numpy array
 		global IDs of the element nodes
+	all_node_IDs: numpy array
+		global IDs of the element nodes, including hanging nodes
 	node_coords: numpy array
 		coordinates of the element nodes [num_nodes, ndims]
 	faces: list
@@ -115,6 +117,7 @@ class Element(object):
 	def __init__(self, elem_ID=-1):
 		self.ID = elem_ID
 		self.node_IDs = np.zeros(0, dtype=int)
+		self.all_node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
 		self.faces = []
 		self.ref_node_coords = np.empty((0,0))
@@ -277,6 +280,7 @@ class Mesh(object):
 
 			elem.ID = elem_ID
 			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
+			elem.all_node_IDs = self.elem_to_node_IDs[elem_ID]
 			elem.node_coords = self.node_coords[elem.node_IDs]
 			elem.ref_node_coords = self.gbasis.get_nodes(self.gorder)
 

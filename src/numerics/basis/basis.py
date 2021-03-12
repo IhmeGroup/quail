@@ -233,9 +233,9 @@ class ShapeBase(ABC):
 		elem = mesh.elements[elem_ID]
 		# Coordinates on the reference element of the local q = 1 nodes of
 		# the face
-		index0 = np.argwhere(elem.node_IDs == face_node_IDs[0])[0]
+		index0 = np.argwhere(elem.all_node_IDs == face_node_IDs[0])[0]
 		xn0 = elem.ref_node_coords[index0]
-		index1 = np.argwhere(elem.node_IDs == face_node_IDs[-1])[0]
+		index1 = np.argwhere(elem.all_node_IDs == face_node_IDs[-1])[0]
 		xn1 = elem.ref_node_coords[index1]
 
 		xf1 = (face_pts + 1.) / 2.
