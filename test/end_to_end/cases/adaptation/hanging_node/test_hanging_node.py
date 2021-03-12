@@ -52,6 +52,7 @@ def test_case():
                 [16, 15, 13],
                 ])
         # Assert
+        breakpoint()
         neighbors = np.array([solver.mesh.elements[i].face_to_neighbors for i in
                 affected_elems])
         np.testing.assert_array_equal(neighbors, neighbors_expected)

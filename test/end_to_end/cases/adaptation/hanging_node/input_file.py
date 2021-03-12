@@ -1,5 +1,5 @@
 TimeStepping = {
-	"FinalTime" : .02,
+	"FinalTime" : .01,
 	"TimeStepSize" : .01,
 	"TimeStepper" : "RK4",
 }
@@ -47,7 +47,7 @@ BoundaryConditions = {
 }
 
 Output = {
-	"WriteInterval" : 1,
+	"WriteInterval" : 10,
 	"Prefix" : "Data",
 	"AutoPostProcess" : False,
 	"WriteInitialSolution" : True,

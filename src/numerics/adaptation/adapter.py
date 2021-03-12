@@ -46,9 +46,6 @@ class Adapter():
         if solver.mesh.ndims == 1: return
         if elem_to_adaptation_group is None: elem_to_adaptation_group = {}
         if adaptation_groups is None: adaptation_groups = set()
-        # Create list of children of each face, initially empty
-        for face in solver.mesh.interior_faces:
-            face.children = []
         # Nodes in reference space
         self.xn_ref = solver.mesh.gbasis.get_nodes(solver.mesh.gbasis.order)
         # Quadrature points in reference space and quadrature weights
@@ -305,6 +302,10 @@ class Adapter():
         # Create elements and update neighbors
         # TODO: Better way to do this
         solver.mesh.create_elements()
+        # TODO: Hack: This adds the node to the old element.
+        elem0 = solver.mesh.elements[0]
+        elem0.node_IDs = np.append(elem0.node_IDs, 4)
+        elem0.ref_node_coords = np.append(elem0.ref_node_coords, [[.5, .5]], axis=0)
         # Reshape residual array
         solver.stepper.res = np.zeros_like(Uc)
         # TODO: Probably don't need to call all of this
@@ -313,7 +314,6 @@ class Adapter():
         solver.elem_helpers.alloc_other_arrays(solver.physics, solver.basis,
                 solver.order)
         solver.int_face_helpers.store_neighbor_info(solver.mesh)
-        breakpoint()
         solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
                 solver.basis, solver.order)
 

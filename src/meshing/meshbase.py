@@ -26,6 +26,9 @@ class InteriorFace(object):
 		ID of "right" element
 	faceR_ID : int
 		local ID of face from perspective of right element
+	children : list
+		either an empty list if a leaf face or a list of two subfaces created
+		from refinement
 	'''
 	def __init__(self, elemL_ID = 0, faceL_ID = 0, elemR_ID = 0, faceR_ID = 0):
 		self.elemL_ID = elemL_ID
@@ -33,6 +36,7 @@ class InteriorFace(object):
 		self.elemR_ID = elemR_ID
 		self.faceR_ID = faceR_ID
 		self.node_IDs = np.array([])
+		self.children = []
 
 
 class BoundaryFace(object):
