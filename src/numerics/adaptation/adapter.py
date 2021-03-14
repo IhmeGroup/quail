@@ -316,7 +316,9 @@ class Adapter():
         solver.int_face_helpers.store_neighbor_info(solver.mesh)
         solver.int_face_helpers.get_basis_and_geom_data(solver.mesh,
                 solver.basis, solver.order)
-        breakpoint()
+        solver.bface_helpers.store_neighbor_info(solver.mesh)
+        solver.bface_helpers.get_basis_and_geom_data(solver.mesh, solver.basis,
+                solver.order)
 
         return (xn, n_elems, dJ, Uc, iMM)
 
@@ -417,6 +419,18 @@ class Adapter():
         solver.mesh.num_interior_faces += 1
         # TODO: This is a quick hack to test two triangles
         middle_face.node_IDs = np.array([3, 4])
+
+        # Update face neighbors
+        # TODO: This is specific to triangles
+        # TODO: Must update face_IDs on each face after as well!!!
+        for local_face in elem.faces:
+            local_face_ID, L_or_R = adapter_tools.get_face_ID(local_face, elem.ID)
+            # Update first face counterclockwise of split face
+            if   ((face_ID + 1) % solver.mesh.gbasis.NFACES) == local_face_ID:
+                adapter_tools.update_face_neighbor(local_face, elemL_ID, L_or_R)
+            # Update second face counterclockwise of split face
+            elif ((face_ID + 2) % solver.mesh.gbasis.NFACES) == local_face_ID:
+                adapter_tools.update_face_neighbor(local_face, elemR_ID, L_or_R)
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary

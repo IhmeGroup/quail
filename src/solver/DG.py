@@ -559,6 +559,9 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			face neighbors for each boundary group
 			[num_boundary_groups][num_interior_faces]
 		'''
+		# Clear out existing data
+		self.elem_IDs = []
+		self.face_IDs = []
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
 			bgroup_elem_IDs = np.empty(bgroup.num_boundary_faces, dtype=int)

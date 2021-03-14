@@ -8,7 +8,7 @@ def custom_user_adaptation(solver):
     # Current iteration number
     i = int(solver.time / solver.stepper.dt) - 1
 
-    if i == 0:
+    if i == -1:
         refine_IDs = np.array([1])
         split_face_IDs = np.array([0])
     else:

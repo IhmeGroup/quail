@@ -454,7 +454,6 @@ class SolverBase(ABC):
 		self.get_element_residuals(U, res)
 		self.get_interior_face_residuals(U, res)
 
-		breakpoint()
 		return res
 
 	def get_element_residuals(self, U, res):
@@ -502,7 +501,6 @@ class SolverBase(ABC):
 		# Calculate face residuals for left and right elements
 		RL, RR = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
 				UR)
-		breakpoint()
 
 		# Add this residual back to the global. The np.add.at function is
 		# used to correctly handle duplicate element IDs.
