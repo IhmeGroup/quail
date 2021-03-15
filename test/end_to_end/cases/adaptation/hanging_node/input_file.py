@@ -1,13 +1,18 @@
 import numpy as np
 
+#TimeStepping = {
+#	"FinalTime" : 2,
+#	"TimeStepSize" : .01,
+#	"TimeStepper" : "RK4",
+#}
 TimeStepping = {
-	"FinalTime" : 2,
-	"TimeStepSize" : .01,
+	"FinalTime" : 4,
+	"NumTimeSteps" : 200,
 	"TimeStepper" : "RK4",
 }
 
 Numerics = {
-	"SolutionOrder" : 10,
+	"SolutionOrder" : 15,
 	"SolutionBasis" : "LagrangeTri",
 	"ElementQuadrature" : "Dunavant",
 	"FaceQuadrature" : "GaussLegendre",
@@ -21,12 +26,16 @@ Mesh = {
 	"xmax" : 7.5,
 	"ymin" : -2.5,
 	"ymax" : 7.5,
+	#"xmin" : 0,
+	#"xmax" : 1,
+	#"ymin" : 0,
+	#"ymax" : 1,
 	#"PeriodicBoundariesX" : ["x2", "x1"],
 }
 
 Physics = {
 	"Type" : "Euler",
-	"ConvFluxNumerical" : "LaxFriedrichs",
+	"ConvFluxNumerical" : "Roe",
 	"GasConstant" : 1.,
 }
 
@@ -38,6 +47,7 @@ Physics = {
 
 InitialCondition = {
 	"Function" : "IsentropicVortex",
+	#"Function" : "TaylorGreenVortex",
 }
 
 ExactSolution = InitialCondition.copy()
@@ -45,6 +55,7 @@ ExactSolution = InitialCondition.copy()
 d = {
 	"BCType" : "StateAll",
 	"Function" : "IsentropicVortex",
+	#"Function" : "TaylorGreenVortex",
 }
 #d = {"BCType" : "SlipWall"}
 
@@ -55,8 +66,14 @@ BoundaryConditions = {
 	"y2" : d,
 }
 
+#SourceTerms = {
+#	"Source1" : { # Name of source term ("Source1") doesn't matter
+#		"Function" : "TaylorGreenSource",
+#	},
+#}
+
 Output = {
-	"WriteInterval" : 50,
+	"WriteInterval" : 5,
 	"Prefix" : "Data",
 	"AutoPostProcess" : False,
 	"WriteInitialSolution" : True,

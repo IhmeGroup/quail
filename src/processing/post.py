@@ -166,7 +166,6 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 
 	# Extract
 	elem_ID = bface_helpers.elem_IDs[boundary_num]
-	face_ID = bface_helpers.face_IDs[boundary_num]
 	basis_val = faces_to_basis[bname]
 
 	# Interpolate state at quad points

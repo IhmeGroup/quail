@@ -294,8 +294,6 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.Fq = np.zeros(0)
 		self.elemL_IDs = np.empty(0, dtype=int)
 		self.elemR_IDs = np.empty(0, dtype=int)
-		self.faceL_IDs = np.empty(0, dtype=int)
-		self.faceR_IDs = np.empty(0, dtype=int)
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -362,7 +360,7 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.faces_to_basisL[i] = basis.basis_val
 			# Right
 			basis.get_basis_face_val_grads(mesh, interior_face.elemR_ID,
-					interior_face.node_IDs, quad_pts[::-1], get_val=True)
+					interior_face.node_IDs, quad_pts, get_val=True)
 			self.faces_to_basisR[i] = basis.basis_val
 			# Normals
 			normals = mesh.gbasis.calculate_normals(mesh,
@@ -399,14 +397,10 @@ class InteriorFaceHelpers(ElemHelpers):
 		'''
 		self.elemL_IDs = np.empty(mesh.num_interior_faces, dtype=int)
 		self.elemR_IDs = np.empty(mesh.num_interior_faces, dtype=int)
-		self.faceL_IDs = np.empty(mesh.num_interior_faces, dtype=int)
-		self.faceR_IDs = np.empty(mesh.num_interior_faces, dtype=int)
 		for face_ID in range(mesh.num_interior_faces):
 			int_face = mesh.interior_faces[face_ID]
 			self.elemL_IDs[face_ID] = int_face.elemL_ID
 			self.elemR_IDs[face_ID] = int_face.elemR_ID
-			self.faceL_IDs[face_ID] = int_face.faceL_ID
-			self.faceR_IDs[face_ID] = int_face.faceR_ID
 
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
@@ -466,7 +460,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqB = np.zeros(0)
 		self.Fq = np.zeros(0)
 		self.elem_IDs = []
-		self.face_IDs = []
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -555,23 +548,16 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			self.elem_IDs: List containing arrays of element IDs of boundary
 			face neighbors for each boundary group
 			[num_boundary_groups][num_interior_faces]
-			self.face_IDs: List containing arrays of face IDs of boundary
-			face neighbors for each boundary group
-			[num_boundary_groups][num_interior_faces]
 		'''
 		# Clear out existing data
 		self.elem_IDs = []
-		self.face_IDs = []
 		# Loop through boundary groups
 		for bgroup in mesh.boundary_groups.values():
 			bgroup_elem_IDs = np.empty(bgroup.num_boundary_faces, dtype=int)
-			bgroup_face_IDs = np.empty(bgroup.num_boundary_faces, dtype=int)
 			for bface_ID in range(bgroup.num_boundary_faces):
 				boundary_face = bgroup.boundary_faces[bface_ID]
 				bgroup_elem_IDs[bface_ID] = boundary_face.elem_ID
-				bgroup_face_IDs[bface_ID] = boundary_face.face_ID
 			self.elem_IDs.append(bgroup_elem_IDs)
-			self.face_IDs.append(bgroup_face_IDs)
 
 	def compute_helpers(self, mesh, physics, basis, order):
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
@@ -666,7 +652,7 @@ class DG(base.SolverBase):
 
 		return res_elem # [ne, nb, ns]
 
-	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
+	def get_interior_face_residual(self, UcL, UcR):
 		# Unpack
 		mesh = self.mesh
 		physics = self.physics
@@ -682,9 +668,9 @@ class DG(base.SolverBase):
 		nq = quad_wts.shape[0]
 
 		# Interpolate state at quad points
-		UqL = helpers.evaluate_state(UcL, faces_to_basisL[faceL_IDs])
+		UqL = helpers.evaluate_state(UcL, faces_to_basisL)
 				# [nf, nq, ns]
-		UqR = helpers.evaluate_state(UcR, faces_to_basisR[faceR_IDs])
+		UqR = helpers.evaluate_state(UcR, faces_to_basisR)
 				# [nf, nq, ns]
 
 		# Allocate resL and resR (needed for operator splitting)
@@ -700,13 +686,13 @@ class DG(base.SolverBase):
 
 			# Compute contribution to left and right element residuals
 			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
-					faces_to_basisL[faceL_IDs], quad_wts, Fq)
+					faces_to_basisL, quad_wts, Fq)
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
-					faces_to_basisR[faceR_IDs], quad_wts, Fq)
+					faces_to_basisR, quad_wts, Fq)
 
 		return resL, resR # [nif, nb, ns]
 
-	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
+	def get_boundary_face_residual(self, bgroup, Uc, resB):
 		# unpack
 		mesh = self.mesh
 		physics = self.physics
