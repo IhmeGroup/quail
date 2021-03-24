@@ -148,7 +148,7 @@ class PhysicsType(Enum):
 		# Euler equations with chemistry (1D and 2D)
 	ModelPSRScalar = auto()
 		# Model for perfectly stirred reactor (0D model)
-
+	SecondOrderODE = auto()
 
 class ModalOrNodal(Enum):
 	'''
