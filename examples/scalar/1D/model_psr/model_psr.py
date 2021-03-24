@@ -1,27 +1,39 @@
 import numpy as np
 
+# Case A Settings
+Da = 15.89
+Tinit = 1.0
+tfinal = 2000.
+
+# Case B Settings
+# Da = 833.0
+# Tinit = 0.15
+# tfinal = 330000.
+
+# Operator Splitting Settings:
+# timescheme = "Strang"
+# solver = "DG"
+# order = 0
+
+# ADERDG Settings:
+timescheme = "ADER"
+solver = "ADERDG"
+order = 3
+
 TimeStepping = {
 	"InitialTime" : 0.,
-	# "FinalTime" : 2000.,
-	"FinalTime" : 330000.,
-	# "TimeStepSize" : 1.589,
-	"TimeStepSize" : 83.3/16.,
-	"TimeStepper" : "Strang",
-	# "TimeStepper" : "ADER", 
-	# "OperatorSplittingImplicit" : "Scipy",
-	"OperatorSplittingImplicit" : "Trapezoidal",
-	# "OperatorSplittingExplicit" : "RK4",
+	"FinalTime" : tfinal,
+	"TimeStepSize" : Da/10.,
+	"TimeStepper" : timescheme,
+	"OperatorSplittingImplicit" : "Scipy",
+	
 }
 
 Numerics = {
-	"SolutionOrder" : 1,
+	"SolutionOrder" : order,
 	"SolutionBasis" : "LagrangeSeg",
-	# "Solver" : "ADERDG",
-	"Solver" : "DG",
-	"SourceTreatmentADER" : "Testing",
-	# "ElementQuadrature" : "GaussLobatto",
-	# "FaceQuadrature" : "GaussLobatto",
-
+	"Solver" : solver,
+	"SourceTreatmentADER" : "StiffImplicit",
 	"InterpolateFluxADER" : False,
 }
 
@@ -37,25 +49,28 @@ Mesh = {
 Physics = {
 	"Type" : "ModelPSRScalar",
 	"ConvFluxNumerical" : "LaxFriedrichs",
+	"T_ad" : 1.15,
+	"T_in" : 0.15,
+	"T_a" : 1.8
 }
 
-# Dahmkohler Number
-Da = 833.0
-# Da = 15.89
 InitialCondition = {
 	"Function" : "Uniform",
-	"state" : .15,
-	# "state" : 1.,
+	"state" : Tinit,
 }
 
 SourceTerms = {
 	"Mixing" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "ScalarMixing",
 		"Da" : Da,
-		"source_treatment" : "Explicit",	
+		"source_treatment" : "Explicit",
 	},
 	"Arrhenius" : {
 		"Function" : "ScalarArrhenius",
 		"source_treatment" : "Implicit",
 	},
+}
+
+Output = {
+	"AutoPostProcess" : False,
 }
