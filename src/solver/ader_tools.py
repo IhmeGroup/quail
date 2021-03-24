@@ -405,7 +405,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	Sjac = Sjac[:, 0, :, :]
 
 	# Initialize space-time coefficients with computed average
-	# U_pred[:] = W_bar
+	U_pred[:] = W_bar
 
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
@@ -466,8 +466,8 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 				U_pred)
 
 		if i == niter - 1:
-			print('Sub-iterations not converging')
-			raise ValueError
+			print('Sub-iterations not converging', np.amax(np.abs(err)))
+
 	return U_pred # [ne, nb_st, ns]
 
 
