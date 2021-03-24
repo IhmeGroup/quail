@@ -27,7 +27,7 @@ class FcnType(Enum):
 	ShockBurgers = auto()
 	SineBurgers = auto()
 	LinearBurgers = auto()
-	
+	PendulumExact = auto()
 
 class BCType(Enum):
 	'''
@@ -45,6 +45,7 @@ class SourceType(Enum):
 	SimpleSource = auto()
 	ScalarArrhenius = auto()
 	ScalarMixing = auto()
+	Pendulum = auto()
 
 
 '''
@@ -278,6 +279,21 @@ class LinearBurgers(FcnBase):
 
 		return Uq
 
+class PendulumExact(FcnBase):
+	def __init__(self):
+		pass
+
+	def get_state(self, physics, x, t):
+
+		g = physics.g
+		l = physics.l
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		Uq[:, :, 0] = 0.1745 * np.cos(np.sqrt(g/l)*t)
+		Uq[:, :, 1] = -0.1745 * np.sqrt(g/l) * np.sin(np.sqrt(g/l)*t)
+
+		return Uq
 
 '''
 ---------------------
@@ -373,7 +389,6 @@ class ScalarArrhenius(SourceBase):
 		T_a = physics.T_a
 
 		S = (T_ad - Uq) * np.exp(-T_a/Uq) 
-
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
@@ -383,3 +398,35 @@ class ScalarArrhenius(SourceBase):
 		jac = -np.exp(-T_a/Uq) * (Uq**2 - T_a*T_ad + T_a*Uq)/Uq**2
 
 		return np.expand_dims(jac, axis=-1)
+
+class Pendulum(SourceBase):
+	'''
+	Arrhenius source term for scalar PSR model problem
+	'''
+	def __init__(self, **kwargs):
+		super().__init__(kwargs)
+
+	def get_source(self, physics, Uq, x, t):
+		g = physics.g
+		l = physics.l
+
+		S = np.zeros_like(Uq)
+		S[:, :, 0] = Uq[:, :, 1]
+		S[:, :, 1] = (-g/l) * Uq[:, :, 0]
+
+		return S
+
+	def get_jacobian(self, physics, Uq, x, t):
+		g = physics.g
+		l = physics.l
+
+		ns = physics.NUM_STATE_VARS
+
+		jac = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
+
+		jac[:, :, 0, 0] = 1.
+		jac[:, :, 0, 1] = 0.
+		jac[:, :, 1, 0] = 0.
+		jac[:, :, 1, 1] = -g/l
+		
+		return jac
