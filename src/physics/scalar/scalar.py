@@ -296,3 +296,72 @@ class ModelPSRScalar(base.PhysicsBase):
 		self.T_in = T_in
 		self.T_a = T_a
 
+
+class SecondOrderODE(base.PhysicsBase):
+	'''
+	This class corresponds to the 0D model of a partially stirred reactor.
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods.
+	'''
+	NUM_STATE_VARS = 2
+	NDIMS = 1
+	PHYSICS_TYPE = general.PhysicsType.SecondOrderODE
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.PendulumExact : scalar_fcns.PendulumExact,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+
+		self.source_map.update({
+			scalar_source_type.Pendulum : scalar_fcns.Pendulum,
+		})
+
+	class StateVariables(Enum):
+		Scalar = "$\\theta$"
+		Scalar2 = "$\\frac{d\\theta}{dt}$"
+
+	class AdditionalVariables(Enum):
+	    MaxWaveSpeed = "\\lambda"
+
+	def get_conv_flux_interior(self, Uq):
+
+		# This can be zero or the mixing function.
+		F = np.zeros_like(Uq)
+		F = np.expand_dims(F, axis=-1)
+
+		return F, None
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		sname = self.AdditionalVariables[var_name].name
+
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is u
+			scalar = np.zeros_like(Uq)
+		else:
+			raise NotImplementedError
+		
+		return scalar
+
+	def set_physical_params(self, g=9.81, l=0.6):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			T_in: Inlet temperature of the unburned gas
+			T_ad: Adiabatic flame temperature
+			T_a:  Activation temperature
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.g = g
+		self.l = l
