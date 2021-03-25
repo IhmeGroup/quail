@@ -99,6 +99,13 @@ Numerics = {
 	"SourceSwitch" : True,
 		# If False, will ignore the source terms
 		# Useful for debugging
+	"PredictorGuessADER" : "Average",
+		# How to construct initial guess for the ADER-DG scheme
+		# Default is average value, can also select zeros or 
+		# ODEGuess
+	"RecalculateJacobianADER" : False,
+		# Either recalculates the source term jacobian or not for the 
+		# subiterations in the non-linear solver of the predictor step
 }
 
 
