@@ -400,6 +400,16 @@ class ADERDG(base.SolverBase):
 		self.calculate_predictor_step = solver_tools.set_source_treatment(ns,
 				source_treatment)
 
+		# Set the guess type to the predictor function
+		predictor_guess = params["PredictorGuessADER"]
+		self.get_spacetime_guess = solver_tools.set_predictor_guess(
+				predictor_guess)
+
+		# Determine if the source term jacobian will be recalculated for 
+		# each nonlinear subiteration in the predictor step
+		recalculate_jacobian = params["RecalculateJacobianADER"]
+		self.recalculate_jacobian = solver_tools.set_recalculate_jac(
+				recalculate_jacobian)
 		# Precompute helpers
 		self.precompute_matrix_helpers()
 
