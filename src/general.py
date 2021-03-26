@@ -45,6 +45,7 @@ class ShapeType(Enum):
 	Segment = auto()
 	Quadrilateral = auto()
 	Triangle = auto()
+	Hexahedron = auto()
 
 
 class BasisType(Enum):
@@ -57,6 +58,8 @@ class BasisType(Enum):
 	LagrangeQuad = auto()
 		# Lagrange basis polynomials for quadrilaterals
 	LagrangeTri = auto()
+		# Lagrange basis polynomials for hexahedrons
+	LagrangeHex = auto()
 		# Lagrange basis polynomials for triangles
 	LegendreSeg = auto()
 		# Legendre basis polynomials for segments
@@ -78,14 +81,14 @@ class LimiterType(Enum):
 
 class ShockIndicatorType(Enum):
 	'''
-	This enum contains the available shoock indicator 
+	This enum contains the available shoock indicator
 	types. See src/numerics/limiting/ for more info.
 	'''
 	MinMod = auto()
 		# Uses a TVB modified minmod to tag troubled elements.
 	MinModQuad = auto()
 		# Uses a TVB modified minmod to tag troubled quad elements.
-	
+
 
 class SolverType(Enum):
 	'''

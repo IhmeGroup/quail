@@ -1,38 +1,44 @@
 import numpy as np
 import copy
 
-FinalTime = 2.0
+FinalTime = 0.25
 NumTimeSteps = 1500
 
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : 0.2,
+    "CFL" : 0.1,
     "TimeStepper" : "SSPRK3",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 1,
-    "SolutionBasis" : "LagrangeSeg",
+    "SolutionOrder" : 2,
+    "SolutionBasis" : "LagrangeQuad",
     "Solver" : "DG",
-    "ApplyLimiters" : "PositivityPreserving",
+    "ApplyLimiters" : "WENOquad",
+    #"ApplyLimiters" : "PositivityPreserving",
+    "ShockIndicator" : "MinModQuad",
+    "TVBParameter" : 120,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
 }
 
 Output = {
-    "AutoPostProcess" : True,
+    "AutoPostProcess" : False,
     "Prefix" : "Data",
 }
 
 Mesh = {
     "File" : None,
-    "ElementShape" : "Segment",
-    "NumElemsX" : 100,
-    "xmin" : -5.,
-    "xmax" : 5.,
+    "ElementShape" : "Quadrilateral",
+    "NumElemsX" : 60,
+    "NumElemsY" : 60,
+    "xmin" : -0.5,
+    "xmax" : 0.5,
+    "ymin" : -0.5,
+    "ymax" : 0.5,
 }
 
 
@@ -44,25 +50,24 @@ Physics = {
 }
 
 
-state = { 
-    "Function" : "RiemannProblem",
-    "rhoL" : 1., 
-    "uL" : 0.,
-    "pL" : 1.,
-    "rhoR" : 0.125, 
-    "uR" : 0.,
-    "pR" : 0.1,
-    "xd" : 0.0,
+state = {
+    "Function" : "Riemann_2D",
 }
 
 InitialCondition = state
-ExactSolution = state
+#ExactSolution = state
 
 BoundaryConditions = {
     "x1" : {
         "BCType" : "SlipWall"
         },
-    "x2" : { 
+    "x2" : {
+        "BCType" : "SlipWall"
+        },
+    "y1" : {
+        "BCType" : "SlipWall"
+        },
+    "y2" : {
         "BCType" : "SlipWall"
         }
 }
