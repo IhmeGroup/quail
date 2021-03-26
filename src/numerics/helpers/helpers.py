@@ -55,3 +55,36 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 			Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
 
 	return Uq # [ne, nq, ns]
+
+def get_face_avg(mesh,physics,U_face):
+	Uf_avg = np.zeros([U_face.shape[0], 4, U_face.shape[-1]])
+
+	Uf_avg[:,0,:] = 0.5*(U_face[:,0,:] + U_face[:,1,:])
+	Uf_avg[:,1,:] = 0.5*(U_face[:,2,:] + U_face[:,3,:])
+	Uf_avg[:,2,:] = 0.5*(U_face[:,4,:] + U_face[:,5,:])
+	Uf_avg[:,3,:] = 0.5*(U_face[:,6,:] + U_face[:,7,:])
+	
+	return Uf_avg
+
+def get_face_length(djac_faces,quad_wts_face):
+	face_length = np.zeros((djac_faces.shape[0],djac_faces.shape[1]))
+
+	face_length = np.einsum('ijkl,kl->ij',djac_faces,quad_wts_face)
+
+	return face_length
+
+def get_face_mean(U_face,djac_faces,quad_wts_face,face_lengths):
+	U_face_bar = np.zeros((U_face.shape[0],face_lengths.shape[1],U_face.shape[-1]))
+	nq_face = quad_wts_face.shape[0]
+	
+	U_face_mod = np.zeros((U_face.shape[0],face_lengths.shape[1],nq_face,U_face.shape[-1]))
+
+	U_face_mod[:,0,:,:] = U_face[:,:nq_face,:]
+	U_face_mod[:,1,:,:] = U_face[:,nq_face:2*nq_face,:]
+	U_face_mod[:,2,:,:] = U_face[:,2*nq_face:3*nq_face,:]
+	U_face_mod[:,3,:,:] = U_face[:,3*nq_face:4*nq_face,:]
+	
+	#U_face_bar = np.einsum('ijn,ikl,lm,ik->ikn',U_face,djac_faces,quad_wts_face,1/face_lengths)
+	U_face_bar = np.einsum('ijkn,ijkm,km,ij->ijn',U_face_mod,djac_faces,quad_wts_face,1/face_lengths)
+
+	return U_face_bar
