@@ -46,3 +46,9 @@ def update_face_neighbor(face, elem_ID, on_the_left):
     # Otherwise, it's a BoundaryFace, and has only one side
     else:
         face.elem_ID = elem_ID
+
+def get_new_node_IDs(start, n):
+    """
+    Get n new node IDs given the first one to start from.
+    """
+    return np.arange(start, start + n)

@@ -297,6 +297,7 @@ class Adapter():
         # TODO: get nodes on each element after refinement, this is a hack
         #for i in range(solver.mesh.num_elems):
         #    solver.mesh.elem_to_node_IDs[i] = elem_node_IDs
+        # TODO: Remove elem_to_node_IDs completely
         solver.mesh.elem_to_node_IDs = np.array(
                 [[0, 1, 2], [3, 4, 1], [3, 2, 4]])
         # Create elements and update neighbors
@@ -342,33 +343,73 @@ class Adapter():
             neighbor_face_ID = face.faceL_ID
         # If the face has no children
         if not face.children:
+
+            # Get new node IDs
+            num_new_nodes = 3 * solver.mesh.gorder - 2
+            new_node_IDs = adapter_tools.get_new_node_IDs(solver.mesh.num_nodes,
+                    num_new_nodes)
+            middle_node_ID = new_node_IDs[0]
+
             # Make a face between elemL and neighbor
-            new_faceL = mesh_defs.InteriorFace()
+            face0 = mesh_defs.InteriorFace()
             # Make a face between elemR and neighbor
-            new_faceR = mesh_defs.InteriorFace()
+            face1 = mesh_defs.InteriorFace()
             # Add new faces to the mesh
-            solver.mesh.interior_faces.append(new_faceL)
-            solver.mesh.interior_faces.append(new_faceR)
+            solver.mesh.interior_faces.append(face0)
+            solver.mesh.interior_faces.append(face1)
             # Make new faces children of old face
-            face.children = [new_faceL, new_faceR]
+            face.children = [face0, face1]
+
+            # Corner node is the node opposite the split face for Q1
+            # TODO: This is specific to Q1 triangles. Add function to get corner
+            # node from split face for triangles (and something else for quads)
+            corner_node_ID = elem.node_IDs[face_ID]
+            # Get reference coordinates from global node ID
+            xn_ref_corner = elem.ref_node_coords[
+                    np.argwhere(elem.all_node_IDs == corner_node_ID)[0]][0, :]
+
             # Local node IDs of face end points on the element
-            _, local_node_IDs, _ = np.intersect1d(elem.node_IDs,
+            _, (node0_local_ID, node1_local_ID), _ = np.intersect1d(elem.all_node_IDs,
                     face.node_IDs[[0, -1]], return_indices=True)
+            # Global node IDs of these nodes
+            node0_ID = elem.all_node_IDs[node0_local_ID]
+            node1_ID = elem.all_node_IDs[node1_local_ID]
+
             # Coordinates of face end points on reference element
-            xn_ref_endpoints = elem.ref_node_coords[local_node_IDs]
+            xn_ref_endpoints = elem.ref_node_coords[[node0_local_ID,
+                node1_local_ID]]
             # New nodes on reference element
-            xn_ref = np.empty((2*face.node_IDs.size - 1, solver.mesh.ndims))
-            for i in range(solver.mesh.ndims):
-                xn_ref[:, i] = np.linspace(xn_ref_endpoints[0, i],
-                        xn_ref_endpoints[1, i], xn_ref.shape[0])
+            xn_ref = np.empty((num_new_nodes, solver.mesh.ndims))
+            num_nodes_per_face = solver.mesh.gorder + 1
+            xn_ref_middle = np.empty(solver.mesh.ndims)
+            for dim in range(solver.mesh.ndims):
+                # Set of nodes on the edge from node0 to node1, exclusive on
+                # both ends
+                xn_ref[:2*num_nodes_per_face - 3, dim] = np.linspace(
+                        xn_ref_endpoints[0, dim], xn_ref_endpoints[1, dim],
+                        2 * num_nodes_per_face - 1)[1:-1]
+                # Get the middle node just created
+                xn_ref_middle[dim] = xn_ref[num_nodes_per_face - 2, dim]
+                # Set of nodes in the middle from corner_node to middle_node,
+                # exclusive on both ends
+                xn_ref[2*num_nodes_per_face - 3:, dim] = np.linspace(
+                        xn_ref_corner[dim], xn_ref_middle[dim],
+                        num_nodes_per_face)[1:-1]
             # New nodes in physical space
-            new_xn = mesh_tools.ref_to_phys(solver.mesh, elemL_ID, xn_ref)
+            xn = mesh_tools.ref_to_phys(solver.mesh, elemL_ID, xn_ref)
+
             # Add endpoint nodes to faces
-            # TODO: This depends on the orientation!!!
-            new_faceL.node_IDs = np.empty_like(face.node_IDs)
-            new_faceL.node_IDs[0] = face.node_IDs[0]
-            new_faceR.node_IDs = np.empty_like(face.node_IDs)
-            new_faceR.node_IDs[-1] = face.node_IDs[-1]
+            face0.node_IDs = np.empty_like(face.node_IDs)
+            face0.node_IDs[0] = node0_ID
+            face1.node_IDs = np.empty_like(face.node_IDs)
+            face1.node_IDs[-1] = node1_ID
+            # Add middle node to faces
+            face0.node_IDs[-1] = middle_node_ID
+            face1.node_IDs[0] = middle_node_ID
+            # Add interior nodes (nodes that are not endpoints/middle node)
+            breakpoint()
+            face0.node_IDs[1:-1] = new_node_IDs[1:num_nodes_per_face - 1]
+
             # Add to new_nodes, but without the end points (those already exist)
             for i in range(xn.shape[0] - 2):
                 new_node_ID = solver.mesh.num_nodes + i
