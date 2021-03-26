@@ -312,10 +312,11 @@ class Euler1D(Euler):
 		left_eigen[:, :, irhoE, irhoE] = -1.*gm1oa2
 
 		# Can uncomment line below to test l dot r = kronecker delta
-		# test = np.einsum('elij,eljk->elik', left_eigen, right_eigen)
-
+		test = np.einsum('elij,eljk->elik', left_eigen, right_eigen)
+		import code ; code.interact(local=locals())
 		return right_eigen, left_eigen # [ne, 1, ns, ns]
 
+	
 
 class Euler2D(Euler):
 	'''
@@ -338,6 +339,9 @@ class Euler2D(Euler):
 			euler_fcn_type.IsentropicVortex : euler_fcns.IsentropicVortex,
 			euler_fcn_type.TaylorGreenVortex : euler_fcns.TaylorGreenVortex,
 			euler_fcn_type.GravityRiemann : euler_fcns.GravityRiemann,
+			euler_fcn_type.RiemannQuad : euler_fcns.RiemannQuad,
+			euler_fcn_type.Riemann_2D : euler_fcns.Riemann_2D,
+			euler_fcn_type.DensitySine : euler_fcns.DensitySine,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -419,3 +423,156 @@ class Euler2D(Euler):
 		rho -= eps
 
 		return F, (u2, v2, rho, p)
+
+	def get_conv_eigenvectors_2D(self, U_bar):
+		'''
+		This function defines the convective eigenvectors for the 
+		2D euler equations. This is used with the WENO limiter to 
+		transform the system of equations from physical space to
+		characteristic space.
+
+		Inputs:
+		------- 
+			U_bar: Average state [ne, 1, ns]
+
+		Outputs:
+		--------
+			right_eigen_x: Right eigenvector matrix for x-direction flux [ne, 1, ns, ns]
+			left_eigen_x: Left eigenvector matrix for x-direction flux [ne, 1, ns, ns]
+			right_eigen_y: Right eigenvector matrix for y-direction flux [ne, 1, ns, ns]
+			left_eigen_y: Left eigenvector matrix for y-direction flux [ne, 1, ns, ns]
+		'''
+		#Unpack
+		ne = U_bar.shape[0]
+		eps = general.eps
+
+		ns = self.NUM_STATE_VARS
+
+		irho, irhou, irhov, irhoE = self.get_state_indices()
+
+		rho = U_bar[:, :, irho]
+		rhou = U_bar[:, :, irhou]
+		rhov = U_bar[:, :, irhov]
+		rhoE = U_bar[:, :, irhoE]
+		rho += eps # prevent rare division-by-zero errors
+
+		#Get velocity
+		u = rhou/rho
+		v = rhov/rho
+		#Get velocity magnitude
+		q2 = u**2 + v**2
+		# Calculate pressure using the Ideal Gasd Law
+		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * q2) # [n, nq]
+		# Get total enthalpy
+		H = rhoE/rho + p/rho
+
+		# Get sound speed
+		a = np.sqrt(self.gamma * p / rho)
+
+		b1 = (self.gamma - 1.) / (a * a)
+
+		b2 = np.ones(H.shape)
+
+		b2 = b2 + b1*q2 - b1*H
+
+		# Allocate the right and left eigenvectors
+		right_eigen_x = np.zeros([ne, 1, ns, ns])
+		left_eigen_x = np.zeros([ne, 1, ns, ns])
+		right_eigen_y = np.zeros([ne, 1, ns, ns])
+		left_eigen_y = np.zeros([ne, 1, ns, ns])
+
+		#Computing the right and left eigenvectors for x-direction
+		A = 1 
+		B = 0
+		u_tilde = A*u + B*v
+		v_tilde = A*v - B*u
+
+		right_eigen_x[:, :, irho, irho]  = 1.
+		right_eigen_x[:, :, irho, irhou] = 1.
+		right_eigen_x[:, :, irho, irhov] = 1.
+		right_eigen_x[:, :, irho, irhoE] = 1.
+
+		right_eigen_x[:, :, irhou, irho]  = u - A*a
+		right_eigen_x[:, :, irhou, irhou] = u - B*a
+		right_eigen_x[:, :, irhou, irhov] = u + B*a
+		right_eigen_x[:, :, irhou, irhoE] = u + A*a
+
+		right_eigen_x[:, :, irhov, irho]  = v - B*a
+		right_eigen_x[:, :, irhov, irhou] = v + A*a
+		right_eigen_x[:, :, irhov, irhov] = v - A*a
+		right_eigen_x[:, :, irhov, irhoE] = v + B*a
+
+		right_eigen_x[:, :, irhoE, irho]  = H - a*u_tilde
+		right_eigen_x[:, :, irhoE, irhou] = H + a*v_tilde - (1/b1)
+		right_eigen_x[:, :, irhoE, irhov] = H - a*v_tilde - (1/b1)
+		right_eigen_x[:, :, irhoE, irhoE] = H + a*u_tilde
+
+		left_eigen_x[:, :, irho, irho]  = 0.5*b2 + 0.5*u_tilde/a
+		left_eigen_x[:, :, irho, irhou] = -0.5*b1*u - 0.5*A/a
+		left_eigen_x[:, :, irho, irhov] = -0.5*b1*v - 0.5*B/a
+		left_eigen_x[:, :, irho, irhoE] = 0.5 * b1
+
+		left_eigen_x[:, :, irhou, irho]  = 0.5*(1 - b2) - 0.5*v_tilde/a
+		left_eigen_x[:, :, irhou, irhou] = 0.5*b1*u - 0.5*B/a
+		left_eigen_x[:, :, irhou, irhov] = 0.5*b1*v + 0.5*A/a
+		left_eigen_x[:, :, irhou, irhoE] = -0.5 * b1
+
+		left_eigen_x[:, :, irhov, irho]  = 0.5*(1 - b2) + 0.5*v_tilde/a
+		left_eigen_x[:, :, irhov, irhou] = 0.5*b1*u + 0.5*B/a
+		left_eigen_x[:, :, irhov, irhov] = 0.5*b1*v - 0.5*A/a
+		left_eigen_x[:, :, irhov, irhoE] = -0.5 * b1
+
+		left_eigen_x[:, :, irhoE, irho]  = 0.5*b2 - 0.5*u_tilde/a
+		left_eigen_x[:, :, irhoE, irhou] = -0.5*b1*u + 0.5*A/a
+		left_eigen_x[:, :, irhoE, irhov] = -0.5*b1*v + 0.5*B/a
+		left_eigen_x[:, :, irhoE, irhoE] = 0.5 * b1
+
+		#Computing the right and left eigenvectors for y-direction
+		A = 0 
+		B = 1
+		u_tilde = A*u + B*v
+		v_tilde = A*v - B*u
+
+		right_eigen_y[:, :, irho, irho]  = 1.
+		right_eigen_y[:, :, irho, irhou] = 1.
+		right_eigen_y[:, :, irho, irhov] = 1.
+		right_eigen_y[:, :, irho, irhoE] = 1.
+
+		right_eigen_y[:, :, irhou, irho]  = u - A*a
+		right_eigen_y[:, :, irhou, irhou] = u - B*a
+		right_eigen_y[:, :, irhou, irhov] = u + B*a
+		right_eigen_y[:, :, irhou, irhoE] = u + A*a
+
+		right_eigen_y[:, :, irhov, irho]  = v - B*a
+		right_eigen_y[:, :, irhov, irhou] = v + A*a
+		right_eigen_y[:, :, irhov, irhov] = v - A*a
+		right_eigen_y[:, :, irhov, irhoE] = v + B*a
+
+		right_eigen_y[:, :, irhoE, irho]  = H - a*u_tilde
+		right_eigen_y[:, :, irhoE, irhou] = H + a*v_tilde - (1/b1)
+		right_eigen_y[:, :, irhoE, irhov] = H - a*v_tilde - (1/b1)
+		right_eigen_y[:, :, irhoE, irhoE] = H + a*u_tilde
+
+		left_eigen_y[:, :, irho, irho]  = 0.5*b2 + 0.5*u_tilde/a
+		left_eigen_y[:, :, irho, irhou] = -0.5*b1*u - 0.5*A/a
+		left_eigen_y[:, :, irho, irhov] = -0.5*b1*v - 0.5*B/a
+		left_eigen_y[:, :, irho, irhoE] = 0.5 * b1
+
+		left_eigen_y[:, :, irhou, irho]  = 0.5*(1 - b2) - 0.5*v_tilde/a
+		left_eigen_y[:, :, irhou, irhou] = 0.5*b1*u - 0.5*B/a
+		left_eigen_y[:, :, irhou, irhov] = 0.5*b1*v + 0.5*A/a
+		left_eigen_y[:, :, irhou, irhoE] = -0.5 * b1
+
+		left_eigen_y[:, :, irhov, irho]  = 0.5*(1 - b2) + 0.5*v_tilde/a
+		left_eigen_y[:, :, irhov, irhou] = 0.5*b1*u + 0.5*B/a
+		left_eigen_y[:, :, irhov, irhov] = 0.5*b1*v - 0.5*A/a
+		left_eigen_y[:, :, irhov, irhoE] = -0.5 * b1
+
+		left_eigen_y[:, :, irhoE, irho]  = 0.5*b2 - 0.5*u_tilde/a
+		left_eigen_y[:, :, irhoE, irhou] = -0.5*b1*u + 0.5*A/a
+		left_eigen_y[:, :, irhoE, irhov] = -0.5*b1*v + 0.5*B/a
+		left_eigen_y[:, :, irhoE, irhoE] = 0.5 * b1
+
+		#test = np.einsum('elij,eljk->elik', left_eigen_y, right_eigen_y)
+		#import code ; code.interact(local=locals())
+		return right_eigen_x, right_eigen_y, left_eigen_x, left_eigen_y

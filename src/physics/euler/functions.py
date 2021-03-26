@@ -31,6 +31,9 @@ class FcnType(Enum):
 	TaylorGreenVortex = auto()
 	ShuOsherProblem = auto()
 	GravityRiemann = auto()
+	RiemannQuad = auto()
+	Riemann_2D = auto()
+	DensitySine = auto()
 
 class BCType(Enum):
 	'''
@@ -655,7 +658,202 @@ class GravityRiemann(FcnBase):
 
 		return Uq # [ne, nq, ns]
 
+class RiemannQuad(FcnBase):
+	'''
+	Riemann problem intial condition for 2D mesh with quadrilateral
+	elements.
+	'''
+	def __init__(self, rhoL=1., uL=0., pL=1., rhoR=0.125, uR=0., pR=0.1,
+				xd=0.):
+		'''
+		This method initializes the attributes.
 
+		Inputs:
+		-------
+			rhoL: left density
+			uL: left velocity
+			pL: left pressure
+			rhoR: right density
+			uR: right velocity
+			pR: right pressure
+			xd: location of initial discontinuity
+
+		Outputs:
+		--------
+		    self: attributes initialized
+
+		Notes:
+		------
+			Default values set up for Sod problem.
+		'''
+		self.rhoL = rhoL
+		self.uL = uL
+		self.pL = pL
+		self.rhoR = rhoR
+		self.uR = uR
+		self.pR = pR
+		self.xd = xd
+
+	def get_state(self,physics,x,t):
+		#Unpack
+		xd = self.xd
+
+		rhoL = self.rhoL
+		uL = self.uL
+		pL = self.pL
+
+		rhoR = self.rhoR
+		uR = self.uR
+		pR = self.pR
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		gamma = physics.gamma
+		Rg = physics.R
+
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		for elem_ID in range(Uq.shape[0]):
+			iLeft = (x[elem_ID, :, 1] <= xd).reshape(-1)
+			iRight = (x[elem_ID, :, 1] > xd).reshape(-1)
+			#import code ; code.interact(local=locals())
+			#Density
+			Uq[elem_ID, iLeft, irho] = rhoL
+			Uq[elem_ID, iRight, irho] = rhoR
+			#x-Momentum
+			Uq[elem_ID, iLeft, irhou] = 0.
+			Uq[elem_ID, iRight, irhou] = 0.
+			#y-Momentum
+			Uq[elem_ID, iLeft, irhov] = rhoL*uL
+			Uq[elem_ID, iRight, irhov] = rhoR*uR
+			#Energy
+			Uq[elem_ID, iLeft, irhoE] = pL/(gamma - 1.) + 0.5*rhoL*uL*uL
+			Uq[elem_ID, iRight, irhoE] = pR/(gamma - 1.) + 0.5*rhoR*uR*uR
+
+		return Uq
+
+class Riemann_2D(FcnBase):
+	'''
+	2D time dependent riemann problem to test the PPL on a low density
+	and pressure case. For more details see the following reference:
+		[1] X. Zhang, C.-W. Shu, "Positivity-preserving high-order 
+		discontinuous Galerkin schemes for compressible Euler equations
+		with source terms, Journal of Computational Physics 230 
+		(2011) 1238–1248.
+	'''
+	def get_state(self, physics, x, t):
+		# Unpack
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		gamma = physics.gamma
+		Rg = physics.R
+
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		# Zone 1
+		rho1 = 1.1
+		u1 = 0.8939
+		v1 = 0.8939
+		p1 = 1.1
+
+		# Zone 2
+		rho2 = 0.5065
+		u2 = 0.0
+		v2 = 0.8939
+		p2 = 0.35
+
+		# Zone 3
+		rho3 = 1.1
+		u3 = 0.0
+		v3 = 0.0
+		p3 = 1.1
+
+		# Zone 2
+		rho4 = 0.5065
+		u4 = 0.8939
+		v4 = 0.0
+		p4 = 0.35
+		tmp = np.zeros((x.shape[1],x.shape[-1]))
+		for elem_ID in range(Uq.shape[0]):
+			'''
+			if all(x[elem_ID, :, 0] <= 0.0) and all(x[elem_ID, :, 1] <= 0.0) :
+				i1 = (x[elem_ID, :, 0]).reshape(-1)
+			elif all(x[elem_ID, :, 0] >= 0.0 and x[elem_ID, :, 1] <= 0.0) :
+				i2 = (x[elem_ID, :, 0]).reshape(-1)
+			elif all(x[elem_ID, :, 0] >= 0.0 and x[elem_ID, :, 1] >= 0.0) :
+				i3 = (x[elem_ID, :, 0]).reshape(-1)
+			else :
+				i4 = (x[elem_ID, :, 0]).reshape(-1)
+			'''
+			tmp = x[elem_ID,:,:]
+			#_,i1 = np.where((all(x[elem_ID, :, 0] <= 0.0) and all(x[elem_ID, :, 1] <= 0.0)))
+			#i1 = np.where((all(tmp[:, 0] <= 0.0) and all(tmp[:, 1] <= 0.0)))[0]
+			i1 =  np.where(np.logical_and(x[elem_ID,:,0]<=0.0, x[elem_ID,:,1] <=0))[0]
+			i2 =  np.where(np.logical_and(x[elem_ID,:,0]>=0.0, x[elem_ID,:,1] <=0))[0]
+			i3 =  np.where(np.logical_and(x[elem_ID,:,0]>=0.0, x[elem_ID,:,1] >=0))[0]
+			i4 =  np.where(np.logical_and(x[elem_ID,:,0]<=0.0, x[elem_ID,:,1] >=0))[0]
+			
+			# Density
+			Uq[elem_ID, i1, irho] = rho1
+			Uq[elem_ID, i2, irho] = rho2
+			Uq[elem_ID, i3, irho] = rho3
+			Uq[elem_ID, i4, irho] = rho4
+			
+			# XMomentum
+			Uq[elem_ID, i1, irhou] = rho1*u1
+			Uq[elem_ID, i2, irhou] = rho2*u2
+			Uq[elem_ID, i3, irhou] = rho3*u3
+			Uq[elem_ID, i4, irhou] = rho4*u4
+			
+			# YMomentum
+			Uq[elem_ID, i1, irhov] = rho1*v1
+			Uq[elem_ID, i2, irhov] = rho2*v2
+			Uq[elem_ID, i3, irhov] = rho3*v3
+			Uq[elem_ID, i4, irhov] = rho4*v4
+			
+			# Energy
+			Uq[elem_ID, i1, irhoE] = p1/(gamma - 1.) + 0.5*rho1*u1*u1 + 0.5*rho1*v1*v1
+			Uq[elem_ID, i2, irhoE] = p2/(gamma - 1.) + 0.5*rho2*u2*u2 + 0.5*rho2*v2*v2
+			Uq[elem_ID, i3, irhoE] = p3/(gamma - 1.) + 0.5*rho3*u3*u3 + 0.5*rho3*v3*v3
+			Uq[elem_ID, i4, irhoE] = p4/(gamma - 1.) + 0.5*rho4*u4*u4 + 0.5*rho4*v4*v4
+			
+
+		return Uq # [ne, nq, ns]
+
+class DensitySine(FcnBase):
+	'''
+	2D Density sin wave with constant velocity and pressure. This has
+		an exact solution. Reference:
+		[1] X. Zhong, C. Shu, "A simple weighted essentially nonoscillatory
+			limiter for Runge-Kutta discontinuous Galerkin methods," 
+			Journal of Computational Physics. Vol. 232 pg. 397-415. 2013.
+	'''
+	def get_state(self, physics, x, t):
+		# Unpack
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		gamma = physics.gamma
+		Rg = physics.R
+
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		# State
+		rho = 1.0 + 0.2*np.sin(x[:,:,0] + x[:,:,1] - t)
+		u = 0.7
+		v = 0.3
+		p = 1
+		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
+		'''
+		u = np.sin(np.pi*x[:, :, 0])*np.cos(np.pi*x[:, :, 1])
+		v = -np.cos(np.pi*x[:, :, 0])*np.sin(np.pi*x[:, :, 1])
+		p = 0.25*(np.cos(2.*np.pi*x[:, :, 0]) + np.cos(2*np.pi*x[:, :, 1]))\
+				+ 1.
+		E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
+		'''
+		# Store
+		Uq[:, :, irho] = rho
+		Uq[:, :, irhou] = rho*u
+		Uq[:, :, irhov] = rho*v
+		Uq[:, :, irhoE] = rho*E
+
+		return Uq # [ne, nq, ns]
 '''
 -------------------
 Boundary conditions
