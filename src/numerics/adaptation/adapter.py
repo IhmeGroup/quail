@@ -104,14 +104,10 @@ class Adapter():
 
         # Extract needed data from the solver object
         # TODO: Maybe wrap this?
-        # The old function took as arguments:
-        # dJ_old, Uc_old, iMM_old, neighbors_old, xn_old, coarsen_IDs,
-        #         refine_IDs, split_face_IDs
         num_nodes_old = solver.mesh.num_nodes
         dJ_old = solver.elem_helpers.djac_elems[:, :, 0]
         Uc_old = solver.state_coeffs
         iMM_old = solver.elem_helpers.iMM_elems
-        xn_old = solver.mesh.node_coords[solver.mesh.elem_to_node_IDs]
 
         # == Coarsening == #
 
@@ -133,7 +129,7 @@ class Adapter():
                 print(group.elem_IDs)
 
                 # Coarsen triangles
-                self.coarsen_triangles(solver, xn_old, iMM_old, dJ_old, Uc_old,
+                self.coarsen_triangles(solver, iMM_old, dJ_old, Uc_old,
                         group, delete_groups)
                 # Neighbors of the old triangles in the group
                 old_neighbors = neighbors_old[group.elem_IDs]
@@ -204,7 +200,6 @@ class Adapter():
 
         # -- Array sizing and allocation -- #
         # Create new arrays
-        xn_coarsened = np.empty((n_elems_coarsened,) + xn_old.shape[1:])
         dJ_coarsened = np.empty((n_elems_coarsened,) + dJ_old.shape[1:])
         iMM_coarsened = np.empty((n_elems_coarsened,) + iMM_old.shape[1:])
         Uc_coarsened = np.empty((n_elems_coarsened,) + Uc_old.shape[1:])
@@ -218,7 +213,6 @@ class Adapter():
             reordered_IDs[i_old] = i
             # Only add elements that are not deleted
             if i_old not in delete_elems:
-                xn_coarsened[i] = xn_old[i_old]
                 dJ_coarsened[i] = dJ_old[i_old]
                 iMM_coarsened[i] = iMM_old[i_old]
                 Uc_coarsened[i] = Uc_old[i_old]
@@ -257,12 +251,10 @@ class Adapter():
         n_refined = refine_IDs.shape[0]
         n_elems = n_elems_coarsened + n_refined
         # Create new arrays
-        xn = np.empty((n_elems,) + xn_coarsened.shape[1:])
         dJ = np.empty((n_elems,) + dJ_coarsened.shape[1:])
         iMM = np.empty((n_elems,) + iMM_coarsened.shape[1:])
         Uc = np.empty((n_elems,) + Uc_coarsened.shape[1:])
         # Copy old data into new arrays
-        xn[:n_elems_coarsened] = xn_coarsened
         dJ[:n_elems_coarsened, :] = dJ_coarsened
         iMM[:n_elems_coarsened, :] = iMM_coarsened
         Uc[:n_elems_coarsened, :] = Uc_coarsened
@@ -276,7 +268,7 @@ class Adapter():
             elemL_ID = elem_ID
             elemR_ID = n_elems_coarsened + i
             # Create new elements and update faces
-            self.refine_element(solver, xn, iMM, dJ, Uc, elemL_ID, elemR_ID,
+            self.refine_element(solver, iMM, dJ, Uc, elemL_ID, elemR_ID,
                     face_ID, new_nodes)
 
         # TODO: Maybe wrap this?
@@ -307,9 +299,9 @@ class Adapter():
         solver.bface_helpers.get_basis_and_geom_data(solver.mesh, solver.basis,
                 solver.order)
 
-        return (xn, n_elems, dJ, Uc, iMM)
+        return (n_elems, dJ, Uc, iMM)
 
-    def refine_element(self, solver, xn, iMM, dJ, Uc, elem0_ID, elem1_ID,
+    def refine_element(self, solver, iMM, dJ, Uc, elem0_ID, elem1_ID,
             face_ID, new_nodes):
         """
         Split an element into two elements.
@@ -322,18 +314,14 @@ class Adapter():
         xq_ref_new = self.refinement_transformation(self.xq_ref, self.T_J,
                 self.T_const, face_ID)
 
-        # The geometric basis of the parent element evaluated at the new nodes
-        gbasis_xn_ref_new = np.empty((2, solver.mesh.num_nodes_per_elem,
-                solver.mesh.num_nodes_per_elem))
-        for i in range(2):
-            gbasis_xn_ref_new[i] = solver.mesh.gbasis.get_values(xn_ref_new[i])
-        # The nodes of the new triangles, transformed from the parent reference
-        # space to physical space
-        new_elem_IDs = [elem0_ID, elem1_ID]
-        old_elem_IDs = [elem0_ID, elem0_ID]
-        xn_new = np.einsum('ipn, inl -> ipl', gbasis_xn_ref_new,
-                xn[old_elem_IDs])
-        xn[new_elem_IDs] = xn_new
+        # Get elem being split (which ends up being elem0)
+        elem0 = solver.mesh.elements[elem0_ID]
+        # Store old faces and nodes
+        old_faces = elem0.faces.copy()
+        old_nodes = elem0.node_coords.copy()
+        # Create new elem, elem1
+        elem1 = mesh_defs.Element(elem1_ID)
+        solver.mesh.elements.append(elem1)
 
         # Get new node IDs
         # TODO: What about node overlap, since geom nodes are colocated?
@@ -344,15 +332,17 @@ class Adapter():
                 solver.mesh.elements[elem0_ID].node_IDs, 2 * num_new_nodes
                 ).reshape((2, -1))
 
-        # Get elem being split (which ends up being elem0) and store old element
-        # nodes
-        elem0 = solver.mesh.elements[elem0_ID]
-        # Store old faces and nodes
-        old_faces = elem0.faces.copy()
-        old_nodes = elem0.node_coords.copy()
-        # Create new elem, elem1
-        elem1 = mesh_defs.Element(elem1_ID)
-        solver.mesh.elements.append(elem1)
+        # The geometric basis of the parent element evaluated at the new nodes
+        gbasis_xn_ref_new = np.empty((2, solver.mesh.num_nodes_per_elem,
+                solver.mesh.num_nodes_per_elem))
+        for i in range(2):
+            gbasis_xn_ref_new[i] = solver.mesh.gbasis.get_values(xn_ref_new[i])
+        # The nodes of the new triangles, transformed from the parent reference
+        # space to physical space
+        new_elem_IDs = [elem0_ID, elem1_ID]
+        old_elem_IDs = [elem0_ID, elem0_ID]
+        xn_new = np.einsum('ipn, nl -> ipl', gbasis_xn_ref_new, old_nodes)
+
         # Update data within the elements
         # TODO: Update the face tree?
         for i, elem in enumerate([elem0, elem1]):
@@ -443,17 +433,17 @@ class Adapter():
         # Update face neighbors
         # TODO: This is specific to triangles
         # TODO: Must update face_IDs on each face after as well!!!
-        for local_face in elem.faces:
-            local_face_ID, L_or_R = adapter_tools.get_face_ID(local_face, elem.ID)
-            # Update first face counterclockwise of split face
-            if   ((face_ID + 1) % solver.mesh.gbasis.NFACES) == local_face_ID:
-                adapter_tools.update_face_neighbor(local_face, elem0_ID, L_or_R)
-            # Update second face counterclockwise of split face
-            elif ((face_ID + 2) % solver.mesh.gbasis.NFACES) == local_face_ID:
-                adapter_tools.update_face_neighbor(local_face, elem1_ID, L_or_R)
-
-
-        breakpoint()
+        for local_face in old_faces:
+            # Do not update the old face, which will be removed
+            if local_face is not face:
+                local_face_ID, L_or_R = adapter_tools.get_face_ID(local_face,
+                        elem0_ID)
+                # Update first face counterclockwise of split face
+                if   ((face_ID + 1) % solver.mesh.gbasis.NFACES) == local_face_ID:
+                    adapter_tools.update_face_neighbor(local_face, elem0_ID, L_or_R)
+                # Update second face counterclockwise of split face
+                elif ((face_ID + 2) % solver.mesh.gbasis.NFACES) == local_face_ID:
+                    adapter_tools.update_face_neighbor(local_face, elem1_ID, L_or_R)
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary
@@ -476,7 +466,7 @@ class Adapter():
         solver.mesh.interior_faces.remove(face)
 
         # Compute Jacobian matrix
-        J = np.einsum('pnr, inl -> iplr', self.grad_phi_g, xn[new_elem_IDs])
+        J = np.einsum('pnr, inl -> iplr', self.grad_phi_g, xn_new)
         # Compute and store the Jacobian determinant
         dJ[new_elem_IDs] = np.linalg.det(J)
 
@@ -494,7 +484,7 @@ class Adapter():
                 iMM[new_elem_IDs], self.B, phi_old_on_xq_new, Uc[old_elem_IDs],
                 dJ[new_elem_IDs])
 
-    def coarsen_triangles(self, solver, xn, iMM, dJ, Uc, group, delete_groups):
+    def coarsen_triangles(self, solver, iMM, dJ, Uc, group, delete_groups):
         # Get face pair of group being coarsened
         face_pair = group.face_pair
         # Get new element IDs from the previous parent
