@@ -213,8 +213,7 @@ class ShapeBase(ABC):
 		'''
 		pass
 
-	def get_elem_ref_from_face_ref(self, mesh, elem_ID, face_node_IDs,
-			face_pts):
+	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
 		'''
 		Defines element reference nodes
 
@@ -229,14 +228,12 @@ class ShapeBase(ABC):
 		--------
 			elem_pts: coordinates in element reference space
 		'''
-		# Get element from mesh
-		elem = mesh.elements[elem_ID]
-		# Coordinates on the reference element of the local q = 1 nodes of
-		# the face
-		index0 = np.argwhere(elem.all_node_IDs == face_node_IDs[0])[0]
-		xn0 = elem.ref_node_coords[index0]
-		index1 = np.argwhere(elem.all_node_IDs == face_node_IDs[-1])[0]
-		xn1 = elem.ref_node_coords[index1]
+
+		fnodes = self.get_local_face_principal_node_nums(1, face_ID)
+
+		# coordinates of local q = 1 nodes on face
+		xn0 = self.PRINCIPAL_NODE_COORDS[fnodes[0]]
+		xn1 = self.PRINCIPAL_NODE_COORDS[fnodes[1]]
 
 		xf1 = (face_pts + 1.) / 2.
 		xf0 = 1. - xf1
@@ -899,13 +896,12 @@ class BasisBase(ABC):
 				raise Exception("Need Jacobian data")
 			self.basis_phys_grad = self.get_physical_grads(ijac)
 
-	def get_basis_face_val_grads(self, mesh, elem_ID, face_node_IDs, face_pts,
-			basis=None, get_val=True, get_ref_grad=False, get_phys_grad=False,
+	def get_basis_face_val_grads(self, mesh, face_ID, face_pts, basis=None,
+			get_val=True, get_ref_grad=False, get_phys_grad=False,
 			ijac=None):
 		'''
 		Evaluates the basis function and if applicable evaluates the
 		gradient in reference and/or physical space on the element face
-
 		Inputs:
 		-------
 			mesh: mesh object
@@ -919,11 +915,9 @@ class BasisBase(ABC):
 				functions in phys space
 			ijac: [OPTIONAL] inverse Jacobian (needed if calculating
 				physical gradients) [nq, nq, ndims]
-
 		Outputs:
 		--------
 			Sets the following attributes of the BasisBase class:
-
 			basis_val: evaluated basis function [nq, nb]
 			basis_ref_grad: evaluated gradient of the basis function in
 				reference space [nq, nb, ndims]
@@ -934,8 +928,7 @@ class BasisBase(ABC):
 			basis = self
 
 		# Convert from face ref space to element ref space
-		elem_pts = basis.get_elem_ref_from_face_ref(mesh, elem_ID,
-				face_node_IDs, face_pts)
+		elem_pts = basis.get_elem_ref_from_face_ref(face_ID, face_pts)
 
 		self.get_basis_val_grads(elem_pts, get_val, get_ref_grad,
 				get_phys_grad, ijac)

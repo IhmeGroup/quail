@@ -302,7 +302,7 @@ class Adapter():
                 [[0, 1, 2], [3, 4, 1], [3, 2, 4]])
         # Create elements and update neighbors
         # TODO: Better way to do this
-        solver.mesh.create_elements()
+        #solver.mesh.create_elements()
         # TODO: Hack: This adds the node to the old element.
         elem0 = solver.mesh.elements[0]
         elem0.all_node_IDs = np.append(elem0.node_IDs, 4)
@@ -323,19 +323,65 @@ class Adapter():
 
         return (xn, n_elems, dJ, Uc, iMM)
 
-    def refine_element(self, solver, xn, iMM, dJ, Uc, elemL_ID, elemR_ID,
+    def refine_element(self, solver, xn, iMM, dJ, Uc, elem0_ID, elem1_ID,
             face_ID, new_nodes):
         """
         Split an element into two elements.
         """
-        # Get elem being split
-        elem = solver.mesh.elements[elemL_ID]
+
+        # Transform reference nodes into new nodes on reference element
+        # TODO: Precompute these for each orientation
+        xn_ref_new = self.refinement_transformation(self.xn_ref, self.T_J,
+                self.T_const, face_ID)
+        xq_ref_new = self.refinement_transformation(self.xq_ref, self.T_J,
+                self.T_const, face_ID)
+
+        # The geometric basis of the parent element evaluated at the new nodes
+        gbasis_xn_ref_new = np.empty((2, solver.mesh.num_nodes_per_elem,
+                solver.mesh.num_nodes_per_elem))
+        for i in range(2):
+            gbasis_xn_ref_new[i] = solver.mesh.gbasis.get_values(xn_ref_new[i])
+        # The nodes of the new triangles, transformed from the parent reference
+        # space to physical space
+        new_elem_IDs = [elem0_ID, elem1_ID]
+        old_elem_IDs = [elem0_ID, elem0_ID]
+        xn_new = np.einsum('ipn, inl -> ipl', gbasis_xn_ref_new,
+                xn[old_elem_IDs])
+        xn[new_elem_IDs] = xn_new
+
+        # Get new node IDs
+        # TODO: What about node overlap, since geom nodes are colocated?
+        #num_new_nodes = 3 * solver.mesh.gorder - 2
+        num_new_nodes = solver.mesh.gbasis.get_num_basis_coeff(
+                solver.mesh.gorder)
+        new_node_IDs = adapter_tools.get_new_node_IDs(solver.mesh.num_nodes,
+                solver.mesh.elements[elem0_ID].node_IDs, 2 * num_new_nodes
+                ).reshape((2, -1))
+
+        # Get elem being split (which ends up being elem0) and store old element
+        # nodes
+        elem0 = solver.mesh.elements[elem0_ID]
+        old_nodes = elem0.node_coords.copy()
+        # Create new elem, elem1
+        elem1 = mesh_defs.Element(elem1_ID)
+        solver.mesh.elements.append(elem1)
+        # Update data within the elements
+        # TODO: Update the face tree?
+        for i, elem in enumerate([elem0, elem1]):
+            elem.node_IDs = new_node_IDs[i]
+            elem.node_coords = xn_new[i]
+
+        # Update number of elements and nodes
+        solver.mesh.num_elems += 1
+        solver.mesh.num_nodes += num_new_nodes
+
         # Get face being split
-        face = elem.faces[face_ID]
+        face = elem0.faces[face_ID]
+
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
-        if face.elemL_ID == elemL_ID:
+        if face.elemL_ID == elem0_ID:
             neighbor_ID = face.elemR_ID
             neighbor_face_ID = face.faceR_ID
         else:
@@ -344,15 +390,9 @@ class Adapter():
         # If the face has no children
         if not face.children:
 
-            # Get new node IDs
-            num_new_nodes = 3 * solver.mesh.gorder - 2
-            new_node_IDs = adapter_tools.get_new_node_IDs(solver.mesh.num_nodes,
-                    num_new_nodes)
-            middle_node_ID = new_node_IDs[0]
-
-            # Make a face between elemL and neighbor
+            # Make a face between elem0 and neighbor
             face0 = mesh_defs.InteriorFace()
-            # Make a face between elemR and neighbor
+            # Make a face between elem1 and neighbor
             face1 = mesh_defs.InteriorFace()
             # Add new faces to the mesh
             solver.mesh.interior_faces.append(face0)
@@ -360,100 +400,52 @@ class Adapter():
             # Make new faces children of old face
             face.children = [face0, face1]
 
-            # Corner node is the node opposite the split face for Q1
-            # TODO: This is specific to Q1 triangles. Add function to get corner
-            # node from split face for triangles (and something else for quads)
-            corner_node_ID = elem.node_IDs[face_ID]
-            # Get reference coordinates from global node ID
-            xn_ref_corner = elem.ref_node_coords[
-                    np.argwhere(elem.all_node_IDs == corner_node_ID)[0]][0, :]
+            # The new split faces are always face_ID 0. Get indices of element nodes
+            # colocated on the face.
+            face_node_nums = solver.mesh.gbasis.get_local_face_node_nums(
+                    solver.mesh.gorder, 0)
+            # Use these indices to index the element nodes to get the face nodes
+            # in reference space
+            xn_face_ref = xn_ref_new[:, face_node_nums]
+            # Convert these to physical space
+            xn_face = np.empty_like(xn_face_ref)
+            for i in range(2):
+                geom_basis_face = solver.mesh.gbasis.get_values(xn_face_ref[i])
+                xn_face[i] = np.matmul(geom_basis_face, old_nodes)
+            face0.node_coords = xn_face[0]
+            face1.node_coords = xn_face[1]
 
-            # Local node IDs of face end points on the element
-            _, (node0_local_ID, node1_local_ID), _ = np.intersect1d(elem.all_node_IDs,
-                    face.node_IDs[[0, -1]], return_indices=True)
-            # Global node IDs of these nodes
-            node0_ID = elem.all_node_IDs[node0_local_ID]
-            node1_ID = elem.all_node_IDs[node1_local_ID]
-
-            # Coordinates of face end points on reference element
-            xn_ref_endpoints = elem.ref_node_coords[[node0_local_ID,
-                node1_local_ID]]
-            # New nodes on reference element
-            xn_ref = np.empty((num_new_nodes, solver.mesh.ndims))
-            num_nodes_per_face = solver.mesh.gorder + 1
-            xn_ref_middle = np.empty(solver.mesh.ndims)
-            for dim in range(solver.mesh.ndims):
-                # Set of nodes on the edge from node0 to node1, exclusive on
-                # both ends
-                xn_ref[:2*num_nodes_per_face - 3, dim] = np.linspace(
-                        xn_ref_endpoints[0, dim], xn_ref_endpoints[1, dim],
-                        2 * num_nodes_per_face - 1)[1:-1]
-                # Get the middle node just created
-                xn_ref_middle[dim] = xn_ref[num_nodes_per_face - 2, dim]
-                # Set of nodes in the middle from corner_node to middle_node,
-                # exclusive on both ends
-                xn_ref[2*num_nodes_per_face - 3:, dim] = np.linspace(
-                        xn_ref_corner[dim], xn_ref_middle[dim],
-                        num_nodes_per_face)[1:-1]
-            # New nodes in physical space
-            xn = mesh_tools.ref_to_phys(solver.mesh, elemL_ID, xn_ref)
-
-            # Add endpoint nodes to faces
-            face0.node_IDs = np.empty_like(face.node_IDs)
-            face0.node_IDs[0] = node0_ID
-            face1.node_IDs = np.empty_like(face.node_IDs)
-            face1.node_IDs[-1] = node1_ID
-            # Add middle node to faces
-            face0.node_IDs[-1] = middle_node_ID
-            face1.node_IDs[0] = middle_node_ID
-            # Add interior nodes (nodes that are not endpoints/middle node)
-            breakpoint()
-            face0.node_IDs[1:-1] = new_node_IDs[1:num_nodes_per_face - 1]
-
-            # Add to new_nodes, but without the end points (those already exist)
-            for i in range(xn.shape[0] - 2):
-                new_node_ID = solver.mesh.num_nodes + i
-                new_nodes[new_node_ID] = new_xn[i + 1]
-                # Add to faces
-                # TODO: This depends on the orientation!!! (maybe?)
-                if i < (xn.shape[0] - 2) // 2:
-                    new_faceL.node_IDs[i + 1] = new_node_ID
-                elif i > (xn.shape[0] - 2) // 2:
-                    new_faceR.node_IDs[i] = new_node_ID
-                else:
-                    new_faceL.node_IDs[i + 1] = new_node_ID
-                    new_faceR.node_IDs[i] = new_node_ID
             # Figure out the orientation
-            if face.elemL_ID == elemL_ID:
+            if face.elemL_ID == elem0_ID:
                 # The "positive" orientation
-                new_faceL.elemL_ID = elemR_ID
-                new_faceL.elemR_ID = neighbor_ID
-                new_faceL.faceL_ID = 0
-                new_faceL.faceR_ID = neighbor_face_ID
-                new_faceR.elemL_ID = elemL_ID
-                new_faceR.elemR_ID = neighbor_ID
-                new_faceR.faceL_ID = 0
-                new_faceR.faceR_ID = neighbor_face_ID
+                face0.elemL_ID = elem1_ID
+                face0.elemR_ID = neighbor_ID
+                face0.faceL_ID = 0
+                face0.faceR_ID = neighbor_face_ID
+                face1.elemL_ID = elem0_ID
+                face1.elemR_ID = neighbor_ID
+                face1.faceL_ID = 0
+                face1.faceR_ID = neighbor_face_ID
             else:
                 # The "negative" orientation
-                new_faceL.elemL_ID = neighbor_ID
-                new_faceL.elemR_ID = elemL_ID
-                new_faceL.faceL_ID = neighbor_face_ID
-                new_faceL.faceR_ID = 0
-                new_faceR.elemL_ID = neighbor_ID
-                new_faceR.elemR_ID = elemR_ID
-                new_faceR.faceL_ID = neighbor_face_ID
-                new_faceR.faceR_ID = 0
-            # Update number of faces and nodes
+                face0.elemL_ID = neighbor_ID
+                face0.elemR_ID = elem0_ID
+                face0.faceL_ID = neighbor_face_ID
+                face0.faceR_ID = 0
+                face1.elemL_ID = neighbor_ID
+                face1.elemR_ID = elem1_ID
+                face1.faceL_ID = neighbor_face_ID
+                face1.faceR_ID = 0
+            # Update number of faces
             solver.mesh.num_interior_faces += 1
-            solver.mesh.num_nodes += solver.mesh.gbasis.order
+
         # If the face does have children
         else:
             # Implement this
             pass
 
-        # Make a face between elemL and elemR
-        middle_face = mesh_defs.InteriorFace(elemL_ID, 2, elemR_ID, 1)
+        # Make a face between elem0 and elem1
+        middle_face = mesh_defs.InteriorFace(elem0_ID, 2, elem1_ID, 1)
         # Add new face to the mesh
         solver.mesh.interior_faces.append(middle_face)
         # Update number of faces
@@ -468,10 +460,10 @@ class Adapter():
             local_face_ID, L_or_R = adapter_tools.get_face_ID(local_face, elem.ID)
             # Update first face counterclockwise of split face
             if   ((face_ID + 1) % solver.mesh.gbasis.NFACES) == local_face_ID:
-                adapter_tools.update_face_neighbor(local_face, elemL_ID, L_or_R)
+                adapter_tools.update_face_neighbor(local_face, elem0_ID, L_or_R)
             # Update second face counterclockwise of split face
             elif ((face_ID + 2) % solver.mesh.gbasis.NFACES) == local_face_ID:
-                adapter_tools.update_face_neighbor(local_face, elemR_ID, L_or_R)
+                adapter_tools.update_face_neighbor(local_face, elem1_ID, L_or_R)
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary
@@ -492,28 +484,6 @@ class Adapter():
 
         # Remove the old face
         solver.mesh.interior_faces.remove(face)
-
-        # Transform reference nodes into new nodes on reference element
-        xn_ref_new = self.refinement_transformation(self.xn_ref, self.T_J,
-                self.T_const, face_ID)
-        xq_ref_new = self.refinement_transformation(self.xq_ref, self.T_J,
-                self.T_const, face_ID)
-
-        # Update number of elements and nodes
-        solver.mesh.num_elems += 1
-        solver.mesh.num_nodes += solver.mesh.gbasis.order - 1
-
-        # The geometric basis of the parent element evaluated at the new nodes
-        gbasis_xn_ref_new = np.empty((2, solver.mesh.num_nodes_per_elem,
-                solver.mesh.num_nodes_per_elem))
-        for i in range(2):
-            gbasis_xn_ref_new[i] = solver.mesh.gbasis.get_values(xn_ref_new[i])
-        # The nodes of the new triangles, transformed from the parent reference
-        # space to physical space
-        new_elem_IDs = [elemL_ID, elemR_ID]
-        old_elem_IDs = [elemL_ID, elemL_ID]
-        xn[new_elem_IDs] = np.einsum('ipn, inl -> ipl', gbasis_xn_ref_new,
-                xn[old_elem_IDs])
 
         # Compute Jacobian matrix
         J = np.einsum('pnr, inl -> iplr', self.grad_phi_g, xn[new_elem_IDs])

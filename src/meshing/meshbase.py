@@ -26,6 +26,8 @@ class InteriorFace(object):
 		ID of "right" element
 	faceR_ID : int
 		local ID of face from perspective of right element
+	node_coords: numpy array
+		coordinates of the face nodes [num_nodes, ndims]
 	children : list
 		either an empty list if a leaf face or a list of two subfaces created
 		from refinement
@@ -35,7 +37,7 @@ class InteriorFace(object):
 		self.faceL_ID = faceL_ID
 		self.elemR_ID = elemR_ID
 		self.faceR_ID = faceR_ID
-		self.node_IDs = np.array([])
+		self.node_coords = np.array([])
 		self.children = []
 
 
@@ -49,11 +51,13 @@ class BoundaryFace(object):
 		ID of adjacent element
 	face_ID : int
 		local ID of face from perspective of adjacent element
+	node_coords: numpy array
+		coordinates of the face nodes [num_nodes, ndims]
 	'''
 	def __init__(self, elem_ID = 0, face_ID = 0):
 		self.elem_ID = elem_ID
 		self.face_ID = face_ID
-		self.node_IDs = np.array([])
+		self.node_coords = np.array([])
 
 
 class BoundaryGroup(object):
@@ -104,8 +108,6 @@ class Element(object):
 		element ID
 	node_IDs: numpy array
 		global IDs of the element nodes
-	all_node_IDs: numpy array
-		global IDs of the element nodes, including hanging nodes
 	node_coords: numpy array
 		coordinates of the element nodes [num_nodes, ndims]
 	faces: list
@@ -117,7 +119,6 @@ class Element(object):
 	def __init__(self, elem_ID=-1):
 		self.ID = elem_ID
 		self.node_IDs = np.zeros(0, dtype=int)
-		self.all_node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
 		self.faces = []
 		self.ref_node_coords = np.empty((0,0))
@@ -280,7 +281,6 @@ class Mesh(object):
 
 			elem.ID = elem_ID
 			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
-			elem.all_node_IDs = self.elem_to_node_IDs[elem_ID]
 			elem.node_coords = self.node_coords[elem.node_IDs]
 			elem.ref_node_coords = self.gbasis.get_nodes(self.gorder)
 
@@ -303,10 +303,10 @@ class Mesh(object):
 				elem.faces.append(boundary_face)
 
 
-	def get_face_global_node_IDs(self):
+	def get_face_coords(self):
 		'''
-		This method creates an array of global node IDs for each InteriorFace
-		and BoundaryFace.
+		Create an array of physical node coordinates for each InteriorFace and
+		BoundaryFace.
 
 		Outputs:
 		--------
@@ -317,14 +317,16 @@ class Mesh(object):
 		'''
 
 		# Loop over InteriorFaces
-		for int_face in self.interior_faces:
+		for interior_face in self.interior_faces:
 			# Get node numbers on the element to the left of this face
 			node_nums = self.gbasis.get_local_face_node_nums(self.gorder,
-					int_face.faceL_ID)
-			# Assign the global node IDs of this face to be the global node
-			# IDs associated with the node numbers on the element
-			int_face.node_IDs = self.elements[int_face.elemL_ID].node_IDs[
+					interior_face.faceL_ID)
+			# The global node IDs associated with the node numbers on the
+			# element
+			node_IDs = self.elements[interior_face.elemL_ID].node_IDs[
 					node_nums]
+			# Coordinates in physical space
+			interior_face.node_coords = self.node_coords[node_IDs]
 
 		# Loop over BoundaryGroups
 		for bgroup in self.boundary_groups.values():
@@ -333,8 +335,9 @@ class Mesh(object):
 				# Get node numbers on the element adjacent to this face
 				node_nums = self.gbasis.get_local_face_node_nums(self.gorder,
 						boundary_face.face_ID)
-
-				# Assign the global node IDs of this face to be the global node
-				# IDs associated with the node numbers on the element
-				boundary_face.node_IDs = self.elements[
+				# The global node IDs associated with the node numbers on the
+				# element
+				node_IDs = self.elements[
 						boundary_face.elem_ID].node_IDs[node_nums]
+				# Coordinates in physical space
+				boundary_face.node_coords = self.node_coords[node_IDs]

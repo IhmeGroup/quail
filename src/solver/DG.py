@@ -355,16 +355,17 @@ class InteriorFaceHelpers(ElemHelpers):
 		# compute normals
 		for i, interior_face in enumerate(mesh.interior_faces):
 			# Left
-			basis.get_basis_face_val_grads(mesh, interior_face.elemL_ID,
-					interior_face.node_IDs, quad_pts, get_val=True)
+			basis.get_basis_face_val_grads(mesh, interior_face.faceL_ID,
+					quad_pts, get_val=True)
 			self.faces_to_basisL[i] = basis.basis_val
 			# Right
-			basis.get_basis_face_val_grads(mesh, interior_face.elemR_ID,
-					interior_face.node_IDs, quad_pts, get_val=True)
+			# TODO: Should quad_pts be flipped or not??
+			basis.get_basis_face_val_grads(mesh, interior_face.faceR_ID,
+					quad_pts[::-1], get_val=True)
 			self.faces_to_basisR[i] = basis.basis_val
 			# Normals
 			normals = mesh.gbasis.calculate_normals(mesh,
-					interior_face.node_IDs, interior_face.faceL_ID, quad_pts)
+					interior_face.node_coords, interior_face.faceL_ID, quad_pts)
 			self.normals_int_faces[i] = normals
 
 	def alloc_other_arrays(self, physics, basis, order):
@@ -506,16 +507,15 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 			for j, boundary_face in enumerate(bgroup.boundary_faces):
 				# Coordinates of face quadrature points on reference element
-				ref_quad_pts = basis.get_elem_ref_from_face_ref(mesh,
-						boundary_face.elem_ID, boundary_face.node_IDs,
-						quad_pts)
-				basis.get_basis_face_val_grads(mesh, boundary_face.elem_ID,
-						boundary_face.node_IDs, quad_pts, get_val=True)
+				ref_quad_pts = basis.get_elem_ref_from_face_ref(
+						boundary_face.face_ID, quad_pts)
+				basis.get_basis_face_val_grads(mesh, boundary_face.face_ID,
+						quad_pts, get_val=True)
 				self.faces_to_basis[bgroup_name][j] = basis.basis_val
 
 				# Normals
 				normals = mesh.gbasis.calculate_normals(mesh,
-						boundary_face.node_IDs, boundary_face.face_ID,
+						boundary_face.node_coords, boundary_face.face_ID,
 						quad_pts)
 				normal_bgroup[j] = normals
 

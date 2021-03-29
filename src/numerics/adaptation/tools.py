@@ -47,8 +47,12 @@ def update_face_neighbor(face, elem_ID, on_the_left):
     else:
         face.elem_ID = elem_ID
 
-def get_new_node_IDs(start, n):
+def get_new_node_IDs(start, old, n):
     """
-    Get n new node IDs given the first one to start from.
+    Get n new node IDs given the first one to start from as well as some old IDs
+    to overwrite.
     """
-    return np.arange(start, start + n)
+    new_IDs = np.empty(n, dtype=int)
+    new_IDs[:old.size] = old
+    new_IDs[old.size:] = np.arange(start, start + n - old.size)
+    return new_IDs

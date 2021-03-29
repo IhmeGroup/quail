@@ -350,14 +350,14 @@ def calculate_1D_normals(mesh, node_IDs, face_ID, quad_pts):
 	return normals # [nq, ndims]
 
 
-def calculate_2D_normals(mesh, node_IDs, face_ID, quad_pts):
+def calculate_2D_normals(mesh, face_coords, face_ID, quad_pts):
 	'''
 	Calculate the normals for 2D shapes (triangles and quadrilaterals).
 
 	Inputs:
 	-------
 		mesh: mesh object
-		node_IDs: global node IDs of face
+		face_coords: physical coordinates of points on face
 		quad_pts: points in reference space at which to calculate normals
 
 	Outputs:
@@ -368,8 +368,6 @@ def calculate_2D_normals(mesh, node_IDs, face_ID, quad_pts):
 	gorder = mesh.gorder
 
 	''' Get face coordinates and basis gradient '''
-	# Extract coordinates of face nodes
-	face_coords = mesh.node_coords[node_IDs]
 	# Instantiate segment basis
 	basis_seg = basis_defs.LagrangeSeg(gorder)
 	# Compute basis values
