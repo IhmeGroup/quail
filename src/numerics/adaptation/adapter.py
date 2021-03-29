@@ -293,20 +293,6 @@ class Adapter():
         # Add new node coords
         for i, coords in new_nodes.items():
             solver.mesh.node_coords[i] = coords
-        # Update elem_to_node_IDs
-        # TODO: get nodes on each element after refinement, this is a hack
-        #for i in range(solver.mesh.num_elems):
-        #    solver.mesh.elem_to_node_IDs[i] = elem_node_IDs
-        # TODO: Remove elem_to_node_IDs completely
-        solver.mesh.elem_to_node_IDs = np.array(
-                [[0, 1, 2], [3, 4, 1], [3, 2, 4]])
-        # Create elements and update neighbors
-        # TODO: Better way to do this
-        #solver.mesh.create_elements()
-        # TODO: Hack: This adds the node to the old element.
-        elem0 = solver.mesh.elements[0]
-        elem0.all_node_IDs = np.append(elem0.node_IDs, 4)
-        elem0.ref_node_coords = np.append(elem0.ref_node_coords, [[.5, .5]], axis=0)
         # Reshape residual array
         solver.stepper.res = np.zeros_like(Uc)
         # TODO: Probably don't need to call all of this
@@ -446,12 +432,18 @@ class Adapter():
 
         # Make a face between elem0 and elem1
         middle_face = mesh_defs.InteriorFace(elem0_ID, 2, elem1_ID, 1)
+        # Get the nodes from elem0's 2nd face. Similar procedure as what was
+        # done with face0 and face1 above.
+        # NOTE: This assumes triangles
+        face_node_nums = solver.mesh.gbasis.get_local_face_node_nums(
+                solver.mesh.gorder, 2)
+        xn_face_ref = xn_ref_new[0, face_node_nums]
+        geom_basis_face = solver.mesh.gbasis.get_values(xn_face_ref)
+        middle_face.node_coords = np.matmul(geom_basis_face, old_nodes)
         # Add new face to the mesh
         solver.mesh.interior_faces.append(middle_face)
         # Update number of faces
         solver.mesh.num_interior_faces += 1
-        # TODO: This is a quick hack to test two triangles
-        middle_face.node_IDs = np.array([3, 4])
 
         # Update face neighbors
         # TODO: This is specific to triangles

@@ -641,7 +641,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	'''
 	for interior_face in mesh.interior_faces:
 		# Get coordinates of face nodes
-		coords = mesh.node_coords[interior_face.node_IDs]
+		coords = interior_face.node_coords
 		if ndims == 1:
 			x = np.full(2, coords[:, 0])
 		else:
@@ -656,7 +656,7 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	for boundary_group in mesh.boundary_groups.values():
 		for boundary_face in boundary_group.boundary_faces:
 			# Get coordinates of face nodes
-			coords = mesh.node_coords[boundary_face.node_IDs]
+			coords = boundary_face.node_coords
 			if ndims == 1:
 				x = np.full(2, coords[:, 0])
 			else:

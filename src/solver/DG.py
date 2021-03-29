@@ -359,9 +359,8 @@ class InteriorFaceHelpers(ElemHelpers):
 					quad_pts, get_val=True)
 			self.faces_to_basisL[i] = basis.basis_val
 			# Right
-			# TODO: Should quad_pts be flipped or not??
 			basis.get_basis_face_val_grads(mesh, interior_face.faceR_ID,
-					quad_pts[::-1], get_val=True)
+					quad_pts, get_val=True)
 			self.faces_to_basisR[i] = basis.basis_val
 			# Normals
 			normals = mesh.gbasis.calculate_normals(mesh,
