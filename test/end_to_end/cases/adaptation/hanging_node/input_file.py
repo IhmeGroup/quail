@@ -6,8 +6,8 @@ import numpy as np
 #	"TimeStepper" : "RK4",
 #}
 TimeStepping = {
-	"FinalTime" : .01,
-	"NumTimeSteps" : 2,
+	"FinalTime" : .1,
+	"NumTimeSteps" : 20,
 	"TimeStepper" : "RK4",
 }
 

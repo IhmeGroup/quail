@@ -347,6 +347,8 @@ class Adapter():
         # Get elem being split (which ends up being elem0) and store old element
         # nodes
         elem0 = solver.mesh.elements[elem0_ID]
+        # Store old faces and nodes
+        old_faces = elem0.faces.copy()
         old_nodes = elem0.node_coords.copy()
         # Create new elem, elem1
         elem1 = mesh_defs.Element(elem1_ID)
@@ -375,7 +377,6 @@ class Adapter():
             neighbor_face_ID = face.faceL_ID
         # If the face has no children
         if not face.children:
-
             # Make a face between elem0 and neighbor
             face0 = mesh_defs.InteriorFace()
             # Make a face between elem1 and neighbor
@@ -401,27 +402,15 @@ class Adapter():
             face0.node_coords = xn_face[0]
             face1.node_coords = xn_face[1]
 
-            # Figure out the orientation
-            if face.elemL_ID == elem0_ID:
-                # The "positive" orientation
-                face0.elemL_ID = elem1_ID
-                face0.elemR_ID = neighbor_ID
-                face0.faceL_ID = 0
-                face0.faceR_ID = neighbor_face_ID
-                face1.elemL_ID = elem0_ID
-                face1.elemR_ID = neighbor_ID
-                face1.faceL_ID = 0
-                face1.faceR_ID = neighbor_face_ID
-            else:
-                # The "negative" orientation
-                face0.elemL_ID = neighbor_ID
-                face0.elemR_ID = elem0_ID
-                face0.faceL_ID = neighbor_face_ID
-                face0.faceR_ID = 0
-                face1.elemL_ID = neighbor_ID
-                face1.elemR_ID = elem1_ID
-                face1.faceL_ID = neighbor_face_ID
-                face1.faceR_ID = 0
+            # Update face neighbors
+            face0.elemL_ID = elem0_ID
+            face0.elemR_ID = neighbor_ID
+            face0.faceL_ID = 0
+            face0.faceR_ID = neighbor_face_ID
+            face1.elemL_ID = elem1_ID
+            face1.elemR_ID = neighbor_ID
+            face1.faceL_ID = 0
+            face1.faceR_ID = neighbor_face_ID
             # Update number of faces
             solver.mesh.num_interior_faces += 1
 
@@ -445,6 +434,12 @@ class Adapter():
         # Update number of faces
         solver.mesh.num_interior_faces += 1
 
+        # Update element faces
+        elem0.faces = np.array([face0, old_faces[face_ID - 2],
+            middle_face])
+        elem1.faces = np.array([face1, old_faces[face_ID - 1],
+            middle_face])
+
         # Update face neighbors
         # TODO: This is specific to triangles
         # TODO: Must update face_IDs on each face after as well!!!
@@ -456,6 +451,9 @@ class Adapter():
             # Update second face counterclockwise of split face
             elif ((face_ID + 2) % solver.mesh.gbasis.NFACES) == local_face_ID:
                 adapter_tools.update_face_neighbor(local_face, elem1_ID, L_or_R)
+
+
+        breakpoint()
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary

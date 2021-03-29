@@ -283,24 +283,28 @@ class Mesh(object):
 			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
 			elem.node_coords = self.node_coords[elem.node_IDs]
 			elem.ref_node_coords = self.gbasis.get_nodes(self.gorder)
+			elem.faces = np.empty(self.gbasis.NFACES, dtype=object)
 
 		# Add interior faces to each element
 		for int_face in self.interior_faces:
 			elemL_ID = int_face.elemL_ID
+			faceL_ID = int_face.faceL_ID
 			elemR_ID = int_face.elemR_ID
+			faceR_ID = int_face.faceR_ID
 
 			elemL = self.elements[elemL_ID]
 			elemR = self.elements[elemR_ID]
 
-			elemL.faces.append(int_face)
-			elemR.faces.append(int_face)
+			elemL.faces[faceL_ID] = int_face
+			elemR.faces[faceR_ID] = int_face
 
 		# Add boundary faces to each element
 		for bgroup in self.boundary_groups.values():
 			for boundary_face in bgroup.boundary_faces:
 				elem_ID = boundary_face.elem_ID
+				face_ID = boundary_face.face_ID
 				elem = self.elements[elem_ID]
-				elem.faces.append(boundary_face)
+				elem.faces[face_ID] = boundary_face
 
 
 	def get_face_coords(self):
