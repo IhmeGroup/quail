@@ -6,13 +6,13 @@ import numpy as np
 #	"TimeStepper" : "RK4",
 #}
 TimeStepping = {
-	"FinalTime" : .1,
-	"NumTimeSteps" : 20,
+	"FinalTime" : .04,
+	"NumTimeSteps" : 4,
 	"TimeStepper" : "RK4",
 }
 
 Numerics = {
-	"SolutionOrder" : 2,
+	"SolutionOrder" : 0,
 	"SolutionBasis" : "LagrangeTri",
 	"ElementQuadrature" : "Dunavant",
 	"FaceQuadrature" : "GaussLegendre",
@@ -22,10 +22,10 @@ Mesh = {
 	"ElementShape" : "Triangle",
 	"NumElemsX" : 1,
 	"NumElemsY" : 1,
-	"xmin" : -5,
-	"xmax" : 5,
-	"ymin" : -5,
-	"ymax" : 5,
+	"xmin" : -2.5,
+	"xmax" : 7.5,
+	"ymin" : -2.5,
+	"ymax" : 7.5,
 	#"xmin" : 0,
 	#"xmax" : 1,
 	#"ymin" : 0,
