@@ -6,13 +6,13 @@ import numpy as np
 #	"TimeStepper" : "RK4",
 #}
 TimeStepping = {
-	"FinalTime" : .04,
-	"NumTimeSteps" : 4,
+	"FinalTime" : .5,
+	"NumTimeSteps" : 200,
 	"TimeStepper" : "RK4",
 }
 
 Numerics = {
-	"SolutionOrder" : 0,
+	"SolutionOrder" : 8,
 	"SolutionBasis" : "LagrangeTri",
 	"ElementQuadrature" : "Dunavant",
 	"FaceQuadrature" : "GaussLegendre",
@@ -73,7 +73,7 @@ BoundaryConditions = {
 #}
 
 Output = {
-	"WriteInterval" : 1,
+	"WriteInterval" : 10,
 	"Prefix" : "Data",
 	"AutoPostProcess" : False,
 	"WriteInitialSolution" : True,

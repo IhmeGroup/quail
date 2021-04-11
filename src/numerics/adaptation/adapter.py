@@ -1,5 +1,6 @@
 import numpy as np
 
+import numerics.basis.tools as basis_tools
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 import numerics.adaptation.tools as adapter_tools
@@ -54,6 +55,7 @@ class Adapter():
         # accounted for.
         self.xq_ref = solver.elem_helpers.quad_pts
         self.w = solver.elem_helpers.quad_wts.flatten()
+        self.face_quad_pts = solver.int_face_helpers.quad_pts
         # Basis evaluated at quadrature points
         self.phi_xq_ref = solver.basis.get_values(self.xq_ref)
         # Reference gradient of geometric basis on reference quadrature points
@@ -62,6 +64,7 @@ class Adapter():
         self.elem_to_adaptation_group = elem_to_adaptation_group
         self.adaptation_groups = adaptation_groups
         # Precompute matrices
+        # TODO: Get rid of this
         self.A = adapter_tools.calculate_A(self.phi_xq_ref, self.w)
         self.B = adapter_tools.calculate_B(self.phi_xq_ref, self.w)
 
@@ -138,6 +141,8 @@ class Adapter():
         solver.bface_helpers.get_basis_and_geom_data(solver.mesh, solver.basis,
                 solver.order)
 
+        breakpoint()
+
         return (n_elems, dJ, Uc, iMM)
 
     def refine(self, elements, interior_faces, gbasis, basis, refine_IDs,
@@ -176,10 +181,8 @@ class Adapter():
 
         # Transform reference nodes into new nodes on reference element
         # TODO: Precompute these for each orientation
-        xn_ref_new = self.refinement_transformation(self.xn_ref, self.T_J,
-                self.T_const, face_ID)
-        xq_ref_new = self.refinement_transformation(self.xq_ref, self.T_J,
-                self.T_const, face_ID)
+        xn_ref_new = self.refinement_transformation(self.xn_ref, face_ID)
+        xq_ref_new = self.refinement_transformation(self.xq_ref, face_ID)
 
         # Get elem being split (which ends up being elem0)
         elem0 = elements[elem0_ID]
@@ -214,12 +217,17 @@ class Adapter():
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
+        # 3. old quadrature points on the reference elements on either side
         if face.elemL_ID == elem0_ID:
             neighbor_ID = face.elemR_ID
             neighbor_face_ID = face.faceR_ID
+            quad_ptsL = face.quad_ptsL
+            quad_ptsR = face.quad_ptsR
         else:
             neighbor_ID = face.elemL_ID
             neighbor_face_ID = face.faceL_ID
+            quad_ptsL = face.quad_ptsR
+            quad_ptsR = face.quad_ptsL
         # If the face has no children
         if not face.children:
             # Make a face between elem0 and neighbor
@@ -247,6 +255,37 @@ class Adapter():
             face0.node_coords = xn_face[0]
             face1.node_coords = xn_face[1]
 
+            # TODO: Transform the quad pts on the neighbor side
+            # t1 = 0; t2 = 0; t3 = 0; e = 0; x = self.refinement_transformation(self.refinement_transformation(self.refinement_transformation(x_ref, t1)[e], t2)[e], t3)[e]; plt.plot(np.append(x[:,0],x[0,0]), np.append(x[:,1],x[0,1])); plt.xlim([0,1]); plt.ylim([0,1]); plt.show()
+            # TODO: Should this be a [0] or [1] on the neighbor side??
+
+            # The left sides of face0 and face1 are always leaf faces, and with
+            # face ID of 0
+            face0.quad_ptsL = basis.get_elem_ref_from_face_ref(0, self.face_quad_pts)
+            face1.quad_ptsL = basis.get_elem_ref_from_face_ref(0, self.face_quad_pts)
+
+            # The right sides have the neighbor, and are not leaf faces,
+            # therefore the quad points need to be transformed
+            # TODO: Why is this backwards?
+            face0.quad_ptsR = self.refinement_transformation(quad_ptsR,
+                    neighbor_face_ID)[1][::-1, :]
+            face1.quad_ptsR = self.refinement_transformation(quad_ptsR,
+                    neighbor_face_ID)[0][::-1, :]
+            # Loop over old face IDs and apply the transformation again
+            # TODO: This is like 100% wrong
+            for ID in face0.old_faceL_IDs:
+                face0.quad_ptsR = self.refinement_transformation(
+                        face0.quad_ptsR, ID)[1]
+            for ID in face1.old_faceL_IDs:
+                face1.quad_ptsR = self.refinement_transformation(
+                        face0.quad_ptsR, ID)[0]
+
+            # Store old face IDs
+            face0.old_faceL_IDs.append(face0.faceL_ID)
+            face0.old_faceR_IDs.append(face0.faceR_ID)
+            face1.old_faceL_IDs.append(face1.faceL_ID)
+            face1.old_faceR_IDs.append(face1.faceR_ID)
+
             # Update face neighbors
             face0.elemL_ID = elem0_ID
             face0.elemR_ID = neighbor_ID
@@ -258,6 +297,10 @@ class Adapter():
             face1.faceR_ID = neighbor_face_ID
             # Number of new faces
             num_new_interior_faces = 1
+
+            # TODO: Using:
+            # basis_tools.get_lagrange_basis_1D
+            # Figure out the nodes on either side.
 
         # If the face does have children
         else:
@@ -274,6 +317,11 @@ class Adapter():
         xn_face_ref = xn_ref_new[0, face_node_nums]
         geom_basis_face = gbasis.get_values(xn_face_ref)
         middle_face.node_coords = np.matmul(geom_basis_face, old_nodes)
+        # Add quadrature points to face
+        middle_face.quad_ptsL = basis.get_elem_ref_from_face_ref(2,
+                self.face_quad_pts)[::-1, :]
+        middle_face.quad_ptsR = basis.get_elem_ref_from_face_ref(1,
+                self.face_quad_pts)
         # Add new face to the mesh
         interior_faces.append(middle_face)
         # Update number of new faces
@@ -287,7 +335,6 @@ class Adapter():
 
         # Update face neighbors
         # TODO: This is specific to triangles
-        # TODO: Must update face_IDs on each face after as well!!!
         for local_face in old_faces:
             # Do not update the old face, which will be removed
             if local_face is not face:
@@ -295,10 +342,10 @@ class Adapter():
                         elem0_ID)
                 # Update first face counterclockwise of split face
                 if   ((face_ID + 1) % gbasis.NFACES) == local_face_ID:
-                    adapter_tools.update_face_neighbor(local_face, elem0_ID, L_or_R)
+                    adapter_tools.update_face_neighbor(local_face, elem0_ID, 1, L_or_R)
                 # Update second face counterclockwise of split face
                 elif ((face_ID + 2) % gbasis.NFACES) == local_face_ID:
-                    adapter_tools.update_face_neighbor(local_face, elem1_ID, L_or_R)
+                    adapter_tools.update_face_neighbor(local_face, elem1_ID, 2, L_or_R)
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary
@@ -392,12 +439,12 @@ class Adapter():
         Uc[new_elem_IDs] = np.einsum('isn, js, ijk, ij -> ink', iMM[new_elem_IDs],
                 self.B, U_new, dJ[new_elem_IDs])
 
-    def refinement_transformation(self, x_ref, T_J, T_const, face_ID):
+    def refinement_transformation(self, x_ref, face_ID):
         """Transform from the old element reference space to the two new elements
         during refinement.
         """
-        x = np.einsum('ilr, pr -> ipl', T_J[face_ID],
-                x_ref) + T_const[face_ID]
+        x = np.einsum('ilr, pr -> ipl', self.T_J[face_ID],
+                x_ref) + self.T_const[face_ID]
         return x
 
     def coarsen(self, solver, coarsen_IDs, iMM_old, dJ_old, Uc_old, refine_IDs):

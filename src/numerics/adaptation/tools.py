@@ -32,7 +32,7 @@ def get_face_ID(face, elem_ID):
     else:
         return face.face_ID, None
 
-def update_face_neighbor(face, elem_ID, on_the_left):
+def update_face_neighbor(face, elem_ID, face_ID, on_the_left):
     """
     Update neighbor of face given the element ID and the side of the face.
     """
@@ -41,8 +41,11 @@ def update_face_neighbor(face, elem_ID, on_the_left):
     if isinstance(face, mesh_defs.InteriorFace):
         if on_the_left:
             face.elemL_ID = elem_ID
+            face.faceL_ID = face_ID
         else:
             face.elemR_ID = elem_ID
+            face.faceR_ID = face_ID
     # Otherwise, it's a BoundaryFace, and has only one side
     else:
         face.elem_ID = elem_ID
+        face.face_ID = face_ID

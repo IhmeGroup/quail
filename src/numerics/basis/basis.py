@@ -917,6 +917,7 @@ class BasisBase(ABC):
 				physical gradients) [nq, nq, ndims]
 		Outputs:
 		--------
+			elem_pts: coordinates of face points on the reference element
 			Sets the following attributes of the BasisBase class:
 			basis_val: evaluated basis function [nq, nb]
 			basis_ref_grad: evaluated gradient of the basis function in
@@ -932,6 +933,8 @@ class BasisBase(ABC):
 
 		self.get_basis_val_grads(elem_pts, get_val, get_ref_grad,
 				get_phys_grad, ijac)
+
+		return elem_pts
 
 	def force_colocated_nodes_quad_pts(self, use_colocated_scheme):
 		'''

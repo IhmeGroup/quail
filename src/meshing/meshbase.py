@@ -31,6 +31,12 @@ class InteriorFace(object):
 	children : list
 		either an empty list if a leaf face or a list of two subfaces created
 		from refinement
+	old_faceL_IDs : list
+		list of local face IDs of left element of all parent faces, in order of
+		refinement
+	old_faceR_IDs : list
+		list of local face IDs of right element of all parent faces, in order of
+		refinement
 	'''
 	def __init__(self, elemL_ID = 0, faceL_ID = 0, elemR_ID = 0, faceR_ID = 0):
 		self.elemL_ID = elemL_ID
@@ -38,7 +44,11 @@ class InteriorFace(object):
 		self.elemR_ID = elemR_ID
 		self.faceR_ID = faceR_ID
 		self.node_coords = np.array([])
+		self.quad_ptsL = np.array([])
+		self.quad_ptsR = np.array([])
 		self.children = []
+		self.old_faceL_IDs = []
+		self.old_faceR_IDs = []
 
 
 class BoundaryFace(object):
@@ -319,7 +329,6 @@ class Mesh(object):
 			self.boundary_groups[:].boundary_faces[:].node_IDs: Array of node
 					IDs for each boundary face
 		'''
-
 		# Loop over InteriorFaces
 		for interior_face in self.interior_faces:
 			# Get node numbers on the element to the left of this face

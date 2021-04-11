@@ -355,13 +355,19 @@ class InteriorFaceHelpers(ElemHelpers):
 		# compute normals
 		for i, interior_face in enumerate(mesh.interior_faces):
 			# Left
-			basis.get_basis_face_val_grads(mesh, interior_face.faceL_ID,
-					quad_pts, get_val=True)
-			self.faces_to_basisL[i] = basis.basis_val
+			if interior_face.quad_ptsL.size == 0:
+				interior_face.quad_ptsL = basis.get_basis_face_val_grads(mesh,
+						interior_face.faceL_ID, quad_pts, get_val=True)
+				self.faces_to_basisL[i] = basis.basis_val
+			else:
+				self.faces_to_basisL[i] = basis.get_values(interior_face.quad_ptsL)
 			# Right
-			basis.get_basis_face_val_grads(mesh, interior_face.faceR_ID,
-					quad_pts, get_val=True)
-			self.faces_to_basisR[i] = basis.basis_val
+			if interior_face.quad_ptsR.size == 0:
+				interior_face.quad_ptsR = basis.get_basis_face_val_grads(mesh,
+						interior_face.faceR_ID, quad_pts, get_val=True)
+				self.faces_to_basisR[i] = basis.basis_val
+			else:
+				self.faces_to_basisR[i] = basis.get_values(interior_face.quad_ptsR)
 			# Normals
 			normals = mesh.gbasis.calculate_normals(mesh,
 					interior_face.node_coords, interior_face.faceL_ID, quad_pts)
