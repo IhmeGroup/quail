@@ -221,13 +221,9 @@ class Adapter():
         if face.elemL_ID == elem0_ID:
             neighbor_ID = face.elemR_ID
             neighbor_face_ID = face.faceR_ID
-            quad_ptsL = face.quad_ptsL
-            quad_ptsR = face.quad_ptsR
         else:
             neighbor_ID = face.elemL_ID
             neighbor_face_ID = face.faceL_ID
-            quad_ptsL = face.quad_ptsR
-            quad_ptsR = face.quad_ptsL
         # If the face has no children
         if not face.children:
             # Make a face between elem0 and neighbor
@@ -276,7 +272,6 @@ class Adapter():
             face1.faceR_ID = neighbor_face_ID
             # Number of new faces
             num_new_interior_faces = 1
-            breakpoint()
 
             # TODO: Using:
             # basis_tools.get_lagrange_basis_1D

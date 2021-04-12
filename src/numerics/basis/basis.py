@@ -213,15 +213,14 @@ class ShapeBase(ABC):
 		'''
 		pass
 
-	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
+	def get_elem_ref_from_face_ref(self, refQ1nodes, face_pts):
 		'''
 		Defines element reference nodes
 
 		Inputs:
 		-------
 			mesh: Mesh object
-			elem_ID: ID of element adjacent to face
-			face_node_IDs: global node IDs of face
+			refQ1nodes: Q1 nodes of the face in element reference space
 			face_pts: coordinates for face pts
 
 		Outputs:
@@ -229,11 +228,9 @@ class ShapeBase(ABC):
 			elem_pts: coordinates in element reference space
 		'''
 
-		fnodes = self.get_local_face_principal_node_nums(1, face_ID)
-
-		# coordinates of local q = 1 nodes on face
-		xn0 = self.PRINCIPAL_NODE_COORDS[fnodes[0]]
-		xn1 = self.PRINCIPAL_NODE_COORDS[fnodes[1]]
+		# Coordinates of local q = 1 nodes on face
+		xn0 = refQ1nodes[0]
+		xn1 = refQ1nodes[1]
 
 		xf1 = (face_pts + 1.) / 2.
 		xf0 = 1. - xf1
@@ -896,7 +893,7 @@ class BasisBase(ABC):
 				raise Exception("Need Jacobian data")
 			self.basis_phys_grad = self.get_physical_grads(ijac)
 
-	def get_basis_face_val_grads(self, mesh, face_ID, face_pts, basis=None,
+	def get_basis_face_val_grads(self, mesh, refQ1nodes, face_pts, basis=None,
 			get_val=True, get_ref_grad=False, get_phys_grad=False,
 			ijac=None):
 		'''
@@ -905,7 +902,7 @@ class BasisBase(ABC):
 		Inputs:
 		-------
 			mesh: mesh object
-			face_ID: index of face in reference element
+			refQ1nodes: Q1 nodes of the face in element reference space
 			face_pts: coordinates of quadrature points on the face
 			basis: basis object
 			get_val: [OPTIONAL] flag to calculate basis functions
@@ -929,7 +926,7 @@ class BasisBase(ABC):
 			basis = self
 
 		# Convert from face ref space to element ref space
-		elem_pts = basis.get_elem_ref_from_face_ref(face_ID, face_pts)
+		elem_pts = basis.get_elem_ref_from_face_ref(refQ1nodes, face_pts)
 
 		self.get_basis_val_grads(elem_pts, get_val, get_ref_grad,
 				get_phys_grad, ijac)

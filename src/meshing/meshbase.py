@@ -376,4 +376,4 @@ class Mesh(object):
 				ref_nodes = self.gbasis.get_nodes(self.gorder)
 				node_indices = self.gbasis.get_local_face_principal_node_nums(
 						self.gorder, boundary_face.face_ID)
-				interior_face.refQ1nodes = ref_nodes[node_indices]
+				boundary_face.refQ1nodes = ref_nodes[node_indices]
