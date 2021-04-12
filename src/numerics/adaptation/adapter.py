@@ -224,8 +224,13 @@ class Adapter():
         else:
             neighbor_ID = face.elemL_ID
             neighbor_face_ID = face.faceL_ID
-        # If the face has no children
-        if not face.children:
+
+
+        # If the face has no children, then new faces must be created
+        create_new_faces = not face.children
+
+        # If new faces need to be made
+        if create_new_faces:
             # Make a face between elem0 and neighbor
             face0 = mesh_defs.InteriorFace()
             # Make a face between elem1 and neighbor
@@ -277,7 +282,6 @@ class Adapter():
                 refQ1node_nums_L = gbasis.get_local_face_principal_node_nums(
                         gbasis.order, 0)
                 new_face.refQ1nodes_L = gbasis.PRINCIPAL_NODE_COORDS[refQ1node_nums_L]
-            breakpoint()
 
             # Store old face IDs
             face0.old_faceL_IDs.append(face0.faceL_ID)
@@ -294,13 +298,32 @@ class Adapter():
             face1.elemR_ID = neighbor_ID
             face1.faceL_ID = 0
             face1.faceR_ID = neighbor_face_ID
-            # Number of new faces
-            num_new_interior_faces = 1
+            # One face split into two, and the middle face will be made later,
+            # so there are two new interior faces
+            num_new_interior_faces = 2
 
-        # If the face does have children
+        # If new faces do not need to be made
         else:
-            # Implement this
-            pass
+            # Get the faces from the face's children
+            face0, face1 = face.children
+
+            # Transform the Q1 nodes of each face on this side
+            # TODO: This will not work if some are face L's and some are R's.
+            # Pick an orientation so that this does not flip around.
+            # TODO: Deep transform (children of children, etc).
+            for pair_ID, new_face in enumerate([face0, face1]):
+                new_face.refQ1nodes_R = self.inverse_refinement_transformation(
+                        new_face.refQ1nodes_R, face_ID, 1 - pair_ID)
+
+            # Update face neighbors
+            face0.elemR_ID = elem1_ID
+            face0.faceR_ID = 0
+            face1.elemR_ID = elem0_ID
+            face1.faceR_ID = 0
+
+            # No faces were split into two, but the middle face will still be
+            # made later, so there is one new interior face
+            num_new_interior_faces = 1
 
         # Make a face between elem0 and elem1
         middle_face = mesh_defs.InteriorFace(elem0_ID, 2, elem1_ID, 1)
@@ -325,8 +348,6 @@ class Adapter():
 
         # Add new face to the mesh
         interior_faces.append(middle_face)
-        # Update number of new faces
-        num_new_interior_faces += 1
 
         # Update element faces
         elem0.faces = np.array([face0, old_faces[face_ID - 2],
@@ -365,8 +386,8 @@ class Adapter():
         #self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
         # ---- End old stuff, before hanging nodes ---- #
 
-        # Remove the old face
-        interior_faces.remove(face)
+        # Remove the old face if new faces were made
+        if create_new_faces: interior_faces.remove(face)
 
         # Compute Jacobian matrix
         J = np.einsum('pnr, inl -> iplr', self.grad_phi_g, xn_new)
@@ -446,6 +467,13 @@ class Adapter():
         """
         x = np.einsum('ilr, pr -> ipl', self.T_J[face_ID],
                 x_ref) + self.T_const[face_ID]
+        return x
+
+    def inverse_refinement_transformation(self, x_ref, face_ID, pair_ID):
+        """Transform from the new element reference space to the old element.
+        """
+        x = np.einsum('lr, pr -> pl', self.T_J_inv[face_ID, pair_ID],
+                x_ref - self.T_const[face_ID, pair_ID])
         return x
 
     def coarsen(self, solver, coarsen_IDs, iMM_old, dJ_old, Uc_old, refine_IDs):
