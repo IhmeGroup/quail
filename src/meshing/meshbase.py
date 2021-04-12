@@ -357,7 +357,7 @@ class Mesh(object):
 			interior_face.refQ1nodes_L = ref_nodes[node_indices_L]
 			node_indices_R = self.gbasis.get_local_face_principal_node_nums(
 					self.gorder, interior_face.faceR_ID)
-			interior_face.refQ1nodes_R = ref_nodes[node_indices_R]
+			interior_face.refQ1nodes_R = ref_nodes[node_indices_R][::-1]
 
 		# Loop over BoundaryGroups
 		for bgroup in self.boundary_groups.values():

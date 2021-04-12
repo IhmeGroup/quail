@@ -250,10 +250,34 @@ class Adapter():
                 xn_face[i] = np.matmul(geom_basis_face, old_nodes)
             face0.node_coords = xn_face[0]
             face1.node_coords = xn_face[1]
+            # Extract end points to get the Q1 nodes in element reference space
+            face0.refQ1nodes_L = xn_face_ref[0][(0, -1), :]
+            face1.refQ1nodes_L = xn_face_ref[1][(0, -1), :]
 
-            # TODO: Transform the quad pts on the neighbor side
-            # t1 = 0; t2 = 0; t3 = 0; e = 0; x = self.refinement_transformation(self.refinement_transformation(self.refinement_transformation(x_ref, t1)[e], t2)[e], t3)[e]; plt.plot(np.append(x[:,0],x[0,0]), np.append(x[:,1],x[0,1])); plt.xlim([0,1]); plt.ylim([0,1]); plt.show()
-            # TODO: Should this be a [0] or [1] on the neighbor side??
+            # Figure out the nodes on either side using the transformation
+            # between reference left to right on the face
+            faceL_gbasis_val = np.empty((face0.refQ1nodes_L.shape[0], 2))
+            for new_face in [face0, face1]:
+                # Initialize
+                new_face.refQ1nodes_R = np.empty_like(new_face.refQ1nodes_L)
+                for dim in range(2):
+                    # Old face Q1 Lagrange basis eval'd at new points on
+                    # reference element
+                    basis_tools.get_lagrange_basis_1D(
+                            new_face.refQ1nodes_L[:, dim].reshape((-1, 1)),
+                            face.refQ1nodes_L[:, dim].reshape((-1, 1)),
+                            faceL_gbasis_val)
+                    # Transform from left element to right element
+                    new_face.refQ1nodes_R[:, dim] = np.matmul(faceL_gbasis_val,
+                            face.refQ1nodes_R[:, dim])
+
+                # Now that the Q1 nodes on the left have been transformed to the
+                # right, replace them with the new Q1 nodes, which are just the
+                # principle nodes on the new element
+                refQ1node_nums_L = gbasis.get_local_face_principal_node_nums(
+                        gbasis.order, 0)
+                new_face.refQ1nodes_L = gbasis.PRINCIPAL_NODE_COORDS[refQ1node_nums_L]
+            breakpoint()
 
             # Store old face IDs
             face0.old_faceL_IDs.append(face0.faceL_ID)
@@ -273,10 +297,6 @@ class Adapter():
             # Number of new faces
             num_new_interior_faces = 1
 
-            # TODO: Using:
-            # basis_tools.get_lagrange_basis_1D
-            # Figure out the nodes on either side.
-
         # If the face does have children
         else:
             # Implement this
@@ -292,11 +312,17 @@ class Adapter():
         xn_face_ref = xn_ref_new[0, face_node_nums]
         geom_basis_face = gbasis.get_values(xn_face_ref)
         middle_face.node_coords = np.matmul(geom_basis_face, old_nodes)
-        # Add quadrature points to face
-        middle_face.quad_ptsL = basis.get_elem_ref_from_face_ref(2,
-                self.face_quad_pts)[::-1, :]
-        middle_face.quad_ptsR = basis.get_elem_ref_from_face_ref(1,
-                self.face_quad_pts)
+        # Add reference Q1 nodes to face by getting them from the left and right
+        # side
+        refQ1node_nums_L = gbasis.get_local_face_principal_node_nums(
+                gbasis.order, 2)
+        refQ1node_nums_R = gbasis.get_local_face_principal_node_nums(
+                gbasis.order, 1)
+        middle_face.refQ1nodes_L = gbasis.PRINCIPAL_NODE_COORDS[
+                refQ1node_nums_L]
+        middle_face.refQ1nodes_R = gbasis.PRINCIPAL_NODE_COORDS[
+                refQ1node_nums_R][::-1]
+
         # Add new face to the mesh
         interior_faces.append(middle_face)
         # Update number of new faces
