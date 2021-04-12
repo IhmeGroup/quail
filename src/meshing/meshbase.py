@@ -28,6 +28,12 @@ class InteriorFace(object):
 		local ID of face from perspective of right element
 	node_coords: numpy array
 		coordinates of the face nodes [num_nodes, ndims]
+	refQ1nodes_L: numpy array
+		coordinates of the face Q1 nodes in the left element's reference space
+		[num_Q1_nodes, ndims]
+	refQ1nodes_R: numpy array
+		coordinates of the face Q1 nodes in the right element's reference space
+		[num_Q1_nodes, ndims]
 	children : list
 		either an empty list if a leaf face or a list of two subfaces created
 		from refinement
@@ -44,11 +50,11 @@ class InteriorFace(object):
 		self.elemR_ID = elemR_ID
 		self.faceR_ID = faceR_ID
 		self.node_coords = np.array([])
-		self.quad_ptsL = np.array([])
-		self.quad_ptsR = np.array([])
 		self.children = []
 		self.old_faceL_IDs = []
 		self.old_faceR_IDs = []
+		self.refQ1nodes_L = np.array([])
+		self.refQ1nodes_R = np.array([])
 
 
 class BoundaryFace(object):
@@ -63,11 +69,15 @@ class BoundaryFace(object):
 		local ID of face from perspective of adjacent element
 	node_coords: numpy array
 		coordinates of the face nodes [num_nodes, ndims]
+	refQ1nodes: numpy array
+		coordinates of the face Q1 nodes in the element's reference space
+		[num_Q1_nodes, ndims]
 	'''
 	def __init__(self, elem_ID = 0, face_ID = 0):
 		self.elem_ID = elem_ID
 		self.face_ID = face_ID
 		self.node_coords = np.array([])
+		self.refQ1nodes = np.array([])
 
 
 class BoundaryGroup(object):
@@ -340,6 +350,14 @@ class Mesh(object):
 					node_nums]
 			# Coordinates in physical space
 			interior_face.node_coords = self.node_coords[node_IDs]
+			# Get reference space Q1 nodes of face
+			ref_nodes = self.gbasis.get_nodes(self.gorder)
+			node_indices_L = self.gbasis.get_local_face_principal_node_nums(
+					self.gorder, interior_face.faceL_ID)
+			interior_face.refQ1nodes_L = ref_nodes[node_indices_L]
+			node_indices_R = self.gbasis.get_local_face_principal_node_nums(
+					self.gorder, interior_face.faceR_ID)
+			interior_face.refQ1nodes_R = ref_nodes[node_indices_R]
 
 		# Loop over BoundaryGroups
 		for bgroup in self.boundary_groups.values():
@@ -354,3 +372,8 @@ class Mesh(object):
 						boundary_face.elem_ID].node_IDs[node_nums]
 				# Coordinates in physical space
 				boundary_face.node_coords = self.node_coords[node_IDs]
+				# Get reference space Q1 nodes of face
+				ref_nodes = self.gbasis.get_nodes(self.gorder)
+				node_indices = self.gbasis.get_local_face_principal_node_nums(
+						self.gorder, boundary_face.face_ID)
+				interior_face.refQ1nodes = ref_nodes[node_indices]

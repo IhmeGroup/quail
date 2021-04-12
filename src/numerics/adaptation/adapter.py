@@ -259,27 +259,6 @@ class Adapter():
             # t1 = 0; t2 = 0; t3 = 0; e = 0; x = self.refinement_transformation(self.refinement_transformation(self.refinement_transformation(x_ref, t1)[e], t2)[e], t3)[e]; plt.plot(np.append(x[:,0],x[0,0]), np.append(x[:,1],x[0,1])); plt.xlim([0,1]); plt.ylim([0,1]); plt.show()
             # TODO: Should this be a [0] or [1] on the neighbor side??
 
-            # The left sides of face0 and face1 are always leaf faces, and with
-            # face ID of 0
-            face0.quad_ptsL = basis.get_elem_ref_from_face_ref(0, self.face_quad_pts)
-            face1.quad_ptsL = basis.get_elem_ref_from_face_ref(0, self.face_quad_pts)
-
-            # The right sides have the neighbor, and are not leaf faces,
-            # therefore the quad points need to be transformed
-            # TODO: Why is this backwards?
-            face0.quad_ptsR = self.refinement_transformation(quad_ptsR,
-                    neighbor_face_ID)[1][::-1, :]
-            face1.quad_ptsR = self.refinement_transformation(quad_ptsR,
-                    neighbor_face_ID)[0][::-1, :]
-            # Loop over old face IDs and apply the transformation again
-            # TODO: This is like 100% wrong
-            for ID in face0.old_faceL_IDs:
-                face0.quad_ptsR = self.refinement_transformation(
-                        face0.quad_ptsR, ID)[1]
-            for ID in face1.old_faceL_IDs:
-                face1.quad_ptsR = self.refinement_transformation(
-                        face0.quad_ptsR, ID)[0]
-
             # Store old face IDs
             face0.old_faceL_IDs.append(face0.faceL_ID)
             face0.old_faceR_IDs.append(face0.faceR_ID)
@@ -297,6 +276,7 @@ class Adapter():
             face1.faceR_ID = neighbor_face_ID
             # Number of new faces
             num_new_interior_faces = 1
+            breakpoint()
 
             # TODO: Using:
             # basis_tools.get_lagrange_basis_1D
