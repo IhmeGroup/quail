@@ -126,22 +126,16 @@ class Element(object):
 	-----------
 	ID: int
 		element ID
-	node_IDs: numpy array
-		global IDs of the element nodes
 	node_coords: numpy array
 		coordinates of the element nodes [num_nodes, ndims]
 	faces: list
 		list of faces (both InteriorFaces and BoundaryFaces) which border this
 		element, ordered by local face ID
-	ref_node_coords: numpy array
-		coordinates of nodes in reference space
 	'''
 	def __init__(self, elem_ID=-1):
 		self.ID = elem_ID
-		self.node_IDs = np.zeros(0, dtype=int)
 		self.node_coords = np.zeros(0)
 		self.faces = []
-		self.ref_node_coords = np.empty((0,0))
 
 
 class Mesh(object):
@@ -300,9 +294,7 @@ class Mesh(object):
 			elem = self.elements[elem_ID]
 
 			elem.ID = elem_ID
-			elem.node_IDs = self.elem_to_node_IDs[elem_ID]
-			elem.node_coords = self.node_coords[elem.node_IDs]
-			elem.ref_node_coords = self.gbasis.get_nodes(self.gorder)
+			elem.node_coords = self.node_coords[self.elem_to_node_IDs[elem_ID]]
 			elem.faces = np.empty(self.gbasis.NFACES, dtype=object)
 
 		# Add interior faces to each element
@@ -344,12 +336,12 @@ class Mesh(object):
 			# Get node numbers on the element to the left of this face
 			node_nums = self.gbasis.get_local_face_node_nums(self.gorder,
 					interior_face.faceL_ID)
-			# The global node IDs associated with the node numbers on the
-			# element
-			node_IDs = self.elements[interior_face.elemL_ID].node_IDs[
+			# Coordinates in physical space associated with the node numbers on
+			# the element
+			node_coords = self.elements[interior_face.elemL_ID].node_coords[
 					node_nums]
 			# Coordinates in physical space
-			interior_face.node_coords = self.node_coords[node_IDs]
+			interior_face.node_coords = node_coords
 			# Get reference space Q1 nodes of face
 			ref_nodes = self.gbasis.get_nodes(self.gorder)
 			node_indices_L = self.gbasis.get_local_face_principal_node_nums(
@@ -366,12 +358,12 @@ class Mesh(object):
 				# Get node numbers on the element adjacent to this face
 				node_nums = self.gbasis.get_local_face_node_nums(self.gorder,
 						boundary_face.face_ID)
-				# The global node IDs associated with the node numbers on the
-				# element
-				node_IDs = self.elements[
-						boundary_face.elem_ID].node_IDs[node_nums]
+				# Coordinates in physical space associated with the node
+				# numbers on the element
+				node_coords = self.elements[boundary_face.elem_ID].node_coords[
+						node_nums]
 				# Coordinates in physical space
-				boundary_face.node_coords = self.node_coords[node_IDs]
+				boundary_face.node_coords = node_coords
 				# Get reference space Q1 nodes of face
 				ref_nodes = self.gbasis.get_nodes(self.gorder)
 				node_indices = self.gbasis.get_local_face_principal_node_nums(

@@ -23,18 +23,18 @@ class Adapter():
     T_J = np.empty((3, 2, 2, 2))
     T_J[0, 0] = np.array([[.5, 0.], [.5, 1.]])
     T_J[0, 1] = np.array([[1., .5], [0., .5]])
-    T_J[1, 0] = np.array([[-1., -1.], [.5, 0.]])
-    T_J[1, 1] = np.array([[-1., -1.], [1., .5]])
-    T_J[2, 0] = np.array([[.5, 1.], [-1., -1.]])
-    T_J[2, 1] = np.array([[0., .5], [-1., -1.]])
+    T_J[1, 0] = np.array([[1., 0.], [0., .5]])
+    T_J[1, 1] = np.array([[1., 0.], [-.5, .5]])
+    T_J[2, 0] = np.array([[.5, -.5], [0., 1.]])
+    T_J[2, 1] = np.array([[.5, 0.], [0., 1.]])
 
     T_const = np.empty((3, 2, 1, 2))
     T_const[0, 0] = np.array([[0., 0.]])
     T_const[0, 1] = np.array([[0., 0.]])
-    T_const[1, 0] = np.array([[1., 0.]])
-    T_const[1, 1] = np.array([[1., 0.]])
-    T_const[2, 0] = np.array([[0., 1.]])
-    T_const[2, 1] = np.array([[0., 1.]])
+    T_const[1, 0] = np.array([[0., 0.]])
+    T_const[1, 1] = np.array([[0., .5]])
+    T_const[2, 0] = np.array([[.5, 0.]])
+    T_const[2, 1] = np.array([[0., 0.]])
 
     T_J_inv = np.empty_like(T_J)
     for i in range(3):
@@ -217,14 +217,15 @@ class Adapter():
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
-        # 3. old quadrature points on the reference elements on either side
+        # 3. if needed, flip orientation of elements
         if face.elemL_ID == elem0_ID:
             neighbor_ID = face.elemR_ID
             neighbor_face_ID = face.faceR_ID
         else:
             neighbor_ID = face.elemL_ID
             neighbor_face_ID = face.faceL_ID
-
+            xn_ref_new = xn_ref_new[::-1]
+            xq_ref_new = xq_ref_new[::-1]
 
         # If the face has no children, then new faces must be created
         create_new_faces = not face.children
@@ -241,63 +242,63 @@ class Adapter():
             # Make new faces children of old face
             face.children = [face0, face1]
 
-            # The new split faces are always face_ID 0. Get indices of element nodes
-            # colocated on the face.
-            face_node_nums = gbasis.get_local_face_node_nums(
-                    gbasis.order, 0)
-            # Use these indices to index the element nodes to get the face nodes
-            # in reference space
-            xn_face_ref = xn_ref_new[:, face_node_nums]
-            # Convert these to physical space
-            xn_face = np.empty_like(xn_face_ref)
-            for i in range(2):
-                geom_basis_face = gbasis.get_values(xn_face_ref[i])
-                xn_face[i] = np.matmul(geom_basis_face, old_nodes)
-            face0.node_coords = xn_face[0]
-            face1.node_coords = xn_face[1]
-            # Extract end points to get the Q1 nodes in element reference space
-            face0.refQ1nodes_L = xn_face_ref[0][(0, -1), :]
-            face1.refQ1nodes_L = xn_face_ref[1][(0, -1), :]
-
-            # Figure out the nodes on either side using the transformation
-            # between reference left to right on the face
-            faceL_gbasis_val = np.empty((face0.refQ1nodes_L.shape[0], 2))
-            for new_face in [face0, face1]:
-                # Initialize
-                new_face.refQ1nodes_R = np.empty_like(new_face.refQ1nodes_L)
-                for dim in range(2):
-                    # Old face Q1 Lagrange basis eval'd at new points on
-                    # reference element
-                    basis_tools.get_lagrange_basis_1D(
-                            new_face.refQ1nodes_L[:, dim].reshape((-1, 1)),
-                            face.refQ1nodes_L[:, dim].reshape((-1, 1)),
-                            faceL_gbasis_val)
-                    # Transform from left element to right element
-                    new_face.refQ1nodes_R[:, dim] = np.matmul(faceL_gbasis_val,
-                            face.refQ1nodes_R[:, dim])
-
-                # Now that the Q1 nodes on the left have been transformed to the
-                # right, replace them with the new Q1 nodes, which are just the
-                # principle nodes on the new element
-                refQ1node_nums_L = gbasis.get_local_face_principal_node_nums(
-                        gbasis.order, 0)
-                new_face.refQ1nodes_L = gbasis.PRINCIPAL_NODE_COORDS[refQ1node_nums_L]
+            # Get the reference Q1 nodes from endpoints of elem0's split face
+            refQ1node_nums_split = gbasis.get_local_face_principal_node_nums(
+                    gbasis.order, face_ID)
+            refQ1nodes_split = gbasis.PRINCIPAL_NODE_COORDS[
+                    refQ1node_nums_split]
+            # If positive orientation
+            if face.elemL_ID == elem0_ID:
+                # Q1 nodes on split side
+                face0.refQ1nodes_L = refQ1nodes_split
+                face1.refQ1nodes_L = refQ1nodes_split
+                # Figure out the Q1 nodes on other side by cutting in half
+                middle_point_R = np.mean(face.refQ1nodes_R, axis=0)
+                face1.refQ1nodes_R = np.vstack((face.refQ1nodes_R[0],
+                    middle_point_R))
+                face0.refQ1nodes_R = np.vstack((middle_point_R,
+                    face.refQ1nodes_R[1]))
+            # If negative orientation
+            else:
+                # Q1 nodes on split side
+                face0.refQ1nodes_R = refQ1nodes_split[::-1]
+                face1.refQ1nodes_R = refQ1nodes_split[::-1]
+                # Figure out the Q1 nodes on other side by cutting in half
+                middle_point_L = np.mean(face.refQ1nodes_L, axis=0)
+                face1.refQ1nodes_L = np.vstack((face.refQ1nodes_L[0],
+                    middle_point_L))
+                face0.refQ1nodes_L = np.vstack((middle_point_L,
+                    face.refQ1nodes_L[1]))
+            breakpoint()
 
             # Store old face IDs
+            # TODO: Is this needed?
             face0.old_faceL_IDs.append(face0.faceL_ID)
             face0.old_faceR_IDs.append(face0.faceR_ID)
             face1.old_faceL_IDs.append(face1.faceL_ID)
             face1.old_faceR_IDs.append(face1.faceR_ID)
 
             # Update face neighbors
-            face0.elemL_ID = elem0_ID
-            face0.elemR_ID = neighbor_ID
-            face0.faceL_ID = 0
-            face0.faceR_ID = neighbor_face_ID
-            face1.elemL_ID = elem1_ID
-            face1.elemR_ID = neighbor_ID
-            face1.faceL_ID = 0
-            face1.faceR_ID = neighbor_face_ID
+            # If positive orientation
+            if face.elemL_ID == elem0_ID:
+                face0.elemL_ID = elem0_ID
+                face0.elemR_ID = neighbor_ID
+                face0.faceL_ID = face_ID
+                face0.faceR_ID = neighbor_face_ID
+                face1.elemL_ID = elem1_ID
+                face1.elemR_ID = neighbor_ID
+                face1.faceL_ID = face_ID
+                face1.faceR_ID = neighbor_face_ID
+            # If negative orientation
+            else:
+                face0.elemR_ID = elem0_ID
+                face0.elemL_ID = neighbor_ID
+                face0.faceR_ID = face_ID
+                face0.faceL_ID = neighbor_face_ID
+                face1.elemR_ID = elem1_ID
+                face1.elemL_ID = neighbor_ID
+                face1.faceR_ID = face_ID
+                face1.faceL_ID = neighbor_face_ID
             # One face split into two, and the middle face will be made later,
             # so there are two new interior faces
             num_new_interior_faces = 2
@@ -309,38 +310,33 @@ class Adapter():
 
             # Transform the Q1 nodes of each face on this side
             # TODO: This will not work if some are face L's and some are R's.
-            # Pick an orientation so that this does not flip around.
-            # TODO: Deep transform (children of children, etc).
-            for pair_ID, new_face in enumerate([face0, face1]):
-                new_face.refQ1nodes_R = self.inverse_refinement_transformation(
-                        new_face.refQ1nodes_R, face_ID, 1 - pair_ID)
-
-            # Update face neighbors
-            face0.elemR_ID = elem1_ID
-            face0.faceR_ID = 0
-            face1.elemR_ID = elem0_ID
-            face1.faceR_ID = 0
+            #       But...does this ever happen? Unsure.
+            for pair_ID, (new_face, elem_ID) in enumerate(
+                    zip([face0, face1], [elem1_ID, elem0_ID])):
+                self.update_faces(new_face, face_ID, elem_ID, pair_ID)
 
             # No faces were split into two, but the middle face will still be
             # made later, so there is one new interior face
             num_new_interior_faces = 1
 
         # Make a face between elem0 and elem1
-        middle_face = mesh_defs.InteriorFace(elem0_ID, 2, elem1_ID, 1)
-        # Get the nodes from elem0's 2nd face. Similar procedure as what was
-        # done with face0 and face1 above.
         # NOTE: This assumes triangles
+        middle_faceL_ID = (face_ID + 2) % 3
+        middle_faceR_ID = (face_ID + 1) % 3
+        middle_face = mesh_defs.InteriorFace(elem0_ID, middle_faceL_ID,
+                elem1_ID, middle_faceR_ID)
+        # Get the nodes from elem0's 2nd face
         face_node_nums = gbasis.get_local_face_node_nums(
-                gbasis.order, 2)
+                gbasis.order, middle_faceL_ID)
         xn_face_ref = xn_ref_new[0, face_node_nums]
         geom_basis_face = gbasis.get_values(xn_face_ref)
         middle_face.node_coords = np.matmul(geom_basis_face, old_nodes)
         # Add reference Q1 nodes to face by getting them from the left and right
         # side
         refQ1node_nums_L = gbasis.get_local_face_principal_node_nums(
-                gbasis.order, 2)
+                gbasis.order, middle_faceL_ID)
         refQ1node_nums_R = gbasis.get_local_face_principal_node_nums(
-                gbasis.order, 1)
+                gbasis.order, middle_faceR_ID)
         middle_face.refQ1nodes_L = gbasis.PRINCIPAL_NODE_COORDS[
                 refQ1node_nums_L]
         middle_face.refQ1nodes_R = gbasis.PRINCIPAL_NODE_COORDS[
@@ -475,6 +471,23 @@ class Adapter():
         x = np.einsum('lr, pr -> pl', self.T_J_inv[face_ID, pair_ID],
                 x_ref - self.T_const[face_ID, pair_ID])
         return x
+
+    def update_faces(self, face, face_ID, elem_ID, pair_ID):
+        """
+        When refining a face that already has children, this function
+        deep-updates the children recursively (children, children of children,
+        etc.)
+        """
+        # Transform and update this face
+        face.refQ1nodes_R = self.inverse_refinement_transformation(
+                face.refQ1nodes_R, face_ID, 1 - pair_ID)
+        face.elemR_ID = elem_ID
+        face.faceR_ID = face_ID
+        # If it has children, transform and update them too
+        if face.children:
+            child0, child1 = face.children
+            self.update_faces(child0, face_ID, elem_ID, pair_ID)
+            self.update_faces(child1, face_ID, elem_ID, pair_ID)
 
     def coarsen(self, solver, coarsen_IDs, iMM_old, dJ_old, Uc_old, refine_IDs):
         """

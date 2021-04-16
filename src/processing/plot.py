@@ -10,6 +10,8 @@ from matplotlib import pyplot as plt
 import matplotlib.tri as tri
 import numpy as np
 
+import numerics.basis.basis as basis_defs
+
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
@@ -640,8 +642,18 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	Loop through interior_faces and plot interior faces
 	'''
 	for interior_face in mesh.interior_faces:
-		# Get coordinates of face nodes
-		coords = interior_face.node_coords
+
+		''' Get face coordinates and basis gradient '''
+		# Instantiate segment basis
+		basis_seg = basis_defs.LagrangeSeg(gbasis.order)
+
+		# Convert from face ref space to element ref space
+		face_ref_nodes = basis_seg.equidistant_nodes(gbasis.order)
+		face_coords_ref = gbasis.get_elem_ref_from_face_ref(
+				interior_face.refQ1nodes_L, face_ref_nodes)
+		# Convert from element ref space to physical space
+		coords = mesh_tools.ref_to_phys(mesh, interior_face.elemL_ID, face_coords_ref)
+
 		if ndims == 1:
 			x = np.full(2, coords[:, 0])
 		else:

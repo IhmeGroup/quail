@@ -10,6 +10,7 @@ import numpy as np
 from general import BasisType, ShapeType, NodeType
 
 import meshing.gmsh as mesh_gmsh
+import meshing.tools as mesh_tools
 
 import numerics.basis.basis as basis_defs
 import numerics.quadrature.segment as segment
@@ -350,14 +351,14 @@ def calculate_1D_normals(mesh, node_IDs, face_ID, quad_pts):
 	return normals # [nq, ndims]
 
 
-def calculate_2D_normals(mesh, face_coords, face_ID, quad_pts):
+def calculate_2D_normals(mesh, refQ1nodes, elem_ID, face_ID, quad_pts):
 	'''
 	Calculate the normals for 2D shapes (triangles and quadrilaterals).
 
 	Inputs:
 	-------
 		mesh: mesh object
-		face_coords: physical coordinates of points on face
+		refQ1nodes: Q1 nodes (end points) of faces in element reference space
 		quad_pts: points in reference space at which to calculate normals
 
 	Outputs:
@@ -372,6 +373,13 @@ def calculate_2D_normals(mesh, face_coords, face_ID, quad_pts):
 	basis_seg = basis_defs.LagrangeSeg(gorder)
 	# Compute basis values
 	basis_ref_grad = basis_seg.get_grads(quad_pts)
+
+	# Convert from face ref space to element ref space
+	face_ref_nodes = basis_seg.equidistant_nodes(gorder)
+	face_coords_ref = gbasis.get_elem_ref_from_face_ref(refQ1nodes,
+			face_ref_nodes)
+	# Convert from element ref space to physical space
+	face_coords = mesh_tools.ref_to_phys(mesh, elem_ID, face_coords_ref)
 
 	''' Calculate 2D normals '''
 	xphys_grad = np.matmul(face_coords.transpose(), basis_ref_grad)[

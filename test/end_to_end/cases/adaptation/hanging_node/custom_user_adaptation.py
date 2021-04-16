@@ -11,15 +11,15 @@ def custom_user_adaptation(solver):
     if i == 0:
         refine_IDs = np.array([1])
         split_face_IDs = np.array([0])
-    elif i == 1:
-        refine_IDs = np.array([0])
-        split_face_IDs = np.array([0])
-#    elif i == 2:
-#        refine_IDs = np.array([1])
-#        split_face_IDs = np.array([0])
-#    elif i == 3:
-#        refine_IDs = np.array([3])
-#        split_face_IDs = np.array([2])
+    #elif i == 1:
+    #    refine_IDs = np.array([1])
+    #    split_face_IDs = np.array([0])
+    #elif i == 2:
+    #    refine_IDs = np.array([0])
+    #    split_face_IDs = np.array([0])
+    #elif i == 3:
+    #    refine_IDs = np.array([4])
+    #    split_face_IDs = np.array([0])
     else:
         refine_IDs = np.array([])
         split_face_IDs = np.array([])
