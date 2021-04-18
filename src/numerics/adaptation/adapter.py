@@ -141,8 +141,6 @@ class Adapter():
         solver.bface_helpers.get_basis_and_geom_data(solver.mesh, solver.basis,
                 solver.order)
 
-        breakpoint()
-
         return (n_elems, dJ, Uc, iMM)
 
     def refine(self, elements, interior_faces, gbasis, basis, refine_IDs,
@@ -193,6 +191,14 @@ class Adapter():
         elem1 = mesh_defs.Element(elem1_ID)
         elements.append(elem1)
 
+        # Get face being split
+        face = elem0.faces[face_ID]
+
+        # If needed, flip orientation of elements
+        if not face.elemL_ID == elem0_ID:
+            xn_ref_new = xn_ref_new[::-1]
+            xq_ref_new = xq_ref_new[::-1]
+
         num_nodes_per_elem = gbasis.get_num_basis_coeff(gbasis.order)
 
         # The geometric basis of the parent element evaluated at the new nodes
@@ -211,21 +217,15 @@ class Adapter():
         for i, elem in enumerate([elem0, elem1]):
             elem.node_coords = xn_new[i]
 
-        # Get face being split
-        face = elem0.faces[face_ID]
-
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
-        # 3. if needed, flip orientation of elements
         if face.elemL_ID == elem0_ID:
             neighbor_ID = face.elemR_ID
             neighbor_face_ID = face.faceR_ID
         else:
             neighbor_ID = face.elemL_ID
             neighbor_face_ID = face.faceL_ID
-            xn_ref_new = xn_ref_new[::-1]
-            xq_ref_new = xq_ref_new[::-1]
 
         # If the face has no children, then new faces must be created
         create_new_faces = not face.children
@@ -269,7 +269,6 @@ class Adapter():
                     middle_point_L))
                 face0.refQ1nodes_L = np.vstack((middle_point_L,
                     face.refQ1nodes_L[1]))
-            breakpoint()
 
             # Store old face IDs
             # TODO: Is this needed?
@@ -319,16 +318,31 @@ class Adapter():
             # made later, so there is one new interior face
             num_new_interior_faces = 1
 
+        # If positive orientation
+        if face.elemL_ID == elem0_ID:
+            elemL = elem0
+            elemR = elem1
+            faceL = face0
+            faceR = face1
+            split_elemL_ID = 0
+        # If negative orientation
+        else:
+            elemL = elem1
+            elemR = elem0
+            faceL = face1
+            faceR = face0
+            split_elemL_ID = 1
+        # If negative orientation
         # Make a face between elem0 and elem1
         # NOTE: This assumes triangles
         middle_faceL_ID = (face_ID + 2) % 3
         middle_faceR_ID = (face_ID + 1) % 3
-        middle_face = mesh_defs.InteriorFace(elem0_ID, middle_faceL_ID,
-                elem1_ID, middle_faceR_ID)
-        # Get the nodes from elem0's 2nd face
+        middle_face = mesh_defs.InteriorFace(elemL.ID, middle_faceL_ID,
+                elemR.ID, middle_faceR_ID)
+        # Get the nodes from elemL's 2nd face
         face_node_nums = gbasis.get_local_face_node_nums(
                 gbasis.order, middle_faceL_ID)
-        xn_face_ref = xn_ref_new[0, face_node_nums]
+        xn_face_ref = xn_ref_new[split_elemL_ID, face_node_nums]
         geom_basis_face = gbasis.get_values(xn_face_ref)
         middle_face.node_coords = np.matmul(geom_basis_face, old_nodes)
         # Add reference Q1 nodes to face by getting them from the left and right
@@ -346,10 +360,10 @@ class Adapter():
         interior_faces.append(middle_face)
 
         # Update element faces
-        elem0.faces = np.array([face0, old_faces[face_ID - 2],
-            middle_face])
-        elem1.faces = np.array([face1, old_faces[face_ID - 1],
-            middle_face])
+        elemL.faces = np.roll([faceL, old_faces[face_ID - 2],
+            middle_face], -face_ID)
+        elemR.faces = np.roll([faceR, old_faces[face_ID - 1],
+            middle_face], -face_ID)
 
         # Update face neighbors
         # TODO: This is specific to triangles
