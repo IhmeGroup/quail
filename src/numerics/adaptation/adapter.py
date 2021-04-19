@@ -194,8 +194,11 @@ class Adapter():
         # Get face being split
         face = elem0.faces[face_ID]
 
+        # Orientation of adaptation
+        forward = face.elemL_ID == elem0_ID
+
         # If needed, flip orientation of elements
-        if not face.elemL_ID == elem0_ID:
+        if not forward:
             xn_ref_new = xn_ref_new[::-1]
             xq_ref_new = xq_ref_new[::-1]
 
@@ -220,7 +223,7 @@ class Adapter():
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
-        if face.elemL_ID == elem0_ID:
+        if forward:
             neighbor_ID = face.elemR_ID
             neighbor_face_ID = face.faceR_ID
         else:
@@ -248,7 +251,7 @@ class Adapter():
             refQ1nodes_split = gbasis.PRINCIPAL_NODE_COORDS[
                     refQ1node_nums_split]
             # If positive orientation
-            if face.elemL_ID == elem0_ID:
+            if forward:
                 # Q1 nodes on split side
                 face0.refQ1nodes_L = refQ1nodes_split
                 face1.refQ1nodes_L = refQ1nodes_split
@@ -279,7 +282,7 @@ class Adapter():
 
             # Update face neighbors
             # If positive orientation
-            if face.elemL_ID == elem0_ID:
+            if forward:
                 face0.elemL_ID = elem0_ID
                 face0.elemR_ID = neighbor_ID
                 face0.faceL_ID = face_ID
@@ -308,11 +311,9 @@ class Adapter():
             face0, face1 = face.children
 
             # Transform the Q1 nodes of each face on this side
-            # TODO: This will not work if some are face L's and some are R's.
-            #       But...does this ever happen? Unsure.
             for pair_ID, (new_face, elem_ID) in enumerate(
-                    zip([face0, face1], [elem1_ID, elem0_ID])):
-                self.update_faces(new_face, face_ID, elem_ID, pair_ID)
+                    zip([face0, face1], [elem0_ID, elem1_ID])):
+                self.update_faces(new_face, face_ID, elem_ID, pair_ID, forward)
 
             # No faces were split into two, but the middle face will still be
             # made later, so there is one new interior face
@@ -488,22 +489,30 @@ class Adapter():
                 x_ref - self.T_const[face_ID, pair_ID])
         return x
 
-    def update_faces(self, face, face_ID, elem_ID, pair_ID):
+    def update_faces(self, face, face_ID, elem_ID, pair_ID, forward):
         """
         When refining a face that already has children, this function
         deep-updates the children recursively (children, children of children,
         etc.)
         """
-        # Transform and update this face
-        face.refQ1nodes_R = self.inverse_refinement_transformation(
-                face.refQ1nodes_R, face_ID, 1 - pair_ID)
-        face.elemR_ID = elem_ID
-        face.faceR_ID = face_ID
+        # Transform and update this face, depending on its orientation
+        if forward:
+            face.refQ1nodes_L = self.inverse_refinement_transformation(
+                    face.refQ1nodes_L, face_ID, pair_ID)
+            face.elemL_ID = elem_ID
+            # TODO: Is it really necessary to update face_IDs? Shouldn't they
+            # stay the same?
+            face.faceL_ID = face_ID
+        else:
+            face.refQ1nodes_R = self.inverse_refinement_transformation(
+                    face.refQ1nodes_R, face_ID, 1 - pair_ID)
+            face.elemR_ID = elem_ID
+            face.faceR_ID = face_ID
         # If it has children, transform and update them too
         if face.children:
             child0, child1 = face.children
-            self.update_faces(child0, face_ID, elem_ID, pair_ID)
-            self.update_faces(child1, face_ID, elem_ID, pair_ID)
+            self.update_faces(child0, face_ID, elem_ID, pair_ID, forward)
+            self.update_faces(child1, face_ID, elem_ID, pair_ID, forward)
 
     def coarsen(self, solver, coarsen_IDs, iMM_old, dJ_old, Uc_old, refine_IDs):
         """
