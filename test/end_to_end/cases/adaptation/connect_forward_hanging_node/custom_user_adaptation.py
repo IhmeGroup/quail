@@ -4,7 +4,7 @@ import numerics.helpers.helpers as helpers
 
 def custom_user_adaptation(solver):
     '''
-    Split element 1 along face 0 after the first iteration.
+    Split element 1, then split element 0 to connect back to the hanging node.
     '''
     # Current iteration number
     i = int(solver.time / solver.stepper.dt) - 1
