@@ -33,7 +33,7 @@ plt.xlabel('$t$')
 Da =1.
 
 time, T = extract_data('time_hist.txt')
-ax.scatter(time/Da, T,color='k')
+ax.plot(time/Da, T,color='k')
 
 ax.legend()
 plt.show()

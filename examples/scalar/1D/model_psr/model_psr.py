@@ -1,14 +1,14 @@
 import numpy as np
 
 # Case A Settings
-Da = 15.89
-Tinit = 1.0
-tfinal = 2000.
+# Da = 15.89
+# Tinit = 1.0
+# tfinal = 2000.
 
 # Case B Settings
-# Da = 833.0
-# Tinit = 0.15
-# tfinal = 330000.
+Da = 833.0
+Tinit = 0.15
+tfinal = 330000.
 
 # Operator Splitting Settings:
 # timescheme = "Strang"
@@ -18,12 +18,12 @@ tfinal = 2000.
 # ADERDG Settings:
 timescheme = "ADER"
 solver = "ADERDG"
-order = 3
+order = 7
 
 TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : tfinal,
-	"TimeStepSize" : Da/10.,
+	"TimeStepSize" : 80.,# Da/10.,
 	"TimeStepper" : timescheme,
 	"OperatorSplittingImplicit" : "Scipy",
 	
@@ -33,9 +33,14 @@ Numerics = {
 	"SolutionOrder" : order,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : solver,
-	"SourceTreatmentADER" : "StiffImplicit",
+	# "SourceTreatmentADER" : "Explicit",
+	"SourceTreatmentADER" : "SylImp",
+	# "SourceTreatmentADER" : "StiffImplicit",
 	"InterpolateFluxADER" : False,
-}
+	"PredictorGuessADER" : "ODEGuess",
+	"RecalculateJacobianADER" : False,
+	"PredictorThreshold" : 1e-10,
+}	
 
 Mesh = {
 	"File" : None,

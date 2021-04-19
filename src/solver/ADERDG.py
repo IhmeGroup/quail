@@ -273,6 +273,11 @@ class ADERHelpers(object):
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K)
 
+		# # Check eigenvalues
+		# check = np.matmul(self.iK, MM)
+		# eigen = np.linalg.eig(check)
+		# import code; code.interact(local=locals())
+
 	def get_geom_data(self, mesh, basis, order):
 		'''
 		Precomputes the geometric data for the ADER-DG scheme
