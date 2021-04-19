@@ -7,7 +7,6 @@ def custom_user_function(solver):
 		Uc = solver.state_coeffs
 		basis_val = solver.elem_helpers.basis_val
 		Uq = helpers.evaluate_state(Uc, basis_val)
-	
 		time_hist = open('time_hist.txt', 'a')
 		s = str(solver.time)
 		s1 = str(Uq[0,0,0])
