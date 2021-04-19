@@ -429,6 +429,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		U_pred: predicted solution in space-time [ne, nb_st, ns]
 	'''
 	# Unpack
+	threshold = solver.params["PredictorThreshold"]
 	physics = solver.physics
 	ns = physics.NUM_STATE_VARS
 	mesh = solver.mesh
@@ -478,7 +479,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		# This could be resolved by evaluating at the quadrature points
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
-		if np.amax(np.abs(err)) < 1.e-15:
+		if np.amax(np.abs(err)) < threshold:
 			U_pred = U_pred_new
 			print("Predictor iterations: ", i)
 			break
@@ -517,6 +518,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 		U_pred: predicted solution in space-time [ne, nb_st, 1]
 	'''
 	# Unpack
+	threshold = solver.params["PredictorThreshold"]
 	physics = solver.physics
 	source_terms = physics.source_terms
 
@@ -584,7 +586,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 		# This could be resolved by evaluating at the quadrature points
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
-		if np.amax(np.abs(err)) < 1.e-15:
+		if np.amax(np.abs(err)) < threshold:
 			U_pred = U_pred_new
 			print("Predictor iterations: ", i)
 			break
@@ -626,6 +628,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		U_pred: predicted solution in space-time [ne, nb_st, ns]
 	'''
 	# Unpack
+	threshold = solver.params["PredictorThreshold"]
 	physics = solver.physics
 	source_terms = physics.source_terms
 
@@ -652,13 +655,26 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
 	
+	# Get physical average for testing purposes
+	vol_elems = elem_helpers.vol_elems
+	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
+	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
+	
+
+	# Only evaluate Jacobian for stiff sources
+	temp_sources = physics.source_terms.copy()
+	physics.source_terms = physics.implicit_sources.copy()
+
 	# Calculate the source term Jacobian using average state
 	Sjac = np.zeros([U_pred.shape[0], 1, ns, ns])
-	Sjac = physics.eval_source_term_jacobians(U_bar, x_elems, solver.time,
+	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time,
 			Sjac)
 	Sjac = Sjac[:, 0, :, :]
 
 
+	# Set all sources for source_coeffs calculation
+	physics.source_terms = temp_sources.copy()
+	
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
@@ -670,11 +686,12 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# 	AX + XB = C
 	# Update: We now transform AX+XB=C into KX=C using kronecker
 	# products.
-	niter = 1000
+	niter = 10000
 
 	A = np.matmul(iMM,K)
 
 	U_pred_new = np.zeros_like(U_pred)
+
 	for i in range(niter):
 
 		B = -1.0*dt*Sjac.transpose(0,2,1)
@@ -696,6 +713,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 			# Conduct kronecker products to make system Ax=b
 			kronecker = np.kron(I1, A) + np.kron(B[ie, :, :], I2)
 			U_pred_new[ie, :, :] = np.linalg.solve(kronecker, C[ie, :, :])
+
 			# Note: Previous implementaion used sylvester solve directly.
 			# This still requires further testing to determine which is 
 			# more efficient.
@@ -707,10 +725,12 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		# This could be resolved by evaluating at the quadrature points
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
+		# if solver.time>=295900:
+		# 	import code; code.interact(local=locals())
 
-		if np.amax(np.abs(err)) < 1.e-15:
+		if np.amax(np.abs(err)) < threshold:
 			print("Predictor iterations: ", i)
-			U_pred = U_pred_new
+			U_pred = np.copy(U_pred_new)
 			break
 
 		U_pred = np.copy(U_pred_new)
@@ -884,7 +904,7 @@ def predictor_elem_ode_guess(solver, dt, W, U_pred):
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 			U_pred)
 
-	A = np.matmul(iMM,K)
+	A = np.matmul(iMM,K)/dt
 	# Iterate using a nonlinear Sylvester solver for the
 	# updated space-time coefficients. Solves for X in the form:
 	# 	AX + XB = C
@@ -894,14 +914,14 @@ def predictor_elem_ode_guess(solver, dt, W, U_pred):
 	U_pred_new = np.zeros_like(U_pred)
 	for i in range(niter):
 
-		B = -1.0*dt*Sjac.transpose(0,2,1)
+		B = -1.0*Sjac.transpose(0,2,1)
 
 		Q = np.einsum('jk, ikm -> ijm', FTR, W) - np.einsum(
 				'ijkl, ikml -> ijm', SMS_elems, flux_coeffs)
 
-		C = source_coeffs - dt*np.matmul(U_pred[:],
+		C = source_coeffs/dt - np.matmul(U_pred[:],
 				Sjac[:].transpose(0,2,1)) + \
-				np.einsum('jk, ikl -> ijl',iMM, Q)
+				np.einsum('jk, ikl -> ijl',iMM, Q) / dt
 
 		for ie in range(U_pred.shape[0]):
 			U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
