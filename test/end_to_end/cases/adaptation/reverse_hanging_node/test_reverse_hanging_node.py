@@ -59,7 +59,6 @@ def test_case():
                 np.array([ [.5, .5], [0, 1] ]))
         np.testing.assert_allclose(face1.refQ1nodes_L,
                 np.array([ [1, 0], [.5, .5] ]))
-        breakpoint()
         np.testing.assert_allclose(face0.refQ1nodes_R,
                 np.array([ [0, 1], [1, 0] ]))
         np.testing.assert_allclose(face1.refQ1nodes_R,

@@ -72,6 +72,9 @@ def test_case():
                 np.array([ [0, 1], [1, 0] ]))
         np.testing.assert_allclose(face1.refQ1nodes_R,
                 np.array([ [0, 1], [1, 0] ]))
+        # Check that boundary faces on the refined side have the right neighbor
+        np.testing.assert_equal(solver.mesh.elements[2].faces[1].elem_ID, 2)
+        np.testing.assert_equal(solver.mesh.elements[1].faces[2].elem_ID, 1)
 
     # Return to test directory
     os.chdir(f'{quail_dir}/test')

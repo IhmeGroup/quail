@@ -63,7 +63,6 @@ def test_case():
                 np.array([ [.5, .5], [1, 0] ]))
         np.testing.assert_allclose(face1.refQ1nodes_R,
                 np.array([ [0, 1], [.5, .5] ]))
-        breakpoint()
 
     # Return to test directory
     os.chdir(f'{quail_dir}/test')

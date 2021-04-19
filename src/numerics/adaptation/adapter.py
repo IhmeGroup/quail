@@ -374,10 +374,12 @@ class Adapter():
                         elem0_ID)
                 # Update first face counterclockwise of split face
                 if   ((face_ID + 1) % gbasis.NFACES) == local_face_ID:
-                    adapter_tools.update_face_neighbor(local_face, elem0_ID, 1, L_or_R)
+                    adapter_tools.update_face_neighbor(local_face, elemL.ID,
+                            face_ID + 1, L_or_R)
                 # Update second face counterclockwise of split face
                 elif ((face_ID + 2) % gbasis.NFACES) == local_face_ID:
-                    adapter_tools.update_face_neighbor(local_face, elem1_ID, 2, L_or_R)
+                    adapter_tools.update_face_neighbor(local_face, elemR.ID,
+                            face_ID + 2, L_or_R)
 
         # ---- Old stuff, before hanging nodes ---- #
         # Create new adaptation group and add to set. If it's a boundary
