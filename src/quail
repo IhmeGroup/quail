@@ -60,6 +60,9 @@ def set_physics(mesh, physics_type):
 	elif PhysicsType[physics_type] == PhysicsType.ModelPSRScalar and \
 			ndims == 1:
 		physics_class = scalar.ModelPSRScalar
+	elif PhysicsType[physics_type] == PhysicsType.MultispeciesPSR and \
+			ndims == 1:
+		physics_class = scalar.MultispeciesPSR
 	elif PhysicsType[physics_type] == PhysicsType.SecondOrderODE and \
 			ndims == 1:
 		physics_class = scalar.SecondOrderODE
