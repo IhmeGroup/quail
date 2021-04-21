@@ -5,6 +5,7 @@
 #       Contains class definitions for scalar equations.
 #
 # ------------------------------------------------------------------------ #
+import cantera as ct
 from enum import Enum, auto
 import numpy as np
 import sys
@@ -256,6 +257,7 @@ class ModelPSRScalar(base.PhysicsBase):
 	class StateVariables(Enum):
 		Scalar = "T"
 
+
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
@@ -365,3 +367,92 @@ class SecondOrderODE(base.PhysicsBase):
 		'''
 		self.g = g
 		self.l = l
+
+class MultispeciesPSR(base.PhysicsBase):
+	'''
+	This class corresponds to the 0D model of a partially stirred reactor.
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods.
+	'''
+	NUM_STATE_VARS = 11
+	NDIMS = 1
+	PHYSICS_TYPE = general.PhysicsType.MultispeciesPSR
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.ModelPSR : scalar_fcns.ModelPSR,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+
+		self.source_map.update({
+			scalar_source_type.Reacting : scalar_fcns.Reacting,
+			scalar_source_type.Mixing : scalar_fcns.Mixing,
+		})
+
+	class StateVariables(Enum):
+		Temperature = "T"
+		Y_H2 = "$Y_{H_2}$"
+		Y_H = "$Y_{H}$"
+		Y_O = "$Y_{O}$"
+		Y_O2 = "$Y_{O2}$"
+		Y_OH = "$Y_{OH}$"
+		Y_H2O = "$Y_{H2O}$"
+		Y_HO2 = "$Y_{HO2}$"
+		Y_H2O2 = "$Y_{H2O2}$"
+		Y_AR = "$Y_{AR}$"
+		Y_N2 = "$Y_{N2}$"
+
+	class AdditionalVariables(Enum):
+	    MaxWaveSpeed = "\\lambda"
+
+	def get_conv_flux_interior(self, Uq):
+
+		# This can be zero or the mixing function.
+		F = np.zeros_like(Uq)
+		F = np.expand_dims(F, axis=-1)
+
+		return F, None
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		sname = self.AdditionalVariables[var_name].name
+
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is u
+			scalar = np.zeros_like(Uq)
+		else:
+			raise NotImplementedError
+		
+		return scalar
+
+	def set_physical_params(self, P=80.*ct.one_atm, Tu=875., phi=0.5, tau=2.e-6):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.P = P
+		self.Tu = Tu
+		self.phi = phi
+		self.tau = tau		
+
+		gas = ct.Solution('h2o2.yaml')
+
+		# NOTE: This is hardcoded for now!!!
+		gas.TPX = Tu, P, "H2:{},O2:{},N2:{},H:{}".format(phi, 0.5, 0.5*3.76, 0.095)
+		
+		self.yin = np.hstack((gas.T, gas.Y))
+		self.hin = gas.partial_molar_enthalpies
+
+
+	

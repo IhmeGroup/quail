@@ -149,7 +149,10 @@ class PhysicsType(Enum):
 	ModelPSRScalar = auto()
 		# Model for perfectly stirred reactor (0D model)
 	SecondOrderODE = auto()
-
+		# Model for 2nd order pendulum ODE (0D model)
+	MultispeciesPSR = auto()
+		# Model for PSR (with real chemistry)
+		
 class ModalOrNodal(Enum):
 	'''
 	This enum contains flags indicating whether the basis functions are

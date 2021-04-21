@@ -6,6 +6,7 @@
 #       terms for scalar equations.
 #
 # ------------------------------------------------------------------------ #
+import cantera as ct
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root
@@ -28,6 +29,7 @@ class FcnType(Enum):
 	SineBurgers = auto()
 	LinearBurgers = auto()
 	PendulumExact = auto()
+	ModelPSR = auto()
 
 class BCType(Enum):
 	'''
@@ -46,7 +48,8 @@ class SourceType(Enum):
 	ScalarArrhenius = auto()
 	ScalarMixing = auto()
 	Pendulum = auto()
-
+	Mixing = auto()
+	Reacting = auto()
 
 '''
 ---------------
@@ -295,6 +298,29 @@ class PendulumExact(FcnBase):
 
 		return Uq
 
+class ModelPSR(FcnBase):
+	def __init__(self):
+		pass
+
+	def get_state(self, physics, x, t):
+		# unpack
+
+		P = physics.P
+		Tu = physics.Tu
+		phi = physics.phi
+		tau = physics.tau
+
+		gas = ct.Solution('h2o2.yaml')
+		gas.TPX = Tu, P, "H2:{},O2:{},N2:{}".format(phi, 0.5, 0.5*3.76)
+		y0 = np.hstack((gas.T, gas.Y))
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		Uq[:, :] = y0
+
+		# Save the gas object for passing to source terms
+		physics.gas = gas
+
+		return Uq
 '''
 ---------------------
 Source term functions
@@ -430,3 +456,81 @@ class Pendulum(SourceBase):
 		jac[:, :, 1, 1] = -g/l
 		
 		return jac
+
+class Mixing(SourceBase):
+	'''
+	Mixing source term for PSR model problem
+
+	Attributes:
+	-----------
+	'''
+	def __init__(self, **kwargs):
+		super().__init__(kwargs)
+
+	def get_source(self, physics, Uq, x, t):
+		# Unpack T and Y
+		T = Uq[0,0,0]
+		y = Uq[0,0,1:]
+
+		tau = physics.tau
+		gas = physics.gas
+		gas.set_unnormalized_mass_fractions(y)
+
+		gas.TPY = T, physics.P, y
+
+		rho = gas.density
+		wdot = gas.net_production_rates
+		h_hat = gas.partial_molar_enthalpies
+		cp = gas.cp_mass
+
+		mw = gas.molecular_weights
+
+		dTdt = (1./(tau*cp)) * np.dot(physics.yin[1:] ,(physics.hin/mw - h_hat/mw)) 
+		dYdt = (1./tau) * (physics.yin[1:] - y)
+
+		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
+
+		S[:, :] = np.hstack((dTdt, dYdt))
+
+		return S
+
+	def get_jacobian(self, physics, Uq, x, t):
+		pass
+
+
+class Reacting(SourceBase):
+	'''
+	Arrhenius source term for scalar PSR model problem
+	'''
+	def __init__(self, **kwargs):
+		super().__init__(kwargs)
+
+	def get_source(self, physics, Uq, x, t):
+		# Unpack T and Y
+		T = Uq[0,0,0]
+		y = Uq[0,0,1:]
+
+		tau = physics.tau
+		gas = physics.gas
+		gas.set_unnormalized_mass_fractions(y)
+
+		gas.TPY = T, physics.P, y
+
+		rho = gas.density
+		wdot = gas.net_production_rates
+		h_hat = gas.partial_molar_enthalpies
+		cp = gas.cp_mass
+
+		mw = gas.molecular_weights
+
+		dTdt = -1.*np.dot(h_hat, wdot) * (1./ (rho*cp))
+		dYdt = wdot * mw / rho
+
+		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
+
+		S[:, :] = np.hstack((dTdt, dYdt))
+
+		return S
+
+	def get_jacobian(self, physics, Uq, x, t):
+		pass

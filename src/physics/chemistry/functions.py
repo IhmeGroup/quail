@@ -7,6 +7,7 @@
 #		for mass fraction.
 #
 # ------------------------------------------------------------------------ #
+import cantera as ct
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import fsolve, root
