@@ -13,8 +13,8 @@ import physics.chemistry.chemistry as chemistry
 import solver.DG as DG
 import solver.ADERDG as ADERDG
 
-rtol = 1e-15
-atol = 1e-15
+rtol = 1e-14
+atol = 1e-14
 
 
 # Markers distinguish tests into different categories
@@ -35,13 +35,15 @@ def test_case(test_data):
 	# Unpack test data
 	Uc_expected_list, quail_dir = test_data
 
+	# Get case directory
+	case_dir = os.path.dirname(os.path.abspath(__file__))
 	# Get test case name
-	test_name = sys.path[0].split('cases/')[-1]
+	test_name = case_dir.split('cases/')[-1]
 	# Get expected solution for this test case
 	Uc_expected = Uc_expected_list[test_name]
 
 	# Enter case directory
-	os.chdir(sys.path[0])
+	os.chdir(case_dir)
 
 	# Call the Quail executable
 	result = subprocess.check_output([

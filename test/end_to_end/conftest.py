@@ -20,7 +20,7 @@ def test_data():
 	quail_dir = os.path.dirname(os.getcwd())
 
 	# Name and path of data file which stores the regression test data
-	datafile_name = f'{quail_dir}/test/end_to_end/regression_data.npy'
+	datafile_name = f'{quail_dir}/test/end_to_end/regression_data.npz'
 
 	# List of case directories
 	case_dirs = list(list_of_cases.case_dirs.keys())
@@ -28,6 +28,7 @@ def test_data():
 	# Read file storing regression test data
 	Uc_expected_list = {}
 	with open(datafile_name, 'rb') as datafile:
-		for i in range(len(case_dirs)):
-			Uc_expected_list[case_dirs[i]] = np.load(datafile)
+		npzfile = np.load(datafile)
+		for i, array in enumerate(npzfile.files):
+			Uc_expected_list[case_dirs[i]] = npzfile[array];
 	yield Uc_expected_list, quail_dir

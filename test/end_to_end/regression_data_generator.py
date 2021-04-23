@@ -39,7 +39,7 @@ def generate_regression_test_data():
 	n_cases = len(case_dirs)
 
 	# Name and path of data file which stores the regression test data
-	datafile_name = f'{script_dir}/regression_data.npy'
+	datafile_name = f'{script_dir}/regression_data.npz'
 
 	# Loop over all case directories
 	results = []
@@ -62,7 +62,7 @@ def generate_regression_test_data():
 
 	# Save results to the regression test datafile
 	with open(datafile_name, 'wb') as datafile:
-		for data in results: np.save(datafile, data)
+		np.savez(datafile, *results)
 
 
 if __name__ == "__main__":
