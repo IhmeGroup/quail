@@ -7,7 +7,7 @@ TimeStepping = {
 
 Numerics = {
 	"SolutionOrder" : 10,
-	"SolutionBasis" : "HierarchicH1Tri",
+	"SolutionBasis" : "LagrangeTri",
 	"Solver" : "DG",
 	"ElementQuadrature" : "GaussLegendre",
 	"FaceQuadrature" : "GaussLegendre",
