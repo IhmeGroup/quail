@@ -1,6 +1,6 @@
 TimeStepping = {
 	"FinalTime" : 1.0,
-	"TimeStepSize" : 0.05,
+	"TimeStepSize" : 0.01,
 	"TimeStepper" : "LSRK4",
 }
 
@@ -13,8 +13,8 @@ Numerics = {
 
 Mesh = {
 	"ElementShape" : "Triangle",
-	"NumElemsX" : 5,
-	"NumElemsY" : 5,
+	"NumElemsX" : 50,
+	"NumElemsY" : 50,
 	"xmin" : -5.,
 	"xmax" : 5.,
 	"ymin" : -5.,
@@ -45,6 +45,6 @@ BoundaryConditions = {
 }
 
 Output = {
-	"AutoPostProcess" : True,
+	"AutoPostProcess" : False,
 	"Verbose" : True,
 }
