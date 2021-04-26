@@ -225,7 +225,7 @@ class SourceSolvers():
 				Sq = np.zeros([U.shape[0], x.shape[1], U.shape[2]])
 				y = y.reshape(res.shape)
 				Sq = solver.physics.eval_source_terms(y, x, t, Sq)
-
+			
 				# res = solver.get_residual(y, res)
 				# dU = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
 				return Sq.reshape(-1)
@@ -236,9 +236,13 @@ class SourceSolvers():
 			
 			tvals = []
 			value = r.integrate(r.t+dt).reshape([res.shape[0],res.shape[1],res.shape[2]])
+			
 			tvals = np.unique(tvals)
 
+
+
 			print("len(tvals) =", len(tvals))
+			solver.count_evaluations += len(tvals)
 
 			solver_tools.L2_projection(mesh, iMM_elems, solver.basis, quad_pts,
 					quad_wts, value, U)

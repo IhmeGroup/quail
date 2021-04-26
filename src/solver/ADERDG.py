@@ -426,6 +426,7 @@ class ADERDG(base.SolverBase):
 				self.int_face_helpers_st.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
+		self.count_nonlinear_iterations = 0
 		# Initialize state
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()
@@ -591,7 +592,7 @@ class ADERDG(base.SolverBase):
 					time_skip, basis_valL, quad_wts_st, Fq)
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					time_skip, basis_valR, quad_wts_st, Fq)
-
+		
 		return resL, resR # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
