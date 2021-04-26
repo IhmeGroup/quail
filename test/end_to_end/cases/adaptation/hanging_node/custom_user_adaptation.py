@@ -10,10 +10,10 @@ def custom_user_adaptation(solver):
 
     if i == 0:
         refine_IDs = np.array([1])
-        split_face_IDs = np.array([0])
-    #elif i == 1:
-    #    refine_IDs = np.array([0])
-    #    split_face_IDs = np.array([0])
+        split_face_IDs = np.array([1])
+    elif i == 1:
+        refine_IDs = np.array([1])
+        split_face_IDs = np.array([1])
     #elif i == 2:
     #    refine_IDs = np.array([2])
     #    split_face_IDs = np.array([0])

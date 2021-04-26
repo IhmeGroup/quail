@@ -362,9 +362,9 @@ class Adapter():
 
         # Update element faces
         elemL.faces = np.roll([faceL, old_faces[face_ID - 2], middle_face],
-                -face_ID)
+                face_ID)
         elemR.faces = np.roll([faceR, middle_face, old_faces[face_ID - 1]],
-                -face_ID)
+                face_ID)
 
         # Update face neighbors
         # TODO: This is specific to triangles
