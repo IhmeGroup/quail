@@ -69,6 +69,9 @@ class BoundaryFace(object):
 		local ID of face from perspective of adjacent element
 	node_coords: numpy array
 		coordinates of the face nodes [num_nodes, ndims]
+	children : list
+		either an empty list if a leaf face or a list of two subfaces created
+		from refinement
 	refQ1nodes: numpy array
 		coordinates of the face Q1 nodes in the element's reference space
 		[num_Q1_nodes, ndims]
@@ -77,6 +80,7 @@ class BoundaryFace(object):
 		self.elem_ID = elem_ID
 		self.face_ID = face_ID
 		self.node_coords = np.array([])
+		self.children = []
 		self.refQ1nodes = np.array([])
 
 

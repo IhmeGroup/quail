@@ -320,7 +320,7 @@ class Adapter():
             num_new_interior_faces = 1
 
         # If positive orientation
-        if face.elemL_ID == elem0_ID:
+        if forward:
             elemL = elem0
             elemR = elem1
             faceL = face0

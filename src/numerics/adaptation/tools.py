@@ -34,7 +34,8 @@ def get_face_ID(face, elem_ID):
 
 def update_face_neighbor(face, elem_ID, face_ID, on_the_left):
     """
-    Update neighbor of face given the element ID and the side of the face.
+    Recursively update neighbors of faces given the element ID and the side of
+    the face.
     """
     # TODO: This function should be in meshbase, or something.
     # If it's an InteriorFace, check which side we're on
@@ -49,3 +50,8 @@ def update_face_neighbor(face, elem_ID, face_ID, on_the_left):
     else:
         face.elem_ID = elem_ID
         face.face_ID = face_ID
+    # Recursively update child faces
+    if face.children:
+        child0, child1 = face.children
+        update_face_neighbor(child0, elem_ID, face_ID, on_the_left)
+        update_face_neighbor(child1, elem_ID, face_ID, on_the_left)
