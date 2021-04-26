@@ -258,22 +258,33 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 
 	W0, t0 = Wq.reshape(-1), solver.time
 
-	def func(t, y, x):
+	def func(t, y, x, Sq_exp):
 		# Keep track of the number of times func is called
 		tvals.append(t)
 
 		# Evaluate the source term at the quadrature points
 		Sq = np.zeros([U_pred.shape[0], x.shape[1], ns])
 		y = y.reshape(Sq.shape)
-		Sq = physics.eval_source_terms(y, x, t, Sq)
+		Sq = Sq_exp + physics.eval_source_terms(y, x, t, Sq)
 
 		# NOTE: This will eventually need to include the flux evaluation
 		return Sq.reshape(-1)
 
+
+	# Evaluate source terms to be taken explicitly
+	temp_sources = physics.source_terms.copy()
+	physics.source_terms = physics.explicit_sources.copy()
+
+	Sq_exp = np.zeros([U_pred.shape[0], x_elems.shape[1], ns])
+	Sq_exp = physics.eval_source_terms(Wq, x_elems, t, Sq_exp)
+
+	# Set implicit sources only for stiff ODE evaluation
+	physics.source_terms = physics.implicit_sources.copy()
+
 	# Initialize the integrator
 	r = ode(func, jac=None)
 	r.set_integrator('lsoda', atol=1e-14, rtol=1e-12)
-	r.set_initial_value(W0, t0).set_f_params(x_elems)
+	r.set_initial_value(W0, t0).set_f_params(x_elems, Sq_exp)
 
 	# Set constants for managing data and begin ODE integration loop
 	# Note: These commented points after i, j defs mods for 
@@ -281,6 +292,7 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 	i = 0 #t.shape[0]
 	j = 0 #1
 	# Run the ODEsolver guess
+
 	while r.successful() and j < t.shape[0]: 
 		# Length of tvals represents number of ODE interations per
 		# timestep between two quadrature points in time
@@ -295,10 +307,13 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 
 		i+=t.shape[0]
 		j+=1
-		tvals = np.unique(tvals)
 
+		tvals = np.unique(tvals)
+		solver.count_evaluations += len(tvals)
 		# Prints the number of ODE iterations
 		print("len(tvals) =", len(tvals))
+
+	physics.source_terms = temp_sources
 
 	# Get space-time average from initial guess
 	U_bar = helpers.get_element_mean(Uq_guess, quad_wts_st, 
@@ -694,6 +709,8 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 
 	for i in range(niter):
 
+		solver.count_nonlinear_iterations+=1
+		
 		B = -1.0*dt*Sjac.transpose(0,2,1)
 
 		Q = np.einsum('jk, ikm -> ijm', FTR, W) - np.einsum(
