@@ -32,6 +32,9 @@ import solver.DG as DG
 import solver.ADERDG as ADERDG
 
 
+# NOTE This line is mac specific and is needed for openmp only
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+
 def set_physics(mesh, physics_type):
 	'''
 	This function creates the physics object based on the input parameters.
