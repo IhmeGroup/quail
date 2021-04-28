@@ -791,6 +791,8 @@ class StiffFriction(SourceBase):
 		stiffness parameter
 	'''
 	def __init__(self, nu=-1):
+	# def __init__(self, **kwargs):
+		super().__init__()
 		'''
 		This method initializes the attributes.
 
@@ -802,7 +804,7 @@ class StiffFriction(SourceBase):
 		--------
 		    self: attributes initialized
 		'''
-		self.nu = nu
+		self.nu = nu#kwargs['nu']
 
 	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
