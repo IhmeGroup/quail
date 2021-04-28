@@ -669,7 +669,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
-	
+
 	# Get physical average for testing purposes
 	vol_elems = elem_helpers.vol_elems
 	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
@@ -685,7 +685,6 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	Sjac = physics.eval_source_term_jacobians(W_bar, x_elems, solver.time,
 			Sjac)
 	Sjac = Sjac[:, 0, :, :]
-
 
 	# Set all sources for source_coeffs calculation
 	physics.source_terms = temp_sources.copy()
@@ -729,21 +728,25 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 
 			# Conduct kronecker products to make system Ax=b
 			kronecker = np.kron(I1, A) + np.kron(B[ie, :, :], I2)
-			U_pred_new[ie, :, :] = np.linalg.solve(kronecker, C[ie, :, :])
 
+			# import code; code.interact(local=locals())
+			# U_pred_hold = np.linalg.solve(kronecker, C[ie, :, :].reshape([27,1]))
+			# U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[1], U_pred.shape[2])
+
+			# import code; code.interact(local=locals())
 			# Note: Previous implementaion used sylvester solve directly.
 			# This still requires further testing to determine which is 
 			# more efficient.
-			# U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
-					# C[ie, :, :])
-
+			U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
+					C[ie, :, :])
+			# import code; code.interact(local=locals())
 		# We check when the coefficients are no longer changing.
 		# This can lead to differences between NODAL and MODAL solutions.
 		# This could be resolved by evaluating at the quadrature points
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
 		# if solver.time>=295900:
-		# 	import code; code.interact(local=locals())
+		# import code; code.interact(local=locals())
 
 		if np.amax(np.abs(err)) < threshold:
 			print("Predictor iterations: ", i)

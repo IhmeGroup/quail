@@ -495,8 +495,13 @@ class Mixing(SourceBase):
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
-		pass
+		
+		# S = self.get_source(physics, Uq, x, t)
 
+
+		import code; code.interact(local=locals())
+
+		return Uq	
 
 class Reacting(SourceBase):
 	'''
@@ -533,4 +538,28 @@ class Reacting(SourceBase):
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
-		pass
+
+		jac = get_numerical_jacobian(self, physics, Uq, x, t)
+		# import code; code.interact(local=locals())
+		return jac
+
+
+def get_numerical_jacobian(source, physics, Uq, x, t):
+
+	ns = physics.NUM_STATE_VARS
+	eps = 1.e-10
+
+	S = source.get_source(physics, Uq, x, t)
+	Sperturb = np.zeros([ns, S.shape[0], S.shape[1], S.shape[2]])
+	eps_ = Uq * eps
+
+	jac = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
+
+	for i in range(ns):
+		Uq_per = Uq.copy()
+		Uq_per[:, :, i] += eps_[:, :, i] 
+		Sperturb[i] = source.get_source(physics, Uq_per, x, t)
+	for i in range(ns):
+		for j in range(ns):
+				jac[:, :, i, j] = (Sperturb[j, :, :, i] - S[:, :, i]) / (eps_[:, :, j]+1.e-12)
+	return jac		

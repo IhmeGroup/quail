@@ -5,17 +5,18 @@ TimeStepping = {
 	"FinalTime" : 0.5,
 	"NumTimeSteps" : 100,
 	"TimeStepper" : "SSPRK3",
-	# "TimeStepper" : "Simpler",
-	# "TimeStepper" : "ADER",
+	#"TimeStepper" : "Simpler",
+	"TimeStepper" : "ADER",
 }
 
 Numerics = {
 	"SolutionOrder" : 2,
 	"SolutionBasis" : "LagrangeSeg",
-	"Solver" : "DG",
-	# "Solver" : "ADERDG",
-	# "SourceTreatmentADER" : "Implicit",
-
+ 	"Solver" : "DG",
+	"Solver" : "ADERDG",
+	"SourceTreatmentADER" : "SylImp",
+	"PredictorGuessADER" : "Zeros",
+	"PredictorThreshold" : 1e-10,
 }
 
 Output = {
@@ -39,7 +40,7 @@ Physics = {
 	"SpecificHeatRatio" : 1.4,
 }
 
-nu = -100.
+nu = -1.
 
 InitialCondition = {
 	"Function" : "DensityWave",
