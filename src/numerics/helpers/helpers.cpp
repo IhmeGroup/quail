@@ -1,4 +1,5 @@
 #include <iostream>
+#include <omp.h>
 
 extern "C" {
 
@@ -27,7 +28,7 @@ void evaluate_face_state(const double* Uc, const double* basis_val,
         double* Uq, int nf, int nq, int nb, int ns, int basis_dim,
         bool skip_interp) {
 
-// Loop faces in parallel
+    // Loop faces in parallel
 #pragma omp parallel for
     for (int i = 0; i < nf; i++) {
         const double* phi = basis_val + i*nq*nb;
@@ -39,7 +40,7 @@ void evaluate_face_state(const double* Uc, const double* basis_val,
             for (int k = 0; k < ns; k++) {
                 // Sum over bases
                 for (int n = 0; n < nb; n++) {
-                    Uqi[j*ns + k] += phi[j*nb + k] * Uc[n*ns + k];
+                    Uqi[j*ns + k] += phi[j*nb + n] * Uci[n*ns + k];
                 }
             }
         }
@@ -51,7 +52,7 @@ void evaluate_elem_state(const double* Uc, const double* basis_val,
         double* Uq, int ne, int nq, int nb, int ns, int basis_dim,
         bool skip_interp) {
 
-// Loop elements in parallel
+    // Loop elements in parallel
 #pragma omp parallel for
     for (int i = 0; i < ne; i++) {
         const double* Uci = Uc + i*nb*ns;
@@ -62,7 +63,7 @@ void evaluate_elem_state(const double* Uc, const double* basis_val,
             for (int k = 0; k < ns; k++) {
                 // Sum over bases
                 for (int n = 0; n < nb; n++) {
-                    Uqi[j*ns + k] += basis_val[j*nb + k] * Uc[n*ns + k];
+                    Uqi[j*ns + k] += basis_val[j*nb + n] * Uci[n*ns + k];
                 }
             }
         }
