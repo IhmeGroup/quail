@@ -175,7 +175,7 @@ def get_dt_from_cfl(stepper, solver):
 
 	# Interpolate state at quad points
 	Uq = helpers.evaluate_state(U, basis_val,
-			skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
+			skip_interp=solver.basis.skip_interp, lib=solver.lib) # [ne, nq, ns]
 
 	# Calculate max wavespeed
 	a = physics.compute_variable("MaxWaveSpeed", Uq,

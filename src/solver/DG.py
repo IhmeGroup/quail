@@ -645,7 +645,7 @@ class DG(base.SolverBase):
 
 		# Interpolate state at quad points
 		Uq = helpers.evaluate_state(Uc, basis_val,
-				skip_interp=self.basis.skip_interp) # [ne, nq, ns]
+				skip_interp=self.basis.skip_interp, lib=self.lib) # [ne, nq, ns]
 		if self.verbose:
 			# Get min and max of state variables for reporting
 			self.get_min_max_state(Uq)
@@ -686,9 +686,9 @@ class DG(base.SolverBase):
 		nq = quad_wts.shape[0]
 
 		# Interpolate state at quad points
-		UqL = helpers.evaluate_state(UcL, faces_to_basisL[faceL_IDs])
+		UqL = helpers.evaluate_state(UcL, faces_to_basisL[faceL_IDs], lib=self.lib)
 				# [nf, nq, ns]
-		UqR = helpers.evaluate_state(UcR, faces_to_basisR[faceR_IDs])
+		UqR = helpers.evaluate_state(UcR, faces_to_basisR[faceR_IDs], lib=self.lib)
 				# [nf, nq, ns]
 
 		# Allocate resL and resR (needed for operator splitting)
@@ -724,14 +724,14 @@ class DG(base.SolverBase):
 		basis_val = bface_helpers.faces_to_basis[face_IDs] # [nbf, nq, nb]
 
 		# Interpolate state at quad points
-		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
+		UqI = helpers.evaluate_state(Uc, basis_val, lib=self.lib) # [nbf, nq, ns]
 
 		normals = normals_bgroups[bgroup_num] # [nbf, nq, ndims]
 		x = x_bgroups[bgroup_num] # [nbf, nq, ndims]
 		BC = physics.BCs[bgroup.name]
 
 		# Interpolate state at quadrature points
-		UqI = helpers.evaluate_state(Uc, basis_val)
+		UqI = helpers.evaluate_state(Uc, basis_val, lib=self.lib)
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute boundary flux

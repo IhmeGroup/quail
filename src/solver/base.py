@@ -6,6 +6,7 @@
 #
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
+import ctypes
 import importlib
 import numpy as np
 import time
@@ -154,7 +155,10 @@ class SolverBase(ABC):
 		self.min_state = np.zeros(physics.NUM_STATE_VARS)
 		self.max_state = np.zeros(physics.NUM_STATE_VARS)
 
+		###### ADD C++ Library
+		self.lib = ctypes.cdll.LoadLibrary('./libf.so')
 
+		
 		# Search for custom_user_function in case directory
 		custom_user_function = self.params["CustomFunctionFilename"]
 		try:
