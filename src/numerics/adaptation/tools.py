@@ -55,3 +55,12 @@ def update_face_neighbor(face, elem_ID, face_ID, on_the_left):
         child0, child1 = face.children
         update_face_neighbor(child0, elem_ID, face_ID, on_the_left)
         update_face_neighbor(child1, elem_ID, face_ID, on_the_left)
+
+def get_orientation(face, elem_ID):
+    """
+    Get orientation of a face with respect to a given element ID.
+    """
+    if isinstance(face, mesh_defs.InteriorFace):
+        return face.elemL_ID == elem_ID
+    else:
+        return True

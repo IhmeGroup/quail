@@ -75,13 +75,16 @@ class BoundaryFace(object):
 	refQ1nodes: numpy array
 		coordinates of the face Q1 nodes in the element's reference space
 		[num_Q1_nodes, ndims]
+	name : str
+		boundary name
 	'''
-	def __init__(self, elem_ID = 0, face_ID = 0):
-		self.elem_ID = elem_ID
-		self.face_ID = face_ID
+	def __init__(self, boundary_name = None):
+		self.elem_ID = 0
+		self.face_ID = 0
 		self.node_coords = np.array([])
 		self.children = []
 		self.refQ1nodes = np.array([])
+		self.name = boundary_name
 
 
 class BoundaryGroup(object):
@@ -118,7 +121,7 @@ class BoundaryGroup(object):
 		--------
 			self.boundary_faces
 		'''
-		self.boundary_faces = [BoundaryFace() for i in \
+		self.boundary_faces = [BoundaryFace(self.name) for i in
 				range(self.num_boundary_faces)]
 
 

@@ -117,9 +117,10 @@ class Adapter():
 
         # == Refinement == #
         dJ, iMM, Uc, n_elems, num_new_interior_faces = \
-                self.refine(solver.mesh.elements, solver.mesh.interior_faces,
-                solver.mesh.gbasis, solver.basis, refine_IDs, split_face_IDs,
-                dJ_coarsened, iMM_coarsened, Uc_coarsened, n_elems_coarsened)
+        self.refine(solver.mesh.elements, solver.mesh.interior_faces,
+                solver.mesh.boundary_groups, solver.mesh.gbasis, solver.basis,
+                refine_IDs, split_face_IDs, dJ_coarsened, iMM_coarsened,
+                Uc_coarsened, n_elems_coarsened)
         solver.mesh.num_elems = n_elems
         solver.mesh.num_interior_faces += num_new_interior_faces
 
@@ -143,8 +144,8 @@ class Adapter():
 
         return (n_elems, dJ, Uc, iMM)
 
-    def refine(self, elements, interior_faces, gbasis, basis, refine_IDs,
-            split_face_IDs, dJ_old, iMM_old, Uc_old, n_elems_old):
+    def refine(self, elements, interior_faces, boundary_groups, gbasis, basis,
+            refine_IDs, split_face_IDs, dJ_old, iMM_old, Uc_old, n_elems_old):
         # -- Array sizing and allocation -- #
         n_refined = refine_IDs.shape[0]
         n_elems = n_elems_old + n_refined
@@ -166,12 +167,22 @@ class Adapter():
             elemL_ID = elem_ID
             elemR_ID = n_elems_old + i
             # Create new elements and update faces
-            num_new_interior_faces += self.refine_element(elements,
-                    interior_faces, gbasis, basis, iMM, dJ, Uc, elemL_ID,
-                    elemR_ID, face_ID)
+            # If splitting an interior face
+            face = elements[elem_ID].faces[face_ID]
+            if isinstance(face, mesh_defs.InteriorFace):
+                num_new_interior_faces += self.refine_element(elements,
+                        interior_faces, gbasis, basis, iMM, dJ, Uc, elemL_ID,
+                        elemR_ID, face_ID)
+            # If splitting a boundary face
+            else:
+                boundary_groups[face.name].num_boundary_faces += \
+                self.refine_element(elements,
+                        boundary_groups[face.name].boundary_faces, gbasis,
+                        basis, iMM, dJ, Uc, elemL_ID, elemR_ID, face_ID)
+
         return dJ, iMM, Uc, n_elems, num_new_interior_faces
 
-    def refine_element(self, elements, interior_faces, gbasis, basis, iMM, dJ,
+    def refine_element(self, elements, list_of_faces, gbasis, basis, iMM, dJ,
             Uc, elem0_ID, elem1_ID, face_ID):
         """
         Split an element into two elements.
@@ -195,7 +206,10 @@ class Adapter():
         face = elem0.faces[face_ID]
 
         # Orientation of adaptation
-        forward = face.elemL_ID == elem0_ID
+        forward = adapter_tools.get_orientation(face, elem0_ID)
+
+        # Whether or not we are refining a boundary face
+        boundary = not isinstance(face, mesh_defs.InteriorFace)
 
         # If needed, flip orientation of elements
         if not forward:
@@ -223,25 +237,31 @@ class Adapter():
         # Figure out:
         # 1. the element ID of the neighbor across the face being split
         # 2. the local face ID on the neighbor of the face being split
-        if forward:
-            neighbor_ID = face.elemR_ID
-            neighbor_face_ID = face.faceR_ID
-        else:
-            neighbor_ID = face.elemL_ID
-            neighbor_face_ID = face.faceL_ID
+        # This info only needed for interior faces.
+        if not boundary:
+            if forward:
+                neighbor_ID = face.elemR_ID
+                neighbor_face_ID = face.faceR_ID
+            else:
+                neighbor_ID = face.elemL_ID
+                neighbor_face_ID = face.faceL_ID
 
         # If the face has no children, then new faces must be created
         create_new_faces = not face.children
 
         # If new faces need to be made
         if create_new_faces:
-            # Make a face between elem0 and neighbor
-            face0 = mesh_defs.InteriorFace()
-            # Make a face between elem1 and neighbor
-            face1 = mesh_defs.InteriorFace()
+            # Make a face between elem0 and neighbor, and another between
+            # elem1 and neighbor
+            if boundary:
+                face0 = mesh_defs.BoundaryFace(face.name)
+                face1 = mesh_defs.BoundaryFace(face.name)
+            else:
+                face0 = mesh_defs.InteriorFace()
+                face1 = mesh_defs.InteriorFace()
             # Add new faces to the mesh
-            interior_faces.append(face0)
-            interior_faces.append(face1)
+            list_of_faces.append(face0)
+            list_of_faces.append(face1)
             # Make new faces children of old face
             face.children = [face0, face1]
 
@@ -250,60 +270,66 @@ class Adapter():
                     gbasis.order, face_ID)
             refQ1nodes_split = gbasis.PRINCIPAL_NODE_COORDS[
                     refQ1node_nums_split]
-            # If positive orientation
-            if forward:
-                # Q1 nodes on split side
-                face0.refQ1nodes_L = refQ1nodes_split
-                face1.refQ1nodes_L = refQ1nodes_split
-                # Figure out the Q1 nodes on other side by cutting in half
-                middle_point_R = np.mean(face.refQ1nodes_R, axis=0)
-                face1.refQ1nodes_R = np.vstack((face.refQ1nodes_R[0],
-                    middle_point_R))
-                face0.refQ1nodes_R = np.vstack((middle_point_R,
-                    face.refQ1nodes_R[1]))
-            # If negative orientation
+            # Boundary faces are always oriented forward and have only one side
+            if boundary:
+                face0.refQ1nodes = refQ1nodes_split
+                face1.refQ1nodes = refQ1nodes_split
+            # For interior faces, check orientation
             else:
-                # Q1 nodes on split side
-                face0.refQ1nodes_R = refQ1nodes_split[::-1]
-                face1.refQ1nodes_R = refQ1nodes_split[::-1]
-                # Figure out the Q1 nodes on other side by cutting in half
-                middle_point_L = np.mean(face.refQ1nodes_L, axis=0)
-                face1.refQ1nodes_L = np.vstack((face.refQ1nodes_L[0],
-                    middle_point_L))
-                face0.refQ1nodes_L = np.vstack((middle_point_L,
-                    face.refQ1nodes_L[1]))
+                # If positive orientation
+                if forward:
+                    # Q1 nodes on split side
+                    face0.refQ1nodes_L = refQ1nodes_split
+                    face1.refQ1nodes_L = refQ1nodes_split
+                    # Figure out the Q1 nodes on other side by cutting in half
+                    middle_point_R = np.mean(face.refQ1nodes_R, axis=0)
+                    face1.refQ1nodes_R = np.vstack((face.refQ1nodes_R[0],
+                        middle_point_R))
+                    face0.refQ1nodes_R = np.vstack((middle_point_R,
+                        face.refQ1nodes_R[1]))
+                # If negative orientation
+                else:
+                    # Q1 nodes on split side
+                    face0.refQ1nodes_R = refQ1nodes_split[::-1]
+                    face1.refQ1nodes_R = refQ1nodes_split[::-1]
+                    # Figure out the Q1 nodes on other side by cutting in half
+                    middle_point_L = np.mean(face.refQ1nodes_L, axis=0)
+                    face1.refQ1nodes_L = np.vstack((face.refQ1nodes_L[0],
+                        middle_point_L))
+                    face0.refQ1nodes_L = np.vstack((middle_point_L,
+                        face.refQ1nodes_L[1]))
 
-            # Store old face IDs
-            # TODO: Is this needed?
-            face0.old_faceL_IDs.append(face0.faceL_ID)
-            face0.old_faceR_IDs.append(face0.faceR_ID)
-            face1.old_faceL_IDs.append(face1.faceL_ID)
-            face1.old_faceR_IDs.append(face1.faceR_ID)
-
-            # Update face neighbors
-            # If positive orientation
-            if forward:
-                face0.elemL_ID = elem0_ID
-                face0.elemR_ID = neighbor_ID
-                face0.faceL_ID = face_ID
-                face0.faceR_ID = neighbor_face_ID
-                face1.elemL_ID = elem1_ID
-                face1.elemR_ID = neighbor_ID
-                face1.faceL_ID = face_ID
-                face1.faceR_ID = neighbor_face_ID
-            # If negative orientation
+            # Update boundary face neighbors
+            if boundary:
+                face0.elem_ID = elem0_ID
+                face0.face_ID = face_ID
+                face1.elem_ID = elem1_ID
+                face1.face_ID = face_ID
+            # Update interior face neighbors
             else:
-                face0.elemR_ID = elem0_ID
-                face0.elemL_ID = neighbor_ID
-                face0.faceR_ID = face_ID
-                face0.faceL_ID = neighbor_face_ID
-                face1.elemR_ID = elem1_ID
-                face1.elemL_ID = neighbor_ID
-                face1.faceR_ID = face_ID
-                face1.faceL_ID = neighbor_face_ID
-            # One face split into two, and the middle face will be made later,
-            # so there are two new interior faces
-            num_new_interior_faces = 2
+                # If positive orientation
+                if forward:
+                    face0.elemL_ID = elem0_ID
+                    face0.elemR_ID = neighbor_ID
+                    face0.faceL_ID = face_ID
+                    face0.faceR_ID = neighbor_face_ID
+                    face1.elemL_ID = elem1_ID
+                    face1.elemR_ID = neighbor_ID
+                    face1.faceL_ID = face_ID
+                    face1.faceR_ID = neighbor_face_ID
+                # If negative orientation
+                else:
+                    face0.elemR_ID = elem0_ID
+                    face0.elemL_ID = neighbor_ID
+                    face0.faceR_ID = face_ID
+                    face0.faceL_ID = neighbor_face_ID
+                    face1.elemR_ID = elem1_ID
+                    face1.elemL_ID = neighbor_ID
+                    face1.faceR_ID = face_ID
+                    face1.faceL_ID = neighbor_face_ID
+                # One face split into two, and the middle face will be made later,
+                # so there are two new interior faces
+                num_new_interior_faces = 2
 
         # If new faces do not need to be made
         else:
