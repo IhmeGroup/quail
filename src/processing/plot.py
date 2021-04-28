@@ -638,21 +638,23 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	if ndims == 1:
 		y = plt.ylim()
 
+	# Segment basis and equispaced nodes for faces
+	basis_seg = basis_defs.LagrangeSeg(gbasis.order)
+	face_ref_nodes = basis_seg.equidistant_nodes(gbasis.order)
+
 	'''
 	Loop through interior_faces and plot interior faces
 	'''
 	for interior_face in mesh.interior_faces:
 
 		''' Get face coordinates and basis gradient '''
-		# Instantiate segment basis
-		basis_seg = basis_defs.LagrangeSeg(gbasis.order)
 
 		# Convert from face ref space to element ref space
-		face_ref_nodes = basis_seg.equidistant_nodes(gbasis.order)
 		face_coords_ref = gbasis.get_elem_ref_from_face_ref(
 				interior_face.refQ1nodes_L, face_ref_nodes)
 		# Convert from element ref space to physical space
-		coords = mesh_tools.ref_to_phys(mesh, interior_face.elemL_ID, face_coords_ref)
+		coords = mesh_tools.ref_to_phys(mesh, interior_face.elemL_ID,
+				face_coords_ref)
 
 		if ndims == 1:
 			x = np.full(2, coords[:, 0])
@@ -667,8 +669,13 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 	'''
 	for boundary_group in mesh.boundary_groups.values():
 		for boundary_face in boundary_group.boundary_faces:
-			# Get coordinates of face nodes
-			coords = boundary_face.node_coords
+			# Convert from face ref space to element ref space
+			face_coords_ref = gbasis.get_elem_ref_from_face_ref(
+					boundary_face.refQ1nodes, face_ref_nodes)
+			# Convert from element ref space to physical space
+			coords = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID,
+					face_coords_ref)
+
 			if ndims == 1:
 				x = np.full(2, coords[:, 0])
 			else:
