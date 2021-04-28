@@ -116,13 +116,17 @@ class Adapter():
                 refine_IDs)
 
         # == Refinement == #
-        dJ, iMM, Uc, n_elems, num_new_interior_faces = \
-        self.refine(solver.mesh.elements, solver.mesh.interior_faces,
-                solver.mesh.boundary_groups, solver.mesh.gbasis, solver.basis,
-                refine_IDs, split_face_IDs, dJ_coarsened, iMM_coarsened,
-                Uc_coarsened, n_elems_coarsened)
+        # Refine
+        dJ, iMM, Uc, n_elems = self.refine(solver.mesh.elements,
+                solver.mesh.interior_faces, solver.mesh.boundary_groups,
+                solver.mesh.gbasis, solver.basis, refine_IDs, split_face_IDs,
+                dJ_coarsened, iMM_coarsened, Uc_coarsened, n_elems_coarsened)
+        # Update counts
         solver.mesh.num_elems = n_elems
-        solver.mesh.num_interior_faces += num_new_interior_faces
+        solver.mesh.num_interior_faces = len(solver.mesh.interior_faces)
+        for boundary_group_name in solver.mesh.boundary_groups:
+            boundary_group = solver.mesh.boundary_groups[boundary_group_name]
+            boundary_group.num_boundary_faces = len(boundary_group.boundary_faces)
 
         # == Interface to Quail == #
         solver.elem_helpers.djac_elems = dJ[..., np.newaxis]
@@ -159,7 +163,6 @@ class Adapter():
         Uc[:n_elems_old, :] = Uc_old
 
         # -- Loop through tagged elements and perform refinement -- #
-        num_new_interior_faces = 0
         for i, (elem_ID, face_ID) in enumerate(zip(refine_IDs, split_face_IDs)):
             # Refinement always takes one element and turns it into two. The
             # element which retains the parent ID is called the left element.
@@ -170,19 +173,17 @@ class Adapter():
             # If splitting an interior face
             face = elements[elem_ID].faces[face_ID]
             if isinstance(face, mesh_defs.InteriorFace):
-                num_new_interior_faces += self.refine_element(elements,
-                        interior_faces, gbasis, basis, iMM, dJ, Uc, elemL_ID,
-                        elemR_ID, face_ID)
+                self.refine_element(elements, interior_faces, interior_faces,
+                        gbasis, basis, iMM, dJ, Uc, elemL_ID, elemR_ID, face_ID)
             # If splitting a boundary face
             else:
-                boundary_groups[face.name].num_boundary_faces += \
-                self.refine_element(elements,
+                self.refine_element(elements, interior_faces,
                         boundary_groups[face.name].boundary_faces, gbasis,
                         basis, iMM, dJ, Uc, elemL_ID, elemR_ID, face_ID)
 
-        return dJ, iMM, Uc, n_elems, num_new_interior_faces
+        return dJ, iMM, Uc, n_elems
 
-    def refine_element(self, elements, list_of_faces, gbasis, basis, iMM, dJ,
+    def refine_element(self, elements, interior_faces, list_of_faces, gbasis, basis, iMM, dJ,
             Uc, elem0_ID, elem1_ID, face_ID):
         """
         Split an element into two elements.
@@ -327,9 +328,6 @@ class Adapter():
                     face1.elemL_ID = neighbor_ID
                     face1.faceR_ID = face_ID
                     face1.faceL_ID = neighbor_face_ID
-                # One face split into two, and the middle face will be made later,
-                # so there are two new interior faces
-                num_new_interior_faces = 2
 
         # If new faces do not need to be made
         else:
@@ -340,10 +338,6 @@ class Adapter():
             for pair_ID, (new_face, elem_ID) in enumerate(
                     zip([face0, face1], [elem0_ID, elem1_ID])):
                 self.update_faces(new_face, face_ID, elem_ID, pair_ID, forward)
-
-            # No faces were split into two, but the middle face will still be
-            # made later, so there is one new interior face
-            num_new_interior_faces = 1
 
         # If positive orientation
         if forward:
@@ -426,7 +420,7 @@ class Adapter():
         # ---- End old stuff, before hanging nodes ---- #
 
         # Remove the old face if new faces were made
-        if create_new_faces: interior_faces.remove(face)
+        if create_new_faces: list_of_faces.remove(face)
 
         # Compute Jacobian matrix
         J = np.einsum('pnr, inl -> iplr', self.grad_phi_g, xn_new)
@@ -446,7 +440,6 @@ class Adapter():
         Uc[new_elem_IDs] = np.einsum('isn, js, ijt, itk, ij -> ink',
                 iMM[new_elem_IDs], self.B, phi_old_on_xq_new, Uc[old_elem_IDs],
                 dJ[new_elem_IDs])
-        return num_new_interior_faces
 
     def coarsen_triangles(self, solver, iMM, dJ, Uc, group, delete_groups):
         # Get face pair of group being coarsened

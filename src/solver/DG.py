@@ -493,6 +493,8 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 		# Get values on each face (from interior perspective) and get boundary
 		# information
+		self.normals_bgroups = []
+		self.x_bgroups = []
 		for i, bgroup_name in enumerate(mesh.boundary_groups):
 			bgroup = mesh.boundary_groups[bgroup_name]
 			# Allocate
