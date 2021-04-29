@@ -364,8 +364,8 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 			self.implicit = source_stepper.SourceSolvers.BDF1(U)
 		elif SourceStepperType[implicit] == SourceStepperType.Trapezoidal:
 			self.implicit = source_stepper.SourceSolvers.Trapezoidal(U)
-		elif SourceStepperType[implicit] == SourceStepperType.Scipy:
-			self.implicit = source_stepper.SourceSolvers.Scipy(U)
+		elif SourceStepperType[implicit] == SourceStepperType.LSODA:
+			self.implicit = source_stepper.SourceSolvers.LSODA(U)
 		else:
 			raise NotImplementedError("Time scheme not supported")
 

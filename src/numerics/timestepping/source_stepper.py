@@ -193,9 +193,9 @@ class SourceSolvers():
 			return res
 
 
-	class Scipy(SourceStepperBase):
+	class LSODA(SourceStepperBase):
 		'''
-		Scipy solver ... add some details
+		Scipy LSODA solver ... add some details
 
 		Additional methods and attributes are commented below.
 		'''
