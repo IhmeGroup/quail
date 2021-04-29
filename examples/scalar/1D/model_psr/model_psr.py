@@ -25,7 +25,7 @@ TimeStepping = {
 	"FinalTime" : tfinal,
 	"TimeStepSize" : 80.,# Da/10.,
 	"TimeStepper" : timescheme,
-	"OperatorSplittingImplicit" : "Scipy",
+	"OperatorSplittingImplicit" : "LSODA",
 	
 }
 
