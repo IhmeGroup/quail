@@ -122,6 +122,8 @@ def check_face_orientations(mesh):
 		# Don't need to check for 1D
 		return
 
+	# TODO: Make this work with the removal of node IDs
+	return
 	for interior_face in mesh.interior_faces:
 		elemL_ID = interior_face.elemL_ID
 		elemR_ID = interior_face.elemR_ID
