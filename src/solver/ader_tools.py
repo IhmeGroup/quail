@@ -700,7 +700,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# 	AX + XB = C
 	# Update: We now transform AX+XB=C into KX=C using kronecker
 	# products.
-	niter = 10000
+	niter = 1000
 
 	A = np.matmul(iMM,K)
 
@@ -727,19 +727,16 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		for ie in range(U_pred.shape[0]):
 
 			# Conduct kronecker products to make system Ax=b
-			kronecker = np.kron(I1, A) + np.kron(B[ie, :, :], I2)
+			# kronecker = np.kron(I1, A) + np.kron(B[ie, :, :].transpose(), I2)
+			# U_pred_hold = np.linalg.solve(kronecker, C[ie, :, :].transpose().reshape(-1))
+			# U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[2], U_pred.shape[1]).transpose()
 
-			# import code; code.interact(local=locals())
-			# U_pred_hold = np.linalg.solve(kronecker, C[ie, :, :].reshape([27,1]))
-			# U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[1], U_pred.shape[2])
-
-			# import code; code.interact(local=locals())
 			# Note: Previous implementaion used sylvester solve directly.
 			# This still requires further testing to determine which is 
 			# more efficient.
 			U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
 					C[ie, :, :])
-			# import code; code.interact(local=locals())
+
 		# We check when the coefficients are no longer changing.
 		# This can lead to differences between NODAL and MODAL solutions.
 		# This could be resolved by evaluating at the quadrature points
