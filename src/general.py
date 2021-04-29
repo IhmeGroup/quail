@@ -129,8 +129,8 @@ class SourceStepperType(Enum):
 		# 1st-order backwards differencing
 	Trapezoidal = auto()
 		# Trapezoidal
-	Scipy = auto()
-		# Scipy built-in ode solver.
+	LSODA = auto()
+		# Scipy LSODA built-in ode solver.
 
 
 class PhysicsType(Enum):
