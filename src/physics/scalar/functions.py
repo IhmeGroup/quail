@@ -422,7 +422,7 @@ class ScalarArrhenius(SourceBase):
 		T_a = physics.T_a
 
 		jac = -np.exp(-T_a/Uq) * (Uq**2 - T_a*T_ad + T_a*Uq)/Uq**2
-
+	
 		return np.expand_dims(jac, axis=-1)
 
 class Pendulum(SourceBase):
@@ -496,12 +496,10 @@ class Mixing(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		
-		# S = self.get_source(physics, Uq, x, t)
+		jac = get_numerical_jacobian(self, physics, Uq, x, t)
 
+		return jac
 
-		import code; code.interact(local=locals())
-
-		return Uq	
 
 class Reacting(SourceBase):
 	'''
@@ -540,18 +538,18 @@ class Reacting(SourceBase):
 	def get_jacobian(self, physics, Uq, x, t):
 
 		jac = get_numerical_jacobian(self, physics, Uq, x, t)
-		# import code; code.interact(local=locals())
+
 		return jac
 
 
 def get_numerical_jacobian(source, physics, Uq, x, t):
 
 	ns = physics.NUM_STATE_VARS
-	eps = 1.e-10
+	eps = 1.e-6
 
 	S = source.get_source(physics, Uq, x, t)
 	Sperturb = np.zeros([ns, S.shape[0], S.shape[1], S.shape[2]])
-	eps_ = Uq * eps
+	eps_ = Uq*eps
 
 	jac = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
 
@@ -562,4 +560,18 @@ def get_numerical_jacobian(source, physics, Uq, x, t):
 	for i in range(ns):
 		for j in range(ns):
 				jac[:, :, i, j] = (Sperturb[j, :, :, i] - S[:, :, i]) / (eps_[:, :, j]+1.e-12)
-	return jac		
+	return jac	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
