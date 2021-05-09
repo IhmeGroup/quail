@@ -527,6 +527,7 @@ class Adapter():
         # Get face ID of face between two elements being coarsened
         middle_face0_ID = np.argwhere(np.isin(elem0.faces, elem1.faces))[0, 0]
         middle_face1_ID = np.argwhere(elem1.faces == elem0.faces[middle_face0_ID])[0, 0]
+        middle_face = elem0.faces[middle_face0_ID]
         # Figure out the refinement was forward or backward by inverting the
         # way faces were assigned during refinement
         # TODO: I am almost certain this is wrong - there is a 0 vs 1, an L vs
@@ -545,11 +546,10 @@ class Adapter():
         xn_ref_new = self.inverse_refinement_transformation(self.xn_ref, face_ID, 0)
         # Convert to physical space
         xn = mesh_tools.ref_to_phys(mesh, elem0_ID, xn_ref_new)
+        elem0.node_coords = xn
         # Update counts
         mesh.num_elems -= 1
         mesh.num_interior_faces -= 1
-        # Removed middle face
-        list_of_faces.remove(elem0.faces[middle_face0_ID])
 
         # Compute Jacobian matrix
         J = np.einsum('pnr, nl -> plr', self.grad_phi_g, xn)
@@ -575,6 +575,18 @@ class Adapter():
 
         # Do L2 projection
         Uc_old[elem0_ID] = np.einsum('sn, js, jk, j -> nk', iMM, self.B, U_new, dJ)
+
+        # Update face neighbors
+        # TODO: This is specific to triangles
+        for local_face in elem1.faces:
+            # Do not update the middle face, which will be removed
+            if local_face is not middle_face:
+                local_face_ID, L_or_R = adapter_tools.get_face_ID(local_face,
+                        elem1_ID)
+                adapter_tools.update_face_neighbor(local_face, elem0_ID,
+                        local_face_ID, L_or_R)
+        # Remove middle face
+        list_of_faces.remove(middle_face)
 
         # Return the element ID that should be removed
         return elem1_ID
