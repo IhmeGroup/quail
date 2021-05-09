@@ -106,21 +106,24 @@ class Adapter():
         # Extract needed data from the solver object
         # TODO: Maybe wrap this?
         num_nodes_old = solver.mesh.num_nodes
+        num_elems_old = solver.mesh.num_elems
         dJ_old = solver.elem_helpers.djac_elems[:, :, 0]
         Uc_old = solver.state_coeffs
         iMM_old = solver.elem_helpers.iMM_elems
 
         # == Coarsening == #
-        dJ_coarsened, iMM_coarsened, Uc_coarsened, n_elems_coarsened = \
-                self.coarsen(solver, coarsen_IDs, iMM_old, dJ_old, Uc_old,
-                refine_IDs)
+        dJ_coarsened, iMM_coarsened, Uc_coarsened = \
+        self.coarsen(solver.mesh, solver.mesh.elements,
+                solver.mesh.interior_faces, solver.mesh.boundary_groups,
+                solver.mesh.gbasis, solver.basis, coarsen_IDs, refine_IDs,
+                dJ_old, iMM_old, Uc_old, num_elems_old)
 
         # == Refinement == #
         # Refine
         dJ, iMM, Uc, n_elems = self.refine(solver.mesh.elements,
                 solver.mesh.interior_faces, solver.mesh.boundary_groups,
                 solver.mesh.gbasis, solver.basis, refine_IDs, split_face_IDs,
-                dJ_coarsened, iMM_coarsened, Uc_coarsened, n_elems_coarsened)
+                dJ_coarsened, iMM_coarsened, Uc_coarsened, solver.mesh.num_elems)
         # Update counts
         solver.mesh.num_elems = n_elems
         solver.mesh.num_interior_faces = len(solver.mesh.interior_faces)
@@ -202,6 +205,9 @@ class Adapter():
         # Create new elem, elem1
         elem1 = mesh_defs.Element(elem1_ID)
         elements.append(elem1)
+        # Set these elements as partners
+        elem0.partner_ID = elem1_ID
+        elem1.partner_ID = elem0_ID
 
         # Get face being split
         face = elem0.faces[face_ID]
@@ -353,7 +359,6 @@ class Adapter():
             faceL = face1
             faceR = face0
             split_elemL_ID = 1
-        # If negative orientation
         # Make a face between elem0 and elem1
         # NOTE: This assumes triangles
         middle_faceL_ID = (face_ID + 2) % 3
@@ -441,57 +446,138 @@ class Adapter():
                 iMM[new_elem_IDs], self.B, phi_old_on_xq_new, Uc[old_elem_IDs],
                 dJ[new_elem_IDs])
 
-    def coarsen_triangles(self, solver, iMM, dJ, Uc, group, delete_groups):
-        # Get face pair of group being coarsened
-        face_pair = group.face_pair
-        # Get new element IDs from the previous parent
-        new_elem_IDs = group.parent_elem_IDs
-        # Get old element IDs from the elements in the group
-        old_elem_IDs = group.elem_IDs
+    def coarsen(self, mesh, elements, interior_faces, boundary_groups, gbasis, basis,
+            coarsen_IDs, refine_IDs, dJ_old, iMM_old, Uc_old, n_elems_old):
+        # List of elements that are removed
+        removed_elem_IDs = []
+        # -- Loop through tagged elements and perform coarsening -- #
+        while coarsen_IDs:
+            # Get element
+            elem_ID = coarsen_IDs.pop()
+            elem = elements[elem_ID]
+            # Get partner element
+            partner_ID = elem.partner_ID
+            partner = elements[partner_ID]
+            # Coarsening can only be performed if the partner element also needs
+            # to be coarsened, and if both elements are leaf elements.
+            if partner_ID in coarsen_IDs and elem.leaf and partner.leaf:
+                # Remove partner from set
+                coarsen_IDs.remove(partner_ID)
+
+                # Refinement always takes one element and turns it into two. The
+                # element which retains the parent ID is called the left element.
+                # The new element is called the right element.
+                #elemL_ID = elem_ID
+                #elemR_ID = n_elems_old + i
+                #TODO: This is a hack
+                elemL_ID = elem_ID
+                elemR_ID = partner_ID
+                # Create new elements and update faces
+                # If coarsening an interior face
+                #face = elements[elem_ID].faces[face_ID]
+                #if isinstance(face, mesh_defs.InteriorFace):
+                removed_elem_IDs.append(
+                        self.coarsen_element(mesh, elements, interior_faces, interior_faces,
+                        gbasis, basis, iMM_old, dJ_old,
+                        Uc_old, elemL_ID, elemR_ID))#, face_ID)
+                # If coarsening a boundary face
+                #else:
+                #    self.coarsen_element(elements, interior_faces,
+                #            boundary_groups[face.name].boundary_faces, gbasis,
+                #            basis, iMM, dJ, Uc, elemL_ID, elemR_ID, face_ID)
+
+        # Array sizing and allocation
+        dJ_coarsened  = np.empty((mesh.num_elems,) + dJ_old.shape[1:])
+        iMM_coarsened = np.empty((mesh.num_elems,) + iMM_old.shape[1:])
+        Uc_coarsened  = np.empty((mesh.num_elems,) + Uc_old.shape[1:])
+
+        # -- ID reordering -- #
+        # Loop over to reorder elements into these arrays
+        i = 0
+        reordered_IDs = np.empty(n_elems_old, dtype=int)
+        for i_old in range(n_elems_old):
+            # Store the new ID after reordering
+            reordered_IDs[i_old] = i
+            # Only add elements that are not deleted
+            if i_old not in removed_elem_IDs:
+                dJ_coarsened[i] = dJ_old[i_old]
+                iMM_coarsened[i] = iMM_old[i_old]
+                Uc_coarsened[i] = Uc_old[i_old]
+                i += 1
+        # Update IDs in the faces, refine IDs after reordering
+        for i_old in range(n_elems_old):
+            refine_IDs[refine_IDs == i_old] = reordered_IDs[i_old]
+            for face in interior_faces:
+                if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
+                if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
+            for boundary_group in boundary_groups.values():
+                for face in boundary_group.boundary_faces:
+                    if face.elem_ID == i_old: face.elem_ID = reordered_IDs[i_old]
+
+        return dJ_coarsened, iMM_coarsened, Uc_coarsened
+
+    def coarsen_element(self, mesh, elements, interior_faces, list_of_faces, gbasis,
+            basis, iMM_old, dJ_old, Uc_old, elem0_ID, elem1_ID):
         # Get new xn, iMM, and dJ from the previously stored parent information
-        xn[new_elem_IDs] = group.parent_xn
-        iMM[new_elem_IDs] = group.parent_iMM
-        dJ[new_elem_IDs] = group.parent_dJ
-        # Remove old adaptation group from dict
-        self.elem_to_adaptation_group.update({old_elem_ID : None for old_elem_ID
-            in old_elem_IDs})
-        # Mark old adaptation group for deletion
-        delete_groups.append(group)
-        # Update groups to be the same as the parent
-        self.elem_to_adaptation_group.update({new_elem_IDs[i] :
-            group.parent_groups[i] for i in range(new_elem_IDs.size)})
+        #xn[new_elem_IDs] = group.parent_xn
+        #iMM[new_elem_IDs] = group.parent_iMM
+        #dJ[new_elem_IDs] = group.parent_dJ
+        elem0 = elements[elem0_ID]
+        elem1 = elements[elem1_ID]
+        # Get face ID of face between two elements being coarsened
+        middle_face0_ID = np.argwhere(np.isin(elem0.faces, elem1.faces))[0, 0]
+        middle_face1_ID = np.argwhere(elem1.faces == elem0.faces[middle_face0_ID])[0, 0]
+        # Figure out the refinement was forward or backward by inverting the
+        # way faces were assigned during refinement
+        # TODO: I am almost certain this is wrong - there is a 0 vs 1, an L vs
+        # R, and the fact that i don't know which I pick to be 0 or 1 at the
+        # start.
+        if ((middle_face0_ID - 2) % 3) == ((middle_face1_ID - 1) % 3):
+            forward = True
+            face_ID = (middle_face0_ID - 2) % 3
+        else:
+            forward = False
+            face_ID = (middle_face0_ID - 1) % 3
+            # Swap element 0 and 1 since we are backwards
+            elem0, elem1 = elem1, elem0
+            elem0_ID, elem1_ID = elem1_ID, elem0_ID
+        # Get nodes of new element
+        xn_ref_new = self.inverse_refinement_transformation(self.xn_ref, face_ID, 0)
+        # Convert to physical space
+        xn = mesh_tools.ref_to_phys(mesh, elem0_ID, xn_ref_new)
         # Update counts
-        #TODO: Make this work at boundaries
-        solver.mesh.num_elems -= 2
-        solver.mesh.num_nodes -= 1 + 4 * (solver.mesh.gbasis.order - 1)
-        solver.mesh.num_interior_faces -= 3
-        # Removed old refined faces and add middle face back
-        for face in group.refined_faces:
-            solver.mesh.interior_faces.remove(face)
-        solver.mesh.interior_faces.append(group.middle_face)
+        mesh.num_elems -= 1
+        mesh.num_interior_faces -= 1
+        # Removed middle face
+        list_of_faces.remove(elem0.faces[middle_face0_ID])
 
-        U_new = np.empty((new_elem_IDs.size, self.xq_ref.shape[0],
-                solver.physics.NUM_STATE_VARS))
-        # Loop over parent elements
-        for i in range(new_elem_IDs.size):
-            # Loop over the two elements within each parent
-            for ii in range(2):
-                # Indices of quadrature points which fit inside this subelement
-                idx = self.xq_indices[ii][face_pair[i]]
-                # Transform the quad points contained within this subelement
-                xq_ref_new = np.einsum('lr, pr -> pl',
-                        self.T_J_inv[(face_pair[i], ii)],
-                        self.xq_ref[idx] - self.T_const[(face_pair[i], ii)])\
+        # Compute Jacobian matrix
+        J = np.einsum('pnr, nl -> plr', self.grad_phi_g, xn)
+        # Compute the Jacobian determinant
+        dJ = np.linalg.det(J)
 
-                # Evaluate basis on these points
-                phi_xq_ref_new = solver.basis.get_values(xq_ref_new)
-                # Evaluate solution on these points
-                U_new[i, idx] = np.einsum('jn, nk -> jk', phi_xq_ref_new,
-                        Uc[old_elem_IDs[2*i + ii]])
+        # Compute and store inverse mass matrix
+        iMM = np.linalg.inv(np.einsum('jsn, j -> sn', self.A, dJ))
+
+        U_new = np.empty((self.xq_ref.shape[0], Uc_old.shape[2]))
+        # Loop over the two old elements
+        for i, elem in enumerate([elem0, elem1]):
+            # Indices of quadrature points which fit inside this subelement
+            idx = self.xq_indices[i][face_ID]
+            # Transform the quad points contained within this subelement
+            xq_ref_new = self.inverse_refinement_transformation(
+                    self.xq_ref[idx], face_ID, i)
+            # Evaluate basis on these points
+            phi_xq_ref_new = basis.get_values(xq_ref_new)
+            # Evaluate solution on these points
+            U_new[idx] = np.einsum('jn, nk -> jk', phi_xq_ref_new,
+                    Uc_old[elem.ID])
 
         # Do L2 projection
-        Uc[new_elem_IDs] = np.einsum('isn, js, ijk, ij -> ink', iMM[new_elem_IDs],
-                self.B, U_new, dJ[new_elem_IDs])
+        Uc_old[elem0_ID] = np.einsum('sn, js, jk, j -> nk', iMM, self.B, U_new, dJ)
+
+        # Return the element ID that should be removed
+        return elem1_ID
 
     def refinement_transformation(self, x_ref, face_ID):
         """Transform from the old element reference space to the two new elements
@@ -532,158 +618,3 @@ class Adapter():
             child0, child1 = face.children
             self.update_faces(child0, face_ID, elem_ID, pair_ID, forward)
             self.update_faces(child1, face_ID, elem_ID, pair_ID, forward)
-
-    def coarsen(self, solver, coarsen_IDs, iMM_old, dJ_old, Uc_old, refine_IDs):
-        """
-        Loop through adaptation groups and perform coarsening.
-        """
-        # Groups to be deleted
-        delete_groups = []
-        # Start counting number of elements from the old mesh
-        n_elems_old = Uc_old.shape[0]
-        n_elems_coarsened = n_elems_old
-        # Set of elements that will be deleted by the coarsening
-        delete_elems = set()
-        # Loop over adaptation groups
-        for group in self.adaptation_groups:
-            # Only do coarsening if all members of the group need to be
-            # coarsened and the group has no child groups
-            if (all([elem_ID in coarsen_IDs for elem_ID in group.elem_IDs])
-                    and len(group.child_groups) == 0):
-                print("Coarsening:")
-                print(group.elem_IDs)
-
-                # Coarsen triangles
-                self.coarsen_triangles(solver, iMM_old, dJ_old, Uc_old,
-                        group, delete_groups)
-                # Neighbors of the old triangles in the group
-                old_neighbors = neighbors_old[group.elem_IDs]
-                # Get exterior neighbor of each triangle (the neighbor that is
-                # not one of the old triangles)
-                exterior_neighbors = np.empty(group.elem_IDs.size, dtype=int)
-                for i in range(exterior_neighbors.size):
-                    exterior_neighbors[i] = np.setdiff1d(old_neighbors[i], group.elem_IDs)[0]
-                # Set neighbors of new elements
-                for i in range(group.parent_elem_IDs.size):
-                    if group.parent_elem_IDs.size != 1:
-                        other_side = group.parent_elem_IDs[1 - i]
-                    else:
-                        other_side = -1
-                    neighbors_old[group.parent_elem_IDs[i],
-                            group.face_pair[i]] = other_side
-                    neighbors_old[group.parent_elem_IDs[i],
-                            group.face_pair[i] - 1] = exterior_neighbors[1 + 2*i]
-                    neighbors_old[group.parent_elem_IDs[i],
-                            group.face_pair[i] - 2] = exterior_neighbors[2*i]
-                # Decrease total count of elements
-                n_elems_to_delete = int(len(group.elem_IDs) / 2)
-                if n_elems_to_delete == 2:
-                    n_elems_coarsened -= 2
-                    delete_elems.update(group.elem_IDs[[1, 3]])
-                else:
-                    n_elems_coarsened -= 1
-                    delete_elems.update(group.elem_IDs[[1]])
-
-                # Update old faces, by searching through and finding it
-                # TODO: Add the reverse mapping (elem face ID to face object)
-                new_elem_IDs = [
-                        group.parent_elem_IDs[0],
-                        group.parent_elem_IDs[0],
-                        group.parent_elem_IDs[1],
-                        group.parent_elem_IDs[1],
-                        ]
-                neighbor_face_IDs = [ID % 3 for ID in [
-                        group.face_pair[0] + 1,
-                        group.face_pair[0] + 2,
-                        group.face_pair[1] + 1,
-                        group.face_pair[1] + 2,
-                        ]]
-                for elem_ID, neighbor_ID, new_ID, neighbor_face_ID in zip(
-                        group.elem_IDs, exterior_neighbors, new_elem_IDs,
-                        neighbor_face_IDs):
-                    for int_face in solver.mesh.interior_faces:
-                        if (int_face.elemL_ID == elem_ID and int_face.elemR_ID ==
-                                neighbor_ID):
-                            int_face.elemL_ID = new_ID
-                            int_face.faceL_ID = neighbor_face_ID
-                        elif (int_face.elemL_ID == neighbor_ID and
-                                int_face.elemR_ID == elem_ID):
-                            int_face.elemR_ID = new_ID
-                            int_face.faceR_ID = neighbor_face_ID
-
-                # Update neighbors of neighbors
-                #TODO: Wont work at a boundary
-                for j, elem_ID in enumerate(exterior_neighbors):
-                    if elem_ID != -1:
-                        # Find which face of the neighbor's neighbor used to be elem_L, then
-                        # update it
-                        neighbors_old[elem_ID, np.argwhere(neighbors_old[elem_ID] ==
-                                group.elem_IDs[j])] = new_elem_IDs[j]
-                # Hack to only coarsen one group per iteration
-                # TODO: get rid of this
-                break
-
-        # -- Array sizing and allocation -- #
-        # Create new arrays
-        dJ_coarsened = np.empty((n_elems_coarsened,) + dJ_old.shape[1:])
-        iMM_coarsened = np.empty((n_elems_coarsened,) + iMM_old.shape[1:])
-        Uc_coarsened = np.empty((n_elems_coarsened,) + Uc_old.shape[1:])
-
-        # -- ID reordering -- #
-        # Loop over to reorder elements into these arrays
-        i = 0
-        reordered_IDs = np.empty(n_elems_old, dtype=int)
-        for i_old in range(n_elems_old):
-            # Store the new ID after reordering
-            reordered_IDs[i_old] = i
-            # Only add elements that are not deleted
-            if i_old not in delete_elems:
-                dJ_coarsened[i] = dJ_old[i_old]
-                iMM_coarsened[i] = iMM_old[i_old]
-                Uc_coarsened[i] = Uc_old[i_old]
-                i += 1
-        # Update IDs in the faces, refine IDs, adaptation groups,
-        # elem_to_adaptation_group after reordering
-        # TODO: Add the same thing, but for boundary faces
-        for i_old in range(n_elems_old):
-            refine_IDs[refine_IDs == i_old] = reordered_IDs[i_old]
-            for face in solver.mesh.interior_faces:
-                if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
-                if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
-            # Update IDs in adaptation groups
-            for group in self.adaptation_groups:
-                group.elem_IDs[group.elem_IDs == i_old] = reordered_IDs[i_old]
-                group.parent_elem_IDs[group.parent_elem_IDs == i_old] = reordered_IDs[i_old]
-                for face in [group.middle_face, *group.refined_faces]:
-                    if face.elemL_ID == i_old: face.elemL_ID = reordered_IDs[i_old]
-                    if face.elemR_ID == i_old: face.elemR_ID = reordered_IDs[i_old]
-            # Update elem_to_adaptation_group
-            self.elem_to_adaptation_group[reordered_IDs[i_old]] = \
-                    self.elem_to_adaptation_group.pop(i_old, None)
-
-        # Delete groups that are no longer needed
-        for group in delete_groups:
-            # Remove this group as a child group of its parent
-            for i in range(len(group.parent_groups)):
-                if group.parent_groups[i] is not None:
-                    group.parent_groups[i].child_groups.remove(group)
-            # Remove the group
-            self.adaptation_groups.remove(group)
-
-        return dJ_coarsened, iMM_coarsened, Uc_coarsened, n_elems_coarsened
-
-
-class AdaptationGroup():
-
-    def __init__(self, elem_IDs, parent_elem_IDs, parent_groups, parent_iMM,
-            parent_xn, parent_dJ, face_pair, middle_face, refined_faces):
-        self.elem_IDs = elem_IDs
-        self.parent_elem_IDs = parent_elem_IDs
-        self.parent_groups = parent_groups
-        self.parent_iMM = parent_iMM
-        self.parent_xn = parent_xn
-        self.parent_dJ = parent_dJ
-        self.face_pair = face_pair
-        self.middle_face = middle_face
-        self.refined_faces = refined_faces
-        self.child_groups = []

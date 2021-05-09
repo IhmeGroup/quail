@@ -129,6 +129,8 @@ class Element(object):
 		self.ID = elem_ID
 		self.node_coords = np.zeros(0)
 		self.faces = np.empty([], dtype=object)
+		self.partner_ID = -1
+		self.leaf = True
 
 
 class Mesh(object):
