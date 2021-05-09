@@ -64,20 +64,36 @@ class PositivityPreserving(base.LimiterBase):
 		# Unpack
 		elem_helpers = solver.elem_helpers
 		int_face_helpers = solver.int_face_helpers
-		self.elem_vols, _ = mesh_tools.element_volumes(solver.mesh, solver)
 
 		# Basis values in element interior and on faces
 		if not solver.basis.skip_interp:
-			basis_val_faces = int_face_helpers.faces_to_basisL.copy()
-			bshape = basis_val_faces.shape
-			basis_val_faces.shape = (bshape[0]*bshape[1], bshape[2])
+			gbasis = solver.mesh.gbasis
+
+			# Sizing
+			nq_face, nb = int_face_helpers.faces_to_basisL.shape[1:]
+			n_faces = solver.basis.NFACES
+
+			# Loop over faces and compute basis on face quadrature points
+			local_faces_to_basis = np.empty((n_faces, nq_face, nb))
+			for i in range(n_faces):
+				# Get principal node nums of this face
+				node_nums = gbasis.get_local_face_principal_node_nums(
+						gbasis.order, i)
+				# Get Q1 nodes from the principal node nums
+				refQ1nodes = gbasis.PRINCIPAL_NODE_COORDS[node_nums]
+				# Get the quad points of this face on the reference element
+				face_quad_pts_on_elem = gbasis.get_elem_ref_from_face_ref(
+						refQ1nodes, int_face_helpers.quad_pts)
+				# Compute the basis values
+				local_faces_to_basis[i] = solver.basis.get_values(
+						face_quad_pts_on_elem)
+			# Reshape so all points on first axis
+			local_faces_to_basis.shape = (-1, nb)
+			# Combine with basis values at element quadrature points
 			self.basis_val_elem_faces = np.vstack((elem_helpers.basis_val,
-					basis_val_faces))
+					local_faces_to_basis))
 		else:
 			self.basis_val_elem_faces = elem_helpers.basis_val
-
-		# Jacobian determinant
-		self.djac_elems = elem_helpers.djac_elems
 
 		# Element quadrature weights
 		self.quad_wts_elem = elem_helpers.quad_wts
@@ -89,7 +105,11 @@ class PositivityPreserving(base.LimiterBase):
 		int_face_helpers = solver.int_face_helpers
 		basis = solver.basis
 
+		# Jacobian determinant
+		self.djac_elems = elem_helpers.djac_elems
 		djac = self.djac_elems
+		# Element volumes
+		self.elem_vols = elem_helpers.vol_elems
 
 		# Interpolate state at quadrature points over element and on faces
 		U_elem_faces = helpers.evaluate_state(Uc, self.basis_val_elem_faces,
@@ -156,7 +176,7 @@ class PositivityPreserving(base.LimiterBase):
 		elem_IDs = np.where(theta2 < 1.)[0]
 		# Modify coefficients
 		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
-			Uc[elem_IDs] = np.einsum('im, ijk -> ijk', theta2[elem_IDs], 
+			Uc[elem_IDs] = np.einsum('im, ijk -> ijk', theta2[elem_IDs],
 					Uc[elem_IDs]) + np.einsum('im, ijk -> ijk', 1 - theta2[
 					elem_IDs], U_bar[elem_IDs])
 		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
@@ -260,7 +280,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		elem_IDs = np.where(theta2 < 1.)[0]
 		# Modify density coefficients
 		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
-			Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :, 
+			Uc[elem_IDs, :, irhoY] = theta2[elem_IDs]*Uc[elem_IDs, :,
 					irhoY] + (1. - theta2[elem_IDs])*rho_bar[elem_IDs, 0]
 		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
 			Uc[elem_IDs, :, irhoY] *= theta2[elem_IDs]
@@ -291,7 +311,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		elem_IDs = np.where(theta3 < 1.)[0]
 		# Modify coefficients
 		if basis.MODAL_OR_NODAL == general.ModalOrNodal.Nodal:
-			Uc[elem_IDs] = np.einsum('im, ijk -> ijk', theta3[elem_IDs], 
+			Uc[elem_IDs] = np.einsum('im, ijk -> ijk', theta3[elem_IDs],
 					Uc[elem_IDs]) + np.einsum('im, ijk -> ijk', 1 - theta3[
 					elem_IDs], U_bar[elem_IDs])
 		elif basis.MODAL_OR_NODAL == general.ModalOrNodal.Modal:
