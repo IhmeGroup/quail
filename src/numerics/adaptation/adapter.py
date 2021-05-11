@@ -197,26 +197,30 @@ class Adapter():
         xn_ref_new = self.refinement_transformation(self.xn_ref, face_ID)
         xq_ref_new = self.refinement_transformation(self.xq_ref, face_ID)
 
-        # Get elem being split (which ends up being elem0)
-        elem0 = elements[elem0_ID]
+        # Get elem being split (same ID as elem0, to be made)
+        elem_old = elements[elem0_ID]
         # Store old faces and nodes
-        old_faces = elem0.faces.copy()
-        old_nodes = elem0.node_coords.copy()
-        # Create new elem, elem1
+        old_faces = elem_old.faces.copy()
+        old_nodes = elem_old.node_coords.copy()
+        # Create new elements
+        elem0 = mesh_defs.Element(elem0_ID)
         elem1 = mesh_defs.Element(elem1_ID)
+        elements[elem0_ID] = elem0
         elements.append(elem1)
-        # Set these elements as partners
-        elem0.partner_ID = elem1_ID
-        elem1.partner_ID = elem0_ID
+        # Set parent of the new elements
+        elem0.parent = elem_old
+        elem1.parent = elem_old
+        # Set these elements as children of the old element
+        elem_old.children = np.array([elem0, elem1])
 
         # Get face being split
-        face = elem0.faces[face_ID]
+        face = elem_old.faces[face_ID]
 
         # Orientation of adaptation
         forward = adapter_tools.get_orientation(face, elem0_ID)
 
         # Whether or not we are refining a boundary face
-        boundary = not isinstance(face, mesh_defs.InteriorFace)
+        boundary = isinstance(face, mesh_defs.BoundaryFace)
 
         # If needed, flip orientation of elements
         if not forward:
@@ -407,23 +411,6 @@ class Adapter():
                     adapter_tools.update_face_neighbor(local_face, elemR.ID,
                             face_ID + 2, L_or_R)
 
-        # ---- Old stuff, before hanging nodes ---- #
-        # Create new adaptation group and add to set. If it's a boundary
-        # refinement, then don't add the boundary (-1) elements/faces.
-        # TODO: middle face is removed later. Should it be copied before being
-        # passed in, or no?
-        #new_group = AdaptationGroup(new_elem_IDs, group_old_elem_IDs,
-        #        [self.elem_to_adaptation_group.get(ID) for ID in group_old_elem_IDs],
-        #        iMM[group_old_elem_IDs], xn[group_old_elem_IDs],
-        #        dJ[group_old_elem_IDs], face_pair, middle_face, refined_faces)
-        ## Add this group as child groups of its parent
-        #for i in range(len(new_group.parent_groups)):
-        #    if new_group.parent_groups[i] is not None:
-        #        new_group.parent_groups[i].child_groups.append(new_group)
-        #self.adaptation_groups.add(new_group)
-        #self.elem_to_adaptation_group.update({ID : new_group for ID in new_elem_IDs})
-        # ---- End old stuff, before hanging nodes ---- #
-
         # Remove the old face if new faces were made
         if create_new_faces: list_of_faces.remove(face)
 
@@ -456,22 +443,20 @@ class Adapter():
             elem_ID = coarsen_IDs.pop()
             elem = elements[elem_ID]
             # Get partner element
-            partner_ID = elem.partner_ID
-            partner = elements[partner_ID]
+            partner = elem.parent.children[np.argwhere(elem.parent.children != elem)[0,0]]
             # Coarsening can only be performed if the partner element also needs
-            # to be coarsened, and if both elements are leaf elements.
-            if partner_ID in coarsen_IDs and elem.leaf and partner.leaf:
+            # to be coarsened, and if both elements have no children.
+            if (partner.ID in coarsen_IDs and elem.children.size == 0 and
+                    partner.children.size == 0):
                 # Remove partner from set
-                coarsen_IDs.remove(partner_ID)
+                coarsen_IDs.remove(partner.ID)
 
                 # Refinement always takes one element and turns it into two. The
                 # element which retains the parent ID is called the left element.
                 # The new element is called the right element.
                 #elemL_ID = elem_ID
                 #elemR_ID = n_elems_old + i
-                #TODO: This is a hack
-                elemL_ID = elem_ID
-                elemR_ID = partner_ID
+                elem0, elem1 = elem.parent.children
                 # Create new elements and update faces
                 # If coarsening an interior face
                 #face = elements[elem_ID].faces[face_ID]
@@ -479,7 +464,7 @@ class Adapter():
                 removed_elem_IDs.append(
                         self.coarsen_element(mesh, elements, interior_faces, interior_faces,
                         gbasis, basis, iMM_old, dJ_old,
-                        Uc_old, elemL_ID, elemR_ID))#, face_ID)
+                        Uc_old, elem0.ID, elem1.ID))#, face_ID)
                 # If coarsening a boundary face
                 #else:
                 #    self.coarsen_element(elements, interior_faces,
@@ -518,10 +503,6 @@ class Adapter():
 
     def coarsen_element(self, mesh, elements, interior_faces, list_of_faces, gbasis,
             basis, iMM_old, dJ_old, Uc_old, elem0_ID, elem1_ID):
-        # Get new xn, iMM, and dJ from the previously stored parent information
-        #xn[new_elem_IDs] = group.parent_xn
-        #iMM[new_elem_IDs] = group.parent_iMM
-        #dJ[new_elem_IDs] = group.parent_dJ
         elem0 = elements[elem0_ID]
         elem1 = elements[elem1_ID]
         # Get face ID of face between two elements being coarsened
@@ -530,18 +511,13 @@ class Adapter():
         middle_face = elem0.faces[middle_face0_ID]
         # Figure out the refinement was forward or backward by inverting the
         # way faces were assigned during refinement
-        # TODO: I am almost certain this is wrong - there is a 0 vs 1, an L vs
-        # R, and the fact that i don't know which I pick to be 0 or 1 at the
-        # start.
+        # TODO: This could be a source of error
         if ((middle_face0_ID - 2) % 3) == ((middle_face1_ID - 1) % 3):
             forward = True
             face_ID = (middle_face0_ID - 2) % 3
         else:
             forward = False
             face_ID = (middle_face0_ID - 1) % 3
-            # Swap element 0 and 1 since we are backwards
-            elem0, elem1 = elem1, elem0
-            elem0_ID, elem1_ID = elem1_ID, elem0_ID
         # Get nodes of new element
         xn_ref_new = self.inverse_refinement_transformation(self.xn_ref, face_ID, 0)
         # Convert to physical space
@@ -585,8 +561,35 @@ class Adapter():
                         elem1_ID)
                 adapter_tools.update_face_neighbor(local_face, elem0_ID,
                         local_face_ID, L_or_R)
+
+        # Get faces being coarsened (face0 is the one that remains, face1 is
+        # deleted)
+        face0 = elem0.faces[face_ID]
+        face1 = elem1.faces[face_ID]
+        # Whether or not the faces being coarsened are interior faces
+        interior = isinstance(face0, mesh_defs.InteriorFace)
+        # Only modify the Q1 nodes for interior faces being coarsened, since
+        # only interior faces have hanging nodes
+        if interior:
+            # If positive orientation
+            if forward:
+                # The Q1 nodes on the split side remain the same. On the other
+                # side, the Q1 nodes should come from joining the faces together.
+                face0.refQ1nodes_R = np.vstack((face1.refQ1nodes_R[0],
+                    face0.refQ1nodes_R[1]))
+            # If positive orientation
+            if forward:
+                # The Q1 nodes on the split side remain the same. On the other
+                # side, the Q1 nodes should come from joining the faces together.
+                face0.refQ1nodes_L = np.vstack((face1.refQ1nodes_L[0],
+                    face0.refQ1nodes_L[1]))
+
         # Remove middle face
         list_of_faces.remove(middle_face)
+        # Put parent back in place of elem0
+        elements[elem0_ID] = elem0.parent
+        # Remove children
+        elem0.parent.children = np.array([], dtype=object)
 
         # Return the element ID that should be removed
         return elem1_ID

@@ -128,9 +128,9 @@ class Element(object):
 	def __init__(self, elem_ID=-1):
 		self.ID = elem_ID
 		self.node_coords = np.zeros(0)
-		self.faces = np.empty([], dtype=object)
-		self.partner_ID = -1
-		self.leaf = True
+		self.faces = np.array([], dtype=object)
+		self.parent = None
+		self.children = np.array([], dtype=object)
 
 
 class Mesh(object):

@@ -36,33 +36,40 @@ def test_case():
     # Print results of run
     print(result.decode('utf-8'))
 
+    # Open initial condition data file
+    with open('Data_0.pkl', 'rb') as f:
+        # Read final solution from file
+        solver_init = pickle.load(f)
+
     # Open resulting data file
     with open('Data_final.pkl', 'rb') as f:
         # Read final solution from file
         solver = pickle.load(f)
 
-        # Get newly created faces
-        face0 = solver.mesh.elements[1].faces[0].children[0]
-        face1 = solver.mesh.elements[1].faces[0].children[1]
-        # Verify neighbors of new faces
-        np.testing.assert_equal(face0.elemL_ID, 0)
-        np.testing.assert_equal(face0.elemR_ID, 1)
-        np.testing.assert_equal(face1.elemL_ID, 2)
-        np.testing.assert_equal(face1.elemR_ID, 1)
-        # Verify face IDs of new faces
-        np.testing.assert_equal(face0.faceL_ID, 0)
-        np.testing.assert_equal(face0.faceR_ID, 0)
-        np.testing.assert_equal(face1.faceL_ID, 0)
-        np.testing.assert_equal(face1.faceR_ID, 0)
-        # Verify reference Q1 nodes of new faces
-        np.testing.assert_allclose(face0.refQ1nodes_L,
-                np.array([ [1, 0], [0, 1] ]))
-        np.testing.assert_allclose(face1.refQ1nodes_L,
-                np.array([ [1, 0], [0, 1] ]))
-        np.testing.assert_allclose(face0.refQ1nodes_R,
-                np.array([ [.5, .5], [1, 0] ]))
-        np.testing.assert_allclose(face1.refQ1nodes_R,
-                np.array([ [0, 1], [.5, .5] ]))
+        # Loop over interior faces
+        for face, face_init in zip(solver.mesh.interior_faces,
+                solver_init.mesh.interior_faces):
+            # Ensure that all faces have the same neighbors, orientation, and Q1
+            # nodes
+            np.testing.assert_equal(face.elemL_ID, face_init.elemL_ID)
+            np.testing.assert_equal(face.elemR_ID, face_init.elemR_ID)
+            np.testing.assert_equal(face.faceL_ID, face_init.faceL_ID)
+            np.testing.assert_equal(face.faceR_ID, face_init.faceR_ID)
+            np.testing.assert_allclose(face.refQ1nodes_L,
+                    face_init.refQ1nodes_L)
+            np.testing.assert_allclose(face.refQ1nodes_R,
+                    face_init.refQ1nodes_R)
+        # Loop over boundary faces
+        for bgroup, bgroup_init in zip(solver.mesh.boundary_groups.values(),
+                solver_init.mesh.boundary_groups.values()):
+            for face, face_init in zip(bgroup.boundary_faces,
+                    bgroup_init.boundary_faces):
+                # Ensure that all faces have the same neighbors, orientation,
+                # and Q1 nodes
+                np.testing.assert_equal(face.elem_ID, face_init.elem_ID)
+                np.testing.assert_equal(face.face_ID, face_init.face_ID)
+                np.testing.assert_allclose(face.refQ1nodes,
+                        face_init.refQ1nodes)
 
     # Return to test directory
     os.chdir(f'{quail_dir}/test')
