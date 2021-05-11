@@ -17,7 +17,7 @@ for fname in files:
     # Compute L2 error
     post.get_error(mesh, physics, solver, "Density")
     ''' Plot '''
-    # Density contour
+    # Pressure contour
     plot.prepare_plot(linewidth=0.5)
     plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=True,
             plot_exact=False, plot_IC=False, create_new_figure=True, fmt='bo',
@@ -49,4 +49,4 @@ for fname in files:
 
 #plot.show_plot()
 
-os.system('feh *.png')
+os.system('feh $(ls -v *.png)')

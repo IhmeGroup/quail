@@ -205,13 +205,15 @@ class Adapter():
         # Create new elements
         elem0 = mesh_defs.Element(elem0_ID)
         elem1 = mesh_defs.Element(elem1_ID)
-        elements[elem0_ID] = elem0
-        elements.append(elem1)
         # Set parent of the new elements
         elem0.parent = elem_old
         elem1.parent = elem_old
         # Set these elements as children of the old element
         elem_old.children = np.array([elem0, elem1])
+        # Place the new elements into the elements array (with elem0 taking the
+        # place of the old element)
+        elements[elem0_ID] = elem0
+        elements.append(elem1)
 
         # Get face being split
         face = elem_old.faces[face_ID]
@@ -241,7 +243,6 @@ class Adapter():
         xn_new = np.einsum('ipn, nl -> ipl', gbasis_xn_ref_new, old_nodes)
 
         # Update data within the elements
-        # TODO: Update the face tree?
         for i, elem in enumerate([elem0, elem1]):
             elem.node_coords = xn_new[i]
 
@@ -442,6 +443,8 @@ class Adapter():
             # Get element
             elem_ID = coarsen_IDs.pop()
             elem = elements[elem_ID]
+            # If this is a root element, then nothing can be done
+            if not elem.parent: continue
             # Get partner element
             partner = elem.parent.children[np.argwhere(elem.parent.children != elem)[0,0]]
             # Coarsening can only be performed if the partner element also needs
@@ -503,6 +506,7 @@ class Adapter():
 
     def coarsen_element(self, mesh, elements, interior_faces, list_of_faces, gbasis,
             basis, iMM_old, dJ_old, Uc_old, elem0_ID, elem1_ID):
+        # Get elements being coarsened
         elem0 = elements[elem0_ID]
         elem1 = elements[elem1_ID]
         # Get face ID of face between two elements being coarsened
@@ -570,6 +574,9 @@ class Adapter():
         interior = isinstance(face0, mesh_defs.InteriorFace)
         # Only modify the Q1 nodes for interior faces being coarsened, since
         # only interior faces have hanging nodes
+        # TODO: This should only be done if the other side is a hanging node -
+        # this should be skipped if the hanging node is connected to on the
+        # other side
         if interior:
             # If positive orientation
             if forward:
@@ -577,19 +584,22 @@ class Adapter():
                 # side, the Q1 nodes should come from joining the faces together.
                 face0.refQ1nodes_R = np.vstack((face1.refQ1nodes_R[0],
                     face0.refQ1nodes_R[1]))
-            # If positive orientation
-            if forward:
+            # If negative orientation
+            else:
                 # The Q1 nodes on the split side remain the same. On the other
                 # side, the Q1 nodes should come from joining the faces together.
                 face0.refQ1nodes_L = np.vstack((face1.refQ1nodes_L[0],
                     face0.refQ1nodes_L[1]))
-
-        # Remove middle face
+        # Remove face1 from the mesh
+        list_of_faces.remove(face1)
+        # Remove middle face from the mesh
         list_of_faces.remove(middle_face)
         # Put parent back in place of elem0
         elements[elem0_ID] = elem0.parent
         # Remove children
-        elem0.parent.children = np.array([], dtype=object)
+        elements[elem0_ID].children = np.array([], dtype=object)
+        # Update face to be face0
+        elements[elem0_ID].faces[face_ID] = face0
 
         # Return the element ID that should be removed
         return elem1_ID
