@@ -170,10 +170,18 @@ class SourceSolvers():
 			A = I - beta*dt * \
 					np.einsum('eij, ejklm -> eiklm', iMM_elems, dRdU)
 
+			# NEED TO DOUBLE CHECK THIS!!!!!!
 			iA = np.zeros_like(A)
 			for i in range(ns):
 				for s in range(ns):
 					iA[:, :, :, i, s] = np.linalg.inv(A[:, :, :, i, s])
+			# import code; code.interact(local=locals())
+
+
+			# for i in range(Uq.shape[0]):
+			# 	for j in range(nb):
+			# 		for k in range(nb):
+			# 			iA[i, j, k] = np.linalg.inv(A[i, j, k])
 
 			return A, iA # [ne, nb, nb, ns, ns]
 
