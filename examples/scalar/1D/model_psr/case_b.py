@@ -15,15 +15,18 @@ def extract_data(filename):
     #infile.readline() # skip the first line
     time = []
     pmax = []
+    jac = []
     for line in endLine:
         data = line.split()
         time.append(float(data[0]))
         pmax.append(float(data[2]))
+        jac.append(float(data[4]))
     infile.close()
 
     time = np.array(time)
     pmax = np.array(pmax)
-    return time, pmax
+    jac = np.array(jac)
+    return time, pmax, jac
 
 fig, ax = plt.subplots()
 
@@ -32,8 +35,10 @@ plt.xlabel('$t$')
 #Da = 80.
 Da =1.
 
-time, T = extract_data('time_hist.txt')
-ax.plot(time/Da, T,color='k')
+time, T , jac= extract_data('ana_jac.txt')
+ax.plot(time/Da, T, color='k', label='Analytical')
+time, T, jac = extract_data('num_jac.txt')
+ax.plot(time, T, ls='-.', color='r', label='Numerical')
 
 ax.legend()
 plt.show()
