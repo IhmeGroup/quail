@@ -727,15 +727,15 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		for ie in range(U_pred.shape[0]):
 
 			# Conduct kronecker products to make system Ax=b
-			# kronecker = np.kron(I1, A) + np.kron(B[ie, :, :].transpose(), I2)
-			# U_pred_hold = np.linalg.solve(kronecker, C[ie, :, :].transpose().reshape(-1))
-			# U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[2], U_pred.shape[1]).transpose()
+			kronecker = np.kron(I1, A) + np.kron(B[ie, :, :].transpose(), I2)
+			U_pred_hold = np.linalg.solve(kronecker, C[ie, :, :].transpose().reshape(-1))
+			U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[2], U_pred.shape[1]).transpose()
 
 			# Note: Previous implementaion used sylvester solve directly.
 			# This still requires further testing to determine which is 
 			# more efficient.
-			U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
-					C[ie, :, :])
+			# U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
+			# 		C[ie, :, :])
 
 		# We check when the coefficients are no longer changing.
 		# This can lead to differences between NODAL and MODAL solutions.
@@ -750,6 +750,7 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 			U_pred = np.copy(U_pred_new)
 			break
 
+		# import code; code.interact(local=locals())
 		U_pred = np.copy(U_pred_new)
 
 		source_coeffs = solver.source_coefficients(dt, order,
