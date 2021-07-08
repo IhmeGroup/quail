@@ -11,14 +11,14 @@ Tinit = 0.15
 tfinal = 330000.
 
 # Operator Splitting Settings:
-# timescheme = "Strang"
-# solver = "DG"
-# order = 0
+timescheme = "Strang"
+solver = "DG"
+order = 0
 
 # ADERDG Settings:
-timescheme = "ADER"
-solver = "ADERDG"
-order = 7
+# timescheme = "ADER"
+# solver = "ADERDG"
+# order = 7
 
 TimeStepping = {
 	"InitialTime" : 0.,
@@ -68,7 +68,7 @@ SourceTerms = {
 	"Mixing" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "ScalarMixing",
 		"Da" : Da,
-		"source_treatment" : "Explicit",
+		"source_treatment" : "Implicit",
 	},
 	"Arrhenius" : {
 		"Function" : "ScalarArrhenius",
