@@ -609,7 +609,7 @@ class SolverBase(ABC):
 			readwritedatafiles.write_data_file(self, 0)
 
 		# Custom user function initial iteration
-		self.custom_user_function(self)
+		# self.custom_user_function(self)
 
 		t0 = time.time()
 		iwrite = 1
@@ -619,7 +619,7 @@ class SolverBase(ABC):
 				"-----------------------")
 
 		# Custom user function initial iteration
-		self.custom_user_function(self)
+		# self.custom_user_function(self)
 
 		itime = 0
 		while itime < stepper.num_time_steps:
