@@ -6,6 +6,9 @@
 #       terms for scalar equations.
 #
 # ------------------------------------------------------------------------ #
+import sys
+sys.path.append('/Users/brettbornhoft/utilities/pyJac')
+import pyjacob
 import cantera as ct
 from enum import Enum, auto
 import numpy as np
@@ -399,6 +402,7 @@ class ScalarMixing(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		Da = self.Da
+		# jac = get_numerical_jacobian(self, physics, Uq, x, t)
 
 		return -1./Da
 
@@ -422,7 +426,8 @@ class ScalarArrhenius(SourceBase):
 		T_a = physics.T_a
 
 		jac = -np.exp(-T_a/Uq) * (Uq**2 - T_a*T_ad + T_a*Uq)/Uq**2
-	
+		# jac = get_numerical_jacobian(self, physics, Uq, x, t)
+
 		return np.expand_dims(jac, axis=-1)
 
 class Pendulum(SourceBase):
@@ -536,10 +541,16 @@ class Reacting(SourceBase):
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
-
+		# ns = physics.NUM_STATE_VARS
+		# jac_ = np.zeros([(ns-1)*(ns-1)])
+		# jac2 = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
+		# for ie in range(Uq.shape[0]):
+			# for iq in range(Uq.shape[1]):
+			    # pyjacob.py_eval_jacobian(0, physics.P, Uq[ie, iq, :(ns-1)], jac_)
+			    # jac2[ie, iq, :(ns-1), :(ns-1)] = jac_.reshape([(ns-1), (ns-1)])
 		jac = get_numerical_jacobian(self, physics, Uq, x, t)
-
-		return jac
+		# physics.jac2 = jac2.transpose(0,1,3,2)
+		return jac #jac2.transpose(0,1,3,2)
 
 
 def get_numerical_jacobian(source, physics, Uq, x, t):
@@ -549,17 +560,27 @@ def get_numerical_jacobian(source, physics, Uq, x, t):
 
 	S = source.get_source(physics, Uq, x, t)
 	Sperturb = np.zeros([ns, S.shape[0], S.shape[1], S.shape[2]])
+	Sperturb2 = np.zeros_like(Sperturb)
 	eps_ = Uq*eps
 
 	jac = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
-
 	for i in range(ns):
 		Uq_per = Uq.copy()
+		Uq_per2 = Uq.copy()
 		Uq_per[:, :, i] += eps_[:, :, i] 
+		Uq_per2[:, :, i] -= eps_[:, :, i]
 		Sperturb[i] = source.get_source(physics, Uq_per, x, t)
+		# Sperturb2[i] = source.get_source(physics, Uq_per2, x, t)
 	for i in range(ns):
 		for j in range(ns):
-				jac[:, :, i, j] = (Sperturb[j, :, :, i] - S[:, :, i]) / (eps_[:, :, j]+1.e-12)
+				if eps_[:, :, j] == 0.0:
+					jac[:, :, i, j] = 0
+				else:
+					# Second-order central difference
+					# jac[:, :, i, j] = (Sperturb[j, :, :, i] - Sperturb2[j, :, :, i]) / (2*eps_[:, :, j])
+					# First-order finite difference
+					jac[:, :, i, j] = (Sperturb[j, :, :, i] - S[:, :, i]) / (eps_[:, :, j])
+	
 	return jac	
 
 
