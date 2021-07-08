@@ -577,6 +577,12 @@ class PhysicsBase(ABC):
 		for source in self.source_terms:
 			jac += source.get_jacobian(self, Uq, xphys, time)
 
+		# Create an array of the jacobian and time for easier post processing
+		# TEMPORARY -> once I get the multispecies stuff working should 
+		# be able to remove
+		self.jac_time.append(jac)
+		self.time_array.append(time)
+
 		return jac
 
 	def compute_variable(self, var_name, Uq, flag_non_physical=False):
