@@ -1,14 +1,14 @@
 import numpy as np
 
 # Case A Settings
-# Da = 15.89
-# Tinit = 1.0
-# tfinal = 2000.
+Da = 15.89
+Tinit = 1.0
+tfinal = 2000.
 
 # Case B Settings
-Da = 833.0
-Tinit = 0.15
-tfinal = 330000.
+# Da = 833.0
+# Tinit = 0.15
+# tfinal = 330000.
 
 # Operator Splitting Settings:
 timescheme = "Strang"
@@ -18,12 +18,12 @@ order = 0
 # ADERDG Settings:
 # timescheme = "ADER"
 # solver = "ADERDG"
-# order = 7
+# order = 5
 
 TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : tfinal,
-	"TimeStepSize" : 80.,# Da/10.,
+	"TimeStepSize" : Da / 10.,
 	"TimeStepper" : timescheme,
 	"OperatorSplittingImplicit" : "LSODA",
 	
@@ -33,13 +33,9 @@ Numerics = {
 	"SolutionOrder" : order,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : solver,
-	# "SourceTreatmentADER" : "Explicit",
-	"SourceTreatmentADER" : "SylImp",
-	# "SourceTreatmentADER" : "StiffImplicit",
-	"InterpolateFluxADER" : False,
+	"SourceTreatmentADER" : "Root",
+	"InterpolateFluxADER" : True,
 	"PredictorGuessADER" : "ODEGuess",
-	"RecalculateJacobianADER" : False,
-	"PredictorThreshold" : 1e-10,
 }	
 
 Mesh = {
@@ -68,7 +64,7 @@ SourceTerms = {
 	"Mixing" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "ScalarMixing",
 		"Da" : Da,
-		"source_treatment" : "Implicit",
+		"source_treatment" : "Explicit",
 	},
 	"Arrhenius" : {
 		"Function" : "ScalarArrhenius",
@@ -78,4 +74,5 @@ SourceTerms = {
 
 Output = {
 	"AutoPostProcess" : False,
+	"WriteFinalSolution" : False,
 }
