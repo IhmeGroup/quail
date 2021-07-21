@@ -175,7 +175,6 @@ class SourceSolvers():
 			for i in range(ns):
 				for s in range(ns):
 					iA[:, :, :, i, s] = np.linalg.inv(A[:, :, :, i, s])
-			# import code; code.interact(local=locals())
 
 
 			# for i in range(Uq.shape[0]):
@@ -237,17 +236,23 @@ class SourceSolvers():
 				# res = solver.get_residual(y, res)
 				# dU = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
 				return Sq.reshape(-1)
+			def jac(t, y, x, solver):
 
+				source = solver.physics.source_terms[0]
+				ns = solver.physics.NUM_STATE_VARS
+				y = y.reshape([U.shape[0],U.shape[1],U.shape[2]])
+				jacobian = source.get_jacobian(solver.physics, y, x, t)
+				return jacobian.reshape(ns, ns)
+
+			# r = ode(func, jac=jac)
 			r = ode(func, jac=None)	
-			r.set_integrator('lsoda', atol=1e-14, rtol=1e-12)
+			r.set_integrator('lsoda', nsteps=50000, atol=1e-14, rtol=1e-12)
 			r.set_initial_value(U0, t0).set_f_params(x_elems, res)
-			
+			# r.set_jac_params(x_elems, solver)
 			tvals = []
 			value = r.integrate(r.t+dt).reshape([res.shape[0],res.shape[1],res.shape[2]])
 			
 			tvals = np.unique(tvals)
-
-
 
 			print("len(tvals) =", len(tvals))
 			solver.count_evaluations += len(tvals)
