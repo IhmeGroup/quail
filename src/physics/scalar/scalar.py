@@ -408,8 +408,8 @@ class MultispeciesPSR(base.PhysicsBase):
 		Y_H2O = "$Y_{H2O}$"
 		Y_HO2 = "$Y_{HO2}$"
 		Y_H2O2 = "$Y_{H2O2}$"
-		Y_AR = "$Y_{AR}$"
 		Y_N2 = "$Y_{N2}$"
+		Y_AR = "$Y_{AR}$"
 
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
@@ -450,14 +450,14 @@ class MultispeciesPSR(base.PhysicsBase):
 		self.tau = tau		
 		self.jac_time = []
 		self.time_array = []
-		filename = '/Users/brettbornhoft/utilities/pyJac/data/h2o2.cti'
-		gas = ct.Solution(filename)
+		# filename = '/Users/brettbornhoft/utilities/pyJac/data/h2o2.cti'
+		gas = ct.Solution('h2o2.yaml')
 
-		# n2_ind = gas.species_index('Ar')
-		# specs = gas.species()[:]
-		# gas = ct.Solution(thermo='IdealGas', kinetics='GasKinetics',
-  #   		species=specs[:n2_ind] + specs[n2_ind + 1:] + [specs[n2_ind]],
-  #   		reactions=gas.reactions())
+		n2_ind = gas.species_index('Ar')
+		specs = gas.species()[:]
+		gas = ct.Solution(thermo='IdealGas', kinetics='GasKinetics',
+    		species=specs[:n2_ind] + specs[n2_ind + 1:] + [specs[n2_ind]],
+    		reactions=gas.reactions())
 
 		# NOTE: This is hardcoded for now!!!
 		gas.TPX = Tu, P, "H2:{},O2:{},N2:{},H:{}".format(phi, 0.5, 0.5*3.76, 0.095)

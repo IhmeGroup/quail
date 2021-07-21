@@ -313,7 +313,14 @@ class ModelPSR(FcnBase):
 		phi = physics.phi
 		tau = physics.tau
 
+		# filename = '/Users/brettbornhoft/utilities/pyJac/data/h2o2.cti'
+		# gas = ct.Solution(filename)
 		gas = ct.Solution('h2o2.yaml')
+		n2_ind = gas.species_index('Ar')
+		specs = gas.species()[:]
+		gas = ct.Solution(thermo='IdealGas', kinetics='GasKinetics',
+    		species=specs[:n2_ind] + specs[n2_ind + 1:] + [specs[n2_ind]],
+    		reactions=gas.reactions())
 		gas.TPX = Tu, P, "H2:{},O2:{},N2:{}".format(phi, 0.5, 0.5*3.76)
 		y0 = np.hstack((gas.T, gas.Y))
 
@@ -474,28 +481,28 @@ class Mixing(SourceBase):
 
 	def get_source(self, physics, Uq, x, t):
 		# Unpack T and Y
-		T = Uq[0,0,0]
-		y = Uq[0,0,1:]
-
-		tau = physics.tau
-		gas = physics.gas
-		gas.set_unnormalized_mass_fractions(y)
-
-		gas.TPY = T, physics.P, y
-
-		rho = gas.density
-		wdot = gas.net_production_rates
-		h_hat = gas.partial_molar_enthalpies
-		cp = gas.cp_mass
-
-		mw = gas.molecular_weights
-
-		dTdt = (1./(tau*cp)) * np.dot(physics.yin[1:] ,(physics.hin/mw - h_hat/mw)) 
-		dYdt = (1./tau) * (physics.yin[1:] - y)
-
 		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
+		for i in range(Uq.shape[1]):
+			T = Uq[0,i,0]
+			y = Uq[0,i,1:]
 
-		S[:, :] = np.hstack((dTdt, dYdt))
+			tau = physics.tau
+			gas = physics.gas
+			gas.set_unnormalized_mass_fractions(y)
+
+			gas.TPY = T, physics.P, y
+
+			rho = gas.density
+			wdot = gas.net_production_rates
+			h_hat = gas.partial_molar_enthalpies
+			cp = gas.cp_mass
+
+			mw = gas.molecular_weights
+
+			dTdt = (1./(tau*cp)) * np.dot(physics.yin[1:] ,(physics.hin/mw - h_hat/mw)) 
+			dYdt = (1./tau) * (physics.yin[1:] - y)
+
+			S[:, i] = np.hstack((dTdt, dYdt))
 
 		return S
 
@@ -515,76 +522,116 @@ class Reacting(SourceBase):
 
 	def get_source(self, physics, Uq, x, t):
 		# Unpack T and Y
-		T = Uq[0,0,0]
-		y = Uq[0,0,1:]
-
-		tau = physics.tau
-		gas = physics.gas
-		gas.set_unnormalized_mass_fractions(y)
-
-		gas.TPY = T, physics.P, y
-
-		rho = gas.density
-		wdot = gas.net_production_rates
-		h_hat = gas.partial_molar_enthalpies
-		cp = gas.cp_mass
-
-		mw = gas.molecular_weights
-
-		dTdt = -1.*np.dot(h_hat, wdot) * (1./ (rho*cp))
-		dYdt = wdot * mw / rho
-
 		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
+		for i in range(Uq.shape[1]):
+			T = Uq[0,i,0]
+			y = Uq[0,i,1:]
 
-		S[:, :] = np.hstack((dTdt, dYdt))
+			tau = physics.tau
+			gas = physics.gas
+			gas.set_unnormalized_mass_fractions(y)
+
+			gas.TPY = T, physics.P, y
+
+			rho = gas.density
+			wdot = gas.net_production_rates
+			h_hat = gas.partial_molar_enthalpies
+			cp = gas.cp_mass
+
+			mw = gas.molecular_weights
+
+			dTdt = -1.*np.dot(h_hat, wdot) * (1./ (rho*cp))
+			dYdt = wdot * mw / rho
+
+			S[:, i] = np.hstack((dTdt, dYdt))
 
 		return S
 
 	def get_jacobian(self, physics, Uq, x, t):
-		# ns = physics.NUM_STATE_VARS
-		# jac_ = np.zeros([(ns-1)*(ns-1)])
-		# jac2 = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
-		# for ie in range(Uq.shape[0]):
-			# for iq in range(Uq.shape[1]):
-			    # pyjacob.py_eval_jacobian(0, physics.P, Uq[ie, iq, :(ns-1)], jac_)
-			    # jac2[ie, iq, :(ns-1), :(ns-1)] = jac_.reshape([(ns-1), (ns-1)])
-		jac = get_numerical_jacobian(self, physics, Uq, x, t)
+		ns = physics.NUM_STATE_VARS
+		jac_ = np.zeros([(ns-1)*(ns-1)])
+		jac2 = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
+
+		for ie in range(Uq.shape[0]):
+			for iq in range(Uq.shape[1]):
+			    pyjacob.py_eval_jacobian(0, physics.P, Uq[ie, iq, :(ns-1)], jac_)
+			    jac2[ie, iq, :(ns-1), :(ns-1)] = jac_.reshape([(ns-1), (ns-1)])
+
+		# jac = get_numerical_jacobian(self, physics, Uq, x, t)
 		# physics.jac2 = jac2.transpose(0,1,3,2)
-		return jac #jac2.transpose(0,1,3,2)
+		return jac2.transpose(0,1,3,2)
+
+
+# def get_numerical_jacobian(source, physics, Uq, x, t):
+
+# 	ns = physics.NUM_STATE_VARS
+# 	eps = 1.e-6
+
+# 	S = source.get_source(physics, Uq, x, t)
+# 	Sperturb = np.zeros([ns, S.shape[0], S.shape[1], S.shape[2]])
+# 	Sperturb2 = np.zeros_like(Sperturb)
+# 	eps_ = Uq*eps
+
+# 	jac = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
+# 	for i in range(ns):
+# 		Uq_per = Uq.copy()
+# 		Uq_per2 = Uq.copy()
+# 		Uq_per[:, :, i] += eps_[:, :, i] 
+# 		Uq_per2[:, :, i] -= eps_[:, :, i]
+# 		Sperturb[i] = source.get_source(physics, Uq_per, x, t)
+# 		# Sperturb2[i] = source.get_source(physics, Uq_per2, x, t)
+# 	for i in range(ns):
+# 		for j in range(ns):
+# 				if eps_[:, :, j] == 0.0:
+# 					jac[:, :, i, j] = 0
+# 				else:
+# 					# Second-order central difference
+# 					# jac[:, :, i, j] = (Sperturb[j, :, :, i] - Sperturb2[j, :, :, i]) / (2*eps_[:, :, j])
+# 					# First-order finite difference
+# 					jac[:, :, i, j] = (Sperturb[j, :, :, i] - S[:, :, i]) / (eps_[:, :, j])
+
+# 	return jac	
 
 
 def get_numerical_jacobian(source, physics, Uq, x, t):
 
+
+	nelem = Uq.shape[0]
 	ns = physics.NUM_STATE_VARS
 	eps = 1.e-6
 
-	S = source.get_source(physics, Uq, x, t)
-	Sperturb = np.zeros([ns, S.shape[0], S.shape[1], S.shape[2]])
-	Sperturb2 = np.zeros_like(Sperturb)
-	eps_ = Uq*eps
+	S = np.zeros([nelem, 1, ns])
+	Sp = np.zeros([nelem, ns, 1, ns])
+	Sp2 = np.zeros([nelem, ns, 1, ns])
 
 	jac = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
-	for i in range(ns):
-		Uq_per = Uq.copy()
-		Uq_per2 = Uq.copy()
-		Uq_per[:, :, i] += eps_[:, :, i] 
-		Uq_per2[:, :, i] -= eps_[:, :, i]
-		Sperturb[i] = source.get_source(physics, Uq_per, x, t)
-		# Sperturb2[i] = source.get_source(physics, Uq_per2, x, t)
-	for i in range(ns):
-		for j in range(ns):
-				if eps_[:, :, j] == 0.0:
-					jac[:, :, i, j] = 0
-				else:
-					# Second-order central difference
-					# jac[:, :, i, j] = (Sperturb[j, :, :, i] - Sperturb2[j, :, :, i]) / (2*eps_[:, :, j])
-					# First-order finite difference
-					jac[:, :, i, j] = (Sperturb[j, :, :, i] - S[:, :, i]) / (eps_[:, :, j])
-	
-	return jac	
 
+	for ielem in range(nelem):
 
+		S[ielem] = source.get_source(physics, Uq[ielem].reshape([1,1,ns]), x, t)
 
+		for i in range(ns):
+			Uq_per = Uq[ielem].copy()
+			# Uq2_per = Uq[ielem].copy()
+			Uq_per[0, i] += eps# eps_[ielem, 0] 
+			# Uq2_per[0, i] -= eps# eps_[ielem, 0] 
+
+			Sp[ielem, i] = source.get_source(physics, Uq_per.reshape([1,1,ns]), x, t)
+			# Sp2[ielem, i] = source.get_source(source, physics, Uq2_per.reshape([1,1,ns]), x, t)
+		
+			# import code; code.interact(local=locals())
+	for ielem in range(nelem):
+		for i in range(ns):
+			for j in range(ns):
+					# if eps_[ielem, 0, j] == 0.0:
+						# jac[ielem, 0, i, j] = 0
+					# else:
+						# Second-order central difference
+					# jac[ielem, 0, i, j] = (Sp[ielem, i, 0, j] - Sp2[ielem, i, 0, j]) / (2*eps)#eps_[:, :, j])
+						# First-order finite difference
+					jac[ielem, 0, i, j] = (Sp[ielem, i, 0, j] - S[ielem, 0, j]) / (eps)#eps_[ielem, 0])
+			# import code; code.interact(local=locals())
+	return jac.transpose(0, 1, 3, 2)
 
 
 
