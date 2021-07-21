@@ -619,7 +619,7 @@ class SolverBase(ABC):
 				"-----------------------")
 
 		# Custom user function initial iteration
-		# self.custom_user_function(self)
+		self.custom_user_function(self)
 
 		itime = 0
 		while itime < stepper.num_time_steps:
@@ -655,6 +655,7 @@ class SolverBase(ABC):
 		print("\nWall clock time = %g seconds" % (t1 - t0))
 		print("--------------------------------------------------------" + \
 				"-----------------------")
+		self.wall_clock_time = t1 - t0
 
 		if write_final_solution:
 			readwritedatafiles.write_data_file(self, -1)
