@@ -148,7 +148,7 @@ class PhysicsType(Enum):
 		# Euler equations with chemistry (1D and 2D)
 	ModelPSRScalar = auto()
 		# Model for perfectly stirred reactor (0D model)
-	SecondOrderODE = auto()
+	Pendulum = auto()
 		# Model for 2nd order pendulum ODE (0D model)
 	MultispeciesPSR = auto()
 		# Model for PSR (with real chemistry)

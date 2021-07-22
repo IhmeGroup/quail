@@ -22,6 +22,7 @@ import meshing.tools as mesh_tools
 
 import numerics.timestepping.tools as stepper_tools
 
+import physics.zerodimensional.zerodimensional as zerod
 import physics.euler.euler as euler
 import physics.scalar.scalar as scalar
 import physics.chemistry.chemistry as chemistry
@@ -57,15 +58,12 @@ def set_physics(mesh, physics_type):
 	    physics_class = scalar.ConstAdvScalar2D
 	elif PhysicsType[physics_type] == PhysicsType.Burgers and ndims == 1:
 	    physics_class = scalar.Burgers1D
-	elif PhysicsType[physics_type] == PhysicsType.ModelPSRScalar and \
-			ndims == 1:
-		physics_class = scalar.ModelPSRScalar
-	elif PhysicsType[physics_type] == PhysicsType.MultispeciesPSR and \
-			ndims == 1:
-		physics_class = scalar.MultispeciesPSR
-	elif PhysicsType[physics_type] == PhysicsType.SecondOrderODE and \
-			ndims == 1:
-		physics_class = scalar.SecondOrderODE
+	elif PhysicsType[physics_type] == PhysicsType.ModelPSRScalar:
+		physics_class = zerod.ModelPSRScalar
+	elif PhysicsType[physics_type] == PhysicsType.MultispeciesPSR:
+		physics_class = zerod.MultispeciesPSR
+	elif PhysicsType[physics_type] == PhysicsType.Pendulum:
+		physics_class = zerod.Pendulum
 	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 1:
 	    physics_class = euler.Euler1D
 	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 2:
