@@ -14,6 +14,7 @@ Numerics = {
 	"SourceTreatmentADER" : "Explicit",
 	# "SourceTreatmentADER" : "Implicit",
 	"InterpolateFluxADER" : False,
+	"PredictorThreshold" : 1e-8,
 }
 
 Mesh = {
