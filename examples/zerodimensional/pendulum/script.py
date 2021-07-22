@@ -28,8 +28,6 @@ if model_psr.timestep != 0.5:
 
 time.sleep(1)
 
-# dt = np.array([0.01, 0.001, 0.0001])
-# dt = np.array([40.0, 20.0, 10.0, 5.0, 2.5, 1.25])
 dt = np.array([0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 
 	0.00390625, 0.001953125, 9.765625e-4, 4.8828125e-4])
 for j in range(dt.shape[0]):
@@ -58,7 +56,7 @@ for j in range(dt.shape[0]):
 	basis_val = solver.elem_helpers.basis_val
 	Uq = helpers.evaluate_state(Uc, basis_val)
 
-	solution.append(Uq[0,1,0])
+	solution.append(Uq[0, 0, 0])
 
 	# text from previous case
 	# text_to_search = 'tfinal = ' + str(tin)
@@ -71,8 +69,8 @@ for j in range(dt.shape[0]):
 	order = model_psr.order
 
 	# file_out = 'time_accuracy_study/RK4/'+ str(j)+'.pkl'
-	# file_out = 'time_accuracy_study/Strang/' + str(int(dt[j]))+'.pkl'
-	file_out = 'time_accuracy_study/ADER/p'+str(order)+'/'+str(j)+'.pkl'
+	file_out = 'convergence_testing/Trapezoidal/' + str(j)+'.pkl'
+	# file_out = 'time_accuracy_study/ADER/p'+str(order)+'/'+str(j)+'.pkl'
 	write_file(file_out, solution)
 
 	# text from previous case
