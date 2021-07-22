@@ -11,14 +11,14 @@ tfinal = 2000.
 # tfinal = 330000.
 
 # Operator Splitting Settings:
-timescheme = "Strang"
-solver = "DG"
-order = 0
+# timescheme = "Strang"
+# solver = "DG"
+# order = 0
 
 # ADERDG Settings:
-# timescheme = "ADER"
-# solver = "ADERDG"
-# order = 5
+timescheme = "ADER"
+solver = "ADERDG"
+order = 5
 
 TimeStepping = {
 	"InitialTime" : 0.,
