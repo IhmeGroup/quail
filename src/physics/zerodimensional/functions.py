@@ -288,14 +288,14 @@ class Reacting(SourceBase):
 		jac_ = np.zeros([(ns-1)*(ns-1)])
 		jac2 = np.zeros([Uq.shape[0], Uq.shape[1], ns, ns])
 
-		for ie in range(Uq.shape[0]):
-			for iq in range(Uq.shape[1]):
-			    pyjacob.py_eval_jacobian(0, physics.P, Uq[ie, iq, :(ns-1)], jac_)
-			    jac2[ie, iq, :(ns-1), :(ns-1)] = jac_.reshape([(ns-1), (ns-1)])
+		# for ie in range(Uq.shape[0]):
+		# 	for iq in range(Uq.shape[1]):
+		# 	    pyjacob.py_eval_jacobian(0, physics.P, Uq[ie, iq, :(ns-1)], jac_)
+		# 	    jac2[ie, iq, :(ns-1), :(ns-1)] = jac_.reshape([(ns-1), (ns-1)])
 
-		# jac = get_numerical_jacobian(self, physics, Uq, x, t)
+		jac = get_numerical_jacobian(self, physics, Uq, x, t)
 		# physics.jac2 = jac2.transpose(0,1,3,2)
-		return jac2.transpose(0,1,3,2)
+		return jac # jac2.transpose(0,1,3,2)
 
 
 # def get_numerical_jacobian(source, physics, Uq, x, t):

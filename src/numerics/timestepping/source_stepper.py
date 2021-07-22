@@ -7,13 +7,12 @@
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import numpy as np
+from scipy.integrate import ode
 
 import numerics.helpers.helpers as helpers
 
 from solver.tools import mult_inv_mass_matrix
 import solver.tools as solver_tools
-
-from scipy.integrate import ode
 
 
 class SourceSolvers():
@@ -25,6 +24,7 @@ class SourceSolvers():
 	Current schemes supported include:
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
+		- Scipy's Stiff LSODA Scheme (LSODA)
 	'''
 	class SourceStepperBase(ABC):
 		'''
@@ -170,18 +170,11 @@ class SourceSolvers():
 			A = I - beta*dt * \
 					np.einsum('eij, ejklm -> eiklm', iMM_elems, dRdU)
 
-			# NEED TO DOUBLE CHECK THIS!!!!!!
 			iA = np.zeros_like(A)
 			for i in range(ns):
 				for s in range(ns):
 					iA[:, :, :, i, s] = np.linalg.inv(A[:, :, :, i, s])
-
-
-			# for i in range(Uq.shape[0]):
-			# 	for j in range(nb):
-			# 		for k in range(nb):
-			# 			iA[i, j, k] = np.linalg.inv(A[i, j, k])
-
+			
 			return A, iA # [ne, nb, nb, ns, ns]
 
 
@@ -202,7 +195,9 @@ class SourceSolvers():
 
 	class LSODA(SourceStepperBase):
 		'''
-		Scipy LSODA solver ... add some details
+		Scipy LSODA solver. This solver switches between a high-order
+		Adams-Bashforth scheme and BDF scheme depending on the stiffness
+		of the system. Works for very stiff problems.
 
 		Additional methods and attributes are commented below.
 		'''
@@ -225,40 +220,56 @@ class SourceSolvers():
 			U0, t0 = Uq.reshape(-1), solver.time
 			dt = self.dt
 
-			def func(t, y, x, res):
-				tvals.append(t) 
+			def func(t, y, x):
+				'''
+				Internal RHS call for the ODE solver
 
+				Inputs:
+				-------
+					t: current time
+					y: solution state at the quadrature points
+						[ne x nq x ns]
+					x: coordinates of the quadrature points
+
+				Outputs:
+				--------
+					Sq: Source term evaluated at the quadrature points
+						[ne, nq, ns]
+				'''
+				# Append to the subiteration counter
+				subiterations.append(t) 
+
+				# Reconstruct shapes for source term evaluation on the 
+				# quadrature points.
 				y = y.reshape([U.shape[0],U.shape[1],U.shape[2]])
 				Sq = np.zeros([U.shape[0], x.shape[1], U.shape[2]])
-				y = y.reshape(res.shape)
+				y = y.reshape(U.shape)
+
+				# Evaluate source term on quadrature points
 				Sq = solver.physics.eval_source_terms(y, x, t, Sq)
-			
-				# res = solver.get_residual(y, res)
-				# dU = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
-				return Sq.reshape(-1)
-			def jac(t, y, x, solver):
 
-				source = solver.physics.source_terms[0]
-				ns = solver.physics.NUM_STATE_VARS
-				y = y.reshape([U.shape[0],U.shape[1],U.shape[2]])
-				jacobian = source.get_jacobian(solver.physics, y, x, t)
-				return jacobian.reshape(ns, ns)
+				return Sq.reshape(-1) # ode function requires stacked array
 
-			# r = ode(func, jac=jac)
+			# Instantiate ode object
 			r = ode(func, jac=None)	
 			r.set_integrator('lsoda', nsteps=50000, atol=1e-14, rtol=1e-12)
-			r.set_initial_value(U0, t0).set_f_params(x_elems, res)
-			# r.set_jac_params(x_elems, solver)
-			tvals = []
-			value = r.integrate(r.t+dt).reshape([res.shape[0],res.shape[1],res.shape[2]])
+			r.set_initial_value(U0, t0).set_f_params(x_elems)
+
+
+			subiterations = []
+			value = r.integrate(r.t+dt).reshape([res.shape[0], res.shape[1],
+				res.shape[2]])
 			
-			tvals = np.unique(tvals)
+			subiterations = np.unique(subiterations)
 
-			print("len(tvals) =", len(tvals))
-			solver.count_evaluations += len(tvals)
+			# Print the number of subiterations for each iteration and 
+			# store the total number of ODE subiterations for the solver
+			print("Subiterations:", len(subiterations))
+			solver.count_evaluations += len(subiterations)
 
-			solver_tools.L2_projection(mesh, iMM_elems, solver.basis, quad_pts,
-					quad_wts, value, U)
+			# Project onto the basis state from the quadrature points
+			solver_tools.L2_projection(mesh, iMM_elems, solver.basis, 
+					quad_pts, quad_wts, value, U)
 
 			solver.apply_limiter(U)
 			solver.state_coeffs = U 
