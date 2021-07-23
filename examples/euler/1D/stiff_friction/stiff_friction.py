@@ -3,7 +3,7 @@ import numpy as np
 TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : 0.5,
-	"NumTimeSteps" : 100,
+	"NumTimeSteps" : 110,
 	"TimeStepper" : "SSPRK3",
 	#"TimeStepper" : "Simpler",
 	"TimeStepper" : "ADER",
