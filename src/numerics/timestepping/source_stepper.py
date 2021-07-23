@@ -184,7 +184,6 @@ class SourceSolvers():
 		using Scipy rootfinding, as opposed to linearization, due to improved
 		convergence properties.
 		'''
-
 		def take_time_step(self, solver):
 			mesh = solver.mesh
 			U = solver.state_coeffs
@@ -204,9 +203,9 @@ class SourceSolvers():
 			# for each element and each quadrature point, fully uncoupled. This
 			# is actually only valid for orthogonal bases - for nodal bases this
 			# could incur some error.
-			for i in range(U.shape[0]):
-				for j in range(U.shape[1]):
-					sol = scipy.optimize.root(self.rhs, Uq[i, j], args=(solver,
+			for i in range(Uq.shape[0]):
+				for j in range(Uq.shape[1]):
+					sol = scipy.optimize.root(self.rhs_sources, Uq[i, j], args=(solver,
 							x_elems[i, j], Uq[i, j]))
 					Uq[i, j] = sol.x
 
@@ -221,7 +220,7 @@ class SourceSolvers():
 
 			return res # [ne, nb, ns]
 
-		def rhs(self, Uq_new, solver, x, Uq):
+		def rhs_sources(self, Uq_new, solver, x, Uq):
 			Uq = Uq.reshape((1, 1, -1))
 			Uq_new = Uq_new.reshape((1, 1, -1))
 			x = x.reshape((1, 1, -1))
@@ -236,7 +235,7 @@ class SourceSolvers():
 			Sq_new = solver.physics.eval_source_terms(Uq_new, x, solver.time,
 					Sq_new)
 			# Return RHS of trapezoid rule
-			return (Uq_new - Uq - .5*dt*(Sq_new + Sq))[0, 0]
+			return (Uq_new - Uq - .5*dt*(Sq_new + Sq))[0, 0] # [ns]
 
 
 	class LSODA(SourceStepperBase):
@@ -263,46 +262,17 @@ class SourceSolvers():
 
 			res = self.res
 
-			U0, t0 = Uq.reshape(-1), solver.time
+			Uq0, t0 = Uq.reshape(-1), solver.time
 			dt = self.dt
 
-			def func(t, y, x):
-				'''
-				Internal RHS call for the ODE solver
-
-				Inputs:
-				-------
-					t: current time
-					y: solution state at the quadrature points
-						[ne x nq x ns]
-					x: coordinates of the quadrature points
-
-				Outputs:
-				--------
-					Sq: Source term evaluated at the quadrature points
-						[ne, nq, ns]
-				'''
-				# Append to the subiteration counter
-				subiterations.append(t)
-
-				# Reconstruct shapes for source term evaluation on the
-				# quadrature points.
-				y = y.reshape([U.shape[0],U.shape[1],U.shape[2]])
-				Sq = np.zeros([U.shape[0], x.shape[1], U.shape[2]])
-				y = y.reshape(U.shape)
-
-				# Evaluate source term on quadrature points
-				Sq = solver.physics.eval_source_terms(y, x, t, Sq)
-
-				return Sq.reshape(-1) # ode function requires stacked array
+			subiterations = []
 
 			# Instantiate ode object
-			r = ode(func, jac=None)
+			r = ode(self.rhs_sources, jac=None)
 			r.set_integrator('lsoda', nsteps=50000, atol=1e-14, rtol=1e-12)
-			r.set_initial_value(U0, t0).set_f_params(x_elems)
+			r.set_initial_value(Uq0, t0).set_f_params(x_elems, Uq, 
+					solver, subiterations)
 
-
-			subiterations = []
 			value = r.integrate(r.t+dt).reshape([res.shape[0], res.shape[1],
 				res.shape[2]])
 
@@ -321,3 +291,32 @@ class SourceSolvers():
 			solver.state_coeffs = U
 
 			return res # [ne, nb, ns]
+
+		def rhs_sources(self, t, Uq0, x, Uq, solver, subiterations):
+			'''
+			Internal RHS call for the ODE solver
+
+			Inputs:
+			-------
+				t: current time
+				Uq0: solution state at the quadrature points
+					[ne x nq x ns]
+				x: coordinates of the quadrature points [ne, nq, ndim]
+
+			Outputs:
+			--------
+				Sq: Source term evaluated at the quadrature points
+					[ne, nq, ns]
+			'''
+			# Append to the subiteration counter
+			subiterations.append(t)
+
+			# Reconstruct shapes for source term evaluation on the
+			# quadrature points.
+			Uq = Uq0.reshape(Uq.shape)
+			Sq = np.zeros_like(Uq)
+
+			# Evaluate source term on quadrature points
+			Sq = solver.physics.eval_source_terms(Uq, x, t, Sq)
+
+			return Sq.reshape(-1) # ode function requires stacked array
