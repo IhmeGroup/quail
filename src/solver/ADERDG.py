@@ -376,7 +376,8 @@ class ADERDG(base.SolverBase):
 
 		# Time stepping
 		time_stepper = params["TimeStepper"]
-		if StepperType[time_stepper] != StepperType.ADER:
+		if (StepperType[time_stepper] != StepperType.ADER) and \
+			(StepperType[time_stepper] != StepperType.ODEIntegrator):
 			raise errors.IncompatibleError
 
 		self.stepper = stepper_defs.ADER(self.state_coeffs)
