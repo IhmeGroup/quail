@@ -19,6 +19,10 @@ from physics.base.functions import BCType as base_BC_type
 from physics.base.functions import FcnType as base_fcn_type
 from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
 
+import physics.scalar.functions as scalar_fcns
+from physics.scalar.functions import FcnType as scalar_fcn_type
+from physics.scalar.functions import SourceType as scalar_source_type
+
 import physics.zerodimensional.functions as zerod_fcns
 from physics.zerodimensional.functions import FcnType as zerod_fcn_type
 from physics.zerodimensional.functions import SourceType as zerod_source_type
@@ -74,6 +78,28 @@ class ZeroDimensional(base.PhysicsBase):
 		
 		return scalar
 
+class ModelProblem(ZeroDimensional):
+	'''
+	This class solves the classic model problem:
+
+		dy/dt = nu * y
+
+	This is used for testing order of accuracy in time as it provides
+	an exact error.
+	'''
+	NUM_STATE_VARS = 1
+	NDIMS = 1
+	PHYSICS_TYPE = general.PhysicsType.ModelProblem
+
+	def set_maps(self):
+		super().set_maps()
+
+		self.source_map.update({
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+		})
+
+	class StateVariables(Enum):
+		Scalar = "y"
 
 class ModelPSRScalar(ZeroDimensional):
 	'''
