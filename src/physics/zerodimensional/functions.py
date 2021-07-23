@@ -40,7 +40,6 @@ class SourceType(Enum):
 	Enum class that stores the types of source terms. These
 	source terms are specific to the available scalar equation sets.
 	'''
-	SimpleSource = auto()
 	ScalarArrhenius = auto()
 	ScalarMixing = auto()
 	Pendulum = auto()
