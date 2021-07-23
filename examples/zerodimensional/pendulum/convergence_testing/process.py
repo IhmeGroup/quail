@@ -35,7 +35,7 @@ def read_data_file(fname):
     return solution
 
 # Read in reference solution
-dt = np.array([0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 
+dt = np.array([0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125,
     0.00390625, 0.001953125, 9.765625e-4, 4.8828125e-4])
 # dt_int = np.array([40, 20, 10, 5, 2, 1])
 dt_ref = np.array([0, 1, 2, 3, 4, 5])
@@ -48,11 +48,11 @@ dt_ref = np.array([0, 1, 2, 3, 4, 5])
 sol_trap  = np.zeros([dt.shape[0], 1])
 # sol_lsoda  = np.zeros([dt.shape[0], 1])
 
-sol_rk4  = np.zeros([dt_rk4.shape[0], 1])
+#sol_rk4  = np.zeros([dt_rk4.shape[0], 1])
 
     # sol_strang[idt] =  read_data_file('Strang/' +str(dt_int[idt])+'.pkl')
-for idt in range(len(dt_rk4)):  
-    sol_rk4[idt] =     read_data_file('RK4/' +str(idt)+'.pkl')
+for idt in range(len(dt)):
+    # sol_rk4[idt] =     read_data_file('RK4/' +str(idt)+'.pkl')
     # sol_ader_p1[idt] = read_data_file('ADER/p1/'+str(idt)+'.pkl')
     # sol_ader_p2[idt] = read_data_file('ADER/p2/'+str(idt)+'.pkl')
     # sol_ader_p3[idt] = read_data_file('ADER/p3/'+str(idt)+'.pkl')
@@ -94,7 +94,7 @@ m2t_slope = np.array([err_trap[0, 0]*1.5, err_trap[0, 0]*1.5*fac**2])
 # title = ['$t_f=40$ s', '$t_f=80$ s', '$t_f=120$ s', '$t_f=160$ s']
 al1 = 0.5
 
-for i in range(sol_ader_p1.shape[1]):
+for i in range(sol_trap.shape[1]):
     fig, ax = plt.subplots()
     # ax.plot(dt2, m1_slope, ls='--', color='k', alpha=al1)
     # ax.plot(dt2, m2_slope, ls='--', color='r', alpha=al1)
@@ -109,7 +109,7 @@ for i in range(sol_ader_p1.shape[1]):
     # ax.plot(dt_rk4, err_p4[:, i], marker='o', label='$p=4$', color='tab:orange')
     # ax.plot(dt_rk4, err_rk4[:, i], marker='o', label='RK4', color='tab:brown')
     # ax.plot(dt_rk4, err_bdf1[:, i], marker='o', label='BDF1', color='k')
-    ax.plot(dt_rk4, err_trap[:, i], marker='o', label='Trap', color='tab:pink')
+    ax.plot(dt, err_trap[:, i], marker='o', label='Trap', color='tab:pink')
     # ax.plot(dt_rk4, err_lsoda[:, i], marker='o', label='LSODA', color='tab:gray')
 
 
@@ -140,7 +140,7 @@ for i in range(sol_ader_p1.shape[1]):
 # print('errors BDF1')
 # print_errors(dt_rk4, err_bdf1)
 print('errors Trap')
-print_errors(dt_rk4, err_trap)
+print_errors(dt, err_trap)
 # print('errors RK4')
 # print_errors(dt_rk4, err_rk4)
 
