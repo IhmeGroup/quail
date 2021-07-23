@@ -380,20 +380,20 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		implicit = self.implicit
 		implicit.dt = self.dt
 
-		# First: take the half-step for the inviscid flux only
+		# Force SourceSwitch ON for splitting schemes
 		solver.params["SourceSwitch"] = True
+
+		# First: take the half-step for the inviscid flux only
 		solver.params["ConvFluxSwitch"] = True
 		physics.source_terms = physics.explicit_sources.copy()
 		explicit.take_time_step(solver)
 
 		# Second: take the implicit full step for the source term.
-		# solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
 		physics.source_terms = physics.implicit_sources.copy()
 		implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
-		# solver.params["SourceSwitch"] = False
 		physics.source_terms = physics.explicit_sources.copy()
 
 		solver.params["ConvFluxSwitch"] = True
@@ -426,6 +426,7 @@ class Simpler(Strang):
 		implicit = self.implicit
 		implicit.dt = self.dt
 
+		# Force SourceSwitch ON for splitting schemes
 		solver.params["SourceSwitch"] = True
 		res = self.res
 
@@ -439,16 +440,66 @@ class Simpler(Strang):
 		self.balance_const = -1.*balance_const
 
 		# Second: take the implicit full step for the source term.
-		# solver.params["SourceSwitch"] = True
 		solver.params["ConvFluxSwitch"] = False
 		physics.source_terms = physics.implicit_sources.copy()
 		implicit.take_time_step(solver)
 
 		# Third: take the second half-step for the inviscid flux only.
-		# solver.params["SourceSwitch"] = False
 		solver.params["ConvFluxSwitch"] = True
 		physics.source_terms = physics.explicit_sources.copy()
 		self.balance_const = balance_const
 		R3 = explicit.take_time_step(solver)
 
 		return R3 # [num_elems, nb, ns]
+
+
+class ODEIntegrator(StepperBase, source_stepper.SourceSolvers):
+	def set_ode_integrator(self, ode_scheme, U):
+		'''
+		Sets the ode integrator from the list of available time integration
+		schemes. 
+		
+		Inputs:
+		-------
+		    ode_scheme: name of chosen scheme from params
+		    U: solution state vector used to initialize solver
+		    	[num_elems, nb, ns]
+
+		Outputs:
+		--------
+			ode_integrator: object stored in self that contains
+				the ode time integration scheme
+		'''
+		try:
+			stepper = StepperType[ode_scheme]			
+		except:
+			pass
+			try:
+			    stepper = SourceStepperType[ode_scheme]
+			except:
+				raise NotImplementedError("ODE time scheme is not supported")
+
+		if stepper == StepperType.FE:
+			ode_integrator = FE(U)
+		elif stepper == StepperType.RK4:
+			ode_integrator = RK4(U)
+		elif stepper == StepperType.LSRK4:
+			ode_integrator = LSRK4(U)
+		elif stepper == StepperType.SSPRK3:
+			ode_integrator = SSPRK3(U)
+		elif stepper == StepperType.ADER:
+			ode_integrator = StepperType.ADER(U)
+		elif stepper == SourceStepperType.BDF1:
+			ode_integrator = source_stepper.SourceSolvers.BDF1(U)
+		elif stepper == SourceStepperType.Trapezoidal:
+			ode_integrator = source_stepper.SourceSolvers.Trapezoidal(U)
+		elif stepper == SourceStepperType.LSODA:
+			ode_integrator = source_stepper.SourceSolvers.LSODA(U)
+
+		self.ode_integrator = ode_integrator
+
+	def take_time_step(self, solver):
+		self.ode_integrator.dt = self.dt
+		R = self.ode_integrator.take_time_step(solver)
+
+		return R

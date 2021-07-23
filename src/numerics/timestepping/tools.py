@@ -49,6 +49,9 @@ def set_stepper(params, U):
 		stepper = stepper_defs.Simpler(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"],
 			params["OperatorSplittingImplicit"], U)
+	elif StepperType[time_stepper] == StepperType.ODEIntegrator:
+		stepper = stepper_defs.ODEIntegrator(U)
+		stepper.set_ode_integrator(params["ODEScheme"], U)
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper

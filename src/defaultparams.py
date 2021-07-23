@@ -39,6 +39,10 @@ TimeStepping = {
 		# Implicit time stepping scheme for source terms if doing operator
 		# splitting
 		# See general.SourceStepperType
+	"ODEScheme" : "FE",
+		# Sets the specific time integration scheme when choosing to solve
+		# an ODE or system of ODEs alone (see physics/zerodimensional 
+		# for examples)
 }
 
 

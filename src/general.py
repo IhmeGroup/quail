@@ -117,7 +117,8 @@ class StepperType(Enum):
 		# Strang splitting for reacting flows
 	Simpler = auto()
 		# Simpler scheme for reacting flows
-
+	ODEIntegrator = auto()
+		# Setup to only call for an ODE integrator (can use any steppers)
 
 class SourceStepperType(Enum):
 	'''
@@ -146,12 +147,14 @@ class PhysicsType(Enum):
 		# Euler equations (1D and 2D)
 	Chemistry = auto()
 		# Euler equations with chemistry (1D and 2D)
+	ModelProblem = auto()
+		# Classic model problem for time convergence testing
 	ModelPSRScalar = auto()
 		# Model for perfectly stirred reactor (0D model)
 	Pendulum = auto()
 		# Model for 2nd order pendulum ODE (0D model)
 	MultispeciesPSR = auto()
-		# Model for PSR (with real chemistry)
+		# Model for PSR (with H2/Air chemistry)
 		
 class ModalOrNodal(Enum):
 	'''
