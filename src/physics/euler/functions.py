@@ -790,9 +790,8 @@ class StiffFriction(SourceBase):
 	nu: float
 		stiffness parameter
 	'''
-	def __init__(self, nu=-1):
-	# def __init__(self, **kwargs):
-		super().__init__()
+	def __init__(self, nu=-1, **kwargs):
+		super().__init__(kwargs)
 		'''
 		This method initializes the attributes.
 
