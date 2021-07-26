@@ -1,37 +1,25 @@
 import numpy as np
 
 tfinal = 6.0
-timescheme = 'ADER'
-timestep = 0.001
+timescheme = 'ODEIntegrator'
+timestep = 0.00048828125
+solver = 'DG'
+order = 0
+prefix = 'Data'
 
-if timescheme == 'ADER':
-	solver = 'ADERDG'
-	order = 4
-else:
-	solver = 'DG'
-	order = 1
-
-# Need to fix this script
-prefix = 'time_accuracy_study/ADER/p'+str(order)+'/tf' \
-	+ str(int(tfinal)) + 'dt' + str(int(timestep))
-	
-# prefix = 'time_accuracy_study/RK4/ref'
-# prefix = 'Data'
 TimeStepping = {
 	"InitialTime" : 0.,
 	
 	"FinalTime" : tfinal,
 	"TimeStepSize" : timestep,
 	"TimeStepper" : timescheme,
-	"OperatorSplittingImplicit" : "LSODA",
+	"ODEScheme" : "Trapezoidal",
 }
 
 Numerics = {
 	"SolutionOrder" : order,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : solver,
-	# "SourceTreatmentADER" : "StiffImplicit",
-	"InterpolateFluxADER" : False,
 }
 
 Mesh = {
@@ -66,7 +54,6 @@ InitialCondition = {
 SourceTerms = {
 	"Pendulum" : {
 		"Function" : "Pendulum",
-		"source_treatment" : "Explicit",
 	}
 	# "Mixing" : { # Name of source term ("Source1") doesn't matter
 	# 	"Function" : "ScalarMixing",
@@ -82,6 +69,5 @@ SourceTerms = {
 
 Output = {
 	"AutoPostProcess" : False,
-	"Prefix" : prefix,
 	"WriteFinalSolution" : True,
 }
