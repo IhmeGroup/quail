@@ -6,7 +6,7 @@
 #
 # ------------------------------------------------------------------------ #
 import numpy as np
-from scipy.optimize import fsolve, root, minimize
+from scipy.optimize import fsolve, root, minimize, newton_krylov
 from scipy.linalg import solve_sylvester
 from scipy.integrate import LSODA
 import general
@@ -38,12 +38,8 @@ def set_source_treatment(ns, source_treatment):
 		fcn = predictor_elem_explicit
 	elif source_treatment == "Implicit":
 		fcn = predictor_elem_implicit
-	elif source_treatment == "SylImp":
-		fcn = predictor_elem_sylvester
 	elif source_treatment == "StiffImplicit":
-		fcn = predictor_elem_ode_guess
-	elif source_treatment == "Root":
-		fcn = predictor_elem_root_testing
+		fcn = predictor_elem_stiffimplicit
 	else:
 		raise NotImplementedError
 
@@ -82,8 +78,7 @@ def set_recalculate_jac(recalculate_jacobian):
 	nonlinear subiterations in the predictor step of the ADERDG 
 	scheme. If True we recalculate the source term jacobians at
 	each subiteration, if false we use the source term jacobian
-	from the first iteration. Recalculating has shown some 
-	improvement of convergence for very stiff cases.
+	from the first iteration.
 
 	Inputs:
 	-------
@@ -256,7 +251,7 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 	# Build phys time array for space-time element
 	tphys, elem_helpers_st.basis_time = ref_to_phys_time(
 			mesh, solver.time, dt,
-			ader_helpers.x_elems[0,0:2,:], elem_helpers_st.basis_time)
+			ader_helpers.x_elems[0, 0:2, :], elem_helpers_st.basis_time)
 
 	W0, t0 = Wq.reshape(-1), solver.time
 
@@ -269,7 +264,10 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 		y = y.reshape(Sq.shape)
 		Sq = Sq_exp + physics.eval_source_terms(y, x, t, Sq)
 
-		# NOTE: This will eventually need to include the flux evaluation
+		# NOTE: This function currently does not include the flux evaluation.
+		# It will need to be added for the guess to be correct for more 
+		# complicated systems. Current test cases that require this are
+		# only ODE cases.
 		return Sq.reshape(-1)
 
 
@@ -289,12 +287,8 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 	r.set_initial_value(W0, t0).set_f_params(x_elems, Sq_exp)
 
 	# Set constants for managing data and begin ODE integration loop
-	# Note: These commented points after i, j defs mods for 
-	# gauss-lobatto quadrature
-	i = 0 #t.shape[0]
-	j = 0 #1
+	i = 0; j = 0
 	# Run the ODEsolver guess
-
 	while r.successful() and j < t.shape[0]: 
 		# Length of tvals represents number of ODE interations per
 		# timestep between two quadrature points in time
@@ -313,7 +307,7 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 		tvals = np.unique(tvals)
 		solver.count_evaluations += len(tvals)
 		# Prints the number of ODE iterations
-		print("len(tvals) =", len(tvals))
+		print("Steps/quadrature point: ", len(tvals))
 
 	physics.source_terms = temp_sources
 
@@ -519,192 +513,6 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	Calculates the predicted solution state for the ADER-DG method using a
 	nonlinear solve of the weak form of the DG discretization in time.
 
-	This function treats the source term implicitly. Appropriate for
-	stiff scalar equations.
-
-	Note: Currently not used -> Sylvestor approach supercedes this one
-
-	Inputs:
-	-------
-		solver: solver object
-		dt: time step
-		W: previous time step solution in space only [ne, nb, 1]
-
-	Outputs:
-	--------
-		U_pred: predicted solution in space-time [ne, nb_st, 1]
-	'''
-	# Unpack
-	threshold = solver.params["PredictorThreshold"]
-	physics = solver.physics
-	source_terms = physics.source_terms
-
-	ns = physics.NUM_STATE_VARS
-	mesh = solver.mesh
-
-	basis = solver.basis
-	basis_st = solver.basis_st
-
-	order = solver.order
-	elem_helpers = solver.elem_helpers
-	elem_helpers_st = solver.elem_helpers_st
-	ader_helpers = solver.ader_helpers
-
-	quad_wts = elem_helpers.quad_wts
-	quad_wts_st = elem_helpers_st.quad_wts
-	quad_pts = elem_helpers.quad_pts
-	basis_val = elem_helpers.basis_val
-	djac_elems = elem_helpers.djac_elems
-	djac_elems_st = ader_helpers.djac_elems
-	x_elems = elem_helpers.x_elems
-
-	FTR = ader_helpers.FTR
-	MM = ader_helpers.MM
-	SMS_elems = ader_helpers.SMS_elems
-	K = ader_helpers.K
-
-	# Initialize space-time coefficients
-	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
-
-	res = solver.stepper.res
-
-	# Only evaluate Jacobian for stiff sources
-	temp_sources = physics.source_terms.copy()
-	physics.source_terms = physics.implicit_sources.copy()
-
-	# Calculate the source term Jacobian using average state
-	Sjac = np.zeros([U_pred.shape[0], 1, ns, ns])
-	Sjac = physics.eval_source_term_jacobians(U_bar, x_elems, solver.time,
-			Sjac)
-
-	Sjac = np.reshape(Sjac, [U_pred.shape[0], ns, ns])
-	Kp = K - dt * np.einsum('jk, imn -> ijk', MM, Sjac)
-
-	iK = np.linalg.inv(Kp)
-
-	physics.source_terms = temp_sources.copy()
-	# Calculate the source and flux coefficients with initial guess
-	source_coeffs = solver.source_coefficients(dt, order, basis_st,
-			U_pred)
-	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-			U_pred)
-	# Iterate using a discrete Picard nonlinear solve for the
-	# updated space-time coefficients.
-	niter = 1000
-	for i in range(niter):
-		U_pred_new = np.einsum('ijk, ikm -> ijm',iK,
-				(np.einsum('jk, ijl -> ikl', MM, source_coeffs) -
-				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-				np.einsum('jk, ikm -> ijm', FTR, W) -
-				np.einsum('jk, ijm -> ikm', MM, dt*Sjac*U_pred)))
-	
-		# We check when the coefficients are no longer changing.
-		# This can lead to differences between NODAL and MODAL solutions.
-		# This could be resolved by evaluating at the quadrature points
-		# and comparing the error between those values.
-		err = U_pred_new - U_pred
-		if np.amax(np.abs(err)) < threshold:
-			U_pred = U_pred_new
-			print("Predictor iterations: ", i)
-			break
-
-		U_pred = np.copy(U_pred_new)
-
-		source_coeffs = solver.source_coefficients(dt, order,
-				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-				U_pred)
-		
-		if i == niter - 1:
-			print('Sub-iterations not converging', np.amax(np.abs(err)))
-	return U_pred # [ne, nb_st, ns]
-
-def predictor_elem_explicit_update(solver, dt, W, U_pred):
-	'''
-	Calculates the predicted solution state for the ADER-DG method using a
-	nonlinear solve of the weak form of the DG discretization in time.
-
-	This function treats the source term explicitly. Appropriate for
-	non-stiff systems.
-
-	Inputs:
-	-------
-		solver: solver object
-		dt: time step
-		W: previous time step solution in space only [ne, nb, ns]
-
-	Outputs:
-	--------
-		U_pred: predicted solution in space-time [ne, nb_st, ns]
-	'''
-	# Unpack
-	threshold = solver.params["PredictorThreshold"]
-	physics = solver.physics
-	ns = physics.NUM_STATE_VARS
-	mesh = solver.mesh
-
-	basis = solver.basis
-	basis_st = solver.basis_st
-
-	elem_helpers = solver.elem_helpers
-	ader_helpers = solver.ader_helpers
-
-	order = solver.order
-	quad_wts = elem_helpers.quad_wts
-	basis_val = elem_helpers.basis_val
-	djac_elems = elem_helpers.djac_elems
-
-	FTR = ader_helpers.FTR
-	MM = ader_helpers.MM
-	SMS_elems = ader_helpers.SMS_elems
-	iK = ader_helpers.iK
-
-	# Calculate the source and flux coefficients with initial guess
-	source_coeffs = solver.source_coefficients(dt, order, basis_st,
-			U_pred)
-	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-			U_pred)
-
-	# Iterate using a discrete Picard nonlinear solve for the
-	# updated space-time coefficients.
-	niter = 1000
-	for i in range(niter):
-
-		U_pred_new = np.einsum('jk, ikm -> ijm',iK,
-				np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
-				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-				np.einsum('jk, ikm -> ijm', FTR, W))
-
-		# We check when the coefficients are no longer changing.
-		# This can lead to differences between NODAL and MODAL solutions.
-		# This could be resolved by evaluating at the quadrature points
-		# and comparing the error between those values.
-		err = U_pred_new - U_pred
-
-		import code; code.interact(local=locals())
-		if np.amax(np.abs(err)) < threshold:
-			U_pred = U_pred_new
-			print("Explicit Predictor iterations: ", i)
-			break
-
-		U_pred = np.copy(U_pred_new)
-
-		source_coeffs = solver.source_coefficients(dt, order,
-				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-				U_pred)
-
-		if i == niter - 1:
-			print('Sub-iterations not converging', np.amax(np.abs(err)))
-
-	return U_pred # [ne, nb_st, ns]
-
-
-def predictor_elem_sylvester(solver, dt, W, U_pred):
-	'''
-	Calculates the predicted solution state for the ADER-DG method using a
-	nonlinear solve of the weak form of the DG discretization in time.
-
 	This function applies the source term implicitly. Appropriate for
 	stiff systems of equations. The implicit solve utilizes the Sylvester
 	equation of the form:
@@ -783,15 +591,13 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 	# products.
 	niter = 10000
 
-	# HACKY BRETT
-	sub_iterations = open('subiter_hist.txt', 'a')
-
 	A = np.matmul(iMM,K)
 
 	U_pred_new = np.zeros_like(U_pred)
 
 	for i in range(niter):
 
+		# Keeps track of the total number of nonlinear iterations
 		solver.count_nonlinear_iterations+=1
 		
 		B = -1.0*dt*Sjac.transpose(0,2,1)
@@ -809,10 +615,12 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 
 		for ie in range(U_pred.shape[0]):
 
-			# Conduct kronecker products to make system Ax=b
+			# Conduct kronecker products to transfrom Ax+xB=C system to Ax=b
 			kronecker = np.kron(I1, A) + np.kron(B[ie, :, :].transpose(), I2)
-			U_pred_hold = np.linalg.solve(kronecker, C[ie, :, :].transpose().reshape(-1))
-			U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[2], U_pred.shape[1]).transpose()
+			U_pred_hold = np.linalg.solve(kronecker, 
+					C[ie, :, :].transpose().reshape(-1))
+			U_pred_new[ie, :, :] = U_pred_hold.reshape(U_pred.shape[2], 
+					U_pred.shape[1]).transpose()
 
 			# Note: Previous implementaion used sylvester solve directly.
 			# This still requires further testing to determine which is 
@@ -826,15 +634,8 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
 
-
 		if (np.amax(np.abs(err)) < threshold):
 			print("Predictor iterations: ", i)
-			# HACKY BRETT
-			sub_iterations.write(str(solver.time))
-			sub_iterations.write(' , ')
-			sub_iterations.write(str(i))
-			sub_iterations.write('\n')
-			sub_iterations.close()
 			U_pred = np.copy(U_pred_new)
 			break
 
@@ -850,20 +651,31 @@ def predictor_elem_sylvester(solver, dt, W, U_pred):
 
 		if i == niter - 1:
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
-			# HACKY BRETT
-			sub_iterations.write(str(solver.time))
-			sub_iterations.write(' , ')
-			sub_iterations.write(str(i))
-			sub_iterations.write('\n')
-			sub_iterations.close()
-
-	# U_pred_update = predictor_elem_explicit_update(solver, dt, W, U_pred)
 
 	return U_pred #_update # [ne, nb_st, ns]
 
-def predictor_elem_root_testing(solver, dt, W, U_pred):
+def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 	'''
-	
+	Calculates the predicted solution state for the ADER-DG method using a
+	nonlinear solve of the weak form of the DG discretization in time.
+
+	This function utilizes scipy's root solver (specifically 'hybr' or a 
+	modified Powell method) to converge the nonlinear solver. For this 
+	method to be effecient, the user should also select the ODEGuess to
+	provide the initial condition to the nonlinear solver. 
+
+	This is suitable for very stiff systems such as those observed
+	in chemically reacting flows.
+
+	Inputs:
+	-------
+		solver: solver object
+		dt: time step
+		W: previous time step solution in space only [ne, nb, ns]
+
+	Outputs:
+	--------
+		U_pred: predicted solution in space-time [ne, nb_st, ns]
 	'''
 	# Unpack
 	threshold = solver.params["PredictorThreshold"]
@@ -901,8 +713,20 @@ def predictor_elem_root_testing(solver, dt, W, U_pred):
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 			U_pred)
 
-	def fun(q):
+	def rhs_weakform(q):
+		'''
+		Solves the weak form of the DG discretization while doing
+		integration by parts on the temporal term.
 
+		Inputs:
+		-------
+			q: Space-time polynomial coffecients [ne x nb_st x ns]
+
+		Outputs:
+		--------
+			zero: The rhs of the nonlinear solver should be zero 
+					[ne x nb_st x ns]
+		'''
 		q = q.reshape([U_pred.shape[0], U_pred.shape[1], U_pred.shape[2]])
 
 		source_coeffs = solver.source_coefficients(dt, order,
@@ -913,236 +737,22 @@ def predictor_elem_root_testing(solver, dt, W, U_pred):
 				np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
 				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
 				np.einsum('jk, ikm -> ijm', FTR, W)) - q
-		q.reshape(-1)
-		return zero.reshape(-1)# np.sum(zero.reshape(-1)**2)
-	
-	# Iterate using root function
+		
+		q.reshape(-1) # reshape for the nonlinear solver
+		return zero.reshape(-1) # reshape for the nonlinear solver
 
-	sol = root(fun, U_pred.reshape(-1), tol=1e-20, jac=None, method='hybr', 
-			options={'maxfev':50000, 'xtol':1e-20})
-	
-	# sol = minimize(fun, U_pred.reshape(-1), method='Nelder-Mead')
+	# Iterate using root function
+	sol = root(rhs_weakform, U_pred.reshape(-1), tol=1e-15, jac=None, 
+			method='hybr', options={'maxfev':50000, 'xtol':1e-15})
 	U_pred = np.copy(sol.x.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
 
-	return U_pred # [ne, nb_st, ns]
-
-
-def predictor_elem_ode_guess(solver, dt, W, U_pred):
-	'''
-	Calculates the predicted solution state for the ADER-DG method using a
-	nonlinear solve of the weak form of the DG discretization in time.
-
-	This function applies the source term implicitly. Appropriate for
-	stiff systems of equations. The implicit solve utilizes the Sylvester
-	equation of the form:
-
-		AX + XB = C
-
-	This is a built-in function via the scipy.linalg library.
-
-	In addition, we use a robust version of the guess to the ODE solve
-	where we use an LSODA package to create the first guess to the non-linear
-	solver. This often leads to minimal iterations from the non-linear solver 
-	and is better suited for very stiff systems.
-
-	Inputs:
-	-------
-		solver: solver object
-		dt: time step
-		W: previous time step solution in space only [ne, nb, ns]
-
-	Outputs:
-	--------
-		U_pred: predicted solution in space-time [ne, nb_st, ns]
-	'''
-	# Unpack
-	physics = solver.physics
-	source_terms = physics.source_terms
-
-	ns = physics.NUM_STATE_VARS
-	mesh = solver.mesh
-
-	basis = solver.basis
-	basis_st = solver.basis_st
-
-	order = solver.order
-	elem_helpers = solver.elem_helpers
-	elem_helpers_st = solver.elem_helpers_st
-	ader_helpers = solver.ader_helpers
-
-	quad_wts = elem_helpers.quad_wts
-	quad_pts = elem_helpers.quad_pts
-	basis_val = elem_helpers.basis_val
-	basis_val_st = elem_helpers_st.basis_val
-	djac_elems = elem_helpers.djac_elems
-	x_elems = elem_helpers.x_elems
-
-	FTR = ader_helpers.FTR
-	iMM = ader_helpers.iMM
-	iMM_elems = ader_helpers.iMM_elems
-	SMS_elems = ader_helpers.SMS_elems
-	K = ader_helpers.K
-
-	nelem = W.shape[0]
-	quad_pts_st = elem_helpers_st.quad_pts
-	quad_wts_st = elem_helpers_st.quad_wts
-	nq_st = quad_wts_st.shape[0]
-
-	nq_t = elem_helpers_st.nq_tile_constant
-	vol_elems = elem_helpers.vol_elems
-
-	# Evaluate spatial coeffs on spatial quadrature points
-	Wq = helpers.evaluate_state(W, basis_val, skip_interp=basis.skip_interp)
-
-	# Allocate memory for the guess at the quadrature points
-	Uq_guess = np.zeros([nelem, nq_st, ns])
-	Uq_guess = np.tile(Wq, [1, Wq.shape[1], 1])
-
-	# Evaluate the spacial average from the quadrature points
-	W_bar = helpers.get_element_mean(Wq, quad_wts, djac_elems, vol_elems)
-
-	# Build ref temporal array for space-time element
-	t, elem_helpers_st.basis_time = ref_to_phys_time(
-			mesh, solver.time, dt,
-			quad_pts[:, -1:], elem_helpers_st.basis_time)
-
-	# Build phys time array for space-time element
-	tphys, elem_helpers_st.basis_time = ref_to_phys_time(
-			mesh, solver.time, dt,
-			ader_helpers.x_elems[0,0:2,:], elem_helpers_st.basis_time)
-
-	W0, t0 = Wq.reshape(-1), solver.time
-
-	def func(t, y, x):
-		# Keep track of the number of times func is called
-		tvals.append(t)
-
-		# Evaluate the source term at the quadrature points
-		Sq = np.zeros([U_pred.shape[0], x.shape[1], ns])
-		y = y.reshape(Sq.shape)
-		Sq = physics.eval_source_terms(y, x, t, Sq)
-
-		return Sq.reshape(-1)
-
-	# Initialize the integrator
-	r = ode(func, jac=None)
-	r.set_integrator('lsoda', atol=1e-14, rtol=1e-12)
-	r.set_initial_value(W0, t0).set_f_params(x_elems)
-
-	# Set constants for managing data and begin ODE integration loop
-	# Note: These commented points after i, j defs mods for gauss-lobatto quadrature
-	i = 0 #t.shape[0]
-	j = 0 #1
-
-	# Run the ODEsolver guess
-	while r.successful() and j < t.shape[0]: 
-		# Length of tvals represents number of ODE interations per
-		# timestep between two quadrature points in time
-		tvals = []
-
-		# Runs the integrator
-		value = r.integrate(r.t + (t[j] - r.t))
-
-		# Populate the data into the guess
-		Uq_guess[:,i:t.shape[0]*j+t.shape[0],:] = \
-				value.reshape([nelem, t.shape[0], ns])
-
-		i+=t.shape[0]
-		j+=1
-		tvals = np.unique(tvals)
-
-		# Prints the number of ODE iterations
-		print("len(tvals) =", len(tvals))
-
-	# Get space-time average from initial guess
-	U_bar = helpers.get_element_mean(Uq_guess, quad_wts_st, 
-			np.tile(djac_elems, [1, nq_t, 1])*dt/2., dt*vol_elems)
-
-	# Project the guess at the space-time quadrature points to the 
-	# state coefficient's initial guess
-	L2_projection(mesh, iMM_elems, solver.basis_st, quad_pts_st,
-			quad_wts_st, np.tile(djac_elems, [1, nq_t, 1]), Uq_guess, U_pred)
-
-	# Only evaluate Jacobian for stiff sources
-	temp_sources = physics.source_terms.copy()
-	physics.source_terms = physics.implicit_sources.copy()
-
-	# # Calculate the source term Jacobian using average state
-	Sjac = np.zeros([nelem, 1, ns, ns])
-	Sjac = physics.eval_source_term_jacobians(U_bar, x_elems, solver.time,
-			Sjac)
-	Sjac = np.reshape(Sjac, [nelem, ns, ns])
-
-	# Set all sources for source_coeffs calculation
-	physics.source_terms = temp_sources.copy()
-
-	# Calculate the source and flux coefficients with initial guess
-	source_coeffs = solver.source_coefficients(dt, order, basis_st,
-			U_pred)
-	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-			U_pred)
-
-	A = np.matmul(iMM,K)/dt
-	# Iterate using a nonlinear Sylvester solver for the
-	# updated space-time coefficients. Solves for X in the form:
-	# 	AX + XB = C
-	niter = 1000
-
-
-	U_pred_new = np.zeros_like(U_pred)
-	for i in range(niter):
-
-		B = -1.0*Sjac.transpose(0,2,1)
-
-		Q = np.einsum('jk, ikm -> ijm', FTR, W) - np.einsum(
-				'ijkl, ikml -> ijm', SMS_elems, flux_coeffs)
-
-		C = source_coeffs/dt - np.matmul(U_pred[:],
-				Sjac[:].transpose(0,2,1)) + \
-				np.einsum('jk, ikl -> ijl',iMM, Q) / dt
-
-		for ie in range(U_pred.shape[0]):
-			U_pred_new[ie, :, :] = solve_sylvester(A, B[ie, :, :],
-					C[ie, :, :])
-
-		# We check when the coefficients are no longer changing.
-		# This can lead to differences between NODAL and MODAL solutions.
-		# This could be resolved by evaluating at the quadrature points
-		# and comparing the error between those values.
-		err = U_pred_new - U_pred
-		if np.amax(np.abs(err)) < 1.e-15:
-			U_pred = U_pred_new
-			print("Predictor iterations: ", i)
-			break
-
-		U_pred = np.copy(U_pred_new)
-
-		source_coeffs = solver.source_coefficients(dt, order,
-				basis_st, U_pred)
-		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-				U_pred)
-
-		# # Only evaluate Jacobian for stiff sources
-		temp_sources = physics.source_terms.copy()
-		physics.source_terms = physics.implicit_sources.copy()
-
-		Uq = helpers.evaluate_state(U_pred, basis_val_st)
-		U_bar = helpers.get_element_mean(Uq, quad_wts_st, 
-				np.tile(djac_elems, [1, nq_t, 1])*dt/2., dt*vol_elems)
-		# # Calculate the source term Jacobian using average state
-		Sjac = np.zeros([U_pred.shape[0], 1, ns, ns])
-		Sjac = physics.eval_source_term_jacobians(U_bar, x_elems, solver.time,
-				Sjac)
-		Sjac = np.reshape(Sjac, [nelem, ns, ns])
-		# Set all sources for source_coeffs calculation
-		physics.source_terms = temp_sources.copy()
-
-
-		# Recalculate jacobian for subiterations (Default is OFF)
-		# solver.recalculate_jacobian(solver, U_pred, dt, Sjac)
-		if i == niter - 1:
-			print('Sub-iterations not converging', np.amax(np.abs(err)))
-
+	
+	# Note: Other nonlinear solvers could be more efficient. Further work is
+	# needed to determine the most efficient method. Commented code below
+	# is another approach.
+	# sol = newton_krylov(fun, U_pred.reshape(-1), iter=None, 
+		# rdiff=None, method='lgmres', maxiter=100)
+	# U_pred = np.copy(sol.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
 
 	return U_pred # [ne, nb_st, ns]
 
