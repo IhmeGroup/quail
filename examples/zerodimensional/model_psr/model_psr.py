@@ -6,9 +6,9 @@ Tinit = 1.0
 tfinal = 2000.
 
 # Case B Settings
-# Da = 833.0
-# Tinit = 0.15
-# tfinal = 330000.
+Da = 833.0
+Tinit = 0.15
+tfinal = 330000.
 
 # Operator Splitting Settings:
 # timescheme = "Strang"
@@ -33,7 +33,7 @@ Numerics = {
 	"SolutionOrder" : order,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : solver,
-	"SourceTreatmentADER" : "Root",
+	"SourceTreatmentADER" : "StiffImplicit",
 	"InterpolateFluxADER" : True,
 	"PredictorGuessADER" : "ODEGuess",
 }	
