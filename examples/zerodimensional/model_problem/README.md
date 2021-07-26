@@ -3,7 +3,7 @@ Due to the linear nature of the problem it can be used to test the order of accu
 
 To create the figure below you follow these steps:
 - `cd convergence testing` and 	`mkdir RK4`, `mkdir BDF1`, and `mkdir Trapezoidal`. Then `cd ..`
-- Run `python script.py` (in this directory) to generate the solution files for this case using different time step sizes.
+- Run `quail script.py` (in this directory) to generate the solution files for this case using different time step sizes.
 - Do this three times but change the `scheme_name` in `script.py` to `BDF1`, `Trapezoidal`, and `RK4`
 	- This generates a set of `*.pkl` files in the `convergence_testing` directory. 
 - Next, `cd convergence testing` and run `python process.py`. This should generate the appropriate convergence plots and output the order of convergence between each time step size.
