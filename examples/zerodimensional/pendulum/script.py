@@ -29,6 +29,7 @@ dtinit = dt[0]
 scheme_name = 'Trapezoidal'
 model_psr = importlib.import_module(filename.replace('.py',''))
 # -------------- END USER INPUTS -------------------------------------- #
+
 if model_psr.timestep != dtinit:
 	search_and_replace(filename, f'timestep = {model_psr.timestep}', 
 			f'timestep = {dtinit}')
