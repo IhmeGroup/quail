@@ -8,6 +8,6 @@ Two cases are provided in this input deck. 'Case A' models an extinction event a
 
 
 <p align="center">
-  <img alt="Case A" src="https://user-images.githubusercontent.com/55554103/127208044-03b1c8a6-48df-4757-b478-a0269805075e.png" width="50%"></a>
-  <img alt="Case B" src="https://user-images.githubusercontent.com/55554103/127208100-c7874a1a-e000-402d-b1aa-30fc1df71537.png" width="50%"></a>
+  <img alt="Case A" src="https://user-images.githubusercontent.com/55554103/127208044-03b1c8a6-48df-4757-b478-a0269805075e.png" width="45%"></a>
+  <img alt="Case B" src="https://user-images.githubusercontent.com/55554103/127208100-c7874a1a-e000-402d-b1aa-30fc1df71537.png" width="45%"></a>
 </p>
