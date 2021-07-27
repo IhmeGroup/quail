@@ -6,16 +6,16 @@
 #
 # ------------------------------------------------------------------------ #
 import numpy as np
-from scipy.optimize import fsolve, root, minimize, newton_krylov
+from scipy.integrate import LSODA, ode
 from scipy.linalg import solve_sylvester
-from scipy.integrate import LSODA
+from scipy.optimize import fsolve, root
+
 import general
 
 import meshing.tools as mesh_tools
 
 import numerics.basis.basis as basis_defs
 import numerics.helpers.helpers as helpers
-from scipy.integrate import ode
 
 
 def set_source_treatment(ns, source_treatment):
@@ -596,9 +596,6 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	U_pred_new = np.zeros_like(U_pred)
 
 	for i in range(niter):
-
-		# Keeps track of the total number of nonlinear iterations
-		solver.count_nonlinear_iterations+=1
 		
 		B = -1.0*dt*Sjac.transpose(0,2,1)
 

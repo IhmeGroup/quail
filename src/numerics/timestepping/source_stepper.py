@@ -72,7 +72,8 @@ class SourceSolvers():
 		Additional methods and attributes are commented below.
 		'''
 
-		# constant used to differentiate between BDF1 and Trapezoidal scheme
+		# constant used to differentiate between BDF1 (BETA=1.0) and linearize
+		# Trapezoidal scheme (BETA=0.5) 
 		BETA = 1.0
 
 		def take_time_step(self, solver):

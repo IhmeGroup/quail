@@ -408,7 +408,6 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.elemL_IDs[face_ID] = int_face.elemL_ID
 			self.elemR_IDs[face_ID] = int_face.elemR_ID
 			self.faceL_IDs[face_ID] = int_face.faceL_ID
-			self.faceL_IDs[face_ID] = int_face.faceL_ID
 			self.faceR_IDs[face_ID] = int_face.faceR_ID
 
 	def compute_helpers(self, mesh, physics, basis, order):

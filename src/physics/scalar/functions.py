@@ -6,10 +6,6 @@
 #       terms for scalar equations.
 #
 # ------------------------------------------------------------------------ #
-import sys
-sys.path.append('/Users/brettbornhoft/utilities/pyJac')
-import pyjacob
-import cantera as ct
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root
@@ -323,13 +319,3 @@ class SimpleSource(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
-
-
-
-
-
-
-
-
-
-

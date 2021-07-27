@@ -57,6 +57,19 @@ def set_stepper(params, U):
 	return stepper
 
 def set_source_treatment(physics):
+	'''
+	Allows user to define how source terms are treated in both splitting 
+	and ADERDG schemes. Can select 'Explicit' or 'Implicit' depending on 
+	the stiffness of the source term.
+
+	Inputs:
+	-------
+		physics: physics object
+
+	Outputs:
+	--------
+		Constructs explicit_sources and implicit_sources
+	'''
 	physics.explicit_sources = []
 	physics.implicit_sources = []
 	for source in physics.source_terms:

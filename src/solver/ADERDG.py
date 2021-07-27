@@ -273,10 +273,6 @@ class ADERHelpers(object):
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K)
 
-		# # Check eigenvalues
-		# check = np.matmul(self.iK, MM)
-		# eigen = np.linalg.eig(check)
-		# import code; code.interact(local=locals())
 
 	def get_geom_data(self, mesh, basis, order):
 		'''
@@ -427,7 +423,6 @@ class ADERDG(base.SolverBase):
 				self.int_face_helpers_st.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
-		self.count_nonlinear_iterations = 0
 		# Initialize state
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()

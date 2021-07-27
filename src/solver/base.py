@@ -165,11 +165,13 @@ class SolverBase(ABC):
 			pass # Not an error, just pass as the user provided
 				 # custom function file is not in the current 
 				 # directory.
+	
+		# Counter to compare ODE evaluations in ADERDG and Splitting methods
+		self.count_evaluations = 0
 
 		# Compatibility checks
 		self.check_compatibility()
 
-		self.count_evaluations = 0
 	def __repr__(self):
 		return '{self.__class__.__name__}(Physics: {self.physics},\n   \
 		Basis: {self.basis},\n   Stepper: {self.stepper})'.format(self=self)

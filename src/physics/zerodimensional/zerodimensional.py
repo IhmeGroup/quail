@@ -225,35 +225,40 @@ class MultispeciesPSR(ZeroDimensional):
 		Y_H2O = "$Y_{H2O}$"
 		Y_HO2 = "$Y_{HO2}$"
 		Y_H2O2 = "$Y_{H2O2}$"
-		Y_N2 = "$Y_{N2}$"
 		Y_AR = "$Y_{AR}$"
+		Y_N2 = "$Y_{N2}$"
 
-	def set_physical_params(self, P=80.*ct.one_atm, Tu=875., phi=0.5, tau=2.e-6):
+	def set_physical_params(self, P=80.*ct.one_atm, Tu=875., 
+			phi=0.5, tau=2.e-6):
 		'''
-		This method sets physical parameters.
+		This method sets physical parameters for the multispecies
+		PSR problem.
 
 		Inputs:
 		-------
+			P: pressure
+			Tu: unburnt gas temperature
+			phi: equivalence ratio
+			tau: reactor residence time
 
 		Outputs:
 		--------
 			self: physical parameters set
 		'''
+		# Unpack
 		self.P = P
 		self.Tu = Tu
 		self.phi = phi
 		self.tau = tau		
-		# filename = '/Users/brettbornhoft/utilities/pyJac/data/h2o2.cti'
+
+		# Save object to physics class before calculating inflow props
 		gas = ct.Solution('h2o2.yaml')
+		self.gas = gas
 
-		n2_ind = gas.species_index('Ar')
-		specs = gas.species()[:]
-		gas = ct.Solution(thermo='IdealGas', kinetics='GasKinetics',
-    		species=specs[:n2_ind] + specs[n2_ind + 1:] + [specs[n2_ind]],
-    		reactions=gas.reactions())
-
-		# NOTE: This is hardcoded for now!!!
-		gas.TPX = Tu, P, "H2:{},O2:{},N2:{},H:{}".format(phi, 0.5, 0.5*3.76, 0.095)
+		# Note: This is hardcoded for the PSR model problem of Wu, 2019
+		gas.TPX = Tu, P, "H2:{},O2:{},N2:{},H:{}".format(phi, 
+				0.5, 0.5*3.76, 0.095)
 		
+		# 'Inflow' properties for reactor system
 		self.yin = np.hstack((gas.T, gas.Y))
 		self.hin = gas.partial_molar_enthalpies
