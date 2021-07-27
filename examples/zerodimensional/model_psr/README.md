@@ -1,4 +1,4 @@
-This case solves an ODE of the form dU/dt = M(U) + S(U) where M and S are mixing and reacting source term models respectively. 
+This case solves an ODE of the form dU/dt = M(U) + S(U) where M and S are mixing and reacting scalar source term models respectively. 
   - Solutions are modeled in 1D with a single element
 
 Two cases are provided in this input deck. 'Case A' models an extinction event and 'Case B' models an ignition event. Both cases are known to provide issues for the common Strang splitting procedure. Here, we compare Strang splitting, ADERDG, and a reference solution obtained using LSODA. 

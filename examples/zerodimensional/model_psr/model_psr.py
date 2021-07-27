@@ -6,9 +6,15 @@ Tinit = 1.0
 tfinal = 2000.
 
 # Case B Settings
-Da = 833.0
-Tinit = 0.15
-tfinal = 330000.
+# Da = 833.0
+# Tinit = 0.15
+# tfinal = 330000.
+
+# Reference Case Settings:
+timescheme = 'ODEIntegrator'
+ode_scheme = 'LSODA'
+solver = 'DG'
+order = 0
 
 # Operator Splitting Settings:
 # timescheme = "Strang"
@@ -16,9 +22,9 @@ tfinal = 330000.
 # order = 0
 
 # ADERDG Settings:
-timescheme = "ADER"
-solver = "ADERDG"
-order = 5
+# timescheme = "ADER"
+# solver = "ADERDG"
+# order = 5
 
 TimeStepping = {
 	"InitialTime" : 0.,
@@ -26,6 +32,7 @@ TimeStepping = {
 	"TimeStepSize" : Da / 10.,
 	"TimeStepper" : timescheme,
 	"OperatorSplittingImplicit" : "LSODA",
+	"ODEScheme" : ode_scheme,
 	
 }
 
