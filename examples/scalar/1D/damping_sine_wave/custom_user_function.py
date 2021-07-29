@@ -2,6 +2,15 @@ import numpy as np
 
 # Calculate the difference between the maximum and minimum values
 def custom_user_function(solver):
+	'''
+	Example custom function that interpolates the state to the 
+	quadrature points and prints the minimum and maximum values 
+	at each iteration.
+
+	Inputs:
+	-------
+		solver: solver object
+	'''
 	# Unpack
 	Uc = solver.state_coeffs
 	elem_helpers = solver.elem_helpers
