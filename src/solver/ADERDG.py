@@ -505,6 +505,7 @@ class ADERDG(base.SolverBase):
 
 		basis_val_st = elem_helpers_st.basis_val
 		x_elems = elem_helpers.x_elems
+		x_elems_st = elem_helpers_st.x_elems
 
 		nq = quad_wts.shape[0]
 		nq_st = quad_wts_st.shape[0]
@@ -533,7 +534,7 @@ class ADERDG(base.SolverBase):
 			# Evaluate the source term at the quadrature points
 			Sq = elem_helpers_st.Sq
 			Sq[:] = 0. # [ne, nq, sr, ndims]
-			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq)
+			Sq = physics.eval_source_terms(Uq, x_elems_st, t, Sq)
 
 			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, elem_helpers_st, Sq) # [ne, nb, ns]
