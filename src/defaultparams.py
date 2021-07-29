@@ -155,7 +155,7 @@ Physics = {
 		# Numerical convective flux
 		# See ConvNumFluxType in functions.py in the corresponding physics
 		# modules
-
+	"DiffFluxNumerical" : None,
 	# Physical parameters specific to the physics type are also set here.
 	# Refer to the corresponding physics classes and the examples.
 }
