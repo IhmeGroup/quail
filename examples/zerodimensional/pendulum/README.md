@@ -1,0 +1,1 @@
+This case solves the a second order ODE that models a simple pendulum system. It can be used to test order of accuracy and adds the complexity of more than one state variable after the ODE is cast as a system of first-order ODEs.

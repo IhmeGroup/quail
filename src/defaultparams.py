@@ -39,6 +39,10 @@ TimeStepping = {
 		# Implicit time stepping scheme for source terms if doing operator
 		# splitting
 		# See general.SourceStepperType
+	"ODEScheme" : "FE",
+		# Sets the specific time integration scheme when choosing to solve
+		# an ODE or system of ODEs alone (see physics/zerodimensional 
+		# for examples)
 }
 
 
@@ -99,6 +103,17 @@ Numerics = {
 	"SourceSwitch" : True,
 		# If False, will ignore the source terms
 		# Useful for debugging
+	"PredictorGuessADER" : "Average",
+		# How to construct initial guess for the ADER-DG scheme
+		# Default is average value, can also select zeros or 
+		# ODEGuess
+	"RecalculateJacobianADER" : False,
+		# Either recalculates the source term jacobian or not for the 
+		# subiterations in the non-linear solver of the predictor step
+	"PredictorThreshold" : 1e-15,
+		# Sets the threshold requirement for the predictor step's 
+		# nonlinear solve. Lower values can be chosen which speeds up 
+		# the simulations, but at the cost of some error increase.
 }
 
 

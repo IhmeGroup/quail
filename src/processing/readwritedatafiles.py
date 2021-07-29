@@ -17,6 +17,8 @@ def write_data_file(solver, iwrite):
 	    solver: solver object
 	    iwrite: integer to label data file
 	'''
+	# Remove cantera objects
+	solver.physics.gas = None
 	# Get file name
 	prefix = solver.params["Prefix"]
 	if iwrite >= 0:

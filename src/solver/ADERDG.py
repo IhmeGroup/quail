@@ -273,6 +273,7 @@ class ADERHelpers(object):
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K)
 
+
 	def get_geom_data(self, mesh, basis, order):
 		'''
 		Precomputes the geometric data for the ADER-DG scheme
@@ -371,11 +372,13 @@ class ADERDG(base.SolverBase):
 
 		# Time stepping
 		time_stepper = params["TimeStepper"]
-		if StepperType[time_stepper] != StepperType.ADER:
+		if (StepperType[time_stepper] != StepperType.ADER) and \
+			(StepperType[time_stepper] != StepperType.ODEIntegrator):
 			raise errors.IncompatibleError
 
 		self.stepper = stepper_defs.ADER(self.state_coeffs)
 		stepper_tools.set_time_stepping_approach(self.stepper, params)
+		stepper_tools.set_source_treatment(physics)
 
 		# Set the space-time basis functions for the solver
 		basis_name = params["SolutionBasis"]
@@ -399,6 +402,16 @@ class ADERDG(base.SolverBase):
 		self.calculate_predictor_step = solver_tools.set_source_treatment(ns,
 				source_treatment)
 
+		# Set the guess type to the predictor function
+		predictor_guess = params["PredictorGuessADER"]
+		self.get_spacetime_guess = solver_tools.set_predictor_guess(
+				predictor_guess)
+
+		# Determine if the source term jacobian will be recalculated for 
+		# each nonlinear subiteration in the predictor step
+		recalculate_jacobian = params["RecalculateJacobianADER"]
+		self.recalculate_jacobian = solver_tools.set_recalculate_jac(
+				recalculate_jacobian)
 		# Precompute helpers
 		self.precompute_matrix_helpers()
 
@@ -575,7 +588,7 @@ class ADERDG(base.SolverBase):
 					time_skip, basis_valL, quad_wts_st, Fq)
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					time_skip, basis_valR, quad_wts_st, Fq)
-
+		
 		return resL, resR # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
@@ -650,7 +663,6 @@ class ADERDG(base.SolverBase):
 						UqI[:, i, :].reshape([nbf, 1, ns]),
 						normals_, x_, t_).reshape([nbf, ns])
 
-			# import code; code.interact(local=locals())
 			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
 					time_skip, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
@@ -758,8 +770,9 @@ class ADERDG(base.SolverBase):
 
 		ader_helpers = self.ader_helpers
 		x_elems_ader = ader_helpers.x_elems
+		InterpolateFluxADER = params["InterpolateFluxADER"]
+		if InterpolateFluxADER:
 
-		if params["InterpolateFluxADER"]:
 			xnodes = basis.get_nodes(order)
 			nb = xnodes.shape[0]
 
@@ -805,5 +818,6 @@ class ADERDG(base.SolverBase):
 			# Project Sq to the space-time basis coefficients
 			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts_st,
 					quad_wts_st, np.tile(djac_elems, (nq_t, 1)), Sq, S)
+			
 
 		return S*dt/2.0 # [ne, nb_st, ns]

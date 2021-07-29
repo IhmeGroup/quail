@@ -226,3 +226,4 @@ class Burgers1D(base.PhysicsBase):
 			raise NotImplementedError
 
 		return scalar
+	

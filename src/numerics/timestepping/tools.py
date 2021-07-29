@@ -49,10 +49,34 @@ def set_stepper(params, U):
 		stepper = stepper_defs.Simpler(U)
 		stepper.set_split_schemes(params["OperatorSplittingExplicit"],
 			params["OperatorSplittingImplicit"], U)
+	elif StepperType[time_stepper] == StepperType.ODEIntegrator:
+		stepper = stepper_defs.ODEIntegrator(U)
+		stepper.set_ode_integrator(params["ODEScheme"], U)
 	else:
 		raise NotImplementedError("Time scheme not supported")
 	return stepper
 
+def set_source_treatment(physics):
+	'''
+	Allows user to define how source terms are treated in both splitting 
+	and ADERDG schemes. Can select 'Explicit' or 'Implicit' depending on 
+	the stiffness of the source term.
+
+	Inputs:
+	-------
+		physics: physics object
+
+	Outputs:
+	--------
+		Constructs explicit_sources and implicit_sources
+	'''
+	physics.explicit_sources = []
+	physics.implicit_sources = []
+	for source in physics.source_terms:
+		if source.source_treatment is 'Explicit':
+			physics.explicit_sources.append(source)
+		elif source.source_treatment is 'Implicit':
+			physics.implicit_sources.append(source)
 
 def set_time_stepping_approach(stepper, params):
 	'''

@@ -165,6 +165,9 @@ class SolverBase(ABC):
 			pass # Not an error, just pass as the user provided
 				 # custom function file is not in the current 
 				 # directory.
+	
+		# Counter to compare ODE evaluations in ADERDG and Splitting methods
+		self.count_evaluations = 0
 
 		# Compatibility checks
 		self.check_compatibility()
@@ -607,9 +610,6 @@ class SolverBase(ABC):
 		if write_initial_solution:
 			readwritedatafiles.write_data_file(self, 0)
 
-		# Custom user function initial iteration
-		self.custom_user_function(self)
-
 		t0 = time.time()
 		iwrite = 1
 
@@ -654,6 +654,7 @@ class SolverBase(ABC):
 		print("\nWall clock time = %g seconds" % (t1 - t0))
 		print("--------------------------------------------------------" + \
 				"-----------------------")
+		self.wall_clock_time = t1 - t0
 
 		if write_final_solution:
 			readwritedatafiles.write_data_file(self, -1)

@@ -117,7 +117,8 @@ class StepperType(Enum):
 		# Strang splitting for reacting flows
 	Simpler = auto()
 		# Simpler scheme for reacting flows
-
+	ODEIntegrator = auto()
+		# Setup to only call for an ODE integrator (can use any steppers)
 
 class SourceStepperType(Enum):
 	'''
@@ -128,7 +129,9 @@ class SourceStepperType(Enum):
 	BDF1 = auto()
 		# 1st-order backwards differencing
 	Trapezoidal = auto()
-		# Trapezoidal
+		# 2nd-order trapezoidal method
+	LSODA = auto()
+		# Scipy LSODA built-in ode solver
 
 
 class PhysicsType(Enum):
@@ -144,8 +147,15 @@ class PhysicsType(Enum):
 		# Euler equations (1D and 2D)
 	Chemistry = auto()
 		# Euler equations with chemistry (1D and 2D)
-
-
+	ModelProblem = auto()
+		# Classic model problem for time convergence testing
+	ModelPSRScalar = auto()
+		# Model for perfectly stirred reactor (0D model)
+	Pendulum = auto()
+		# Model for 2nd order pendulum ODE (0D model)
+	MultispeciesPSR = auto()
+		# Model for PSR (with H2/Air chemistry)
+		
 class ModalOrNodal(Enum):
 	'''
 	This enum contains flags indicating whether the basis functions are

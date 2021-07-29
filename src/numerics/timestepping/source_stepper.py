@@ -7,6 +7,8 @@
 # ------------------------------------------------------------------------ #
 from abc import ABC, abstractmethod
 import numpy as np
+import scipy
+from scipy.integrate import ode
 
 import numerics.helpers.helpers as helpers
 
@@ -23,6 +25,7 @@ class SourceSolvers():
 	Current schemes supported include:
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
+		- Scipy's Stiff LSODA Scheme (LSODA)
 	'''
 	class SourceStepperBase(ABC):
 		'''
@@ -69,7 +72,8 @@ class SourceSolvers():
 		Additional methods and attributes are commented below.
 		'''
 
-		# constant used to differentiate between BDF1 and Trapezoidal scheme
+		# constant used to differentiate between BDF1 (BETA=1.0) and linearize
+		# Trapezoidal scheme (BETA=0.5) 
 		BETA = 1.0
 
 		def take_time_step(self, solver):
@@ -175,16 +179,145 @@ class SourceSolvers():
 
 			return A, iA # [ne, nb, nb, ns, ns]
 
-
-	class Trapezoidal(BDF1):
+	class Trapezoidal(SourceStepperBase):
 		'''
-		2nd-order Trapezoidal method inherits attributes
-		from BDF1. See BDF1 for detailed comments of methods and
-		attributes.
-		Note: Trapezoidal method is identical to linearized BDF1 other than
-		the 'BETA' constant.
+		2nd-order Trapezoidal method. The resulting nonlinear system is solved
+		using Scipy rootfinding, as opposed to linearization, due to improved
+		convergence properties.
 		'''
-		BETA = 0.5
-
 		def take_time_step(self, solver):
-			super().take_time_step(solver)
+			mesh = solver.mesh
+			U = solver.state_coeffs
+
+			mesh = solver.mesh
+			elem_helpers = solver.elem_helpers
+			basis_val = elem_helpers.basis_val
+			iMM_elems = elem_helpers.iMM_elems
+			quad_pts = elem_helpers.quad_pts
+			quad_wts = elem_helpers.quad_wts
+			x_elems = elem_helpers.x_elems
+
+			Uq = helpers.evaluate_state(U, basis_val,
+					skip_interp=solver.basis.skip_interp) # [ne, nq, ns])
+
+			# Solve the nonlinear system to get the new solution. This is done
+			# for each element and each quadrature point, fully uncoupled. This
+			# is actually only valid for orthogonal bases - for nodal bases this
+			# could incur some error.
+			for i in range(Uq.shape[0]):
+				for j in range(Uq.shape[1]):
+					sol = scipy.optimize.root(self.rhs_sources, Uq[i, j], args=(solver,
+							x_elems[i, j], Uq[i, j]))
+					Uq[i, j] = sol.x
+
+			res = self.res
+
+			# Project onto the basis state from the quadrature points
+			solver_tools.L2_projection(mesh, iMM_elems, solver.basis,
+					quad_pts, quad_wts, Uq, U)
+
+			solver.apply_limiter(U)
+			solver.state_coeffs = U
+
+			return res # [ne, nb, ns]
+
+		def rhs_sources(self, Uq_new, solver, x, Uq):
+			Uq = Uq.reshape((1, 1, -1))
+			Uq_new = Uq_new.reshape((1, 1, -1))
+			x = x.reshape((1, 1, -1))
+			dt = solver.stepper.dt
+
+			# Point at n
+			Sq = np.zeros_like(Uq)
+			Sq = solver.physics.eval_source_terms(Uq, x, solver.time,
+					Sq)
+			# Point at n+1
+			Sq_new = np.zeros_like(Uq_new)
+			Sq_new = solver.physics.eval_source_terms(Uq_new, x, solver.time,
+					Sq_new)
+			# Return RHS of trapezoid rule
+			return (Uq_new - Uq - .5*dt*(Sq_new + Sq))[0, 0] # [ns]
+
+
+	class LSODA(SourceStepperBase):
+		'''
+		Scipy LSODA solver. This solver switches between a high-order
+		Adams-Bashforth scheme and BDF scheme depending on the stiffness
+		of the system. Works for very stiff problems.
+
+		Additional methods and attributes are commented below.
+		'''
+		def take_time_step(self, solver):
+			mesh = solver.mesh
+			elem_helpers = solver.elem_helpers
+			basis_val = elem_helpers.basis_val
+			iMM_elems = elem_helpers.iMM_elems
+			quad_pts = elem_helpers.quad_pts
+			quad_wts = elem_helpers.quad_wts
+			x_elems = elem_helpers.x_elems
+
+			U = solver.state_coeffs
+
+			Uq = helpers.evaluate_state(U, basis_val,
+					skip_interp=solver.basis.skip_interp) # [ne, nq, ns])
+
+			res = self.res
+
+			Uq0, t0 = Uq.reshape(-1), solver.time
+			dt = self.dt
+
+			subiterations = []
+
+			# Instantiate ode object
+			r = ode(self.rhs_sources, jac=None)
+			r.set_integrator('lsoda', nsteps=50000, atol=1e-14, rtol=1e-12)
+			r.set_initial_value(Uq0, t0).set_f_params(x_elems, Uq, 
+					solver, subiterations)
+
+			value = r.integrate(r.t+dt).reshape([res.shape[0], res.shape[1],
+				res.shape[2]])
+
+			subiterations = np.unique(subiterations)
+
+			# Print the number of subiterations for each iteration and
+			# store the total number of ODE subiterations for the solver
+			print("Subiterations:", len(subiterations))
+			solver.count_evaluations += len(subiterations)
+
+			# Project onto the basis state from the quadrature points
+			solver_tools.L2_projection(mesh, iMM_elems, solver.basis,
+					quad_pts, quad_wts, value, U)
+
+			solver.apply_limiter(U)
+			solver.state_coeffs = U
+
+			return res # [ne, nb, ns]
+
+		def rhs_sources(self, t, Uq0, x, Uq, solver, subiterations):
+			'''
+			Internal RHS call for the ODE solver
+
+			Inputs:
+			-------
+				t: current time
+				Uq0: solution state at the quadrature points
+					[ne x nq x ns]
+				x: coordinates of the quadrature points [ne, nq, ndim]
+
+			Outputs:
+			--------
+				Sq: Source term evaluated at the quadrature points
+					[ne, nq, ns]
+			'''
+			# Append to the subiteration counter
+			subiterations.append(t)
+
+			# Reconstruct shapes for source term evaluation on the
+			# quadrature points.
+			Uq = Uq0.reshape(Uq.shape)
+			Sq = np.zeros_like(Uq)
+
+			# Evaluate source term on quadrature points
+			Sq = solver.physics.eval_source_terms(Uq, x, t, Sq)
+
+			return Sq.reshape(-1) # ode function requires stacked array
