@@ -21,4 +21,3 @@ except ImportError:
 			return 'Warning: {self.__class__.__name__} is a mock class' \
 				.format(self=self)
 	ct = CanteraMock()
-	print(ct) # print Warning because class is optional
