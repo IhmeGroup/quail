@@ -10,20 +10,32 @@ font = {'family' : 'serif',
 plt.rc('font', **font)
 rc('text',usetex=True)
 def extract_data(filename):
+    '''
+    Extracts needed data from file
+
+    Inputs:
+    -------
+        filename: string for filename
+
+    Outputs:
+    --------
+        data1: first data entry
+        data2: second data entry
+    '''
     infile = open(filename, 'r')
     endLine = infile.readlines()
-    #infile.readline() # skip the first line
-    time = []
-    pmax = []
+
+    data1 = []
+    data2 = []
     for line in endLine:
         data = line.split()
-        time.append(float(data[0]))
-        pmax.append(float(data[2]))
+        data1.append(float(data[0]))
+        data2.append(float(data[2]))
     infile.close()
 
-    time = np.array(time)
-    pmax = np.array(pmax)
-    return time, pmax
+    data1 = np.array(data1)
+    data2 = np.array(data2)
+    return data1, data2
 
 fig, ax = plt.subplots()
 

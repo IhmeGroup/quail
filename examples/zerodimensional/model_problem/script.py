@@ -10,11 +10,28 @@ import pickle
 import time
 
 def search_and_replace(filename, text_to_search, replacement_text):
+	'''
+	Finds and replaces a string in a specific file. 
+
+	Inputs:
+	-------
+		filename: name of file to search
+		text_to_search: string to search for
+		replacement_text: string to replace with
+	'''
 	with fileinput.FileInput(filename, inplace=True, backup='.bak') as file:
 	    for line in file:
 	        print(line.replace(text_to_search, replacement_text), end='')
 
 def write_file(fname, solution):
+	'''
+	Writes a pickle file with the solution at the specified final time
+
+	Inputs:
+	-------
+		fname: filname
+		solution: list with final solution for each dt 
+	'''
 	with open(fname, 'wb') as fo:
 		# Save solver
 		pickle.dump(solution, fo, pickle.HIGHEST_PROTOCOL)

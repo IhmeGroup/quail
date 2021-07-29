@@ -62,9 +62,9 @@ sol_rk4   = np.zeros([dt.shape[0], 1])
 
 # Read in solution files
 for idt in range(len(dt)):  
-    sol_rk4[idt] =  read_data_file(f'RK4/{str(idt)}.pkl')
-    sol_bdf1[idt] = read_data_file(f'BDF1/{str(idt)}.pkl')
-    sol_trap[idt] = read_data_file(f'Trapezoidal/{str(idt)}.pkl')
+    sol_rk4[idt] =  read_data_file(f'RK4/{idt}.pkl')
+    sol_bdf1[idt] = read_data_file(f'BDF1/{idt}.pkl')
+    sol_trap[idt] = read_data_file(f'Trapezoidal/{idt}.pkl')
 
 # Exact solution
 ref = np.exp(-1.)

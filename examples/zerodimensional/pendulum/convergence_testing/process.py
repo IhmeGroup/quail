@@ -1,3 +1,10 @@
+'''
+Script that takes in solution files for various time integration schemes and
+plots their order of convergence (error vs time)
+
+Author: Brett Bornhoft
+Date: 07/29/2021
+'''
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
@@ -11,6 +18,17 @@ plt.rc('font', **font)
 rc('text',usetex=True)
 
 def print_errors(N, errors):
+    '''
+    This functions takes in an array of time step sizes or 
+    number of elements and errors corresponding to this info
+    and prints our the order of accuracy between two stages 
+    of refinement.
+
+    Inputs:
+    -------
+        N: array of time step sizes or number for elements
+        errors: array of errors corresponding to N
+    '''
     for i in range(errors.shape[0]-1):
         err = np.log(errors[i+1]/errors[i]) / np.log(N[i+1]/N[i])
         print(err)
@@ -45,7 +63,7 @@ sol_trap  = np.zeros([dt.shape[0], 1])
 for idt in range(len(dt)):
     # sol_rk4[idt] =     read_data_file('RK4/' +str(idt)+'.pkl')
     # sol_bdf1[idt] = read_data_file('BDF1/'+str(idt)+'.pkl')
-    sol_trap[idt] = read_data_file('Trapezoidal/'+str(idt)+'.pkl')
+    sol_trap[idt] = read_data_file(f'Trapezoidal/{idt}.pkl')
 
 # Exact solution
 g = 9.81

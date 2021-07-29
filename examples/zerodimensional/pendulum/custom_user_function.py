@@ -3,6 +3,15 @@ import pickle
 import numpy as np
 
 def custom_user_function(solver):
+	'''
+	Provides a custom interface for the pendulum problem into the solver.
+	This particular case saves the physical time and solution in time for 
+	the "1D" element. The file written is called 'time_hist.txt'.
+
+	Inputs:
+	-------
+		solver: solver object
+	'''
 	tstart = 0.
 	if solver.time>=tstart:
 		# Unpack
