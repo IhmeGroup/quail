@@ -157,6 +157,8 @@ class PhysicsBase(ABC):
 		direction
 	get_conv_flux_numerical
 		computes the convective numerical flux
+	get_diff_flux_numerical
+		computes the diffusive numerical flux
 	eval_source_terms
 		evaluates the source term(s)
 	eval_source_term_jacobians
@@ -211,6 +213,7 @@ class PhysicsBase(ABC):
 		self.BC_fcn_map = {}
 		self.source_map = {}
 		self.conv_num_flux_map = {}
+		self.diff_num_flux_map = {}
 		self.IC = None
 		self.exact_soln = None
 		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
@@ -284,6 +287,9 @@ class PhysicsBase(ABC):
 		    self.conv_num_flux_map: dict whose keys are the types of
 		    	convective numerical fluxes (members of ConvNumFluxType
 		    	enum); values are the corresponding classes
+		    self.diff_num_flux_map: dict whose keys are the types of 
+		    	diffusive numerical fluxes (members of DiffNumFluxType
+		    	enum); values are the corresponding classes
 
 		Notes:
 		------
@@ -317,6 +323,8 @@ class PhysicsBase(ABC):
 				base_conv_num_flux_type.LaxFriedrichs :
 					base_fcns.LaxFriedrichs,
 			})
+
+		self.diff_num_flux_map = {}
 
 	def set_IC(self, IC_type, **kwargs):
 		'''
@@ -427,6 +435,28 @@ class PhysicsBase(ABC):
 		# Instantiate class and store
 		self.conv_flux_fcn = conv_num_flux_class(**kwargs)
 
+
+	def set_diff_num_flux(self, diff_num_flux_type, **kwargs):
+		'''
+		This method sets the diffusive numerical flux
+
+		Inputs:
+		-------
+			diff_num_flux_type: type of diffusive numerical flux
+				(member of DiffNumFluxType enum)
+			kwargs: keyword arguments; depends on specific diffusive 
+				numerical flux
+
+		Outputs:
+		--------
+			self.diff_flux_fcn : stores diffusive numerical flux object
+		'''
+		diff_num_flux_class = process_map(diff_num_flux_type,
+				self.diff_num_flux_map)
+		# Instantiate class and store
+		self.diff_flux_fcn = diff_num_flux_class(**kwargs)
+
+		
 	def get_state_index(self, var_name):
 		'''
 		This method gets the index corresponding to a given state variable.
