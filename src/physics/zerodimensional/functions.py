@@ -6,10 +6,12 @@
 #       terms for zero dimensional equations.
 #
 # ------------------------------------------------------------------------ #
-import cantera as ct
+import importlib
 from enum import Enum, auto
 import numpy as np
 from scipy.optimize import root
+
+from external.optional_cantera import ct
 
 from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
 		SourceBase, ConvNumFluxBase

@@ -5,13 +5,14 @@
 #       Contains class definitions for zero dimensional equations.
 #
 # ------------------------------------------------------------------------ #
-import cantera as ct
+import importlib
 from enum import Enum, auto
 import numpy as np
-import sys
 
 import errors
 import general
+
+from external.optional_cantera import ct
 
 import physics.base.base as base
 import physics.base.functions as base_fcns

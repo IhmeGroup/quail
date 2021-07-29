@@ -454,6 +454,14 @@ class Simpler(Strang):
 
 
 class ODEIntegrator(StepperBase, source_stepper.SourceSolvers):
+	'''
+	ODEIntegrator method inherits attributes from StepperBase and 
+	source_stepper.SourceSolvers. It constructs an interface for users
+	to utilize the various time integration schemes in Quail directly 
+	for ODEs and systems of ODEs.
+
+	Additional methods and attributes are commented below.
+	'''
 	def set_ode_integrator(self, ode_scheme, U):
 		'''
 		Sets the ode integrator from the list of available time integration

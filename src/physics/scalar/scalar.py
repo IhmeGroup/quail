@@ -5,7 +5,6 @@
 #       Contains class definitions for scalar equations.
 #
 # ------------------------------------------------------------------------ #
-import cantera as ct
 from enum import Enum, auto
 import numpy as np
 import sys

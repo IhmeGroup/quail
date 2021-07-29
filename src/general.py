@@ -131,7 +131,7 @@ class SourceStepperType(Enum):
 	Trapezoidal = auto()
 		# 2nd-order trapezoidal method
 	LSODA = auto()
-		# Scipy LSODA built-in ode solver.
+		# Scipy LSODA built-in ode solver
 
 
 class PhysicsType(Enum):

@@ -141,7 +141,7 @@ class SourceBase(ABC):
 	'''
 	def __init__(self, kwargs=None):
 		# By default set the source treatment to implicit but
-		# allow users to speicify explicit if desired.
+		# allow users to specify explicit if desired.
 		if kwargs:
 			self.source_treatment = kwargs['source_treatment']
 		else:
