@@ -329,6 +329,8 @@ def driver(deck):
 	pparams = physics_params.copy()
 	pparams.pop("Type") # don't pass this key
 	conv_flux_type = pparams.pop("ConvFluxNumerical")
+	diff_flux_type = pparams.pop("DiffFluxNumerical")
+
 	physics.set_conv_num_flux(conv_flux_type)
 	physics.set_physical_params(**pparams)
 
