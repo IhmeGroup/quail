@@ -137,8 +137,10 @@ def get_dt_from_num_time_steps(stepper, solver):
 	time = solver.time
 
 	# only needs to be set once per simulation
-	if stepper.dt == 0.0:
+	if stepper.dt == 0.0 and num_time_steps != 0:
 		return (tfinal - time) / num_time_steps
+	elif num_time_steps == 0:
+		return 1.0
 	else:
 		return stepper.dt
 
