@@ -145,6 +145,8 @@ class PhysicsType(Enum):
 		# Burgers equation (1D only)
 	Euler = auto()
 		# Euler equations (1D and 2D)
+	NavierStokes = auto()
+		# Navier-Stokes equations (1D and 2D)
 	Chemistry = auto()
 		# Euler equations with chemistry (1D and 2D)
 	ModelProblem = auto()
