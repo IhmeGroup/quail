@@ -34,7 +34,7 @@ def read_data_file(fname):
 
     return solution
 
-# Read in reference solution
+# Set dt array
 dt = np.array([0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 
     0.00390625, 0.001953125, 9.765625e-4, 4.8828125e-4])
 
@@ -42,24 +42,28 @@ sol_bdf1  = np.zeros([dt.shape[0], 1])
 sol_trap  = np.zeros([dt.shape[0], 1])
 sol_rk4   = np.zeros([dt.shape[0], 1])
 
+# Read in solution files
 for idt in range(len(dt)):  
-    sol_rk4[idt] =  read_data_file('RK4/' +str(idt)+'.pkl')
-    sol_bdf1[idt] = read_data_file('BDF1/'+str(idt)+'.pkl')
-    sol_trap[idt] = read_data_file('Trapezoidal/'+str(idt)+'.pkl')
+    sol_rk4[idt] =  read_data_file(f'RK4/{str(idt)}.pkl')
+    sol_bdf1[idt] = read_data_file(f'BDF1/{str(idt)}.pkl')
+    sol_trap[idt] = read_data_file(f'Trapezoidal/{str(idt)}.pkl')
 
 # Exact solution
 ref = np.exp(-1.)
 
+# Set absolute error
 err_rk4 = np.abs(sol_rk4 - ref)
 err_bdf1 = np.abs(sol_bdf1 - ref)
 err_trap = np.abs(sol_trap - ref)
 
+# Get slopes for reference order lines
 dt2 = np.array([dt[0],dt[-1]])
 fac = dt2[1]/dt2[0]
 m1_slope = np.array([err_bdf1[0, 0]*1.5, err_bdf1[0, 0]*1.5*fac**1])
 m2_slope = np.array([err_trap[0, 0]*1.5, err_trap[0, 0]*1.5*fac**2])
 m4_slope = np.array([err_rk4[0, 0]*1.5, err_rk4[0, 0]*1.5*fac**4])
 
+# Plot errors
 al1 = 0.5 # Sets opacity for reference lines
 for i in range(1):
     fig, ax = plt.subplots()
@@ -80,6 +84,7 @@ for i in range(1):
     ax.set_title('Model Problem')
     ax.legend()
 
+# Print order of accuracy to screen
 print('errors BDF1')
 print_errors(dt, err_bdf1)
 print('errors Trap')
