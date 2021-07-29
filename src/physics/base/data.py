@@ -251,3 +251,70 @@ class ConvNumFluxBase(ABC):
 			numerical flux values [nq, ns]
 		'''
 		pass
+
+class DiffNumFluxBase(ABC):
+	'''
+	This is an abstract base class for evaluating the diffusiv
+	numerical flux. Attributes depend on the type of numerical flux.
+
+	Abstract Methods:
+	-----------------
+	compute_flux
+		computes the numerical flux
+
+	Methods:
+	--------
+	alloc_helpers
+		allocates helper arrays
+	'''
+	def __init__(self, Uq=None):
+		'''
+		This method initializes the attributes, which depend on the
+		type of numerical flux.
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the
+				quadrature points) [nq, ns]
+
+		Outputs:
+		--------
+			self: attributes initialized
+		'''
+		pass
+
+	def alloc_helpers(self, Uq):
+		'''
+		This method is a wrapper for __init__, in which helper arrays
+		should be allocated.
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the
+				quadrature points) [nq, ns]
+
+		Notes:
+		------
+			Outputs depend on the specific numerical flux.
+		'''
+		self.__init__(Uq)
+
+	@abstractmethod
+	def compute_flux(self, physics, UqL, UqR, normals):
+		'''
+		This method computes the numerical flux.
+
+		Inputs:
+		-------
+			physics: physics object
+			UqL: left values of the state variables (typically at the
+				quadrature points) [nq, ns]
+			UqR: right values of the state variables (typically at the
+				quadrature points) [nq, ns]
+			normals: directions from left to right [nq, ndims]
+
+		Outputs:
+		--------
+			numerical flux values [nq, ns]
+		'''
+		pass
