@@ -267,7 +267,7 @@ class Euler1D(Euler):
 		u2 = u**2
 		# Calculate pressure using the Ideal Gasd Law
 		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2) # [n, nq]
-		# Get total enthalpy
+		# Get total specific enthalpy
 		H = rhoE/rho + p/rho
 
 		# Get sound speed
