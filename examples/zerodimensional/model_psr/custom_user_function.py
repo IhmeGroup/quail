@@ -15,14 +15,13 @@ def custom_user_function(solver):
 	if solver.time>=tstart:
 		# Unpack
 		Uc = solver.state_coeffs
-		# jac = solver.physics.jac
 		basis_val = solver.elem_helpers.basis_val
 		Uq = helpers.evaluate_state(Uc, basis_val)
 		time_hist = open('time_hist.txt', 'a')
 		
 		# Convert applicable variables to strings
 		s = str(solver.time)
-		s1 = str(Uq[0,0,0])
+		s1 = str(Uq[0, 0, 0])
 
 		# write to the file at each iteration
 		time_hist.write(s)
