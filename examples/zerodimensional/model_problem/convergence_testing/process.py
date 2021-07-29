@@ -18,6 +18,17 @@ plt.rc('font', **font)
 rc('text',usetex=True)
 
 def print_errors(N, errors):
+    '''
+    This functions takes in an array of time step sizes or 
+    number of elements and errors corresponding to this info
+    and prints our the order of accuracy between two stages 
+    of refinement.
+
+    Inputs:
+    -------
+        N: array of time step sizes or number for elements
+        errors: array of errors corresponding to N
+    '''
     for i in range(errors.shape[0]-1):
         err = np.log(errors[i+1]/errors[i]) / np.log(N[i+1]/N[i])
         print(err)
