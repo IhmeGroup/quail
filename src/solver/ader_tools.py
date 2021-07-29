@@ -96,6 +96,21 @@ def set_recalculate_jac(recalculate_jacobian):
 	return fcn
 
 def recalculate_jacobian_on(solver, U_pred, dt, Sjac=None):
+	'''
+	Method to recalculate the jacobian at each subiteration 
+	of a nonlinear solver. Note: This has only been useful in very 
+	specific applications.
+
+	Inputs:
+	-------
+		solver: solver object
+		U_pred: Space-time predicted polynomial coefficients [ne, nb_st, ns]
+		dt: time step size
+
+	Outputs:
+	--------
+		Sjac: source term jacobian [nelem, ns, ns]
+	'''
 	# Unpack
 	physics = solver.physics
 	elem_helpers = solver.elem_helpers
@@ -256,6 +271,16 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 	W0, t0 = Wq.reshape(-1), solver.time
 
 	def func(t, y, x, Sq_exp):
+		'''
+		Function for the ode solver to calculate the RHS
+
+		Inputs:
+		-------
+			t: time
+			y: solution array
+			x: quadrature points
+			Sq_exp: explicit source term evaluated at quadrature points
+		'''
 		# Keep track of the number of times func is called
 		tvals.append(t)
 
@@ -591,7 +616,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 	# products.
 	niter = 10000
 
-	A = np.matmul(iMM,K)
+	A = np.matmul(iMM, K)
 
 	U_pred_new = np.zeros_like(U_pred)
 
@@ -603,8 +628,8 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 				'ijkl, ikml -> ijm', SMS_elems, flux_coeffs)
 
 		C = source_coeffs - dt*np.matmul(U_pred[:],
-				Sjac[:].transpose(0,2,1)) + \
-				np.einsum('jk, ikl -> ijl',iMM, Q)
+				Sjac[:].transpose(0, 2, 1)) + \
+				np.einsum('jk, ikl -> ijl', iMM, Q)
 
 		# Build identity matrices for kronecker procucts
 		I2 = np.eye(A.shape[1])

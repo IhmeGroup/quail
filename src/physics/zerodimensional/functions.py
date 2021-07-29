@@ -56,11 +56,15 @@ correspond to the FcnType enum members above.
 '''
 
 class PendulumExact(FcnBase):
+	'''
+	Exact solution to the 2nd order pendulum problem. 
+	See zerodimensional.Pendulum for further details.
+	'''
 	def __init__(self):
 		pass
 
 	def get_state(self, physics, x, t):
-
+		# unpack
 		g = physics.g
 		l = physics.l
 
@@ -72,12 +76,16 @@ class PendulumExact(FcnBase):
 		return Uq
 
 class MultispeicesPSR_IC(FcnBase):
+	'''
+	Constructs the initial condition for the multispecies 
+	perfectly stirred reactor test case. See zerodimensional.MultispeciesPSR
+	for more details.
+	'''
 	def __init__(self):
 		pass
 
 	def get_state(self, physics, x, t):
 		# unpack
-
 		P = physics.P
 		Tu = physics.Tu
 		phi = physics.phi
@@ -269,7 +277,6 @@ class Reacting(SourceBase):
 		return S # [1, nq, ns]
 
 	def get_jacobian(self, physics, Uq, x, t):
-
 		jac = get_numerical_jacobian(self, physics, Uq, x, t)
 
 		return jac # [ne, nq, ns, ns]

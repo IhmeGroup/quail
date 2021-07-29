@@ -610,9 +610,6 @@ class SolverBase(ABC):
 		if write_initial_solution:
 			readwritedatafiles.write_data_file(self, 0)
 
-		# Custom user function initial iteration
-		# self.custom_user_function(self)
-
 		t0 = time.time()
 		iwrite = 1
 
