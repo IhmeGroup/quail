@@ -24,6 +24,7 @@ import numerics.timestepping.tools as stepper_tools
 
 import physics.zerodimensional.zerodimensional as zerod
 import physics.euler.euler as euler
+import physics.navierstokes.navierstokes as navierstokes
 import physics.scalar.scalar as scalar
 import physics.chemistry.chemistry as chemistry
 
@@ -70,6 +71,10 @@ def set_physics(mesh, physics_type):
 	    physics_class = euler.Euler1D
 	elif PhysicsType[physics_type] == PhysicsType.Euler and ndims == 2:
 	    physics_class = euler.Euler2D
+	elif PhysicsType[physics_type] == PhysicsType.NavierStokes and ndims == 1:
+		physics_class = navierstokes.NavierStokes1D
+	elif PhysicsType[physics_type] == PhysicsType.NavierStokes and ndims == 2:
+		physics_class = navierstokes.NavierStokes2D
 	elif PhysicsType[physics_type] == PhysicsType.Chemistry and ndims ==1:
 		physics_class = chemistry.Chemistry1D
 	else:
