@@ -1,3 +1,10 @@
+'''
+Script that takes in solution files for various time integration schemes and
+plots their order of convergence (error vs time)
+
+Author: Brett Bornhoft
+Date: 07/29/2021
+'''
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
