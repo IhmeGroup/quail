@@ -866,7 +866,8 @@ class GravitySource(SourceBase):
 		with source terms, Journal of Computational Physics 230 
 		(2011) 1238–1248.
 	'''
-	def __init__(self, gravity=0.):
+	def __init__(self, gravity=0., **kwargs):
+		super().__init__(kwargs)
 		'''
 		This method initializes the attributes.
 

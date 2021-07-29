@@ -306,7 +306,8 @@ class OverdrivenDetonation(FcnBase):
 Source term functions
 '''
 class Arrhenius(SourceBase):
-	def __init__(self, A=16418., b=0.1, Tign=15.):
+	def __init__(self, A=16418., b=0.1, Tign=15., **kwargs):
+		super().__init__(kwargs)
 		self.A = A
 		self.b = b
 		self.Tign = Tign
