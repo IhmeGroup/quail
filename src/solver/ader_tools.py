@@ -464,7 +464,7 @@ def get_spacetime_gradient(solver, Uc):
 	iMM = ader_helpers.iMM
 	SMS = ader_helpers.SMS_ref
 
-	return np.einsum('mn, npl, ipk -> imlk', iMM, SMS, Uc)
+	return np.einsum('mn, npl, ipk -> imkl', iMM, SMS, Uc)
 
 
 def predictor_elem_explicit(solver, dt, W, U_pred):
