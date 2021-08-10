@@ -100,6 +100,9 @@ Numerics = {
 		# If False, will ignore the convective flux
 		# Useful for debugging
 		# If ConvFluxSwitch is False, can easily test ODE solvers
+	"DiffFluxSwitch" : False,
+		# If Ture, will turn on the diffusive flux
+		# Currently, only implemented for ADERDG
 	"SourceSwitch" : True,
 		# If False, will ignore the source terms
 		# Useful for debugging
