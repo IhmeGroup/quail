@@ -542,6 +542,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		if np.amax(np.abs(err)) < threshold:
 			U_pred = U_pred_new
 			print("Predictor iterations: ", i)
+			import code; code.interact(local=locals())
 			break
 
 		U_pred = np.copy(U_pred_new)
