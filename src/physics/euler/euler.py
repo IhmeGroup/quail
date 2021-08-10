@@ -211,12 +211,9 @@ class Euler1D(Euler):
 		# Get indices of state variables
 		irho, irhou, irhoE = self.get_state_indices()
 
-		eps = general.eps
-
 		rho  = Uq[:, :, irho]  # [n, nq]
 		rhou = Uq[:, :, irhou] # [n, nq]
 		rhoE = Uq[:, :, irhoE] # [n, nq]
-		rho += eps # prevent rare division-by-zero errors
 
 		# Get velocity
 		u = rhou / rho
@@ -233,8 +230,6 @@ class Euler1D(Euler):
 		F[:, :, irho, 0] = rhou         # Flux of mass
 		F[:, :, irhou, 0] = rho * u2 + p # Flux of momentum
 		F[:, :, irhoE, 0] = H * u        # Flux of energy
-
-		rho -= eps
 
 		return F, (u2, rho, p)
 
@@ -257,7 +252,6 @@ class Euler1D(Euler):
 
 		# Unpack
 		ne = U_bar.shape[0]
-		eps = general.eps
 		
 		ns = self.NUM_STATE_VARS
 		
@@ -266,7 +260,6 @@ class Euler1D(Euler):
 		rho = U_bar[:, :, irho]
 		rhou = U_bar[:, :, irhou]
 		rhoE = U_bar[:, :, irhoE]
-		rho += eps # prevent rare division-by-zero errors
 		
 		# Get velocity
 		u = rhou / rho
@@ -383,14 +376,11 @@ class Euler2D(Euler):
 		irho, irhou, irhov, irhoE = self.get_state_indices()
 		smom = self.get_momentum_slice()
 
-		eps = general.eps
-
 		rho  = Uq[:, :, irho]  # [n, nq]
 		rhou = Uq[:, :, irhou] # [n, nq]
 		rhov = Uq[:, :, irhov] # [n, nq]
 		rhoE = Uq[:, :, irhoE] # [n, nq]
 		mom  = Uq[:, :, smom]  # [n, nq, ndims]
-		rho += eps # prevent rare division-by-zero errors
 
 		# Get velocity in each dimension
 		u = rhou / rho
@@ -415,7 +405,5 @@ class Euler2D(Euler):
 		F[:,:,irhov, 1] = rho * v2 + p # y-flux of y-momentum
 		F[:,:,irhoE, 0] = H * u        # x-flux of energy
 		F[:,:,irhoE, 1] = H * v        # y-flux of energy
-
-		rho -= eps
 
 		return F, (u2, v2, rho, p)

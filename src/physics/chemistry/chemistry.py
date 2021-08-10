@@ -217,14 +217,10 @@ class Chemistry1D(Chemistry):
 
 		irho, irhou, irhoE, irhoY = self.get_state_indices()
 
-		eps = general.eps
-
 		rho = Uq[:, :, irho]
 		rhou = Uq[:, :, irhou]
 		rhoE = Uq[:, :, irhoE]
 		rhoY = Uq[:, :, irhoY]
-
-		rho += eps
 
 		# Get velocity
 		u = rhou / rho
@@ -242,8 +238,6 @@ class Chemistry1D(Chemistry):
 		F[:, :, irhou, 0] = rho * u2 + p
 		F[:, :, irhoE, 0] = H * u
 		F[:, :, irhoY, 0] = rhou*rhoY/rho
-
-		rho -= eps
 
 		return F, (u2, rho, p)
 
@@ -274,7 +268,6 @@ class Chemistry1D(Chemistry):
 
 		# Unpack
 		ne = U_bar.shape[0]
-		eps = general.eps
 		
 		ns = self.NUM_STATE_VARS
 		
@@ -284,7 +277,6 @@ class Chemistry1D(Chemistry):
 		rhou = U_bar[:, :, irhou]
 		rhoE = U_bar[:, :, irhoE]
 		rhoY = U_bar[:, :, irhoY]
-		rho += eps # prevent rare division-by-zero errors
 		
 		# Get mass fraction
 		Y = rhoY / rho
