@@ -258,15 +258,12 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 			irho, irhou, irhov, irhoE = self.get_state_indices()
 			smom = self.get_momentum_slice()
 
-			eps = general.eps
-
 			# Unpack state coefficients
 			rho  = Uq[:, :, irho]  # [n, nq]
 			rhou = Uq[:, :, irhou] # [n, nq]
 			rhov = Uq[:, :, irhov] # [n, nq]
 			rhoE = Uq[:, :, irhoE] # [n, nq]
 			mom  = Uq[:, :, smom]  # [n, nq, ndims]
-			rho += eps # prevent rare division-by-zero errors
 
 			# Calculate viscosity
 			mu = self.compute_variable("Viscosity", Uq,
@@ -285,8 +282,8 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 			C2 = (gamma - 1.) / (R * rho)
 			
 			# Separate x and y gradients
-			gUx = gUq[:, :, 0, :] # [ne, nq, ns]
-			gUy = gUq[:, :, 1, :] # [ne, nq, ns]
+			gUx = gUq[:, :, :, 0] # [ne, nq, ns]
+			gUy = gUq[:, :, :, 1] # [ne, nq, ns]
 
 			# Get velocity in each dimension
 			u = rhou / rho
@@ -301,7 +298,7 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 
 			# Store dTdU
 			dTdU = np.zeros_like(gUx)
-			dTdU[:, :, 0] = C2 * (-E + u*u + v*v)
+			dTdU[:, :, 0] = C2 * (-E + u2 + v2)
 			dTdU[:, :, 1] = C2 * -u
 			dTdU[:, :, 2] = C2 * -v
 			dTdU[:, :, 3] = C2
@@ -314,8 +311,8 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 				C1 * rhodiv)
 			tauxy = nu * ((gUy[:, :, 1] - u * gUy[:, :, 0]) + \
 				(gUx[:, :, 2] - v * gUx[:, :, 0]))
-			tauyy = nu * (2. * (gUy[:, :, 2] - v * gUy[:, :, 0] - \
-				C1 * rhodiv))
+			tauyy = nu * (2. * (gUy[:, :, 2] - v * gUy[:, :, 0]) - \
+				C1 * rhodiv)
 
 			# Assemble flux matrix
 			F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -332,7 +329,5 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 			F[:,:,irhov, 1] = tauyy 	   # y-flux of y-momentum
 			F[:,:,irhoE, 1] = u * tauxy + v * tauyy + \
 				kappa * np.einsum('ijk, ijk -> ij', dTdU, gUy)
-
-			rho -= eps
 
 			return F
