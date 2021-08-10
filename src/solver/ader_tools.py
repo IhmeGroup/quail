@@ -445,6 +445,27 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 
 	return res_elem # [ne, nb, ns]
 
+def get_spacetime_gradient(solver, Uc):
+	'''
+	Calculates the spacetime gradient of the state using 
+	the formulation from Dumbser, 2010.
+
+	Inputs:
+	-------
+		solver: solver object
+		Uc: space-time state coefficients [ne, nb_st, ns]
+	
+	Outpus:
+	-------
+		gUc: gradient of the space-time state [ne, nb_st, ns, ndims]
+	'''
+	ader_helpers = solver.ader_helpers
+
+	iMM = ader_helpers.iMM
+	SMS = ader_helpers.SMS_ref
+
+	return np.einsum('mn, npl, ipk -> imlk', iMM, SMS, Uc)
+
 
 def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
@@ -494,11 +515,14 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
 
+	# Calculate the gradient of the state
+	gU_pred = get_spacetime_gradient(solver, U_pred)
+
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-			U_pred)
+			U_pred, gU_pred)
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
@@ -518,6 +542,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		if np.amax(np.abs(err)) < threshold:
 			U_pred = U_pred_new
 			print("Predictor iterations: ", i)
+			import code; code.interact(local=locals())
 			break
 
 		U_pred = np.copy(U_pred_new)
@@ -525,7 +550,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
 		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-				U_pred)
+				U_pred, gU_pred)
 
 		if i == niter - 1:
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
@@ -675,6 +700,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
 
 	return U_pred #_update # [ne, nb_st, ns]
+
 
 def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 	'''
