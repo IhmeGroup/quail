@@ -230,6 +230,7 @@ class ADERHelpers(object):
 		'''
 		ndims = mesh.ndims
 		nb = basis_st.nb
+		SMS_ref = np.zeros([nb, nb, ndims])
 		SMS_elems = np.zeros([mesh.num_elems, nb, nb, ndims])
 		iMM_elems = np.zeros([mesh.num_elems, nb, nb])
 
@@ -262,11 +263,17 @@ class ADERHelpers(object):
 		MM = basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order,
 				elem_ID=-1, physical_space=False)
 
+		# Get stiffness matrices in reference space (only in spatial directions)
+		for nd in range(ndims):
+			SMS_ref[:, :, nd] = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st,
+				order, dt, elem_ID=0, grad_dir=nd, physical_space=False)
+
 		# Store
 		self.FTL = FTL
 		self.FTR = FTR
 		self.SMT = SMT
 		self.SMS_elems = SMS_elems
+		self.SMS_ref = SMS_ref
 		self.MM = MM
 		self.iMM = iMM
 		self.iMM_elems = iMM_elems
@@ -523,6 +530,10 @@ class ADERDG(base.SolverBase):
 			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, elem_helpers_st, Fq) # [ne, nb, ns]
 
+		# Need to add diffusion fluxes here
+		# if self.params["DiffFluxSwitch"] == True:
+			# Fq += physics.get_diff_flux_interior(Uq) # [ne, nq, ns, ndims]
+
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
 
@@ -669,7 +680,7 @@ class ADERDG(base.SolverBase):
 
 		return resB # [nbf, nb, ns]
 
-	def flux_coefficients(self, dt, order, basis, Up):
+	def flux_coefficients(self, dt, order, basis, Up, gUp=None):
 		'''
 		Calculates the polynomial coefficients for the flux functions in
 		ADER-DG
@@ -694,6 +705,7 @@ class ADERDG(base.SolverBase):
 		params = self.params
 
 		InterpolateFluxADER = params["InterpolateFluxADER"]
+		DiffFluxSwitch = params["DiffFluxSwitch"]
 
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
@@ -709,6 +721,10 @@ class ADERDG(base.SolverBase):
 		if InterpolateFluxADER:
 			# Calculate flux
 			Fq = physics.get_conv_flux_interior(Up)[0]
+
+			if DiffFluxSwitch:
+				Fq -= physics.get_diff_flux_interior(Up, gUp)
+				# import code; code.interact(local=locals())
 			# Interpolate flux coefficient to nodes
 			dg_tools.interpolate_to_nodes(Fq, F)
 
