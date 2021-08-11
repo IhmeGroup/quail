@@ -1,11 +1,11 @@
 TimeStepping = {
 	"FinalTime" : 0.5,
 	"NumTimeSteps" : 10,
-	"TimeStepper" : "ADER",
+	"TimeStepper" : "SSPRK3",
 }
 
 Numerics = {
-	"Solver" : "ADERDG",
+	"Solver" : "DG",
 	"SolutionOrder" : 1,
 	"SolutionBasis" : "LagrangeQuad",
 	"DiffFluxSwitch" : True,
