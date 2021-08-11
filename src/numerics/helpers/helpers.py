@@ -55,3 +55,23 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 			Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
 
 	return Uq # [ne, nq, ns]
+
+
+def evaluate_gradient(Uc, basis_phys_grad_elems):
+	'''
+	This function evaluates the gradient of the state based on the 
+	physical gradient of the basis.
+
+	Inputs:
+	-------
+	    Uc: state coefficients [ne, nb, ns]
+	    basis_phys_grad_elems: evaluated gradient of the basis function in
+			physical space [nq, nb, ndims]
+
+	Outputs:
+	--------
+	    gUq: gradient of the state [ne, nq, ns, ndims]
+	'''
+	gUq = np.einsum('ijml, imk -> ijkl', basis_phys_grad_elems, Uc)
+
+	return gUq # [ne, nq, ns, ndims]
