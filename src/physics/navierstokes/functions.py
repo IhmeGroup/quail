@@ -57,7 +57,7 @@ class DiffNumFluxType(Enum):
 	These numerical fluxes are specific to the available NavierStokes 
 	equation sets.
 	'''
-	Rusonov = auto()
+	SIP = auto()
 
 '''
 ---------------
@@ -160,8 +160,8 @@ class ManufacturedSource(SourceBase):
 		Sq = np.zeros_like(Uq)
 		Sq[:, :, irho], Sq[:, :, irhou], Sq[:, :, irhov], \
 			Sq[:, :, irhoE] = self.manufactured_source(x1, x2, 
-				t[:, 0], gamma, kappa[:, :, 0], 
-				mu[:, :, 0], R)
+			t, gamma, kappa[:, :, 0], 
+			mu[:, :, 0], R)
 
 		return Sq # [ne, nq, ns]
 
@@ -240,18 +240,20 @@ class ManufacturedSource(SourceBase):
 ------------------------
 Numerical flux functions
 ------------------------
-These classes inherit from the ConvNumFluxBase class. See
-ConvNumFluxBase for detailed comments of attributes and methods.
-Information specific to the corresponding child classes can be found below.
-These classes should correspond to the ConvNumFluxType enum members above.
+These classes inherit from the ConvNumFluxBase or DiffNumFluxBase class. 
+See ConvNumFluxBase/DiffNumFluxBase for detailed comments of attributes 
+and methods. Information specific to the corresponding child classes can 
+be found below. These classes should correspond to the ConvNumFluxType 
+or DiffNumFluxType enum members above.
 '''
-class Rusonov(DiffNumFluxBase):
+class SIP(DiffNumFluxBase):
 	'''
-	This class corresponds to the local Lax-Friedrichs flux function for the
-	Euler2D class. This replaces the generalized, less efficient version of
-	the Lax-Friedrichs flux found in base.
+	This class corresponds to the Symmetric Interior Penalty Method (SIP)
+	for the NavierStokes class.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals):
+
+		import code; code.interact(local=locals())
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
@@ -274,6 +276,5 @@ class Rusonov(DiffNumFluxBase):
 		aR[:, :, 0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
 		idx = aR > aL
 		aL[idx] = aR[idx]
-
 		# Put together
 		return 0.5 * n_mag * (FqL + FqR - aL*dUq)
