@@ -430,6 +430,11 @@ class ADERDG(base.SolverBase):
 				self.int_face_helpers_st.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
+		physics.diff_flux_fcn.alloc_helpers(
+				np.zeros([mesh.num_interior_faces,
+				self.int_face_helpers.quad_wts.shape[0],
+				physics.NUM_STATE_VARS]))
+		
 		# Initialize state
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()

@@ -113,7 +113,9 @@ class PhysicsBase(ABC):
 	    list of Function objects corresponding to each source term
 	conv_flux_fcn: Function object
 	    holds information about the convective flux function
-
+	diff_flux_fcn: Function object
+		holds information about the diffusive flux function
+		
 	Inner Classes:
 	--------------
 	StateVariables: enum
@@ -219,6 +221,7 @@ class PhysicsBase(ABC):
 		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
 		self.source_terms = []
 		self.conv_flux_fcn = None
+		self.diff_flux_fcn = None
 
 		# Compatibility check
 		if mesh.ndims != self.NDIMS:
@@ -562,6 +565,31 @@ class PhysicsBase(ABC):
 			Fnum: numerical flux values [nf, nq, ns]
 		'''
 		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
+
+		return Fnum
+
+	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals):
+		'''
+		This method computes the diffusive numerical flux.
+
+		Inputs:
+		-------
+			UqL: left values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			UqR: right values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			gUqL: left values of the gradient of the state variables
+				(typically at the quadrature points) [nf, nq, ns, ndims]
+			gUqR: right values of the gradient of the state variables
+				(typically at the quadrature points) [nf, nq, ns, ndims]
+			normals: directions from left to right [nf, nq, ndims]
+		
+		Outputs:
+		--------
+			Fnum: numerical flux values[nf, nq, ns]
+		'''
+		Fnum = self.diff_flux_fcn.compute_flux(self, UqL, UqR, gUqL, gUqR,
+				normals)
 
 		return Fnum
 
