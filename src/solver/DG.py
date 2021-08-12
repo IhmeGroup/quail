@@ -345,23 +345,38 @@ class InteriorFaceHelpers(ElemHelpers):
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		nfaces_per_elem = basis.NFACES
+		nfaces = mesh.num_interior_faces
 
 		# Allocate
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
+		self.faces_to_basis_ref_gradL = np.zeros([nfaces_per_elem,
+				nq, nb, ndims])
+		self.faces_to_basis_ref_gradR = np.zeros([nfaces_per_elem,
+				nq, nb, ndims])
+		self.jacL_elems = np.zeros([nfaces, nq, ndims, ndims])
+		self.ijacL_elems = np.zeros([nfaces, nq, ndims, ndims])
+		self.djacL_elems = np.zeros([nfaces, nq, 1])
+		self.jacR_elems = np.zeros([nfaces, nq, ndims, ndims])
+		self.ijacR_elems = np.zeros([nfaces, nq, ndims, ndims])
+		self.djacR_elems = np.zeros([nfaces, nq, 1])
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
 				ndims])
 
-		# Get values on each face (from both left and right perspectives)
+		# Get values on each face (from both left and right perspectives) 
+		# for both the basis and the reference gradient of the basis
 		for face_ID in range(nfaces_per_elem):
 			# Left
 			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts,
-					get_val=True)
+					get_val=True, get_ref_grad=True)
 			self.faces_to_basisL[face_ID] = basis.basis_val
+			self.faces_to_basis_ref_gradL[face_ID] = basis.basis_ref_grad
+
 			# Right
 			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts[::-1],
-					get_val=True)
+					get_val=True, get_ref_grad=True)
 			self.faces_to_basisR[face_ID] = basis.basis_val
+			self.faces_to_basis_ref_gradR[face_ID] = basis.basis_ref_grad
 
 		# Normals
 		i = 0
@@ -369,6 +384,32 @@ class InteriorFaceHelpers(ElemHelpers):
 			normals = mesh.gbasis.calculate_normals(mesh,
 					interior_face.elemL_ID, interior_face.faceL_ID, quad_pts)
 			self.normals_int_faces[i] = normals
+
+			# Left state
+			# Convert from face ref space to element ref space
+			elem_pts = basis.get_elem_ref_from_face_ref(
+					interior_face.faceL_ID, quad_pts)
+
+			djacL, jacL, ijacL = basis_tools.element_jacobian(mesh, 
+					interior_face.elemL_ID, elem_pts, get_djac=True,
+					get_jac=True, get_ijac=True)
+
+			# Right state
+			# Convert from face ref space to element ref space
+			elem_pts = basis.get_elem_ref_from_face_ref(
+					interior_face.faceR_ID, quad_pts[::-1])
+			djacR, jacR, ijacR = basis_tools.element_jacobian(mesh, 
+					interior_face.elemR_ID, elem_pts, get_djac=True,
+					get_jac=True, get_ijac=True)
+
+			self.jacL_elems[i] = jacL
+			self.djacL_elems[i] = djacL
+			self.ijacL_elems[i] = ijacL
+
+			self.jacR_elems[i] = jacR
+			self.djacR_elems[i] = djacR
+			self.ijacR_elems[i] = ijacR
+
 			i += 1
 
 	def alloc_other_arrays(self, physics, basis, order):
@@ -612,6 +653,11 @@ class DG(base.SolverBase):
 				self.int_face_helpers.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
+		physics.diff_flux_fcn.alloc_helpers(
+				np.zeros([mesh.num_interior_faces,
+				self.int_face_helpers.quad_wts.shape[0],
+				physics.NUM_STATE_VARS]))
+
 		# Initial condition
 		if params["RestartFile"] is None:
 			self.init_state_from_fcn()
@@ -638,6 +684,7 @@ class DG(base.SolverBase):
 		ndims = physics.NDIMS
 		elem_helpers = self.elem_helpers
 		basis_val = elem_helpers.basis_val
+		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 		quad_wts = elem_helpers.quad_wts
 
 		x_elems = elem_helpers.x_elems
@@ -646,6 +693,11 @@ class DG(base.SolverBase):
 		# Interpolate state at quad points
 		Uq = helpers.evaluate_state(Uc, basis_val,
 				skip_interp=self.basis.skip_interp) # [ne, nq, ns]
+		
+		# Interpolate gradient of state at quad points
+		if self.params["DiffFluxSwitch"] == True:
+			gUq = helpers.evaluate_gradient(Uc, basis_phys_grad_elems)
+
 		if self.verbose:
 			# Get min and max of state variables for reporting
 			self.get_min_max_state(Uq)
@@ -654,8 +706,13 @@ class DG(base.SolverBase):
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
 
-			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
-					self, elem_helpers, Fq) # [ne, nb, ns]
+		if self.params["DiffFluxSwitch"] == True:
+			# Evaluate the diffusion flux
+			Fq -= physics.get_diff_flux_interior(Uq, gUq)
+
+		# Note: should this be renamed / always evaluated?
+		res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+				self, elem_helpers, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
@@ -679,6 +736,11 @@ class DG(base.SolverBase):
 		quad_wts = int_face_helpers.quad_wts
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
+		faces_to_basis_ref_gradL = int_face_helpers.faces_to_basis_ref_gradL
+		faces_to_basis_ref_gradR = int_face_helpers.faces_to_basis_ref_gradL
+		ijacL_elems = int_face_helpers.ijacL_elems
+		ijacR_elems = int_face_helpers.ijacR_elems
+
 		normals_int_faces = int_face_helpers.normals_int_faces
 				# [nf, nq, ndims]
 
@@ -691,6 +753,17 @@ class DG(base.SolverBase):
 		UqR = helpers.evaluate_state(UcR, faces_to_basisR[faceR_IDs])
 				# [nf, nq, ns]
 
+		if self.params["DiffFluxSwitch"] == True:
+			# Interpolate gradient of state at quad points
+			gUqL_ref = helpers.evaluate_gradient(UcL, 
+					faces_to_basis_ref_gradL[faceL_IDs])
+			gUqR_ref = helpers.evaluate_gradient(UcR, 
+					faces_to_basis_ref_gradR[faceR_IDs])
+
+			# Make gradient the physical gradient
+			gUqL = np.einsum('ijlp, ijkp -> ijkl', ijacL_elems, gUqL_ref)
+			gUqR = np.einsum('ijlp, ijkp -> ijkl', ijacR_elems, gUqR_ref)
+
 		# Allocate resL and resR (needed for operator splitting)
 		nifL = self.int_face_helpers.elemL_IDs.shape[0]
 		nifR = self.int_face_helpers.elemR_IDs.shape[0]
@@ -702,11 +775,16 @@ class DG(base.SolverBase):
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq, ns]
 
-			# Compute contribution to left and right element residuals
-			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
-					faces_to_basisL[faceL_IDs], quad_wts, Fq)
-			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
-					faces_to_basisR[faceR_IDs], quad_wts, Fq)
+		if self.params["DiffFluxSwitch"] == True:
+			# Compute diff numerical flux
+			Fq += physics.get_diff_flux_numerical(UqL, UqR, gUqL, gUqR, 
+					normals_int_faces) # [nf, nq, ns]
+
+		# Compute contribution to left and right element residuals
+		resL = solver_tools.calculate_inviscid_flux_boundary_integral(
+				faces_to_basisL[faceL_IDs], quad_wts, Fq)
+		resR = solver_tools.calculate_inviscid_flux_boundary_integral(
+				faces_to_basisR[faceR_IDs], quad_wts, Fq)
 
 		return resL, resR # [nif, nb, ns]
 
