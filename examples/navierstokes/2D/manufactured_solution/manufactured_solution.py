@@ -11,8 +11,8 @@ Numerics = {
 	"DiffFluxSwitch" : True,
 }
 
-num_elem_x = 6
-num_elem_y = 4
+num_elem_x = 1
+num_elem_y = 1
 Mesh = {
 	"ElementShape" : "Quadrilateral",
 	"NumElemsX" : num_elem_x,
@@ -28,7 +28,7 @@ Mesh = {
 Physics = {
 	"Type" : "NavierStokes",
 	"ConvFluxNumerical" : "Roe",
-	"DiffFluxNumerical" : "Rusonov",
+	"DiffFluxNumerical" : "SIP",
 }
 
 InitialCondition = {
