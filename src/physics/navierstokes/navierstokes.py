@@ -249,8 +249,8 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 		# })
 
 		self.diff_num_flux_map.update({
-			navierstokes_diff_num_flux_type.Rusonov : 
-				navierstokes_fcns.Rusonov,
+			navierstokes_diff_num_flux_type.SIP : 
+				navierstokes_fcns.SIP,
 			})
 
 	def get_diff_flux_interior(self, Uq, gUq):
