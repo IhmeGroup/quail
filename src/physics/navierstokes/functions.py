@@ -109,6 +109,28 @@ class ManufacturedSolution(FcnBase):
 
 		return Uq # [ne, nq, ns]
 
+# class TaylorGreenVortex(FcnBase):
+# 	'''
+# 	2D Taylor Green Vortex Case
+# 	'''
+# 	def __init__(self):
+# 		pass
+# 	def get_state(self, physics, x, t):
+# 		# Unpack
+# 		gamma = physics.gamma
+		
+# 		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+		
+# 		x = x[:, :, 0]
+# 		y = x[:, :, 1]
+		
+# 		u = np.cos(2.*np.pi * x)*np.sin(2.*np.pi * y)* \
+# 			np.exp((-8.*np.pi**2 / Re) * t)
+# 		v = -np.sin(2.*np.pi * x)*np.cos(2.*np.pi * y)* \
+# 			np.exp((-8.*np.pi**2 / Re) * t)
+# 		p = -0.25 * (np.cos(4.*np.pi * x) + np.cos(4.*np.pi * y))* \
+# 			np.exp((-16.*np.pi**2 / Re) * t)
 
 '''
 -------------------
@@ -163,75 +185,141 @@ class ManufacturedSource(SourceBase):
 			t, gamma, kappa[:, :, 0], 
 			mu[:, :, 0], R)
 
+		
 		return Sq # [ne, nq, ns]
 
 	def manufactured_source(self, x1, x2, t, gamma, kappa, mu, R):
 	
-		S_rho = -0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*( \
-			x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 \
-			+ x2)) - 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*( \
-			x1 + x2))**2 - 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2* \
-			np.pi*(x1 + x2))
+		# S_rho = -0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*( \
+		# 	x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 \
+		# 	+ x2)) - 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*( \
+		# 	x1 + x2))**2 - 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2* \
+		# 	np.pi*(x1 + x2))
 
-		S_rhou = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t \
-			- 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos( \
-			2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos( \
-			2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*( \
-			0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) +  \
-			1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))* \
-			np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125* \
-			np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 \
-			+ 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + \
-			x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - \
-			0.2*np.pi*(x1 + x2))
+		# S_rhou = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t \
+		# 	- 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos( \
+		# 	2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos( \
+		# 	2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*( \
+		# 	0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) +  \
+		# 	1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))* \
+		# 	np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125* \
+		# 	np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 \
+		# 	+ 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + \
+		# 	x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - \
+		# 	0.2*np.pi*(x1 + x2))
 
-		S_rhov = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t \
-			- 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos( \
-			2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos( \
-			2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*( \
-			0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + \
-			1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))* \
-			np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125* \
-			np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 \
-			+ 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + \
-			x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t \
-			- 0.2*np.pi*(x1 + x2))
+		# S_rhov = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t \
+		# 	- 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos( \
+		# 	2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos( \
+		# 	2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*( \
+		# 	0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + \
+		# 	1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))* \
+		# 	np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125* \
+		# 	np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 \
+		# 	+ 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + \
+		# 	x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t \
+		# 	- 0.2*np.pi*(x1 + x2))
 
-		S_rhoE = -0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t \
-			- 0.2*np.pi*(x1 + x2))**2 + 0.0133333333333333*     \
-			np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 +    \
-			x2))**2 + 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2* \
-			np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*   \
-			np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 \
-			+ x2)) - 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi \
-			*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t \
-			- 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi* \
-			t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*   \
-			np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(     \
-			gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*  \
-			np.pi*(x1 + x2)) + 2*(0.0125*np.pi*(0.25*np.cos(2.0 \
-			*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*  \
-			np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - \
-			0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*  \
-			np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*    \
-			np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*  \
-			np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(   \
-			gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 +    \
-			x2)) - 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi* \
-			(x1 + x2))**3 - 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2* \
-			np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(   \
-			0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - \
-			1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))  \
-			+ np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5* \
-			np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(  \
-			0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0  \
-			)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2 \
-			))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) +   \
-			1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2  \
-			))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*    \
-			np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+		# S_rhoE = -0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t \
+		# 	- 0.2*np.pi*(x1 + x2))**2 + 0.0133333333333333*     \
+		# 	np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 +    \
+		# 	x2))**2 + 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2* \
+		# 	np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*   \
+		# 	np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 \
+		# 	+ x2)) - 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi \
+		# 	*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t \
+		# 	- 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi* \
+		# 	t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*   \
+		# 	np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(     \
+		# 	gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*  \
+		# 	np.pi*(x1 + x2)) + 2*(0.0125*np.pi*(0.25*np.cos(2.0 \
+		# 	*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*  \
+		# 	np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - \
+		# 	0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*  \
+		# 	np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*    \
+		# 	np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*  \
+		# 	np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(   \
+		# 	gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 +    \
+		# 	x2)) - 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi* \
+		# 	(x1 + x2))**3 - 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2* \
+		# 	np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(   \
+		# 	0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - \
+		# 	1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))  \
+		# 	+ np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5* \
+		# 	np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(  \
+		# 	0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0  \
+		# 	)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2 \
+		# 	))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) +   \
+		# 	1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2  \
+		# 	))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*    \
+		# 	np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+		
+		#---------------------------
+		# Currently the baseline
 
-		return S_rho, S_rhou, S_rhov, S_rhoE
+		# S_rho = -0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhou = -0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhov = -0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhoE = 0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+		# L2 error -> 0.041730878119526 (text1.mp4)
+
+		#---------------------------
+		# Add temporal terms only (doesnt behave properly)
+		# S_rho = -0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhou = -0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhov = -0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhoE = 0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+
+		#---------------------------
+		# Add temporal and convection terms (doesnt behave properly)
+		# S_rho = 0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhou = -0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhov = -0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhoE = 0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+
+
+		#---------------------------
+		# Subtract viscous terms
+		# L2norm -> 0.097916825525651 (test2.mp4)
+		# S_rho = -0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhou = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhov = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+		# S_rhoE = -0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+
+
+		#---------------------------
+		# Subtract viscous terms and kappa terms
+		# L2norm -> 0.086613001287011 (test3.mp4)
+		# S_rho = -0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhou = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhov = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhoE = -0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) - 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+
+		#----------------------------
+		# # Exactly kihiro's style of implementation (but opposite sign) [most correct so far...]
+		S_rho = 0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		S_rhou = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		S_rhov = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		S_rhoE = -0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) - 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+
+		# S_rho = 0.4*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 1.0*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhou = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhov = 0.0266666666666667*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2.0*np.pi*(-0.125*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.05*np.pi*(0.5*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 1.0)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0125*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.25*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.02*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))
+
+		# S_rhoE = -0.0133333333333333*np.pi**2*mu*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.0133333333333333*np.pi**2*mu*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 - 0.5*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.4*np.pi*(-0.03125*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**2 + 0.025*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.25*(-0.1*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + gamma**(-1))/(gamma - 1) - 0.25/gamma)*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 2*(0.0125*np.pi*(0.25*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.5)*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.0015625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) - 0.005*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1))*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2)) + 0.0625*np.pi*np.sin(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))**3 + 0.2*np.pi*np.cos(2.0*np.pi*t - 0.2*np.pi*(x1 + x2))/(gamma - 1) + 2*np.pi**2*kappa*(0.02*(0.1*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) - 1/gamma)*(np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))**2/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0))/(0.5*np.cos(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2)) + 1.0)**2 + 0.004*np.sin(np.pi*(-2.0*t + 0.2*x1 + 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0) + 0.004*np.sin(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2))/(0.5*np.cos(np.pi*(2.0*t - 0.2*x1 - 0.2*x2)) + 1.0)**2)/R
+
+		return -S_rho, -S_rhou, -S_rhov, -S_rhoE
 
 
 
@@ -251,30 +339,39 @@ class SIP(DiffNumFluxBase):
 	This class corresponds to the Symmetric Interior Penalty Method (SIP)
 	for the NavierStokes class.
 	'''
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, 
+		hL, hR, eta=50.):		
 
-		import code; code.interact(local=locals())
+		# Calculate jump condition
+		dU = UqL - UqR
+
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
-		# Left flux
-		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
-				n_hat)
+		# Tensor product of normal vector with jump
+		dUxn = np.einsum('ijk, ijl -> ijlk', n_hat, dU)
 
-		# Right flux
-		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
-				n_hat)
+		# Left State
+		gFloc2 = 0.5 * physics.get_diff_flux_interior(UqL, gUqL)
+		gFloc = physics.get_diff_flux_interior(UqL, dUxn)
 
-		# Jump
-		dUq = UqR - UqL
+		C4 = 0.5 * eta / hL
+		C5 = 0.5 * n_mag
 
-		# Max wave speeds at each point
-		aL = np.empty(pL.shape + (1,))
-		aR = np.empty(pR.shape + (1,))
-		aL[:, :, 0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
-		aR[:, :, 0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
-		idx = aR > aL
-		aL[idx] = aR[idx]
-		# Put together
-		return 0.5 * n_mag * (FqL + FqR - aL*dUq)
+		gFloc2 += -1. * np.einsum('i, ijkl -> ijkl', C4, gFloc)
+		gFL = np.einsum('ijv, ijkl -> ijkl', C5, gFloc)
+
+		# Right State
+		gFloc2 += 0.5 * physics.get_diff_flux_interior(UqR, gUqR)
+		gFloc = physics.get_diff_flux_interior(UqR, dUxn)
+		
+		C4 = 0.5 * eta / hR
+		C5 = 0.5 * n_mag
+
+		gFloc2 += -1. * np.einsum('i, ijkl -> ijkl', C4, gFloc)
+		gFR = np.einsum('ijv, ijkl -> ijkl', C5, gFloc)
+
+		Floc = np.einsum('ijl, ijkl -> ijk', normals, gFloc2)
+
+		return Floc, gFL, gFR
