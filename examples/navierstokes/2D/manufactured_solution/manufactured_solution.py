@@ -1,6 +1,8 @@
 TimeStepping = {
 	"FinalTime" : 0.5,
-	"NumTimeSteps" : 10,
+	#"NumTimeSteps" : 0,
+	# "CFL" : 0.001,
+	"TimeStepSize" : 0.00125,
 	"TimeStepper" : "SSPRK3",
 }
 
@@ -11,8 +13,13 @@ Numerics = {
 	"DiffFluxSwitch" : True,
 }
 
-num_elem_x = 1
-num_elem_y = 1
+nelem = 4 
+num_elem_x = nelem
+num_elem_y = nelem
+
+#Mesh = {
+#	"File" : "box_4.msh",
+#}
 Mesh = {
 	"ElementShape" : "Quadrilateral",
 	"NumElemsX" : num_elem_x,
@@ -29,6 +36,7 @@ Physics = {
 	"Type" : "NavierStokes",
 	"ConvFluxNumerical" : "Roe",
 	"DiffFluxNumerical" : "SIP",
+	"GasConstant" : 0.4,
 }
 
 InitialCondition = {
@@ -37,6 +45,21 @@ InitialCondition = {
 
 ExactSolution = InitialCondition.copy()
 
+#BoundaryConditions = {
+#        "y1" : {
+#                "BCType" : "SlipWall",
+#        },
+#        "y2" : {
+#                "BCType" : "SlipWall",
+#        },
+#        "x2" : {
+#                "BCType" : "SlipWall",
+#        },
+#        "x1" : {
+#                "BCType" : "SlipWall",
+#        }
+#}
+
 SourceTerms = {
 	"Source1" : { # Name of source term ("Source1") doesn't matter
 		"Function" : "ManufacturedSource",
@@ -44,5 +67,9 @@ SourceTerms = {
 }
 
 Output = {
+	"Prefix" : "Data",
+	"WriteInterval" : 100,
+	"WriteInitialSolution" : True,
+	"WriteFinalSolution" : True,
 	"AutoPostProcess" : True,
 }
