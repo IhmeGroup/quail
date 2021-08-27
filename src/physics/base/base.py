@@ -568,7 +568,8 @@ class PhysicsBase(ABC):
 
 		return Fnum
 
-	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals):
+	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals,
+			hL, hR, eta=50.):
 		'''
 		This method computes the diffusive numerical flux.
 
@@ -589,7 +590,7 @@ class PhysicsBase(ABC):
 			Fnum: numerical flux values[nf, nq, ns]
 		'''
 		Fnum = self.diff_flux_fcn.compute_flux(self, UqL, UqR, gUqL, gUqR,
-				normals)
+				normals, hL, hR, eta)
 
 		return Fnum
 
