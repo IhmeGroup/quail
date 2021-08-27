@@ -38,7 +38,6 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	# Calculate residual
 	res_elem = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad)
 			# [ne, nb, ns]
-
 	return res_elem # [ne, nb, ns]
 
 
@@ -64,6 +63,16 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	return resB # [nf, nb, ns]
 
+def calculate_flux_boundary_integral_sum(basis_ref_grad, quad_wts, gFq):
+	'''
+	'''
+	# Calculate flux quadrature
+	gFq_quad = np.einsum('ijkl, jm -> ijkl', gFq, quad_wts) # [nf, nq, ns]
+
+	# Calculate residual
+	resB = np.einsum('ijnl, ijkl -> ink', basis_ref_grad, gFq_quad)
+	# import code; code.interact(local=locals())
+	return resB
 
 def calculate_source_term_integral(elem_helpers, Sq):
 	'''
@@ -180,6 +189,16 @@ def interpolate_to_nodes(f, U):
 		U: array of values to be interpolated onto
 	'''
 	U[:, :, :] = f
+
+
+def get_ip_eta(mesh, order):
+	i = order
+
+	if i > 8:
+		i = 8;
+	etas = np.array([1., 4., 12., 12., 20., 30., 35., 45., 50.])
+
+	return etas[i] * mesh.gbasis.NFACES
 
 
 def update_progress(progress):
