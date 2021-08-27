@@ -277,14 +277,17 @@ class SSPRK3(StepperBase):
 		Time = solver.time
 		for istage in range(self.nstages):
 			dt = self.dt
-			solver.time = Time + dt
+			#HACK -> Need to confirm that this is the right thing to do!
+
 			res = solver.get_residual(U, res)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
+
+			solver.time = Time + dt
 			dU *= self.ssprk3a[istage]
 			dU += dUtemp
-
 			U += self.ssprk3b[istage]*dU
 			solver.apply_limiter(U)
+
 
 		return res # [num_elems, nb, ns]
 
