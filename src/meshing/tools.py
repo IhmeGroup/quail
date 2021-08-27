@@ -85,6 +85,22 @@ def element_volumes(mesh, solver=None):
 
     return vol_elems, domain_vol # [num_elems], [1]
 
+def get_face_lengths(djac_faces, quad_wts_face):
+    '''
+    Calculates the length of all the faces
+
+    Inputs:
+    -------
+        djac_faces: determinant of the jacobian for faces
+        quad_wts_face: quadrature weights on the faces
+
+    Outputs:
+    --------
+        face_lengths: length of faces [nf, 1]
+    '''
+    face_lengths = np.einsum('ik, kl -> il', djac_faces, quad_wts_face)
+
+    return face_lengths # [nf, 1]
 
 def get_element_centroid(mesh, elem_ID):
     '''
