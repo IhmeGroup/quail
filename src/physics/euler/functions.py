@@ -1263,7 +1263,15 @@ class Roe1D(ConvNumFluxBase):
 
 		# Eigenvalues
 		evals = self.get_eigenvalues(velRoe, c)
-
+		
+		# Entopy fix
+		eps = np.zeros_like(evals)
+		eps[:, :, :] = (1e-2 * c)
+		fix = np.argwhere(np.logical_and(evals < eps, evals > -eps))
+		fix_shape = fix[:, 0], fix[:, 1], fix[:, 2]
+		evals[fix_shape] = 0.5 * (eps[fix_shape] + evals[fix_shape]* \
+			evals[fix_shape] / eps[fix_shape])
+		
 		# Right eigenvector matrix
 		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 
