@@ -347,7 +347,8 @@ class SolverBase(ABC):
 			order = physics.get_quadrature_order(order)
 
 			quad_order = basis.get_quadrature_order(mesh, order)
-			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
+			quad_pts, quad_wts = basis.get_quadrature_data(quad_order+4) # HACK to compare to DGLegion P1
+			# quad_pts, quad_wts = basis.get_quadrature_data(quad_order) # HACK to compare to DGLegion P0 ( but also quails implementation)
 
 			eval_pts = quad_pts
 			nq = eval_pts.shape[0]
@@ -485,13 +486,16 @@ class SolverBase(ABC):
 		UR = U[elemR_IDs]
 
 		# Calculate face residuals for left and right elements
-		RL, RR = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
+		RL, RR, RL2, RR2 = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
 				UR)
 
 		# Add this residual back to the global. The np.add.at function is
 		# used to correctly handle duplicate element IDs.
 		np.add.at(res, elemL_IDs, -RL)
 		np.add.at(res, elemR_IDs,  RR)
+
+		np.add.at(res, elemL_IDs,  RL2)
+		np.add.at(res, elemR_IDs,  RR2)
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
