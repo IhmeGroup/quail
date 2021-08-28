@@ -317,7 +317,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh,
 				order, physics=physics)
 		self.quad_pts, self.quad_wts = \
-				basis.FACE_SHAPE.get_quadrature_data(quad_order)
+				basis.FACE_SHAPE.get_quadrature_data(quad_order+1)#HACK to compare to DGLegion
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -342,6 +342,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		'''
 		ndims = mesh.ndims
 		quad_pts = self.quad_pts
+		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		nfaces_per_elem = basis.NFACES
@@ -363,6 +364,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
 				ndims])
 
+		self.djac_faces = np.zeros([mesh.num_interior_faces, nq])
+
 		# Get values on each face (from both left and right perspectives) 
 		# for both the basis and the reference gradient of the basis
 		for face_ID in range(nfaces_per_elem):
@@ -377,7 +380,6 @@ class InteriorFaceHelpers(ElemHelpers):
 					get_val=True, get_ref_grad=True)
 			self.faces_to_basisR[face_ID] = basis.basis_val
 			self.faces_to_basis_ref_gradR[face_ID] = basis.basis_ref_grad
-
 		# Normals
 		i = 0
 		for interior_face in mesh.interior_faces:
@@ -410,8 +412,11 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.djacR_elems[i] = djacR
 			self.ijacR_elems[i] = ijacR
 
+			self.djac_faces[i] = np.linalg.norm(normals, axis=1)
 			i += 1
 
+		self.face_lengths = mesh_tools.get_face_lengths(self.djac_faces, quad_wts)
+		
 	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
@@ -513,6 +518,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.UqB = np.zeros(0)
 		self.Fq = np.zeros(0)
 		self.elem_IDs = []
+		self.face_IDs = []
 		self.face_IDs = []
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
@@ -686,7 +692,8 @@ class DG(base.SolverBase):
 		basis_val = elem_helpers.basis_val
 		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 		quad_wts = elem_helpers.quad_wts
-
+		djac_elems=elem_helpers.djac_elems
+		ijac_elems = elem_helpers.ijac_elems
 		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
 
@@ -709,7 +716,7 @@ class DG(base.SolverBase):
 		if self.params["DiffFluxSwitch"] == True:
 			# Evaluate the diffusion flux
 			Fq -= physics.get_diff_flux_interior(Uq, gUq)
-
+			
 		# Note: should this be renamed / always evaluated?
 		res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 				self, elem_helpers, Fq) # [ne, nb, ns]
@@ -733,6 +740,10 @@ class DG(base.SolverBase):
 		physics = self.physics
 
 		int_face_helpers = self.int_face_helpers
+		elem_helpers = self.elem_helpers
+		vol_elems = elem_helpers.vol_elems
+		face_lengths = int_face_helpers.face_lengths
+
 		quad_wts = int_face_helpers.quad_wts
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
@@ -758,7 +769,7 @@ class DG(base.SolverBase):
 			gUqL_ref = helpers.evaluate_gradient(UcL, 
 					faces_to_basis_ref_gradL[faceL_IDs])
 			gUqR_ref = helpers.evaluate_gradient(UcR, 
-					faces_to_basis_ref_gradR[faceR_IDs])
+					faces_to_basis_ref_gradR[faceR_IDs])[:, ::-1]
 
 			# Make gradient the physical gradient
 			gUqL = np.einsum('ijlp, ijkp -> ijkl', ijacL_elems, gUqL_ref)
@@ -775,10 +786,24 @@ class DG(base.SolverBase):
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq, ns]
 
+
 		if self.params["DiffFluxSwitch"] == True:
 			# Compute diff numerical flux
-			Fq += physics.get_diff_flux_numerical(UqL, UqR, gUqL, gUqR, 
-					normals_int_faces) # [nf, nq, ns]
+			# HACK!!! Not correct. Need to revisit face_lengths!
+			eta = solver_tools.get_ip_eta(mesh, self.order)
+
+			hL = vol_elems[int_face_helpers.elemL_IDs] / \
+					face_lengths[int_face_helpers.faceL_IDs, -1]
+			hR = vol_elems[int_face_helpers.elemR_IDs] / \
+					face_lengths[int_face_helpers.faceR_IDs, -1]
+
+			Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
+					gUqL, gUqR, normals_int_faces, hL, hR, eta) # [nf, nq, ns]
+			Fq -= Fq_diff
+
+			gFL_phys = np.einsum('ijlp, ijkp -> ijkl', ijacL_elems, gFL)
+			gFR_phys = np.einsum('ijlp, ijkp -> ijkl', ijacR_elems, gFR)
+
 
 		# Compute contribution to left and right element residuals
 		resL = solver_tools.calculate_inviscid_flux_boundary_integral(
@@ -786,7 +811,14 @@ class DG(base.SolverBase):
 		resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 				faces_to_basisR[faceR_IDs], quad_wts, Fq)
 
-		return resL, resR # [nif, nb, ns]
+		resL2 = solver_tools.calculate_flux_boundary_integral_sum(
+				faces_to_basis_ref_gradL[faceL_IDs], quad_wts, gFL_phys)
+
+		resR2 = solver_tools.calculate_flux_boundary_integral_sum(
+				faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, gFR_phys)
+
+
+		return resL, resR, resL2, resR2 # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		# unpack
