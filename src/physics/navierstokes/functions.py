@@ -24,7 +24,7 @@ class FcnType(Enum):
 	functions are specific to the available Euler equation sets.
 	'''
 	ManufacturedSolution = auto()
-
+	TaylorGreenVortexNS = auto()
 
 # class BCType(Enum):
 	'''
@@ -109,28 +109,45 @@ class ManufacturedSolution(FcnBase):
 
 		return Uq # [ne, nq, ns]
 
-# class TaylorGreenVortex(FcnBase):
-# 	'''
-# 	2D Taylor Green Vortex Case
-# 	'''
-# 	def __init__(self):
-# 		pass
-# 	def get_state(self, physics, x, t):
-# 		# Unpack
-# 		gamma = physics.gamma
+class TaylorGreenVortexNS(FcnBase):
+	'''
+	2D Taylor Green Vortex Case
+	'''
+	def __init__(self):
+		pass
+	def get_state(self, physics, x, t):
+		# Unpack
+		x1 = x[:, :, 0]
+		x2 = x[:, :, 1]
 		
-# 		irho, irhou, irhov, irhoE = physics.get_state_indices()
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
+		gamma = physics.gamma
 		
-# 		x = x[:, :, 0]
-# 		y = x[:, :, 1]
-		
-# 		u = np.cos(2.*np.pi * x)*np.sin(2.*np.pi * y)* \
-# 			np.exp((-8.*np.pi**2 / Re) * t)
-# 		v = -np.sin(2.*np.pi * x)*np.cos(2.*np.pi * y)* \
-# 			np.exp((-8.*np.pi**2 / Re) * t)
-# 		p = -0.25 * (np.cos(4.*np.pi * x) + np.cos(4.*np.pi * y))* \
-# 			np.exp((-16.*np.pi**2 / Re) * t)
+		irho, irhou, irhov, irhoE = physics.get_state_indices()	
+
+		Ma = 0.01
+		P0 = 1. / (gamma*Ma*Ma)
+		mu, _ = physics.get_transport(physics, Uq)
+
+		nu = mu/1. # Rho = 1
+
+		F = np.exp(-8. * np.pi*np.pi * nu * t)
+		P = P0 + 0.25 * (np.cos(4.*np.pi * x1) + \
+			np.cos(4.*np.pi * x2)) * F * F
+
+		''' Fill state '''
+		Uq[:, :, irho] = 1.0
+		Uq[:, :, irhou] = np.sin(2.*np.pi * x1) * \
+			np.cos(2.*np.pi * x2) * F
+		Uq[:, :, irhov] = -np.cos(2.*np.pi * x1) * \
+			np.sin(2.*np.pi * x2) * F
+		Uq[:, :, irhoE] = P / (gamma-1.) + 0.5 * \
+			(Uq[:, :, irhou]*Uq[:, :, irhou] +
+			Uq[:, :, irhov]*Uq[:, :, irhov]) / Uq[:, :, irho]
+
+
+		return Uq
 
 '''
 -------------------
@@ -172,12 +189,15 @@ class ManufacturedSource(SourceBase):
 		x2 = x[:, :, 1]
 
 		# Calculate viscosity
-		mu = physics.compute_variable("Viscosity", Uq,
-			flag_non_physical=True)
+		# mu = physics.compute_variable("Viscosity", Uq,
+		# 	flag_non_physical=True)
 
-		# Calculate thermal conductivity
-		kappa = physics.compute_variable("ThermalConductivity",
-			Uq, flag_non_physical=True)
+		# # Calculate thermal conductivity
+		# kappa = physics.compute_variable("ThermalConductivity",
+		# 	Uq, flag_non_physical=True)
+
+		mu, kappa = physics.get_transport(physics, Uq, 
+			flag_non_physical=False)
 
 		Sq = np.zeros_like(Uq)
 		Sq[:, :, irho], Sq[:, :, irhou], Sq[:, :, irhov], \

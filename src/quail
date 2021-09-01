@@ -28,6 +28,8 @@ import physics.navierstokes.navierstokes as navierstokes
 import physics.scalar.scalar as scalar
 import physics.chemistry.chemistry as chemistry
 
+import physics.navierstokes.tools as ns_tools
+
 import processing.readwritedatafiles as readwritedatafiles
 
 import solver.DG as DG
@@ -324,10 +326,12 @@ def driver(deck):
 
 	# Create physics object
 	physics = set_physics(mesh, physics_params["Type"])
-
+	# Add tranport if using NS
+	physics.get_transport = ns_tools.set_transport(physics_params["Transport"])
 	# Set parameters
 	pparams = physics_params.copy()
 	pparams.pop("Type") # don't pass this key
+	pparams.pop("Transport") # don't pass this key
 	conv_flux_type = pparams.pop("ConvFluxNumerical")
 	diff_flux_type = pparams.pop("DiffFluxNumerical")
 

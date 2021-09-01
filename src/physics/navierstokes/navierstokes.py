@@ -67,7 +67,7 @@ class NavierStokes(euler.Euler):
 		# })
 
 	def set_physical_params(self, GasConstant=287., SpecificHeatRatio=1.4, 
-			PrandtlNumber=0.7):
+			PrandtlNumber=0.7, Viscosity=1.0, s=1.0, T0=1.0, beta=1.5):
 		'''
 		This method sets physical parameters.
 
@@ -83,7 +83,10 @@ class NavierStokes(euler.Euler):
 		self.R = GasConstant
 		self.gamma = SpecificHeatRatio
 		self.Pr = PrandtlNumber
-
+		self.mu0 = Viscosity
+		self.s = s
+		self.T0 = T0
+		self.beta = beta
 
 	class AdditionalVariables(Enum):
 	    Pressure = "p"
@@ -128,25 +131,24 @@ class NavierStokes(euler.Euler):
 		def get_temperature():
 			return get_pressure()/(rho*R)
 
-		def get_viscosity():
-			'''
-			Compute viscosity from Sutherland's law (needs to get more
-			general in the future)
-			'''
-			# These current constants are for the manufactured solution
-			# in Dumbser's 2010 paper.
-			T = get_temperature()
-			mu0 = 0.1; s = 1.; T0 = 1.; beta = 1.5;
+		# def get_viscosity():
+		# 	'''
+		# 	Compute viscosity from Sutherland's law (needs to get more
+		# 	general in the future)
+		# 	'''
+		# 	# These current constants are for the manufactured solution
+		# 	# in Dumbser's 2010 paper.
+		# 	T = get_temperature()
+		# 	mu0 = 0.1; s = 1.; T0 = 1.; beta = 1.5;
+		# 	return mu0 * (T / T0)**beta * ((T0 + s) / (T + s))
 
-			return mu0 * (T / T0)**beta * ((T0 + s) / (T + s))
-
-		def get_thermalconductivity():
-			'''
-			Compute thermal conductivity
-			'''
-			mu = get_viscosity()
-			cv = 1./(gamma - 1) * R
-			return mu * cv * gamma / Pr
+		# def get_thermalconductivity():
+		# 	'''
+		# 	Compute thermal conductivity
+		# 	'''
+		# 	mu = get_viscosity()
+		# 	cv = 1./(gamma - 1) * R
+		# 	return mu * cv * gamma / Pr
 
 		''' Compute '''
 		vname = self.AdditionalVariables[var_name].name
@@ -155,10 +157,6 @@ class NavierStokes(euler.Euler):
 			varq = get_pressure()
 		elif vname is self.AdditionalVariables["Temperature"].name:
 			varq = get_temperature()
-		elif vname is self.AdditionalVariables["Viscosity"].name:
-			varq = get_viscosity()
-		elif vname is self.AdditionalVariables["ThermalConductivity"].name:
-			varq = get_thermalconductivity()
 		elif vname is self.AdditionalVariables["Entropy"].name:
 			varq = np.log(get_pressure()/rho**gamma)
 		elif vname is self.AdditionalVariables["InternalEnergy"].name:
@@ -231,6 +229,8 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 		d = {
 			navierstokes_fcn_type.ManufacturedSolution : 
 					navierstokes_fcns.ManufacturedSolution,
+			navierstokes_fcn_type.TaylorGreenVortexNS : 
+					navierstokes_fcns.TaylorGreenVortexNS,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -265,14 +265,12 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 			rhoE = Uq[:, :, irhoE] # [n, nq]
 			mom  = Uq[:, :, smom]  # [n, nq, ndims]
 
-			# Calculate viscosity
-			mu = self.compute_variable("Viscosity", Uq,
-				flag_non_physical=True).reshape(rho.shape)
+			# Calculate transport
+			mu, kappa = self.get_transport(self, Uq, 
+				flag_non_physical=False)
+			mu = mu.reshape(rho.shape)
+			kappa = kappa.reshape(rho.shape)
 			nu = mu / rho
-
-			# Calculate thermal conductivity
-			kappa = self.compute_variable("ThermalConductivity",
-				Uq, flag_non_physical=True).reshape(rho.shape)
 
 			gamma = self.gamma
 			R = self.R

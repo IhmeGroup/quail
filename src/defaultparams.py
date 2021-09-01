@@ -154,6 +154,9 @@ Physics = {
 	"Type" : "ConstAdvScalar",
 		# Physics type
 		# See general.PhysicsType
+	"Transport" : "NotNeeded",
+		# Physics transport properties
+		# See general.TransportType
 	"ConvFluxNumerical" : "LaxFriedrichs",
 		# Numerical convective flux
 		# See ConvNumFluxType in functions.py in the corresponding physics
