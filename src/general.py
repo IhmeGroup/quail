@@ -158,6 +158,19 @@ class PhysicsType(Enum):
 	MultispeciesPSR = auto()
 		# Model for PSR (with H2/Air chemistry)
 		
+		
+class TransportType(Enum):
+	'''
+	This enum contains the available transport types for Navier-Stokes.
+	see src/physics/navierstokes/tools.py for more information
+	'''
+	Constant = auto()
+		# Constant transport properties
+	Sutherland = auto()
+		# Transport properties defined using sutherland's law for viscosity
+	NotNeeded = auto()
+		# No transport properties required for physics class
+
 class ModalOrNodal(Enum):
 	'''
 	This enum contains flags indicating whether the basis functions are

@@ -4,6 +4,7 @@ import sys
 sys.path.append('../src')
 
 import physics.navierstokes.navierstokes as navierstokes
+import physics.navierstokes.tools as ns_tools
 import meshing.meshbase as meshbase
 
 rtol = 1e-15
@@ -17,6 +18,7 @@ def test_diffusion_flux_2D():
 	mesh = meshbase.Mesh(ndims=2)
 	physics = navierstokes.NavierStokes2D(mesh)
 	physics.set_physical_params()
+	physics.get_transport = ns_tools.set_transport("Sutherland")
 
 	ns = physics.NUM_STATE_VARS
 
@@ -37,14 +39,9 @@ def test_diffusion_flux_2D():
 	Uq[:, :, irhov] = rho * v
 	Uq[:, :, irhoE] = rhoE
 
-	# Calculate viscosity
-	mu = physics.compute_variable("Viscosity", Uq,
-		flag_non_physical=True)[0, 0, 0]
+	# Calculate viscosity and thermal conductivity
+	mu, kappa = physics.get_transport(physics, Uq)
 	nu = mu / rho
-
-	# Calculate thermal conductivity
-	kappa = physics.compute_variable("ThermalConductivity",
-		Uq, flag_non_physical=True)[0, 0, 0]
 
 	# Get temperature
 	T = physics.compute_variable("Temperature", Uq, 
@@ -102,6 +99,7 @@ def test_diffusion_flux_2D_zero_velocity():
 	mesh = meshbase.Mesh(ndims=2)
 	physics = navierstokes.NavierStokes2D(mesh)
 	physics.set_physical_params()
+	physics.get_transport = ns_tools.set_transport("Sutherland")
 
 	ns = physics.NUM_STATE_VARS
 
@@ -122,13 +120,11 @@ def test_diffusion_flux_2D_zero_velocity():
 	Uq[:, :, irhoE] = rhoE
 
 	# Calculate viscosity
-	mu = physics.compute_variable("Viscosity", Uq,
-		flag_non_physical=True)[0, 0, 0]
-	nu = mu / rho
+	mu, kappa = physics.get_transport(physics, Uq)
+	mu = mu[0,0,0]
+	kappa = kappa[0,0,0]
 
-	# Calculate thermal conductivity
-	kappa = physics.compute_variable("ThermalConductivity",
-		Uq, flag_non_physical=True)[0, 0, 0]
+	nu = mu / rho
 
 	# Get temperature
 	T = physics.compute_variable("Temperature", Uq, 
