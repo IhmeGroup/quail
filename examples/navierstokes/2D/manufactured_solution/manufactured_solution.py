@@ -37,6 +37,7 @@ Physics = {
 	"ConvFluxNumerical" : "Roe",
 	"DiffFluxNumerical" : "SIP",
 	"GasConstant" : 0.4,
+	"Transport" : "Sutherland",
 }
 
 InitialCondition = {
