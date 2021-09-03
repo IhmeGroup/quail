@@ -514,6 +514,8 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.faces_to_xref = np.zeros(0)
 		self.normals_bgroups = []
 		self.x_bgroups = []
+		self.ijac_bgroups = []
+		self.face_lengths_bgroups = []
 		self.UqI = np.zeros(0)
 		self.UqB = np.zeros(0)
 		self.Fq = np.zeros(0)
@@ -545,6 +547,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		'''
 		ndims = mesh.ndims
 		quad_pts = self.quad_pts
+		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
 		nb = basis.nb
 		nfaces_per_elem = basis.NFACES
@@ -552,14 +555,16 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		# Allocate
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.NDIMS])
-
+		self.faces_to_basis_ref_grad = np.zeros([nfaces_per_elem,
+				nq, nb, ndims])
 		# Get values on each face (from interior perspective)
 		for face_ID in range(nfaces_per_elem):
 			self.faces_to_xref[face_ID] = basis.get_elem_ref_from_face_ref(
 					face_ID, quad_pts)
 			basis.get_basis_face_val_grads(mesh, face_ID, quad_pts,
-					get_val=True)
+					get_val=True, get_ref_grad=True)
 			self.faces_to_basis[face_ID] = basis.basis_val
+			self.faces_to_basis_ref_grad[face_ID] = basis.basis_ref_grad
 
 		# Get boundary information
 		i = 0
@@ -568,8 +573,15 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 					nq, ndims]))
 			self.x_bgroups.append(np.zeros([bgroup.num_boundary_faces,
 					nq, ndims]))
+			self.ijac_bgroups.append(np.zeros([bgroup.num_boundary_faces,
+					nq, ndims, ndims]))
+			self.face_lengths_bgroups.append(np.zeros([
+					bgroup.num_boundary_faces, 1]))
+
 			normal_bgroup = self.normals_bgroups[i]
 			x_bgroup = self.x_bgroups[i]
+			ijac_bgroup = self.ijac_bgroups[i]
+			face_lengths_bgroup = self.face_lengths_bgroups[i]
 
 			j = 0
 			for boundary_face in bgroup.boundary_faces:
@@ -577,7 +589,17 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 				normals = mesh.gbasis.calculate_normals(mesh,
 						boundary_face.elem_ID,
 						boundary_face.face_ID, quad_pts)
+				elem_pts = basis.get_elem_ref_from_face_ref(
+						boundary_face.face_ID, quad_pts)
+				djac, jac, ijac = basis_tools.element_jacobian(mesh, 
+					boundary_face.elem_ID, elem_pts, get_djac=True,
+					get_jac=True, get_ijac=True)
+
 				normal_bgroup[j] = normals
+				ijac_bgroup[j] = ijac
+				djac_faces = np.linalg.norm(normals, axis=1)
+				face_lengths_bgroup[j] = mesh_tools.get_face_lengths(
+						djac_faces.reshape([1, nq]), quad_wts)
 
 				# Physical coordinates of quadrature points
 				x = mesh_tools.ref_to_phys(mesh, boundary_face.elem_ID,
@@ -588,6 +610,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 				# Increment
 				j += 1
 			i += 1
+
 
 	def alloc_other_arrays(self, physics, basis, order):
 		quad_pts = self.quad_pts
@@ -793,9 +816,9 @@ class DG(base.SolverBase):
 			eta = solver_tools.get_ip_eta(mesh, self.order)
 
 			hL = vol_elems[int_face_helpers.elemL_IDs] / \
-					face_lengths[int_face_helpers.faceL_IDs, -1]
+					face_lengths[int_face_helpers.elemL_IDs, -1]
 			hR = vol_elems[int_face_helpers.elemR_IDs] / \
-					face_lengths[int_face_helpers.faceR_IDs, -1]
+					face_lengths[int_face_helpers.elemR_IDs, -1]
 
 			Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
 					gUqL, gUqR, normals_int_faces, hL, hR, eta) # [nf, nq, ns]
@@ -827,27 +850,58 @@ class DG(base.SolverBase):
 		bgroup_num = bgroup.number
 
 		bface_helpers = self.bface_helpers
+		elem_helpers = self.elem_helpers
+
 		quad_wts = bface_helpers.quad_wts
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
+		ijac_bgroups = bface_helpers.ijac_bgroups
+		face_lengths_bgroups = bface_helpers.face_lengths_bgroups
 
 		basis_val = bface_helpers.faces_to_basis[face_IDs] # [nbf, nq, nb]
+		basis_ref_grad = bface_helpers.faces_to_basis_ref_grad[face_IDs] 
+
+		vol_elems = elem_helpers.vol_elems
 
 		# Interpolate state at quad points
 		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
 
 		normals = normals_bgroups[bgroup_num] # [nbf, nq, ndims]
 		x = x_bgroups[bgroup_num] # [nbf, nq, ndims]
+		ijac = ijac_bgroups[bgroup_num]
+		face_lengths = face_lengths_bgroups[bgroup_num]
+		elem_IDs = bface_helpers.elem_IDs[bgroup_num]
+
 		BC = physics.BCs[bgroup.name]
 
 		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val)
 
+		if self.params["DiffFluxSwitch"] == True:
+			# Interpolate gradient of state at quad points
+			gUq_ref = helpers.evaluate_gradient(Uc, 
+					basis_ref_grad)
+
+			eta = solver_tools.get_ip_eta(mesh, self.order)
+
+			# HACK: Maybe an issue. Need to check that this works when
+			# boundary faces arnt all the same length in a given group
+			h = vol_elems[elem_IDs] / face_lengths[-1]
+
+			# Make gradient the physical gradient
+			gUq = np.einsum('ijlp, ijkp -> ijkl', ijac, gUq_ref)
+
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute boundary flux
-			Fq = BC.get_boundary_flux(physics, UqI, normals, x, self.time)
+			Fq, gFq = BC.get_boundary_flux(physics, UqI, gUq, normals, x, self.time, h, eta)
+			gFq_phys = np.einsum('ijlp, ijkp -> ijkl', ijac, gFq)
+
 			# Compute contribution to adjacent element residual
 			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)
+
+			resB -= solver_tools.calculate_flux_boundary_integral_sum(
+				basis_ref_grad, quad_wts, gFq_phys)
+
 
 		return resB
