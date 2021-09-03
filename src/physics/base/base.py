@@ -588,11 +588,42 @@ class PhysicsBase(ABC):
 		Outputs:
 		--------
 			Fnum: numerical flux values[nf, nq, ns]
+			gFL: numerical gradient of flux values at left state
+				[nf, nq, ns, ndims]
+			gFR: numerical gradient of flux values at right state
+				[nf, nq, ns, ndims]
 		'''
-		Fnum = self.diff_flux_fcn.compute_flux(self, UqL, UqR, gUqL, gUqR,
-				normals, hL, hR, eta)
+		Fnum, gFL, gFR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
+				gUqL, gUqR, normals, hL, hR, eta)
 
-		return Fnum
+		return Fnum, gFL, gFR # [nf, nq, ns], [nf, nq, ns, ndim], 
+				# [nf, nq, ns, ndim]
+	def get_diff_boundary_flux_numerical(self, UqI, UqB, gUq, normals,
+			h, eta=50.):
+		'''
+		This method computes the diffusive numerical flux at a boundary state.
+
+		Inputs:
+		-------
+			UqI: interior values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			UqB: boundary values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			gUq: interior values of the gradient of the state variables
+				(typically at the quadrature points) [nf, nq, ns, ndims]
+			normals: directions from left to right [nf, nq, ndims]
+		
+		Outputs:
+		--------
+			Fnum: numerical flux values[nf, nq, ns]
+			gF: numerical gradient of flux values at boundary state
+				[nf, nq, ns, ndims]
+		'''
+		Fnum, gF = self.diff_flux_fcn.compute_boundary_flux(self, UqI, UqB, gUq,
+				normals, h, eta)
+
+		return Fnum, gF # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
+
 
 	def eval_source_terms(self, Uq, xphys, time, Sq):
 		'''
