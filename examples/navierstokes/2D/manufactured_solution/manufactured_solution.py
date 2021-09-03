@@ -10,7 +10,6 @@ Numerics = {
 	"Solver" : "DG",
 	"SolutionOrder" : 1,
 	"SolutionBasis" : "LagrangeQuad",
-	"DiffFluxSwitch" : True,
 }
 
  
