@@ -23,8 +23,9 @@ class FcnType(Enum):
 	conditions, exact solutions, and/or boundary conditions. These
 	functions are specific to the available Euler equation sets.
 	'''
-	ManufacturedSolution = auto()
+	ManufacturedSolutionPeriodic = auto()
 	TaylorGreenVortexNS = auto()
+	ManufacturedSolution = auto()
 
 # class BCType(Enum):
 	'''
@@ -40,8 +41,8 @@ class SourceType(Enum):
 	Enum class that stores the types of source terms. These
 	source terms are specific to the available Euler equation sets.
 	'''
+	ManufacturedSourcePeriodic = auto()
 	ManufacturedSource = auto()
-
 
 # class ConvNumFluxType(Enum):
 	'''
@@ -69,7 +70,7 @@ corresponding child classes can be found below. These classes should
 correspond to the FcnType enum members above.
 '''
 
-class ManufacturedSolution(FcnBase):
+class ManufacturedSolutionPeriodic(FcnBase):
 	'''
 	Manufactured solution to the Navier-Stokes equations used for 
 	verifying the order of accuracy of a given scheme.
@@ -106,6 +107,51 @@ class ManufacturedSolution(FcnBase):
 		Uq[:, :, irhou] = rho*u
 		Uq[:, :, irhov] = rho*v
 		Uq[:, :, irhoE] = rho*E
+
+		return Uq # [ne, nq, ns]
+
+class ManufacturedSolution(FcnBase):
+	'''
+	Manufactured solution to the Navier-Stokes equations used for 
+	verifying the order of accuracy of a given scheme.
+
+	Script to generate sources is located in examples/navierstokes/
+	2D/manufacturedNS2D
+	'''
+	def __init__(self):
+		pass
+	def get_state(self, physics, x, t):
+		# Unpack
+		gamma = physics.gamma
+		
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+
+    		# define the constants for the various params
+		# rhob, rho0, u0, v0, pb, p0, k, om = 1.0, 0.5, 0.25, \
+		# 	0.25, 1/gamma, 0.1, 2.0*np.pi/10.0, 2.0*np.pi		
+		
+		x1 = x[:, :, 0]
+		x2 = x[:, :, 1]
+
+		# rho = rhob + rho0 * np.cos(k * (x1 + x2) - om * t)
+		# u = u0 * np.sin(k * (x1 + x2) - om * t)
+		# v = v0 * np.sin(k * (x1 + x2) - om * t)
+		# p = pb + p0 * np.sin(k * (x1 + x2) - om * t)
+
+		# E = p/(rho*(gamma - 1.)) + 0.5*(u**2. + v**2.)
+
+		''' Fill state '''
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		# Generated initial condition from 
+
+		Uq[:, :, irho] = 0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0
+
+		Uq[:, :, irhou] = (0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0)
+
+		Uq[:, :, irhov] = (0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0)
+
+		Uq[:, :, irhoE] = (4.0*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1)**2 + 4.0*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1)**2)*(0.05*np.sin(np.pi*x1) + 0.05*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.1*np.cos(np.pi*x2) + 0.5) + (1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0)/(gamma - 1)
 
 		return Uq # [ne, nq, ns]
 
@@ -146,7 +192,6 @@ class TaylorGreenVortexNS(FcnBase):
 			(Uq[:, :, irhou]*Uq[:, :, irhou] +
 			Uq[:, :, irhov]*Uq[:, :, irhov]) / Uq[:, :, irho]
 
-
 		return Uq
 
 '''
@@ -171,7 +216,7 @@ comments of attributes and methods. Information specific to the
 corresponding child classes can be found below. These classes should
 correspond to the SourceType enum members above.
 '''
-class ManufacturedSource(SourceBase):
+class ManufacturedSourcePeriodic(SourceBase):
 	'''
 	Generated source term for the manufactured solution of the 
 	Navier-Stokes equations. Generated using script in 
@@ -341,6 +386,61 @@ class ManufacturedSource(SourceBase):
 
 		return -S_rho, -S_rhou, -S_rhov, -S_rhoE
 
+class ManufacturedSource(SourceBase):
+	'''
+	Generated source term for the manufactured solution of the 
+	Navier-Stokes equations. Generated using script in 
+	examples/navierstokes/2D/manufactured_solution. Exact solution can 
+	be found in the following paper.
+		[1] Dumbser, M. (2010)
+	'''
+	def get_source(self, physics, Uq, x, t):
+		# Unpack
+		gamma = physics.gamma
+		R = physics.R
+
+		irho, irhou, irhov, irhoE = physics.get_state_indices()
+		x1 = x[:, :, 0]
+		x2 = x[:, :, 1]
+
+		mu, kappa = physics.get_transport(physics, Uq, 
+			flag_non_physical=False)
+		# import code; code.interact(local=locals())
+		Sq = np.zeros_like(Uq)
+		Sq[:, :, irho], Sq[:, :, irhou], Sq[:, :, irhov], \
+			Sq[:, :, irhoE] = self.manufactured_source(x1, x2, 
+			t, gamma, kappa, 
+			mu, R)
+
+		
+		return Sq # [ne, nq, ns]
+
+	def manufactured_source(self, x1, x2, t, gamma, kappa, mu, R):
+	
+		
+		#----------------------------
+		# # Exactly kihiro's style of implementation (but opposite sign) [most correct so far...]
+		S_rho = (-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.9*np.pi*np.cos(3*np.pi*x1))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) + (-0.1*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.1*np.pi*np.cos(np.pi*x1))*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0) + (-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.3*np.pi*np.cos(np.pi*x2))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) + (-0.1*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.2*np.pi*np.sin(np.pi*x2))*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0)
+
+		S_rhou = -mu*(-0.2*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 3.6*np.pi**2*np.sin(3*np.pi*x1) - 0.4*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2)) - mu*(0.3*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x2)) + 4.0*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.9*np.pi*np.cos(3*np.pi*x1))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1) + 4.0*(-0.1*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.1*np.pi*np.cos(np.pi*x1))*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1)**2 + (-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0) + (-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.3*np.pi*np.cos(np.pi*x2))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0) + (-0.1*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.2*np.pi*np.sin(np.pi*x2))*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0)*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0) - 0.5*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 2.0*np.pi*np.sin(2*np.pi*x1)
+
+		S_rhov = -mu*(-0.2*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 0.4*np.pi**2*np.sin(np.pi*x2) - 0.4*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2)) - mu*(0.3*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x1)) + (-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi*np.sin(np.pi*x1))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0) + (-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.9*np.pi*np.cos(3*np.pi*x1))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0) + (-0.1*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.1*np.pi*np.cos(np.pi*x1))*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0)*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0) + 4.0*(-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.3*np.pi*np.cos(np.pi*x2))*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1) + 4.0*(-0.1*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.2*np.pi*np.sin(np.pi*x2))*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1)**2 - 0.5*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 1.0*np.pi*np.cos(np.pi*x2)
+
+		S_rhoE = -mu*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi*np.sin(np.pi*x1))*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi*np.sin(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2)) - mu*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.9*np.pi*np.cos(3*np.pi*x1))*(-0.4*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.2*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 1.2*np.pi*np.cos(3*np.pi*x1) - 0.2*np.pi*np.cos(np.pi*x2)) - mu*(-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2))*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi*np.sin(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2)) - mu*(-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.3*np.pi*np.cos(np.pi*x2))*(0.2*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 0.4*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 0.6*np.pi*np.cos(3*np.pi*x1) + 0.4*np.pi*np.cos(np.pi*x2)) - mu*(-0.2*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 3.6*np.pi**2*np.sin(3*np.pi*x1) - 0.4*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2))*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0) - mu*(-0.2*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 0.4*np.pi**2*np.sin(np.pi*x2) - 0.4*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2))*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0) - mu*(0.3*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x1))*(0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0) - mu*(0.3*np.pi**2*np.sin(np.pi*x1)*np.sin(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi**2*np.cos(np.pi*x2))*(0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0) + (-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.9*np.pi*np.cos(3*np.pi*x1))*((4.0*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1)**2 + 4.0*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1)**2)*(0.05*np.sin(np.pi*x1) + 0.05*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.1*np.cos(np.pi*x2) + 0.5) + 1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0 + (1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0)/(gamma - 1)) + (-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.3*np.pi*np.cos(np.pi*x2))*((4.0*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1)**2 + 4.0*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1)**2)*(0.05*np.sin(np.pi*x1) + 0.05*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.1*np.cos(np.pi*x2) + 0.5) + 1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0 + (1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0)/(gamma - 1)) + (0.3*np.sin(3*np.pi*x1) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x2) + 2.0)*((4.0*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 0.3*np.pi*np.sin(np.pi*x1))*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1) + 4.0*(-0.3*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.9*np.pi*np.cos(3*np.pi*x1))*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1))*(0.05*np.sin(np.pi*x1) + 0.05*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.1*np.cos(np.pi*x2) + 0.5) + (-0.05*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 0.05*np.pi*np.cos(np.pi*x1))*(4.0*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1)**2 + 4.0*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1)**2) - 0.5*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 2.0*np.pi*np.sin(2*np.pi*x1) + (-0.5*np.pi*np.sin(np.pi*x1)*np.cos(np.pi*x2) - 2.0*np.pi*np.sin(2*np.pi*x1))/(gamma - 1)) + (0.3*np.sin(np.pi*x2) + 0.3*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.3*np.cos(np.pi*x1) + 2.0)*((4.0*(-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 0.3*np.pi*np.sin(np.pi*x2))*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1) + 4.0*(-0.3*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.3*np.pi*np.cos(np.pi*x2))*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1))*(0.05*np.sin(np.pi*x1) + 0.05*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.1*np.cos(np.pi*x2) + 0.5) + (-0.05*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 0.1*np.pi*np.sin(np.pi*x2))*(4.0*(0.15*np.sin(3*np.pi*x1) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x2) + 1)**2 + 4.0*(0.15*np.sin(np.pi*x2) + 0.15*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 0.15*np.cos(np.pi*x1) + 1)**2) - 0.5*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 1.0*np.pi*np.cos(np.pi*x2) + (-0.5*np.pi*np.sin(np.pi*x2)*np.cos(np.pi*x1) + 1.0*np.pi*np.cos(np.pi*x2))/(gamma - 1)) - np.pi**2*kappa*(-0.2*(0.5*np.sin(np.pi*x1)*np.cos(np.pi*x2) + 2.0*np.sin(2*np.pi*x1))*(np.sin(np.pi*x1)*np.cos(np.pi*x2) - np.cos(np.pi*x1))/(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) + (0.02*(np.sin(np.pi*x1)*np.cos(np.pi*x2) - np.cos(np.pi*x1))**2/(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) + 0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2))*(1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0)/(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) - 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 4.0*np.cos(2*np.pi*x1))/(R*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0)) - np.pi**2*kappa*(-2*(0.5*np.sin(np.pi*x2)*np.cos(np.pi*x1) - 1.0*np.cos(np.pi*x2))*(0.1*np.cos(np.pi*x1) - 0.2)*np.sin(np.pi*x2)/(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) + ((0.2*np.cos(np.pi*x1) - 0.4)*np.sin(np.pi*x2)**2/(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) + np.cos(np.pi*x2))*(0.1*np.cos(np.pi*x1) - 0.2)*(1.0*np.sin(np.pi*x2) + 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2) + 1.0*np.cos(2*np.pi*x1) + 10.0)/(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0) - 1.0*np.sin(np.pi*x2) - 0.5*np.cos(np.pi*x1)*np.cos(np.pi*x2))/(R*(0.1*np.sin(np.pi*x1) + 0.1*np.cos(np.pi*x1)*np.cos(np.pi*x2) - 0.2*np.cos(np.pi*x2) + 1.0))
+
+		
+		return S_rho, S_rhou, S_rhov, S_rhoE
+
+'''
+-------------------
+Boundary conditions
+-------------------
+These classes inherit from either the BCWeakRiemann or BCWeakPrescribed
+classes. See those parent classes for detailed comments of attributes
+and methods. Information specific to the corresponding child classes can be
+found below. These classes should correspond to the BCType enum members
+above.
+'''
 
 
 
@@ -395,3 +495,32 @@ class SIP(DiffNumFluxBase):
 		Floc = np.einsum('ijl, ijkl -> ijk', normals, gFloc2)
 
 		return Floc, gFL, gFR
+
+	def compute_boundary_flux(self, physics, UqI, UqB, gUq, normals, 
+		h, eta=50.):		
+
+		# Calculate jump condition
+		dU = UqI - UqB
+
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+
+		# Tensor product of normal vector with jump
+		dUxn = np.einsum('ijk, ijl -> ijlk', n_hat, dU)
+
+		# Boundary State
+		gFloc2 = physics.get_diff_flux_interior(UqB, gUq)
+
+		# Right State
+		gFloc = physics.get_diff_flux_interior(UqB, dUxn)
+
+		C4 = - eta / h
+		C5 = n_mag
+
+		gFloc2 += np.einsum('i, ijkl -> ijkl', C4, gFloc)
+		gF = np.einsum('ijv, ijkl -> ijkl', C5, gFloc)
+
+		Floc = np.einsum('ijl, ijkl -> ijk', normals, gFloc2)
+
+		return Floc, gF
