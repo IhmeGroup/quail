@@ -102,11 +102,15 @@ class BCWeakRiemann(BCBase):
 	This class computes the boundary flux via the numerical flux, which
 	depends on the interior and exterior states, i.e. Fnum(UqI, UqB, n).
 	'''
-	def get_boundary_flux(self, physics, UqI, normals, x, t):
+	def get_boundary_flux(self, physics, UqI, gUq, normals, x, t, h, eta):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
 		F = physics.get_conv_flux_numerical(UqI, UqB, normals)
+			
+		Fv, gFv = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
+				gUq, normals, h, eta) # [nf, nq, ns]
+		F -= Fv
 
-		return F
+		return F, gFv
 
 
 class BCWeakPrescribed(BCBase):
@@ -123,6 +127,7 @@ class BCWeakPrescribed(BCBase):
 		F,_ = physics.get_conv_flux_projected(UqB, normals)
 
 		return F
+
 
 
 class SourceBase(ABC):
