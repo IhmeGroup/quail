@@ -12,7 +12,6 @@ Numerics = {
 	"Solver" : "DG",
 	"SolutionOrder" : 3,
 	"SolutionBasis" : "LagrangeQuad",
-	"DiffFluxSwitch" : True,
 }
 
 nelem = 64 
