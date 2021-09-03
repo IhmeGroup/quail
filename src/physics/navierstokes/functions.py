@@ -16,7 +16,6 @@ import general
 from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
         SourceBase, ConvNumFluxBase, DiffNumFluxBase)
 
-
 class FcnType(Enum):
 	'''
 	Enum class that stores the types of analytic functions for initial
@@ -459,9 +458,53 @@ class SIP(DiffNumFluxBase):
 	This class corresponds to the Symmetric Interior Penalty Method (SIP)
 	for the NavierStokes class.
 	'''
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, 
-		hL, hR, eta=50.):		
+	def compute_iface_helpers(self, solver):
+		# Unpack
+		elem_helpers = solver.elem_helpers
+		int_face_helpers = solver.int_face_helpers
 
+		face_lengths = int_face_helpers.face_lengths
+		vol_elems = elem_helpers.vol_elems
+
+		# Calculate the penalty term
+		self.eta = self.get_ip_eta(solver.mesh, solver.order)
+
+		# Calculate ratio of volume/area for each L/R face
+		self.hL = vol_elems[int_face_helpers.elemL_IDs] / \
+				face_lengths[int_face_helpers.elemL_IDs, -1]
+		self.hR = vol_elems[int_face_helpers.elemR_IDs] / \
+				face_lengths[int_face_helpers.elemR_IDs, -1]
+
+	def compute_bface_helpers(self, solver, bgroup_num):
+		# Unpack
+		bface_helpers = solver.bface_helpers
+		elem_helpers = solver.elem_helpers
+		elem_IDs = bface_helpers.elem_IDs[bgroup_num]
+
+		vol_elems = elem_helpers.vol_elems
+		face_lengths_bgroups = bface_helpers.face_lengths_bgroups
+		face_lengths = face_lengths_bgroups[bgroup_num]
+
+		# Calculate the penalty term
+		self.eta = self.get_ip_eta(solver.mesh, solver.order)
+
+		# HACK: Maybe an issue. Need to check that this works when
+		# boundary faces arnt all the same length in a given group
+		self.h = vol_elems[elem_IDs] / face_lengths[-1]
+
+	def get_ip_eta(self, mesh, order):
+		i = order
+		if i > 8:
+			i = 8;
+		etas = np.array([1., 4., 12., 12., 20., 30., 35., 45., 50.])
+
+		return etas[i] * mesh.gbasis.NFACES
+
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals):		
+		#Unpack
+		hL = self.hL
+		hR = self.hR
+		eta = self.eta
 		# Calculate jump condition
 		dU = UqL - UqR
 
@@ -496,9 +539,10 @@ class SIP(DiffNumFluxBase):
 
 		return Floc, gFL, gFR
 
-	def compute_boundary_flux(self, physics, UqI, UqB, gUq, normals, 
-		h, eta=50.):		
-
+	def compute_boundary_flux(self, physics, UqI, UqB, gUq, normals):		
+		#Unpack
+		h = self.h
+		eta = self.eta
 		# Calculate jump condition
 		dU = UqI - UqB
 
