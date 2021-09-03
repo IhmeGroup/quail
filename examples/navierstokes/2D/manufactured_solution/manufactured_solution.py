@@ -13,9 +13,9 @@ Numerics = {
 	"DiffFluxSwitch" : True,
 }
 
-nelem = 4 
-num_elem_x = nelem
-num_elem_y = nelem
+ 
+num_elem_x = 4
+num_elem_y = 4
 
 #Mesh = {
 #	"File" : "box_4.msh",
@@ -41,7 +41,7 @@ Physics = {
 }
 
 InitialCondition = {
-	"Function" : "ManufacturedSolution",
+	"Function" : "ManufacturedSolutionPeriodic",
 }
 
 ExactSolution = InitialCondition.copy()
@@ -63,7 +63,7 @@ ExactSolution = InitialCondition.copy()
 
 SourceTerms = {
 	"Source1" : { # Name of source term ("Source1") doesn't matter
-		"Function" : "ManufacturedSource",
+		"Function" : "ManufacturedSourcePeriodic",
 	},
 }
 
