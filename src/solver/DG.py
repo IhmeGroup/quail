@@ -319,6 +319,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.quad_pts, self.quad_wts = \
 				basis.FACE_SHAPE.get_quadrature_data(quad_order+1)#HACK to compare to DGLegion
 
+				# basis.FACE_SHAPE.get_quadrature_data(quad_order)
+
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
 		Precomputes the basis and geometric data for each interior face
@@ -682,10 +684,14 @@ class DG(base.SolverBase):
 				self.int_face_helpers.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
-		physics.diff_flux_fcn.alloc_helpers(
-				np.zeros([mesh.num_interior_faces,
-				self.int_face_helpers.quad_wts.shape[0],
-				physics.NUM_STATE_VARS]))
+		if physics.diff_flux_fcn:
+			physics.diff_flux_fcn.alloc_helpers(
+					np.zeros([mesh.num_interior_faces,
+					self.int_face_helpers.quad_wts.shape[0],
+					physics.NUM_STATE_VARS]))
+
+		# Construct the necessary functions dependent upon required physics
+		solver_tools.set_function_definitions(self, params)
 
 		# Initial condition
 		if params["RestartFile"] is None:
@@ -725,8 +731,7 @@ class DG(base.SolverBase):
 				skip_interp=self.basis.skip_interp) # [ne, nq, ns]
 		
 		# Interpolate gradient of state at quad points
-		if self.params["DiffFluxSwitch"] == True:
-			gUq = helpers.evaluate_gradient(Uc, basis_phys_grad_elems)
+		gUq = self.evaluate_gradient(Uc, basis_phys_grad_elems)
 
 		if self.verbose:
 			# Get min and max of state variables for reporting
@@ -736,7 +741,7 @@ class DG(base.SolverBase):
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
 
-		if self.params["DiffFluxSwitch"] == True:
+		if physics.diff_flux_fcn:
 			# Evaluate the diffusion flux
 			Fq -= physics.get_diff_flux_interior(Uq, gUq)
 			
@@ -787,16 +792,15 @@ class DG(base.SolverBase):
 		UqR = helpers.evaluate_state(UcR, faces_to_basisR[faceR_IDs])
 				# [nf, nq, ns]
 
-		if self.params["DiffFluxSwitch"] == True:
-			# Interpolate gradient of state at quad points
-			gUqL_ref = helpers.evaluate_gradient(UcL, 
-					faces_to_basis_ref_gradL[faceL_IDs])
-			gUqR_ref = helpers.evaluate_gradient(UcR, 
-					faces_to_basis_ref_gradR[faceR_IDs])[:, ::-1]
+		# Interpolate gradient of state at quad points
+		gUqL_ref = self.evaluate_gradient(UcL, 
+				faces_to_basis_ref_gradL[faceL_IDs])
+		gUqR_ref = self.evaluate_gradient(UcR, 
+				faces_to_basis_ref_gradR[faceR_IDs][:, ::-1])
 
-			# Make gradient the physical gradient
-			gUqL = np.einsum('ijlp, ijkp -> ijkl', ijacL_elems, gUqL_ref)
-			gUqR = np.einsum('ijlp, ijkp -> ijkl', ijacR_elems, gUqR_ref)
+		# Make gradient the physical gradient at L/R states
+		gUqL = self.ref_to_phys_grad(ijacL_elems, gUqL_ref)
+		gUqR = self.ref_to_phys_grad(ijacR_elems, gUqR_ref)
 
 		# Allocate resL and resR (needed for operator splitting)
 		nifL = self.int_face_helpers.elemL_IDs.shape[0]
@@ -808,25 +812,18 @@ class DG(base.SolverBase):
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq, ns]
+		
+		if physics.diff_flux_fcn:
+			# Calculate diffusion flux helpers
+			physics.diff_flux_fcn.compute_iface_helpers(self)
 
+		# Compute diffusion flux
+		Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
+				gUqL, gUqR, normals_int_faces) # [nf, nq, ns]
+		Fq -= Fq_diff
 
-		if self.params["DiffFluxSwitch"] == True:
-			# Compute diff numerical flux
-			# HACK!!! Not correct. Need to revisit face_lengths!
-			eta = solver_tools.get_ip_eta(mesh, self.order)
-
-			hL = vol_elems[int_face_helpers.elemL_IDs] / \
-					face_lengths[int_face_helpers.elemL_IDs, -1]
-			hR = vol_elems[int_face_helpers.elemR_IDs] / \
-					face_lengths[int_face_helpers.elemR_IDs, -1]
-
-			Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
-					gUqL, gUqR, normals_int_faces, hL, hR, eta) # [nf, nq, ns]
-			Fq -= Fq_diff
-
-			gFL_phys = np.einsum('ijlp, ijkp -> ijkl', ijacL_elems, gFL)
-			gFR_phys = np.einsum('ijlp, ijkp -> ijkl', ijacR_elems, gFR)
-
+		gFL_phys = self.ref_to_phys_grad(ijacL_elems, gFL)
+		gFR_phys = self.ref_to_phys_grad(ijacR_elems, gFR)
 
 		# Compute contribution to left and right element residuals
 		resL = solver_tools.calculate_inviscid_flux_boundary_integral(
@@ -834,14 +831,16 @@ class DG(base.SolverBase):
 		resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 				faces_to_basisR[faceR_IDs], quad_wts, Fq)
 
-		resL2 = solver_tools.calculate_flux_boundary_integral_sum(
+		# Compute additional boundary flux integrals for diffusion terms
+		resL_diff = self.calculate_flux_boundary_integral_sum(
 				faces_to_basis_ref_gradL[faceL_IDs], quad_wts, gFL_phys)
 
-		resR2 = solver_tools.calculate_flux_boundary_integral_sum(
-				faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, gFR_phys)
+		resR_diff = self.calculate_flux_boundary_integral_sum(
+				faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
+				gFR_phys)
 
 
-		return resL, resR, resL2, resR2 # [nif, nb, ns]
+		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		# unpack
@@ -856,12 +855,9 @@ class DG(base.SolverBase):
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
 		ijac_bgroups = bface_helpers.ijac_bgroups
-		face_lengths_bgroups = bface_helpers.face_lengths_bgroups
 
 		basis_val = bface_helpers.faces_to_basis[face_IDs] # [nbf, nq, nb]
 		basis_ref_grad = bface_helpers.faces_to_basis_ref_grad[face_IDs] 
-
-		vol_elems = elem_helpers.vol_elems
 
 		# Interpolate state at quad points
 		UqI = helpers.evaluate_state(Uc, basis_val) # [nbf, nq, ns]
@@ -869,38 +865,35 @@ class DG(base.SolverBase):
 		normals = normals_bgroups[bgroup_num] # [nbf, nq, ndims]
 		x = x_bgroups[bgroup_num] # [nbf, nq, ndims]
 		ijac = ijac_bgroups[bgroup_num]
-		face_lengths = face_lengths_bgroups[bgroup_num]
-		elem_IDs = bface_helpers.elem_IDs[bgroup_num]
 
 		BC = physics.BCs[bgroup.name]
 
 		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val)
 
-		if self.params["DiffFluxSwitch"] == True:
-			# Interpolate gradient of state at quad points
-			gUq_ref = helpers.evaluate_gradient(Uc, 
-					basis_ref_grad)
+		# Interpolate gradient of state at quad points
+		gUq_ref = self.evaluate_gradient(Uc, 
+				basis_ref_grad)
 
-			eta = solver_tools.get_ip_eta(mesh, self.order)
+		# Make ref gradient of state the physical gradient
+		gUq = self.ref_to_phys_grad(ijac, gUq_ref)
 
-			# HACK: Maybe an issue. Need to check that this works when
-			# boundary faces arnt all the same length in a given group
-			h = vol_elems[elem_IDs] / face_lengths[-1]
-
-			# Make gradient the physical gradient
-			gUq = np.einsum('ijlp, ijkp -> ijkl', ijac, gUq_ref)
+		# Compute any additional helpers for diffusive flux fcn
+		if physics.diff_flux_fcn:
+			physics.diff_flux_fcn.compute_bface_helpers(self, bgroup_num)
+		
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute boundary flux
-			Fq, gFq = BC.get_boundary_flux(physics, UqI, gUq, normals, x, self.time, h, eta)
-			gFq_phys = np.einsum('ijlp, ijkp -> ijkl', ijac, gFq)
+			Fq, gFq = BC.get_boundary_flux(physics, UqI, gUq, normals, x, self.time)
+			gFq_phys = self.ref_to_phys_grad(ijac, gFq)
 
 			# Compute contribution to adjacent element residual
 			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
 					basis_val, quad_wts, Fq)
 
-			resB -= solver_tools.calculate_flux_boundary_integral_sum(
+			# Compute additional boundary flux integral for diffusion terms
+			resB -= self.calculate_flux_boundary_integral_sum(
 				basis_ref_grad, quad_wts, gFq_phys)
 
 

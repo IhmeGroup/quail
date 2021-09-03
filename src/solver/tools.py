@@ -10,6 +10,26 @@ import sys
 
 import general
 import numerics.basis.tools as basis_tools
+import numerics.helpers.helpers as helpers
+import solver.tools as solver_tools
+
+def set_function_definitions(solver, params):
+	'''
+	This function sets the necessary functions for the given case 
+	dependent upon setter flags in the input deck.
+	'''
+	conv_flux_switch = params["ConvFluxSwitch"]
+
+	if solver.physics.diff_flux_fcn:
+		solver.evaluate_gradient = helpers.evaluate_gradient
+		solver.ref_to_phys_grad = helpers.ref_to_phys_grad
+		solver.calculate_flux_boundary_integral_sum = \
+			solver_tools.calculate_flux_boundary_integral_sum
+	else:
+		solver.evaluate_gradient = helpers.pass_evaluate_gradient	
+		solver.ref_to_phys_grad = helpers.pass_ref_to_phys_grad
+		solver.calculate_flux_boundary_integral_sum = \
+			solver_tools.pass_calculate_flux_boundary_integral_sum
 
 
 def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
@@ -63,6 +83,11 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	return resB # [nf, nb, ns]
 
+
+def pass_calculate_flux_boundary_integral_sum(basis_ref_grad, quad_wts, gFq):
+	return 0.
+
+
 def calculate_flux_boundary_integral_sum(basis_ref_grad, quad_wts, gFq):
 	'''
 	'''
@@ -71,8 +96,9 @@ def calculate_flux_boundary_integral_sum(basis_ref_grad, quad_wts, gFq):
 
 	# Calculate residual
 	resB = np.einsum('ijnl, ijkl -> ink', basis_ref_grad, gFq_quad)
-	# import code; code.interact(local=locals())
+
 	return resB
+
 
 def calculate_source_term_integral(elem_helpers, Sq):
 	'''
