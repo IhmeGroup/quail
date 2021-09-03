@@ -454,10 +454,11 @@ class PhysicsBase(ABC):
 		--------
 			self.diff_flux_fcn : stores diffusive numerical flux object
 		'''
-		diff_num_flux_class = process_map(diff_num_flux_type,
-				self.diff_num_flux_map)
-		# Instantiate class and store
-		self.diff_flux_fcn = diff_num_flux_class(**kwargs)
+		if diff_num_flux_type:
+			diff_num_flux_class = process_map(diff_num_flux_type,
+					self.diff_num_flux_map)
+			# Instantiate class and store
+			self.diff_flux_fcn = diff_num_flux_class(**kwargs)
 
 		
 	def get_state_index(self, var_name):
@@ -568,8 +569,7 @@ class PhysicsBase(ABC):
 
 		return Fnum
 
-	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals,
-			hL, hR, eta=50.):
+	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals):
 		'''
 		This method computes the diffusive numerical flux.
 
@@ -593,13 +593,17 @@ class PhysicsBase(ABC):
 			gFR: numerical gradient of flux values at right state
 				[nf, nq, ns, ndims]
 		'''
-		Fnum, gFL, gFR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
-				gUqL, gUqR, normals, hL, hR, eta)
+		if self.diff_flux_fcn:
+			# Compute the diffusion fluxes
+			Fnum, gFL, gFR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
+					gUqL, gUqR, normals)
 
-		return Fnum, gFL, gFR # [nf, nq, ns], [nf, nq, ns, ndim], 
+			return Fnum, gFL, gFR # [nf, nq, ns], [nf, nq, ns, ndim], 
 				# [nf, nq, ns, ndim]
-	def get_diff_boundary_flux_numerical(self, UqI, UqB, gUq, normals,
-			h, eta=50.):
+		else:
+			return 0., 0., 0. # Return zeros when diffusion fluxes not needed
+
+	def get_diff_boundary_flux_numerical(self, UqI, UqB, gUq, normals):
 		'''
 		This method computes the diffusive numerical flux at a boundary state.
 
@@ -620,7 +624,7 @@ class PhysicsBase(ABC):
 				[nf, nq, ns, ndims]
 		'''
 		Fnum, gF = self.diff_flux_fcn.compute_boundary_flux(self, UqI, UqB, gUq,
-				normals, h, eta)
+				normals)
 
 		return Fnum, gF # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
 
