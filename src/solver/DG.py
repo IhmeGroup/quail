@@ -746,7 +746,7 @@ class DG(base.SolverBase):
 				Fq -= physics.get_diff_flux_interior(Uq, gUq)
 			
 			# Note: should this be renamed / always evaluated?
-			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+			res_elem += solver_tools.calculate_volume_flux_integral(
 					self, elem_helpers, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
@@ -828,16 +828,16 @@ class DG(base.SolverBase):
 			gFR_phys = self.ref_to_phys_grad(ijacR_elems, gFR)
 
 			# Compute contribution to left and right element residuals
-			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resL = solver_tools.calculate_boundary_flux_integral(
 					faces_to_basisL[faceL_IDs], quad_wts, Fq)
-			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resR = solver_tools.calculate_boundary_flux_integral(
 					faces_to_basisR[faceR_IDs], quad_wts, Fq)
 
 			# Compute additional boundary flux integrals for diffusion terms
-			resL_diff = self.calculate_flux_boundary_integral_sum(
+			resL_diff = self.calculate_boundary_flux_integral_sum(
 					faces_to_basis_ref_gradL[faceL_IDs], quad_wts, gFL_phys)
 
-			resR_diff = self.calculate_flux_boundary_integral_sum(
+			resR_diff = self.calculate_boundary_flux_integral_sum(
 					faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
 					gFR_phys)
 
@@ -891,11 +891,11 @@ class DG(base.SolverBase):
 			gFq_phys = self.ref_to_phys_grad(ijac, gFq)
 
 			# Compute contribution to adjacent element residual
-			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resB = solver_tools.calculate_boundary_flux_integral(
 					basis_val, quad_wts, Fq)
 
 			# Compute additional boundary flux integral for diffusion terms
-			resB -= self.calculate_flux_boundary_integral_sum(
+			resB -= self.calculate_boundary_flux_integral_sum(
 				basis_ref_grad, quad_wts, gFq_phys)
 
 

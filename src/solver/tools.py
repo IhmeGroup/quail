@@ -18,7 +18,6 @@ def set_function_definitions(solver, params):
 	dependent upon setter flags in the input deck (primarily for 
 	the diffusive flux definitions)
 
-	Test
 	Inputs:
 	-------
 		solver: solver object
@@ -27,18 +26,18 @@ def set_function_definitions(solver, params):
 	if solver.physics.diff_flux_fcn:
 		solver.evaluate_gradient = helpers.evaluate_gradient
 		solver.ref_to_phys_grad = helpers.ref_to_phys_grad
-		solver.calculate_flux_boundary_integral_sum = \
-			solver_tools.calculate_flux_boundary_integral_sum
+		solver.calculate_boundary_flux_integral_sum = \
+			solver_tools.calculate_boundary_flux_integral_sum
 	else:
 		solver.evaluate_gradient = helpers.pass_evaluate_gradient	
 		solver.ref_to_phys_grad = helpers.pass_ref_to_phys_grad
-		solver.calculate_flux_boundary_integral_sum = \
-			solver_tools.pass_calculate_flux_boundary_integral_sum
+		solver.calculate_boundary_flux_integral_sum = \
+			solver_tools.pass_calculate_boundary_flux_integral_sum
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
+def calculate_volume_flux_integral(solver, elem_helpers, Fq):
 	'''
-	Calculates the inviscid flux volume integral for the DG scheme
+	Calculates the volume flux integral for the DG scheme
 
 	Inputs:
 	-------
@@ -65,7 +64,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	return res_elem # [ne, nb, ns]
 
 
-def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
+def calculate_boundary_flux_integral(basis_val, quad_wts, Fq):
 	'''
 	Calculates the inviscid flux boundary integral for the DG scheme
 
@@ -88,11 +87,11 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 	return resB # [nf, nb, ns]
 
 
-def pass_calculate_flux_boundary_integral_sum(basis_ref_grad, quad_wts, gFq):
+def pass_calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, gFq):
 	return 0.
 
 
-def calculate_flux_boundary_integral_sum(basis_ref_grad, quad_wts, gFq):
+def calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, gFq):
 	'''
 	'''
 	# Calculate flux quadrature
