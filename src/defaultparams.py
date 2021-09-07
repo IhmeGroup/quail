@@ -159,6 +159,10 @@ Physics = {
 		# See ConvNumFluxType in functions.py in the corresponding physics
 		# modules
 	"DiffFluxNumerical" : None,
+		# Numerical diffusive flux
+		# See DiffNumFluxType in functions.py in the corresponding physics
+		# modules
+		
 	# Physical parameters specific to the physics type are also set here.
 	# Refer to the corresponding physics classes and the examples.
 }
