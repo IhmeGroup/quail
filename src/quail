@@ -326,7 +326,7 @@ def driver(deck):
 
 	# Create physics object
 	physics = set_physics(mesh, physics_params["Type"])
-	# Add tranport if using NS
+	# Add tranport if using Navier-Stokes
 	physics.get_transport = ns_tools.set_transport(physics_params["Transport"])
 	# Set parameters
 	pparams = physics_params.copy()
