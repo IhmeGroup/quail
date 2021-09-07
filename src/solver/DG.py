@@ -317,9 +317,9 @@ class InteriorFaceHelpers(ElemHelpers):
 		quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh,
 				order, physics=physics)
 		self.quad_pts, self.quad_wts = \
-				basis.FACE_SHAPE.get_quadrature_data(quad_order+1)#HACK to compare to DGLegion
+				basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
-				# basis.FACE_SHAPE.get_quadrature_data(quad_order)
+				# basis.FACE_SHAPE.get_quadrature_data(quad_order+1)#HACK to compare to DGLegion
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -342,7 +342,7 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.normals_int_faces: precomputed normal vectors at each
 				interior face [num_interior_faces, nq, ndims]
 		'''
-		ndims = mesh.ndims
+		ndims = basis.NDIMS # Need to define ndims from basis for ADERDG
 		quad_pts = self.quad_pts
 		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
@@ -547,7 +547,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			self.x_bgroups: precomputed physical coordinates of the
 				quadrature points [num_boundary_faces, nq, ndims]
 		'''
-		ndims = mesh.ndims
+		ndims = basis.NDIMS
 		quad_pts = self.quad_pts
 		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
@@ -741,13 +741,13 @@ class DG(base.SolverBase):
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
 
-		if physics.diff_flux_fcn:
-			# Evaluate the diffusion flux
-			Fq -= physics.get_diff_flux_interior(Uq, gUq)
+			if physics.diff_flux_fcn:
+				# Evaluate the diffusion flux
+				Fq -= physics.get_diff_flux_interior(Uq, gUq)
 			
-		# Note: should this be renamed / always evaluated?
-		res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
-				self, elem_helpers, Fq) # [ne, nb, ns]
+			# Note: should this be renamed / always evaluated?
+			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+					self, elem_helpers, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
@@ -807,37 +807,39 @@ class DG(base.SolverBase):
 		nifR = self.int_face_helpers.elemR_IDs.shape[0]
 		resL = np.zeros([nifL, nq, ns])
 		resR = np.zeros([nifR, nq, ns])
+		resL_diff = np.zeros([nifL, nq, ns])
+		resR_diff = np.zeros([nifR, nq, ns])
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq, ns]
 		
-		if physics.diff_flux_fcn:
-			# Calculate diffusion flux helpers
-			physics.diff_flux_fcn.compute_iface_helpers(self)
+			if physics.diff_flux_fcn:
+				# Calculate diffusion flux helpers
+				physics.diff_flux_fcn.compute_iface_helpers(self)
 
-		# Compute diffusion flux
-		Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
-				gUqL, gUqR, normals_int_faces) # [nf, nq, ns]
-		Fq -= Fq_diff
+			# Compute diffusion flux
+			Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
+					gUqL, gUqR, normals_int_faces) # [nf, nq, ns]
+			Fq -= Fq_diff
 
-		gFL_phys = self.ref_to_phys_grad(ijacL_elems, gFL)
-		gFR_phys = self.ref_to_phys_grad(ijacR_elems, gFR)
+			gFL_phys = self.ref_to_phys_grad(ijacL_elems, gFL)
+			gFR_phys = self.ref_to_phys_grad(ijacR_elems, gFR)
 
-		# Compute contribution to left and right element residuals
-		resL = solver_tools.calculate_inviscid_flux_boundary_integral(
-				faces_to_basisL[faceL_IDs], quad_wts, Fq)
-		resR = solver_tools.calculate_inviscid_flux_boundary_integral(
-				faces_to_basisR[faceR_IDs], quad_wts, Fq)
+			# Compute contribution to left and right element residuals
+			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
+					faces_to_basisL[faceL_IDs], quad_wts, Fq)
+			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
+					faces_to_basisR[faceR_IDs], quad_wts, Fq)
 
-		# Compute additional boundary flux integrals for diffusion terms
-		resL_diff = self.calculate_flux_boundary_integral_sum(
-				faces_to_basis_ref_gradL[faceL_IDs], quad_wts, gFL_phys)
+			# Compute additional boundary flux integrals for diffusion terms
+			resL_diff = self.calculate_flux_boundary_integral_sum(
+					faces_to_basis_ref_gradL[faceL_IDs], quad_wts, gFL_phys)
 
-		resR_diff = self.calculate_flux_boundary_integral_sum(
-				faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
-				gFR_phys)
+			resR_diff = self.calculate_flux_boundary_integral_sum(
+					faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
+					gFR_phys)
 
 
 		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
@@ -885,7 +887,7 @@ class DG(base.SolverBase):
 
 		if self.params["ConvFluxSwitch"] == True:
 			# Compute boundary flux
-			Fq, gFq = BC.get_boundary_flux(physics, UqI, gUq, normals, x, self.time)
+			Fq, gFq = BC.get_boundary_flux(physics, UqI, normals, x, self.time, gUq=gUq)
 			gFq_phys = self.ref_to_phys_grad(ijac, gFq)
 
 			# Compute contribution to adjacent element residual
