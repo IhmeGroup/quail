@@ -15,10 +15,14 @@ import solver.tools as solver_tools
 def set_function_definitions(solver, params):
 	'''
 	This function sets the necessary functions for the given case 
-	dependent upon setter flags in the input deck.
-	'''
-	conv_flux_switch = params["ConvFluxSwitch"]
+	dependent upon setter flags in the input deck (primarily for 
+	the diffusive flux definitions)
 
+	Inputs:
+	-------
+		solver: solver object
+		params: dict with solver parameters
+	'''
 	if solver.physics.diff_flux_fcn:
 		solver.evaluate_gradient = helpers.evaluate_gradient
 		solver.ref_to_phys_grad = helpers.ref_to_phys_grad
