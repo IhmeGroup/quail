@@ -430,10 +430,11 @@ class ADERDG(base.SolverBase):
 				self.int_face_helpers_st.quad_wts.shape[0],
 				physics.NUM_STATE_VARS]))
 
-		physics.diff_flux_fcn.alloc_helpers(
-				np.zeros([mesh.num_interior_faces,
-				self.int_face_helpers.quad_wts.shape[0],
-				physics.NUM_STATE_VARS]))
+		if physics.diff_flux_fcn:
+			physics.diff_flux_fcn.alloc_helpers(
+					np.zeros([mesh.num_interior_faces,
+					self.int_face_helpers.quad_wts.shape[0],
+					physics.NUM_STATE_VARS]))
 		
 		# Initialize state
 		if params["RestartFile"] is None:
@@ -535,10 +536,6 @@ class ADERDG(base.SolverBase):
 			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
 					self, elem_helpers, elem_helpers_st, Fq) # [ne, nb, ns]
 
-		# Need to add diffusion fluxes here
-		# if self.params["DiffFluxSwitch"] == True:
-			# Fq += physics.get_diff_flux_interior(Uq) # [ne, nq, ns, ndims]
-
 		if self.params["SourceSwitch"] == True:
 			# Evaluate the source term integral
 
@@ -606,7 +603,7 @@ class ADERDG(base.SolverBase):
 			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
 					time_skip, basis_valR, quad_wts_st, Fq)
 		
-		return resL, resR # [nif, nb, ns]
+		return resL, resR, 0, 0 # [nif, nb, ns] Need zeros w/out diff impl
 
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
 		# Unpack
@@ -710,7 +707,6 @@ class ADERDG(base.SolverBase):
 		params = self.params
 
 		InterpolateFluxADER = params["InterpolateFluxADER"]
-		DiffFluxSwitch = params["DiffFluxSwitch"]
 
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
@@ -727,7 +723,7 @@ class ADERDG(base.SolverBase):
 			# Calculate flux
 			Fq = physics.get_conv_flux_interior(Up)[0]
 
-			if DiffFluxSwitch:
+			if physics.diff_flux_fcn:
 				Fq -= physics.get_diff_flux_interior(Up, gUp)
 				# import code; code.interact(local=locals())
 			# Interpolate flux coefficient to nodes
