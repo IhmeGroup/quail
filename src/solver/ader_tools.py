@@ -348,10 +348,10 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 	return U_pred, U_bar
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
+def calculate_volume_flux_integral(solver, elem_helpers,
 		elem_helpers_st, Fq):
 	'''
-	Calculates the inviscid flux volume integral for the ADERDG scheme
+	Calculates the flux volume integral for the ADERDG scheme
 
 	Inputs:
 	-------
@@ -362,7 +362,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 
 	Outputs:
 	--------
-		res_elem: residual contribution (for volume integral of inviscid flux)
+		res_elem: residual contribution (for volume integral of flux)
 			[ne, nb, ns]
 	'''
 	quad_wts_st = elem_helpers_st.quad_wts
@@ -386,10 +386,10 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 	return res_elem # [ne, nb, ns]
 
 
-def calculate_inviscid_flux_boundary_integral(nq_t, basis_val, 
+def calculate_boundary_flux_integral(nq_t, basis_val, 
 		quad_wts_st, Fq):
 	'''
-	Calculates the inviscid flux boundary integral for the ADERDG scheme
+	Calculates the boundary flux integral for the ADERDG scheme
 
 	Inputs:
 	-------

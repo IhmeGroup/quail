@@ -533,7 +533,7 @@ class ADERDG(base.SolverBase):
 		if self.params["ConvFluxSwitch"] == True:
 			# Evaluate the inviscid flux integral.
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
-			res_elem += solver_tools.calculate_inviscid_flux_volume_integral(
+			res_elem += solver_tools.calculate_volume_flux_integral(
 					self, elem_helpers, elem_helpers_st, Fq) # [ne, nb, ns]
 
 		if self.params["SourceSwitch"] == True:
@@ -598,9 +598,9 @@ class ADERDG(base.SolverBase):
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq_st, ns]
-			resL = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resL = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_valL, quad_wts_st, Fq)
-			resR = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resR = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_valR, quad_wts_st, Fq)
 		
 		return resL, resR, 0, 0 # [nif, nb, ns] Need zeros w/out diff impl
@@ -677,7 +677,7 @@ class ADERDG(base.SolverBase):
 						UqI[:, i, :].reshape([nbf, 1, ns]),
 						normals_, x_, t_).reshape([nbf, ns])
 
-			resB = solver_tools.calculate_inviscid_flux_boundary_integral(
+			resB = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
 		return resB # [nbf, nb, ns]
