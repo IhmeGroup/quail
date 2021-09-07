@@ -73,7 +73,7 @@ class BCBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_flux(self, physics, UqI, normals, x, t):
+	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
 		'''
 		This method computes the flux at a boundary face.
 
@@ -85,6 +85,7 @@ class BCBase(ABC):
 			normals: outward-pointing normals [nq, ndims]
 			x: coordinates in physical space [nq, ndims]
 			t: time
+			gUq: Gradient of the state [nq, ndims, ns]
 
 		Outputs:
 		--------
@@ -102,7 +103,7 @@ class BCWeakRiemann(BCBase):
 	This class computes the boundary flux via the numerical flux, which
 	depends on the interior and exterior states, i.e. Fnum(UqI, UqB, n).
 	'''
-	def get_boundary_flux(self, physics, UqI, gUq, normals, x, t):
+	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
 		F = physics.get_conv_flux_numerical(UqI, UqB, normals)
 
@@ -125,11 +126,11 @@ class BCWeakPrescribed(BCBase):
 	This class computes the boundary flux via the analytic flux based on
 	only the exterior state, i.e. F(UqB, n).
 	'''
-	def get_boundary_flux(self, physics, UqI, normals, x, t):
+	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
 		F,_ = physics.get_conv_flux_projected(UqB, normals)
 
-		return F
+		return F, None
 
 
 
