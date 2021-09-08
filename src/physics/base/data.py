@@ -109,10 +109,10 @@ class BCWeakRiemann(BCBase):
 
 		# Compute diffusive boundary fluxes if needed
 		if physics.diff_flux_fcn:
-			Fv, gFv = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
+			Fv, FvB = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
 					gUq, normals) # [nf, nq, ns]
 			F -= Fv
-			return F, gFv
+			return F, FvB # [nf, nq, ns], [nf, nq, ns, ndims]
 		else:
 			return F, None
 
@@ -129,9 +129,15 @@ class BCWeakPrescribed(BCBase):
 	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
 		F,_ = physics.get_conv_flux_projected(UqB, normals)
-
-		return F, None
-
+		
+		# Compute diffusive boundary fluxes if needed
+		if physics.diff_flux_fcn:
+			Fv, FvB = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
+					gUq, normals) # [nf, nq, ns]
+			F -= Fv
+			return F, FvB # [nf, nq, ns], [nf, nq, ns, ndims]
+		else:
+			return F, None
 
 
 class SourceBase(ABC):
