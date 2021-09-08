@@ -91,7 +91,7 @@ def set_recalculate_jac(recalculate_jacobian):
 	if recalculate_jacobian:
 		fcn = recalculate_jacobian_on
 	else:
-		fcn = recalculate_jacobian_off
+		fcn = general.pass_function
 
 	return fcn
 
@@ -146,9 +146,6 @@ def recalculate_jacobian_on(solver, U_pred, dt, Sjac=None):
 	# Set all sources for source_coeffs calculation
 	physics.source_terms = temp_sources.copy()
 
-
-def recalculate_jacobian_off(solver, U_pred, dt, Sjac=None):
-	pass
 
 def zeros_spacetime_guess(solver, W, U_pred, dt=None):
 	'''
