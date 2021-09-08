@@ -72,13 +72,13 @@ class InteriorFaceHelpersADER(DG.InteriorFaceHelpers):
 		Outputs:
 		--------
 			self.elemL_IDs: Element IDs to the left of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.elemR_IDs: Element IDs to the right of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.faceL_IDs: Face IDs to the left of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.faceR_IDs: Face IDs to the right of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 		'''
 		super().store_neighbor_info(mesh)
 
@@ -123,13 +123,13 @@ class BoundaryFaceHelpersADER(DG.BoundaryFaceHelpers):
 		Outputs:
 		--------
 			self.elemL_IDs: Element IDs to the left of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.elemR_IDs: Element IDs to the right of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.faceL_IDs: Face IDs to the left of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.faceR_IDs: Face IDs to the right of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 		'''
 		super().store_neighbor_info(mesh)
 		# Convert spacial boundary face numbering to space-time
@@ -746,7 +746,11 @@ class ADERDG(base.SolverBase):
 
 			# Evaluate the inviscid flux
 			Fq = physics.get_conv_flux_interior(Uq)[0]
-
+			
+			# Evaluate the diffusive flux 
+			if physics.diff_flux_fcn:
+				Fq -= physics.get_diff_flux_interior(Up, gUp)
+				
 			# Project Fq to the space-time basis coefficients
 			for d in range(ndims):
 				solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts_st,
