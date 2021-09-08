@@ -43,21 +43,6 @@ class SourceType(Enum):
 	ManufacturedSourcePeriodic = auto()
 	ManufacturedSource = auto()
 
-# class ConvNumFluxType(Enum):
-	'''
-	Enum class that stores the types of convective numerical fluxes. 
-	These numerical fluxes are specific to the available Euler 
-	equation sets.
-	'''
-	# Roe = auto()
-
-class DiffNumFluxType(Enum):
-	'''
-	Enum class that stores the types of diffusive numerical fluxes. 
-	These numerical fluxes are specific to the available NavierStokes 
-	equation sets.
-	'''
-	SIP = auto()
 
 '''
 ---------------
@@ -442,7 +427,6 @@ above.
 '''
 
 
-
 '''
 ------------------------
 Numerical flux functions
@@ -453,118 +437,3 @@ and methods. Information specific to the corresponding child classes can
 be found below. These classes should correspond to the ConvNumFluxType 
 or DiffNumFluxType enum members above.
 '''
-class SIP(DiffNumFluxBase):
-	'''
-	This class corresponds to the Symmetric Interior Penalty Method (SIP)
-	for the NavierStokes class.
-	'''
-	def compute_iface_helpers(self, solver):
-		# Unpack
-		elem_helpers = solver.elem_helpers
-		int_face_helpers = solver.int_face_helpers
-
-		face_lengths = int_face_helpers.face_lengths
-		vol_elems = elem_helpers.vol_elems
-
-		# Calculate the penalty term
-		self.eta = self.get_ip_eta(solver.mesh, solver.order)
-
-		# Calculate ratio of volume/area for each L/R face
-		self.hL = vol_elems[int_face_helpers.elemL_IDs] / \
-				face_lengths[int_face_helpers.elemL_IDs, -1]
-		self.hR = vol_elems[int_face_helpers.elemR_IDs] / \
-				face_lengths[int_face_helpers.elemR_IDs, -1]
-
-	def compute_bface_helpers(self, solver, bgroup_num):
-		# Unpack
-		bface_helpers = solver.bface_helpers
-		elem_helpers = solver.elem_helpers
-		elem_IDs = bface_helpers.elem_IDs[bgroup_num]
-
-		vol_elems = elem_helpers.vol_elems
-		face_lengths_bgroups = bface_helpers.face_lengths_bgroups
-		face_lengths = face_lengths_bgroups[bgroup_num]
-
-		# Calculate the penalty term
-		self.eta = self.get_ip_eta(solver.mesh, solver.order)
-
-		# HACK: Maybe an issue. Need to check that this works when
-		# boundary faces arnt all the same length in a given group
-		self.h = vol_elems[elem_IDs] / face_lengths[-1]
-
-	def get_ip_eta(self, mesh, order):
-		i = order
-		if i > 8:
-			i = 8;
-		etas = np.array([1., 4., 12., 12., 20., 30., 35., 45., 50.])
-
-		return etas[i] * mesh.gbasis.NFACES
-
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals):		
-		#Unpack
-		hL = self.hL
-		hR = self.hR
-		eta = self.eta
-		# Calculate jump condition
-		dU = UqL - UqR
-
-		# Normalize the normal vectors
-		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
-		n_hat = normals/n_mag
-
-		# Tensor product of normal vector with jump
-		dUxn = np.einsum('ijk, ijl -> ijlk', n_hat, dU)
-
-		# Left State
-		gFloc2 = 0.5 * physics.get_diff_flux_interior(UqL, gUqL)
-		gFloc = physics.get_diff_flux_interior(UqL, dUxn)
-
-		C4 = 0.5 * eta / hL
-		C5 = 0.5 * n_mag
-
-		gFloc2 += -1. * np.einsum('i, ijkl -> ijkl', C4, gFloc)
-		gFL = np.einsum('ijv, ijkl -> ijkl', C5, gFloc)
-
-		# Right State
-		gFloc2 += 0.5 * physics.get_diff_flux_interior(UqR, gUqR)
-		gFloc = physics.get_diff_flux_interior(UqR, dUxn)
-		
-		C4 = 0.5 * eta / hR
-		C5 = 0.5 * n_mag
-
-		gFloc2 += -1. * np.einsum('i, ijkl -> ijkl', C4, gFloc)
-		gFR = np.einsum('ijv, ijkl -> ijkl', C5, gFloc)
-
-		Floc = np.einsum('ijl, ijkl -> ijk', normals, gFloc2)
-
-		return Floc, gFL, gFR
-
-	def compute_boundary_flux(self, physics, UqI, UqB, gUq, normals):		
-		#Unpack
-		h = self.h
-		eta = self.eta
-		# Calculate jump condition
-		dU = UqI - UqB
-
-		# Normalize the normal vectors
-		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
-		n_hat = normals/n_mag
-
-		# Tensor product of normal vector with jump
-		dUxn = np.einsum('ijk, ijl -> ijlk', n_hat, dU)
-
-		# Boundary State
-		gFloc2 = physics.get_diff_flux_interior(UqB, gUq)
-
-		# Right State
-		gFloc = physics.get_diff_flux_interior(UqB, dUxn)
-
-		C4 = - eta / h
-		C5 = n_mag
-
-		gFloc2 += np.einsum('i, ijkl -> ijkl', C4, gFloc)
-		gF = np.einsum('ijv, ijkl -> ijkl', C5, gFloc)
-
-		Floc = np.einsum('ijl, ijkl -> ijk', normals, gFloc2)
-
-		return Floc, gF
