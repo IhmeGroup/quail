@@ -105,7 +105,7 @@ def calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, Fq):
 	'''
 
 	# Calculate flux quadrature
-	Fq_quad = np.einsum('ijkl, jm -> ijkl', gFq, quad_wts) # [nf, nq, ns]
+	Fq_quad = np.einsum('ijkl, jm -> ijkl', Fq, quad_wts) # [nf, nq, ns]
 
 	# Calculate residual
 	resB = np.einsum('ijnl, ijkl -> ink', basis_ref_grad, Fq_quad)

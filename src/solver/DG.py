@@ -922,12 +922,13 @@ class DG(base.SolverBase):
 					# [nf, nq, ns]
 
 			# Compute diffusion flux
-			Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
-					gUqL, gUqR, normals_int_faces) # [nf, nq, ns]
+			Fq_diff, FL, FR = physics.get_diff_flux_numerical(UqL, UqR,
+					gUqL, gUqR, normals_int_faces) # [nf, nq, ns], 
+					# [nf, nq, ns, ndims], [nf, nq, ns, ndims]
 			Fq -= Fq_diff
 
-			gFL_phys = self.ref_to_phys_grad(ijacL_elems, gFL)
-			gFR_phys = self.ref_to_phys_grad(ijacR_elems, gFR)
+			FL_phys = self.ref_to_phys_grad(ijacL_elems, FL)
+			FR_phys = self.ref_to_phys_grad(ijacR_elems, FR)
 
 			# Compute contribution to left and right element residuals
 			resL = solver_tools.calculate_boundary_flux_integral(
@@ -937,11 +938,11 @@ class DG(base.SolverBase):
 
 			# Compute additional boundary flux integrals for diffusion terms
 			resL_diff = self.calculate_boundary_flux_integral_sum(
-					faces_to_basis_ref_gradL[faceL_IDs], quad_wts, gFL_phys)
+					faces_to_basis_ref_gradL[faceL_IDs], quad_wts, FL_phys)
 
 			resR_diff = self.calculate_boundary_flux_integral_sum(
 					faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
-					gFR_phys)
+					FR_phys)
 
 		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
 
@@ -986,11 +987,10 @@ class DG(base.SolverBase):
 		if physics.diff_flux_fcn:
 			physics.diff_flux_fcn.compute_bface_helpers(self, bgroup_num)
 		
-
 		if fluxes:
 			# Compute boundary flux
-			Fq, gFq = BC.get_boundary_flux(physics, UqI, normals, x, self.time, gUq=gUq)
-			gFq_phys = self.ref_to_phys_grad(ijac, gFq)
+			Fq, FqB = BC.get_boundary_flux(physics, UqI, normals, x, self.time, gUq=gUq)
+			FqB_phys = self.ref_to_phys_grad(ijac, FqB)
 
 			# Compute contribution to adjacent element residual
 			resB = solver_tools.calculate_boundary_flux_integral(
@@ -998,6 +998,6 @@ class DG(base.SolverBase):
 
 			# Compute additional boundary flux integral for diffusion terms
 			resB -= self.calculate_boundary_flux_integral_sum(
-				basis_ref_grad, quad_wts, gFq_phys)
+				basis_ref_grad, quad_wts, FqB_phys)
 
 		return resB
