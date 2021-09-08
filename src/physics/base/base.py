@@ -438,7 +438,6 @@ class PhysicsBase(ABC):
 		# Instantiate class and store
 		self.conv_flux_fcn = conv_num_flux_class(**kwargs)
 
-
 	def set_diff_num_flux(self, diff_num_flux_type, **kwargs):
 		'''
 		This method sets the diffusive numerical flux
@@ -460,7 +459,6 @@ class PhysicsBase(ABC):
 			# Instantiate class and store
 			self.diff_flux_fcn = diff_num_flux_class(**kwargs)
 
-		
 	def get_state_index(self, var_name):
 		'''
 		This method gets the index corresponding to a given state variable.
@@ -587,18 +585,18 @@ class PhysicsBase(ABC):
 		
 		Outputs:
 		--------
-			Fnum: numerical flux values[nf, nq, ns]
-			gFL: numerical gradient of flux values at left state
+			Fnum: numerical normal flux values [nf, nq, ns]
+			FL: numerical directional flux values at left state
 				[nf, nq, ns, ndims]
-			gFR: numerical gradient of flux values at right state
+			FR: numerical directional flux values at right state
 				[nf, nq, ns, ndims]
 		'''
 		if self.diff_flux_fcn:
 			# Compute the diffusion fluxes
-			Fnum, gFL, gFR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
+			Fnum, FL, FR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
 					gUqL, gUqR, normals)
 
-			return Fnum, gFL, gFR # [nf, nq, ns], [nf, nq, ns, ndim], 
+			return Fnum, FL, FR # [nf, nq, ns], [nf, nq, ns, ndim], 
 				# [nf, nq, ns, ndim]
 		else:
 			return 0., 0., 0. # Return zeros when diffusion fluxes not needed
@@ -620,14 +618,13 @@ class PhysicsBase(ABC):
 		Outputs:
 		--------
 			Fnum: numerical flux values[nf, nq, ns]
-			gF: numerical gradient of flux values at boundary state
+			FB: directional numerical flux values at boundary
 				[nf, nq, ns, ndims]
 		'''
-		Fnum, gF = self.diff_flux_fcn.compute_boundary_flux(self, UqI, UqB, gUq,
+		Fnum, FB = self.diff_flux_fcn.compute_boundary_flux(self, UqI, UqB, gUq,
 				normals)
 
-		return Fnum, gF # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
-
+		return Fnum, FB # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
 
 	def eval_source_terms(self, Uq, xphys, time, Sq):
 		'''
