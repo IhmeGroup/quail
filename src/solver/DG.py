@@ -257,6 +257,12 @@ class InteriorFaceHelpers(ElemHelpers):
 	faces_to_basisR: numpy array
 		basis values evaluated at quadrature points of each face for
 		right element
+	faces_to_basis_ref_gradL: numpy array
+		gradient of basis values evaluated at quadrature points of each face 
+		for left element
+	faces_to_basis_ref_gradR: numpy array
+		gradient of basis values evaluated at quadrature points of each face 
+		for right element
 	normals_int_faces: numpy array
 		normal vector array for each interior face
 	UqL: numpy array
@@ -267,6 +273,30 @@ class InteriorFaceHelpers(ElemHelpers):
 		element
 	Fq: numpy array
 		flux vector evaluated at the face quadrature points
+	elemL_IDs: numpy array
+		element IDs to the left of each interior face
+	elemR_IDs: numpy array
+		element IDs to the right of each interior face
+	faceL_IDs: numpy array
+		face IDs to the left of each interior face
+	faceR_IDs: numpy array
+		face IDs to the right of each interior face
+	jacL_elems: numpy array
+		stores the evaluated geometric Jacobian for each left element
+	ijacL_elems: numpy array
+		stores the evaluated inverse of the geometric Jacobian for each
+		left element
+	djacL_elems: numpy array
+		stores the evaluated determinant of the geometric Jacobian for
+		each left element
+	jacR_elems: numpy array
+		stores the evaluated geometric Jacobian for each right element
+	ijacR_elems: numpy array
+		stores the evaluated inverse of the geometric Jacobian for each
+		right element
+	djacR_elems: numpy array
+		stores the evaluated determinant of the geometric Jacobian for
+		each right element
 
 	Methods:
 	--------
@@ -287,6 +317,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.quad_wts = np.zeros(0)
 		self.faces_to_basisL = np.zeros(0)
 		self.faces_to_basisR = np.zeros(0)
+		self.faces_to_basis_ref_gradL = np.zeros(0)
+		self.faces_to_basis_ref_gradR = np.zeros(0)
 		self.normals_int_faces = np.zeros(0)
 		self.UqL = np.zeros(0)
 		self.UqR = np.zeros(0)
@@ -295,6 +327,12 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.elemR_IDs = np.empty(0, dtype=int)
 		self.faceL_IDs = np.empty(0, dtype=int)
 		self.faceR_IDs = np.empty(0, dtype=int)
+		self.jacL_elems = np.zeros(0)
+		self.ijacL_elems = np.zeros(0)
+		self.djacL_elems = np.zeros(0)
+		self.jacR_elems = np.zeros(0)
+		self.ijacR_elems = np.zeros(0)
+		self.djacR_elems = np.zeros(0)
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -319,8 +357,6 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.quad_pts, self.quad_wts = \
 				basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
-				# basis.FACE_SHAPE.get_quadrature_data(quad_order+1)#HACK to compare to DGLegion
-
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
 		Precomputes the basis and geometric data for each interior face
@@ -339,8 +375,32 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.faces_to_basisR: basis values evaluated at quadrature
 				points of each face for right element
 				[nfaces_per_elem, nq, nb]
+			self.faces_to_basis_ref_gradL: gradient of basis values 
+				evaluated at quadrature points of each face for left element
+				[nfaces_per_elem, nq, nb, ndims]
+			self.faces_to_basis_ref_gradR: gradient of basis values 
+				evaluated at quadrature points of each face for right element
+				[nfaces_per_elem, nq, nb, ndims]
 			self.normals_int_faces: precomputed normal vectors at each
 				interior face [num_interior_faces, nq, ndims]
+			self.jacL_elems: stores the evaluated geometric Jacobian for each 
+				left element [num_interior_faces, nq, ndims, ndims]
+			self.ijacL_elems: stores the evaluated inverse of the geometric 
+				Jacobian for each left element 
+				[num_interior_faces, nq, ndims, ndims]
+			self.djacL_elems: stores the evaluated determinant of the 
+				geometric Jacobian for each left element
+				[num_interior_faces, nq, 1]
+			self.jacR_elems: stores the evaluated geometric Jacobian for each 
+				right element [num_interior_faces, nq, ndims, ndims]
+			self.ijacR_elems: stores the evaluated inverse of the geometric 
+				Jacobian for each right element 
+				[num_interior_faces, nq, ndims, ndims]
+			self.djacR_elems: stores the evaluated determinant of the 
+				geometric Jacobian for each right element
+				[num_interior_faces, nq, 1]
+			self.face_lengths: stores the precomputed length of each face
+				[num_interior_faces, 1]
 		'''
 		ndims = basis.NDIMS # Need to define ndims from basis for ADERDG
 		quad_pts = self.quad_pts
@@ -365,8 +425,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.djacR_elems = np.zeros([nfaces, nq, 1])
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
 				ndims])
-
-		self.djac_faces = np.zeros([mesh.num_interior_faces, nq])
+		djac_faces = np.zeros([mesh.num_interior_faces, nq])
 
 		# Get values on each face (from both left and right perspectives) 
 		# for both the basis and the reference gradient of the basis
@@ -406,6 +465,7 @@ class InteriorFaceHelpers(ElemHelpers):
 					interior_face.elemR_ID, elem_pts, get_djac=True,
 					get_jac=True, get_ijac=True)
 
+			# Store
 			self.jacL_elems[i] = jacL
 			self.djacL_elems[i] = djacL
 			self.ijacL_elems[i] = ijacL
@@ -414,12 +474,23 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.djacR_elems[i] = djacR
 			self.ijacR_elems[i] = ijacR
 
-			self.djac_faces[i] = np.linalg.norm(normals, axis=1)
+			# Used for face_length calculations
+			djac_faces[i] = np.linalg.norm(normals, axis=1)
 			i += 1
 
-		self.face_lengths = mesh_tools.get_face_lengths(self.djac_faces, quad_wts)
+		self.face_lengths = mesh_tools.get_face_lengths(djac_faces, quad_wts)
 		
 	def alloc_other_arrays(self, physics, basis, order):
+		'''
+		Allocates the solution and flux vectors that are evaluated
+		at the quadrature points
+
+		Inputs:
+		-------
+			physics: physics object
+			basis: basis object
+			order: solution order
+		'''
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
 		ns = physics.NUM_STATE_VARS
@@ -439,13 +510,13 @@ class InteriorFaceHelpers(ElemHelpers):
 		Outputs:
 		--------
 			self.elemL_IDs: Element IDs to the left of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.elemR_IDs: Element IDs to the right of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.faceL_IDs: Face IDs to the left of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 			self.faceR_IDs: Face IDs to the right of each interior face
-			[num_interior_faces]
+				[num_interior_faces]
 		'''
 		self.elemL_IDs = np.empty(mesh.num_interior_faces, dtype=int)
 		self.elemR_IDs = np.empty(mesh.num_interior_faces, dtype=int)
@@ -486,17 +557,28 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 	faces_to_xref: numpy array
 		coordinates of quadrature points of each face converted to
 		element reference space
-	normals_bgroups: numpy array
+	normals_bgroups: list of numpy arrays
 		normal vector array for each boundary face
-	x: numpy array
+	x_bgroups: list of numpy arrays
 		coordinates of the quadrature points in physical space at the
-		boundary face
+		boundary face	
+	ijac_bgroups: list of numpy arrays
+		stores the evaluated inverse of the geometric Jacobian for each
+		interior boundary element
+	face_lengths_bgroups: list of numpy arrays
+		stores the precomputed face lengths for each boundary face
 	UqI: numpy array
 		values of interior state at the quadrature points
 	UqB: numpy array
 		values of boundary (exterior) state at the quadrature points
 	Fq: numpy array
 		flux vector evaluated at the face quadrature points
+	elem_IDs: list of numpy arrays 
+		list containing arrays of element IDs of boundary
+		face neighbors for each boundary group
+	face_IDs: list of numpy arrays 
+		list containing arrays of face IDs of boundary
+		face neighbors for each boundary group
 
 	Methods:
 	--------
@@ -523,7 +605,6 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.Fq = np.zeros(0)
 		self.elem_IDs = []
 		self.face_IDs = []
-		self.face_IDs = []
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -539,15 +620,22 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		--------
 			self.faces_to_basis: basis values evaluated at quadrature points
 				of each face [nfaces_per_elem, nq, nb]
+			self.faces_to_basis_ref_grad: gradient of basis values 
+				evaluated at quadrature points of each face for interior element
+				[nfaces_per_elem, nq, nb, ndims]
 			self.faces_to_xref: coordinates of quadrature points of each
 				face converted to element reference space
-				[nfaces_per_elem, nq, ndims]
+				[nfaces_per_elem, nq, ndims]		
 			self.normals_bgroups: precomputed normal vectors at each
 				boundary face [num_boundary_faces, nq, ndims]
 			self.x_bgroups: precomputed physical coordinates of the
 				quadrature points [num_boundary_faces, nq, ndims]
+			self.ijac_bgroups: stores the evaluated inverse of the geometric 
+				Jacobian for each interior element 	
+			self.face_lengths_bgroups: stores the precomputed length of each face
+				[num_interior_faces, 1]
 		'''
-		ndims = basis.NDIMS
+		ndims = basis.NDIMS # Need to define from basis for ADERDG
 		quad_pts = self.quad_pts
 		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
@@ -559,6 +647,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.NDIMS])
 		self.faces_to_basis_ref_grad = np.zeros([nfaces_per_elem,
 				nq, nb, ndims])
+
 		# Get values on each face (from interior perspective)
 		for face_ID in range(nfaces_per_elem):
 			self.faces_to_xref[face_ID] = basis.get_elem_ref_from_face_ref(
@@ -615,6 +704,16 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 
 
 	def alloc_other_arrays(self, physics, basis, order):
+		'''
+		Allocates the solution and flux vectors that are evaluated
+		at the quadrature points
+
+		Inputs:
+		-------
+			physics: physics object
+			basis: basis object
+			order: solution order
+		'''
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
 		ns = physics.NUM_STATE_VARS
@@ -725,6 +824,8 @@ class DG(base.SolverBase):
 		ijac_elems = elem_helpers.ijac_elems
 		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
+		fluxes = self.params["ConvFluxSwitch"]
+		sources = self.params["SourceSwitch"]
 
 		# Interpolate state at quad points
 		Uq = helpers.evaluate_state(Uc, basis_val,
@@ -737,19 +838,19 @@ class DG(base.SolverBase):
 			# Get min and max of state variables for reporting
 			self.get_min_max_state(Uq)
 
-		if self.params["ConvFluxSwitch"] == True:
+		if fluxes:
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
 
 			if physics.diff_flux_fcn:
 				# Evaluate the diffusion flux
-				Fq -= physics.get_diff_flux_interior(Uq, gUq)
+				Fq -= physics.get_diff_flux_interior(Uq, gUq) 
+					# [ne, nq, ns, ndims]
 			
-			# Note: should this be renamed / always evaluated?
 			res_elem += solver_tools.calculate_volume_flux_integral(
 					self, elem_helpers, Fq) # [ne, nb, ns]
 
-		if self.params["SourceSwitch"] == True:
+		if sources:
 			# Evaluate the source term integral
 			# eval_source_terms is an additive function so source needs to be
 			# initialized to zero for each time step
@@ -766,6 +867,7 @@ class DG(base.SolverBase):
 		# Unpack
 		mesh = self.mesh
 		physics = self.physics
+		fluxes = self.params["ConvFluxSwitch"]
 
 		int_face_helpers = self.int_face_helpers
 		elem_helpers = self.elem_helpers
@@ -810,14 +912,14 @@ class DG(base.SolverBase):
 		resL_diff = np.zeros([nifL, nq, ns])
 		resR_diff = np.zeros([nifR, nq, ns])
 
-		if self.params["ConvFluxSwitch"] == True:
+		if physics.diff_flux_fcn:
+			# Calculate diffusion flux helpers
+			physics.diff_flux_fcn.compute_iface_helpers(self)
+
+		if fluxes:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq, ns]
-		
-			if physics.diff_flux_fcn:
-				# Calculate diffusion flux helpers
-				physics.diff_flux_fcn.compute_iface_helpers(self)
 
 			# Compute diffusion flux
 			Fq_diff, gFL, gFR = physics.get_diff_flux_numerical(UqL, UqR,
@@ -841,7 +943,6 @@ class DG(base.SolverBase):
 					faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
 					gFR_phys)
 
-
 		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
@@ -852,6 +953,7 @@ class DG(base.SolverBase):
 
 		bface_helpers = self.bface_helpers
 		elem_helpers = self.elem_helpers
+		fluxes = self.params["ConvFluxSwitch"]
 
 		quad_wts = bface_helpers.quad_wts
 		normals_bgroups = bface_helpers.normals_bgroups
@@ -885,7 +987,7 @@ class DG(base.SolverBase):
 			physics.diff_flux_fcn.compute_bface_helpers(self, bgroup_num)
 		
 
-		if self.params["ConvFluxSwitch"] == True:
+		if fluxes:
 			# Compute boundary flux
 			Fq, gFq = BC.get_boundary_flux(physics, UqI, normals, x, self.time, gUq=gUq)
 			gFq_phys = self.ref_to_phys_grad(ijac, gFq)
@@ -897,6 +999,5 @@ class DG(base.SolverBase):
 			# Compute additional boundary flux integral for diffusion terms
 			resB -= self.calculate_boundary_flux_integral_sum(
 				basis_ref_grad, quad_wts, gFq_phys)
-
 
 		return resB
