@@ -57,13 +57,6 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 	return Uq # [ne, nq, ns]
 
 
-def pass_evaluate_gradient(Uc, basis_phys_grad_elems):
-	'''
-	This function passes on evaluating the gradient when it is not needed
-	'''
-	pass
-
-
 def evaluate_gradient(Uc, basis_phys_grad_elems):
 	'''
 	This function evaluates the gradient of the state based on the 
@@ -83,10 +76,7 @@ def evaluate_gradient(Uc, basis_phys_grad_elems):
 
 	return gUq # [ne, nq, ns, ndims]
 
-def pass_ref_to_phys_grad(ijac, gU_ref):
-	pass
 
-	
 def ref_to_phys_grad(ijac, gU_ref):
 	gU_phys = np.einsum('ijlp, ijkp -> ijkl', ijac, gU_ref)
 
