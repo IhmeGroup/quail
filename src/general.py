@@ -223,4 +223,9 @@ def set_solver_params(params=None, **kwargs):
 	return params
 
 
+def pass_function(*args):
+	pass
 
+
+def zero_function(*args):
+	return 0.
