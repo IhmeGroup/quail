@@ -2,11 +2,10 @@
 #
 #       File : src/physics/navierstokes/tools.py
 #
-#       Contains helper functions for the navierstokes class.
+#       Contains tools for the navierstokes class that define the 
+#		transport properties for the given setup
 #
 # ------------------------------------------------------------------------ #
-# from abc import ABC, abstractmethod
-# import math
 import numpy as np
 from general import TransportType
 
@@ -36,6 +35,21 @@ def set_transport(transport_type):
 	return fcn
 
 def get_constant_transport(physics, Uq, flag_non_physical=None):
+	'''
+	Returns viscosity and thermal conductivity for constant transport
+	properties.
+
+	Inputs:
+	-------
+		physics: physics object
+		Uq: solution state evaluated at quadrature points [ne, nq, ns]
+		flag_non_physical: boolean to check for physicality of transport
+
+	Outputs:
+	--------
+		mu: viscosity [ne]
+		kappa: thermal conductivity [ne]
+	'''
 	# Unpack
 	Pr = physics.Pr
 	gamma = physics.gamma
@@ -47,6 +61,21 @@ def get_constant_transport(physics, Uq, flag_non_physical=None):
 	return mu, mu * cv * gamma / Pr
 
 def get_sutherland_transport(physics, Uq, flag_non_physical=None):
+	'''
+	Calculates the viscosity and thermal conductivity using Sutherland's 
+	law.
+
+	Inputs:
+	-------
+		physics: physics object
+		Uq: solution state evaluated at quadrature points [ne, nq, ns]
+		flag_non_physical: boolean to check for physicality of transport
+
+	Outputs:
+	--------
+		mu: viscosity [ne]
+		kappa: thermal conductivity [ne]
+	'''
 	# Unpack
 	Pr = physics.Pr
 	gamma = physics.gamma
