@@ -13,6 +13,7 @@ import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
 import solver.tools as solver_tools
 
+
 def set_function_definitions(solver, params):
 	'''
 	This function sets the necessary functions for the given case 
@@ -30,10 +31,10 @@ def set_function_definitions(solver, params):
 		solver.calculate_boundary_flux_integral_sum = \
 			solver_tools.calculate_boundary_flux_integral_sum
 	else:
-		solver.evaluate_gradient = helpers.pass_evaluate_gradient	
-		solver.ref_to_phys_grad = helpers.pass_ref_to_phys_grad
+		solver.evaluate_gradient = general.pass_function
+		solver.ref_to_phys_grad = general.pass_function
 		solver.calculate_boundary_flux_integral_sum = \
-			solver_tools.pass_calculate_boundary_flux_integral_sum
+			general.zero_function
 
 
 def calculate_volume_flux_integral(solver, elem_helpers, Fq):
@@ -48,7 +49,7 @@ def calculate_volume_flux_integral(solver, elem_helpers, Fq):
 
 	Outputs:
 	--------
-		res_elem: calculated residual array (for volume integral of all elements)
+		res_elem: calculated residual array
 			[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
@@ -67,7 +68,7 @@ def calculate_volume_flux_integral(solver, elem_helpers, Fq):
 
 def calculate_boundary_flux_integral(basis_val, quad_wts, Fq):
 	'''
-	Calculates the inviscid flux boundary integral for the DG scheme
+	Calculates the boundary flux integral for the DG scheme
 
 	Inputs:
 	-------
@@ -77,7 +78,7 @@ def calculate_boundary_flux_integral(basis_val, quad_wts, Fq):
 
 	Outputs:
 	--------
-		resB: residual contribution (from boundary face) [nb, ns]
+		resB: residual contribution (from boundary face) [nf, nb, ns]
 	'''
 	# Calculate flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts) # [nf, nq, ns]
@@ -88,20 +89,29 @@ def calculate_boundary_flux_integral(basis_val, quad_wts, Fq):
 	return resB # [nf, nb, ns]
 
 
-def pass_calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, gFq):
-	return 0.
-
-
-def calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, gFq):
+def calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, Fq):
 	'''
+	Calculates the directional boundary flux integrals for diffusion fluxes
+
+	Inputs:
+	-------
+		basis_ref_grad: evaluated gradient of the basis function in 
+			reference space [nq, nb, ndims]
+		quad_wts: quadrature weights [nq, 1]
+		Fq: Direction diffusion flux contribution [nf, nq, ns, ndims]
+
+	Outputs:
+	--------
+		resB: residual contribution (from boundary face) [nf, nb, ns]
 	'''
+
 	# Calculate flux quadrature
-	gFq_quad = np.einsum('ijkl, jm -> ijkl', gFq, quad_wts) # [nf, nq, ns]
+	Fq_quad = np.einsum('ijkl, jm -> ijkl', gFq, quad_wts) # [nf, nq, ns]
 
 	# Calculate residual
-	resB = np.einsum('ijnl, ijkl -> ink', basis_ref_grad, gFq_quad)
+	resB = np.einsum('ijnl, ijkl -> ink', basis_ref_grad, Fq_quad)
 
-	return resB
+	return resB # [nf, nb, ns]
 
 
 def calculate_source_term_integral(elem_helpers, Sq):
