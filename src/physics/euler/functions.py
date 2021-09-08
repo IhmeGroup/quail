@@ -903,12 +903,12 @@ class GravitySource(SourceBase):
 ------------------------
 Numerical flux functions
 ------------------------
-These classes inherit from the ConvNumFluxBase class. See
-ConvNumFluxBase for detailed comments of attributes and methods.
-Information specific to the corresponding child classes can be found below.
-These classes should correspond to the ConvNumFluxType enum members above.
+These classes inherit from the ConvNumFluxBase or DiffNumFluxBase class. 
+See ConvNumFluxBase/DiffNumFluxBase for detailed comments of attributes 
+and methods. Information specific to the corresponding child classes can 
+be found below. These classes should correspond to the ConvNumFluxType 
+or DiffNumFluxType enum members above.
 '''
-
 class LaxFriedrichs1D(ConvNumFluxBase):
 	'''
 	This class corresponds to the local Lax-Friedrichs flux function for the
