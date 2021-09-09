@@ -60,16 +60,6 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	tot_err = 0.
 
 	# Get quadrature data
-	
-	# HACK Compare to DG-Legion
-	# p0
-	# quad_order = basis.get_quadrature_order(mesh, 0,#np.amax([order, 1]), # HACK multiply by 2.*np.amax....
-	# 		physics=physics)
-	# p1
-	# quad_order = basis.get_quadrature_order(mesh, np.amax([order, 1]), # HACK multiply by 2.*np.amax....
-	# 		physics=physics)
-
-	# Quail implementation 
 	quad_order = basis.get_quadrature_order(mesh, 2*np.amax([order, 1]),
 			physics=physics)
 
@@ -101,9 +91,8 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 		err_elems[elem_ID] = err
 		tot_err += err_elems[elem_ID]
 
-	# import code; code.interact(local=locals())
-	tot_err = (tot_err)**(1./ord) # HACK How DGLegion does this
-	# tot_err = (tot_err / tot_vol)**(1./ord)
+	tot_err = (tot_err / tot_vol)**(1./ord)
+
 	# Print if requested
 	if print_error:
 		print("Total error = %.15f" % (tot_err))
