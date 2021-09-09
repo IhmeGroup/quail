@@ -17,7 +17,9 @@ import physics.base.functions as base_fcns
 from physics.base.functions import BCType as base_BC_type
 from physics.base.functions import FcnType as base_fcn_type
 from physics.base.functions import ConvNumFluxType as base_conv_num_flux_type
+from physics.base.functions import DiffNumFluxType as base_diff_num_flux_type
 
+import physics.base.functions as base_fcns
 import physics.scalar.functions as scalar_fcns
 from physics.scalar.functions import FcnType as scalar_fcn_type
 from physics.scalar.functions import SourceType as scalar_source_type
@@ -208,9 +210,10 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 	def set_maps(self):
 		super().set_maps()
 
-		# self.source_map.update({
-		# 	scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
-		# })
+		self.diff_num_flux_map.update({
+			base_diff_num_flux_type.SIP : 
+				base_fcns.SIP,
+			})
 
 	class StateVariables(Enum):
 		Scalar = "u"
@@ -224,12 +227,12 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 
 		return F, None
 
-	def get_diff_flux_interior(self, Uq, gUq)::
+	def get_diff_flux_interior(self, Uq, gUq):
 		al = self.al
 		F = al * gUq
 
 		return F
-		
+
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		sname = self.AdditionalVariables[var_name].name
 
@@ -242,7 +245,7 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 		return scalar
 
 
-class ConstAdvDiffScalar1D(ConstAdvScalar):
+class ConstAdvDiffScalar1D(ConstAdvDiffScalar):
 	'''
 	This class corresponds to 1D scalar advection/diffusion with a constant
 	velocity and diffusion coefficient. 
@@ -258,7 +261,7 @@ class ConstAdvDiffScalar1D(ConstAdvScalar):
 		super().set_maps()
 
 		d = {
-			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
+			scalar_fcn_type.DiffGaussian : scalar_fcns.DiffGaussian,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -281,6 +284,77 @@ class ConstAdvDiffScalar1D(ConstAdvScalar):
 		self.c = ConstVelocity
 		self.cspeed = np.abs(self.c)
 		self.al = DiffCoefficient
+
+class ConstAdvDiffScalar2D(ConstAdvDiffScalar):
+	'''
+	This class corresponds to 2D scalar /diffusion with a constant
+	velocity and diffusion coefficient.
+
+	It inherits attributes and methods from the ConstAdvDiffScalar 
+	class. See ConstAdvDiffScalar for detailed comments of attributes
+	and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	NDIMS = 2
+
+	def __init__(self, mesh):
+		super().__init__(mesh)
+		self.c = np.zeros(2)
+		self.cspeed = 0.
+		self.al = np.zeros(2)
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			scalar_fcn_type.DiffGaussian2D : scalar_fcns.DiffGaussian2D
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+
+	def set_physical_params(self, ConstXVelocity=1., ConstYVelocity=1., 
+			DiffCoefficientX=1., DiffCoefficientY=1.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			ConstXVelocity: constant advection velocity in the x-direction
+			ConstYVelocity: constant advection velocity in the y-direction
+			DiffCoefficientX: constant diffusion coefficient in the 
+				x-direction
+			DiffCoefficientY: constant diffusion coefficient in the 
+				y-direction
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.c = np.array([ConstXVelocity, ConstYVelocity])
+		self.al = np.array([DiffCoefficientX, DiffCoefficientY])
+		self.cspeed = np.linalg.norm(self.c)
+
+	def get_conv_flux_interior(self, Uq):
+		c = self.c
+
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+		F[:, :, :, 0] = c[0] * Uq
+		F[:, :, :, 1] = c[1] * Uq
+
+		return F, None
+
+	def get_diff_flux_interior(self, Uq, gUq):
+		al = self.al
+		
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+
+		F[:, :, :, 0] = al[0] * gUq[:, :, :, 0]
+		F[:, :, :, 1] = al[1] * gUq[:, :, :, 1]
+
+		return F
+
 
 class Burgers1D(base.PhysicsBase):
 	'''
