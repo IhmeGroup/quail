@@ -62,6 +62,9 @@ def set_physics(mesh, physics_type):
 	elif PhysicsType[physics_type] == PhysicsType.ConstAdvDiffScalar and \
 			ndims == 1:
 		physics_class = scalar.ConstAdvDiffScalar1D
+	elif PhysicsType[physics_type] == PhysicsType.ConstAdvDiffScalar and \
+			ndims == 2:
+		physics_class = scalar.ConstAdvDiffScalar2D
 	elif PhysicsType[physics_type] == PhysicsType.Burgers and ndims == 1:
 	    physics_class = scalar.Burgers1D
 	elif PhysicsType[physics_type] == PhysicsType.ModelProblem:

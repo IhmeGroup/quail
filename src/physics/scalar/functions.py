@@ -27,6 +27,8 @@ class FcnType(Enum):
 	ShockBurgers = auto()
 	SineBurgers = auto()
 	LinearBurgers = auto()
+	DiffGaussian = auto()
+	DiffGaussian2D = auto()
 
 
 class BCType(Enum):
@@ -276,6 +278,59 @@ class LinearBurgers(FcnBase):
 
 		return Uq
 
+
+class DiffGaussian(FcnBase):
+	'''
+	Advecting/Diffusing Gaussian wave
+	'''
+	def __init__(self, xo):
+		self.xo = xo # Center of wave
+
+	def get_state(self, physics, x, t):
+		# unpack
+		c = physics.c
+		al = physics.al
+
+		xo = self.xo
+
+		C1 = 1. / np.sqrt(4.*t + 1.)
+		C2 = (x - xo - c*t) * (x - xo - c*t)
+		C3 = al * (4*t + 1)
+
+		Uq = C1 * np.exp(-C2 / C3)
+
+		return Uq
+
+class DiffGaussian2D(FcnBase):
+	'''
+	Advecting/Diffusing Gaussian wave
+	'''
+	def __init__(self, xo, yo):
+		self.xo = xo # Center of wave (x-coordinate)
+		self.yo = yo # Center of wave (y-coordinate)
+
+	def get_state(self, physics, x, t):
+		# unpack
+		c = physics.c
+		al = physics.al
+
+		x1 = x[:, :, 0]
+		x2 = x[:, :, 1]
+
+		xo = self.xo
+		yo = self.yo
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		C1 = 1. / (4.*t + 1.)
+		C2x = (x1 - xo - c[0]*t)**2
+		C2y = (x2 - yo - c[1]*t)**2
+		C3x = al[0] * (4*t + 1)
+		C3y = al[1] * (4*t + 1)
+
+		Uq[:, :, 0] = C1 * np.exp(-1.*(C2x / C3x) - (C2y / C3y))
+
+		return Uq
 
 '''
 ---------------------

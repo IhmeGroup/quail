@@ -335,7 +335,7 @@ class SIP(DiffNumFluxBase):
 		Fv_dir += -1. * np.einsum('i, ijkl -> ijkl', C4, Fv_dir_jump)
 		FvR = np.einsum('ijv, ijkl -> ijkl', C5, Fv_dir_jump)
 
-		Fv = np.einsum('ijl, ijkl -> ijk', normals, F_dir)
+		Fv = np.einsum('ijl, ijkl -> ijk', normals, Fv_dir)
 
 		return Fv, FvL, FvR # [nf, nq, ns], [nf, nq, ns, ndims] 
 			# [nf, nq, ns, ndims]
