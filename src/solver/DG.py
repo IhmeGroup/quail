@@ -147,7 +147,7 @@ class ElemHelpers(object):
 			self.x_elems: precomputed coordinates of the quadrature points
 				in physical space [num_elems, nq, ndims]
 		'''
-		ndims = mesh.ndims
+		ndims = basis.NDIMS # Need to define ndims from basis for ADERDG
 		num_elems = mesh.num_elems
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]

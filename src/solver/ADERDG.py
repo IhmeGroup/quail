@@ -435,6 +435,9 @@ class ADERDG(base.SolverBase):
 					np.zeros([mesh.num_interior_faces,
 					self.int_face_helpers.quad_wts.shape[0],
 					physics.NUM_STATE_VARS]))
+
+		# Construct the necessary functions dependent upon required physics
+		solver_tools.set_function_definitions(self, params)
 		
 		# Initialize state
 		if params["RestartFile"] is None:
@@ -511,32 +514,59 @@ class ADERDG(base.SolverBase):
 
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
+		nq_tile_constant = elem_helpers_st.nq_tile_constant
 
 		quad_wts = elem_helpers.quad_wts
 		quad_wts_st = elem_helpers_st.quad_wts
 		quad_pts_st = elem_helpers_st.quad_pts
 
 		basis_val_st = elem_helpers_st.basis_val
+		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+
+		basis_phys_grad_elems_st = elem_helpers_st.basis_phys_grad_elems
+		basis_ref_grad_st = elem_helpers_st.basis_ref_grad
+
+		basis_ref_grad = elem_helpers.basis_ref_grad
+		ijac_elems = elem_helpers.ijac_elems
+
 		x_elems = elem_helpers.x_elems
 		x_elems_st = elem_helpers_st.x_elems
 
 		nq = quad_wts.shape[0]
 		nq_st = quad_wts_st.shape[0]
 
+		fluxes = self.params["ConvFluxSwitch"]
+		sources = self.params["SourceSwitch"]
+
 		# Interpolate state at quad points
 		Uq = helpers.evaluate_state(Uc, basis_val_st) # [ne, nq_st, ns]
+
+		# Interpolate gradient of state at quad points
+		# gUq = solver_tools.evaluate_gradient(nq_tile_constant, Uc, 
+				# basis_phys_grad_elems)
+		gUq_ref = solver_tools.evaluate_gradient(Uc, 
+				basis_ref_grad_st[:,:,0])
+
+		ijac_elems_st = np.tile(ijac_elems, (1, nq_tile_constant, 1, 1))
+		gUq = self.ref_to_phys_grad(ijac_elems_st, gUq_ref)
 
 		if self.verbose:
 			# Get min and max of state variables for reporting
 			self.get_min_max_state(Uq)
 
-		if self.params["ConvFluxSwitch"] == True:
-			# Evaluate the inviscid flux integral.
+		if fluxes:
+			# Evaluate the flux volume integral.
 			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
+			
+			if physics.diff_flux_fcn:
+				# Evaluate the diffusion flux
+				Fq -= physics.get_diff_flux_interior(Uq, gUq)
+					# [ne, nq, ns, ndims]
+
 			res_elem += solver_tools.calculate_volume_flux_integral(
 					self, elem_helpers, elem_helpers_st, Fq) # [ne, nb, ns]
 
-		if self.params["SourceSwitch"] == True:
+		if sources:
 			# Evaluate the source term integral
 
 			# Get array in physical time from ref time
@@ -554,13 +584,14 @@ class ADERDG(base.SolverBase):
 
 		return res_elem # [ne, nb, ns]
 
-	def get_interior_face_residual(self, faceL_id, faceR_id, Uc_L, Uc_R):
+	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		# Unpack
 		mesh = self.mesh
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
 
 		time_skip = self.elem_helpers_st.time_skip
+		nq_tile_constant = self.elem_helpers_st.nq_tile_constant
 
 		int_face_helpers = self.int_face_helpers
 		int_face_helpers_st = self.int_face_helpers_st
@@ -576,34 +607,99 @@ class ADERDG(base.SolverBase):
 		faces_to_basisL_st = int_face_helpers_st.faces_to_basisL
 		faces_to_basisR_st = int_face_helpers_st.faces_to_basisR
 
-		basis_valL = faces_to_basisL[faceL_id]
-		basis_valR = faces_to_basisR[faceR_id]
+		faces_to_basis_ref_gradL = \
+			int_face_helpers.faces_to_basis_ref_gradL
+		faces_to_basis_ref_gradR = \
+			int_face_helpers.faces_to_basis_ref_gradR
+
+		faces_to_basis_ref_gradL_st = \
+			int_face_helpers_st.faces_to_basis_ref_gradL
+		faces_to_basis_ref_gradR_st = \
+			int_face_helpers_st.faces_to_basis_ref_gradR
+
+		basis_valL = faces_to_basisL[faceL_IDs]
+		basis_valR = faces_to_basisR[faceR_IDs]
 
 		basis_valL_st = faces_to_basisL_st[faceL_id_st]
 		basis_valR_st = faces_to_basisR_st[faceR_id_st]
 
+		ijacL_elems = int_face_helpers.ijacL_elems
+		ijacR_elems = int_face_helpers.ijacR_elems
+
+		ijacL_elems_st = int_face_helpers_st.ijacL_elems
+		ijacR_elems_st = int_face_helpers_st.ijacR_elems
+
+		fluxes = self.params["ConvFluxSwitch"]
+
 		# Interpolate state at quad points
-		UqL = helpers.evaluate_state(Uc_L, basis_valL_st) # [nf, nq_st, ns]
-		UqR = helpers.evaluate_state(Uc_R, basis_valR_st) # [nf, nq_st, ns]
+		UqL = helpers.evaluate_state(UcL, basis_valL_st) # [nf, nq_st, ns]
+		UqR = helpers.evaluate_state(UcR, basis_valR_st) # [nf, nq_st, ns]
+
+		# Interpolate gradient of state at quad points
+		gUqL_ref = solver_tools.evaluate_gradient(UcL, 
+				faces_to_basis_ref_gradL_st[faceL_id_st, :, :, 0])
+		gUqR_ref = solver_tools.evaluate_gradient(UcR, 
+				faces_to_basis_ref_gradR_st[faceR_id_st, :, :, 0][:, ::-1])
+
+		# Interpolate gradient of state at quad points
+		# gUqL_ref = self.evaluate_gradient(UcL, 
+		# 		faces_to_basis_ref_gradL_st[faceL_id_st])
+		# gUqR_ref = self.evaluate_gradient(UcR, 
+		# 		faces_to_basis_ref_gradR_st[faceR_id_st][:, ::-1])
+
+		# gUqL_ref = solver_tools.evaluate_gradient(nq_tile_constant, UcL, 
+				# faces_to_basis_ref_gradL[faceL_IDs])
+		# gUqR_ref = solver_tools.evaluate_gradient(nq_tile_constant, UcR, 
+				# faces_to_basis_ref_gradR[faceR_IDs][:, ::-1])
+
+		# Make gradient the physical gradient at L/R states
+		gUqL = self.ref_to_phys_grad(ijacL_elems, gUqL_ref)
+		gUqR = self.ref_to_phys_grad(ijacR_elems, gUqR_ref)
 
 		normals_int_faces = int_face_helpers.normals_int_faces
 		normals_int_faces = np.tile(normals_int_faces, 
 				(normals_int_faces.shape[1], 1))
 
-		# Allocate resL and resR (needed for operator splitting)
+		# Allocate resL/R and resL/R_diff (needed for operator splitting)
 		resL = np.zeros_like(self.stepper.res)
 		resR = np.zeros_like(self.stepper.res)
+		resL_diff = np.zeros_like(resL)
+		resR_diff = np.zeros_like(resR)
 
-		if self.params["ConvFluxSwitch"] == True:
+		if physics.diff_flux_fcn:
+			# Calculate diffusion flux helpers
+			physics.diff_flux_fcn.compute_iface_helpers(self)
+		
+		if fluxes:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
 					# [nf, nq_st, ns]
+
+			# Compute diffusion flux
+			Fq_diff, FL, FR = physics.get_diff_flux_numerical(UqL, UqR,
+					gUqL, gUqR, normals_int_faces) # [nf, nq, ns], 
+					# [nf, nq, ns, ndims], [nf, nq, ns, ndims]
+			Fq -= Fq_diff
+
+			FL_phys = self.ref_to_phys_grad(ijacL_elems, FL)
+			FR_phys = self.ref_to_phys_grad(ijacR_elems, FR)
+			
+			# Compute contribution to left and right element residuals
 			resL = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_valL, quad_wts_st, Fq)
 			resR = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_valR, quad_wts_st, Fq)
-		
-		return resL, resR, 0, 0 # [nif, nb, ns] Need zeros w/out diff impl
+					
+			# Compute additional boundary flux integrals for diffusion terms
+			resL_diff = self.calculate_boundary_flux_integral_sum(
+					time_skip, faces_to_basis_ref_gradL[faceL_IDs], 
+					quad_wts_st, FL_phys)
+
+			resR_diff = self.calculate_boundary_flux_integral_sum(
+					time_skip, faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], 
+					quad_wts_st, FR_phys)
+
+		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_ID, Uc, resB):
 		# Unpack
@@ -711,6 +807,7 @@ class ADERDG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
 		djac_elems = elem_helpers.djac_elems
+		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 
 		nq_t = self.elem_helpers_st.nq_tile_constant 
 
@@ -725,7 +822,7 @@ class ADERDG(base.SolverBase):
 
 			if physics.diff_flux_fcn:
 				Fq -= physics.get_diff_flux_interior(Up, gUp)
-				# import code; code.interact(local=locals())
+
 			# Interpolate flux coefficient to nodes
 			dg_tools.interpolate_to_nodes(Fq, F)
 
@@ -744,12 +841,16 @@ class ADERDG(base.SolverBase):
 			# Interpolate state at quadrature points
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
+			# Interpolate gradient of the state
+			gUq = solver_tools.evaluate_gradient(nq_t, Up,
+				basis_phys_grad_elems)
+
 			# Evaluate the inviscid flux
 			Fq = physics.get_conv_flux_interior(Uq)[0]
 			
-			# Evaluate the diffusive flux 
+			# Evaluate the diffusive flux (FIX!!!!!)
 			if physics.diff_flux_fcn:
-				Fq -= physics.get_diff_flux_interior(Up, gUp)
+				Fq -= physics.get_diff_flux_interior(Uq, gUq)
 				
 			# Project Fq to the space-time basis coefficients
 			for d in range(ndims):
