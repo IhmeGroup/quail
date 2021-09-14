@@ -16,6 +16,30 @@ import meshing.tools as mesh_tools
 
 import numerics.basis.basis as basis_defs
 import numerics.helpers.helpers as helpers
+import solver.ader_tools as solver_tools
+
+
+def set_function_definitions(solver, params):
+	'''
+	This function sets the necessary functions for the given case 
+	dependent upon setter flags in the input deck (primarily for 
+	the diffusive flux definitions)
+
+	Inputs:
+	-------
+		solver: solver object
+		params: dict with solver parameters
+	'''
+	if solver.physics.diff_flux_fcn:
+		solver.evaluate_gradient = helpers.evaluate_gradient
+		solver.ref_to_phys_grad = helpers.ref_to_phys_grad
+		solver.calculate_boundary_flux_integral_sum = \
+			solver_tools.calculate_boundary_flux_integral_sum
+	else:
+		solver.evaluate_gradient = general.pass_function
+		solver.ref_to_phys_grad = general.pass_function
+		solver.calculate_boundary_flux_integral_sum = \
+			general.zero_function
 
 
 def set_source_treatment(ns, source_treatment):
@@ -406,6 +430,32 @@ def calculate_boundary_flux_integral(nq_t, basis_val,
 	return resB # [nf, nb, ns]
 
 
+def calculate_boundary_flux_integral_sum(nq_t, basis_ref_grad, quad_wts_st, Fq):
+	'''
+	Calculates the directional boundary flux integrals for diffusion fluxes
+
+	Inputs:
+	-------
+		basis_ref_grad: evaluated gradient of the basis function in 
+			reference space [nq, nb, ndims]
+		quad_wts: quadrature weights [nq, 1]
+		Fq: Direction diffusion flux contribution [nf, nq, ns, ndims]
+
+	Outputs:
+	--------
+		resB: residual contribution (from boundary face) [nf, nb, ns]
+	'''
+
+	# Calculate flux quadrature
+	Fq_quad = np.einsum('ijkl, jm -> ijkl', Fq, quad_wts_st) # [nf, nq, ns]
+
+	# Calculate residual
+	resB = np.einsum('ijnl, ijkl -> ink', np.tile(basis_ref_grad, (nq_t, 1)),
+		Fq_quad)
+
+	return resB # [nf, nb, ns]
+
+
 def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 	'''
 	Calculates the source term volume integral for the ADERDG scheme
@@ -464,6 +514,57 @@ def get_spacetime_gradient(solver, Uc):
 	return np.einsum('mn, npl, ipk -> imkl', iMM, SMS, Uc)
 
 
+# def evaluate_gradient(nq_t, Uc, basis_ref_grad):
+def evaluate_gradient(Uc, basis_ref_grad):
+
+	'''
+	This function evaluates the gradient of the state based on the 
+	physical gradient of the basis.
+
+	Inputs:
+	-------
+	    Uc: state coefficients [ne, nb, ns]
+	    basis_phys_grad_elems: evaluated gradient of the basis function in
+			physical space [nq, nb, ndims]
+
+	Outputs:
+	--------
+	    gUq: gradient of the state [ne, nq, ns, ndims]
+	'''
+	# nb_tile = int(Uc.shape[1] / basis_ref_grad.shape[2])
+	# btile = np.tile(basis_ref_grad, (nb_tile, 1))
+	# gUc = np.einsum('ijml, imk -> ijkl', np.tile(btile, [1, nq_t, 1, 1]), Uc)
+	if basis_ref_grad.ndim == 3:
+		gUc = np.einsum('ijm, imk -> ijk', basis_ref_grad, Uc)
+	else:
+		gUc = np.einsum('jm, imk -> ijk', basis_ref_grad, Uc)
+
+	return np.expand_dims(gUc, axis=-1) # [ne, nq, ns, ndims]
+
+
+def evaluate_gradient2(nq_t, Uc, basis_ref_grad):
+	'''
+	This function evaluates the gradient of the state based on the 
+	physical gradient of the basis.
+
+	Inputs:
+	-------
+	    Uc: state coefficients [ne, nb, ns]
+	    basis_phys_grad_elems: evaluated gradient of the basis function in
+			physical space [nq, nb, ndims]
+
+	Outputs:
+	--------
+	    gUq: gradient of the state [ne, nq, ns, ndims]
+	'''
+	nb_tile = int(Uc.shape[1] / basis_ref_grad.shape[1])
+	btile = np.tile(basis_ref_grad, (nb_tile, 1))
+
+	gUc = np.einsum('jml, imk -> ijkl', np.tile(btile, [nq_t, 1, 1]), Uc)
+
+
+	return gUc # [ne, nq, ns, ndims]
+
 def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
 	Calculates the predicted solution state for the ADER-DG method using a
@@ -492,8 +593,11 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	basis_st = solver.basis_st
 
 	elem_helpers = solver.elem_helpers
+	elem_helpers_st = solver.elem_helpers_st
 	ader_helpers = solver.ader_helpers
-
+	nq_tile_constant = elem_helpers_st.nq_tile_constant
+	basis_ref_grad = elem_helpers.basis_ref_grad
+	basis_ref_grad_st = elem_helpers_st.basis_ref_grad
 	order = solver.order
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val
@@ -512,8 +616,11 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
 
-	# Calculate the gradient of the state
+	# Calculate the gradient of the state (Not sure how to do this yet)
 	gU_pred = get_spacetime_gradient(solver, U_pred)
+	# gU_pred = evaluate_gradient2(nq_tile_constant, U_pred, basis_ref_grad)
+	# gU_pred = np.einsum('jml, imk -> ijkl', basis_ref_grad_st, U_pred)
+	# import code; code.interact(local=locals())
 
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
