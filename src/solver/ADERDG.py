@@ -544,8 +544,8 @@ class ADERDG(base.SolverBase):
 		# Interpolate gradient of state at quad points
 		# gUq = solver_tools.evaluate_gradient(nq_tile_constant, Uc, 
 				# basis_phys_grad_elems)
-		gUq_ref = solver_tools.evaluate_gradient(Uc, 
-				basis_ref_grad_st[:,:,0])
+		gUq_ref = self.evaluate_gradient(Uc, 
+				basis_ref_grad_st[:, : , :-1])
 
 		ijac_elems_st = np.tile(ijac_elems, (1, nq_tile_constant, 1, 1))
 		gUq = self.ref_to_phys_grad(ijac_elems_st, gUq_ref)
@@ -636,10 +636,10 @@ class ADERDG(base.SolverBase):
 		UqR = helpers.evaluate_state(UcR, basis_valR_st) # [nf, nq_st, ns]
 
 		# Interpolate gradient of state at quad points
-		gUqL_ref = solver_tools.evaluate_gradient(UcL, 
-				faces_to_basis_ref_gradL_st[faceL_id_st, :, :, 0])
-		gUqR_ref = solver_tools.evaluate_gradient(UcR, 
-				faces_to_basis_ref_gradR_st[faceR_id_st, :, :, 0][:, ::-1])
+		gUqL_ref = self.evaluate_gradient(UcL, 
+				faces_to_basis_ref_gradL_st[faceL_id_st, :, :, :-1])
+		gUqR_ref = self.evaluate_gradient(UcR, 
+				faces_to_basis_ref_gradR_st[faceR_id_st, :, :, :-1][:, ::-1])
 
 		# Interpolate gradient of state at quad points
 		# gUqL_ref = self.evaluate_gradient(UcL, 
@@ -807,7 +807,8 @@ class ADERDG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		elem_helpers_st = self.elem_helpers_st
 		djac_elems = elem_helpers.djac_elems
-		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+		basis_ref_grad_st = elem_helpers_st.basis_ref_grad
+		ijac_elems = elem_helpers.ijac_elems
 
 		nq_t = self.elem_helpers_st.nq_tile_constant 
 
@@ -842,13 +843,16 @@ class ADERDG(base.SolverBase):
 			Uq = helpers.evaluate_state(Up, basis_val_st)
 
 			# Interpolate gradient of the state
-			gUq = solver_tools.evaluate_gradient(nq_t, Up,
-				basis_phys_grad_elems)
+			gUq_ref = self.evaluate_gradient(Up, 
+				basis_ref_grad_st[:, : , :-1])
 
+			ijac_elems_st = np.tile(ijac_elems, (1, nq_t, 1, 1))
+			gUq = self.ref_to_phys_grad(ijac_elems_st, gUq_ref)
+			
 			# Evaluate the inviscid flux
 			Fq = physics.get_conv_flux_interior(Uq)[0]
 			
-			# Evaluate the diffusive flux (FIX!!!!!)
+			# Evaluate the diffusive flux
 			if physics.diff_flux_fcn:
 				Fq -= physics.get_diff_flux_interior(Uq, gUq)
 				
