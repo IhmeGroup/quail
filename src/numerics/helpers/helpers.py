@@ -72,7 +72,10 @@ def evaluate_gradient(Uc, basis_phys_grad_elems):
 	--------
 	    gUq: gradient of the state [ne, nq, ns, ndims]
 	'''
-	gUq = np.einsum('ijml, imk -> ijkl', basis_phys_grad_elems, Uc)
+	if basis_phys_grad_elems.ndim == 4:
+		gUq = np.einsum('ijml, imk -> ijkl', basis_phys_grad_elems, Uc)
+	else:
+		gUq = np.einsum('jml, imk -> ijkl', basis_phys_grad_elems, Uc)
 
 	return gUq # [ne, nq, ns, ndims]
 
