@@ -616,11 +616,8 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
 
-	# Calculate the gradient of the state (Not sure how to do this yet)
+	# Calculate the gradient of the state
 	gU_pred = get_spacetime_gradient(solver, U_pred)
-	# gU_pred = evaluate_gradient2(nq_tile_constant, U_pred, basis_ref_grad)
-	# gU_pred = np.einsum('jml, imk -> ijkl', basis_ref_grad_st, U_pred)
-	# import code; code.interact(local=locals())
 
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
@@ -649,7 +646,9 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 			break
 
 		U_pred = np.copy(U_pred_new)
-
+		# Calculate the gradient of the state
+		gU_pred = get_spacetime_gradient(solver, U_pred)
+		
 		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
 		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
@@ -857,6 +856,9 @@ def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
+
+	# Calculate the gradient of the state
+	gU_pred = get_spacetime_gradient(solver, U_pred)
 
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
