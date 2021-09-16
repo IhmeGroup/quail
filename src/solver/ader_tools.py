@@ -492,10 +492,10 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 
 	return res_elem # [ne, nb, ns]
 
+
 def get_spacetime_gradient(solver, Uc):
 	'''
-	Calculates the spacetime gradient of the state using 
-	the formulation from Dumbser, 2010.
+	Calculates the spacetime gradient of the state
 
 	Inputs:
 	-------
@@ -510,13 +510,12 @@ def get_spacetime_gradient(solver, Uc):
 
 	iMM = ader_helpers.iMM
 	SMS = ader_helpers.SMS_ref
+	
+	SMSxUc = np.einsum('mnl, imk -> inkl', SMS, Uc)
+	return np.einsum('mn, inkl -> imkl', iMM, SMSxUc)
 
-	return np.einsum('mn, npl, ipk -> imkl', iMM, SMS, Uc)
 
-
-# def evaluate_gradient(nq_t, Uc, basis_ref_grad):
 def evaluate_gradient(Uc, basis_ref_grad):
-
 	'''
 	This function evaluates the gradient of the state based on the 
 	physical gradient of the basis.
@@ -531,9 +530,6 @@ def evaluate_gradient(Uc, basis_ref_grad):
 	--------
 	    gUq: gradient of the state [ne, nq, ns, ndims]
 	'''
-	# nb_tile = int(Uc.shape[1] / basis_ref_grad.shape[2])
-	# btile = np.tile(basis_ref_grad, (nb_tile, 1))
-	# gUc = np.einsum('ijml, imk -> ijkl', np.tile(btile, [1, nq_t, 1, 1]), Uc)
 	if basis_ref_grad.ndim == 3:
 		gUc = np.einsum('ijm, imk -> ijk', basis_ref_grad, Uc)
 	else:
@@ -541,29 +537,6 @@ def evaluate_gradient(Uc, basis_ref_grad):
 
 	return np.expand_dims(gUc, axis=-1) # [ne, nq, ns, ndims]
 
-
-def evaluate_gradient2(nq_t, Uc, basis_ref_grad):
-	'''
-	This function evaluates the gradient of the state based on the 
-	physical gradient of the basis.
-
-	Inputs:
-	-------
-	    Uc: state coefficients [ne, nb, ns]
-	    basis_phys_grad_elems: evaluated gradient of the basis function in
-			physical space [nq, nb, ndims]
-
-	Outputs:
-	--------
-	    gUq: gradient of the state [ne, nq, ns, ndims]
-	'''
-	nb_tile = int(Uc.shape[1] / basis_ref_grad.shape[1])
-	btile = np.tile(basis_ref_grad, (nb_tile, 1))
-
-	gUc = np.einsum('jml, imk -> ijkl', np.tile(btile, [nq_t, 1, 1]), Uc)
-
-
-	return gUc # [ne, nq, ns, ndims]
 
 def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
@@ -623,7 +596,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
 	flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-			U_pred, gU_pred)
+			U_pred)
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
@@ -646,13 +619,11 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 			break
 
 		U_pred = np.copy(U_pred_new)
-		# Calculate the gradient of the state
-		gU_pred = get_spacetime_gradient(solver, U_pred)
 		
 		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
 		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
-				U_pred, gU_pred)
+				U_pred)
 
 		if i == niter - 1:
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
