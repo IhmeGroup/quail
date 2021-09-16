@@ -217,6 +217,7 @@ class ADERHelpers(object):
 				[nb_st, nb_st]
 			self.FTR: flux matrix in reference space [nb_st, nb]
 			self.SMT: stiffness matrix in time [nb_st, nb_st]
+			self.SMS_ref: stiffness matrix in space [nb_st, nb_st, ndims]
 			self.SMS_elems: stiffness matrix in space for each
 				element [num_elems, nb_st, nb_st]
 			self.MM: space-time mass matrix in reference space
@@ -263,10 +264,11 @@ class ADERHelpers(object):
 		MM = basis_st_tools.get_elem_mass_matrix_ader(mesh, basis_st, order,
 				elem_ID=-1, physical_space=False)
 
-		# Get stiffness matrices in reference space (only in spatial directions)
+		# Get stiffness matrices in reference space (only in spatial dirs)
 		for nd in range(ndims):
-			SMS_ref[:, :, nd] = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st,
-				order, dt, elem_ID=0, grad_dir=nd, physical_space=False)
+			SMS_ref[:, :, nd] = basis_st_tools.get_stiffness_matrix_ader(
+				mesh, basis, basis_st, order, dt, elem_ID=0, grad_dir=nd,
+				physical_space=False)
 
 		# Store
 		self.FTL = FTL
@@ -353,6 +355,7 @@ class ADERHelpers(object):
 			Sets the tiling constants in elem_helpers_st
 		'''
 		bface_quad_pts_st = bface_helpers_st.quad_pts
+
 		nq_t, time_skip, time_tile = basis.get_tiling_constants(
 				bface_quad_pts_st)
 
@@ -707,6 +710,8 @@ class ADERDG(base.SolverBase):
 		ndims = mesh.ndims
 		physics = self.physics
 		ns = physics.NUM_STATE_VARS
+		fluxes = self.params["ConvFluxSwitch"]
+
 		bgroup_num = bgroup.number
 		nq_t = self.elem_helpers_st.nq_tile_constant 
 		time_skip = self.elem_helpers_st.time_skip
@@ -719,14 +724,18 @@ class ADERDG(base.SolverBase):
 
 		faces_to_basis = bface_helpers.faces_to_basis
 		faces_to_basis_st = bface_helpers_st.faces_to_basis
+		faces_to_basis_ref_grad = bface_helpers_st.faces_to_basis_ref_grad
 
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
+		ijac_bgroups = bface_helpers_st.ijac_bgroups
 		face_ID_st = bface_helpers_st.face_IDs_st[bgroup_num] 
 
 		basis_val = faces_to_basis[face_ID]
 		basis_val_st = faces_to_basis_st[face_ID_st]
+		basis_ref_grad_st = faces_to_basis_ref_grad[face_ID_st]
 		xref_st = faces_to_xref_st[face_ID_st]
+		ijac = ijac_bgroups[bgroup_num]
 
 		nq_st = quad_wts_st.shape[0]
 
@@ -748,6 +757,12 @@ class ADERDG(base.SolverBase):
 		# Interpolate state at quadrature points
 		UqI = helpers.evaluate_state(Uc, basis_val_st) # [nbf, nq, ns]
 
+		# Interpolate gradient of state at quad points
+		gUq_ref = self.evaluate_gradient(Uc, basis_ref_grad_st[:, :, :-1])
+
+		# Make ref gradient of state the physical gradient
+		gUq = self.ref_to_phys_grad(ijac, gUq_ref)
+
 		# Unpack normals and x on boundary faces
 		normals = normals_bgroups[bgroup_num]
 		x = x_bgroups[bgroup_num]
@@ -760,7 +775,13 @@ class ADERDG(base.SolverBase):
 		BC = physics.BCs[bgroup.name]
 		nbf = UqI.shape[0]
 		Fq = np.zeros([nbf, nq_st, ns])
-		if self.params["ConvFluxSwitch"] == True:
+		FqB = np.zeros([nbf, nq_st, nd, ndims])
+
+		# Compute any additional helpers for diffusive flux fcn
+		if physics.diff_flux_fcn:
+			physics.diff_flux_fcn.compute_bface_helpers(self, bgroup_num)
+
+		if fluxes:
 			# Loop over time to apply BC at each temporal quadrature point
 			for i in range(t.shape[1]):
 				# Need time to be constant not an array to work with 
@@ -769,16 +790,21 @@ class ADERDG(base.SolverBase):
 				x_ = x[:, i].reshape([nbf, 1, ndims])
 				normals_ = normals[:, i].reshape([nbf, 1, ndims])
 
-				Fq[:, i, :] = BC.get_boundary_flux(physics,
+				Fq[:, i, :], FqB[:, i, :, :] = BC.get_boundary_flux(physics,
 						UqI[:, i, :].reshape([nbf, 1, ns]),
 						normals_, x_, t_).reshape([nbf, ns])
+
+				FqB_phys = self.ref_to_phys_grad(ijac, FqB)
 
 			resB = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
+			resB -= self.calculate_boundary_flux_integral_sum(
+				basis_ref_grad, quad_wts, FqB_phys)
+
 		return resB # [nbf, nb, ns]
 
-	def flux_coefficients(self, dt, order, basis, Up, gUp=None):
+	def flux_coefficients(self, dt, order, basis, Up):
 		'''
 		Calculates the polynomial coefficients for the flux functions in
 		ADER-DG
@@ -809,7 +835,8 @@ class ADERDG(base.SolverBase):
 		djac_elems = elem_helpers.djac_elems
 		basis_ref_grad_st = elem_helpers_st.basis_ref_grad
 		ijac_elems = elem_helpers.ijac_elems
-
+		ader_helpers = self.ader_helpers
+		ijac_nodes = ader_helpers.ijac_elems
 		nq_t = self.elem_helpers_st.nq_tile_constant 
 
 		# Allocate flux coefficients
@@ -822,6 +849,9 @@ class ADERDG(base.SolverBase):
 			Fq = physics.get_conv_flux_interior(Up)[0]
 
 			if physics.diff_flux_fcn:
+				# Calculate the gradient of the state
+				gUp_ref = solver_tools.get_spacetime_gradient(self, Up)
+				gUp = self.ref_to_phys_grad(ijac_nodes, gUp_ref)
 				Fq -= physics.get_diff_flux_interior(Up, gUp)
 
 			# Interpolate flux coefficient to nodes
@@ -829,7 +859,6 @@ class ADERDG(base.SolverBase):
 
 		else:
 			# Unpack for L2-projection
-			ader_helpers = self.ader_helpers
 			basis_val_st = elem_helpers_st.basis_val
 			quad_wts_st = elem_helpers_st.quad_wts
 			quad_wts = elem_helpers.quad_wts
@@ -848,7 +877,7 @@ class ADERDG(base.SolverBase):
 
 			ijac_elems_st = np.tile(ijac_elems, (1, nq_t, 1, 1))
 			gUq = self.ref_to_phys_grad(ijac_elems_st, gUq_ref)
-			
+
 			# Evaluate the inviscid flux
 			Fq = physics.get_conv_flux_interior(Uq)[0]
 			
