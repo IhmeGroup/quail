@@ -81,6 +81,20 @@ def evaluate_gradient(Uc, basis_phys_grad_elems):
 
 
 def ref_to_phys_grad(ijac, gU_ref):
+	'''
+	This function converts a gradient in reference space to one in 
+	physical space given the inverse jacobian evaluated at the 
+	corresponding points
+
+	Inputs:
+	-------
+		ijac: inverse jacobian [ne, num_pts, ndims, ndims]
+		gU_ref: reference gradient of the state [ne, num_pts, ns, ndims]
+
+	Outputs:
+	--------
+		gU_phys: physical gradient of the state [ne, num_pts, ns, ndims]
+	'''
 	gU_phys = np.einsum('ijlp, ijkp -> ijkl', ijac, gU_ref)
 
-	return gU_phys
+	return gU_phys # [ne, num_pts, ns, ndims]
