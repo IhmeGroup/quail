@@ -5,6 +5,7 @@ dg = 'dg'
 ader = 'ader'
 splitting = 'splitting'
 source = 'source'
+diffusion = 'diffusion'
 
 # A dictionary containing the directories of each test case. When adding a new
 # test case, the directory needs to be added to this list as well as a list of
@@ -20,4 +21,9 @@ case_dirs = {
 	'euler/1D/smooth_isentropic_flow' : [two_d, dg],
 	'euler/2D/flow_over_bump' : [two_d, dg],
 	'euler/2D/isentropic_vortex' : [two_d, dg],
+	'scalar/1D/constant_advection_diffusion/dg' : [one_d, dg, diffusion],
+	'scalar/1D/constant_advection_diffusion/ader/interpolate' : \
+		[one_d, ader, diffusion],
+	'scalar/1D/constant_advection_diffusion/ader/l2projection' : \
+		[one_d, ader, diffusion],	
 	}
