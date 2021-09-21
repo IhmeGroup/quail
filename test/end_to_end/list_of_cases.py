@@ -26,4 +26,6 @@ case_dirs = {
 		[one_d, ader, diffusion],
 	'scalar/1D/constant_advection_diffusion/ader/l2projection' : \
 		[one_d, ader, diffusion],	
+	'scalar/2D/constant_advection_diffusion/dg' : \
+		[two_d, dg, diffusion],	
 	}
