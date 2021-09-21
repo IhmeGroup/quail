@@ -16,7 +16,7 @@ case_dirs = {
 	'scalar/1D/damping_sine_wave/dg' : [one_d, dg, source],
 	'scalar/1D/damping_sine_wave/ader' : [one_d, ader, source],
 	'scalar/1D/damping_sine_wave/splitting' : [one_d, dg, splitting, source],
-	'scalar/2D/constant_advection' : [two_d, dg],
+	'scalar/2D/constant_advection/dg' : [two_d, dg],
 	'euler/1D/moving_shock' : [two_d, dg],
 	'euler/1D/smooth_isentropic_flow' : [two_d, dg],
 	'euler/2D/flow_over_bump' : [two_d, dg],
@@ -28,4 +28,5 @@ case_dirs = {
 		[one_d, ader, diffusion],	
 	'scalar/2D/constant_advection_diffusion/dg' : \
 		[two_d, dg, diffusion],	
+	'scalar/2D/constant_advection/ader' : [two_d, ader],
 	}
