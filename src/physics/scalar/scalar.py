@@ -23,6 +23,8 @@ import physics.base.functions as base_fcns
 import physics.scalar.functions as scalar_fcns
 from physics.scalar.functions import FcnType as scalar_fcn_type
 from physics.scalar.functions import SourceType as scalar_source_type
+from physics.scalar.functions import ConvNumFluxType as scalar_conv_num_flux_type
+
 
 
 class ConstAdvScalar(base.PhysicsBase):
@@ -56,6 +58,11 @@ class ConstAdvScalar(base.PhysicsBase):
 
 		self.source_map.update({
 			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+		})
+
+		self.conv_num_flux_map.update({
+			scalar_conv_num_flux_type.ExactLinearFlux :
+					scalar_fcns.ExactLinearFlux,
 		})
 
 	class StateVariables(Enum):
