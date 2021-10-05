@@ -232,8 +232,11 @@ class SIP(DiffNumFluxBase):
 		# Calculate ratio of volume/area for each L/R face
 		self.hL = vol_elems[int_face_helpers.elemL_IDs] / \
 				face_lengths[int_face_helpers.elemL_IDs, -1]
+		# HACK: This needs investigation... needed to subtract one for 
+		# 1D cases with BCs to get the ID mapping correct
+		# Not sure if this is general for 2D...
 		self.hR = vol_elems[int_face_helpers.elemR_IDs] / \
-				face_lengths[int_face_helpers.elemR_IDs, -1]
+				face_lengths[int_face_helpers.elemR_IDs - 1, -1]
 
 	def compute_bface_helpers(self, solver, bgroup_num):
 		'''
