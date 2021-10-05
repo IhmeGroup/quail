@@ -282,7 +282,6 @@ class ADERHelpers(object):
 		self.K = FTL - SMT
 		self.iK = np.linalg.inv(self.K)
 
-
 	def get_geom_data(self, mesh, basis, order):
 		'''
 		Precomputes the geometric data for the ADER-DG scheme
@@ -579,6 +578,7 @@ class ADERDG(base.SolverBase):
 
 			# Evaluate the source term at the quadrature points
 			Sq = elem_helpers_st.Sq
+			
 			Sq[:] = 0. # [ne, nq, sr, ndims]
 			Sq = physics.eval_source_terms(Uq, x_elems_st, t, Sq)
 
@@ -629,9 +629,6 @@ class ADERDG(base.SolverBase):
 		ijacL_elems = int_face_helpers.ijacL_elems
 		ijacR_elems = int_face_helpers.ijacR_elems
 
-		ijacL_elems_st = int_face_helpers_st.ijacL_elems
-		ijacR_elems_st = int_face_helpers_st.ijacR_elems
-
 		fluxes = self.params["ConvFluxSwitch"]
 
 		# Interpolate state at quad points
@@ -644,20 +641,12 @@ class ADERDG(base.SolverBase):
 		gUqR_ref = self.evaluate_gradient(UcR, 
 				faces_to_basis_ref_gradR_st[faceR_id_st, :, :, :-1][:, ::-1])
 
-		# Interpolate gradient of state at quad points
-		# gUqL_ref = self.evaluate_gradient(UcL, 
-		# 		faces_to_basis_ref_gradL_st[faceL_id_st])
-		# gUqR_ref = self.evaluate_gradient(UcR, 
-		# 		faces_to_basis_ref_gradR_st[faceR_id_st][:, ::-1])
-
-		# gUqL_ref = solver_tools.evaluate_gradient(nq_tile_constant, UcL, 
-				# faces_to_basis_ref_gradL[faceL_IDs])
-		# gUqR_ref = solver_tools.evaluate_gradient(nq_tile_constant, UcR, 
-				# faces_to_basis_ref_gradR[faceR_IDs][:, ::-1])
+		ijacL_elems_st = np.tile(ijacL_elems, (1, time_skip, 1, 1))
+		ijacR_elems_st = np.tile(ijacR_elems, (1, time_skip, 1, 1))
 
 		# Make gradient the physical gradient at L/R states
-		gUqL = self.ref_to_phys_grad(ijacL_elems, gUqL_ref)
-		gUqR = self.ref_to_phys_grad(ijacR_elems, gUqR_ref)
+		gUqL = self.ref_to_phys_grad(ijacL_elems_st, gUqL_ref)
+		gUqR = self.ref_to_phys_grad(ijacR_elems_st, gUqR_ref)
 
 		normals_int_faces = int_face_helpers.normals_int_faces
 		normals_int_faces = np.tile(normals_int_faces, 
@@ -684,8 +673,8 @@ class ADERDG(base.SolverBase):
 					# [nf, nq, ns, ndims], [nf, nq, ns, ndims]
 			Fq -= Fq_diff
 
-			FL_phys = self.ref_to_phys_grad(ijacL_elems, FL)
-			FR_phys = self.ref_to_phys_grad(ijacR_elems, FR)
+			FL_phys = self.ref_to_phys_grad(ijacL_elems_st, FL)
+			FR_phys = self.ref_to_phys_grad(ijacR_elems_st, FR)
 			
 			# Compute contribution to left and right element residuals
 			resL = solver_tools.calculate_boundary_flux_integral(
@@ -724,16 +713,19 @@ class ADERDG(base.SolverBase):
 
 		faces_to_basis = bface_helpers.faces_to_basis
 		faces_to_basis_st = bface_helpers_st.faces_to_basis
-		faces_to_basis_ref_grad = bface_helpers_st.faces_to_basis_ref_grad
+		faces_to_basis_ref_grad_st = bface_helpers_st.faces_to_basis_ref_grad
+		faces_to_basis_ref_grad = bface_helpers.faces_to_basis_ref_grad
 
 		normals_bgroups = bface_helpers.normals_bgroups
 		x_bgroups = bface_helpers.x_bgroups
-		ijac_bgroups = bface_helpers_st.ijac_bgroups
+		ijac_bgroups = bface_helpers.ijac_bgroups
+		face_ID = bface_helpers.face_IDs[bgroup_num]
 		face_ID_st = bface_helpers_st.face_IDs_st[bgroup_num] 
 
 		basis_val = faces_to_basis[face_ID]
 		basis_val_st = faces_to_basis_st[face_ID_st]
-		basis_ref_grad_st = faces_to_basis_ref_grad[face_ID_st]
+		basis_ref_grad_st = faces_to_basis_ref_grad_st[face_ID_st]
+		basis_ref_grad = faces_to_basis_ref_grad[face_ID]
 		xref_st = faces_to_xref_st[face_ID_st]
 		ijac = ijac_bgroups[bgroup_num]
 
@@ -758,10 +750,12 @@ class ADERDG(base.SolverBase):
 		UqI = helpers.evaluate_state(Uc, basis_val_st) # [nbf, nq, ns]
 
 		# Interpolate gradient of state at quad points
-		gUq_ref = self.evaluate_gradient(Uc, basis_ref_grad_st[:, :, :-1])
+		gUq_ref = self.evaluate_gradient(Uc, basis_ref_grad_st[:, :, :, :-1])
+		# import code; code.interact(local=locals())
+		ijac_st = np.tile(ijac, (1, time_skip, 1, 1))
 
 		# Make ref gradient of state the physical gradient
-		gUq = self.ref_to_phys_grad(ijac, gUq_ref)
+		gUq = self.ref_to_phys_grad(ijac_st, gUq_ref)
 
 		# Unpack normals and x on boundary faces
 		normals = normals_bgroups[bgroup_num]
@@ -775,7 +769,11 @@ class ADERDG(base.SolverBase):
 		BC = physics.BCs[bgroup.name]
 		nbf = UqI.shape[0]
 		Fq = np.zeros([nbf, nq_st, ns])
-		FqB = np.zeros([nbf, nq_st, nd, ndims])
+		FqB = np.zeros([nbf, nq_st, ns, ndims])
+		
+		# Need to allocate data for gradient when not using diffusion
+		if not physics.diff_flux_fcn:
+			gUq = np.zeros([Uc.shape[0], nq_st, ns, ndims])
 
 		# Compute any additional helpers for diffusive flux fcn
 		if physics.diff_flux_fcn:
@@ -790,17 +788,24 @@ class ADERDG(base.SolverBase):
 				x_ = x[:, i].reshape([nbf, 1, ndims])
 				normals_ = normals[:, i].reshape([nbf, 1, ndims])
 
-				Fq[:, i, :], FqB[:, i, :, :] = BC.get_boundary_flux(physics,
+				Fq_hold, FqB_hold = BC.get_boundary_flux(physics,
 						UqI[:, i, :].reshape([nbf, 1, ns]),
-						normals_, x_, t_).reshape([nbf, ns])
+						normals_, x_, t_, gUq=gUq[:, i, :, :].reshape(
+						[nbf, 1, ns, ndims]))
 
-				FqB_phys = self.ref_to_phys_grad(ijac, FqB)
+				if not physics.diff_flux_fcn:
+					FqB_hold = np.zeros([nbf, ns, ndims])
+
+				Fq[:, i, :] = Fq_hold.reshape([nbf, ns])
+				FqB[:, i, :, :] = FqB_hold.reshape([nbf, ns, ndims])
+
+			FqB_phys = self.ref_to_phys_grad(ijac_st, FqB)
 
 			resB = solver_tools.calculate_boundary_flux_integral(
 					time_skip, basis_val, quad_wts_st, Fq) # [nbf, nb, ns]
 
-			resB -= self.calculate_boundary_flux_integral_sum(
-				basis_ref_grad, quad_wts, FqB_phys)
+			resB -= self.calculate_boundary_flux_integral_sum(time_skip,
+				basis_ref_grad, quad_wts_st, FqB_phys)
 
 		return resB # [nbf, nb, ns]
 
@@ -958,7 +963,7 @@ class ADERDG(base.SolverBase):
 
 			# Interpolate state at quadrature points
 			Uq = helpers.evaluate_state(Up, basis_val_st)
-
+			x_elems_st = np.tile(x_elems, [1, nq_t, 1])
 			# Get array in physical time from ref time
 			t = np.zeros([nq_st, ndims])
 			t, elem_helpers_st.basis_time = solver_tools.ref_to_phys_time(
@@ -968,7 +973,7 @@ class ADERDG(base.SolverBase):
 			# Evaluate the source term at the quadrature points
 			Sq = np.zeros_like(Uq)
 			S = np.zeros([Uq.shape[0], nb_st, ns])
-			Sq = physics.eval_source_terms(Uq, x_elems, t, Sq)
+			Sq = physics.eval_source_terms(Uq, x_elems_st, t, Sq)
 				# [ne, nq, ns, ndims]
 
 			# Project Sq to the space-time basis coefficients
