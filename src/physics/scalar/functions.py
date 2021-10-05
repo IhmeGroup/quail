@@ -47,6 +47,13 @@ class SourceType(Enum):
 	SimpleSource = auto()
 	
 
+class ConvNumFluxType(Enum):
+	'''
+	Enum class that stores the types of convective numerical fluxes. These
+	numerical fluxes are specific to the available Euler equation sets.
+	'''
+	ExactLinearFlux = auto()
+
 '''
 ---------------
 State functions
@@ -374,3 +381,33 @@ class SimpleSource(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
+
+
+'''
+------------------------
+Exact flux functions
+------------------------
+These classes inherit from the ConvNumFluxBase or DiffNumFluxBase class. 
+See ConvNumFluxBase/DiffNumFluxBase for detailed comments of attributes 
+and methods. Information specific to the corresponding child classes can 
+be found below. These classes should correspond to the ConvNumFluxType 
+or DiffNumFluxType enum members above.
+'''
+class ExactLinearFlux(ConvNumFluxBase):
+	'''
+	This class corresponds to the exact flux for linear advection.
+	'''
+	def compute_flux(self, physics, UqL, UqR, normals):
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+
+		Uq_upwind = UqR.copy()
+		iL = (np.einsum('ijl, l -> ij', n_hat, physics.c) >= 0.) 
+		Uq_upwind[iL, :] = UqL[iL, :]
+
+		# Flux
+		Fq,_ = physics.get_conv_flux_projected(Uq_upwind, n_hat)
+
+		# Put together
+		return n_mag*Fq
