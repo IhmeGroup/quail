@@ -346,8 +346,7 @@ class SolverBase(ABC):
 			order = physics.get_quadrature_order(order)
 
 			quad_order = basis.get_quadrature_order(mesh, order)
-			# quad_pts, quad_wts = basis.get_quadrature_data(quad_order+4) # HACK to compare to DGLegion P1
-			quad_pts, quad_wts = basis.get_quadrature_data(quad_order) # HACK to compare to DGLegion P0 ( but also quails implementation)
+			quad_pts, quad_wts = basis.get_quadrature_data(quad_order)
 
 			eval_pts = quad_pts
 			nq = eval_pts.shape[0]
