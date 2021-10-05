@@ -147,7 +147,7 @@ class ElemHelpers(object):
 			self.x_elems: precomputed coordinates of the quadrature points
 				in physical space [num_elems, nq, ndims]
 		'''
-		ndims = basis.NDIMS # Need to define ndims from basis for ADERDG
+		ndims = mesh.ndims
 		num_elems = mesh.num_elems
 		quad_pts = self.quad_pts
 		nq = quad_pts.shape[0]
@@ -158,7 +158,7 @@ class ElemHelpers(object):
 		self.ijac_elems = np.zeros([num_elems, nq, ndims, ndims])
 		self.djac_elems = np.zeros([num_elems, nq, 1])
 		self.x_elems = np.zeros([num_elems, nq, ndims])
-		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, ndims])
+		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, basis.NDIMS])
 
 		# Basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True,
@@ -402,7 +402,8 @@ class InteriorFaceHelpers(ElemHelpers):
 			self.face_lengths: stores the precomputed length of each face
 				[num_interior_faces, 1]
 		'''
-		ndims = basis.NDIMS # Need to define ndims from basis for ADERDG
+		ndims_st = basis.NDIMS # number of dims in space-time
+		ndims = mesh.ndims
 		quad_pts = self.quad_pts
 		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
@@ -414,9 +415,9 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basis_ref_gradL = np.zeros([nfaces_per_elem,
-				nq, nb, ndims])
+				nq, nb, ndims_st])
 		self.faces_to_basis_ref_gradR = np.zeros([nfaces_per_elem,
-				nq, nb, ndims])
+				nq, nb, ndims_st])
 		self.jacL_elems = np.zeros([nfaces, nq, ndims, ndims])
 		self.ijacL_elems = np.zeros([nfaces, nq, ndims, ndims])
 		self.djacL_elems = np.zeros([nfaces, nq, 1])
@@ -635,7 +636,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 			self.face_lengths_bgroups: stores the precomputed length of each face
 				[num_interior_faces, 1]
 		'''
-		ndims = basis.NDIMS # Need to define from basis for ADERDG
+		ndims = mesh.ndims
 		quad_pts = self.quad_pts
 		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
@@ -646,7 +647,7 @@ class BoundaryFaceHelpers(InteriorFaceHelpers):
 		self.faces_to_basis = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_xref = np.zeros([nfaces_per_elem, nq, basis.NDIMS])
 		self.faces_to_basis_ref_grad = np.zeros([nfaces_per_elem,
-				nq, nb, ndims])
+				nq, nb, basis.NDIMS])
 
 		# Get values on each face (from interior perspective)
 		for face_ID in range(nfaces_per_elem):
