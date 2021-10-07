@@ -95,6 +95,14 @@ def ref_to_phys_grad(ijac, gU_ref):
 	--------
 		gU_phys: physical gradient of the state [ne, num_pts, ns, ndims]
 	'''
-	gU_phys = np.einsum('ijlp, ijkp -> ijkl', ijac, gU_ref)
+	gU_phys = np.einsum('ijpl, ijkp -> ijkl', ijac, gU_ref) # Seemingly correct
+	# gU_phys = np.einsum('ijlp, ijkp -> ijkl', ijac, gU_ref) # Incorrect
+
+	# if (np.abs(gU_ref) > 1e-12).any():
+	# 	print('ref')
+	# 	import code; code.interact(local=locals())
+	# if (np.abs(gU_phys) > 1e-12).any():
+	# 	print('phys')
+	# 	import code; code.interact(local=locals())
 
 	return gU_phys # [ne, num_pts, ns, ndims]
