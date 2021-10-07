@@ -511,34 +511,43 @@ def get_spacetime_gradient(solver, Uc):
 	iMM = ader_helpers.iMM
 	SMS = ader_helpers.SMS_ref
 	
-	SMSxUc = np.einsum('mnl, imk -> inkl', SMS, Uc)
-	return np.einsum('mn, inkl -> imkl', iMM, SMSxUc)
+	# SMSxUc = np.einsum('mnl, imk -> inkl', SMS, Uc)
+
+	x = np.zeros([Uc.shape[0], Uc.shape[1], Uc.shape[-1], SMS.shape[-1]])
+	gUc = np.zeros([Uc.shape[0], Uc.shape[1], Uc.shape[-1], SMS.shape[-1]])
+
+	for i in range(SMS.shape[-1]):
+		x[:, :, :, i] = SMS[:, :, i].transpose() @ Uc
+		gUc[:, :, :, i] = iMM @ x[:, :, :, i]
+	# test = np.einsum('mn, inkl -> imkl', iMM, SMSxUc)
+
+	return gUc
 
 def smsflux(SMS, flux):
+	'''
+	This method does two operations:
 
-	# SMStry = SMS.reshape([SMS.shape[0], SMS.shape[3],  SMS.shape[2], SMS.shape[1]])
-	# fluxtry = flux.reshape([flux.shape[0], flux.shape[3], flux.shape[1], flux.shape[2]])
-	
-	# # SMStry = SMS.reshape([64, 2, 8, 8])
-	# # fluxtry = flux.reshape([64, 2, 8, 4])
-	# test_mat = SMStry @ fluxtry
-	# test2 = np.linalg.norm(test_mat, axis=1)
+	1. It first does a matrix multiply of the SMS matrix and flux in each direction
+	2. It then conducts a sum along the dimensional axis of the returned matrix.
 
-	# old = np.einsum('ijkl, ikml -> ijm', SMS, flux)
+	This is a more efficient implementation of the following einsum calculation
 
-	# old1 = np.einsum('ijkl, ikml -> ijml', SMS, flux)
-	# old2 = np.einsum('ijml->ijm', old1)
+		np.einsum('ijkl, ikml -> ijm', SMS, flux)
 
-	# old3 = np.einsum('iljk, ilkm -> iljm', SMStry, fluxtry)
-	# old4 = np.einsum('iljm ->ijm', old3)
-	# import code; code.interact(local=locals())
+	Inputs:
+	-------
+		SMS: ADER helper matrix [ne, nb_st, nb_st, ndims]
+		flux: coefficients of the flux function [ne, nb_st, ns, ndims]
+
+	Outputs:
+	--------
+		Returns a matrix of shape [ne, nb_st, ns]
+	'''
 	x = np.zeros_like(flux)
 	for i in range(flux.shape[-1]):
 		x[:, :, :, i] = SMS[:, :, :, i] @ flux[:, :, :, i]
 	return np.sum(x, axis=3)
 
-def mymatmul(X, Y):
-	return X @ Y
 
 def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
@@ -591,9 +600,6 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
 
-	# Calculate the gradient of the state
-	# gU_pred = get_spacetime_gradient(solver, U_pred)
-
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
 			U_pred)
@@ -602,23 +608,11 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
-	niter = 1000
+	niter = 100
 	for i in range(niter):
 
-		# U_pred_new = np.einsum('jk, ikm -> ijm',iK,
-		# 		np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
-		# 		np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-		# 		np.einsum('jk, ikm -> ijm', FTR, W))
-
-		test_mat = mymatmul(MM, source_coeffs) - \
-				smsflux(SMS_elems, flux_coeffs) + \
-				mymatmul(FTR, W)
-		U_pred_new = mymatmul(iK, test_mat)
-
-		# test_mat = np.matmul(MM, source_coeffs) - \
-		# 		np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) + \
-		# 		np.matmul(FTR, W)
-		# U_pred_new = np.matmul(iK, test_mat)
+		U_pred_new = iK @ ( MM @ source_coeffs - \
+			smsflux(SMS_elems, flux_coeffs) + FTR @ W )
 
 		# We check when the coefficients are no longer changing.
 		# This can lead to differences between NODAL and MODAL solutions.
@@ -640,6 +634,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 		if i == niter - 1:
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
+			raise ValueError('Sub-iterations not converging')
 
 	return U_pred # [ne, nb_st, ns]
 
