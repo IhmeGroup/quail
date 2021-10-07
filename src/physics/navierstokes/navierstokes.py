@@ -247,8 +247,6 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 		super().set_maps()
 
 		d = {
-			navierstokes_fcn_type.ManufacturedSolutionPeriodic : 
-					navierstokes_fcns.ManufacturedSolutionPeriodic,
 			navierstokes_fcn_type.TaylorGreenVortexNS : 
 					navierstokes_fcns.TaylorGreenVortexNS,
 			navierstokes_fcn_type.ManufacturedSolution : 
@@ -260,8 +258,6 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 		self.BC_fcn_map.update(d)
 
 		self.source_map.update({
-			navierstokes_source_type.ManufacturedSourcePeriodic : 
-					navierstokes_fcns.ManufacturedSourcePeriodic,
 			navierstokes_source_type.ManufacturedSource : 
 					navierstokes_fcns.ManufacturedSource,
 		})
