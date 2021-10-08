@@ -639,7 +639,7 @@ class ADERDG(base.SolverBase):
 		gUqL_ref = self.evaluate_gradient(UcL, 
 				faces_to_basis_ref_gradL_st[faceL_id_st, :, :, :-1])
 		gUqR_ref = self.evaluate_gradient(UcR, 
-				faces_to_basis_ref_gradR_st[faceR_id_st, :, :, :-1][:, ::-1])
+				faces_to_basis_ref_gradR_st[faceR_id_st, :, :, :-1])
 
 		ijacL_elems_st = np.tile(ijacL_elems, (1, time_skip, 1, 1))
 		ijacR_elems_st = np.tile(ijacR_elems, (1, time_skip, 1, 1))
@@ -688,7 +688,7 @@ class ADERDG(base.SolverBase):
 					quad_wts_st, FL_phys)
 
 			resR_diff = self.calculate_boundary_flux_integral_sum(
-					time_skip, faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], 
+					time_skip, faces_to_basis_ref_gradR[faceR_IDs],
 					quad_wts_st, FR_phys)
 
 		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
