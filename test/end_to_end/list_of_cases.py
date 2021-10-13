@@ -30,4 +30,6 @@ case_dirs = {
 		[two_d, dg, diffusion],	
 	'scalar/2D/constant_advection/ader' : [two_d, ader],
 	'navierstokes/2D/manufactured_solution/dg' : [two_d, ader, diffusion],
+	'scalar/2D/constant_advection_diffusion/ader' : \
+		[two_d, ader, diffusion],
 	}
