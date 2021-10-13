@@ -401,9 +401,18 @@ class InteriorFaceHelpers(ElemHelpers):
 				[num_interior_faces, nq, 1]
 			self.face_lengths: stores the precomputed length of each face
 				[num_interior_faces, 1]
+		
+		Note(s):
+		--------
+			We separate ndims_basis and ndims to allow for basis
+			and mesh to have different number of dimensions
+			(ex: when using a space-time basis function and 
+			only a spatial mesh)
 		'''
-		ndims_st = basis.NDIMS # number of dims in space-time
+		ndims_basis = basis.NDIMS 
 		ndims = mesh.ndims
+
+		# unpack
 		quad_pts = self.quad_pts
 		quad_wts = self.quad_wts
 		nq = quad_pts.shape[0]
@@ -415,9 +424,9 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.faces_to_basisL = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basisR = np.zeros([nfaces_per_elem, nq, nb])
 		self.faces_to_basis_ref_gradL = np.zeros([nfaces_per_elem,
-				nq, nb, ndims_st])
+				nq, nb, ndims_basis])
 		self.faces_to_basis_ref_gradR = np.zeros([nfaces_per_elem,
-				nq, nb, ndims_st])
+				nq, nb, ndims_basis])
 		self.jacL_elems = np.zeros([nfaces, nq, ndims, ndims])
 		self.ijacL_elems = np.zeros([nfaces, nq, ndims, ndims])
 		self.djacL_elems = np.zeros([nfaces, nq, 1])
@@ -442,6 +451,7 @@ class InteriorFaceHelpers(ElemHelpers):
 					get_val=True, get_ref_grad=True)
 			self.faces_to_basisR[face_ID] = basis.basis_val
 			self.faces_to_basis_ref_gradR[face_ID] = basis.basis_ref_grad
+
 		# Normals
 		i = 0
 		for interior_face in mesh.interior_faces:
@@ -879,7 +889,7 @@ class DG(base.SolverBase):
 		faces_to_basisL = int_face_helpers.faces_to_basisL
 		faces_to_basisR = int_face_helpers.faces_to_basisR
 		faces_to_basis_ref_gradL = int_face_helpers.faces_to_basis_ref_gradL
-		faces_to_basis_ref_gradR = int_face_helpers.faces_to_basis_ref_gradL
+		faces_to_basis_ref_gradR = int_face_helpers.faces_to_basis_ref_gradR
 		ijacL_elems = int_face_helpers.ijacL_elems
 		ijacR_elems = int_face_helpers.ijacR_elems
 
@@ -899,7 +909,7 @@ class DG(base.SolverBase):
 		gUqL_ref = self.evaluate_gradient(UcL, 
 				faces_to_basis_ref_gradL[faceL_IDs])
 		gUqR_ref = self.evaluate_gradient(UcR, 
-				faces_to_basis_ref_gradR[faceR_IDs][:, ::-1])
+				faces_to_basis_ref_gradR[faceR_IDs])
 
 		# Make gradient the physical gradient at L/R states
 		gUqL = self.ref_to_phys_grad(ijacL_elems, gUqL_ref)
@@ -942,9 +952,9 @@ class DG(base.SolverBase):
 					faces_to_basis_ref_gradL[faceL_IDs], quad_wts, FL_phys)
 
 			resR_diff = self.calculate_boundary_flux_integral_sum(
-					faces_to_basis_ref_gradR[faceR_IDs][:, ::-1], quad_wts, 
+					faces_to_basis_ref_gradR[faceR_IDs], quad_wts, 
 					FR_phys)
-
+			
 		return resL, resR, resL_diff, resR_diff # [nif, nb, ns]
 
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
