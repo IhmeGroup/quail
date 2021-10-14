@@ -31,6 +31,7 @@ from physics.navierstokes.functions import FcnType as navierstokes_fcn_type
 from physics.navierstokes.functions import SourceType as \
 		navierstokes_source_type
 
+
 class NavierStokes(euler.Euler):
 	'''
 	This class corresponds to the compressible Navier-Stokes equations. 
@@ -72,7 +73,12 @@ class NavierStokes(euler.Euler):
 		-------
 			GasConstant: mass-specific gas constant
 			SpecificHeatRatio: ratio of specific heats
-
+			PrandtlNumber: ratio of kinematic viscosity to thermal diffusivity
+			Viscosity: fluid viscosity
+			s: Sutherland model constant
+			T0: Sutherland model constant
+			beta: Sutherland model constant
+			
 		Outputs:
 		--------
 			self: physical parameters set

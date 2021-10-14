@@ -514,11 +514,29 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			Uq: values of the state variables (typically at the quadrature
-				points) [nq, ns]
+				points) [ne, nq, ns]
 
 		Outputs:
 		--------
-			Fq: flux values [nq, ns, ndims]
+			Fq: flux values [ne, nq, ns, ndims]
+		'''
+		pass
+
+	def get_diff_flux_interior(self, Uq, gUq):
+		'''
+		This method computes the diffusive analytic flux for element
+		interiors.
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [ne, nq, ns]
+			gUq: vales of the gradient of the state (typically at the 
+				quadrature points) [ne, nq, ns, ndims]
+
+		Outputs:
+		--------
+			Fq: flux values [ne, nq, ns, ndims]
 		'''
 		pass
 

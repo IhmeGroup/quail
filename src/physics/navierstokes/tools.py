@@ -34,6 +34,7 @@ def set_transport(transport_type):
 
 	return fcn
 
+
 def get_constant_transport(physics, Uq, flag_non_physical=None):
 	'''
 	Returns viscosity and thermal conductivity for constant transport
@@ -59,6 +60,7 @@ def get_constant_transport(physics, Uq, flag_non_physical=None):
 	cv = 1./(gamma - 1) * R
 
 	return mu, mu * cv * gamma / Pr
+
 
 def get_sutherland_transport(physics, Uq, flag_non_physical=None):
 	'''
