@@ -292,6 +292,7 @@ class ConstAdvDiffScalar1D(ConstAdvDiffScalar):
 		self.cspeed = np.abs(self.c)
 		self.al = DiffCoefficient
 
+
 class ConstAdvDiffScalar2D(ConstAdvDiffScalar):
 	'''
 	This class corresponds to 2D scalar /diffusion with a constant
