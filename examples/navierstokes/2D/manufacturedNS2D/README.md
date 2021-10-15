@@ -13,7 +13,7 @@ Navah, F., and Nadarajah, S. (2018). A comprehensive high-order solver verificat
 
 <p align="center">
   <img alt="density" src="https://user-images.githubusercontent.com/55554103/137536697-662c10aa-2a10-45f8-bc53-34a3e698893e.png" width="48%"></a>
-  <img alt="pressure" src="https://user-images.githubusercontent.com/55554103/137536743-9636df51-e629-4a07-956f-bf81ef8f86e9.png" width="47%"></a>
+  <img alt="pressure" src="https://user-images.githubusercontent.com/55554103/137536743-9636df51-e629-4a07-956f-bf81ef8f86e9.png" width="45%"></a>
 </p>
 
 <p align="center">
