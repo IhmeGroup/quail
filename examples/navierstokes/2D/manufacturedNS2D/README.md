@@ -12,11 +12,11 @@ Navah, F., and Nadarajah, S. (2018). A comprehensive high-order solver verificat
 
 
 <p align="center">
-  <img alt="density" src="https://github.com/IhmeGroup/quail_dev/files/7355365/Density.pdf" width="48%"></a>
-  <img alt="pressure" src="https://github.com/IhmeGroup/quail_dev/files/7355367/Pressure.pdf" width="48%"></a>
+  <img alt="density" src="https://user-images.githubusercontent.com/55554103/137536697-662c10aa-2a10-45f8-bc53-34a3e698893e.png" width="48%"></a>
+  <img alt="pressure" src="https://user-images.githubusercontent.com/55554103/137536743-9636df51-e629-4a07-956f-bf81ef8f86e9.png" width="48%"></a>
 </p>
 
 <p align="center">
-  <img alt="x-velocity" src="https://github.com/IhmeGroup/quail_dev/files/7355370/XVelocity.pdf" width="48%"></a>
-  <img alt="y-velocity" src="https://github.com/IhmeGroup/quail_dev/files/7355371/YVelocity.pdf" width="48%"></a>
+  <img alt="x-velocity" src="https://user-images.githubusercontent.com/55554103/137536782-a812af78-7b17-4583-b4ea-8f0ff47bc535.png" width="48%"></a>
+  <img alt="y-velocity" src="https://user-images.githubusercontent.com/55554103/137536826-51c038c2-1ced-4399-aaa2-9acaeb752db4.png" width="48%"></a>
 </p>
