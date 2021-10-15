@@ -13,6 +13,7 @@ physics = solver.physics
 # Compute L2 error
 post.get_error( mesh, physics, solver, "Scalar")
 
+import code; code.interact(local=locals())
 ''' Plot '''
 # Scalar contour
 plot.prepare_plot(linewidth=0.5)
