@@ -102,6 +102,8 @@ class NavierStokes(euler.Euler):
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
 	    Velocity = "|u|"
+	    XVelocity = "u"
+	    YVelocity = "v"
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
@@ -155,6 +157,10 @@ class NavierStokes(euler.Euler):
 					gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["Velocity"].name:
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho 
+		elif vname is self.AdditionalVariables["XVelocity"].name:
+			varq = mom[:, :, [0]]/rho
+		elif vname is self.AdditionalVariables["YVelocity"].name:
+			varq = mom[:, :, [1]]/rho
 		else:
 			raise NotImplementedError
 
