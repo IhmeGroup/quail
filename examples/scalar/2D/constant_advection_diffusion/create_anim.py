@@ -13,7 +13,7 @@ ax = plt.gca()
 imgs_all = []
 j = 0
 # Loop through data files
-for i in range(21):
+for i in range(33):
 	print(i)
 
 	# Read data file

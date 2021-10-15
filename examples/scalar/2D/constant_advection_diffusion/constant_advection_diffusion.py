@@ -1,29 +1,32 @@
 TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : 5.,
-	"CFL" : 0.0025,
+	# "CFL" : 0.0025,
+	"TimeStepSize" : 0.001,
+	# "NumTimeSteps" : 1,
 	"TimeStepper" : "RK4",
 }
 
 Numerics = {
 	"SolutionOrder" : 3,
-	"SolutionBasis" : "LagrangeTri",
+	"SolutionBasis" : "LagrangeQuad",
 	"Solver" : "DG",
 }
 
 Output = {
 	"Prefix" : "Data",
+	"AutoPostProcess" : True,
 	"WriteInterval" : 150,
 	"WriteInitialSolution" : True,
-	"WriteFinalSolution" : True,
-	"AutoPostProcess" : True,
+
 }
 
+nelem = 8
 Mesh = {
 	"File" : None,
-	"ElementShape" : "Triangle",
-	"NumElemsX" : 8,
-	"NumElemsY" : 8,
+	"ElementShape" : "Quadrilateral",
+	"NumElemsX" : nelem,
+	"NumElemsY" : nelem,
 	"xmin" : 0.,
 	"xmax" : 2.,
 	"ymin" : 0.,
@@ -60,6 +63,5 @@ BoundaryConditions = {
 	"y1" : d,
 	"y2" : d,
 }
-
 
 ExactSolution = InitialCondition.copy()
