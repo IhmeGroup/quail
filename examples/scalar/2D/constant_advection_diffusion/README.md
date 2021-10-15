@@ -17,5 +17,5 @@ $ quail script_convergence.py
 This will open the `convergence_inputs.py` input deck and will automatically run it for a series of different mesh sizes and orders. Users are then encouraged to run the `process.py` file found in the `convergence_testing` directory. An example graph is shown below.
 <p align="center">
   <img alt="anim" src="https://user-images.githubusercontent.com/55554103/137525330-eee8a556-d17e-456e-9d31-b4e48a9d255f.gif" width="48%"></a>
-  <img alt="conv" src="https://user-images.githubusercontent.com/55554103/137531264-0b6fde79-6bcd-4882-b9e4-54ab1fc6e133.png" width="46%"></a>
+  <img alt="conv" src="https://user-images.githubusercontent.com/55554103/137531264-0b6fde79-6bcd-4882-b9e4-54ab1fc6e133.png" width="48%"></a>
 </p>
