@@ -12,11 +12,11 @@ jobs:
       - checkout
       # Step 2: setup conda
       - run:
-        name: setup conda
-        command: |
-          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
-          chmod +x ~/miniconda.sh && ~/miniconda.sh -b;
-          echo 'export PATH="$HOME/miniconda3/bin:$PATH"'  >> $BASH_ENV;
+          name: setup conda
+          command: |
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
+            chmod +x ~/miniconda.sh && ~/miniconda.sh -b;
+            echo 'export PATH="$HOME/miniconda3/bin:$PATH"'  >> $BASH_ENV;
       # Step 3: install packages in conda env
       - run:
           name: Install packages in conda environment
