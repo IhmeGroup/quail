@@ -22,6 +22,7 @@ jobs:
           name: Install packages in conda environment
           command: |
             conda init bash
+            source ~/.bashrc
             echo "conda version = $(conda --version)"
             conda create -n quailenv
             conda install -n quailenv python=3.9.7 numpy scipy pytest matplotlib
