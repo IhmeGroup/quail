@@ -33,5 +33,5 @@ jobs:
           command: |
             conda init bash
             source ~/.bashrc
-            conda activate quailenv
+            source activate quailenv
             pytest -v
