@@ -3,24 +3,34 @@ version: 2
 jobs:
   build:
     docker:
-      - image: continuumio/miniconda3
+      - image: circleci/python:3.9
 
-    working_directory: ~/repo/tests
+    # working_directory: ~/repo/tests
 
     steps:
       # Step 1: obtain repo from GitHub
       - checkout
-      # Step 2: create virtual env and install dependencies
+      # Step 2: setup conda
+      -run:
+        name: setup conda
+        command: |
+          wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
+          chmod +x ~/miniconda.sh && ~/miniconda.sh -b;
+          echo 'export PATH="$HOME/miniconda3/bin:$PATH"'  >> $BASH_ENV;
+      # Step 3: install packages in conda env
       - run:
-          name: install dependencies
+          name: Install packages in conda environment
           command: |
-            conda env create -f environment.yml
-
-      # Step 3: run linter and tests
+            conda init bash
+            echo "conda version = $(conda --version)"
+            conda create -n quailenv
+            conda install -n quailenv python=3.9.7 numpy scipy pytest matplotlib
+            source activate quailenv
+      # Step 3: run tests
       - run:
           name: run tests
           command: |
             conda init bash
             source ~/.bashrc
-            conda activate quail
+            conda activate quailenv
             pytest -v
