@@ -5,7 +5,7 @@ jobs:
     docker:
       - image: circleci/python:3.9
 
-    # working_directory: ~/repo/tests
+    working_directory: ~/repo/tests
 
     steps:
       # Step 1: obtain repo from GitHub
