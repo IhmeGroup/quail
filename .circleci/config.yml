@@ -23,7 +23,7 @@ jobs:
             source ~/.bashrc
             echo "conda version = $(conda --version)"
             conda create -n quailenv
-            conda install -n quailenv python=3.9.7 numpy=1.21.2 scipy=1.7.1 pytest=6.2.4 matplotlib=3.4.3
+            conda install -n quailenv python=3.9.7 numpy scipy pytest matplotlib
             source activate quailenv
       # Step 3: run tests
       - run:
