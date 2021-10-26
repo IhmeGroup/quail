@@ -12,10 +12,10 @@ jobs:
       - checkout
       # Step 1.2: Update PATH
       - run:
-        name: update path
-        command: |
-          echo 'export PATH=src:$PATH' >> $BASH_ENV
-          source $BASH_ENV
+          name: update path
+          command: |
+            echo 'export PATH=src:$PATH' >> $BASH_ENV
+            source $BASH_ENV
       # Step 2: setup conda
       - run:
           name: setup conda
