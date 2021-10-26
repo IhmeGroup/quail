@@ -5,13 +5,13 @@ jobs:
     docker:
       - image: circleci/python:3.9
 
-    working_directory: ~/repo/tests
+    # working_directory: ~/repo/tests
 
     steps:
       # Step 1: obtain repo from GitHub
       - checkout
       # Step 2: setup conda
-      -run:
+      - run:
         name: setup conda
         command: |
           wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh;
