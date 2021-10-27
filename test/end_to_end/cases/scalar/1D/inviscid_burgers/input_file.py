@@ -39,6 +39,7 @@ ExactSolution = {
 Output = {
 	"Prefix" : "Data",
 	"AutoPostProcess" : False,
+	"ProgressBar" : True,
 }
 
 BoundaryConditions = {

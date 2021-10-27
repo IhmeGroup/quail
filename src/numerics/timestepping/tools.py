@@ -58,8 +58,8 @@ def set_stepper(params, U):
 
 def set_source_treatment(physics):
 	'''
-	Allows user to define how source terms are treated in both splitting 
-	and ADERDG schemes. Can select 'Explicit' or 'Implicit' depending on 
+	Allows user to define how source terms are treated in both splitting
+	and ADERDG schemes. Can select 'Explicit' or 'Implicit' depending on
 	the stiffness of the source term.
 
 	Inputs:
@@ -98,6 +98,7 @@ def set_time_stepping_approach(stepper, params):
 	dt = params["TimeStepSize"]
 	num_time_steps = params["NumTimeSteps"]
 	tfinal = params["FinalTime"]
+	stepper.tfinal = tfinal
 
 	'''
 	Hierarchy for cases goes:
@@ -134,6 +135,7 @@ def get_dt_from_num_time_steps(stepper, solver):
 	'''
 	num_time_steps = stepper.num_time_steps
 	tfinal = solver.params["FinalTime"]
+	stepper.tfinal = tfinal
 	time = solver.time
 
 	# only needs to be set once per simulation
@@ -162,6 +164,7 @@ def get_dt_from_timestepsize(stepper, solver):
 	time = solver.time
 	dt = solver.params["TimeStepSize"]
 	tfinal = solver.params["FinalTime"]
+	stepper.tfinal = tfinal
 
 	# logic to ensure final time step yields FinalTime
 	if time + dt < tfinal:
@@ -192,6 +195,7 @@ def get_dt_from_cfl(stepper, solver):
 
 	time = solver.time
 	tfinal = solver.params["FinalTime"]
+	stepper.tfinal = tfinal
 	cfl = solver.params["CFL"]
 
 	elem_helpers = solver.elem_helpers
@@ -238,6 +242,7 @@ def get_dt_from_timestepsize_and_numtimesteps(stepper, solver):
 	num_time_steps = stepper.num_time_steps
 
 	tfinal = dt*num_time_steps
+	stepper.tfinal = tfinal
 	# logic to ensure final time step yields FinalTime
 	if time + dt < tfinal:
 		return dt

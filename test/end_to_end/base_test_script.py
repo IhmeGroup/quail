@@ -59,6 +59,3 @@ def test_case(test_data):
 		Uc = solver.state_coeffs
 		# Assert
 		np.testing.assert_allclose(Uc, Uc_expected, rtol, atol)
-
-	# Return to test directory
-	os.chdir(f'{quail_dir}/test')

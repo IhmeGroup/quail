@@ -6,6 +6,7 @@
 #
 # ------------------------------------------------------------------------ #
 import numpy as np
+import sys
 
 import general
 import numerics.basis.tools as basis_tools
@@ -179,3 +180,55 @@ def interpolate_to_nodes(f, U):
 		U: array of values to be interpolated onto
 	'''
 	U[:, :, :] = f
+
+
+def update_progress(progress):
+	'''
+	Displays or updates a console progress bar.
+	Accepts a float between 0 and 1. Any int will be converted to a float.
+	A value under 0 represents a 'halt'.
+	A value at 1 or bigger represents 100%.
+
+	Inputs:
+	-------
+		progress: value representing the progress, scaled from 0 to 1
+	'''
+	# Length of the progress bar
+	bar_length = 55
+
+	status = ""
+	# Convert ints
+	if isinstance(progress, int):
+		progress = float(progress)
+	# Make sre it's a number
+	if not isinstance(progress, float):
+		progress = 0
+		status = "error: progress var must be float\r\n"
+	# Less than 0 'halts' the progress
+	if progress < 0:
+		progress = 0
+		status = "Halt...\r\n"
+	# Cap the progress at 100%
+	if progress >= 1:
+		progress = 1
+		status = "Done...\r\n"
+
+	# Compute number of blocks
+	block = int(round(bar_length*progress))
+	# Figure out the color
+	if progress < .25:
+		color = '\033[0;31m' # Dark red
+	elif progress < .5:
+		color = '\033[1;31m' # Light red
+	elif progress < .75:
+		color = '\033[0;33m' # Yellow
+	elif progress < 1:
+		color = '\033[0;32m' # Dark green
+	else:
+		color = '\033[1;32m' # Light green
+	reset_color = '\033[0m'
+	# Write out the text
+	text = color + '\rPercent: [{0}] {1}% {2}'.format( "#"*block + "-"*(bar_length-block),
+			int(round(progress*100)), status) + reset_color
+	sys.stdout.write(text)
+	sys.stdout.flush()

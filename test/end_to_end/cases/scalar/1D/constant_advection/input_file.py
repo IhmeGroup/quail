@@ -34,6 +34,7 @@ Physics = {
 
 Output = {
 	"AutoPostProcess" : False,
+	"ProgressBar" : True,
 }
 
 InitialCondition = {

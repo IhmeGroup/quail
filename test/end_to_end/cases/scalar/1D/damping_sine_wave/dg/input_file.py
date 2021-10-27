@@ -50,4 +50,5 @@ SourceTerms = {
 
 Output = {
 	"AutoPostProcess" : False,
+	"ProgressBar" : True,
 }

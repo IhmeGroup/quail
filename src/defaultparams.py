@@ -41,7 +41,7 @@ TimeStepping = {
 		# See general.SourceStepperType
 	"ODEScheme" : "FE",
 		# Sets the specific time integration scheme when choosing to solve
-		# an ODE or system of ODEs alone (see physics/zerodimensional 
+		# an ODE or system of ODEs alone (see physics/zerodimensional
 		# for examples)
 }
 
@@ -86,7 +86,7 @@ Numerics = {
 		# See general.ShockIndicatorType
 	"TVBParameter" : 100.,
 		# TVB MinMod Indicator
-		# Default is set to 100. 
+		# Default is set to 100.
 		# This parameter modifies the sensitivity of the MinMod shock
 		# indicator. It is problem dependent.
 	"SourceTreatmentADER" : "Explicit",
@@ -105,14 +105,14 @@ Numerics = {
 		# Useful for debugging
 	"PredictorGuessADER" : "Average",
 		# How to construct initial guess for the ADER-DG scheme
-		# Default is average value, can also select zeros or 
+		# Default is average value, can also select zeros or
 		# ODEGuess
 	"RecalculateJacobianADER" : False,
-		# Either recalculates the source term jacobian or not for the 
+		# Either recalculates the source term jacobian or not for the
 		# subiterations in the non-linear solver of the predictor step
 	"PredictorThreshold" : 1e-15,
-		# Sets the threshold requirement for the predictor step's 
-		# nonlinear solve. Lower values can be chosen which speeds up 
+		# Sets the threshold requirement for the predictor step's
+		# nonlinear solve. Lower values can be chosen which speeds up
 		# the simulations, but at the cost of some error increase.
 }
 
@@ -218,6 +218,9 @@ Output = {
 		# time step and residual information
 		# If True, will also print out the input deck and the min/max of
 		# the state variables
+	"ProgressBar" : False,
+		# If False, iteration info is printed to console
+		# If True, a progress bar is given instead of iteration info
 	"CustomFunctionFilename" : "custom_user_function"
 		# Name of the user's custom function definitions.
 }

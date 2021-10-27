@@ -1,15 +1,17 @@
 import os
 import numpy as np
 import pytest
+import sys
 
 import list_of_cases
 
 
 @pytest.fixture
-def test_data():
+def test_data(capsys):
 	'''
 	This fixture reads in the regression test data and yields it, along with
-	the Quail directory.
+	the Quail directory. After the test ends, it returns to the test directory
+	to continue with the next tests.
 
 	Outputs:
 	--------
@@ -32,3 +34,6 @@ def test_data():
 		for i, array in enumerate(npzfile.files):
 			Uc_expected_list[case_dirs[i]] = npzfile[array];
 	yield Uc_expected_list, quail_dir
+
+	# Return to test directory
+	os.chdir(f'{quail_dir}/test')

@@ -13,6 +13,7 @@ Numerics = {
 
 Output = {
 	"AutoPostProcess" : False,
+	"ProgressBar" : True,
 }
 
 Mesh = {

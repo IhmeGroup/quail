@@ -38,20 +38,20 @@ class SolverBase(ABC):
 	'''
 	This is a base class for any solver type.
 
-    Attributes:
-    -----------
-    params: dictionary
-        contains a list of parameters that can be accessed with kwargs
-    physics: object
-    	contains the set of equations to be solved
-    mesh: object
+	Attributes:
+	-----------
+	params: dictionary
+		contains a list of parameters that can be accessed with kwargs
+	physics: object
+		contains the set of equations to be solved
+	mesh: object
 		contains the geometric information for the solver's mesh
 	time: float
 		global time of the solution at the given time step
 	basis: object
 		contains all the information and methods for the basis class
 	order: int
-	    order of solution approximation
+		order of solution approximation
 	state_coeffs: numpy array
 		coefficients of polynomial approximation of global solution
 	limiter: object
@@ -63,24 +63,24 @@ class SolverBase(ABC):
 	max_state: numpy array
 		maximum values of state variables
 
-    Abstract Methods:
-    -----------------
-    precompute_matrix_helpers
-    	precomputes a variety of functions and methods prior to running the
-    	simulation
-    get_element_residual
-    	calculates the residual contribution for elements
-    get_interior_face_residual
-    	calculates the residual contribution for interior faces
-    get_boundary_face_residual
-    	calculates the residual contribution for boundary faces
+	Abstract Methods:
+	-----------------
+	precompute_matrix_helpers
+		precomputes a variety of functions and methods prior to running the
+		simulation
+	get_element_residual
+		calculates the residual contribution for elements
+	get_interior_face_residual
+		calculates the residual contribution for interior faces
+	get_boundary_face_residual
+		calculates the residual contribution for boundary faces
 
-    Methods:
-    --------
-    check_compatibility
-    	checks parameter compatibilities based on the given input deck
-    init_state_from_fcn
-    	initializes state from a specified function in the input deck
+	Methods:
+	--------
+	check_compatibility
+		checks parameter compatibilities based on the given input deck
+	init_state_from_fcn
+		initializes state from a specified function in the input deck
 	project_state_to_new_basis
 		takes a state from a restartfile and projects it onto a higher
 		order of accuracy
@@ -151,6 +151,7 @@ class SolverBase(ABC):
 
 		# Console output
 		self.verbose = params["Verbose"]
+		self.progress_bar = params["ProgressBar"]
 		self.min_state = np.zeros(physics.NUM_STATE_VARS)
 		self.max_state = np.zeros(physics.NUM_STATE_VARS)
 
@@ -163,9 +164,9 @@ class SolverBase(ABC):
 					user_fcn.custom_user_function
 		except ModuleNotFoundError:
 			pass # Not an error, just pass as the user provided
-				 # custom function file is not in the current 
+				 # custom function file is not in the current
 				 # directory.
-	
+
 		# Counter to compare ODE evaluations in ADERDG and Splitting methods
 		self.count_evaluations = 0
 
@@ -266,14 +267,14 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
 		'''
-		Calculates the surface integral for the interior faces, divided 
+		Calculates the surface integral for the interior faces, divided
 		between left and right contributions.
 
 		Inputs:
 		-------
 			faceL_IDs: face IDs for each interior face from the perspective
 				of each left neighboring element
-			faceR_IDs: face IDs for each interior face from the perspective 
+			faceR_IDs: face IDs for each interior face from the perspective
 				of each right neighboring element
 			UcL: solution array for left neighboring element (polynomial
 				coefficients)
@@ -292,7 +293,7 @@ class SolverBase(ABC):
 	@abstractmethod
 	def get_boundary_face_residual(self, bgroup, face_IDs, Uc, resB):
 		'''
-		Calculates the residual from the surface integral for all boundary 
+		Calculates the residual from the surface integral for all boundary
 		faces within a boundary group.
 
 		Inputs:
@@ -308,11 +309,11 @@ class SolverBase(ABC):
 		'''
 		pass
 
-  
+
 	def custom_user_function(self, solver):
 		'''
 		Placeholder for the custom_user_function. Users can specify the
-		custom_user_function in an additional file. This would then be 
+		custom_user_function in an additional file. This would then be
 		called each iteration.
 		'''
 		pass
@@ -494,7 +495,7 @@ class SolverBase(ABC):
 
 	def get_boundary_face_residuals(self, U, res):
 		'''
-		Computes interior face residual contributions for all boundary 
+		Computes interior face residual contributions for all boundary
 		groups.
 
 		Inputs:
@@ -538,7 +539,7 @@ class SolverBase(ABC):
 			U: limited solution array
 		'''
 		for limiter in self.limiters:
-			if limiter is not None:	
+			if limiter is not None:
 				limiter.limit_solution(self, U)
 
 	def get_min_max_state(self, Uq):
@@ -563,7 +564,8 @@ class SolverBase(ABC):
 		'''
 		Prints key information to console. If self.verbose is False, then
 		only time and residual info is printed; otherwise, min and max
-		values of the state are also reported.
+		values of the state are also reported. If self.progress_bar is True,
+		then the iteration output is replaced with a progress bar.
 
 		Inputs:
 		-------
@@ -573,22 +575,30 @@ class SolverBase(ABC):
 			t: time
 			dt: time step size
 		'''
-		# Basic info: time, residual
-		print("%d: Time = %g - Time step = %g - Residual norm = %g" % (
-				itime + 1, t, dt, np.linalg.norm(np.reshape(res, -1),
-				ord=1)))
+		# Progress bar output
+		if self.progress_bar:
+			solver_tools.update_progress(t / self.stepper.tfinal)
 
-		# If requested, report min and max of state variables
-		if self.verbose:
-			print("\nMin|Max at volume quadrature points:")
-			s = 0
-			for state_var in physics.StateVariables:
-				string = "    " + state_var.name + ": " + "%g | %g"
-				print(string % (self.min_state[s], self.max_state[s]))
-				s += 1
+		# Basic info: time, residual. If using a progress bar, only the last
+		# iteration is output.
+		is_final_iteration = itime == self.stepper.num_time_steps - 1
+		if not self.progress_bar or is_final_iteration:
+			print("%d: Time = %g - Time step = %g - Residual norm = %g" % (
+					itime + 1, t, dt, np.linalg.norm(np.reshape(res, -1),
+					ord=1)))
 
-		print("--------------------------------------------------------" + \
-				"-----------------------")
+			# If requested, report min and max of state variables
+			if self.verbose:
+				print("\nMin|Max at volume quadrature points:")
+				s = 0
+				for state_var in physics.StateVariables:
+					string = "    " + state_var.name + ": " + "%g | %g"
+					print(string % (self.min_state[s], self.max_state[s]))
+					s += 1
+
+			print("------------------------------------------------------" + \
+					"-------------------------")
+
 
 	def solve(self):
 		'''

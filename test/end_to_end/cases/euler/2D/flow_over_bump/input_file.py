@@ -52,4 +52,5 @@ BoundaryConditions = {
 
 Output = {
 	"AutoPostProcess": False,
+	"ProgressBar" : True,
 }
