@@ -89,6 +89,7 @@ def test_diffusion_flux_2D():
 
 	F = physics.get_diff_flux_interior(Uq, gUq)
 
+	kappa = kappa[0, 0, 0]
 	np.testing.assert_allclose(F, Fref, kappa*rtol, kappa*atol)
 
 
