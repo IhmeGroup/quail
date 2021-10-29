@@ -4,6 +4,10 @@ import sys
 sys.path.append('../src')
 
 import numerics.basis.basis as basis_defs
+import numerics.basis.tools as basis_tools
+import general
+
+import meshing.common as mesh_common
 
 rtol = 1e-15
 atol = 1e-15
@@ -33,3 +37,50 @@ def test_lagrange_basis_should_be_nodal(basis, order):
 	expected = np.identity(phi.shape[0])
 	# Assert
 	np.testing.assert_allclose(phi, expected, rtol, atol)
+
+
+@pytest.mark.parametrize('order', [
+	# Order of Lagrange basis
+	0, 1, 2, 3, 4, 5,
+])
+@pytest.mark.parametrize('Basis', [
+	# Basis class representing the element geometry
+	basis_defs.LegendreSeg, basis_defs.LegendreQuad
+])
+def test_legengre_massmatrix_should_be_diagonal(basis, order):
+	'''
+	This test ensures that the mass matrix for a Legendre basis is
+	diagonal
+
+	Inputs:
+	-------
+		modal_basis: Pytest fixture containing the basis object to be tested
+		order: polynomial order of Legendre basis being tested
+	'''
+
+	if basis.NDIMS == 1:
+		mesh = mesh_common.mesh_1D(num_elems=1, xmin=-1., xmax=1.)
+		# Set quadrature
+		basis.set_elem_quadrature_type("GaussLegendre")
+		basis.set_face_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_elem_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_face_quadrature_type("GaussLegendre")
+
+		iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order, -1)
+
+		should_be_zero = np.count_nonzero(np.abs(iMM - np.diag(np.diagonal(iMM))) > 10.*atol)
+
+	elif basis.NDIMS == 2:
+		mesh = mesh_common.mesh_2D(num_elems_x=1, num_elems_y=1, xmin=-1., xmax=1.,
+			 ymin=-1., ymax=1.)
+		# Set quadrature
+		basis.set_elem_quadrature_type("GaussLegendre")
+		basis.set_face_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_elem_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_face_quadrature_type("GaussLegendre")
+
+		iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order, -1)
+
+		should_be_zero = np.count_nonzero(np.abs(iMM - np.diag(np.diagonal(iMM))) > 1e-12)
+
+	np.testing.assert_allclose(should_be_zero, 0, 0, 0)
