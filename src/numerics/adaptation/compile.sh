@@ -4,4 +4,4 @@
 # some way to make that happen. For now, just run this export before running
 # Quail
 export LD_LIBRARY_PATH=/home/ali/software/mmg/lib:$LD_LIBRARY_PATH
-g++ -fPIC -shared -O3 -I/home/ali/software/mmg/include/ mesh_adapter.cpp -L/home/ali/software/mmg/lib -lmmg2d -o libmesh_adapter.so
+g++ -fPIC -shared -O3 -I/home/ali/software/mmg/include/ mesh_adapter.cpp -L/home/ali/software/mmg/lib -lmmg2d -o libmesh_adapter.so -std=c++17
