@@ -200,7 +200,7 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 		# If the user defines levels force the plot to extend and set limits
 		# according to the user defined levels beginning and end.
 		levels = kwargs["levels"]
-		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both') 
+		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both')
 		if isinstance(levels, np.ndarray):
 			tcf.set_clim(levels[0],levels[-1])
 	else:
@@ -525,7 +525,7 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 	    U: state polynomial coefficients
 	    	[num_elems, num_basis_coeffs, num_state_vars]
 	    x: coordinates at which to evaluate solution
-	    	[num_elems, num_pts, ndims], where num_pts is the 
+	    	[num_elems, num_pts, ndims], where num_pts is the
 	    	number of sample points per element
 	    basis: basis object
 	    var_name: name of variable to get
@@ -552,7 +552,7 @@ def get_average_solution(physics, solver, x, basis, var_name):
 	    U: state polynomial coefficients
 	    	[num_elems, num_basis_coeffs, num_state_vars]
 	    x: coordinates at which to evaluate solution
-	    	[num_elems, num_pts, ndims], where num_pts is the number of 
+	    	[num_elems, num_pts, ndims], where num_pts is the number of
 	    	sample points per element
 	    basis: basis object
 	    var_name: name of variable to get
@@ -572,7 +572,7 @@ def get_average_solution(physics, solver, x, basis, var_name):
 		raise NotImplementedError
 
 	#Additions for Ubar
-	solver.elem_helpers.get_gaussian_quadrature(mesh, physics, basis, 
+	solver.elem_helpers.get_gaussian_quadrature(mesh, physics, basis,
 			3*order)
 	solver.elem_helpers.get_basis_and_geom_data(mesh, basis, 3*order)
 
@@ -709,9 +709,9 @@ def plot_mesh(mesh, equal_AR=False, **kwargs):
 
 
 def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
-		plot_exact=False, plot_average=False, plot_IC=False, 
+		plot_exact=False, plot_average=False, plot_IC=False,
 		create_new_figure=True, ylabel=None, fmt='k-', legend_label=None,
-		equidistant_pts=True, include_mesh=False, regular_2D=False, 
+		equidistant_pts=True, include_mesh=False, regular_2D=False,
 		equal_AR=False, skip=None, **kwargs):
 	'''
 	This function plots the solution. For 2D calculations, the solution will
