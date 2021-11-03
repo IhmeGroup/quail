@@ -7,8 +7,8 @@ import numerics.basis.basis as basis_defs
 import numerics.basis.ader_tools as basis_st_tools
 import meshing.common as mesh_common
 
-rtol = 1e-15
-atol = 1e-15
+rtol = 1e-14
+atol = 1e-14
 
 @pytest.mark.parametrize('order', [
 	# Order of Lagrange basis
@@ -41,6 +41,49 @@ def test_legendre_spacetime_massmatrix(order):
 							      [0., 0., 0., 1./9.]])
 	elif order == 2:
 		expected = 4.0 * np.array([[1., 0., 0., 0., 0., 0., 0., 0., 0.], 
+				 	   	  [0., 1./3., 0., 0., 0., 0., 0., 0., 0.],
+					      [0., 0., 1./5., 0., 0., 0., 0., 0., 0.],
+					      [0., 0., 0., 1./3., 0., 0., 0., 0., 0.],
+					      [0., 0., 0., 0., 1./9., 0., 0., 0., 0.],
+					      [0., 0., 0., 0., 0., 1./15., 0., 0., 0.],
+					      [0., 0., 0., 0., 0., 0., 1./5, 0., 0.],
+					      [0., 0., 0., 0., 0., 0., 0., 1./15., 0.],
+					      [0., 0., 0., 0., 0., 0., 0., 0., 1./25.]])
+	# Assert
+	np.testing.assert_allclose(MM, expected, rtol, atol)
+
+
+@pytest.mark.parametrize('order', [
+	# Order of Lagrange basis
+	1, 2
+])
+def test_legendre_spacetime_massmatrix_phys(order):
+	'''
+	This test compares the analytic solution of the space-time MM to 
+	the computed one, but uses a physics element that spans [0.0, 0.5]
+	'''
+	basis = basis_defs.LegendreQuad(order)
+	mesh = mesh_common.mesh_1D(num_elems=1, xmin=0., xmax=0.5)
+		
+	# Set quadrature
+	basis.set_elem_quadrature_type("GaussLegendre")
+	basis.set_face_quadrature_type("GaussLegendre")
+
+	MM = basis_st_tools.get_elem_mass_matrix_ader(mesh, basis, order, 0, 
+		physical_space=True)
+
+	'''
+	Reference:
+	Dumbser, M., Enaux, C., and Toro, E. JCP 2008
+		Vol. 227, Issue 8, Pgs: 3971 - 4001 Appendix B
+	'''
+	if order == 1:
+		expected = np.array([[1., 0., 0., 0.], 
+						 	   	  [0., 1./3., 0., 0.],
+							      [0., 0., 1./3., 0],
+							      [0., 0., 0., 1./9.]])
+	elif order == 2:
+		expected = np.array([[1., 0., 0., 0., 0., 0., 0., 0., 0.], 
 				 	   	  [0., 1./3., 0., 0., 0., 0., 0., 0., 0.],
 					      [0., 0., 1./5., 0., 0., 0., 0., 0., 0.],
 					      [0., 0., 0., 1./3., 0., 0., 0., 0., 0.],
@@ -213,6 +256,64 @@ def test_legendre_spacetime_stiffnessmatrix_spacedir(dt, order):
 	# Order of Lagrange basis
 	1, 2
 ])
+def test_legendre_spacetime_stiffnessmatrix_spacedir_phys(dt, order):
+	'''
+	This test compares the analytic solution of the space-time 
+	stiffness matrix in space to the computed one.
+	'''
+	basis = basis_defs.LegendreSeg(order)
+	basis_st = basis_defs.LegendreQuad(order)
+	mesh = mesh_common.mesh_1D(num_elems=1, xmin=0., xmax=1.)
+
+	# Set quadrature
+	basis.set_elem_quadrature_type("GaussLegendre")
+	basis.set_face_quadrature_type("GaussLegendre")
+	basis_st.set_elem_quadrature_type("GaussLegendre")
+	basis_st.set_face_quadrature_type("GaussLegendre")
+	mesh.gbasis.set_elem_quadrature_type("GaussLegendre")
+	mesh.gbasis.set_face_quadrature_type("GaussLegendre")
+
+	# Get stiffness matrix in space
+	SMS = basis_st_tools.get_stiffness_matrix_ader(mesh, basis, basis_st,
+			order, dt, elem_ID=0, grad_dir=0, physical_space=True)
+	'''
+	Reference:
+	Dumbser, M., Enaux, C., and Toro, E. JCP 2008
+		Vol. 227, Issue 8, Pgs: 3971 - 4001 Appendix B
+
+	Note: We multiply by 4 here because (unlike Dumbser's paper), we 
+	multiply by the inverse jacobian to account for non-ideal meshes
+
+	See the Quail documentation (Section for ADER-DG: space-time 
+	predictor step where the K matrices are defined)
+	'''
+	if order == 1:
+		expected = 4.0 * np.array([[0., 2., 0., 0.], 
+						 	   	  [0., 0., 0., 0.],
+							      [0., 0., 0., 2./3.],
+							      [0., 0., 0., 0.]])
+	elif order == 2:
+		expected = 4.0 * np.array([[0., 2., 0., 0., 0., 0., 0., 0., 0.], 
+				 	   	  [0., 0., 2., 0., 0., 0., 0., 0., 0.],
+					      [0., 0., 0., 0., 0., 0., 0., 0., 0.],
+					      [0., 0., 0., 0., 2./3., 0., 0., 0., 0.],
+					      [0., 0., 0., 0., 0., 2./3., 0., 0., 0.],
+					      [0., 0., 0., 0., 0., 0., 0., 0., 0.],
+					      [0., 0., 0., 0., 0., 0., 0., 2./5., 0.],
+					      [0., 0., 0., 0., 0., 0., 0., 0., 2./5.],
+					      [0., 0., 0., 0., 0., 0., 0., 0., 0.]])
+	# Assert
+	np.testing.assert_allclose(SMS.transpose(), expected, rtol, atol)
+
+
+@pytest.mark.parametrize('dt', [
+	# A few random time step sizes (should not effect matrix)
+	1.0, 0.1, 0.0132
+])
+@pytest.mark.parametrize('order', [
+	# Order of Lagrange basis
+	1, 2
+])
 def test_legendre_spacetime_stiffnessmatrix_timedir(dt, order):
 	'''
 	This test compares the analytic solution of the space-time 
@@ -256,3 +357,27 @@ def test_legendre_spacetime_stiffnessmatrix_timedir(dt, order):
 					      [0., 0., 0., 0., 0., 2./5., 0., 0., 0.]])
 	# Assert
 	np.testing.assert_allclose(SMT, expected, rtol, atol)
+
+
+@pytest.mark.parametrize('order', [
+	# Order of Lagrange basis
+	1, 2, 3, 4, 5
+])
+def test_legendre_spacetime_massmatrix(order):
+	'''
+	This test makes sure that the already tested mass matrix yields
+	the corrected inverse mass matrix with the diagonal inverted.
+	'''
+	basis = basis_defs.LegendreQuad(order)
+	mesh = mesh_common.mesh_1D(num_elems=1, xmin=-1., xmax=1.)
+		
+	# Set quadrature
+	basis.set_elem_quadrature_type("GaussLegendre")
+	basis.set_face_quadrature_type("GaussLegendre")
+
+	MM = basis_st_tools.get_elem_mass_matrix_ader(mesh, basis, order, -1)
+	iMM = basis_st_tools.get_elem_inv_mass_matrix_ader(mesh, basis, order, -1)
+
+	np.testing.assert_allclose(np.diagonal(iMM), 1./np.diagonal(MM), rtol, atol)
+
+

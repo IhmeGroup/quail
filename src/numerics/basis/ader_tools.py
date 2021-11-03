@@ -105,20 +105,14 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
 	nq = quad_pts.shape[0]
 
 	if physical_space:
-		djac, _, ijac = basis_tools.element_jacobian(mesh, elem_ID,
+		djac, jac, ijac = basis_tools.element_jacobian(mesh, elem_ID,
 				quad_pts_st, get_djac=True, get_ijac=True)
-
-		if len(djac) == 1:
-			djac = np.full(nq, djac[0])
 
 		ijac_st = np.zeros([nq_st, ndims + 1, ndims + 1])
 		ijac_st[:, :ndims, :ndims] = ijac
 
 		# Add the temporal Jacobian in the ndims+1 dimension
 		ijac_st[:, ndims, ndims] = 2./dt
-
-	else:
-		djac = np.full(nq, 1.)
 
 	basis_st.get_basis_val_grads(quad_pts_st, get_val=True,
 			get_ref_grad=True)
@@ -132,6 +126,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
 				basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
 	else:
 		basis_st_grad = basis_st.basis_ref_grad
+
 	# ------------------------------------------------------------------- #
 	# Example of ADER Stiffness Matrix calculation using for-loops
 	# ------------------------------------------------------------------- #
@@ -148,7 +143,7 @@ def get_stiffness_matrix_ader(mesh, basis, basis_st, order, dt, elem_ID,
 	#
 	# ------------------------------------------------------------------- #
 	SM = np.matmul(basis_st_grad[:, :, grad_dir].transpose(),
-			basis_st_val * quad_wts_st)
+			 basis_st_val * quad_wts_st)
 
 	return SM # [nb_st, nb_st]
 
