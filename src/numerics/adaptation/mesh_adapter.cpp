@@ -11,10 +11,10 @@ using std::cout, std::endl;
 
 extern "C" {
 
-void adapt_mesh(const double* old_node_coords, int* np, int* nt, double* node_coords, int* node_IDs) {
+MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, int& nt) {
     cout << "Starting mesh adaptation..." << endl;
 
-    MMG5_pMesh mmgMesh;
+    MMG5_Mesh* mmgMesh = (MMG5_Mesh*) malloc(sizeof(MMG5_Mesh));
     MMG5_pSol mmgSol;
     mmgMesh = NULL;
     mmgSol  = NULL;
@@ -74,14 +74,25 @@ void adapt_mesh(const double* old_node_coords, int* np, int* nt, double* node_co
     } else if ( ier == MMG5_LOWFAILURE )
         fprintf(stdout,"BAD ENDING OF MMG2DLIB\n");
 
+    // Get sizing information
+    if ( MMG2D_Get_meshSize(mmgMesh, &np, &nt, nullptr, nullptr/*&na*/) !=1 )  exit(EXIT_FAILURE);
+
+    return mmgMesh;
+}
+
+void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs) {
+
+
     /** ------------------------------ STEP III -------------------------- */
     // Get results
+    int np;
+    int nt;
     int na;
     // Get the size of the mesh: vertices, tetra, triangles, quadrangles, edges
-    if ( MMG2D_Get_meshSize(mmgMesh, np, nt, NULL, &na) !=1 )  exit(EXIT_FAILURE);
+    if (MMG2D_Get_meshSize(mmgMesh, &np, &nt, NULL, &na) !=1 )  exit(EXIT_FAILURE);
 
     // Table to know if a vertex/tetra/tria/edge is required
-    int* required = (int*)calloc(MAX4(*np,0,*nt,na)+1 ,sizeof(int));
+    int* required = (int*)calloc(MAX4(np,0,nt,na)+1 ,sizeof(int));
     if (!required) {
         perror("  ## Memory problem: calloc");
         exit(EXIT_FAILURE);
@@ -94,8 +105,8 @@ void adapt_mesh(const double* old_node_coords, int* np, int* nt, double* node_co
     int nreq = 0;
     int ref;
     nreq = 0;
-    printf("\nVertices\n%d\n",*np);
-    for(int k = 1; k <= *np; k++) {
+    printf("\nVertices\n%d\n", np);
+    for(int k = 1; k <= np; k++) {
         /** b) Vertex recovering */
         if ( MMG2D_Get_vertex(mmgMesh, &(Point[0]), &(Point[1]),
                             &ref, NULL, &(required[k])) != 1 ) {
@@ -108,14 +119,14 @@ void adapt_mesh(const double* old_node_coords, int* np, int* nt, double* node_co
         if (required[k])  nreq++;
     }
     printf("\nRequiredVertices\n%d\n", nreq);
-    for(int k = 1; k <= *np; k++) {
+    for(int k = 1; k <= np; k++) {
       if (required[k]) printf("%d \n", k);
     }
 
     // Get triangles
     int Tria[3];
-    printf("\nTriangles\n%d\n",*nt);
-    for(int k = 1; k <= *nt; k++) {
+    printf("\nTriangles\n%d\n", nt);
+    for(int k = 1; k <= nt; k++) {
         // Triangles recovering
         if (MMG2D_Get_triangle(mmgMesh, &(Tria[0]), &(Tria[1]), &(Tria[2]),
                               &ref, &(required[k])) != 1) {
@@ -129,7 +140,7 @@ void adapt_mesh(const double* old_node_coords, int* np, int* nt, double* node_co
         if (required[k])  nreq++;
     }
     printf("\nRequiredTriangles\n%d\n",nreq);
-    for(int k = 1; k <= *nt; k++) {
+    for(int k = 1; k <= nt; k++) {
         if (required[k])  printf("%d \n",k);
     }
 
@@ -137,9 +148,10 @@ void adapt_mesh(const double* old_node_coords, int* np, int* nt, double* node_co
     required = NULL;
 
     // Free the MMG2D structures
-    MMG2D_Free_all(MMG5_ARG_start,
-                   MMG5_ARG_ppMesh,&mmgMesh,MMG5_ARG_ppMet,&mmgSol,
-                   MMG5_ARG_end);
+    // TODO
+    //MMG2D_Free_all(MMG5_ARG_start,
+    //               MMG5_ARG_ppMesh,&mmgMesh,MMG5_ARG_ppMet,&mmgSol,
+    //               MMG5_ARG_end);
 }
 
 }
