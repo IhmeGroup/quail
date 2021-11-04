@@ -49,6 +49,7 @@ class Adapter:
 
 	def adapt(self):
 		mesh = self.solver.mesh
+		solver = self.solver
 
 		# Run Mmg to do mesh adaptation
 		npoints = ctypes.c_int()
@@ -94,3 +95,10 @@ class Adapter:
 			int_face1.faceL_ID = 0
 			int_face2.faceL_ID = 1
 			int_face3.faceL_ID = 2
+
+		# Update solver helpers and stepper
+		solver.elem_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
+		solver.int_face_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
+		solver.bface_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
+		solver.stepper.res = np.zeros_like(solver.state_coeffs)
+		solver.stepper.dU = np.zeros_like(solver.state_coeffs)
