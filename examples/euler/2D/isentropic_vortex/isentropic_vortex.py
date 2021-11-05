@@ -1,5 +1,5 @@
 TimeStepping = {
-	"FinalTime" : 1.,
+	"FinalTime" : .05,
 	"TimeStepSize" : 0.05,
 	"TimeStepper" : "LSRK4",
 }

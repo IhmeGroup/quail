@@ -1,6 +1,7 @@
+#include <algorithm>
 #include <cstdio>
 #include <iostream>
-#include <vector>
+#include <set>
 
 #include "mmg/mmg2d/libmmg2d.h"
 
@@ -11,7 +12,7 @@ using std::cout, std::endl;
 
 extern "C" {
 
-MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, int& nt) {
+MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, int& nt, int& na) {
     cout << "Starting mesh adaptation..." << endl;
 
     MMG5_Mesh* mmgMesh = (MMG5_Mesh*) malloc(sizeof(MMG5_Mesh));
@@ -40,10 +41,13 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, i
 
     // Give the edges (not mandatory): for each edge,
     // give the vertices index, the reference and the position of the edge
-    if ( MMG2D_Set_edge(mmgMesh,  1,  2, 1, 1) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_edge(mmgMesh,  2,  3, 2, 2) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_edge(mmgMesh,  3,  4, 3, 3) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_edge(mmgMesh,  4,  1, 4, 4) != 1 )  exit(EXIT_FAILURE);
+    // Interior edge
+    if ( MMG2D_Set_edge(mmgMesh, 2, 4, 1, 1) != 1 )  exit(EXIT_FAILURE);
+    // Boundary edges
+    if ( MMG2D_Set_edge(mmgMesh, 1, 2, 2, 1) != 1 )  exit(EXIT_FAILURE);
+    if ( MMG2D_Set_edge(mmgMesh, 2, 3, 3, 2) != 1 )  exit(EXIT_FAILURE);
+    if ( MMG2D_Set_edge(mmgMesh, 3, 4, 4, 3) != 1 )  exit(EXIT_FAILURE);
+    if ( MMG2D_Set_edge(mmgMesh, 4, 1, 5, 4) != 1 )  exit(EXIT_FAILURE);
 
     // Manually set the sol
     // Give info for the sol structure: sol applied on vertex entities,
@@ -55,9 +59,9 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, i
     for(int k = 1; k <= 4; k++) {
         // The value here sets the mesh density
         if (k == 1) {
-            if ( MMG2D_Set_scalarSol(mmgSol, 0.01, k) != 1 ) exit(EXIT_FAILURE);
+            if ( MMG2D_Set_scalarSol(mmgSol, 1., k) != 1 ) exit(EXIT_FAILURE);
         } else {
-            if ( MMG2D_Set_scalarSol(mmgSol, 0.3, k) != 1 ) exit(EXIT_FAILURE);
+            if ( MMG2D_Set_scalarSol(mmgSol, 1., k) != 1 ) exit(EXIT_FAILURE);
         }
     }
 
@@ -75,12 +79,12 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, i
         fprintf(stdout,"BAD ENDING OF MMG2DLIB\n");
 
     // Get sizing information
-    if ( MMG2D_Get_meshSize(mmgMesh, &np, &nt, nullptr, nullptr/*&na*/) !=1 )  exit(EXIT_FAILURE);
+    if ( MMG2D_Get_meshSize(mmgMesh, &np, &nt, nullptr, &na) !=1 )  exit(EXIT_FAILURE);
 
     return mmgMesh;
 }
 
-void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs) {
+void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs, long* face_info) {
 
 
     /** ------------------------------ STEP III -------------------------- */
@@ -96,6 +100,13 @@ void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs) {
     if (!required) {
         perror("  ## Memory problem: calloc");
         exit(EXIT_FAILURE);
+    }
+
+    /* Table to know if a coponant is corner and/or required */
+    int* ridge = (int*)calloc(na+1 ,sizeof(int));
+    if (!ridge) {
+      perror("  ## Memory problem: calloc");
+      exit(EXIT_FAILURE);
     }
 
     // TODO: Some unfortunate 1-indexing below...fix later
@@ -125,23 +136,80 @@ void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs) {
 
     // Get triangles
     int Tria[3];
+    int neighbors[3];
+    int neighbors_of_neighbors[3];
+    auto num_interior_faces = ((nt * 3) - na) / 2;
+    int global_face_ID = 0;
+    std::set<std::pair<int, int> > created_faces;
     printf("\nTriangles\n%d\n", nt);
-    for(int k = 1; k <= nt; k++) {
+    for(int elem_ID = 1; elem_ID <= nt; elem_ID++) {
         // Triangles recovering
         if (MMG2D_Get_triangle(mmgMesh, &(Tria[0]), &(Tria[1]), &(Tria[2]),
-                              &ref, &(required[k])) != 1) {
+                              &ref, &(required[elem_ID])) != 1) {
             exit(EXIT_FAILURE);
         }
-        printf("%d %d %d %d \n",Tria[0],Tria[1],Tria[2],ref);
+        printf("Nodes: %d %d %d %d \n",Tria[0],Tria[1],Tria[2],ref);
+        //printf("Edges: %d %d %d %d %d %d\n", mmgMesh->tria[k], 1, 1, 1, 1, 1);
+        //cout << mmgMesh->tria[k].v[0] << endl;
+        if (MMG2D_Get_adjaTri(mmgMesh, elem_ID, neighbors) != 1) exit(EXIT_FAILURE);
+        cout << "Neighbors: " << neighbors[0] << " " << neighbors[1] << " " << neighbors[2] << endl;
         // Store node IDs
-        node_IDs[3*(k-1)] = Tria[0];
-        node_IDs[3*(k-1) + 1] = Tria[1];
-        node_IDs[3*(k-1) + 2] = Tria[2];
-        if (required[k])  nreq++;
+        node_IDs[3*(elem_ID - 1)] = Tria[0];
+        node_IDs[3*(elem_ID - 1) + 1] = Tria[1];
+        node_IDs[3*(elem_ID - 1) + 2] = Tria[2];
+        // Loop over faces of this triangle
+        for (int face_ID = 0; face_ID < 3; face_ID++) {
+            // Get neighbor of this face
+            auto neighbor_ID = neighbors[face_ID];
+            // Has this face been made already?
+            bool made_yet = created_faces.find(std::pair(neighbor_ID, elem_ID)) != created_faces.end();
+            // If it hasn't, then make it
+            if (not made_yet) {
+                // Get face ID on the neighbor's side
+                if (MMG2D_Get_adjaTri(mmgMesh, neighbor_ID, neighbors_of_neighbors) != 1) exit(EXIT_FAILURE);
+                auto neighbor_face_ID = std::distance(neighbors_of_neighbors, std::find(neighbors_of_neighbors, neighbors_of_neighbors + 3, elem_ID));
+                // Store face information
+                face_info[4 * global_face_ID] = elem_ID;
+                face_info[4 * global_face_ID + 1] = neighbor_ID;
+                face_info[4 * global_face_ID + 2] = face_ID;
+                face_info[4 * global_face_ID + 3] = neighbor_face_ID;
+                // Increment index of faces
+                global_face_ID++;
+                // Mark this face as created
+                created_faces.insert(std::pair(elem_ID, neighbor_ID));
+            }
+        }
+
+        if (required[elem_ID])  nreq++;
     }
     printf("\nRequiredTriangles\n%d\n",nreq);
     for(int k = 1; k <= nt; k++) {
         if (required[k])  printf("%d \n",k);
+    }
+
+    nreq = 0;
+    int nr = 0;
+    int Edge[2];
+    int ktri[2];
+    int ied[2];
+    printf("\nEdges\n%d\n",na);
+    for(int k=1; k<=na; k++) {
+        // Get the vertices of the edge as well as its reference, and whether
+        // it's a ridge or required edge
+        if ( MMG2D_Get_edge(mmgMesh,&(Edge[0]),&(Edge[1]),&ref,
+                            &(ridge[k]),&(required[k])) != 1 )  exit(EXIT_FAILURE);
+        // Get the element and face IDs on either side of the edge
+        if (MMG2D_Get_trisFromEdge(mmgMesh, k, ktri, ied) != 1) exit(EXIT_FAILURE);
+        cout << "edge stuff" << endl;
+        cout << k << "  " << ktri[0] << " " << ktri[1] << " " << ied[0] << " " << ied[1] << endl;
+
+        printf("%d %d %d \n",Edge[0],Edge[1],ref);
+        if ( ridge[k] )  nr++;
+        if ( required[k] )  nreq++;
+    }
+    printf("\nRequiredEdges\n%d\n",nreq);
+    for(int k=1; k<=na; k++) {
+        if ( required[k] )  printf("%d \n",k);
     }
 
     free(required);

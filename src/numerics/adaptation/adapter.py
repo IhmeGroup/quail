@@ -25,7 +25,7 @@ lib.adapt_mesh.argtypes = [
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS'),
 		# Sizes
-		POINTER(ctypes.c_int), POINTER(ctypes.c_int)]
+		POINTER(ctypes.c_int), POINTER(ctypes.c_int), POINTER(ctypes.c_int)]
 adapt_mesh = lib.adapt_mesh
 
 # -- get_results -- #
@@ -37,6 +37,9 @@ lib.get_results.argtypes = [
 		np.ctypeslib.ndpointer(dtype=np.float64, ndim=2,
 			flags='C_CONTIGUOUS'),
 		# Node IDs
+		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
+			flags='C_CONTIGUOUS'),
+		# Face information
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS')]
 get_results = lib.get_results
@@ -54,19 +57,24 @@ class Adapter:
 		# Run Mmg to do mesh adaptation
 		npoints = ctypes.c_int()
 		ntris = ctypes.c_int()
+		nedges = ctypes.c_int()
 		mmgMesh = adapt_mesh(mesh.node_coords, mesh.elem_to_node_IDs,
-				byref(npoints), byref(ntris))
+				byref(npoints), byref(ntris), byref(nedges))
 		npoints = npoints.value
 		ntris = ntris.value
+		nedges = nedges.value
+		num_interior_faces = ((ntris * 3) - nedges) // 2
 
 		# Create new arrays with the sizing given by Mmg
 		mesh.node_coords = np.empty((npoints, mesh.ndims))
 		mesh.elem_to_node_IDs = np.empty((ntris, 3), dtype=np.int64)
+		face_info = np.empty((num_interior_faces, 4), dtype=np.int64)
 
 		# Extract results from Mmg
-		get_results(mmgMesh, mesh.node_coords, mesh.elem_to_node_IDs)
+		get_results(mmgMesh, mesh.node_coords, mesh.elem_to_node_IDs, face_info)
 		# TODO: Fix for unfortunate 1-indexing
 		mesh.elem_to_node_IDs -= 1
+		breakpoint()
 
 		mesh.num_elems = ntris
 		mesh.num_nodes = npoints
