@@ -4,7 +4,6 @@ import sys
 sys.path.append('../src')
 
 import numerics.basis.basis as basis_defs
-import numerics.basis.tools as basis_tools
 from numerics.quadrature import segment, quadrilateral, triangle, \
 		hexahedron
 import general
