@@ -24,6 +24,9 @@ lib.adapt_mesh.argtypes = [
 		# Node IDs
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS'),
+		# Boundary face information
+		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
+			flags='C_CONTIGUOUS'),
 		# Sizes
 		POINTER(ctypes.c_int), POINTER(ctypes.c_int), POINTER(ctypes.c_int)]
 adapt_mesh = lib.adapt_mesh
@@ -66,12 +69,31 @@ class Adapter:
 			# Add to total number of edges
 			num_edges.value += bgroup.num_boundary_faces
 
+		bface_info = np.empty((num_edges.value, 3), dtype=np.int64)
+		edge_idx = 0
+		# Loop over boundary groups
+		for bgroup in mesh.boundary_groups.values():
+			# Loop over boundary faces
+			for bface in bgroup.boundary_faces:
+				# Get node IDs on this boundary face
+				node_nums = mesh.gbasis.get_local_face_node_nums(mesh.gorder,
+						bface.face_ID)
+				# Get global node IDs
+				face_node_IDs = mesh.elem_to_node_IDs[bface.elem_ID, node_nums]
+				# Store these, along with the group number
+				bface_info[edge_idx] = [face_node_IDs[0], face_node_IDs[1],
+						bgroup.number]
+				# Increment edge index
+				edge_idx += 1;
+
 		# Sizing
 		num_nodes = ctypes.c_int(mesh.num_nodes)
 		num_elems = ctypes.c_int(mesh.num_elems)
+
 		# Run Mmg to do mesh adaptation
 		mmgMesh = adapt_mesh(mesh.node_coords, mesh.elem_to_node_IDs,
-				byref(num_nodes), byref(num_elems), byref(num_edges))
+				bface_info, byref(num_nodes), byref(num_elems),
+				byref(num_edges))
 		num_nodes = num_nodes.value
 		num_elems = num_elems.value
 		num_edges = num_edges.value
@@ -128,8 +150,6 @@ class Adapter:
 		breakpoint()
 
 		# Update solver helpers and stepper
-		solver.elem_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
-		solver.int_face_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
-		solver.bface_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
+		solver.precompute_matrix_helpers()
 		solver.stepper.res = np.zeros_like(solver.state_coeffs)
 		solver.stepper.dU = np.zeros_like(solver.state_coeffs)

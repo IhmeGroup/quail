@@ -17,7 +17,8 @@ void check_error(int error) {
 extern "C" {
 
 MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
-        int& num_nodes, int& num_elems, int& num_edges) {
+        const long* bface_info, int& num_nodes, int& num_elems,
+        int& num_edges) {
     int error;
 
     MMG5_Mesh* mmgMesh = (MMG5_Mesh*) malloc(sizeof(MMG5_Mesh));
@@ -41,11 +42,6 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
         check_error(error);
     }
 
-    //if ( MMG2D_Set_vertex(mmgMesh,0  ,0  ,0  ,  1) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_vertex(mmgMesh,1  ,0  ,0  ,  2) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_vertex(mmgMesh,1  ,1  ,0  ,  3) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_vertex(mmgMesh,0  ,1  ,0  ,  4) != 1 )  exit(EXIT_FAILURE);
-
     // Loop over elements
     for (int elem_ID = 0; elem_ID < num_elems; elem_ID++) {
         // Set the triangles. For each triangle, give the vertex indices, the
@@ -56,36 +52,44 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
         check_error(error);
     }
 
-    //if ( MMG2D_Set_triangle(mmgMesh,  1,  2,  4, 1, 1) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_triangle(mmgMesh,  2,  3,  4, 1, 2) != 1 )  exit(EXIT_FAILURE);
+    // Loop over edges
+    for (int edge_ID = 0; edge_ID < num_edges; edge_ID++) {
+        // Set the edges. For each edge, give the vertex indices (with
+        // 1-indexing), the reference (with 1-indexing) and the index of the
+        // edge (with 1-indexing).
+        auto info = bface_info + 3*edge_ID;
+        error = MMG2D_Set_edge(mmgMesh, info[0] + 1, info[1] + 1, info[2] + 1,
+                edge_ID + 1);
+        check_error(error);
+    }
 
-
-    //TODO
-    // Give the edges (not mandatory): for each edge,
-    // give the vertices index, the reference and the position of the edge
     //if ( MMG2D_Set_edge(mmgMesh, 1, 2, 1, 1) != 1 )  exit(EXIT_FAILURE);
     //if ( MMG2D_Set_edge(mmgMesh, 2, 3, 2, 2) != 1 )  exit(EXIT_FAILURE);
     //if ( MMG2D_Set_edge(mmgMesh, 3, 4, 2, 3) != 1 )  exit(EXIT_FAILURE);
     //if ( MMG2D_Set_edge(mmgMesh, 4, 1, 1, 4) != 1 )  exit(EXIT_FAILURE);
 
-    // Manually set the sol
-    // Give info for the sol structure: sol applied on vertex entities,
-    // number of vertices=4, the sol is scalar
-    if ( MMG2D_Set_solSize(mmgMesh,mmgSol,MMG5_Vertex,4,MMG5_Scalar) != 1 )
-        exit(EXIT_FAILURE);
+    // Give info to the sol struct.
+    // - the mesh and sol structs
+    // - where the sol will be applied, which is the vertices
+    // - the number of vertices
+    // - the type of sol, which is scalar for now (isotropic)
+    error = MMG2D_Set_solSize(mmgMesh, mmgSol, MMG5_Vertex, num_nodes, MMG5_Scalar);
+    check_error(error);
 
-    // Give solutions values and positions
-    for(int k = 1; k <= 4; k++) {
+    // Give sol values and positions
+    for(int k = 1; k <= num_nodes; k++) {
         // The value here sets the mesh density
         if (k == 1) {
-            if ( MMG2D_Set_scalarSol(mmgSol, 1., k) != 1 ) exit(EXIT_FAILURE);
+            error = MMG2D_Set_scalarSol(mmgSol, 6., k);
         } else {
-            if ( MMG2D_Set_scalarSol(mmgSol, 1., k) != 1 ) exit(EXIT_FAILURE);
+            error = MMG2D_Set_scalarSol(mmgSol, 6., k);
         }
+        check_error(error);
     }
 
     // (not mandatory): check if the number of given entities match with mesh size
-    if ( MMG2D_Chk_meshData(mmgMesh,mmgSol) != 1 ) exit(EXIT_FAILURE);
+    error = MMG2D_Chk_meshData(mmgMesh,mmgSol);
+    check_error(error);
 
     /** ------------------------------ STEP  II -------------------------- */
     // Remesh function
