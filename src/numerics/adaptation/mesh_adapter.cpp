@@ -10,10 +10,15 @@ using std::cout, std::endl;
 #define MAX0(a,b)     (((a) > (b)) ? (a) : (b))
 #define MAX4(a,b,c,d)  (((MAX0(a,b)) > (MAX0(c,d))) ? (MAX0(a,b)) : (MAX0(c,d)))
 
+void check_error(int error) {
+    if (error != 1) exit(EXIT_FAILURE);
+}
+
 extern "C" {
 
-MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, int& nt, int& na) {
-    cout << "Starting mesh adaptation..." << endl;
+MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
+        int& num_nodes, int& num_elems, int& num_edges) {
+    int error;
 
     MMG5_Mesh* mmgMesh = (MMG5_Mesh*) malloc(sizeof(MMG5_Mesh));
     MMG5_pSol mmgSol;
@@ -23,28 +28,45 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, i
                     MMG5_ARG_ppMesh,&mmgMesh,MMG5_ARG_ppMet,&mmgSol,
                     MMG5_ARG_end);
 
-    // Get the size of the mesh: vertices, triangles, quadrangles, edges
-    if ( MMG2D_Set_meshSize(mmgMesh,4,2,0,4) != 1 )  exit(EXIT_FAILURE);
+    // Set the size of the mesh: vertices, triangles, quadrangles, and edges
+    error = MMG2D_Set_meshSize(mmgMesh, num_nodes , num_elems, 0, num_edges);
+    check_error(error);
 
-    // Give the vertices: for each vertex, give the coordinates, the reference
-    // and the position in mesh of the vertex
-    if ( MMG2D_Set_vertex(mmgMesh,0  ,0  ,0  ,  1) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_vertex(mmgMesh,1  ,0  ,0  ,  2) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_vertex(mmgMesh,1  ,1  ,0  ,  3) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_vertex(mmgMesh,0  ,1  ,0  ,  4) != 1 )  exit(EXIT_FAILURE);
+    // Loop over nodes
+    for (int node_ID = 0; node_ID < num_nodes; node_ID++) {
+        // Set the vertices. For each vertex, give the coordinates, the reference
+        // and the index (with 1-indexing).
+        error = MMG2D_Set_vertex(mmgMesh, node_coords[2*node_ID],
+                node_coords[2*node_ID + 1], 0, node_ID + 1);
+        check_error(error);
+    }
 
-    // Give the triangles: for each triangle,
-    // give the vertices index, the reference and the position of the triangle
-    if ( MMG2D_Set_triangle(mmgMesh,  1,  2,  4, 1, 1) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_triangle(mmgMesh,  2,  3,  4, 1, 2) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_vertex(mmgMesh,0  ,0  ,0  ,  1) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_vertex(mmgMesh,1  ,0  ,0  ,  2) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_vertex(mmgMesh,1  ,1  ,0  ,  3) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_vertex(mmgMesh,0  ,1  ,0  ,  4) != 1 )  exit(EXIT_FAILURE);
+
+    // Loop over elements
+    for (int elem_ID = 0; elem_ID < num_elems; elem_ID++) {
+        // Set the triangles. For each triangle, give the vertex indices, the
+        // reference and the index of the triangle (with 1-indexing).
+        error = MMG2D_Set_triangle(mmgMesh, node_IDs[3*elem_ID] + 1,
+                node_IDs[3*elem_ID + 1] + 1, node_IDs[3*elem_ID + 2] + 1, 1,
+                elem_ID + 1);
+        check_error(error);
+    }
+
+    //if ( MMG2D_Set_triangle(mmgMesh,  1,  2,  4, 1, 1) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_triangle(mmgMesh,  2,  3,  4, 1, 2) != 1 )  exit(EXIT_FAILURE);
 
 
+    //TODO
     // Give the edges (not mandatory): for each edge,
     // give the vertices index, the reference and the position of the edge
-    if ( MMG2D_Set_edge(mmgMesh, 1, 2, 1, 1) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_edge(mmgMesh, 2, 3, 2, 2) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_edge(mmgMesh, 3, 4, 2, 3) != 1 )  exit(EXIT_FAILURE);
-    if ( MMG2D_Set_edge(mmgMesh, 4, 1, 1, 4) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_edge(mmgMesh, 1, 2, 1, 1) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_edge(mmgMesh, 2, 3, 2, 2) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_edge(mmgMesh, 3, 4, 2, 3) != 1 )  exit(EXIT_FAILURE);
+    //if ( MMG2D_Set_edge(mmgMesh, 4, 1, 1, 4) != 1 )  exit(EXIT_FAILURE);
 
     // Manually set the sol
     // Give info for the sol structure: sol applied on vertex entities,
@@ -76,7 +98,9 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const int* node_IDs, int& np, i
         fprintf(stdout,"BAD ENDING OF MMG2DLIB\n");
 
     // Get sizing information
-    if ( MMG2D_Get_meshSize(mmgMesh, &np, &nt, nullptr, &na) !=1 )  exit(EXIT_FAILURE);
+    error = MMG2D_Get_meshSize(mmgMesh, &num_nodes, &num_elems, nullptr,
+            &num_edges);
+    check_error(error);
 
     return mmgMesh;
 }

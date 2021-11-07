@@ -60,20 +60,26 @@ class Adapter:
 		mesh = self.solver.mesh
 		solver = self.solver
 
+		num_edges = ctypes.c_int(0)
+		# Loop over boundary groups
+		for bgroup in mesh.boundary_groups.values():
+			# Add to total number of edges
+			num_edges.value += bgroup.num_boundary_faces
+
+		# Sizing
+		num_nodes = ctypes.c_int(mesh.num_nodes)
+		num_elems = ctypes.c_int(mesh.num_elems)
 		# Run Mmg to do mesh adaptation
-		npoints = ctypes.c_int()
-		ntris = ctypes.c_int()
-		num_edges = ctypes.c_int()
 		mmgMesh = adapt_mesh(mesh.node_coords, mesh.elem_to_node_IDs,
-				byref(npoints), byref(ntris), byref(num_edges))
-		npoints = npoints.value
-		ntris = ntris.value
+				byref(num_nodes), byref(num_elems), byref(num_edges))
+		num_nodes = num_nodes.value
+		num_elems = num_elems.value
 		num_edges = num_edges.value
-		mesh.num_interior_faces = ((ntris * 3) - num_edges) // 2
+		mesh.num_interior_faces = ((num_elems * 3) - num_edges) // 2
 
 		# Create new arrays with the sizing given by Mmg
-		mesh.node_coords = np.empty((npoints, mesh.ndims))
-		mesh.elem_to_node_IDs = np.empty((ntris, 3), dtype=np.int64)
+		mesh.node_coords = np.empty((num_nodes, mesh.ndims))
+		mesh.elem_to_node_IDs = np.empty((num_elems, 3), dtype=np.int64)
 		face_info = np.empty((mesh.num_interior_faces, 4), dtype=np.int64)
 		num_faces_per_bgroup = np.zeros(mesh.num_boundary_groups,
 				dtype=np.int64)
@@ -84,10 +90,10 @@ class Adapter:
 				num_faces_per_bgroup, bface_info)
 
 		# Set sizes
-		mesh.num_elems = ntris
-		mesh.num_nodes = npoints
+		mesh.num_elems = num_elems
+		mesh.num_nodes = num_nodes
 		_, N_n, N_k = self.solver.state_coeffs.shape
-		self.solver.state_coeffs = np.zeros((ntris, N_n, N_k))
+		self.solver.state_coeffs = np.zeros((num_elems, N_n, N_k))
 
 		# Allocate interior faces
 		mesh.allocate_interior_faces()
