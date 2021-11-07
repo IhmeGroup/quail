@@ -41,6 +41,12 @@ lib.get_results.argtypes = [
 			flags='C_CONTIGUOUS'),
 		# Face information
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
+			flags='C_CONTIGUOUS'),
+		# Number of boundary faces in each boundary group
+		np.ctypeslib.ndpointer(dtype=np.int64, ndim=1,
+			flags='C_CONTIGUOUS'),
+		# Information from each boundary edge
+		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS')]
 get_results = lib.get_results
 
@@ -57,52 +63,63 @@ class Adapter:
 		# Run Mmg to do mesh adaptation
 		npoints = ctypes.c_int()
 		ntris = ctypes.c_int()
-		nedges = ctypes.c_int()
+		num_edges = ctypes.c_int()
 		mmgMesh = adapt_mesh(mesh.node_coords, mesh.elem_to_node_IDs,
-				byref(npoints), byref(ntris), byref(nedges))
+				byref(npoints), byref(ntris), byref(num_edges))
 		npoints = npoints.value
 		ntris = ntris.value
-		nedges = nedges.value
-		num_interior_faces = ((ntris * 3) - nedges) // 2
+		num_edges = num_edges.value
+		mesh.num_interior_faces = ((ntris * 3) - num_edges) // 2
 
 		# Create new arrays with the sizing given by Mmg
 		mesh.node_coords = np.empty((npoints, mesh.ndims))
 		mesh.elem_to_node_IDs = np.empty((ntris, 3), dtype=np.int64)
-		face_info = np.empty((num_interior_faces, 4), dtype=np.int64)
+		face_info = np.empty((mesh.num_interior_faces, 4), dtype=np.int64)
+		num_faces_per_bgroup = np.zeros(mesh.num_boundary_groups,
+				dtype=np.int64)
+		bface_info = np.empty((num_edges, 3), dtype=np.int64)
 
 		# Extract results from Mmg
-		get_results(mmgMesh, mesh.node_coords, mesh.elem_to_node_IDs, face_info)
-		# TODO: Fix for unfortunate 1-indexing
-		mesh.elem_to_node_IDs -= 1
-		breakpoint()
+		get_results(mmgMesh, mesh.node_coords, mesh.elem_to_node_IDs, face_info,
+				num_faces_per_bgroup, bface_info)
 
+		# Set sizes
 		mesh.num_elems = ntris
 		mesh.num_nodes = npoints
 		_, N_n, N_k = self.solver.state_coeffs.shape
 		self.solver.state_coeffs = np.zeros((ntris, N_n, N_k))
 
-		mesh.elements = []
-		mesh.interior_faces = []
-		mesh.num_interior_faces = 3*ntris
-		for i in range(mesh.num_elems):
-			mesh.elements.append(meshdefs.Element())
-			elem = mesh.elements[i]
-			elem.ID = i
-			elem.node_IDs = mesh.elem_to_node_IDs[i]
-			elem.node_coords = mesh.node_coords[elem.node_IDs]
-			# TODO
-			elem.face_to_neighbors = np.zeros(0, dtype=int)
+		# Allocate interior faces
+		mesh.allocate_interior_faces()
 
-			mesh.interior_faces.append(meshdefs.InteriorFace())
-			mesh.interior_faces.append(meshdefs.InteriorFace())
-			mesh.interior_faces.append(meshdefs.InteriorFace())
-			int_face1, int_face2, int_face3 = mesh.interior_faces[3*i:3*i+3]
-			int_face1.elemL_ID = i
-			int_face2.elemL_ID = i
-			int_face3.elemL_ID = i
-			int_face1.faceL_ID = 0
-			int_face2.faceL_ID = 1
-			int_face3.faceL_ID = 2
+		# Assign face information
+		for face, info in zip(mesh.interior_faces, face_info):
+			face.elemL_ID, face.elemR_ID, face.faceL_ID, face.faceR_ID = info
+
+		# Create elements
+		mesh.create_elements()
+
+		# Loop over boundary groups
+		for bgroup in mesh.boundary_groups.values():
+			# Set number of faces
+			bgroup.num_boundary_faces = num_faces_per_bgroup[bgroup.number]
+			# Allocate boundary faces
+			bgroup.allocate_boundary_faces()
+
+		# List of boundary names
+		boundary_names = list(mesh.boundary_groups)
+
+		bgroup_counter = np.zeros(mesh.num_boundary_groups, dtype=int)
+		# Loop over edges
+		for info in bface_info:
+			# Get the boundary group of this face
+			boundary_group_idx = info[2]
+			bgroup = mesh.boundary_groups[boundary_names[boundary_group_idx]]
+			# Get the corresponding boundary face
+			bface = bgroup.boundary_faces[bgroup_counter[boundary_group_idx]]
+			# Assign face information
+			bface.elem_ID, bface.face_ID = info[:2]
+		breakpoint()
 
 		# Update solver helpers and stepper
 		solver.elem_helpers.compute_helpers(mesh, solver.physics, solver.basis, solver.order)
