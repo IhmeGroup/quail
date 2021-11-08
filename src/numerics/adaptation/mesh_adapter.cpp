@@ -16,13 +16,11 @@ void check_error(int error) {
 
 extern "C" {
 
-MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
+void adapt_mesh(const double* node_coords, const long* node_IDs,
         const long* bface_info, int& num_nodes, int& num_elems,
-        int& num_edges) {
+        int& num_edges, MMG5_pMesh& mmgMesh, MMG5_pSol& mmgSol) {
     int error;
 
-    MMG5_Mesh* mmgMesh = (MMG5_Mesh*) malloc(sizeof(MMG5_Mesh));
-    MMG5_pSol mmgSol;
     mmgMesh = NULL;
     mmgSol  = NULL;
     MMG2D_Init_mesh(MMG5_ARG_start,
@@ -63,11 +61,6 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
         check_error(error);
     }
 
-    //if ( MMG2D_Set_edge(mmgMesh, 1, 2, 1, 1) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_edge(mmgMesh, 2, 3, 2, 2) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_edge(mmgMesh, 3, 4, 2, 3) != 1 )  exit(EXIT_FAILURE);
-    //if ( MMG2D_Set_edge(mmgMesh, 4, 1, 1, 4) != 1 )  exit(EXIT_FAILURE);
-
     // Give info to the sol struct.
     // - the mesh and sol structs
     // - where the sol will be applied, which is the vertices
@@ -80,9 +73,9 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
     for(int k = 1; k <= num_nodes; k++) {
         // The value here sets the mesh density
         if (k == 1) {
-            error = MMG2D_Set_scalarSol(mmgSol, 6., k);
+            error = MMG2D_Set_scalarSol(mmgSol, 1., k);
         } else {
-            error = MMG2D_Set_scalarSol(mmgSol, 6., k);
+            error = MMG2D_Set_scalarSol(mmgSol, 1., k);
         }
         check_error(error);
     }
@@ -105,11 +98,9 @@ MMG5_Mesh* adapt_mesh(const double* node_coords, const long* node_IDs,
     error = MMG2D_Get_meshSize(mmgMesh, &num_nodes, &num_elems, nullptr,
             &num_edges);
     check_error(error);
-
-    return mmgMesh;
 }
 
-void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs, long* face_info,
+void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long* node_IDs, long* face_info,
         long* num_faces_per_bgroup, long* bface_info) {
 
 
@@ -134,8 +125,6 @@ void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs, long* 
       perror("  ## Memory problem: calloc");
       exit(EXIT_FAILURE);
     }
-
-    // TODO: Some unfortunate 1-indexing below...fix later
 
     // Get vertices
     double Point[3];
@@ -175,8 +164,6 @@ void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs, long* 
             exit(EXIT_FAILURE);
         }
         printf("Nodes: %d %d %d %d \n",Tria[0],Tria[1],Tria[2],ref);
-        //printf("Edges: %d %d %d %d %d %d\n", mmgMesh->tria[k], 1, 1, 1, 1, 1);
-        //cout << mmgMesh->tria[k].v[0] << endl;
         if (MMG2D_Get_adjaTri(mmgMesh, elem_ID, neighbors) != 1) exit(EXIT_FAILURE);
         cout << "Neighbors: " << neighbors[0] << " " << neighbors[1] << " " << neighbors[2] << endl;
         // Store node IDs, subtracting one to go back to 0-indexed
@@ -236,8 +223,6 @@ void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs, long* 
         bface_info[3 * (edge_idx - 1) + 2] = ref - 1;
         // Increment the number of faces in this group
         num_faces_per_bgroup[ref - 1]++;
-        cout << "edge stuff" << endl;
-        cout << edge_idx << "  " << elem_IDs[0] << " " << elem_IDs[1] << " " << face_IDs[0] << " " << face_IDs[1] << endl;
 
         printf("%d %d %d \n",Edge[0],Edge[1],ref);
         if ( ridge[edge_idx] )  nr++;
@@ -248,14 +233,13 @@ void get_results(MMG5_pMesh mmgMesh, double* node_coords, long* node_IDs, long* 
         if ( required[k] )  printf("%d \n",k);
     }
 
+    free(ridge);
     free(required);
-    required = NULL;
 
     // Free the MMG2D structures
-    // TODO
-    //MMG2D_Free_all(MMG5_ARG_start,
-    //               MMG5_ARG_ppMesh,&mmgMesh,MMG5_ARG_ppMet,&mmgSol,
-    //               MMG5_ARG_end);
+    MMG2D_Free_all(MMG5_ARG_start,
+                   MMG5_ARG_ppMesh, &mmgMesh, MMG5_ARG_ppMet, &mmgSol,
+                   MMG5_ARG_end);
 }
 
 }

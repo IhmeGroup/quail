@@ -1,5 +1,5 @@
 TimeStepping = {
-	"FinalTime" : .05,
+	"FinalTime" : 1.,
 	"TimeStepSize" : 0.05,
 	"TimeStepper" : "LSRK4",
 }
@@ -13,13 +13,13 @@ Numerics = {
 
 Mesh = {
 	"ElementShape" : "Triangle",
-	"NumElemsX" : 1,
-	"NumElemsY" : 1,
+	"NumElemsX" : 8,
+	"NumElemsY" : 8,
 	"xmin" : -5.,
 	"xmax" : 5.,
 	"ymin" : -5.,
 	"ymax" : 5.,
-	"PeriodicBoundariesX" : ["x2", "x1"],
+	#"PeriodicBoundariesX" : ["x2", "x1"],
 }
 
 Physics = {
@@ -40,6 +40,8 @@ d = {
 }
 
 BoundaryConditions = {
+	"x1" : d,
+	"x2" : d,
 	"y1" : d,
 	"y2" : d,
 }
