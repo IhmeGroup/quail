@@ -5,7 +5,6 @@ import pickle
 import subprocess
 import sys
 sys.path.append('../src')
-sys.path.append('../../../../src/')
 
 import general
 import meshing.common as mesh_common
