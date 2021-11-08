@@ -1,13 +1,13 @@
 TimeStepping = {
-	"FinalTime" : 0.028,
-	"TimeStepSize" : 0.004,
+	"FinalTime" : 0.6,
+	"TimeStepSize" : 0.02,
 	"TimeStepper" : "SSPRK3",
 }
 
 Numerics = {
 	"SolutionOrder" : 2,
 	"SolutionBasis" : "LagrangeQuad",
-#	"ApplyLimiters" : "PositivityPreserving",
+	"ApplyLimiters" : "PositivityPreserving",
 }
 
 Mesh = {
