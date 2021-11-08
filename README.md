@@ -1,4 +1,7 @@
-[![IhmeGroup](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield)](https://app.circleci.com/pipelines/github/IhmeGroup/quail)
+# Example:
+.. image:: https://circleci.com/gh/IhmeGroup/quail.svg?style=svg
+    :target: https://circleci.com/gh/IhmeGroup/quail
+<!-- [![IhmeGroup](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield)](https://app.circleci.com/pipelines/github/IhmeGroup/quail) -->
 
 <p align="center">
   <a href="https://github.com/ericjching/DG_Python"><img alt="quail_logo" src="https://user-images.githubusercontent.com/55554103/99025045-c0ddb780-251c-11eb-9cdb-0bed0269b434.png" width="55%"></a>
