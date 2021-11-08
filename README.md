@@ -1,5 +1,5 @@
 [![GitHub issues](https://img.shields.io/github/issues/IhmeGroup/quail.svg)](https://github.com/IhmeGroup/quail/issues)
-[![Circle CI](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield)](https://circleci.com/gh/IhmeGroup/quail)
+[![Circle CI](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield&circle-token=qK3Vv9fDZUm3P1ozPb1xcSrtBRQw4yxMim9h4MtBeVA)](https://circleci.com/gh/IhmeGroup/quail)
 
 <p align="center">
   <a href="https://github.com/ericjching/DG_Python"><img alt="quail_logo" src="https://user-images.githubusercontent.com/55554103/99025045-c0ddb780-251c-11eb-9cdb-0bed0269b434.png" width="55%"></a>
