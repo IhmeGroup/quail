@@ -1,6 +1,6 @@
-# Example:
+<!-- # Example:
 .. image:: https://circleci.com/gh/IhmeGroup/quail.svg?style=svg
-    :target: https://circleci.com/gh/IhmeGroup/quail
+    :target: https://circleci.com/gh/IhmeGroup/quail -->
 <!-- [![IhmeGroup](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield)](https://app.circleci.com/pipelines/github/IhmeGroup/quail) -->
 
 <p align="center">
