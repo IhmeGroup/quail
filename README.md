@@ -1,4 +1,3 @@
-[![Circle CI](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield)](https://circleci.com/gh/IhmeGroup/quail)
 [![GitHub issues](https://img.shields.io/github/issues/IhmeGroup/quail.svg)](https://github.com/IhmeGroup/quail/issues)
 [![Circle CI](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield)](https://circleci.com/gh/IhmeGroup/quail)
 
