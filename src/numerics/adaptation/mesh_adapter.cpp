@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <iostream>
 #include <set>
+#include <cmath>
 
 #include "mmg/mmg2d/libmmg2d.h"
 
@@ -38,6 +39,10 @@ void adapt_mesh(const double* node_coords, const long* node_IDs,
         error = MMG2D_Set_vertex(mmgMesh, node_coords[2*node_ID],
                 node_coords[2*node_ID + 1], 0, node_ID + 1);
         check_error(error);
+        // Set vertex requirements
+        // TODO: How best to handle this in general?
+        error = MMG2D_Set_corner(mmgMesh, node_ID + 1);
+        check_error(error);
     }
 
     // Loop over elements
@@ -60,6 +65,11 @@ void adapt_mesh(const double* node_coords, const long* node_IDs,
                 edge_ID + 1);
         check_error(error);
     }
+    // Set edge requirements
+    // TODO: How best to handle this in general?
+    //error = MMG2D_Set_requiredEdge(mmgMesh, 1);
+    //error = MMG2D_Set_requiredEdge(mmgMesh, 2);
+    //check_error(error);
 
     // Give info to the sol struct.
     // - the mesh and sol structs
@@ -70,13 +80,15 @@ void adapt_mesh(const double* node_coords, const long* node_IDs,
     check_error(error);
 
     // Give sol values and positions
-    for(int k = 1; k <= num_nodes; k++) {
+    auto c = 1.28057912;
+    for (int k = 1; k <= num_nodes; k++) {
         // The value here sets the mesh density
-        if (k == 1) {
-            error = MMG2D_Set_scalarSol(mmgSol, 1., k);
-        } else {
-            error = MMG2D_Set_scalarSol(mmgSol, 1., k);
-        }
+        //error = MMG2D_Set_scalarSol(mmgSol, .04, k);
+        auto coords = node_coords + 2*(k-1);
+        auto met = 3*pow(coords[1] - c * coords[0], 2) + .01;
+        if (met > .2) met = 2.;
+        cout << met << endl;
+        error = MMG2D_Set_scalarSol(mmgSol, met, k);
         check_error(error);
     }
 

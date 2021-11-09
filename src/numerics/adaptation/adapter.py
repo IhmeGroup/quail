@@ -69,7 +69,10 @@ class Adapter:
 
 	def adapt(self):
 		# TODO
-		if self.solver.time != .05: return
+		#return
+		if self.solver.time > 1.56e-05:
+			return
+
 
 		mesh = self.solver.mesh
 		solver = self.solver
