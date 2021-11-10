@@ -35,8 +35,9 @@ jobs:
             conda init bash
             source ~/.bashrc
             source activate quailenv
-            pytest --cov=src --cov-report=xml
-            cd test/end_to_end
+            cd test
+            pytest --cov=../src --cov-report=xml
+            cd end_to_end
             python generate_tests.py
             cd ..
             pytest -v
