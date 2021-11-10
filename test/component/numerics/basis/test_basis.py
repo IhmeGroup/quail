@@ -84,3 +84,49 @@ def test_legengre_massmatrix_should_be_diagonal(basis, order):
 		should_be_zero = np.count_nonzero(np.abs(iMM - np.diag(np.diagonal(iMM))) > 1e-12)
 
 	np.testing.assert_allclose(should_be_zero, 0, 0, 0)
+
+@pytest.mark.parametrize('order', [
+	# Order of Lagrange basis
+	0, 1, 2, 3, 4, 5,
+])
+@pytest.mark.parametrize('Basis', [
+	# Basis class representing the element geometry
+	basis_defs.LagrangeSeg, basis_defs.LagrangeQuad,
+])
+def test_lagrange_massmatrix_should_be_symmetric(basis, order):
+	'''
+	This test ensures that the mass matrix for a Lagrange basis is
+	symmetric
+
+	Inputs:
+	-------
+		modal_basis: Pytest fixture containing the basis object to be tested
+		order: polynomial order of Legendre basis being tested
+	'''
+
+	if basis.NDIMS == 1:
+		mesh = mesh_common.mesh_1D(num_elems=1, xmin=-1., xmax=1.)
+		# Set quadrature
+		basis.set_elem_quadrature_type("GaussLegendre")
+		basis.set_face_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_elem_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_face_quadrature_type("GaussLegendre")
+
+		iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order, -1)
+		iMM_T = np.transpose(iMM)
+	elif basis.NDIMS == 2:
+		mesh = mesh_common.mesh_2D(num_elems_x=1, num_elems_y=1, xmin=-1., xmax=1.,
+			 ymin=-1., ymax=1.)
+		# Set quadrature
+		basis.set_elem_quadrature_type("GaussLegendre")
+		basis.set_face_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_elem_quadrature_type("GaussLegendre")
+		mesh.gbasis.set_face_quadrature_type("GaussLegendre")
+
+		iMM = basis_tools.get_elem_inv_mass_matrix(mesh, basis, order, -1)
+		iMM_T = np.transpose(iMM)
+
+	should_be_one = np.abs(iMM - iMM_T) + 1.0
+	expected=np.ones_like(iMM)
+
+	np.testing.assert_allclose(should_be_one, expected, 1e-13, 1e-13)
