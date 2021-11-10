@@ -41,4 +41,7 @@ jobs:
             python generate_tests.py
             cd ..
             pytest -v
-      - codecov/upload
+      - run:
+          name: Send to codecov
+          command: |
+            bash <(curl -s https://codecov.io/bash) -Z
