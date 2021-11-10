@@ -30,6 +30,15 @@ jobs:
             source activate quailenv
       # Step 3: run tests
       - run:
+          name: Run test coverage
+          command: |
+            conda init bash
+            source ~/.bashrc
+            source activate quailenv
+            cd test
+            pytest --cov=../src --cov-report=xml
+      - codecov/upload
+      - run:
           name: run tests
           command: |
             conda init bash
@@ -41,7 +50,8 @@ jobs:
             python generate_tests.py
             cd ..
             pytest -v
-      - run:
-          name: Send to codecov
-          command: |
-            bash <(curl -s https://codecov.io/bash) -Z
+
+#       - run:
+#           name: Send to codecov
+#           command: |
+#             bash <(curl -s https://codecov.io/bash) -Z
