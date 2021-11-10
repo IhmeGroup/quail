@@ -1,7 +1,7 @@
 # Python CircleCI 2.1 configuration file
 version: 2.1
-orbs:
-  codecov: codecov/codecov@3.0.0
+# orbs:
+#   codecov: codecov/codecov@3.0.0
   
 jobs:
   build:
@@ -40,4 +40,4 @@ jobs:
             python generate_tests.py
             cd ..
             pytest -v
-      - codecov/upload
+#       - codecov/upload
