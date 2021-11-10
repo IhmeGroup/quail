@@ -13,9 +13,8 @@ import physics.chemistry.chemistry as chemistry
 import solver.DG as DG
 import solver.ADERDG as ADERDG
 
-rtol = 1e-14
-atol = 1e-14
 
+# Tolerances
 
 # Markers distinguish tests into different categories
 @pytest.mark.e2e
@@ -39,6 +38,7 @@ def test_case(test_data):
 	case_dir = os.path.dirname(os.path.abspath(__file__))
 	# Get test case name
 	test_name = case_dir.split('cases/')[-1]
+
 	# Get expected solution for this test case
 	Uc_expected = Uc_expected_list[test_name]
 

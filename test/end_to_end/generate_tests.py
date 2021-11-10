@@ -2,6 +2,8 @@ import numpy as np
 import os
 import subprocess
 import sys
+import itertools
+
 sys.path.append('../../src')
 
 import list_of_cases
@@ -30,22 +32,35 @@ def generate_tests():
 	with open ("base_test_script.py", "r") as base_test_file:
 		base_test = base_test_file.readlines()
 
+	# Find which line to add tolerances to
+	line_of_tol = 0
+	for i, line in enumerate(base_test):
+		if line.startswith('# Tolerances'):
+			line_of_tol = i + 1
+			break
+
 	# Find which line to add markers to
 	line_of_markers = 0
 	for i, line in enumerate(base_test):
 		if line.startswith('# Markers'):
 			line_of_markers = i + 1
 			break
-
 	# Loop over all case directories
 	for i, (case_dir, marker_list) in enumerate(zip(case_dirs, markers)):
 		# Move to the test case directory
 		os.chdir(case_dir)
 
-		# Add markers to test script
+		# Add tolerances to test script
 		test_script = base_test.copy()
-		for marker in marker_list:
-			test_script.insert(line_of_markers, f'@pytest.mark.{marker}\n')
+
+		test_script.insert(line_of_tol, f'rtol = {marker_list[1][0]}\n')
+		marker_list[1].pop()
+		test_script.insert(line_of_tol+1, f'atol = {marker_list[1][0]}\n')
+		marker_list[1].pop()
+
+		for marker in itertools.islice(marker_list[0] , 0, None):
+		# for marker in marker_list:
+			test_script.insert(line_of_markers+2, f'@pytest.mark.{marker}\n')
 
 		# Create test script
 		with open(f'test_case_{i}.py', 'w') as test_case_file:
