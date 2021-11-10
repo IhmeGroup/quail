@@ -13,9 +13,7 @@ import physics.chemistry.chemistry as chemistry
 import solver.DG as DG
 import solver.ADERDG as ADERDG
 
-rtol = 1e-14
-atol = 1e-14
-
+# Tolerances
 
 # Markers distinguish tests into different categories
 @pytest.mark.e2e
