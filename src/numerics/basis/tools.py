@@ -108,8 +108,8 @@ def gauss_lobatto_nodes_1D_range(start, stop, nnodes):
 
 	Inputs:
 	-------
-		start: start of ref space (typically -1)
-		stop:  end of ref space (typically 1)
+		start: start of ref space (always -1)
+		stop:  end of ref space (always 1)
 		nnodes: num of nodes in 1D ref space
 
 	Outputs:
@@ -119,6 +119,14 @@ def gauss_lobatto_nodes_1D_range(start, stop, nnodes):
 	if nnodes <= 1:
 		raise ValueError
 	if stop <= start:
+		raise ValueError
+
+	# Note: This function can ONLY get the points on the 
+	# reference segment therefore start and stop are 
+	# ALWAYS constrained to -1 and 1.
+	if start != -1.:
+		raise ValueError
+	if stop != 1.:
 		raise ValueError
 
 	order = 2*nnodes - 3
