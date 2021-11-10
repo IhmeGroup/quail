@@ -1,5 +1,5 @@
-[![Circle CI](https://circleci.com/gh/IhmeGroup/quail.svg?style=shield&circle-token=339239199ddbaf2fd8c1e460931e47b792a13389)](https://circleci.com/gh/IhmeGroup/quail)
-[![codecov](https://codecov.io/gh/IhmeGroup/quail/branch/main/graph/badge.svg?token=207AUO9T3V)](https://codecov.io/gh/IhmeGroup/quail)
+[![Circle CI](https://circleci.com/gh/IhmeGroup/quail/dev-ns-aderdg.svg?style=shield&circle-token=339239199ddbaf2fd8c1e460931e47b792a13389)](https://circleci.com/gh/IhmeGroup/quail/?branch=dev-ns-aderdg)
+[![codecov](https://codecov.io/gh/IhmeGroup/quail/branch/dev-ns-aderdg/graph/badge.svg?token=207AUO9T3V)](https://codecov.io/gh/IhmeGroup/quail)
 ![GitHub](https://img.shields.io/github/license/IhmeGroup/quail)
 <!-- [![GitHub issues](https://img.shields.io/github/issues/IhmeGroup/quail.svg)](https://github.com/IhmeGroup/quail/issues) -->
 
