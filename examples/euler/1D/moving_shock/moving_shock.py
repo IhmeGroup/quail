@@ -2,7 +2,7 @@ import numpy as np
 
 TimeStepping = {
 	"InitialTime" : 0.,
-	"FinalTime" : 2.e-4,
+	"FinalTime" : 2.e-5,
 	"CFL" : 0.1,
 	"TimeStepper" : "SSPRK3",
 }
@@ -12,7 +12,9 @@ Numerics = {
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
 	"L2InitialCondition" : True,
-	"ApplyLimiters" : "PositivityPreserving",
+	"ApplyLimiters" : "WENO",#"PositivityPreserving",
+	"ShockIndicator" : "MinMod",
+
 }
 
 Output = {
