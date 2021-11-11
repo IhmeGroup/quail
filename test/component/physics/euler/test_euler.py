@@ -173,3 +173,35 @@ def test_convective_flux_2D_zero_velocity():
 	np.testing.assert_allclose(v2c, 0., rtol, atol)	
 	np.testing.assert_allclose(pc, P, rtol, atol)	
 	np.testing.assert_allclose(F, Fref, rtol, atol)
+
+
+def test_conv_eigenvectors_multiplied_is_identity():
+	'''
+	This tests the convective eigenvectors in euler and ensures
+	that when dotted together they are identity
+	'''
+	mesh = meshbase.Mesh(ndims=1)
+	physics = euler.Euler1D(mesh)
+	ns = physics.NUM_STATE_VARS
+	irho, irhou, irhoE = physics.get_state_indices()
+	physics.set_physical_params()
+	U_bar = np.zeros([1, 1, ns])
+	
+	P = 101325.
+	rho = 1.1
+	u = 2.5
+	gamma = 1.4
+	rhoE = P / (gamma - 1.) + 0.5 * rho * u * u
+
+
+	U_bar[:, :, irho] = rho
+	U_bar[:, :, irhou] = rho*u
+	U_bar[:, :, irhoE] = rhoE
+
+	right_eigen, left_eigen = physics.get_conv_eigenvectors(U_bar)
+	ldotr = np.einsum('elij,eljk->elik', left_eigen, right_eigen)
+
+	expected = np.zeros_like(left_eigen)
+	expected[:, :] = np.identity(left_eigen.shape[-1])
+
+	np.testing.assert_allclose(ldotr, expected, rtol, atol)
