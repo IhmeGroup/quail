@@ -177,3 +177,29 @@ def test_set_basis_type_hierarchicH1Tri():
 	'''
 	basis = basis_tools.set_basis(1, "HierarchicH1Tri")
 	assert basis == basis_defs.HierarchicH1Tri(1)
+
+
+def test_1d_normals_leftface():
+	'''
+	Checks the correct direction of the normals
+	'''
+	xpts = np.array([0.83])
+	mesh = mesh_common.mesh_1D(num_elems=1, xmin=-1., xmax=1.)
+
+	normals = basis_tools.calculate_1D_normals(mesh, 0, 0, xpts)
+	expected = np.array([-1.]).reshape([normals.shape[0], 1])
+
+	np.testing.assert_allclose(normals, expected, rtol, atol)
+
+
+def test_1d_normals_rightface():
+	'''
+	Checks the correct direction of the normals
+	'''
+	xpts = np.array([0.83])
+	mesh = mesh_common.mesh_1D(num_elems=1, xmin=-1., xmax=1.)
+
+	normals = basis_tools.calculate_1D_normals(mesh, 0, 1, xpts)
+	expected = np.array([1.]).reshape([normals.shape[0], 1])
+
+	np.testing.assert_allclose(normals, expected, rtol, atol)
