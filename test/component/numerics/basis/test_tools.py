@@ -236,7 +236,7 @@ def test_get_lagrange_basis_tri_p1():
 	# Order of Lagrange basis
 	0, 1, 2, 3, 4, 5,
 ])
-def test_get_lagrange_basis_tri_p2_nodes_equal_one(order):
+def test_get_lagrange_basis_tri_nodes_equal_one(order):
 	'''
 	Tests that the nodes of the triangle result in basis_val of 1.
 	'''
@@ -251,4 +251,18 @@ def test_get_lagrange_basis_tri_p2_nodes_equal_one(order):
 		np.identity(basis.nb), rtol, atol)
 
 
+def test_get_modal_basis_tri_nodes_equal_one_p1():
+	'''
+	Tests that the nodes of the triangle result in basis_val of 1 for p1
+	'''
+	order = 1
+	basis = basis_defs.HierarchicH1Tri(order)
+	xnodes = basis.equidistant_nodes(order)
+	basis_val = np.zeros([xnodes.shape[0], basis.nb])
+	basis_tools.get_modal_basis_tri(xnodes, order, 
+		xnodes, basis_val) 
+
+	# Get index where value should be 1.0
+	np.testing.assert_allclose(basis_val, 
+		np.identity(basis.nb), rtol, atol)
 
