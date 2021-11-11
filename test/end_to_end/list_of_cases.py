@@ -21,7 +21,6 @@ case_dirs = {
 	'scalar/1D/damping_sine_wave/splitting' : [[one_d, dg, splitting, source], 
 		[rtol, atol]],
 	'scalar/2D/constant_advection' : [[two_d, dg], [1e-9, 1e-13]],
-	'euler/1D/moving_shock' : [[one_d, dg], [rtol, atol]],
 	'euler/1D/smooth_isentropic_flow' : [[two_d, dg], [rtol, atol]],
 	'euler/2D/flow_over_bump' : [[two_d, dg], [rtol, atol]],
 	'euler/2D/isentropic_vortex' : [[two_d, dg], [rtol, atol]],
