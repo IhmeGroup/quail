@@ -768,6 +768,13 @@ class BasisBase(ABC):
 		return '{self.__class__.__name__}(order={self.order})'.format(
 				self=self)
 
+	def __eq__(self, other): 
+		if not isinstance(other, LagrangeSeg):
+			# don't attempt to compare against unrelated types
+			return NotImplementedError
+		return self.BASIS_TYPE == other.BASIS_TYPE and \
+			self.order == other.order
+
 	@abstractmethod
 	def get_values(self, quad_pts):
 		'''
@@ -955,6 +962,7 @@ class LagrangeSeg(BasisBase, SegShape):
 	def __init__(self, order):
 		super().__init__(order)
 		self.calculate_normals = basis_tools.calculate_1D_normals
+	
 
 	def get_nodes(self, p):
 		'''
