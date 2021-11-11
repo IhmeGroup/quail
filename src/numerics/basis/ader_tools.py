@@ -176,7 +176,7 @@ def get_temporal_flux_ader(mesh, basis1, basis2, order,
 	quad_order = gbasis.get_quadrature_order(mesh, order*2)
 	quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
 
-	if basis1 == basis2:
+	if basis1.BASIS_TYPE == basis2.BASIS_TYPE:
 		# If both bases are space-time you are at tau_{n+1} in ref time
 		# Evaluate basis functions at tau_{n+1}
 		face_ID = basis1.FACE_TIME_MAPPING[1]
