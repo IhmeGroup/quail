@@ -203,3 +203,52 @@ def test_1d_normals_rightface():
 	expected = np.array([1.]).reshape([normals.shape[0], 1])
 
 	np.testing.assert_allclose(normals, expected, rtol, atol)
+
+
+def test_get_lagrange_basis_tri_p1():
+	'''
+	Tests the lagrange tri basis for p1
+	'''
+	p = 1
+
+	xpts = np.zeros([3, 2])
+	xpts[0, 0] = 0.0; xpts[0, 1] = 0.0;
+	xpts[1, 0] = 1.0; xpts[1, 1] = 0.0;
+	xpts[2, 0] = 1.0; xpts[2, 1] = 1.0;
+
+	basis = basis_defs.LagrangeTri(p)
+	xnodes = basis.equidistant_nodes(p)
+	basis_val = np.zeros([3, basis.nb])
+	basis_val = basis_tools.get_lagrange_basis_tri(xpts, p, 
+		xnodes, basis_val) 
+
+	x = xpts[:,0]; y = xpts[:,1]
+	phi = np.zeros_like(basis_val)
+
+	phi[:, 0] = 1. - x - y
+	phi[:, 1] = x  
+	phi[:, 2] = y
+
+	np.testing.assert_allclose(basis_val, phi, rtol, atol)
+
+
+@pytest.mark.parametrize('order', [
+	# Order of Lagrange basis
+	0, 1, 2, 3, 4, 5,
+])
+def test_get_lagrange_basis_tri_p2_nodes_equal_one(order):
+	'''
+	Tests that the nodes of the triangle result in basis_val of 1.
+	'''
+	basis = basis_defs.LagrangeTri(order)
+	xnodes = basis.equidistant_nodes(order)
+	basis_val = np.zeros([xnodes.shape[0], basis.nb])
+	basis_tools.get_lagrange_basis_tri(xnodes, order, 
+		xnodes, basis_val) 
+
+	# Get index where value should be 1.0
+	np.testing.assert_allclose(basis_val, 
+		np.identity(basis.nb), rtol, atol)
+
+
+

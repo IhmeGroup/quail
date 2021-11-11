@@ -769,7 +769,7 @@ class BasisBase(ABC):
 				self=self)
 
 	def __eq__(self, other): 
-		if not isinstance(other, LagrangeSeg):
+		if not isinstance(other, BasisBase):
 			# don't attempt to compare against unrelated types
 			return NotImplementedError
 		return self.BASIS_TYPE == other.BASIS_TYPE and \
