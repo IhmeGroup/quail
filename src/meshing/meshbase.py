@@ -27,7 +27,7 @@ from general import ShapeType
 import numerics.basis.basis as basis_defs
 
 
-class InteriorFace(object):
+class InteriorFace():
     '''
     This class provides information about a given interior face.
 
@@ -49,7 +49,7 @@ class InteriorFace(object):
         self.faceR_ID = 0
 
 
-class BoundaryFace(object):
+class BoundaryFace():
     '''
     This class provides information about a given boundary face.
 
@@ -65,7 +65,7 @@ class BoundaryFace(object):
         self.face_ID = 0
 
 
-class BoundaryGroup(object):
+class BoundaryGroup():
     '''
     This class stores boundary face objects for a given boundary group.
 
@@ -103,7 +103,7 @@ class BoundaryGroup(object):
                 range(self.num_boundary_faces)]
 
 
-class Element(object):
+class Element():
     '''
     This class provides information about a given element.
 
@@ -126,7 +126,7 @@ class Element(object):
         self.face_to_neighbors = np.zeros(0, dtype=int)
 
 
-class Mesh(object):
+class Mesh():
     '''
     This class stores information about the mesh.
 
