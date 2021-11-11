@@ -160,7 +160,8 @@ class PhysicsType(Enum):
 		# Model for 2nd order pendulum ODE (0D model)
 	MultispeciesPSR = auto()
 		# Model for PSR (with H2/Air chemistry)
-		
+	EulerMultispecies_2sp_air = auto()
+		# Simple 2sp air transport (with variable cp)
 		
 class TransportType(Enum):
 	'''
