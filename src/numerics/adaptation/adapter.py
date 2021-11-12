@@ -4,6 +4,7 @@ import ctypes
 from ctypes import POINTER, pointer, byref
 import numpy as np
 from scipy import optimize
+import time
 
 import meshing.meshbase as meshdefs
 import meshing.tools as mesh_tools
@@ -172,10 +173,15 @@ class Adapter:
 			bgroup_counter[boundary_group_idx] += 1;
 
 		# Update solver helpers and stepper
+		print('Computing matrix helpers...', end='')
+		start_time = time.time()
 		solver.precompute_matrix_helpers()
 		solver.stepper.res = np.zeros_like(solver.state_coeffs)
 		solver.stepper.dU = np.zeros_like(solver.state_coeffs)
+		print(f'done in {time.time() - start_time} s')
 
+		print('Searching, Newton-solving, and evaluating old solution...', end='')
+		start_time = time.time()
 		nq = solver.elem_helpers.quad_pts.shape[0]
 		Uq = np.empty((mesh.num_elems, nq, Uc_old.shape[2]))
 		# Loop over elements
@@ -204,11 +210,15 @@ class Adapter:
 				basis_val = solver.basis.get_values(quad_pt_old)
 				# Evaluate solution at this point
 				Uq[elem_ID, j] = basis_val @ Uc_old[old_elem_ID]
+		print(f'done in {time.time() - start_time} s')
 
 		# Project solution from old mesh to new
+		print('L2-projecting...', end='')
+		start_time = time.time()
 		solver_tools.L2_projection(mesh, solver.elem_helpers.iMM_elems,
 				solver.basis, solver.elem_helpers.quad_pts,
 				solver.elem_helpers.quad_wts, Uq, solver.state_coeffs)
+		print(f'done in {time.time() - start_time} s')
 		breakpoint()
 
 # Find which element contains a point

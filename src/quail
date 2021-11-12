@@ -287,55 +287,68 @@ def driver(deck):
 			physics_params, IC_params, exact_params, BC_params,
 			source_params, output_params)
 
+	# Merge solver-related params
+	solver_params = {**stepper_params, **numerics_params, **output_params}
+	solver_params["RestartFile"] = restart_params["File"]
+
 	'''
 	Mesh
 	'''
-	if mesh_params["File"] is not None:
-		# Gmsh file
-		mesh = mesh_gmsh.import_gmsh_mesh(mesh_params["File"])
-	else:
-		# Create our own mesh
-
-		# Unpack
-		shape = ShapeType[mesh_params["ElementShape"]]
-		xmin = mesh_params["xmin"]
-		xmax = mesh_params["xmax"]
-		num_elems_x = mesh_params["NumElemsX"]
-		num_elems_y = mesh_params["NumElemsY"]
-		ymin = mesh_params["ymin"]
-		ymax = mesh_params["ymax"]
-
-		# Create mesh
-		if shape is ShapeType.Segment:
-			# 1D - segments
-			mesh = mesh_common.mesh_1D(num_elems=num_elems_x,
-					xmin=xmin, xmax=xmax)
+	# Only create the mesh from scratch if not doing a restart
+	if restart_params["File"] is None:
+		if mesh_params["File"] is not None:
+			# Gmsh file
+			mesh = mesh_gmsh.import_gmsh_mesh(mesh_params["File"])
 		else:
-			# 2D - quads or tris
+			# Create our own mesh
 
-			# First start with quads
-			mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x,
-					num_elems_y=num_elems_y, xmin=xmin, xmax=xmax,
-					ymin=ymin, ymax=ymax)
-			# Split into tris if required
-			if shape is ShapeType.Triangle:
-				mesh = mesh_common.split_quadrils_into_tris(mesh)
+			# Unpack
+			shape = ShapeType[mesh_params["ElementShape"]]
+			xmin = mesh_params["xmin"]
+			xmax = mesh_params["xmax"]
+			num_elems_x = mesh_params["NumElemsX"]
+			num_elems_y = mesh_params["NumElemsY"]
+			ymin = mesh_params["ymin"]
+			ymax = mesh_params["ymax"]
 
-	''' Impose periodicity if requested '''
-	pb_x = mesh_params["PeriodicBoundariesX"]
-	pb_y = mesh_params["PeriodicBoundariesY"]
+			# Create mesh
+			if shape is ShapeType.Segment:
+				# 1D - segments
+				mesh = mesh_common.mesh_1D(num_elems=num_elems_x,
+						xmin=xmin, xmax=xmax)
+			else:
+				# 2D - quads or tris
 
-	# Store periodic boundaries in pb
-	pb = [None]*4
-	if pb_x != []:
-		pb[:2] = pb_x
-	if pb_y != []:
-		pb[2:] = pb_y
+				# First start with quads
+				mesh = mesh_common.mesh_2D(num_elems_x=num_elems_x,
+						num_elems_y=num_elems_y, xmin=xmin, xmax=xmax,
+						ymin=ymin, ymax=ymax)
+				# Split into tris if required
+				if shape is ShapeType.Triangle:
+					mesh = mesh_common.split_quadrils_into_tris(mesh)
 
-	# Make periodic
-	if pb != [None]*4:
-		mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1],
-				y1=pb[2], y2=pb[3])
+		''' Impose periodicity if requested '''
+		pb_x = mesh_params["PeriodicBoundariesX"]
+		pb_y = mesh_params["PeriodicBoundariesY"]
+
+		# Store periodic boundaries in pb
+		pb = [None]*4
+		if pb_x != []:
+			pb[:2] = pb_x
+		if pb_y != []:
+			pb[2:] = pb_y
+
+		# Make periodic
+		if pb != [None]*4:
+			mesh_tools.make_periodic_translational(mesh, x1=pb[0], x2=pb[1],
+					y1=pb[2], y2=pb[3])
+
+	# If doing a restart, take the mesh from the old solution
+	else:
+		# Old solver
+		solver_old = readwritedatafiles.read_data_file(solver_params[
+				"RestartFile"])
+		mesh = solver_old.mesh
 
 
 	'''
@@ -393,9 +406,6 @@ def driver(deck):
 	'''
 	Solver
 	'''
-	# Merge solver-related params
-	solver_params = {**stepper_params, **numerics_params, **output_params}
-	solver_params["RestartFile"] = restart_params["File"]
 	solver_type = solver_params.pop("Solver")
 	if SolverType[solver_type] is SolverType.DG:
 		solver = DG.DG(solver_params, physics, mesh)
