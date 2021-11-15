@@ -668,6 +668,17 @@ class DG(base.SolverBase):
 			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, Sq) # [ne, nb, ns]
 
+		# Add artificial viscosity source term
+		epsilon = -1e-2
+		for elem_ID in range(self.mesh.num_elems):
+			grad_phi = self.basis.get_physical_grads(elem_helpers.ijac_elems[elem_ID])
+			stiffness_matrix = np.einsum('jpm, jnm -> jpn', grad_phi, grad_phi)
+			grad_U_grad_phi = np.einsum('pk, jpn -> jnk', Uc[elem_ID], stiffness_matrix)
+			integral = np.einsum('jnk, jm, jm -> nk', grad_U_grad_phi, quad_wts,
+					elem_helpers.djac_elems[elem_ID])
+			res_elem[elem_ID] += epsilon * integral
+
+
 		return res_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
