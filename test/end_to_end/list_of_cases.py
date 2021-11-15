@@ -25,4 +25,5 @@ case_dirs = {
 	'euler/2D/flow_over_bump' : [[two_d, dg], [rtol, atol]],
 	'euler/2D/isentropic_vortex' : [[two_d, dg], [rtol, atol]],
 	'euler/1D/sod_problem/nolimiter' : [[one_d, dg], [rtol ,atol]],
+	'euler/1D/sod_problem/wenolimiter' : [[one_d, dg], [rtol, atol]],
 	}
