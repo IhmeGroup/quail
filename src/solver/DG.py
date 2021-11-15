@@ -23,6 +23,8 @@ import numerics.timestepping.stepper as stepper_defs
 import solver.base as base
 import solver.tools as solver_tools
 
+from general import PhysicsType
+
 
 class ElemHelpers(object):
 	'''
@@ -804,6 +806,16 @@ class DG(base.SolverBase):
 		self.bface_helpers = BoundaryFaceHelpers()
 		self.bface_helpers.compute_helpers(mesh, physics, basis,
 				self.order)
+
+		# Allocate memory for physics gas objects HACKY
+		if physics.PHYSICS_TYPE == \
+				PhysicsType.EulerMultispecies_2sp_air:
+				num_elems = self.mesh.num_elems
+				nq = self.elem_helpers.quad_wts.shape[0]
+
+				self.physics.gas_elems =np.ndarray((num_elems, nq),
+					dtype=np.object)
+				self.physics.gas_elems[:, :] = self.physics.gas
 
 	def get_element_residual(self, Uc, res_elem):
 		# Unpack
