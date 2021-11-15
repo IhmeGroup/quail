@@ -14,6 +14,7 @@ from scipy.optimize import fsolve, root
 from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
         SourceBase, ConvNumFluxBase)
 
+import physics.chemistry.euler_multispecies.tools as thermo_tools
 
 class FcnType(Enum):
     SodMultispeciesAir = auto()
@@ -52,7 +53,10 @@ class SodMultispeciesAir(FcnBase):
 		'''
 
 	def get_state(self, physics, x, t):
-		# Unpack
+		# Need to reset physical params since gas objects cant be saved
+		# in pickle files
+		physics.set_physical_params()
+
 		xshock = 0.0
 
 		srho, srhou, srhoE, srhoYO2, srhoYN2 = physics.get_state_slices()
@@ -63,6 +67,7 @@ class SodMultispeciesAir(FcnBase):
 		rhoL = 1.0
 		pL = 1.0
 		uL = 0.
+		Y = np.array([[0.21], [0.79]])
 
 		''' Post-shock state '''
 		rhoR = 0.125
@@ -72,20 +77,28 @@ class SodMultispeciesAir(FcnBase):
 		''' Fill state '''
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
-		import code; code.interact(local=locals())
+		# Set the left state
+		stateL = thermo_tools.set_state_from_primitives(physics, rhoL, pL, uL, Y)
+		stateR = thermo_tools.set_state_from_primitives(physics, rhoR, pR, uR, Y)
 
 		for elem_ID in range(Uq.shape[0]):
 			ileft = (x[elem_ID] < xshock).reshape(-1)
 			iright = (x[elem_ID] >= xshock).reshape(-1)
 
 			# Density
-			Uq[elem_ID, iright, srho] = rhoR
-			Uq[elem_ID, ileft, srho] = rhoL
+			Uq[elem_ID, iright, srho] = stateR[srho]
+			Uq[elem_ID, ileft, srho] = stateL[srho]
 			# Momentum
-			Uq[elem_ID, iright, srhou] = rhoR*uR
-			Uq[elem_ID, ileft, srhou] = rhoL*uL
+			Uq[elem_ID, iright, srhou] = stateR[srhou]
+			Uq[elem_ID, ileft, srhou] = stateL[srhou]
 			# Energy
-			Uq[elem_ID, iright, srhoE] = pR/(gamma - 1.) + 0.5*rhoR*uR*uR
-			Uq[elem_ID, ileft, srhoE] = pL/(gamma - 1.) + 0.5*rhoL*uL*uL
+			Uq[elem_ID, iright, srhoE] = stateR[srhoE]
+			Uq[elem_ID, ileft, srhoE] = stateL[srhoE]
+			# YO2
+			Uq[elem_ID, iright, srhoYO2] = stateR[srhoYO2]
+			Uq[elem_ID, ileft, srhoYO2] = stateL[srhoYO2]	
+			# YN2
+			Uq[elem_ID, iright, srhoYN2] = stateR[srhoYN2]
+			Uq[elem_ID, ileft, srhoYN2] = stateL[srhoYN2]		
 
 		return Uq # [ne, nq, ns]
