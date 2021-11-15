@@ -19,6 +19,7 @@ def write_data_file(solver, iwrite):
 	
 	# Remove un-pickle-able functions, objects, etc...
 	solver.physics.gas = None
+	solver.physics.gas_elems = None
 
 	# Get file name
 	prefix = solver.params["Prefix"]
