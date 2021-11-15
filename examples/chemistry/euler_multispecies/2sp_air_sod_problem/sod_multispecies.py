@@ -28,7 +28,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 200,
+    "NumElemsX" : 100,
     "xmin" : -5.,
     "xmax" : 5.,
 }
