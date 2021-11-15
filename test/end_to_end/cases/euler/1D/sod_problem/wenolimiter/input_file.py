@@ -18,6 +18,7 @@ Numerics = {
     "Solver" : "DG",
     "ApplyLimiters" : "WENO",
     "ShockIndicator" : "MinMod",
+    "TVBParameter" : 0.1,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
