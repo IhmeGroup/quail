@@ -10,6 +10,8 @@ from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
 
+from external.optional_cantera import ct
+
 import errors
 import general
 
@@ -30,6 +32,7 @@ from physics.euler.functions import SourceType as euler_source_type
 import physics.chemistry.euler_multispecies.functions as euler_mult_fcns
 from physics.chemistry.euler_multispecies.functions import FcnType as \
 		euler_mult_fcn_type
+import physics.chemistry.euler_multispecies.tools as thermo_tools
 # from physics.chemistry.euler_multispecies.functions import SourceType as \
 # 		euler_mult_source_type
 # from physics.chemistry.euler_multispecies.functions import ConvNumFluxType as \
@@ -71,76 +74,6 @@ class EulerMultispecies(base.PhysicsBase):
 	def set_physical_params(self):
 		pass
 
-	class AdditionalVariables(Enum):
-	    Pressure = "p"
-	    Temperature = "T"
-	    Entropy = "s"
-	    InternalEnergy = "\\rho e"
-	    TotalEnthalpy = "H"
-	    SoundSpeed = "c"
-	    MaxWaveSpeed = "\\lambda"
-	    MassFractionO2 = "YO2"
-	    MassFractionN2 = "YN2"
-
-	# def compute_additional_variable(self, var_name, Uq, flag_non_physical):
-	# 	''' Extract state variables '''
-	# 	srho = self.get_state_slice("Density")
-	# 	srhoE = self.get_state_slice("Energy")
-	# 	srhoY = self.get_state_slice("Mixture")
-	# 	smom = self.get_momentum_slice()
-	# 	rho = Uq[:, :, srho]
-	# 	rhoE = Uq[:, :, srhoE]
-	# 	mom = Uq[:, :, smom]
-	# 	rhoY = Uq[:, :, srhoY]
-
-	# 	''' Unpack '''
-	# 	gamma = self.gamma
-	# 	R = self.R
-	# 	qo = self.qo
-
-	# 	''' Flag non-physical state '''
-	# 	if flag_non_physical:
-	# 		if np.any(rho < 0.):
-	# 			raise errors.NotPhysicalError
-
-	# 	''' Nested functions for common quantities '''
-	# 	def get_pressure():
-	# 		varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2,
-	# 				keepdims=True)/rho - qo*rhoY)
-	# 		if flag_non_physical:
-	# 			if np.any(varq < 0.):
-	# 				raise errors.NotPhysicalError
-	# 		return varq
-	# 	def get_temperature():
-	# 		return get_pressure()/(rho*R)
-
-	# 	''' Get final scalars '''
-	# 	vname = self.AdditionalVariables[var_name].name
-	# 	if vname is self.AdditionalVariables["Pressure"].name:
-	# 		varq = get_pressure()
-	# 	elif vname is self.AdditionalVariables["Temperature"].name:
-	# 		varq = get_temperature()
-	# 	elif vname is self.AdditionalVariables["Entropy"].name:
-	# 		varq = np.log(get_pressure()/rho**gamma)
-	# 	elif vname is self.AdditionalVariables["InternalEnergy"].name:
-	# 		varq = rhoE - 0.5*np.sum(mom*mom, axis=2, keepdims=True)/rho
-	# 	elif vname is self.AdditionalVariables["TotalEnthalpy"].name:
-	# 		varq = (rhoE + get_pressure())/rho
-	# 	elif vname is self.AdditionalVariables["SoundSpeed"].name:
-	# 		varq = np.sqrt(gamma*get_pressure()/rho)
-	# 	elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
-	# 		varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
-	# 				gamma*get_pressure()/rho)
-	# 	elif vname is self.AdditionalVariables["MassFraction"].name:
-	# 		varq = rhoY/rho
-	# 	#NOTE: 1D only right now.
-	# 	elif vname is self.AdditionalVariables["Velocity"].name:
-	# 		varq = mom/rho
-	# 	else:
-	# 		raise NotImplementedError
-
-	# 	return varq
-
 
 class EulerMultispecies1D_2sp_air(EulerMultispecies):
 	'''
@@ -151,6 +84,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 	Additional methods and attributes are commented below.
 	'''
 	NUM_STATE_VARS = 5
+	NUM_SPECIES  = 2
 	NDIMS = 1
 	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies_2sp_air
 
@@ -187,6 +121,88 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		Energy = "\\rho E"
 		rhoYO2 = "\\rho Y_{O2}"
 		rhoYN2 = "\\rho Y_{N2}"
+
+	def set_physical_params(self):
+		# Save object to physics class before calculating inflow props
+		gas = ct.Solution('air_test.yaml')
+		self.gas = gas
+
+	class AdditionalVariables(Enum):
+	    Pressure = "p"
+	    Temperature = "T"
+	    Entropy = "s"
+	    InternalEnergy = "\\rho e"
+	    TotalEnthalpy = "H"
+	    SoundSpeed = "c"
+	    MaxWaveSpeed = "\\lambda"
+	    MassFractionO2 = "YO2"
+	    MassFractionN2 = "YN2"
+	    SpecificHeatRatio = "\\gamma"
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+			''' Extract state variables '''
+			srho = self.get_state_slice("Density")
+			srhoE = self.get_state_slice("Energy")
+			# srhoY = self.get_state_slice("Mixture")
+			smom = self.get_momentum_slice()
+			srhoYO2 = self.get_state_slice("rhoYO2")
+			srhoYN2 = self.get_state_slice("rhoYN2")
+
+			rho = Uq[:, :, srho]
+			rhoE = Uq[:, :, srhoE]
+			mom = Uq[:, :, smom]
+			rhoYO2 = Uq[:, :, srhoYO2]
+			rhoYN2 = Uq[:, :, srhoYN2]
+
+
+			''' Flag non-physical state '''
+			if flag_non_physical:
+				if np.any(rho < 0.):
+					raise errors.NotPhysicalError
+
+			''' Nested functions for common quantities '''
+			# def get_pressure():
+				# varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2,
+				# 		keepdims=True)/rho - qo*rhoY)
+				# if flag_non_physical:
+				# 	if np.any(varq < 0.):
+				# 		raise errors.NotPhysicalError
+				# return varq
+			def get_temperature():
+				return get_pressure()/(rho*R)
+
+			''' Get final scalars '''
+			vname = self.AdditionalVariables[var_name].name
+			if vname is self.AdditionalVariables["Pressure"].name:
+				# T = thermo_tools.get_T_from_U(self, Uq)
+				varq = thermo_tools.get_pressure(self, Uq)
+			elif vname is self.AdditionalVariables["Temperature"].name:
+				varq = thermo_tools.get_temperature(self, Uq)
+			elif vname is self.AdditionalVariables["SpecificHeatRatio"].name:
+				varq = thermo_tools.get_specificheatratio(self, Uq)
+			# elif vname is self.AdditionalVariables["Entropy"].name:
+				# varq = np.log(get_pressure()/rho**gamma)
+			# elif vname is self.AdditionalVariables["InternalEnergy"].name:
+				# varq = rhoE - 0.5*np.sum(mom*mom, axis=2, keepdims=True)/rho
+			# elif vname is self.AdditionalVariables["TotalEnthalpy"].name:
+				# varq = (rhoE + get_pressure())/rho
+			# elif vname is self.AdditionalVariables["SoundSpeed"].name:
+				# varq = np.sqrt(gamma*get_pressure()/rho)
+			# elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
+				# varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
+						# gamma*get_pressure()/rho)
+			elif vname is self.AdditionalVariables["MassFractionO2"].name:
+				varq = rhoYO2/rho
+			elif vname is self.AdditionalVariables["MassFractionN2"].name:
+				varq = rhoYN2/rho
+			#NOTE: 1D only right now.
+			elif vname is self.AdditionalVariables["Velocity"].name:
+				varq = mom/rho
+			else:
+				raise NotImplementedError
+
+			return varq
+
 
 	def get_state_indices(self):
 		irho = self.get_state_index("Density")
