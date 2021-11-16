@@ -1,20 +1,20 @@
 import numpy as np
 import copy
 
-FinalTime = 2.0
+FinalTime = 0.01
 NumTimeSteps = 1500
 
 TimeStepping = {
     "InitialTime" : 0.,
-    "FinalTime" : 0.,#FinalTime,
-    "TimeStepSize" : 0.005,
-	#"CFL" : 0.2,
+    "FinalTime" : FinalTime,
+    "TimeStepSize" : 1e-5,
+#    "CFL" : 0.05,
     "TimeStepper" : "SSPRK3",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 1,
+    "SolutionOrder" : 0,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
 #    "ApplyLimiters" : "PositivityPreserving",
@@ -23,14 +23,17 @@ Numerics = {
 Output = {
     "AutoPostProcess" : True,
     "Prefix" : "Data",
+#    "WriteInterval" : 2,
+    "WriteInitialSolution" : True,
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 100,
-    "xmin" : -5.,
-    "xmax" : 5.,
+    "NumElemsX" : 200,
+    "xmin" : -10.,
+    "xmax" : 10.,
+#    "PeriodicBoundariesX" : ["x1", "x2"]
 }
 
 
@@ -45,14 +48,14 @@ state = {
 }
 
 InitialCondition = state
-
+ExactSolution = state
 BoundaryConditions = {
     "x1" : {
         "BCType" : "StateAll",
 	"Function" : "SodMultispeciesAir",
-        },
+       },
     "x2" : { 
         "BCType" : "StateAll",
 	"Function" : "SodMultispeciesAir",
-        }
+       }
 }

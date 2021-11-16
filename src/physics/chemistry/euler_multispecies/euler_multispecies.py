@@ -123,7 +123,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		rhoYN2 = "\\rho Y_{N2}"
 
 	def set_physical_params(self):
-		# Save object to physics class before calculating inflow props
+	# 	# Save object to physics class before calculating inflow props
 		gas = ct.Solution('air_test.yaml')
 		self.gas = gas
 
@@ -168,8 +168,8 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 				# 	if np.any(varq < 0.):
 				# 		raise errors.NotPhysicalError
 				# return varq
-			def get_temperature():
-				return get_pressure()/(rho*R)
+			# def get_temperature():
+				# return get_pressure()/(rho*R)
 
 			''' Get final scalars '''
 			vname = self.AdditionalVariables[var_name].name
@@ -188,9 +188,8 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 				# varq = (rhoE + get_pressure())/rho
 			# elif vname is self.AdditionalVariables["SoundSpeed"].name:
 				# varq = np.sqrt(gamma*get_pressure()/rho)
-			# elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
-				# varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
-						# gamma*get_pressure()/rho)
+			elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
+				varq = thermo_tools.get_maxwavespeed(self, Uq)
 			elif vname is self.AdditionalVariables["MassFractionO2"].name:
 				varq = rhoYO2/rho
 			elif vname is self.AdditionalVariables["MassFractionN2"].name:
@@ -230,21 +229,22 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 
 	def get_conv_flux_interior(self, Uq):
 
-		irho, irhou, irhoE, irhoY = self.get_state_indices()
-
+		irho, irhou, irhoE, irhoYO2, irhoYN2 = self.get_state_indices()
 		rho = Uq[:, :, irho]
 		rhou = Uq[:, :, irhou]
 		rhoE = Uq[:, :, irhoE]
-		rhoY = Uq[:, :, irhoY]
+		rhoYO2 = Uq[:, :, irhoYO2]
+		rhoYN2 = Uq[:, :, irhoYN2]
 
 		# Get velocity
 		u = rhou / rho
 		# Get squared velocity
 		u2 = u**2
 
-		# Calculate pressure using the Ideal Gas Law
-		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2
-				- rhoY * self.qo) # [n, nq]
+		# Calculate pressure
+		p = self.compute_variable("Pressure", Uq,
+			flag_non_physical=False)[:, :, 0]
+
 		# Get total enthalpy
 		H = rhoE + p
 
@@ -252,7 +252,9 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		F[:, :, irho, 0] = rhou
 		F[:, :, irhou, 0] = rho * u2 + p
 		F[:, :, irhoE, 0] = H * u
-		F[:, :, irhoYO2, 0] = rhou*rhoYN2/rho
+		F[:, :, irhoYO2, 0] = rhou*rhoYO2/rho
 		F[:, :, irhoYN2, 0] = rhou*rhoYN2/rho
+
+		# import code; code.interact(local=locals())
 
 		return F, (u2, rho, p)

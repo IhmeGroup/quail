@@ -1,23 +1,27 @@
 import numpy as np
-
+import cantera as ct
 GAS_CONSTANT = 8.3144621000e3 # [J / (K kmole)]
 
 def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 
+	if physics.gas is None:
+		physics.gas = ct.Solution('air_test.yaml')
+
 	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
 
 	# Get energy
-	e = Uq[elem_ID, quad_ID, irhoE] / Uq[elem_ID, quad_ID, irho]
+	e = Uq[irhoE] / Uq[irho] - 0.5 * (Uq[irhou]**2 / Uq[irho])
 	# Get specific volume
-	nu = 1./Uq[elem_ID, quad_ID, irho]
+	nu = 1./Uq[irho]
 	# Get YO2
-	YO2 = Uq[elem_ID, quad_ID, irhoYO2] / Uq[elem_ID, quad_ID, irho]
+	YO2 = Uq[irhoYO2] / Uq[irho]
 	# Get YN2
-	YN2 = Uq[elem_ID, quad_ID, irhoYN2] / Uq[elem_ID, quad_ID, irho]
+	YN2 = Uq[irhoYN2] / Uq[irho]
 
 	# gas_elem = physics.gas_elems[elem_ID, quad_ID]
+	physics.gas.UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
-	physics.gas_elems[elem_ID, quad_ID].UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
+	# physics.gas_elems[elem_ID, quad_ID].UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
 def set_state_from_primitives(physics, rho, P, u, Y):
 	
@@ -54,37 +58,55 @@ def get_gamma(cv, W):
 
 def get_pressure(physics, Uq):
 	gas_elems = physics.gas_elems
-	ne = gas_elems.shape[0]
-	nq = gas_elems.shape[1]
+	ne = Uq.shape[0]
+	nq = Uq.shape[1]
 
-	P = np.zeros_like(gas_elems)
+	P = np.zeros([ne, nq, 1])
 	for ie in range(ne):
 		for iq in range(nq):
-			set_state_from_conservatives(physics, ie, iq, Uq)
-			P[ie, iq] = physics.gas_elems[ie, iq].P
+			set_state_from_conservatives(physics, ie, iq, Uq[ie, iq])
+			P[ie, iq] = physics.gas.P
 	return P
 
 def get_temperature(physics, Uq):
 	gas_elems = physics.gas_elems
-	ne = gas_elems.shape[0]
-	nq = gas_elems.shape[1]
+	ne = Uq.shape[0]
+	nq = Uq.shape[1]
 
-	T = np.zeros_like(gas_elems)
+	T = np.zeros([ne, nq, 1])
 	for ie in range(ne):
 		for iq in range(nq):
-			set_state_from_conservatives(physics, ie, iq, Uq)
-			T[ie, iq] = physics.gas_elems[ie, iq].T
+			set_state_from_conservatives(physics, ie, iq, Uq[ie, iq])
+			T[ie, iq] = physics.gas.T
 	return T
 
 def get_specificheatratio(physics, Uq):
 	gas_elems = physics.gas_elems
-	ne = gas_elems.shape[0]
-	nq = gas_elems.shape[1]
+	ne = Uq.shape[0]
+	nq = Uq.shape[1]
 
-	gamma = np.zeros_like(gas_elems)
+	gamma = np.zeros([ne, nq, 1])
 	for ie in range(ne):
 		for iq in range(nq):
-			set_state_from_conservatives(physics, ie, iq, Uq)
-			gamma[ie, iq] = physics.gas_elems[ie, iq].cp / \
-				physics.gas_elems[ie, iq].cv
+			set_state_from_conservatives(physics, ie, iq, Uq[ie, iq])
+			gamma[ie, iq] = physics.gas.cp / \
+				physics.gas.cv
 	return gamma
+
+def get_maxwavespeed(physics, Uq):
+
+	gamma = get_specificheatratio(physics, Uq)
+	P = get_pressure(physics, Uq)
+
+	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
+	smom = physics.get_momentum_slice()
+
+	rho = Uq[:, :, [irho]]
+	mom = Uq[:, :, smom]
+
+	return np.linalg.norm(mom, axis=2, keepdims=True) / rho \
+			+ np.sqrt(gamma * P / rho)
+
+
+
+
