@@ -252,20 +252,9 @@ def get_poisson_stiffness_matrices(basis_phys_grad_elems, quad_wts, djac_elems):
 	--------
 		SM_all: all stiffness matrices
 	'''
-	num_elems = basis_phys_grad_elems.shape[0]
-	nb = basis_phys_grad_elems.shape[2]
-
-	SM_all = np.zeros([num_elems, nb, nb])
-
-	for elem_ID in range(num_elems):
-		# Calculate the stiffness matrix in physical space
-		SM = np.einsum('jpm, jnm, jx, jx -> pn', basis_phys_grad_elems[elem_ID],
-				basis_phys_grad_elems[elem_ID], quad_wts, djac_elems[elem_ID])
-		# Store
-		SM_all[elem_ID] = SM
-
-	return SM_all # [num_elems, nb, nb]
-
+	# Calculate the stiffness matrices in physical space
+	return np.einsum('ijpm, ijnm, jx, ijx -> ipn', basis_phys_grad_elems,
+			basis_phys_grad_elems, quad_wts, djac_elems)
 
 def get_stiffness_matrix(solver, mesh, order, elem_ID):
 	'''

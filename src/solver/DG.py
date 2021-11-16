@@ -676,10 +676,10 @@ class DG(base.SolverBase):
 					elem_helpers, Sq) # [ne, nb, ns]
 
 		# Add artificial viscosity term
-		epsilon = -1e-2
-		artificial_viscosity = epsilon * np.einsum('ipk, ipn -> ink', Uc,
-				elem_helpers.SM_elems)
-		res_elem += artificial_viscosity
+		if self.params["ArtificialViscosity"]:
+			epsilon = self.params["AVParameter"]
+			artificial_viscosity = epsilon * elem_helpers.SM_elems @ Uc
+			res_elem -= artificial_viscosity
 
 		return res_elem # [ne, nb, ns]
 
