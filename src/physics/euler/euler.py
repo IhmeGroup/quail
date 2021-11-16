@@ -85,6 +85,7 @@ class Euler(base.PhysicsBase):
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
 	    Velocity = "|u|"
+	    SpecificHeatRatio = "\\gamma"
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
@@ -136,6 +137,9 @@ class Euler(base.PhysicsBase):
 			# |u| + c
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
 					gamma*get_pressure()/rho)
+		elif vname is self.AdditionalVariables["SpecificHeatRatio"].name:
+			varq = np.zeros_like(rho)
+			varq[:] = gamma
 		elif vname is self.AdditionalVariables["Velocity"].name:
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho 
 		else:

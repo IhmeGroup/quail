@@ -9,6 +9,7 @@
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
+import cantera as ct
 from scipy.optimize import fsolve, root
 
 from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
@@ -55,25 +56,27 @@ class SodMultispeciesAir(FcnBase):
 	def get_state(self, physics, x, t):
 		# Need to reset physical params since gas objects cant be saved
 		# in pickle files
-		physics.set_physical_params()
+		if physics.gas is None:
+			physics.gas = ct.Solution('air_test.yaml')		
 
 		xshock = 0.0
 
 		srho, srhou, srhoE, srhoYO2, srhoYN2 = physics.get_state_slices()
 
 		#gamma = physics.gamma
-
 		''' Pre-shock state '''
 		rhoL = 1.0
-		pL = 1.0
+		pL = 1.0*1e5
 		uL = 0.
 		Y = np.array([[0.21], [0.79]])
 
 		''' Post-shock state '''
 		rhoR = 0.125
 		uR = 0.
-		pR = 0.1
-
+		pR = 0.1*1e5
+		# rhoR = 1.0
+		# pR = 1.0
+		# uR = 0.
 		''' Fill state '''
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 

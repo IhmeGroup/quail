@@ -503,7 +503,7 @@ class RiemannProblem(FcnBase):
 		Uq[:, :, srho] = rho
 		Uq[:, :, srhou] = rho*u
 		Uq[:, :, srhoE] = p/(gamma-1.) + 0.5*rho*u*u
-
+		# import code; code.interact(local=locals())
 		return Uq # [ne, nq, ns]
 
 

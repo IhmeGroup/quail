@@ -9,7 +9,6 @@ solver = readwritedatafiles.read_data_file(fname)
 # Unpack
 mesh = solver.mesh
 physics = solver.physics
-
 ''' Plot '''
 ### Density
 plot.prepare_plot()
