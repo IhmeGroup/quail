@@ -62,6 +62,8 @@ class ElemHelpers(object):
 		source vector evaluated at the quadrature points
 	iMM_elems: numpy array
 		stores the inverse mass matrix for each element
+	SM_elems: numpy array
+		stores the stiffness matrix for each element
 	vol_elems: numpy array
 		stores the volume of each element
 	domain_vol: float
@@ -95,6 +97,7 @@ class ElemHelpers(object):
 		self.Fq = np.zeros(0)
 		self.Sq = np.zeros(0)
 		self.iMM_elems = np.zeros(0)
+		self.SM_elems = np.zeros(0)
 		self.vol_elems = np.zeros(0)
 		self.domain_vol = 0.
 		self.need_phys_grad = True
@@ -228,12 +231,16 @@ class ElemHelpers(object):
 		--------
 			self.iMM_elems: precomputed inverse mass matrix for each element
 				[mesh.num_elems, nb, nb]
+			self.SM_elems: precomputed stiffness matrix for each element
+				[mesh.num_elems, nb, nb]
 		'''
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
 		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh,
 				basis, order)
+		self.SM_elems = basis_tools.get_poisson_stiffness_matrices(
+				self.basis_phys_grad_elems, self.quad_wts, self.djac_elems)
 
 
 class InteriorFaceHelpers(ElemHelpers):
@@ -668,16 +675,11 @@ class DG(base.SolverBase):
 			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, Sq) # [ne, nb, ns]
 
-		# Add artificial viscosity source term
+		# Add artificial viscosity term
 		epsilon = -1e-2
-		for elem_ID in range(self.mesh.num_elems):
-			grad_phi = self.basis.get_physical_grads(elem_helpers.ijac_elems[elem_ID])
-			stiffness_matrix = np.einsum('jpm, jnm -> jpn', grad_phi, grad_phi)
-			grad_U_grad_phi = np.einsum('pk, jpn -> jnk', Uc[elem_ID], stiffness_matrix)
-			integral = np.einsum('jnk, jm, jm -> nk', grad_U_grad_phi, quad_wts,
-					elem_helpers.djac_elems[elem_ID])
-			res_elem[elem_ID] += epsilon * integral
-
+		artificial_viscosity = epsilon * np.einsum('ipk, ipn -> ink', Uc,
+				elem_helpers.SM_elems)
+		res_elem += artificial_viscosity
 
 		return res_elem # [ne, nb, ns]
 
