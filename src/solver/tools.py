@@ -92,7 +92,7 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	return res_elem # [ne, nb, ns]
 
-def calculate_artificial_viscosity_integral(physics, Uc, elem_helpers, C, p):
+def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 	'''
 	Calculates the artificial viscosity volume integral, given in:
 		Hartmann, R. and Leicht, T, "Higher order and adaptive DG methods for
@@ -139,8 +139,21 @@ def calculate_artificial_viscosity_integral(physics, Uc, elem_helpers, C, p):
 		# Calculate smoothness switch
 		f =  norm_grad_U0 / (U0 + 1e-12)
 
-	# Isotropic for now. TODO: improve
-	h = np.outer(vol_elems ** (1/3), np.ones(ndims))
+	# Compute s_k
+	s = np.zeros((Uc.shape[0], ndims))
+	# Loop over dimensions
+	for k in range(ndims):
+		# Loop over faces
+		for i in range(elem_helpers.normals_elems.shape[1]):
+			# Integrate normals
+			s[:, k] += np.einsum('jx, ij -> i', elem_helpers.face_quad_wts,
+					np.abs(elem_helpers.normals_elems[:, i, :, k]))
+		s[:, k] = 2 * vol_elems / s[:, k]
+	# Compute h_k (the length scale in the kth direction)
+	h = np.empty_like(s)
+	# Loop over dimensions
+	for k in range(ndims):
+		h[:, k] = s[:, k] * (vol_elems / np.prod(s, axis=1))**(1/3)
 	h_tilde = h / (p + 1)
 	epsilon = C *  np.einsum('ij, il -> ijl', f, h_tilde**3)
 	# Calculate integral, with state coeffs factored out

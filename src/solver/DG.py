@@ -66,6 +66,8 @@ class ElemHelpers(object):
 		stores the stiffness matrix for each element
 	vol_elems: numpy array
 		stores the volume of each element
+	normals_elems: numpy array
+		stores the normals of each face of each element
 	domain_vol: float
 		stores the total volume of the domain
 
@@ -99,13 +101,14 @@ class ElemHelpers(object):
 		self.iMM_elems = np.zeros(0)
 		self.SM_elems = np.zeros(0)
 		self.vol_elems = np.zeros(0)
+		self.normals_elems = np.zeros(0)
 		self.domain_vol = 0.
 		self.need_phys_grad = True
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
 		Precomputes the quadrature points and weights given the computed
-		quadrature order
+		quadrature order. Also computes them for the faces of each element.
 
 		Inputs:
 		-------
@@ -118,11 +121,15 @@ class ElemHelpers(object):
 		--------
 			self.quad_pts: precomputed quadrature points [nq, ndims]
 			self.quad_wts: precomputed quadrature weights [nq, 1]
+			self.face_quad_pts: precomputed quadrature points at faces [nqf, ndims]
 		'''
 		gbasis = mesh.gbasis
 		quad_order = gbasis.get_quadrature_order(mesh, order,
 				physics=physics)
 		self.quad_pts, self.quad_wts = basis.get_quadrature_data(quad_order)
+		face_quad_order = gbasis.FACE_SHAPE.get_quadrature_order(mesh,
+			order, physics=physics)
+		self.face_quad_pts, self.face_quad_wts = basis.FACE_SHAPE.get_quadrature_data(quad_order)
 
 	def get_basis_and_geom_data(self, mesh, basis, order):
 		'''
@@ -162,6 +169,8 @@ class ElemHelpers(object):
 		self.djac_elems = np.zeros([num_elems, nq, 1])
 		self.x_elems = np.zeros([num_elems, nq, ndims])
 		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, ndims])
+		self.normals_elems = np.empty([num_elems, mesh.gbasis.NFACES,
+			self.face_quad_pts.shape[0], ndims])
 
 		# Basis data
 		basis.get_basis_val_grads(self.quad_pts, get_val=True,
@@ -191,8 +200,14 @@ class ElemHelpers(object):
 				self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad
 					# [nq, nb, ndims]
 
+			# Face normals
+			for i in range(mesh.gbasis.NFACES):
+				self.normals_elems[elem_ID, i] = mesh.gbasis.calculate_normals(
+						mesh, elem_ID, i, self.face_quad_pts)
+
 		# Volumes
 		self.vol_elems, self.domain_vol = mesh_tools.element_volumes(mesh)
+
 
 	def alloc_other_arrays(self, physics, basis, order):
 		'''
@@ -679,7 +694,7 @@ class DG(base.SolverBase):
 		# Add artificial viscosity term
 		if self.params["ArtificialViscosity"]:
 			res_elem -= solver_tools.calculate_artificial_viscosity_integral(
-					physics, Uc, elem_helpers, self.params["AVParameter"],
+					physics, elem_helpers, Uc, self.params["AVParameter"],
 					self.order)
 
 		return res_elem # [ne, nb, ns]
