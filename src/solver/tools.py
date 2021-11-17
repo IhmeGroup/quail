@@ -92,7 +92,7 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	return res_elem # [ne, nb, ns]
 
-def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, res, C, p):
+def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 	'''
 	Calculates the artificial viscosity volume integral, given in:
 		Hartmann, R. and Leicht, T, "Higher order and adaptive DG methods for
@@ -103,7 +103,6 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, res, C, p
 		physics: physics object
 		elem_helpers: helpers defined in ElemHelpers
 		Uc: state coefficients of each element
-		res: residual of the solution coefficients
 		C: artificial viscosity parameter
 		p: solution basis order
 
@@ -160,20 +159,14 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, res, C, p
 		h[:, k] = s[:, k] * (vol_elems / np.prod(s, axis=1))**(1/3)
 	# Scale with polynomial order
 	h_tilde = h / (p + 1)
-	# Compute absolute value of residual at quadrature points
-	res_quad = np.abs(np.einsum('jn, ink -> ijk', basis_val, res))
-	# TODO: hack
-	res_quad = np.ones_like(res_quad)
-	res_quad[:, :, 1] = 1e3
-	res_quad[:, :, 2] = 1e6
 	# Compute dissipation scaling
-	epsilon = C *  np.einsum('ij, il, ijk -> ijkl', f, h_tilde**3, res_quad)
+	epsilon = C *  np.einsum('ij, il -> ijl', f, h_tilde**3)
 	# Calculate integral, with state coeffs factored out
-	integral = np.einsum('ijkm, ijpm, ijnm, jx, ijx -> ipnk', epsilon,
+	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
 				basis_phys_grad_elems, basis_phys_grad_elems, quad_wts,
 				djac_elems)
 	# Calculate residual
-	res_elem = np.einsum('ipnk, ipk -> ink', integral, Uc)
+	res_elem = np.einsum('ipn, ipk -> ink', integral, Uc)
 
 	return res_elem # [ne, nb, ns]
 

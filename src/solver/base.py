@@ -440,12 +440,6 @@ class SolverBase(ABC):
 		self.get_element_residuals(U, res)
 		self.get_interior_face_residuals(U, res)
 
-		# Add artificial viscosity term
-		if self.params["ArtificialViscosity"]:
-			res -= solver_tools.calculate_artificial_viscosity_integral(
-					physics, self.elem_helpers, U, res, self.params["AVParameter"],
-					self.order)
-
 		return res
 
 	def get_element_residuals(self, U, res):

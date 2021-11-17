@@ -690,6 +690,12 @@ class DG(base.SolverBase):
 			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, Sq) # [ne, nb, ns]
 
+		# Add artificial viscosity term
+		if self.params["ArtificialViscosity"]:
+			res_elem -= solver_tools.calculate_artificial_viscosity_integral(
+					physics, elem_helpers, Uc, self.params["AVParameter"],
+					self.order)
+
 		return res_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
