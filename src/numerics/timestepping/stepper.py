@@ -372,6 +372,8 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.Strang
+
 	def set_split_schemes(self, explicit, implicit, U):
 		'''
 		Specifies the explicit and implicit schemes to be used in the
@@ -448,6 +450,8 @@ class Simpler(Strang):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.Simpler
+
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
@@ -495,6 +499,8 @@ class ODEIntegrator(StepperBase, source_stepper.SourceSolvers):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.ODEIntegrator
+
 	def set_ode_integrator(self, ode_scheme, U):
 		'''
 		Sets the ode integrator from the list of available time integration
