@@ -92,6 +92,66 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	return res_elem # [ne, nb, ns]
 
+def calculate_artificial_viscosity_integral(physics, Uc, elem_helpers, C, p):
+	'''
+	Calculates the artificial viscosity volume integral, given in:
+		Hartmann, R. and Leicht, T, "Higher order and adaptive DG methods for
+		compressible flows", p. 92, 2013.
+
+	Inputs:
+	-------
+		Uc: state coefficients of each element
+		elem_helpers: helpers defined in ElemHelpers
+		C: artificial viscosity parameter
+
+	Outputs:
+	--------
+		res_elem: artificial viscosity residual array for all elements
+		[ne, nb, ns]
+	'''
+	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+			# [ne, nq, nb, dim]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
+	vol_elems = elem_helpers.vol_elems # [ne]
+	ndims = basis_phys_grad_elems.shape[3]
+
+	# Compute solution at quadrature points
+	Uq = np.einsum('jn, ink -> ijk', elem_helpers.basis_val, Uc)
+	# Compute solution gradient at quadrature points
+	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
+	# Compute pressure
+	pressure = physics.compute_additional_variable("Pressure", Uq,
+			flag_non_physical=False)[:, :, 0]
+	# For Euler equations, use pressure as the smoothness variable
+	if physics.PHYSICS_TYPE == general.PhysicsType.Euler:
+		# Compute pressure gradient
+		grad_p = physics.compute_pressure_gradient(Uq, grad_Uq)
+		# Compute its magnitude
+		norm_grad_p = np.linalg.norm(grad_p, axis = 2)
+		# Calculate smoothness switch
+		f = norm_grad_p / (pressure + 1e-12)
+	# For everything else, use the first solution variable
+	else:
+		U0 = Uq[:, :, 0]
+		grad_U0 = grad_Uq[:, :, 0]
+		norm_grad_U0 = np.linalg.norm(grad_U0, axis = 2)
+		# Calculate smoothness switch
+		f =  norm_grad_U0 / (U0 + 1e-12)
+
+	# Isotropic for now. TODO: improve
+	h = np.outer(vol_elems ** (1/3), np.ones(ndims))
+	h_tilde = h / (p + 1)
+	epsilon = C *  np.einsum('ij, il -> ijl', f, h_tilde**3)
+	# Calculate integral, with state coeffs factored out
+	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
+				basis_phys_grad_elems, basis_phys_grad_elems, quad_wts,
+				djac_elems)
+	# Calculate residual
+	res_elem = np.einsum('ipn, ipk -> ink', integral, Uc)
+
+	return res_elem # [ne, nb, ns]
+
 
 def calculate_dRdU(elem_helpers, Sjac):
 	'''

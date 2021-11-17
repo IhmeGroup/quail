@@ -646,6 +646,7 @@ class DG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		basis_val = elem_helpers.basis_val
 		quad_wts = elem_helpers.quad_wts
+		djac_elems = elem_helpers.djac_elems
 
 		x_elems = elem_helpers.x_elems
 		nq = quad_wts.shape[0]
@@ -677,9 +678,9 @@ class DG(base.SolverBase):
 
 		# Add artificial viscosity term
 		if self.params["ArtificialViscosity"]:
-			epsilon = self.params["AVParameter"]
-			artificial_viscosity = epsilon * elem_helpers.SM_elems @ Uc
-			res_elem -= artificial_viscosity
+			res_elem -= solver_tools.calculate_artificial_viscosity_integral(
+					physics, Uc, elem_helpers, self.params["AVParameter"],
+					self.order)
 
 		return res_elem # [ne, nb, ns]
 
