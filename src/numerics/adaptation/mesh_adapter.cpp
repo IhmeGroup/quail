@@ -28,6 +28,11 @@ void adapt_mesh(const double* node_coords, const long* node_IDs,
                     MMG5_ARG_ppMesh,&mmgMesh,MMG5_ARG_ppMet,&mmgSol,
                     MMG5_ARG_end);
 
+    // -- Set Mmg global parameters -- //
+    // hgrad: ratio of connected edge lengths. Default is 1.3.
+    error = MMG2D_Set_dparameter(mmgMesh, mmgSol, MMG2D_DPARAM_hgrad, 2.);
+    check_error(error);
+
     // Set the size of the mesh: vertices, triangles, quadrangles, and edges
     error = MMG2D_Set_meshSize(mmgMesh, num_nodes , num_elems, 0, num_edges);
     check_error(error);
@@ -76,19 +81,35 @@ void adapt_mesh(const double* node_coords, const long* node_IDs,
     // - where the sol will be applied, which is the vertices
     // - the number of vertices
     // - the type of sol, which is scalar for now (isotropic)
-    error = MMG2D_Set_solSize(mmgMesh, mmgSol, MMG5_Vertex, num_nodes, MMG5_Scalar);
+    error = MMG2D_Set_solSize(mmgMesh, mmgSol, MMG5_Vertex, num_nodes, MMG5_Tensor);
     check_error(error);
 
     // Give sol values and positions
     auto c = 1.28057912;
     for (int k = 1; k <= num_nodes; k++) {
         // The value here sets the mesh density
-        //error = MMG2D_Set_scalarSol(mmgSol, .04, k);
         auto coords = node_coords + 2*(k-1);
-        auto met = 3*pow(coords[1] - c * coords[0], 2) + .01;
-        if (met > .2) met = 2.;
-        cout << met << endl;
-        error = MMG2D_Set_scalarSol(mmgSol, met, k);
+        auto amp = 3*pow(coords[1] - c * coords[0], 2) + .01;
+        auto lambda1 = 1/(amp * amp * 1e2);
+        auto lambda2 = 1/(amp * amp);
+        // For elements far from the shock
+        if (amp > .05) {
+            amp = 10.;
+            // Set isotropic metric
+            error = MMG2D_Set_tensorSol(mmgSol, 1/(amp * amp), 0., 1/(amp * amp), k);
+        // For elements near the shock
+        } else {
+            // matrix multiply with diagonalization, at ~52 degrees
+            double V[4] = {0.61547111, -0.78815945, 0.78815945, 0.61547111};
+            double V_T[4] = {0.61547111, 0.78815945, -0.78815945, 0.61547111};
+            double V_lambda[4] = {V[0] * lambda1, V[1] * lambda2, V[2] * lambda1, V[3] * lambda2};
+            double V_lambda_V_T[4] = {V_lambda[0] * V_T[0] + V_lambda[1] * V_T[2],
+                                      V_lambda[0] * V_T[1] + V_lambda[1] * V_T[3],
+                                      V_lambda[2] * V_T[0] + V_lambda[3] * V_T[2],
+                                      V_lambda[2] * V_T[1] + V_lambda[3] * V_T[3]};
+            // Set anisotropic metric
+            error = MMG2D_Set_tensorSol(mmgSol, V_lambda_V_T[0], V_lambda_V_T[1], V_lambda_V_T[3], k);
+        }
         check_error(error);
     }
 

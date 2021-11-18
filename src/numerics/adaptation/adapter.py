@@ -219,6 +219,11 @@ class Adapter:
 				solver.basis, solver.elem_helpers.quad_pts,
 				solver.elem_helpers.quad_wts, Uq, solver.state_coeffs)
 		print(f'done in {time.time() - start_time} s')
+
+		# Recompute helpers for the limiters
+		if solver.limiters:
+			for limiter in solver.limiters:
+				limiter.precompute_helpers(solver)
 		breakpoint()
 
 # Find which element contains a point
