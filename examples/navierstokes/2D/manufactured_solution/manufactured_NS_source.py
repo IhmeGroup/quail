@@ -7,11 +7,9 @@ A comprehensive high-order solver verification methodology for free fluid flows.
 Aerospace Science and Technology, 80, 101–126.
 https://doi.org/10.1016/j.ast.2018.07.006
 ---------------------
-Author: Kihiro Bando
-Date: 2020/03/04
+
+Originally obtained via Kihiro Bando
 '''
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 from sympy import *
@@ -97,22 +95,7 @@ code += pycode(Assignment(S4, -RHS_rhoE)).replace('math', 'np') + '\n\n'
 with open('source.py', 'w') as f:
     f.write(code)
 
-# write state gradients
-#gUx_rho, gUx_rhou, gUx_rhov, gUx_rhoE = symbols('gUx[0] gUx[1] gUx[2] gUx[3]')
-#gUy_rho, gUy_rhou, gUy_rhov, gUy_rhoE = symbols('gUy[0] gUy[1] gUy[2] gUy[3]')
-#code = ccode(Assignment(gUx_rho, rho_x)) + '\n\n'
-#code += ccode(Assignment(gUx_rhou, rhou_x)) + '\n\n'
-#code += ccode(Assignment(gUx_rhov, rhov_x)) + '\n\n'
-#code += ccode(Assignment(gUx_rhoE, rhoE_x)) + '\n\n'
-#code += ccode(Assignment(gUy_rho, rho_y)) + '\n\n'
-#code += ccode(Assignment(gUy_rhou, rhou_y)) + '\n\n'
-#code += ccode(Assignment(gUy_rhov, rhov_y)) + '\n\n'
-#code += ccode(Assignment(gUy_rhoE, rhoE_y)) + '\n\n'
-#with open('grad.cpp', 'w') as f:
-#    f.write(code)
-
-# plot the primitives
-
+# plot the primitives\
 rhonp = lambdify([x, y], rho, 'numpy')
 unp = lambdify([x, y], u, 'numpy')
 vnp =  lambdify([x, y], v, 'numpy')
