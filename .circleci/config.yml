@@ -1,11 +1,20 @@
+############################################################################
 # Python CircleCI 2.1 configuration file
+############################################################################
+#
+# The following yaml file is used to set up the continuous integration and 
+# code coverage reports that populate our circleci/codecov apps.
+# 
+############################################################################
 version: 2.1
+# Initialize orb to communicate with codecov
 orbs:
   codecov: codecov/codecov@3.0.0
   
 jobs:
   build:
     docker:
+      # Select the python build version
       - image: circleci/python:3.9
 
     steps:
@@ -28,7 +37,7 @@ jobs:
             conda create -n quailenv
             conda install -n quailenv python=3.9.7 numpy scipy pytest matplotlib pytest-cov
             source activate quailenv
-      # Step 3: run tests
+      # Step 4: run unit tests for code coverage and report to codecov
       - run:
           name: Run test coverage
           command: |
@@ -38,6 +47,7 @@ jobs:
             cd test
             pytest --cov=../src --cov-report=xml
       - codecov/upload
+      # Step 5: run both unit and regression tests and report to circleci
       - run:
           name: run tests
           command: |
@@ -50,8 +60,3 @@ jobs:
             python generate_tests.py
             cd ..
             pytest -v
-
-#       - run:
-#           name: Send to codecov
-#           command: |
-#             bash <(curl -s https://codecov.io/bash) -Z
