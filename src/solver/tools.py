@@ -122,7 +122,7 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 	ndims = basis_phys_grad_elems.shape[3]
 
 	# Evaluate solution at quadrature points
-	Uq = helpers.evaluate_state(Uc, basis_val, skip_interp=self.basis.skip_interp)
+	Uq = helpers.evaluate_state(Uc, basis_val)
 	# Evaluate solution gradient at quadrature points
 	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
 	# Compute pressure
