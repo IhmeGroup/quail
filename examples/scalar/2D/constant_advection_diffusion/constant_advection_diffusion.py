@@ -50,10 +50,10 @@ InitialCondition = {
 }
 
 d = {
-		"BCType" : "StateAll",
-		"Function" : "DiffGaussian2D",
-		"xo" : 0.5,
-		"yo" : 0.5,
+	"BCType" : "StateAll",
+	"Function" : "DiffGaussian2D",
+	"xo" : 0.5,
+	"yo" : 0.5,
 }
 
 

@@ -1264,7 +1264,8 @@ class Roe1D(ConvNumFluxBase):
 		# Eigenvalues
 		evals = self.get_eigenvalues(velRoe, c)
 		
-		# Entropy fix
+		# Entropy fix (currently commented as we have yet to decide
+		# if this is needed long term)
 		# eps = np.zeros_like(evals)
 		# eps[:, :, :] = (1e-2 * c)
 		# fix = np.argwhere(np.logical_and(evals < eps, evals > -eps))
