@@ -12,15 +12,18 @@ import pickle
 import time
 
 def print_errors(N, errors):
+	'''
+	Prints the errors for convergence studies
+
+	Inputs:
+	-------
+		N: array whose elements are related to the size of the case
+		errors: rate of convergence
+	'''
 	for i in range(errors.shape[0]-1):
 		err = np.log(errors[i+1]/errors[i]) / np.log(N[i+1]/N[i])
 		print(err)
 
-def array_errors(N, errors):
-	err=np.zeros([N.shape[0]-1])
-	for i in range(errors.shape[0]-1):
-		err[i] = np.log(errors[i+1]/errors[i]) / np.log(N[i+1]/N[i])
-	return err
 
 def write_file(fname, solution):
 	'''
@@ -56,10 +59,8 @@ inputdeck.Output['AutoPostProcess'] = False
 
 l2err = np.zeros([order.shape[0], meshx.shape[0]])
 j=0
-# for j in range(order.shape[0]):
 while (j < order.shape[0]):
 
-	# inputdeck.TimeStepping['TimeStepSize'] = dtinit[j]
 	i = 0
 	while (i < meshx.shape[0]):
 
@@ -117,9 +118,3 @@ for j in range(order.shape[0]):
 	print(f'Errors for p={order[j]}')
 	print_errors(meshx, l2err[j])
 	print('------------------------------')
-
-
-
-
-
-
