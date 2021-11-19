@@ -1,10 +1,9 @@
-'''
-Script that takes in solution files for various time integration schemes and
-plots their order of convergence (error vs time)
-
-Author: Brett Bornhoft
-Date: 09/27/2021
-'''
+# ------------------------------------------------------------------------ #
+#
+# Script that takes in solution files for various time integration schemes and
+# plots their order of convergence (error vs time)
+#
+# ------------------------------------------------------------------------ #
 import numpy as np
 import importlib
 import pickle
