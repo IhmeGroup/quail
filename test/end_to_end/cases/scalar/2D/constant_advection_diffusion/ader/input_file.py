@@ -1,7 +1,6 @@
 TimeStepping = {
 	"InitialTime" : 0.,
 	"FinalTime" : 0.5,
-	# "CFL" : 0.0025,
 	"TimeStepSize" : 0.01,
 	"TimeStepper" : "ADER",
 }

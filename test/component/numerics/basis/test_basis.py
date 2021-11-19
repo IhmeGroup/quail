@@ -40,14 +40,14 @@ def test_lagrange_basis_should_be_nodal(basis, order):
 
 
 @pytest.mark.parametrize('order', [
-	# Order of Lagrange basis
+	# Order of basis
 	0, 1, 2, 3, 4, 5,
 ])
 @pytest.mark.parametrize('Basis', [
 	# Basis class representing the element geometry
 	basis_defs.LegendreSeg, basis_defs.LegendreQuad
 ])
-def test_legengre_massmatrix_should_be_diagonal(basis, order):
+def test_legendre_massmatrix_should_be_diagonal(basis, order):
 	'''
 	This test ensures that the mass matrix for a Legendre basis is
 	diagonal
