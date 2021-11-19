@@ -10,6 +10,7 @@ import sys
 
 import general
 import numerics.basis.tools as basis_tools
+import numerics.helpers.helpers as helpers
 
 
 def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
@@ -92,7 +93,7 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	return res_elem # [ne, nb, ns]
 
-def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
+def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param, p):
 	'''
 	Calculates the artificial viscosity volume integral, given in:
 		Hartmann, R. and Leicht, T, "Higher order and adaptive DG methods for
@@ -103,7 +104,7 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 		physics: physics object
 		elem_helpers: helpers defined in ElemHelpers
 		Uc: state coefficients of each element
-		C: artificial viscosity parameter
+		av_param: artificial viscosity parameter
 		p: solution basis order
 
 	Outputs:
@@ -111,6 +112,7 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 		res_elem: artificial viscosity residual array for all elements
 		[ne, nb, ns]
 	'''
+	# Unpack
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 			# [ne, nq, nb, dim]
@@ -119,9 +121,9 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 	vol_elems = elem_helpers.vol_elems # [ne]
 	ndims = basis_phys_grad_elems.shape[3]
 
-	# Compute solution at quadrature points
-	Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
-	# Compute solution gradient at quadrature points
+	# Evaluate solution at quadrature points
+	Uq = helpers.evaluate_state(Uc, basis_val, skip_interp=self.basis.skip_interp)
+	# Evaluate solution gradient at quadrature points
 	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
 	# Compute pressure
 	pressure = physics.compute_additional_variable("Pressure", Uq,
@@ -146,7 +148,7 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 	s = np.zeros((Uc.shape[0], ndims))
 	# Loop over dimensions
 	for k in range(ndims):
-		# Loop over faces
+		# Loop over number of faces per element
 		for i in range(elem_helpers.normals_elems.shape[1]):
 			# Integrate normals
 			s[:, k] += np.einsum('jx, ij -> i', elem_helpers.face_quad_wts,
@@ -160,7 +162,7 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, C, p):
 	# Scale with polynomial order
 	h_tilde = h / (p + 1)
 	# Compute dissipation scaling
-	epsilon = C *  np.einsum('ij, il -> ijl', f, h_tilde**3)
+	epsilon = av_param *  np.einsum('ij, il -> ijl', f, h_tilde**3)
 	# Calculate integral, with state coeffs factored out
 	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
 				basis_phys_grad_elems, basis_phys_grad_elems, quad_wts,

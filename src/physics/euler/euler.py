@@ -151,8 +151,9 @@ class Euler(base.PhysicsBase):
 		Inputs:
 		-------
 			Uq: solution in each element evaluated at quadrature points
+			[ne, nq, ns]
 			grad_Uq: gradient of solution in each element evaluted at quadrature
-				points
+				points [ne, nq, ns, ndims]
 
 		Outputs:
 		--------

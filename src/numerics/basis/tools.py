@@ -233,29 +233,6 @@ def get_elem_mass_matrix(mesh, basis, order, elem_ID=-1,
 
 	return MM # [nb, nb]
 
-def get_poisson_stiffness_matrices(basis_phys_grad_elems, quad_wts, djac_elems):
-	'''
-	Calculate the stiffness matrices of a Poisson-like term for all elements.
-	This is the integral of the gradient of the basis functions dotted with
-	itself (where the dot product is across dimensions). The computation is
-	performed in physical space.
-
-	Inputs:
-	-------
-		basis_phys_grad_elems: gradient in physical space of the basis values
-			for each element
-		quad_wts: quadrature rule weights
-		djac_elems: determinant of the Jacobian of physical space with respect
-			to reference space
-
-	Outputs:
-	--------
-		SM_all: all stiffness matrices
-	'''
-	# Calculate the stiffness matrices in physical space
-	return np.einsum('ijpm, ijnm, jx, ijx -> ipn', basis_phys_grad_elems,
-			basis_phys_grad_elems, quad_wts, djac_elems)
-
 def get_stiffness_matrix(solver, mesh, order, elem_ID):
 	'''
 	Calculate the stiffness matrix

@@ -62,8 +62,6 @@ class ElemHelpers(object):
 		source vector evaluated at the quadrature points
 	iMM_elems: numpy array
 		stores the inverse mass matrix for each element
-	SM_elems: numpy array
-		stores the stiffness matrix for each element
 	vol_elems: numpy array
 		stores the volume of each element
 	normals_elems: numpy array
@@ -99,7 +97,6 @@ class ElemHelpers(object):
 		self.Fq = np.zeros(0)
 		self.Sq = np.zeros(0)
 		self.iMM_elems = np.zeros(0)
-		self.SM_elems = np.zeros(0)
 		self.vol_elems = np.zeros(0)
 		self.normals_elems = np.zeros(0)
 		self.domain_vol = 0.
@@ -246,16 +243,12 @@ class ElemHelpers(object):
 		--------
 			self.iMM_elems: precomputed inverse mass matrix for each element
 				[mesh.num_elems, nb, nb]
-			self.SM_elems: precomputed stiffness matrix for each element
-				[mesh.num_elems, nb, nb]
 		'''
 		self.get_gaussian_quadrature(mesh, physics, basis, order)
 		self.get_basis_and_geom_data(mesh, basis, order)
 		self.alloc_other_arrays(physics, basis, order)
 		self.iMM_elems = basis_tools.get_inv_mass_matrices(mesh,
 				basis, order)
-		self.SM_elems = basis_tools.get_poisson_stiffness_matrices(
-				self.basis_phys_grad_elems, self.quad_wts, self.djac_elems)
 
 
 class InteriorFaceHelpers(ElemHelpers):
@@ -692,9 +685,9 @@ class DG(base.SolverBase):
 
 		# Add artificial viscosity term
 		if self.params["ArtificialViscosity"]:
+			av_param = self.params["AVParameter"]
 			res_elem -= solver_tools.calculate_artificial_viscosity_integral(
-					physics, elem_helpers, Uc, self.params["AVParameter"],
-					self.order)
+					physics, elem_helpers, Uc, av_param, self.order)
 
 		return res_elem # [ne, nb, ns]
 
