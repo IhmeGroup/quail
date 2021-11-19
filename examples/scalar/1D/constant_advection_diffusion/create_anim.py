@@ -16,7 +16,7 @@ ax = plt.gca()
 
 imgs_all = []
 j = 0
-for i in range(23):
+for i in range(25):
 	print(i)
 	fname = "Data_" + str(i) + ".pkl"
 	solver = readwritedatafiles.read_data_file(fname)
@@ -24,8 +24,6 @@ for i in range(23):
 	mesh = solver.mesh
 	physics = solver.physics
 
-	# plot.PlotSolution(mesh, physics, solver, "Scalar", create_new_figure=False, PlotExact=True, PlotIC=True, Label="u",
-	# 		ignore_legend=True)
 	plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, plot_exact=False, plot_IC=False, create_new_figure=False, 
 			ylabel=None, fmt='bo', legend_label="DG", equidistant_pts=True, 
 			include_mesh=False, regular_2D=False, equal_AR=False, ignore_legend=True)

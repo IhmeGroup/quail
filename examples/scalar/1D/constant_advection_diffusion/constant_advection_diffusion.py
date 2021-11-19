@@ -12,7 +12,6 @@ Numerics = {
 	"SolutionOrder" : 4,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
-	# "InterpolateFluxADER" : True,
 }
 
 Mesh = {
@@ -42,4 +41,6 @@ ExactSolution = InitialCondition.copy()
 
 Output = {
 	"Prefix" : "Data",
+	"WriteInterval" : 200, 
+	"WriteInitialSolution" : True,
 }

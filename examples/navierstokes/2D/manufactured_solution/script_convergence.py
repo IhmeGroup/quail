@@ -47,8 +47,7 @@ dtinit = np.array([0.01]) # initial dt for each p
 timestepper = 'ADER'
 inputdeck = importlib.import_module(filename.replace('.py',''))
 
-order = np.array([3])
-# order = np.array([1, 2, 3, 4])
+order = np.array([1, 2, 3, 4])
 meshx = np.array([2, 4, 8, 16, 32, 64])
 meshy = np.array([2, 4, 8, 16, 32, 64])
 # -------------- END USER INPUTS -------------------------------------- #
@@ -104,7 +103,7 @@ while (j < order.shape[0]):
 		i+=1
 
 	print(f'Output file P{(order[0] + j)}: Solution Order is {solver.order}')
-	file_out = f'convergence_testing/ADER/P{str(order[j])}.pkl'
+	file_out = f'convergence_testing/{timestepper}/P{str(order[j])}.pkl'
 	write_file(file_out, l2err[j, :])	
 	if solver.order != order[0] + j:
 		inputdeck.TimeStepping['TimeStepSize'] = inputdeck.TimeStepping['TimeStepSize'] / 3.

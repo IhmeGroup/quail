@@ -26,7 +26,7 @@ plot.plot_solution(mesh, physics, solver, "Scalar", plot_exact=True,
 plot.plot_solution(mesh, physics, solver, "Scalar", plot_IC=True,
 		plot_numerical=False, create_new_figure=False, fmt='k--')
 # Save figure
-plot.save_figure(file_name='constant_advection', file_type='pdf',
+plot.save_figure(file_name='scalar', file_type='pdf',
 		crop_level=2)
 
 plot.show_plot()

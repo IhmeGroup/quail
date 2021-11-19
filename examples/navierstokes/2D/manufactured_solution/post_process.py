@@ -13,7 +13,6 @@ physics = solver.physics
 
 # Compute L2 error
 post.get_error(mesh, physics, solver, "Density", normalize_by_volume=False)
-#levels = np.array([0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5])
 
 ''' Plot '''
 # Density contour
