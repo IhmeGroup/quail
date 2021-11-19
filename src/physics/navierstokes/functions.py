@@ -25,13 +25,13 @@ class FcnType(Enum):
 	TaylorGreenVortexNS = auto()
 	ManufacturedSolution = auto()
 
-# class BCType(Enum):
+class BCType(Enum):
 	'''
 	Enum class that stores the types of boundary conditions. These
 	boundary conditions are specific to the available Euler equation sets.
 	'''
-	# SlipWall = auto()
-	# PressureOutlet = auto()
+	pass
+
 
 
 class SourceType(Enum):
