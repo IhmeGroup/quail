@@ -511,17 +511,14 @@ def get_spacetime_gradient(solver, Uc):
 	iMM = ader_helpers.iMM
 	SMS = ader_helpers.SMS_ref
 	
-	# SMSxUc = np.einsum('mnl, imk -> inkl', SMS, Uc)
-
 	x = np.zeros([Uc.shape[0], Uc.shape[1], Uc.shape[-1], SMS.shape[-1]])
 	gUc = np.zeros([Uc.shape[0], Uc.shape[1], Uc.shape[-1], SMS.shape[-1]])
 
 	for i in range(SMS.shape[-1]):
 		x[:, :, :, i] = SMS[:, :, i].transpose() @ Uc
 		gUc[:, :, :, i] = iMM @ x[:, :, :, i]
-	# test = np.einsum('mn, inkl -> imkl', iMM, SMSxUc)
 
-	return gUc
+	return gUc # [ne, nb_st, ns, ndims]
 
 def smsflux(SMS, flux):
 	'''
@@ -835,9 +832,6 @@ def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 
 	# Initialize space-time coefficients
 	U_pred, U_bar = solver.get_spacetime_guess(solver, W, U_pred, dt=dt)
-
-	# Calculate the gradient of the state
-	# gU_pred = get_spacetime_gradient(solver, U_pred)
 
 	# Calculate the source and flux coefficients with initial guess
 	source_coeffs = solver.source_coefficients(dt, order, basis_st,
