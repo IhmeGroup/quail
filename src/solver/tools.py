@@ -141,6 +141,85 @@ def calculate_source_term_integral(elem_helpers, Sq):
 
 	return res_elem # [ne, nb, ns]
 
+def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param, p):
+	'''
+	Calculates the artificial viscosity volume integral, given in:
+		Hartmann, R. and Leicht, T, "Higher order and adaptive DG methods for
+		compressible flows", p. 92, 2013.
+
+	Inputs:
+	-------
+		physics: physics object
+		elem_helpers: helpers defined in ElemHelpers
+		Uc: state coefficients of each element
+		av_param: artificial viscosity parameter
+		p: solution basis order
+
+	Outputs:
+	--------
+		res_elem: artificial viscosity residual array for all elements
+		[ne, nb, ns]
+	'''
+	# Unpack
+	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+			# [ne, nq, nb, dim]
+	basis_val = elem_helpers.basis_val # [nq, nb]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
+	vol_elems = elem_helpers.vol_elems # [ne]
+	ndims = basis_phys_grad_elems.shape[3]
+
+	# Evaluate solution at quadrature points
+	Uq = helpers.evaluate_state(Uc, basis_val)
+	# Evaluate solution gradient at quadrature points
+	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
+	# Compute pressure
+	pressure = physics.compute_additional_variable("Pressure", Uq,
+			flag_non_physical=False)[:, :, 0]
+	# For Euler equations, use pressure as the smoothness variable
+	if physics.PHYSICS_TYPE == general.PhysicsType.Euler:
+		# Compute pressure gradient
+		grad_p = physics.compute_pressure_gradient(Uq, grad_Uq)
+		# Compute its magnitude
+		norm_grad_p = np.linalg.norm(grad_p, axis = 2)
+		# Calculate smoothness switch
+		f = norm_grad_p / (pressure + 1e-12)
+	# For everything else, use the first solution variable
+	else:
+		U0 = Uq[:, :, 0]
+		grad_U0 = grad_Uq[:, :, 0]
+		norm_grad_U0 = np.linalg.norm(grad_U0, axis = 2)
+		# Calculate smoothness switch
+		f =  norm_grad_U0 / (U0 + 1e-12)
+
+	# Compute s_k
+	s = np.zeros((Uc.shape[0], ndims))
+	# Loop over dimensions
+	for k in range(ndims):
+		# Loop over number of faces per element
+		for i in range(elem_helpers.normals_elems.shape[1]):
+			# Integrate normals
+			s[:, k] += np.einsum('jx, ij -> i', elem_helpers.face_quad_wts,
+					np.abs(elem_helpers.normals_elems[:, i, :, k]))
+		s[:, k] = 2 * vol_elems / s[:, k]
+	# Compute h_k (the length scale in the kth direction)
+	h = np.empty_like(s)
+	# Loop over dimensions
+	for k in range(ndims):
+		h[:, k] = s[:, k] * (vol_elems / np.prod(s, axis=1))**(1/3)
+	# Scale with polynomial order
+	h_tilde = h / (p + 1)
+	# Compute dissipation scaling
+	epsilon = av_param *  np.einsum('ij, il -> ijl', f, h_tilde**3)
+	# Calculate integral, with state coeffs factored out
+	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
+				basis_phys_grad_elems, basis_phys_grad_elems, quad_wts,
+				djac_elems)
+	# Calculate residual
+	res_elem = np.einsum('ipn, ipk -> ink', integral, Uc)
+
+	return res_elem # [ne, nb, ns]
+
 
 def calculate_dRdU(elem_helpers, Sjac):
 	'''

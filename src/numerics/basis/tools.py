@@ -121,8 +121,8 @@ def gauss_lobatto_nodes_1D_range(start, stop, nnodes):
 	if stop <= start:
 		raise ValueError
 
-	# Note: This function can ONLY get the points on the 
-	# reference segment therefore start and stop are 
+	# Note: This function can ONLY get the points on the
+	# reference segment therefore start and stop are
 	# ALWAYS constrained to -1 and 1.
 	if start != -1.:
 		raise ValueError
@@ -232,7 +232,6 @@ def get_elem_mass_matrix(mesh, basis, order, elem_ID=-1,
 	MM = np.matmul(basis_val.transpose(), basis_val*quad_wts*djac) # [nb, nb]
 
 	return MM # [nb, nb]
-
 
 def get_stiffness_matrix(solver, mesh, order, elem_ID):
 	'''
@@ -520,7 +519,7 @@ def get_lagrange_basis_3D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 	# Tensor products to get 3D basis values
 	if basis_val is not None:
 		for i in range(xq.shape[0]):
-			basis_val[i, :] = np.reshape(np.outer(np.outer(valx[i, :], 
+			basis_val[i, :] = np.reshape(np.outer(np.outer(valx[i, :],
 					valy[i, :]), valz[i, :]), (-1, ), 'F')
 	if basis_ref_grad is not None:
 		for i in range(xq.shape[0]):

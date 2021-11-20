@@ -89,6 +89,12 @@ Numerics = {
 		# Default is set to 100.
 		# This parameter modifies the sensitivity of the MinMod shock
 		# indicator. It is problem dependent.
+	"ArtificialViscosity" : False,
+		# Flag to use artificial viscosity
+		# If true, artificial visocity will be added
+	"AVParameter" : 1.,
+		# Parameter in the artificial viscosity term. A larger value will
+		# increase the amount of AV added, giving a smoother solution.
 	"SourceTreatmentADER" : "Explicit",
 		# Treatment of source terms for ADER-DG
 		# Either "Explicit" or "Implicit"

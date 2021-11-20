@@ -149,6 +149,41 @@ class Euler(base.PhysicsBase):
 
 		return varq
 
+	def compute_pressure_gradient(self, Uq, grad_Uq):
+		'''
+		Compute the gradient of pressure with respect to physical space. This is
+		needed for pressure-based shock sensors.
+
+		Inputs:
+		-------
+			Uq: solution in each element evaluated at quadrature points
+			[ne, nq, ns]
+			grad_Uq: gradient of solution in each element evaluted at quadrature
+				points [ne, nq, ns, ndims]
+
+		Outputs:
+		--------
+			array: gradient of pressure with respected to physical space
+				[ne, nq, ndims]
+		'''
+		srho = self.get_state_slice("Density")
+		srhoE = self.get_state_slice("Energy")
+		smom = self.get_momentum_slice()
+		rho = Uq[:, :, srho]
+		rhoE = Uq[:, :, srhoE]
+		mom = Uq[:, :, smom]
+		gamma = self.gamma
+
+		# Compute dp/dU
+		dpdU = np.empty_like(Uq)
+		dpdU[:, :, srho] = (.5 * (gamma - 1) * np.sum(mom**2, axis = 2,
+			keepdims=True) / rho)
+		dpdU[:, :, smom] = (1 - gamma) * mom / rho
+		dpdU[:, :, srhoE] = gamma - 1
+
+		# Multiply with dU/dx
+		return np.einsum('ijk, ijkl -> ijl', dpdU, grad_Uq)
+
 
 class Euler1D(Euler):
 	'''
@@ -170,7 +205,7 @@ class Euler1D(Euler):
 			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
 			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
 			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
-			euler_fcn_type.ShuOsherProblem : 
+			euler_fcn_type.ShuOsherProblem :
 					euler_fcns.ShuOsherProblem,
 		}
 
@@ -241,13 +276,13 @@ class Euler1D(Euler):
 
 	def get_conv_eigenvectors(self, U_bar):
 		'''
-		This function defines the convective eigenvectors for the 
-		1D euler equations. This is used with the WENO limiter to 
+		This function defines the convective eigenvectors for the
+		1D euler equations. This is used with the WENO limiter to
 		transform the system of equations from physical space to
 		characteristic space.
 
 		Inputs:
-		------- 
+		-------
 			U_bar: Average state [ne, 1, ns]
 
 		Outputs:
@@ -258,15 +293,15 @@ class Euler1D(Euler):
 
 		# Unpack
 		ne = U_bar.shape[0]
-		
+
 		ns = self.NUM_STATE_VARS
-		
+
 		irho, irhou, irhoE = self.get_state_indices()
 
 		rho = U_bar[:, :, irho]
 		rhou = U_bar[:, :, irhou]
 		rhoE = U_bar[:, :, irhoE]
-		
+
 		# Get velocity
 		u = rhou / rho
 		# Get squared velocity

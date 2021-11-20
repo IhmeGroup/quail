@@ -37,6 +37,7 @@ def test_case(test_data):
 	case_dir = os.path.dirname(os.path.abspath(__file__))
 	# Get test case name
 	test_name = case_dir.split('cases/')[-1]
+
 	# Get expected solution for this test case
 	Uc_expected = Uc_expected_list[test_name]
 
