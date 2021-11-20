@@ -18,9 +18,11 @@ void check_error(int error) {
 extern "C" {
 
 void adapt_mesh(const double* node_coords, const long* node_IDs,
-        const long* bface_info, int& num_nodes, int& num_elems,
-        int& num_edges, MMG5_pMesh& mmgMesh, MMG5_pSol& mmgSol) {
+        const long* bface_info, const double* u, const double* sigma, int&
+        num_nodes, int& num_elems, int& num_edges, MMG5_pMesh& mmgMesh,
+        MMG5_pSol& mmgSol) {
     int error;
+    int ndims = 2;
 
     mmgMesh = NULL;
     mmgSol  = NULL;
@@ -90,18 +92,18 @@ void adapt_mesh(const double* node_coords, const long* node_IDs,
         // The value here sets the mesh density
         auto coords = node_coords + 2*(k-1);
         auto amp = 3*pow(coords[1] - c * coords[0], 2) + .01;
-        auto lambda1 = 1/(amp * amp * 1e2);
+        auto lambda1 = 1/(amp * amp * 1e0);
         auto lambda2 = 1/(amp * amp);
-        // For elements far from the shock
-        if (amp > .05) {
+        // For elements far from the shock, or with tiny gradients
+        if (amp > .05 or (sigma[(k-1)*ndims] < 1) or (sigma[(k-1)*ndims + 1] < 1)) {
             amp = 10.;
             // Set isotropic metric
             error = MMG2D_Set_tensorSol(mmgSol, 1/(amp * amp), 0., 1/(amp * amp), k);
         // For elements near the shock
         } else {
-            // matrix multiply with diagonalization, at ~52 degrees
-            double V[4] = {0.61547111, -0.78815945, 0.78815945, 0.61547111};
-            double V_T[4] = {0.61547111, 0.78815945, -0.78815945, 0.61547111};
+            // matrix multiply with singular vectors
+            const double* V = u + (k-1)*ndims*ndims;
+            const double V_T[4] = {V[0], V[2], V[1], V[3]};
             double V_lambda[4] = {V[0] * lambda1, V[1] * lambda2, V[2] * lambda1, V[3] * lambda2};
             double V_lambda_V_T[4] = {V_lambda[0] * V_T[0] + V_lambda[1] * V_T[2],
                                       V_lambda[0] * V_T[1] + V_lambda[1] * V_T[3],

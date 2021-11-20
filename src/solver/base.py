@@ -81,6 +81,8 @@ class SolverBase(ABC):
 		minimum values of state variables
 	max_state: numpy array
 		maximum values of state variables
+	itime: integer
+		current time step number
 
 	Abstract Methods:
 	-----------------
