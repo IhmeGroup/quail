@@ -113,7 +113,9 @@ class PhysicsBase(ABC):
 	    list of Function objects corresponding to each source term
 	conv_flux_fcn: Function object
 	    holds information about the convective flux function
-
+	diff_flux_fcn: Function object
+		holds information about the diffusive flux function
+		
 	Inner Classes:
 	--------------
 	StateVariables: enum
@@ -157,6 +159,8 @@ class PhysicsBase(ABC):
 		direction
 	get_conv_flux_numerical
 		computes the convective numerical flux
+	get_diff_flux_numerical
+		computes the diffusive numerical flux
 	eval_source_terms
 		evaluates the source term(s)
 	eval_source_term_jacobians
@@ -211,11 +215,13 @@ class PhysicsBase(ABC):
 		self.BC_fcn_map = {}
 		self.source_map = {}
 		self.conv_num_flux_map = {}
+		self.diff_num_flux_map = {}
 		self.IC = None
 		self.exact_soln = None
 		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
 		self.source_terms = []
 		self.conv_flux_fcn = None
+		self.diff_flux_fcn = None
 
 		# Compatibility check
 		if mesh.ndims != self.NDIMS:
@@ -284,6 +290,9 @@ class PhysicsBase(ABC):
 		    self.conv_num_flux_map: dict whose keys are the types of
 		    	convective numerical fluxes (members of ConvNumFluxType
 		    	enum); values are the corresponding classes
+		    self.diff_num_flux_map: dict whose keys are the types of 
+		    	diffusive numerical fluxes (members of DiffNumFluxType
+		    	enum); values are the corresponding classes
 
 		Notes:
 		------
@@ -317,6 +326,8 @@ class PhysicsBase(ABC):
 				base_conv_num_flux_type.LaxFriedrichs :
 					base_fcns.LaxFriedrichs,
 			})
+
+		self.diff_num_flux_map = {}
 
 	def set_IC(self, IC_type, **kwargs):
 		'''
@@ -427,6 +438,27 @@ class PhysicsBase(ABC):
 		# Instantiate class and store
 		self.conv_flux_fcn = conv_num_flux_class(**kwargs)
 
+	def set_diff_num_flux(self, diff_num_flux_type, **kwargs):
+		'''
+		This method sets the diffusive numerical flux
+
+		Inputs:
+		-------
+			diff_num_flux_type: type of diffusive numerical flux
+				(member of DiffNumFluxType enum)
+			kwargs: keyword arguments; depends on specific diffusive 
+				numerical flux
+
+		Outputs:
+		--------
+			self.diff_flux_fcn : stores diffusive numerical flux object
+		'''
+		if diff_num_flux_type:
+			diff_num_flux_class = process_map(diff_num_flux_type,
+					self.diff_num_flux_map)
+			# Instantiate class and store
+			self.diff_flux_fcn = diff_num_flux_class(**kwargs)
+
 	def get_state_index(self, var_name):
 		'''
 		This method gets the index corresponding to a given state variable.
@@ -482,11 +514,29 @@ class PhysicsBase(ABC):
 		Inputs:
 		-------
 			Uq: values of the state variables (typically at the quadrature
-				points) [nq, ns]
+				points) [ne, nq, ns]
 
 		Outputs:
 		--------
-			Fq: flux values [nq, ns, ndims]
+			Fq: flux values [ne, nq, ns, ndims]
+		'''
+		pass
+
+	def get_diff_flux_interior(self, Uq, gUq):
+		'''
+		This method computes the diffusive analytic flux for element
+		interiors.
+
+		Inputs:
+		-------
+			Uq: values of the state variables (typically at the quadrature
+				points) [ne, nq, ns]
+			gUq: vales of the gradient of the state (typically at the 
+				quadrature points) [ne, nq, ns, ndims]
+
+		Outputs:
+		--------
+			Fq: flux values [ne, nq, ns, ndims]
 		'''
 		pass
 
@@ -534,6 +584,65 @@ class PhysicsBase(ABC):
 		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
 
 		return Fnum
+
+	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals):
+		'''
+		This method computes the diffusive numerical flux.
+
+		Inputs:
+		-------
+			UqL: left values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			UqR: right values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			gUqL: left values of the gradient of the state variables
+				(typically at the quadrature points) [nf, nq, ns, ndims]
+			gUqR: right values of the gradient of the state variables
+				(typically at the quadrature points) [nf, nq, ns, ndims]
+			normals: directions from left to right [nf, nq, ndims]
+		
+		Outputs:
+		--------
+			Fnum: numerical normal flux values [nf, nq, ns]
+			FL: numerical directional flux values at left state
+				[nf, nq, ns, ndims]
+			FR: numerical directional flux values at right state
+				[nf, nq, ns, ndims]
+		'''
+		if self.diff_flux_fcn:
+			# Compute the diffusion fluxes
+			Fnum, FL, FR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
+					gUqL, gUqR, normals)
+
+			return Fnum, FL, FR # [nf, nq, ns], [nf, nq, ns, ndim], 
+				# [nf, nq, ns, ndim]
+		else:
+			return 0., 0., 0. # Return zeros when diffusion fluxes not needed
+
+	def get_diff_boundary_flux_numerical(self, UqI, UqB, gUq, normals):
+		'''
+		This method computes the diffusive numerical flux at a boundary state.
+
+		Inputs:
+		-------
+			UqI: interior values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			UqB: boundary values of the state variables (typically at the
+				quadrature points) [nf, nq, ns]
+			gUq: interior values of the gradient of the state variables
+				(typically at the quadrature points) [nf, nq, ns, ndims]
+			normals: directions from left to right [nf, nq, ndims]
+		
+		Outputs:
+		--------
+			Fnum: numerical flux values[nf, nq, ns]
+			FB: directional numerical flux values at boundary
+				[nf, nq, ns, ndims]
+		'''
+		Fnum, FB = self.diff_flux_fcn.compute_boundary_flux(self, UqI, UqB, gUq,
+				normals)
+
+		return Fnum, FB # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
 
 	def eval_source_terms(self, Uq, xphys, time, Sq):
 		'''

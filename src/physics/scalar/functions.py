@@ -27,6 +27,8 @@ class FcnType(Enum):
 	ShockBurgers = auto()
 	SineBurgers = auto()
 	LinearBurgers = auto()
+	DiffGaussian = auto()
+	DiffGaussian2D = auto()
 
 
 class BCType(Enum):
@@ -44,6 +46,13 @@ class SourceType(Enum):
 	'''
 	SimpleSource = auto()
 	
+
+class ConvNumFluxType(Enum):
+	'''
+	Enum class that stores the types of convective numerical fluxes. These
+	numerical fluxes are specific to the available Euler equation sets.
+	'''
+	ExactLinearFlux = auto()
 
 '''
 ---------------
@@ -277,6 +286,59 @@ class LinearBurgers(FcnBase):
 		return Uq
 
 
+class DiffGaussian(FcnBase):
+	'''
+	Advecting/Diffusing Gaussian wave
+	'''
+	def __init__(self, xo):
+		self.xo = xo # Center of wave
+
+	def get_state(self, physics, x, t):
+		# unpack
+		c = physics.c
+		al = physics.al
+
+		xo = self.xo
+
+		C1 = 1. / np.sqrt(4.*t + 1.)
+		C2 = (x - xo - c*t) * (x - xo - c*t)
+		C3 = al * (4*t + 1)
+
+		Uq = C1 * np.exp(-C2 / C3)
+
+		return Uq
+
+class DiffGaussian2D(FcnBase):
+	'''
+	Advecting/Diffusing Gaussian wave
+	'''
+	def __init__(self, xo, yo):
+		self.xo = xo # Center of wave (x-coordinate)
+		self.yo = yo # Center of wave (y-coordinate)
+
+	def get_state(self, physics, x, t):
+		# unpack
+		c = physics.c
+		al = physics.al
+
+		x1 = x[:, :, 0]
+		x2 = x[:, :, 1]
+
+		xo = self.xo
+		yo = self.yo
+
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		C1 = 1. / (4.*t + 1.)
+		C2x = (x1 - xo - c[0]*t)**2
+		C2y = (x2 - yo - c[1]*t)**2
+		C3x = al[0] * (4*t + 1)
+		C3y = al[1] * (4*t + 1)
+
+		Uq[:, :, 0] = C1 * np.exp(-1.*(C2x / C3x) - (C2y / C3y))
+
+		return Uq
+
 '''
 ---------------------
 Source term functions
@@ -319,3 +381,33 @@ class SimpleSource(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
+
+
+'''
+------------------------
+Exact flux functions
+------------------------
+These classes inherit from the ConvNumFluxBase or DiffNumFluxBase class. 
+See ConvNumFluxBase/DiffNumFluxBase for detailed comments of attributes 
+and methods. Information specific to the corresponding child classes can 
+be found below. These classes should correspond to the ConvNumFluxType 
+or DiffNumFluxType enum members above.
+'''
+class ExactLinearFlux(ConvNumFluxBase):
+	'''
+	This class corresponds to the exact flux for linear advection.
+	'''
+	def compute_flux(self, physics, UqL, UqR, normals):
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+
+		Uq_upwind = UqR.copy()
+		iL = (np.einsum('ijl, l -> ij', n_hat, physics.c) >= 0.) 
+		Uq_upwind[iL, :] = UqL[iL, :]
+
+		# Flux
+		Fq,_ = physics.get_conv_flux_projected(Uq_upwind, n_hat)
+
+		# Put together
+		return n_mag*Fq

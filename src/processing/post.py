@@ -62,6 +62,7 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	# Get quadrature data
 	quad_order = basis.get_quadrature_order(mesh, 2*np.amax([order, 1]),
 			physics=physics)
+
 	gbasis = mesh.gbasis
 	quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
 
@@ -90,7 +91,7 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 		err_elems[elem_ID] = err
 		tot_err += err_elems[elem_ID]
 
-	tot_err = (tot_err/tot_vol)**(1./ord)
+	tot_err = (tot_err / tot_vol)**(1./ord)
 
 	# Print if requested
 	if print_error:

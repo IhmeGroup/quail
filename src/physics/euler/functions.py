@@ -903,12 +903,12 @@ class GravitySource(SourceBase):
 ------------------------
 Numerical flux functions
 ------------------------
-These classes inherit from the ConvNumFluxBase class. See
-ConvNumFluxBase for detailed comments of attributes and methods.
-Information specific to the corresponding child classes can be found below.
-These classes should correspond to the ConvNumFluxType enum members above.
+These classes inherit from the ConvNumFluxBase or DiffNumFluxBase class. 
+See ConvNumFluxBase/DiffNumFluxBase for detailed comments of attributes 
+and methods. Information specific to the corresponding child classes can 
+be found below. These classes should correspond to the ConvNumFluxType 
+or DiffNumFluxType enum members above.
 '''
-
 class LaxFriedrichs1D(ConvNumFluxBase):
 	'''
 	This class corresponds to the local Lax-Friedrichs flux function for the
@@ -1263,7 +1263,16 @@ class Roe1D(ConvNumFluxBase):
 
 		# Eigenvalues
 		evals = self.get_eigenvalues(velRoe, c)
-
+		
+		# Entropy fix (currently commented as we have yet to decide
+		# if this is needed long term)
+		# eps = np.zeros_like(evals)
+		# eps[:, :, :] = (1e-2 * c)
+		# fix = np.argwhere(np.logical_and(evals < eps, evals > -eps))
+		# fix_shape = fix[:, 0], fix[:, 1], fix[:, 2]
+		# evals[fix_shape] = 0.5 * (eps[fix_shape] + evals[fix_shape]* \
+		# 	evals[fix_shape] / eps[fix_shape])
+		
 		# Right eigenvector matrix
 		R = self.get_right_eigenvectors(c, evals, velRoe, HRoe)
 

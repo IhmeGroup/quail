@@ -157,11 +157,18 @@ Physics = {
 	"Type" : "ConstAdvScalar",
 		# Physics type
 		# See general.PhysicsType
+	"Transport" : "NotNeeded",
+		# Physics transport properties
+		# See general.TransportType
 	"ConvFluxNumerical" : "LaxFriedrichs",
 		# Numerical convective flux
 		# See ConvNumFluxType in functions.py in the corresponding physics
 		# modules
-
+	"DiffFluxNumerical" : None,
+		# Numerical diffusive flux
+		# See DiffNumFluxType in functions.py in the corresponding physics
+		# modules
+		
 	# Physical parameters specific to the physics type are also set here.
 	# Refer to the corresponding physics classes and the examples.
 }

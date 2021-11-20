@@ -13,7 +13,6 @@ import physics.chemistry.chemistry as chemistry
 import solver.DG as DG
 import solver.ADERDG as ADERDG
 
-
 # Tolerances
 
 # Markers distinguish tests into different categories

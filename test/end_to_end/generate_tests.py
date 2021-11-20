@@ -54,9 +54,8 @@ def generate_tests():
 		test_script = base_test.copy()
 
 		test_script.insert(line_of_tol, f'rtol = {marker_list[1][0]}\n')
-		marker_list[1].pop()
-		test_script.insert(line_of_tol+1, f'atol = {marker_list[1][0]}\n')
-		marker_list[1].pop()
+		test_script.insert(line_of_tol+1, f'atol = {marker_list[1][1]}\n')
+		marker_list.pop()
 
 		for marker in itertools.islice(marker_list[0] , 0, None):
 		# for marker in marker_list:

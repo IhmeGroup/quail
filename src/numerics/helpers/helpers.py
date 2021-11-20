@@ -55,3 +55,46 @@ def evaluate_state(Uc, basis_val, skip_interp=False):
 			Uq = np.einsum('jn, ink -> ijk', basis_val, Uc)
 
 	return Uq # [ne, nq, ns]
+
+
+def evaluate_gradient(Uc, basis_phys_grad_elems):
+	'''
+	This function evaluates the gradient of the state based on the 
+	physical gradient of the basis.
+
+	Inputs:
+	-------
+	    Uc: state coefficients [ne, nb, ns]
+	    basis_phys_grad_elems: evaluated gradient of the basis function in
+			physical space [nq, nb, ndims]
+
+	Outputs:
+	--------
+	    gUq: gradient of the state [ne, nq, ns, ndims]
+	'''
+	if basis_phys_grad_elems.ndim == 4:
+		gUq = np.einsum('ijml, imk -> ijkl', basis_phys_grad_elems, Uc)
+	else:
+		gUq = np.einsum('jml, imk -> ijkl', basis_phys_grad_elems, Uc)
+
+	return gUq # [ne, nq, ns, ndims]
+
+
+def ref_to_phys_grad(ijac, gU_ref):
+	'''
+	This function converts a gradient in reference space to one in 
+	physical space given the inverse jacobian evaluated at the 
+	corresponding points
+
+	Inputs:
+	-------
+		ijac: inverse jacobian [ne, num_pts, ndims, ndims]
+		gU_ref: reference gradient of the state [ne, num_pts, ns, ndims]
+
+	Outputs:
+	--------
+		gU_phys: physical gradient of the state [ne, num_pts, ns, ndims]
+	'''
+	gU_phys = np.einsum('ijpl, ijkp -> ijkl', ijac, gU_ref)
+
+	return gU_phys # [ne, num_pts, ns, ndims]

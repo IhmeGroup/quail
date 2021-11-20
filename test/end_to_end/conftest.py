@@ -7,7 +7,7 @@ import list_of_cases
 
 
 @pytest.fixture
-def test_data(capsys):
+def test_data():
 	'''
 	This fixture reads in the regression test data and yields it, along with
 	the Quail directory. After the test ends, it returns to the test directory

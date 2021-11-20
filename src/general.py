@@ -141,10 +141,15 @@ class PhysicsType(Enum):
 	'''
 	ConstAdvScalar = auto()
 		# Scalar advection with constant velocity (1D and 2D)
+	ConstAdvDiffScalar = auto()
+		# Scalar advection diffusion with constant velocity and diffusion
+		# coefficients
 	Burgers = auto()
 		# Burgers equation (1D only)
 	Euler = auto()
 		# Euler equations (1D and 2D)
+	NavierStokes = auto()
+		# Navier-Stokes equations (1D and 2D)
 	Chemistry = auto()
 		# Euler equations with chemistry (1D and 2D)
 	ModelProblem = auto()
@@ -156,6 +161,19 @@ class PhysicsType(Enum):
 	MultispeciesPSR = auto()
 		# Model for PSR (with H2/Air chemistry)
 		
+		
+class TransportType(Enum):
+	'''
+	This enum contains the available transport types for Navier-Stokes.
+	see src/physics/navierstokes/tools.py for more information
+	'''
+	Constant = auto()
+		# Constant transport properties
+	Sutherland = auto()
+		# Transport properties defined using sutherland's law for viscosity
+	NotNeeded = auto()
+		# No transport properties required for physics class
+
 class ModalOrNodal(Enum):
 	'''
 	This enum contains flags indicating whether the basis functions are
@@ -208,4 +226,9 @@ def set_solver_params(params=None, **kwargs):
 	return params
 
 
+def pass_function(*args):
+	pass
 
+
+def zero_function(*args):
+	return 0.

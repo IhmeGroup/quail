@@ -8,6 +8,8 @@ import numpy as np
 import list_of_cases
 import physics.euler.euler as euler
 import physics.scalar.scalar as scalar
+import physics.navierstokes.navierstokes as navierstokes
+import physics.navierstokes.tools as ns_tools
 import physics.chemistry.chemistry as chemistry
 import solver.DG as DG
 import solver.ADERDG as ADERDG

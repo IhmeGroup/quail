@@ -16,6 +16,30 @@ import meshing.tools as mesh_tools
 
 import numerics.basis.basis as basis_defs
 import numerics.helpers.helpers as helpers
+import solver.ader_tools as solver_tools
+
+
+def set_function_definitions(solver, params):
+	'''
+	This function sets the necessary functions for the given case 
+	dependent upon setter flags in the input deck (primarily for 
+	the diffusive flux definitions)
+
+	Inputs:
+	-------
+		solver: solver object
+		params: dict with solver parameters
+	'''
+	if solver.physics.diff_flux_fcn:
+		solver.evaluate_gradient = helpers.evaluate_gradient
+		solver.ref_to_phys_grad = helpers.ref_to_phys_grad
+		solver.calculate_boundary_flux_integral_sum = \
+			solver_tools.calculate_boundary_flux_integral_sum
+	else:
+		solver.evaluate_gradient = general.pass_function
+		solver.ref_to_phys_grad = general.pass_function
+		solver.calculate_boundary_flux_integral_sum = \
+			general.zero_function
 
 
 def set_source_treatment(ns, source_treatment):
@@ -91,7 +115,7 @@ def set_recalculate_jac(recalculate_jacobian):
 	if recalculate_jacobian:
 		fcn = recalculate_jacobian_on
 	else:
-		fcn = recalculate_jacobian_off
+		fcn = general.pass_function
 
 	return fcn
 
@@ -146,9 +170,6 @@ def recalculate_jacobian_on(solver, U_pred, dt, Sjac=None):
 	# Set all sources for source_coeffs calculation
 	physics.source_terms = temp_sources.copy()
 
-
-def recalculate_jacobian_off(solver, U_pred, dt, Sjac=None):
-	pass
 
 def zeros_spacetime_guess(solver, W, U_pred, dt=None):
 	'''
@@ -348,10 +369,10 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 	return U_pred, U_bar
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
+def calculate_volume_flux_integral(solver, elem_helpers,
 		elem_helpers_st, Fq):
 	'''
-	Calculates the inviscid flux volume integral for the ADERDG scheme
+	Calculates the flux volume integral for the ADERDG scheme
 
 	Inputs:
 	-------
@@ -362,7 +383,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 
 	Outputs:
 	--------
-		res_elem: residual contribution (for volume integral of inviscid flux)
+		res_elem: residual contribution (for volume integral of flux)
 			[ne, nb, ns]
 	'''
 	quad_wts_st = elem_helpers_st.quad_wts
@@ -386,10 +407,10 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers,
 	return res_elem # [ne, nb, ns]
 
 
-def calculate_inviscid_flux_boundary_integral(nq_t, basis_val, 
+def calculate_boundary_flux_integral(nq_t, basis_val, 
 		quad_wts_st, Fq):
 	'''
-	Calculates the inviscid flux boundary integral for the ADERDG scheme
+	Calculates the boundary flux integral for the ADERDG scheme
 
 	Inputs:
 	-------
@@ -405,6 +426,32 @@ def calculate_inviscid_flux_boundary_integral(nq_t, basis_val,
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts_st)
 	# Calculate residual
 	resB = np.einsum('ijn, ijk -> ink', np.tile(basis_val,(nq_t, 1)), Fq_quad)
+
+	return resB # [nf, nb, ns]
+
+
+def calculate_boundary_flux_integral_sum(nq_t, basis_ref_grad, quad_wts_st, Fq):
+	'''
+	Calculates the directional boundary flux integrals for diffusion fluxes
+
+	Inputs:
+	-------
+		basis_ref_grad: evaluated gradient of the basis function in 
+			reference space [nq, nb, ndims]
+		quad_wts: quadrature weights [nq, 1]
+		Fq: Direction diffusion flux contribution [nf, nq, ns, ndims]
+
+	Outputs:
+	--------
+		resB: residual contribution (from boundary face) [nf, nb, ns]
+	'''
+
+	# Calculate flux quadrature
+	Fq_quad = np.einsum('ijkl, jm -> ijkl', Fq, quad_wts_st) # [nf, nq, ns]
+
+	# Calculate residual
+	resB = np.einsum('ijnl, ijkl -> ink',np.tile(basis_ref_grad, 
+		[1, nq_t, 1, 1]), Fq_quad)
 
 	return resB # [nf, nb, ns]
 
@@ -446,6 +493,59 @@ def calculate_source_term_integral(elem_helpers, elem_helpers_st, Sq):
 	return res_elem # [ne, nb, ns]
 
 
+def get_spacetime_gradient(solver, Uc):
+	'''
+	Calculates the spacetime gradient of the state
+
+	Inputs:
+	-------
+		solver: solver object
+		Uc: space-time state coefficients [ne, nb_st, ns]
+	
+	Outpus:
+	-------
+		gUc: gradient of the space-time state [ne, nb_st, ns, ndims]
+	'''
+	ader_helpers = solver.ader_helpers
+
+	iMM = ader_helpers.iMM
+	SMS = ader_helpers.SMS_ref
+	
+	x = np.zeros([Uc.shape[0], Uc.shape[1], Uc.shape[-1], SMS.shape[-1]])
+	gUc = np.zeros([Uc.shape[0], Uc.shape[1], Uc.shape[-1], SMS.shape[-1]])
+
+	for i in range(SMS.shape[-1]):
+		x[:, :, :, i] = SMS[:, :, i].transpose() @ Uc
+		gUc[:, :, :, i] = iMM @ x[:, :, :, i]
+
+	return gUc # [ne, nb_st, ns, ndims]
+
+def smsflux(SMS, flux):
+	'''
+	This method does two operations:
+
+	1. It first does a matrix multiply of the SMS matrix and flux in each direction
+	2. It then conducts a sum along the dimensional axis of the returned matrix.
+
+	This is a more efficient implementation of the following einsum calculation
+
+		np.einsum('ijkl, ikml -> ijm', SMS, flux)
+
+	Inputs:
+	-------
+		SMS: ADER helper matrix [ne, nb_st, nb_st, ndims]
+		flux: coefficients of the flux function [ne, nb_st, ns, ndims]
+
+	Outputs:
+	--------
+		Returns a matrix of shape [ne, nb_st, ns]
+	'''
+	x = np.zeros_like(flux)
+	for i in range(flux.shape[-1]):
+		x[:, :, :, i] = SMS[:, :, :, i] @ flux[:, :, :, i]
+	return np.sum(x, axis=3)
+
+
 def predictor_elem_explicit(solver, dt, W, U_pred):
 	'''
 	Calculates the predicted solution state for the ADER-DG method using a
@@ -474,8 +574,11 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 	basis_st = solver.basis_st
 
 	elem_helpers = solver.elem_helpers
+	elem_helpers_st = solver.elem_helpers_st
 	ader_helpers = solver.ader_helpers
-
+	nq_tile_constant = elem_helpers_st.nq_tile_constant
+	basis_ref_grad = elem_helpers.basis_ref_grad
+	basis_ref_grad_st = elem_helpers_st.basis_ref_grad
 	order = solver.order
 	quad_wts = elem_helpers.quad_wts
 	basis_val = elem_helpers.basis_val
@@ -502,26 +605,25 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 	# Iterate using a discrete Picard nonlinear solve for the
 	# updated space-time coefficients.
-	niter = 1000
+	niter = 100
 	for i in range(niter):
 
-		U_pred_new = np.einsum('jk, ikm -> ijm',iK,
-				np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
-				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-				np.einsum('jk, ikm -> ijm', FTR, W))
+		U_pred_new = iK @ ( MM @ source_coeffs - \
+			smsflux(SMS_elems, flux_coeffs) + FTR @ W )
 
 		# We check when the coefficients are no longer changing.
 		# This can lead to differences between NODAL and MODAL solutions.
 		# This could be resolved by evaluating at the quadrature points
 		# and comparing the error between those values.
 		err = U_pred_new - U_pred
+
 		if np.amax(np.abs(err)) < threshold:
 			U_pred = U_pred_new
 			print("Predictor iterations: ", i)
 			break
 
 		U_pred = np.copy(U_pred_new)
-
+		
 		source_coeffs = solver.source_coefficients(dt, order,
 				basis_st, U_pred)
 		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
@@ -529,6 +631,7 @@ def predictor_elem_explicit(solver, dt, W, U_pred):
 
 		if i == niter - 1:
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
+			raise ValueError('Sub-iterations not converging')
 
 	return U_pred # [ne, nb_st, ns]
 
@@ -675,6 +778,7 @@ def predictor_elem_implicit(solver, dt, W, U_pred):
 			print('Sub-iterations not converging', np.amax(np.abs(err)))
 
 	return U_pred #_update # [ne, nb_st, ns]
+
 
 def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 	'''

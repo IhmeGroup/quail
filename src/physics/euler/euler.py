@@ -77,14 +77,16 @@ class Euler(base.PhysicsBase):
 		self.gamma = SpecificHeatRatio
 
 	class AdditionalVariables(Enum):
-	    Pressure = "p"
-	    Temperature = "T"
-	    Entropy = "s"
-	    InternalEnergy = "\\rho e"
-	    TotalEnthalpy = "H"
-	    SoundSpeed = "c"
-	    MaxWaveSpeed = "\\lambda"
-	    Velocity = "|u|"
+		Pressure = "p"
+		Temperature = "T"
+		Entropy = "s"
+		InternalEnergy = "\\rho e"
+		TotalEnthalpy = "H"
+		SoundSpeed = "c"
+		MaxWaveSpeed = "\\lambda"
+		Velocity = "|u|"
+		XVelocity = "u"
+		YVelocity = "v"
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
@@ -137,7 +139,11 @@ class Euler(base.PhysicsBase):
 			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho + np.sqrt(
 					gamma*get_pressure()/rho)
 		elif vname is self.AdditionalVariables["Velocity"].name:
-			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho
+			varq = np.linalg.norm(mom, axis=2, keepdims=True)/rho 
+		elif vname is self.AdditionalVariables["XVelocity"].name:
+			varq = mom[:, :, [0]]/rho
+		elif vname is self.AdditionalVariables["YVelocity"].name:
+			varq = mom[:, :, [1]]/rho
 		else:
 			raise NotImplementedError
 
@@ -302,7 +308,7 @@ class Euler1D(Euler):
 		u2 = u**2
 		# Calculate pressure using the Ideal Gasd Law
 		p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2) # [n, nq]
-		# Get total enthalpy
+		# Get total specific enthalpy
 		H = rhoE/rho + p/rho
 
 		# Get sound speed

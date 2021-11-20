@@ -11,11 +11,35 @@ import sys
 import general
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
+import solver.tools as solver_tools
 
 
-def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
+def set_function_definitions(solver, params):
 	'''
-	Calculates the inviscid flux volume integral for the DG scheme
+	This function sets the necessary functions for the given case 
+	dependent upon setter flags in the input deck (primarily for 
+	the diffusive flux definitions)
+
+	Inputs:
+	-------
+		solver: solver object
+		params: dict with solver parameters
+	'''
+	if solver.physics.diff_flux_fcn:
+		solver.evaluate_gradient = helpers.evaluate_gradient
+		solver.ref_to_phys_grad = helpers.ref_to_phys_grad
+		solver.calculate_boundary_flux_integral_sum = \
+			solver_tools.calculate_boundary_flux_integral_sum
+	else:
+		solver.evaluate_gradient = general.pass_function
+		solver.ref_to_phys_grad = general.pass_function
+		solver.calculate_boundary_flux_integral_sum = \
+			general.zero_function
+
+
+def calculate_volume_flux_integral(solver, elem_helpers, Fq):
+	'''
+	Calculates the volume flux integral for the DG scheme
 
 	Inputs:
 	-------
@@ -25,7 +49,7 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 
 	Outputs:
 	--------
-		res_elem: calculated residual array (for volume integral of all elements)
+		res_elem: calculated residual array
 			[ne, nb, ns]
 	'''
 	quad_wts = elem_helpers.quad_wts # [nq, 1]
@@ -39,13 +63,12 @@ def calculate_inviscid_flux_volume_integral(solver, elem_helpers, Fq):
 	# Calculate residual
 	res_elem = np.einsum('ijnl, ijkl -> ink', basis_phys_grad_elems, F_quad)
 			# [ne, nb, ns]
-
 	return res_elem # [ne, nb, ns]
 
 
-def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
+def calculate_boundary_flux_integral(basis_val, quad_wts, Fq):
 	'''
-	Calculates the inviscid flux boundary integral for the DG scheme
+	Calculates the boundary flux integral for the DG scheme
 
 	Inputs:
 	-------
@@ -55,13 +78,38 @@ def calculate_inviscid_flux_boundary_integral(basis_val, quad_wts, Fq):
 
 	Outputs:
 	--------
-		resB: residual contribution (from boundary face) [nb, ns]
+		resB: residual contribution (from boundary face) [nf, nb, ns]
 	'''
 	# Calculate flux quadrature
 	Fq_quad = np.einsum('ijk, jm -> ijk', Fq, quad_wts) # [nf, nq, ns]
 
 	# Calculate residual
 	resB = np.einsum('ijn, ijk -> ink', basis_val, Fq_quad) # [nf, nb, ns]
+
+	return resB # [nf, nb, ns]
+
+
+def calculate_boundary_flux_integral_sum(basis_ref_grad, quad_wts, Fq):
+	'''
+	Calculates the directional boundary flux integrals for diffusion fluxes
+
+	Inputs:
+	-------
+		basis_ref_grad: evaluated gradient of the basis function in 
+			reference space [nq, nb, ndims]
+		quad_wts: quadrature weights [nq, 1]
+		Fq: Direction diffusion flux contribution [nf, nq, ns, ndims]
+
+	Outputs:
+	--------
+		resB: residual contribution (from boundary face) [nf, nb, ns]
+	'''
+
+	# Calculate flux quadrature
+	Fq_quad = np.einsum('ijkl, jm -> ijkl', Fq, quad_wts) # [nf, nq, ns, ndims]
+
+	# Calculate residual
+	resB = np.einsum('ijnl, ijkl -> ink', basis_ref_grad, Fq_quad)
 
 	return resB # [nf, nb, ns]
 
@@ -260,6 +308,16 @@ def interpolate_to_nodes(f, U):
 		U: array of values to be interpolated onto
 	'''
 	U[:, :, :] = f
+
+
+def get_ip_eta(mesh, order):
+	i = order
+
+	if i > 8:
+		i = 8;
+	etas = np.array([1., 4., 12., 12., 20., 30., 35., 45., 50.])
+
+	return etas[i] * mesh.gbasis.NFACES
 
 
 def update_progress(progress):
