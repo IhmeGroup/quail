@@ -281,22 +281,13 @@ class InteriorFaceHelpers(ElemHelpers):
 		face IDs to the left of each interior face
 	faceR_IDs: numpy array
 		face IDs to the right of each interior face
-	jacL_elems: numpy array
-		stores the evaluated geometric Jacobian for each left element
 	ijacL_elems: numpy array
 		stores the evaluated inverse of the geometric Jacobian for each
 		left element
-	djacL_elems: numpy array
-		stores the evaluated determinant of the geometric Jacobian for
-		each left element
-	jacR_elems: numpy array
-		stores the evaluated geometric Jacobian for each right element
 	ijacR_elems: numpy array
 		stores the evaluated inverse of the geometric Jacobian for each
 		right element
-	djacR_elems: numpy array
-		stores the evaluated determinant of the geometric Jacobian for
-		each right element
+
 
 	Methods:
 	--------
@@ -327,12 +318,8 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.elemR_IDs = np.empty(0, dtype=int)
 		self.faceL_IDs = np.empty(0, dtype=int)
 		self.faceR_IDs = np.empty(0, dtype=int)
-		self.jacL_elems = np.zeros(0)
 		self.ijacL_elems = np.zeros(0)
-		self.djacL_elems = np.zeros(0)
-		self.jacR_elems = np.zeros(0)
 		self.ijacR_elems = np.zeros(0)
-		self.djacR_elems = np.zeros(0)
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -383,22 +370,12 @@ class InteriorFaceHelpers(ElemHelpers):
 				[nfaces_per_elem, nq, nb, ndims]
 			self.normals_int_faces: precomputed normal vectors at each
 				interior face [num_interior_faces, nq, ndims]
-			self.jacL_elems: stores the evaluated geometric Jacobian for each 
-				left element [num_interior_faces, nq, ndims, ndims]
 			self.ijacL_elems: stores the evaluated inverse of the geometric 
 				Jacobian for each left element 
 				[num_interior_faces, nq, ndims, ndims]
-			self.djacL_elems: stores the evaluated determinant of the 
-				geometric Jacobian for each left element
-				[num_interior_faces, nq, 1]
-			self.jacR_elems: stores the evaluated geometric Jacobian for each 
-				right element [num_interior_faces, nq, ndims, ndims]
 			self.ijacR_elems: stores the evaluated inverse of the geometric 
 				Jacobian for each right element 
 				[num_interior_faces, nq, ndims, ndims]
-			self.djacR_elems: stores the evaluated determinant of the 
-				geometric Jacobian for each right element
-				[num_interior_faces, nq, 1]
 			self.face_lengths: stores the precomputed length of each face
 				[num_interior_faces, 1]
 		
@@ -427,12 +404,8 @@ class InteriorFaceHelpers(ElemHelpers):
 				nq, nb, ndims_basis])
 		self.faces_to_basis_ref_gradR = np.zeros([nfaces_per_elem,
 				nq, nb, ndims_basis])
-		self.jacL_elems = np.zeros([nfaces, nq, ndims, ndims])
 		self.ijacL_elems = np.zeros([nfaces, nq, ndims, ndims])
-		self.djacL_elems = np.zeros([nfaces, nq, 1])
-		self.jacR_elems = np.zeros([nfaces, nq, ndims, ndims])
 		self.ijacR_elems = np.zeros([nfaces, nq, ndims, ndims])
-		self.djacR_elems = np.zeros([nfaces, nq, 1])
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
 				ndims])
 		djac_faces = np.zeros([mesh.num_interior_faces, nq])
@@ -464,25 +437,20 @@ class InteriorFaceHelpers(ElemHelpers):
 			elem_pts = basis.get_elem_ref_from_face_ref(
 					interior_face.faceL_ID, quad_pts)
 
-			djacL, jacL, ijacL = basis_tools.element_jacobian(mesh, 
-					interior_face.elemL_ID, elem_pts, get_djac=True,
-					get_jac=True, get_ijac=True)
+			_, _, ijacL = basis_tools.element_jacobian(mesh, 
+					interior_face.elemL_ID, elem_pts, get_djac=False,
+					get_jac=False, get_ijac=True)
 
 			# Right state
 			# Convert from face ref space to element ref space
 			elem_pts = basis.get_elem_ref_from_face_ref(
 					interior_face.faceR_ID, quad_pts[::-1])
-			djacR, jacR, ijacR = basis_tools.element_jacobian(mesh, 
-					interior_face.elemR_ID, elem_pts, get_djac=True,
-					get_jac=True, get_ijac=True)
+			_, _, ijacR = basis_tools.element_jacobian(mesh, 
+					interior_face.elemR_ID, elem_pts, get_djac=False,
+					get_jac=False, get_ijac=True)
 
 			# Store
-			self.jacL_elems[i] = jacL
-			self.djacL_elems[i] = djacL
 			self.ijacL_elems[i] = ijacL
-
-			self.jacR_elems[i] = jacR
-			self.djacR_elems[i] = djacR
 			self.ijacR_elems[i] = ijacR
 
 			# Used for face_length calculations
