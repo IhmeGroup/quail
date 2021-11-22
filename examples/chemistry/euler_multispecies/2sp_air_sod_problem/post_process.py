@@ -13,6 +13,7 @@ mesh = solver.mesh
 physics = solver.physics
 
 fname = "Data_base_p0.pkl"
+
 solver2 = readwritedatafiles.read_data_file(fname)
 
 # Unpack
@@ -45,6 +46,7 @@ plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=num,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
 
 plot.save_figure(file_name='density', file_type='pdf', crop_level=2)
+
 #########################################################################################
 
 # ### Pressure
@@ -60,6 +62,7 @@ plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=num,
 plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
+
 plot.save_figure(file_name='pressure', file_type='pdf', crop_level=2)
 
 #########################################################################################
@@ -77,6 +80,7 @@ plot.plot_solution(mesh2, physics2, solver2, "Temperature", plot_numerical=num,
 plot.plot_solution(mesh, physics, solver, "Temperature", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
+
 plot.save_figure(file_name='temperature', file_type='pdf', crop_level=2)
 
 #########################################################################################
@@ -94,6 +98,7 @@ plot.plot_solution(mesh2, physics2, solver2, "SpecificHeatRatio", plot_numerical
 plot.plot_solution(mesh, physics, solver, "SpecificHeatRatio", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
+
 plot.save_figure(file_name='gamma', file_type='pdf', crop_level=2)
 
 #########################################################################################

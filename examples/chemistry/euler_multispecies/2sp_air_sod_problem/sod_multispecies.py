@@ -10,6 +10,7 @@ TimeStepping = {
     "TimeStepSize" : 1e-5,
 #    "CFL" : 0.05,
     "TimeStepper" : "ADER",
+    "TimeStepper" : "SSPRK3",
 }
 
 

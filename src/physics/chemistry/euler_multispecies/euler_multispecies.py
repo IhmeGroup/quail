@@ -9,7 +9,10 @@
 from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
+<<<<<<< HEAD
 import ctypes
+=======
+>>>>>>> 254cbf23238f8a83b43c636438b98912d1eb9267
 
 from external.optional_cantera import ct
 
@@ -36,7 +39,6 @@ from physics.chemistry.euler_multispecies.functions import FcnType as \
 
 from external.optional_thermo import thermo_tools
 
-# import physics.chemistry.euler_multispecies.tools as thermo_tools
 # from physics.chemistry.euler_multispecies.functions import SourceType as \
 # 		euler_mult_source_type
 # from physics.chemistry.euler_multispecies.functions import ConvNumFluxType as \
@@ -131,6 +133,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 
 	def set_physical_params(self):
 		gas = ct.Solution(self.CANTERA_FILENAME)
+		# Save object to physics class before calculating inflow props
 		self.gas = gas
 
 	class AdditionalVariables(Enum):
@@ -260,7 +263,5 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		F[:, :, irhoE, 0] = H * u
 		F[:, :, irhoYO2, 0] = rhou*rhoYO2/rho
 		F[:, :, irhoYN2, 0] = rhou*rhoYN2/rho
-
-		# import code; code.interact(local=locals())
 
 		return F, (u2, rho, p)

@@ -56,10 +56,8 @@ def get_W_from_Y(Wi, Y):
 	Wi1 = 1./Wi
 	return 1./np.dot(Wi1, Y)
 
-
 def get_T_from_rhop(rho, P, W):
 	return P / (rho * GAS_CONSTANT/W)
-
 
 def get_gamma(cv, W):
 	return (cv + GAS_CONSTANT / W) / cv;
@@ -130,7 +128,3 @@ def get_maxwavespeed(physics, Uq):
 
 	return np.linalg.norm(mom, axis=2, keepdims=True) / rho \
 			+ np.sqrt(gamma * P / rho)
-
-
-
-
