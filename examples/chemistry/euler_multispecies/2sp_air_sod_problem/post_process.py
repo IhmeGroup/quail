@@ -2,7 +2,7 @@ import processing.post as post
 import processing.plot as plot
 import processing.readwritedatafiles as readwritedatafiles
 import numpy as np
-import cantera as ct
+from external.optional_cantera import ct
 
 # Read data file
 fname = "Data_final.pkl"
@@ -13,7 +13,6 @@ mesh = solver.mesh
 physics = solver.physics
 
 fname = "Data_base_p0.pkl"
-print(fname)
 solver2 = readwritedatafiles.read_data_file(fname)
 
 # Unpack
@@ -45,6 +44,7 @@ plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=num,
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
 
+plot.save_figure(file_name='density', file_type='pdf', crop_level=2)
 #########################################################################################
 
 # ### Pressure
@@ -60,6 +60,8 @@ plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=num,
 plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
+plot.save_figure(file_name='pressure', file_type='pdf', crop_level=2)
+
 #########################################################################################
 
 ## ### Temperature
@@ -75,6 +77,7 @@ plot.plot_solution(mesh2, physics2, solver2, "Temperature", plot_numerical=num,
 plot.plot_solution(mesh, physics, solver, "Temperature", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
+plot.save_figure(file_name='temperature', file_type='pdf', crop_level=2)
 
 #########################################################################################
 
@@ -91,6 +94,7 @@ plot.plot_solution(mesh2, physics2, solver2, "SpecificHeatRatio", plot_numerical
 plot.plot_solution(mesh, physics, solver, "SpecificHeatRatio", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
+plot.save_figure(file_name='gamma', file_type='pdf', crop_level=2)
 
 #########################################################################################
 ## Velocity 

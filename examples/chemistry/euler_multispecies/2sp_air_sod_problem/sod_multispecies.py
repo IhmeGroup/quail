@@ -9,19 +9,20 @@ TimeStepping = {
     "FinalTime" : FinalTime,
     "TimeStepSize" : 1e-5,
 #    "CFL" : 0.05,
-    "TimeStepper" : "SSPRK3",
+    "TimeStepper" : "ADER",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 0,
+    "SolutionOrder" : 1,
     "SolutionBasis" : "LagrangeSeg",
-    "Solver" : "DG",
-#    "ApplyLimiters" : "PositivityPreserving",
+    "Solver" : "ADERDG",
+    "ArtificialViscosity" : True,
+    "AVParameter" : 100,
 }
 
 Output = {
-    "AutoPostProcess" : True,
+    "AutoPostProcess" : False,
     "Prefix" : "Data",
 #    "WriteInterval" : 2,
     "WriteInitialSolution" : True,

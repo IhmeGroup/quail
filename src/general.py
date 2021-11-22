@@ -31,6 +31,15 @@ eps = 1.e-15
 
 
 '''
+--------------------------
+External Library Locations
+--------------------------
+'''
+cantera_lib = '/home/ihme/bornhoft/utilities/\
+quail_cantera_interface/build/libcombustor.so'
+
+
+'''
 -------------
 General enums
 -------------
