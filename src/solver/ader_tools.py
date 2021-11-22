@@ -935,3 +935,100 @@ def ref_to_phys_time(mesh, time, dt, tref, basis=None):
     tphys = (time/2.)*(1. - tref) + (time + dt)/2.*(1. + tref)
 
     return tphys, basis
+
+
+def calculate_artificial_viscosity_integral(physics, elem_helpers, elem_helpers_st, Uc, av_param, p):
+	'''
+	Calculates the artificial viscosity volume integral, given in:
+		Hartmann, R. and Leicht, T, "Higher order and adaptive DG methods for
+		compressible flows", p. 92, 2013.
+
+	Inputs:
+	-------
+		physics: physics object
+		elem_helpers: helpers defined in ElemHelpers
+		Uc: state coefficients of each element
+		av_param: artificial viscosity parameter
+		p: solution basis order
+
+	Outputs:
+	--------
+		res_elem: artificial viscosity residual array for all elements
+		[ne, nb, ns]
+	'''
+	# Unpack
+	quad_wts_st = elem_helpers_st.quad_wts # [nq_st, 1]
+	basis_ref_grad_st  = elem_helpers_st.basis_ref_grad
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+			# [ne, nq, nb, dim]
+	ijac_elems = elem_helpers.ijac_elems
+	basis_val_st = elem_helpers_st.basis_val # [nq, nb]
+	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
+	vol_elems = elem_helpers.vol_elems # [ne]
+
+	nq_t = elem_helpers_st.nq_tile_constant
+	ndims = basis_phys_grad_elems.shape[3]
+	
+	# Evaluate solution at quadrature points
+	Uq = helpers.evaluate_state(Uc, basis_val_st)
+	
+	# Evaluate solution gradient at quadrature points
+	gUq_ref = helpers.evaluate_gradient(Uc, 
+		basis_ref_grad_st[:, : , :-1])
+
+	ijac_elems_st = np.tile(ijac_elems, (1, nq_t, 1, 1))
+	gUq = helpers.ref_to_phys_grad(ijac_elems_st, gUq_ref)
+
+	# Compute pressure
+	pressure = physics.compute_additional_variable("Pressure", Uq,
+			flag_non_physical=False)[:, :, 0]
+	# For Euler equations, use pressure as the smoothness variable
+	if physics.PHYSICS_TYPE == general.PhysicsType.Euler:
+		# Compute pressure gradient
+		grad_p = physics.compute_pressure_gradient(Uq, gUq)
+		# Compute its magnitude
+		norm_grad_p = np.linalg.norm(grad_p, axis = 2)
+		# Calculate smoothness switch
+		f = norm_grad_p / (pressure + 1e-12)
+	# For everything else, use the first solution variable
+	else:
+		U0 = Uq[:, :, 0]
+		grad_U0 = gUq[:, :, 0]
+		norm_grad_U0 = np.linalg.norm(grad_U0, axis = 2)
+		# Calculate smoothness switch
+		f =  norm_grad_U0 / (U0 + 1e-12)
+
+	# Compute s_k
+	s = np.zeros((Uc.shape[0], ndims))
+
+	# Loop over dimensions
+	for k in range(ndims):
+		# Loop over number of faces per element
+		for i in range(elem_helpers.normals_elems.shape[1]):
+			# Integrate normals
+			s[:, k] += np.einsum('jx, ij -> i', elem_helpers.face_quad_wts,
+					np.abs(elem_helpers.normals_elems[:, i, :, k]))
+		s[:, k] = 2 * vol_elems / s[:, k]
+	# Compute h_k (the length scale in the kth direction)
+	h = np.empty_like(s)
+	# Loop over dimensions
+	for k in range(ndims):
+		h[:, k] = s[:, k] * (vol_elems / np.prod(s, axis=1))**(1/3)
+	# Scale with polynomial order
+	h_tilde = h / (p + 1)
+	# Compute dissipation scaling
+	epsilon = av_param *  np.einsum('ij, il -> ijl', f, h_tilde**3)
+	# Calculate integral, with state coeffs factored out
+	djac_elems_st = np.tile(djac_elems, (nq_t, 1))
+	# djac_elems_st = np.tile(djac_elems, [1, quad_wts.shape[0], 1])
+	ijac_elems_st = np.tile(ijac_elems, (1, nq_t, 1, 1))
+	basis_phys_grad_elems_st = np.einsum('ijdl, jpd -> ijpl', ijac_elems_st, basis_ref_grad_st)
+	basis_phys_tile = np.tile(basis_phys_grad_elems, [1, nq_t, 1, 1])
+	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
+				basis_phys_grad_elems_st, basis_phys_tile, quad_wts_st,
+				djac_elems_st)
+
+	# Calculate residual
+	res_elem = np.einsum('ipn, ipk -> ink', integral, Uc)
+
+	return res_elem # [ne, nb, ns]
