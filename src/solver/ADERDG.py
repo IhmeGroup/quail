@@ -585,6 +585,13 @@ class ADERDG(base.SolverBase):
 			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, elem_helpers_st, Sq) # [ne, nb, ns]
 
+
+		# Add artificial viscosity term
+		if self.params["ArtificialViscosity"]:
+			av_param = self.params["AVParameter"]
+			res_elem -= solver_tools.calculate_artificial_viscosity_integral(
+					physics, elem_helpers, elem_helpers_st, Uc, av_param, self.order)
+
 		return res_elem # [ne, nb, ns]
 
 	def get_interior_face_residual(self, faceL_IDs, faceR_IDs, UcL, UcR):
