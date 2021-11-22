@@ -1,18 +1,12 @@
 import numpy as np
 from external.optional_cantera import ct
-import ctypes
-
-import general
 
 GAS_CONSTANT = 8.3144621000e3 # [J / (K kmole)]
-
-LIB = ctypes.cdll.LoadLibrary(general.cantera_lib)
-
 
 def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 
 	if physics.gas is None:
-		physics.gas = ct.Solution(physics.CANTERA_FILENAME)
+		physics.gas = ct.Solution('air_test.yaml')
 
 	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
 
@@ -25,8 +19,10 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	# Get YN2
 	YN2 = Uq[irhoYN2] / Uq[irho]
 
+	# gas_elem = physics.gas_elems[elem_ID, quad_ID]
 	physics.gas.UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
+	# physics.gas_elems[elem_ID, quad_ID].UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
 def set_state_from_primitives(physics, rho, P, u, Y):
 	
@@ -51,71 +47,52 @@ def set_state_from_primitives(physics, rho, P, u, Y):
 
 	return U
 
-
 def get_W_from_Y(Wi, Y):
 	Wi1 = 1./Wi
 	return 1./np.dot(Wi1, Y)
 
-
 def get_T_from_rhop(rho, P, W):
 	return P / (rho * GAS_CONSTANT/W)
-
 
 def get_gamma(cv, W):
 	return (cv + GAS_CONSTANT / W) / cv;
 
 def get_pressure(physics, Uq):
+	gas_elems = physics.gas_elems
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
-	ns = Uq.shape[-1]
-
-	filename = physics.c_cantera_file()
 
 	P = np.zeros([ne, nq, 1])
-	LIB.get_pressure(
-		ctypes.c_void_p(Uq.ctypes.data), 
-		ctypes.c_void_p(P.ctypes.data),
-		ctypes.c_int(ne), 
-		ctypes.c_int(nq), 
-		ctypes.c_int(ns),
-		physics.c_cantera_file()
-		)
+	for ie in range(ne):
+		for iq in range(nq):
+			set_state_from_conservatives(physics, ie, iq, Uq[ie, iq])
+			P[ie, iq] = physics.gas.P
 	return P
 
-
 def get_temperature(physics, Uq):
+	gas_elems = physics.gas_elems
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
-	ns = Uq.shape[-1]
 
 	T = np.zeros([ne, nq, 1])
-	LIB.get_temperature(
-		ctypes.c_void_p(Uq.ctypes.data), 
-		ctypes.c_void_p(T.ctypes.data),
-		ctypes.c_int(ne), 
-		ctypes.c_int(nq), 
-		ctypes.c_int(ns),
-		physics.c_cantera_file()
-			)
+	for ie in range(ne):
+		for iq in range(nq):
+			set_state_from_conservatives(physics, ie, iq, Uq[ie, iq])
+			T[ie, iq] = physics.gas.T
 	return T
 
-
 def get_specificheatratio(physics, Uq):
+	gas_elems = physics.gas_elems
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
-	ns = Uq.shape[-1]
 
 	gamma = np.zeros([ne, nq, 1])
-	LIB.get_specificheatratio(
-		ctypes.c_void_p(Uq.ctypes.data), 
-		ctypes.c_void_p(gamma.ctypes.data),
-		ctypes.c_int(ne), 
-		ctypes.c_int(nq), 
-		ctypes.c_int(ns),
-		physics.c_cantera_file()
-			)
+	for ie in range(ne):
+		for iq in range(nq):
+			set_state_from_conservatives(physics, ie, iq, Uq[ie, iq])
+			gamma[ie, iq] = physics.gas.cp / \
+				physics.gas.cv
 	return gamma
-
 
 def get_maxwavespeed(physics, Uq):
 
@@ -130,7 +107,3 @@ def get_maxwavespeed(physics, Uq):
 
 	return np.linalg.norm(mom, axis=2, keepdims=True) / rho \
 			+ np.sqrt(gamma * P / rho)
-
-
-
-

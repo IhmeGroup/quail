@@ -9,6 +9,7 @@
 from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
+import ctypes
 
 from external.optional_cantera import ct
 
@@ -32,7 +33,10 @@ from physics.euler.functions import SourceType as euler_source_type
 import physics.chemistry.euler_multispecies.functions as euler_mult_fcns
 from physics.chemistry.euler_multispecies.functions import FcnType as \
 		euler_mult_fcn_type
-import physics.chemistry.euler_multispecies.tools as thermo_tools
+
+from external.optional_thermo import thermo_tools
+
+# import physics.chemistry.euler_multispecies.tools as thermo_tools
 # from physics.chemistry.euler_multispecies.functions import SourceType as \
 # 		euler_mult_source_type
 # from physics.chemistry.euler_multispecies.functions import ConvNumFluxType as \
@@ -74,6 +78,9 @@ class EulerMultispecies(base.PhysicsBase):
 	def set_physical_params(self):
 		pass
 
+	def c_cantera_file(self):
+		return ctypes.c_char_p(self.CANTERA_FILENAME.encode('utf-8'))
+
 
 class EulerMultispecies1D_2sp_air(EulerMultispecies):
 	'''
@@ -87,7 +94,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 	NUM_SPECIES  = 2
 	NDIMS = 1
 	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies_2sp_air
-
+	CANTERA_FILENAME = "air_test.xml"
 
 	def set_maps(self):
 		super().set_maps()
@@ -123,8 +130,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		rhoYN2 = "\\rho Y_{N2}"
 
 	def set_physical_params(self):
-	# 	# Save object to physics class before calculating inflow props
-		gas = ct.Solution('air_test.yaml')
+		gas = ct.Solution(self.CANTERA_FILENAME)
 		self.gas = gas
 
 	class AdditionalVariables(Enum):

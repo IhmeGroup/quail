@@ -9,13 +9,14 @@
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
-import cantera as ct
+from external.optional_cantera import ct
 from scipy.optimize import fsolve, root
 
 from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
         SourceBase, ConvNumFluxBase)
+from external.optional_thermo import thermo_tools
 
-import physics.chemistry.euler_multispecies.tools as thermo_tools
+# import physics.chemistry.euler_multispecies.tools as thermo_tools
 
 class FcnType(Enum):
     SodMultispeciesAir = auto()
@@ -57,7 +58,7 @@ class SodMultispeciesAir(FcnBase):
 		# Need to reset physical params since gas objects cant be saved
 		# in pickle files
 		if physics.gas is None:
-			physics.gas = ct.Solution('air_test.yaml')		
+			physics.gas = ct.Solution(physics.CANTERA_FILENAME)		
 
 		xshock = 0.0
 
