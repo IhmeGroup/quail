@@ -9,10 +9,7 @@
 from enum import Enum
 import numpy as np
 from scipy.optimize import fsolve, root
-<<<<<<< HEAD
 import ctypes
-=======
->>>>>>> 254cbf23238f8a83b43c636438b98912d1eb9267
 
 from external.optional_cantera import ct
 
