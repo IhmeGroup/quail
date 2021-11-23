@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/physics/euler/functions.py
+#       File : src/physics/navierstokes/functions.py
 #
 #       Contains definitions of Functions, boundary conditions, and source
 #       terms for the Euler equations.
