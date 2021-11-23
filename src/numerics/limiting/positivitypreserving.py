@@ -137,7 +137,7 @@ class PositivityPreserving(base.LimiterBase):
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		# Truncate theta1; otherwise, can get noticeably different
-		# results across machines, likely due to poor conditioning in its
+		# results across machines, possibly due to poor conditioning in its
 		# calculation
 		theta1 = trunc(np.minimum(1., np.min(theta, axis=1)))
 
@@ -174,7 +174,7 @@ class PositivityPreserving(base.LimiterBase):
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p, :])
 
 		# Truncate theta2; otherwise, can get noticeably different
-		# results across machines, likely due to poor conditioning in its
+		# results across machines, possibly due to poor conditioning in its
 		# calculation
 		theta2 = trunc(np.min(theta, axis=1))
 		# Get IDs of elements that need limiting
@@ -253,7 +253,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		# Truncate theta1; otherwise, can get noticeably different
-		# results across machines, likely due to poor conditioning in its
+		# results across machines, possibly due to poor conditioning in its
 		# calculation
 		theta1 = trunc(np.minimum(1., np.min(theta, axis=1)))
 
@@ -282,7 +282,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		rhoY_elem_faces = physics.compute_variable(self.var_name3, U_elem_faces)
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
 		# Truncate theta2; otherwise, can get noticeably different
-		# results across machines, likely due to poor conditioning in its
+		# results across machines, possibly due to poor conditioning in its
 		# calculation
 		theta2 = trunc(np.minimum(1., np.amin(theta, axis=1)))
 
@@ -318,7 +318,7 @@ class PositivityPreservingChem(PositivityPreserving):
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p])
 
 		# Truncate theta3; otherwise, can get noticeably different
-		# results across machines, likely due to poor conditioning in its
+		# results across machines, possibly due to poor conditioning in its
 		# calculation
 		theta3 = trunc(np.min(theta, axis=1))
 		# Get IDs of elements that need limiting
