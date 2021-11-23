@@ -140,6 +140,9 @@ def test_positivity_preserving_limiter_solution_positive_pressure():
 	# Compute mean pressure and pressure at elem and face quadrature points
 	p_elem_faces, p_bar = compute_variable(solver, Uc, "Pressure")
 
+	# Minimum pressure
+	pos_tol = positivitypreserving.POS_TOL
+
 	np.testing.assert_allclose(p_bar, p_orig_bar, rtol, atol)
-	np.testing.assert_allclose(np.amin(p_elem_faces), 0., rtol, 
+	np.testing.assert_allclose(np.amin(p_elem_faces), pos_tol, rtol, 
 			atol)

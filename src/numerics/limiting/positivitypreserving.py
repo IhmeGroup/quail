@@ -117,7 +117,10 @@ class PositivityPreserving(base.LimiterBase):
 				U_elem_faces)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
-		theta1 = np.minimum(1., np.min(theta, axis=1))
+		# Cast theta1 as float32; otherwise, can get noticeably different
+		# results across machines, likely due to poor conditioning in its
+		# calculation
+		theta1 = np.float32(np.minimum(1., np.min(theta, axis=1)))
 
 		irho = physics.get_state_index(self.var_name1)
 		# Get IDs of elements that need limiting
@@ -148,10 +151,13 @@ class PositivityPreserving(base.LimiterBase):
 		elem_IDs = negative_p_indices[0]
 		i_neg_p  = negative_p_indices[1]
 
-		theta[elem_IDs, i_neg_p] = p_bar[elem_IDs, :, 0] / (
+		theta[elem_IDs, i_neg_p] = (p_bar[elem_IDs, :, 0] - POS_TOL) / (
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p, :])
 
-		theta2 = np.min(theta, axis=1)
+		# Cast theta2 as float32; otherwise, can get noticeably different
+		# results across machines, likely due to poor conditioning in its
+		# calculation
+		theta2 = np.float32(np.min(theta, axis=1))
 		# Get IDs of elements that need limiting
 		elem_IDs = np.where(theta2 < 1.)[0]
 		# Modify coefficients
