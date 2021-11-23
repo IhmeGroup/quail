@@ -90,7 +90,7 @@ def test_legendre_massmatrix_should_be_diagonal(basis, order):
 	0, 1, 2, 3, 4, 5,
 ])
 @pytest.mark.parametrize('Basis', [
-	# Basis class representing the element geometry
+	# Basis class
 	basis_defs.LagrangeSeg, basis_defs.LagrangeQuad,
 ])
 def test_lagrange_massmatrix_should_be_symmetric(basis, order):
