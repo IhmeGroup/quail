@@ -8,11 +8,15 @@ TimeStepping = {
 }
 
 Numerics = {
-	"SolutionOrder" : 1,
+	"SolutionOrder" : 2,
 	"SolutionBasis" : "LagrangeSeg",
 	"Solver" : "DG",
 	"L2InitialCondition" : True,
 	"ApplyLimiters" : "PositivityPreserving",
+	"NodeType" : "GaussLobatto",
+	"ElementQuadrature" : "GaussLobatto",
+	"FaceQuadrature" : "GaussLobatto",
+	"ColocatedPoints" : True,
 }
 
 Output = {
@@ -23,7 +27,7 @@ Output = {
 Mesh = {
 	"File" : None,
 	"ElementShape" : "Segment",
-	"NumElemsX" : 100,
+	"NumElemsX" : 50,
 	"xmin" : 0.,
 	"xmax" : 1.,
 }

@@ -40,5 +40,5 @@ case_dirs = {
 		[[two_d, ader, diffusion], [rtol, atol]],
 	'euler/1D/sod_problem/nolimiter' : [[one_d, dg], [rtol ,atol]],
 	'euler/1D/sod_problem/wenolimiter' : [[one_d, dg], [200.0, 1e-13]],
-	'euler/1D/moving_shock' : [[one_d, dg], [200.0, 1e-13]],
+	'euler/1D/moving_shock' : [[one_d, dg], [rtol, atol]],
 	}
