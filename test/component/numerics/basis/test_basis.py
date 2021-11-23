@@ -39,6 +39,16 @@ def test_lagrange_basis_should_be_nodal(basis, order):
 	np.testing.assert_allclose(phi, expected, rtol, atol)
 
 
+def test_lagrange_grad_basis_1D():
+	order = 1
+	basis = basis_defs.LegendreSeg(order)
+	phi = basis.get_values(basis.get_nodes(order))
+
+	gphi = basis.get_grads(basis.get_nodes(order))
+	breakpoint();
+
+
+
 @pytest.mark.parametrize('order', [
 	# Order of basis
 	0, 1, 2, 3, 4, 5,
@@ -130,3 +140,4 @@ def test_lagrange_massmatrix_should_be_symmetric(basis, order):
 	expected=np.ones_like(iMM)
 
 	np.testing.assert_allclose(should_be_one, expected, 1e-12, 1e-12)
+

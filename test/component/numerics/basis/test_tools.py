@@ -6,6 +6,7 @@ sys.path.append('../src')
 import numerics.basis.basis as basis_defs
 import numerics.basis.tools as basis_tools
 import meshing.common as mesh_common
+import numerics.quadrature.segment as seg
 
 rtol = 1e-14
 atol = 1e-14
@@ -265,4 +266,22 @@ def test_get_modal_basis_tri_nodes_equal_one_p1():
 	# Get index where value should be 1.0
 	np.testing.assert_allclose(basis_val, 
 		np.identity(basis.nb), rtol, atol)
+
+
+@pytest.mark.parametrize('order', [
+	# Order of basis
+	0, 1, 2, 3, 4, 5,
+])
+def test_element_jacobian_is_one(order):
+	'''
+	Evaluates jac, djac, and ijac for the reference segment
+	'''
+	mesh = mesh_common.mesh_1D(num_elems=1, xmin=-1., xmax=1.)
+	quad_pts, _ = seg.get_quadrature_gauss_legendre(order)
+	jac, djac, ijac = basis_tools.element_jacobian(mesh, 0, quad_pts, 
+			True, True, True)
+
+	np.testing.assert_allclose(jac, np.ones_like(jac), rtol, atol)
+	np.testing.assert_allclose(djac, np.ones_like(djac), rtol, atol)
+	np.testing.assert_allclose(ijac, np.ones_like(ijac), rtol, atol)
 
