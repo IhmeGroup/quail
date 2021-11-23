@@ -129,4 +129,4 @@ def test_lagrange_massmatrix_should_be_symmetric(basis, order):
 	should_be_one = np.abs(iMM - iMM_T) + 1.0
 	expected=np.ones_like(iMM)
 
-	np.testing.assert_allclose(should_be_one, expected, 1e-13, 1e-13)
+	np.testing.assert_allclose(should_be_one, expected, 1e-12, 1e-12)
