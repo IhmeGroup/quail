@@ -88,9 +88,9 @@ def set_source_treatment(physics):
 	physics.explicit_sources = []
 	physics.implicit_sources = []
 	for source in physics.source_terms:
-		if source.source_treatment is 'Explicit':
+		if source.source_treatment == 'Explicit':
 			physics.explicit_sources.append(source)
-		elif source.source_treatment is 'Implicit':
+		elif source.source_treatment == 'Implicit':
 			physics.implicit_sources.append(source)
 
 def set_time_stepping_approach(stepper, params):
