@@ -129,9 +129,14 @@ params["RestartFile"] = params["File"] # necessary step to avoid error
 params["SolutionBasis"] = "LagrangeSeg"
 params["ElementQuadrature"] = "GaussLegendre"
 params["NodeType"] = "Equidistant"
-# params["ElementQuadrature"] = "GaussLobatto"
-# params["NodeType"] = "GaussLobatto"
-params["ColocatedPoints"] = False # True
+
+# Uncomment the following block for colocated Gauss-Lobatto scheme
+'''
+params["ElementQuadrature"] = "GaussLobatto"
+params["FaceQuadrature"] = "GaussLobatto"
+params["NodeType"] = "GaussLobatto"
+params["ColocatedPoints"] = True
+'''
 
 # Polynomial orders
 orders = range(1, 8)
