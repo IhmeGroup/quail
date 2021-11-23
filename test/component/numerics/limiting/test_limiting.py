@@ -113,8 +113,7 @@ def test_positivity_preserving_limiter_solution_positive_density():
 	pos_tol = positivitypreserving.POS_TOL
 
 	np.testing.assert_allclose(rho_bar, rho_orig_bar, rtol, atol)
-	np.testing.assert_allclose(np.amin(rho_elem_faces), pos_tol, rtol, 
-			atol)
+	assert(np.amin(rho_elem_faces) >= pos_tol - atol)
 
 
 def test_positivity_preserving_limiter_solution_positive_pressure():
@@ -144,5 +143,6 @@ def test_positivity_preserving_limiter_solution_positive_pressure():
 	pos_tol = positivitypreserving.POS_TOL
 
 	np.testing.assert_allclose(p_bar, p_orig_bar, rtol, atol)
-	np.testing.assert_allclose(np.amin(p_elem_faces), pos_tol, rtol, 
-			atol)
+	assert(np.amin(p_elem_faces) >= pos_tol - atol)
+	# np.testing.assert_allclose(np.amin(p_elem_faces), pos_tol, rtol, 
+	# 		atol)

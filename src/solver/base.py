@@ -588,7 +588,7 @@ class SolverBase(ABC):
 		# iteration is output.
 		is_final_iteration = itime == self.stepper.num_time_steps - 1
 		if not self.progress_bar or is_final_iteration:
-			print("%d: Time = %g - Time step = %g - Residual norm = %g" % (
+			print("%d: Time = %.15E - Time step = %.15E - Residual norm = %.15E" % (
 					itime + 1, t, dt, np.linalg.norm(np.reshape(res, -1),
 					ord=1)))
 
@@ -597,7 +597,7 @@ class SolverBase(ABC):
 				print("\nMin|Max at volume quadrature points:")
 				s = 0
 				for state_var in physics.StateVariables:
-					string = "    " + state_var.name + ": " + "%g | %g"
+					string = "    " + state_var.name + ": " + "%.15E | %.15E"
 					print(string % (self.min_state[s], self.max_state[s]))
 					s += 1
 
