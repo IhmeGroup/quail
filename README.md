@@ -14,6 +14,7 @@ Python 3.7 or higher is required. The following libraries should also be install
   - NumPy 1.17.4
   - Matplotlib 3.3.1
   - SciPy 1.4.1
+  - LaTeX (used for post-processing)
 
 Optional libraries:
   - pytest 6.2.4 (see `test/` directory for usage)
