@@ -20,16 +20,22 @@ In addition to these packages are the driver function (`src/quail`), user-define
 
 Interfacing with Quail is meant to be user friendly and painless. We want users to be able to add new physics, limiters, time-steppers, and more to Quail for rapid prototyping! Our primary tool to do this are [abstract base classes](https://docs.python.org/3/library/abc.html). These are parent classes that provide a basic outline of the necessary attributes that a new class in its category would need. 
 
-* Inline `export`s with expressions whenever possible
-  ```js
-  // Use this:
-  export default class ClassName {
+Let's look at a simple example of a base class:
 
-  }
-
-  // Instead of:
-  class ClassName {
-
-  }
-  export default ClassName
+  ```python
+  class ClassBase(ABC):
+    '''
+    Comments for the base class.
+    '''
+    @property
+    @abstractmethod
+    def NEEDED_PROPERTY(self):
+      '''
+      This property is needed by every instantiation of this class.
+      '''
+    @abstractmethod
+    def need_this_function(self, args**):
+      '''
+      A function that everychild class of this type needs.
+      '''
   ```
