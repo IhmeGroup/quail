@@ -13,3 +13,23 @@ Quail is a lightweight discontinuous Galerkin code written with the intention of
 * [numerics](https://github.com/IhmeGroup/quail/tree/main/src/numerics) - which contains modules for basis functions, quadrature, limiters, and time stepping.
 * [physics](https://github.com/IhmeGroup/quail/tree/main/src/physics) - which contains modules for various equation sets and related analytic functions, boundary conditions,and numerical fluxes.
 * [processing](https://github.com/IhmeGroup/quail/tree/main/src/processing) - which contains modules for plotting, post-processing, and reading and writing data files.
+
+In addition to these packages are the driver function (`src/quail`), user-defined exceptions (`src/errors.py`), default parameters for input decks (`src/defaultparams`), and a list of constants and general `Enums` (`src/general.py`).
+
+## Neat, but how do I interface with these packages?
+
+Interfacing with Quail is meant to be user friendly and painless. We want users to be able to add new physics, limiters, time-steppers, and more to Quail for rapid prototyping! Our primary tool to do this are [abstract base classes](https://docs.python.org/3/library/abc.html). These are parent classes that provide a basic outline of the necessary attributes that a new class in its category would need. 
+
+* Inline `export`s with expressions whenever possible
+  ```js
+  // Use this:
+  export default class ClassName {
+
+  }
+
+  // Instead of:
+  class ClassName {
+
+  }
+  export default ClassName
+  ```
