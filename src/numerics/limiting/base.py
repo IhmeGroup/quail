@@ -26,8 +26,6 @@ import numpy as np
 import errors
 import general
 
-import numerics.limiting.positivitypreserving as pp
-
 
 class LimiterBase(ABC):
 	'''
