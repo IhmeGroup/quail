@@ -23,9 +23,9 @@ Interfacing with Quail is meant to be user friendly and painless. We want users 
 Let's look at a simple example of a base class:
 
   ```python
-  class ClassBase(ABC):
+  class NeatFeatureBase(ABC):
     '''
-    Comments for the base class.
+    This is a base class for neat features.
     '''
     @property
     @abstractmethod
@@ -39,3 +39,61 @@ Let's look at a simple example of a base class:
       A function that everychild class of this type needs.
       '''
   ```
+We utilize `@abstractmethod` to define attributes that must be overwritten by any derived class. This ensures that the user defines the minimally required members of the class. Lets imagine that we wish add a new feature called `NeatFeature` that builds on the `NeatFeatureBase` class. 
+
+  ```python
+  class NeatFeature(NeatFeatureBase):
+    '''
+    This neat feature inherits from the NeatFeatureBase class.
+    '''
+    # We define our abstract properties
+    NEEDED_PROPERTY = "Clearly this is needed"
+    # We define our abstract methods
+    def need_this_function(self, args**):
+      '''
+      How the new feature used this function.
+      '''
+      print('This is different from before')
+  ```
+
+Our `NeatFeature` class is now compliant with the abstract base class. Other functions can be added to this class as needed but only the abstract methods are required by all classes derived from `NeatFeatureBase`.
+
+Now, assuming we have defined our class correctly, how does Quail know that it exists? This is done primarily through `Enums` located in `src/general.py`. Here, under the desired class type, the user would add their new class.
+
+An example of a defined `Enum` in `src/general.py` could look like this:
+  ```python
+  class NeatFeatureType(Enum):
+    '''
+    Enum containing available features of this type.
+    '''
+    Feature1 = auto()
+    Feature2 = auto()
+    NeatFeature = auto()
+   ```
+Lastly, the user needs to use the setter function for the feature type to take the appropriate parameter from the input deck and instantiate the corresponding class. These functions are located in the `src/<package-name>/tools.py` file and always start with `set_<name_of_instangtiated_object>`. For example, we could have a function called `set_neatfeatures` which would look like this:
+
+  ```python
+  import numerics.neatfeatures as neat_feature_defs
+  from general import NeatFeatureType
+  
+  def set_neatfeatures(params):
+	'''
+	Given the NeatFeature parameter, set the neat_feature object
+
+	Inputs:
+	-------
+		params: list of parameters from solver
+
+	Outputs:
+	--------
+	    neat_feature: instantiated neat_feature object
+	'''
+	feature_name = params["NeatFeature"]
+	if NeatFeatureType[feature_name] == NeatFeatureType.NeatFeature:
+		neat_feature = neat_feature_defs.NeatFeature()
+	else:
+		raise NotImplementedError("Feature not supported")
+	return neat_feature
+  ```
+
+    
