@@ -16,6 +16,16 @@ Quail is a lightweight discontinuous Galerkin code written with the intention of
 
 In addition to these packages are the driver function (`src/quail`), user-defined exceptions (`src/errors.py`), default parameters for input decks (`src/defaultparams`), and a list of constants and general `Enums` (`src/general.py`).
 
+## Some Video Tutorials
+We have a [YouTube channel](https://www.youtube.com/channel/UCElNsS_mm_0c6X41qVKBMew) for Quail! Why? I don't quite know, but we have one and hopefully some of these videos will be helpful to you. These include videos that will help you as a user/contributor:
+* [Get started with Quail](https://www.youtube.com/watch?v=IkobZVVkWL4)
+* [Create a cool animation](https://www.youtube.com/watch?v=-FjCX-wkX38)
+* [Construct your first input deck](https://www.youtube.com/watch?v=wf01iopPuBo)
+* [Add initial conditions and exact solutions](https://www.youtube.com/watch?v=vpGOYmVOmjk)
+* [Add a new physics class](https://www.youtube.com/watch?v=Rt3I3xj3ECg)
+* [Add boundary conditions](https://www.youtube.com/watch?v=63YqSo1TiAA)
+
+
 ## Neat, but how do I interface with these packages?
 
 Interfacing with Quail is meant to be user friendly and painless. We want users to be able to add new physics, limiters, time-steppers, and more to Quail for rapid prototyping! Our primary tool to do this are [abstract base classes](https://docs.python.org/3/library/abc.html). These are parent classes that provide a basic outline of the necessary attributes that a new class in its category would need. 
