@@ -7,7 +7,7 @@
   <a href="https://github.com/ericjching/DG_Python"><img alt="quail_logo" src="https://user-images.githubusercontent.com/55554103/99025045-c0ddb780-251c-11eb-9cdb-0bed0269b434.png" width="55%"></a>
 </p>
 
-Quail is a lightweight, open-source discontinuous Galerkin code written in Python for teaching and prototyping. Currently, Quail solves first-order nonlinear hyperbolic systems of partial differential equations.
+Quail is a lightweight, open-source discontinuous Galerkin code written in Python for teaching and prototyping. Currently, Quail solves first-order and second-order nonlinear systems of partial differential equations.
 
 ### Setup
 Python 3.7 or higher is required. The following libraries should also be installed (tested version number provided):
@@ -27,7 +27,7 @@ The above line can also be added to the appropriate file (e.g., `~/.bashrc`, `~/
 
 
 ### Using Quail 
-A suite of example 1D and 2D cases for scalar equations and the compressible Euler equations is available in the `examples` directory. For instance, to run the 2D isentropic vortex case, do the following:
+A suite of example 1D and 2D cases for scalar equations, the compressible Euler equations, the compressible Navier-Stokes equations, and chemically reacting flow is available in the `examples` directory. Also showcased are the ADERDG scheme and various stabilization methods (positivity-preserving limiter, WENO limiter, and artificial viscosity). For instance, to run the 2D isentropic vortex case, do the following:
 ```sh
 $ cd examples/euler/2D/isentropic_vortex/
 $ quail isentropic_vortex.py
