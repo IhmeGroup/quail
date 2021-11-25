@@ -9,6 +9,7 @@ The following is a set of guidelines for contributing to Quail [Ihme Group Organ
 [Getting Started](#getting-started)
   * [Video Tutorials](#some-video-tutorials)
   * [Interfaces](#neat-but-how-do-i-interface-with-quails-packages)
+
 [Style Guide](#style-guide)
 
 ## Getting Started
