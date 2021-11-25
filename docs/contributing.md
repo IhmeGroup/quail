@@ -4,6 +4,12 @@ Thanks for your interest in contributing! We are excited to have you join our te
 
 The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. Feel free to propose modifications to this document via a pull request as we value others contributions. 
 
+#### Table Of Contents
+
+[Getting Started](#getting-started)
+  * [Video Tutorials](#some-video-tutorials)
+  * [Interfaces](#neat,-but-how-do-I-interface-with-quail's-packages)
+
 ## Getting Started
 
 Quail is a lightweight discontinuous Galerkin code written with the intention of being useful for teaching and prototyping. Quail is made up of a series of Python packages. These are all located in the `src` directory. They include the following:
