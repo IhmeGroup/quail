@@ -26,7 +26,7 @@ We have a [YouTube channel](https://www.youtube.com/channel/UCElNsS_mm_0c6X41qVK
 * [Add boundary conditions](https://www.youtube.com/watch?v=63YqSo1TiAA)
 
 
-## Neat, but how do I interface with these packages?
+## Neat, but how do I interface with Quail's packages?
 
 Interfacing with Quail is meant to be user friendly and painless. We want users to be able to add new physics, limiters, time-steppers, and more to Quail for rapid prototyping! Our primary tool to do this are [abstract base classes](https://docs.python.org/3/library/abc.html). These are parent classes that provide a basic outline of the necessary attributes that a new class in its category would need. 
 
@@ -108,4 +108,12 @@ Lastly, the user needs to use the setter function for the feature type to take t
   
 These interfaces allow the user to focus on the meat of their new feature while not having too much overhead in making the feature available to the users.
 
-    
+## Style Guide
+
+#### Some general guidelines to follow are:
+* Use tabs with a length of four spaces
+* Indent continued linestwice
+* Limit lines to a maximum of 78 characters
+For more detailed guidelines, please refer to the [PEP 8 style guide for Python code](https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds), which we largely aim to follow.
+#### Commenting Style
+
