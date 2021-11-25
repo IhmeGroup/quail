@@ -12,6 +12,7 @@ The following is a set of guidelines for contributing to Quail [Ihme Group Organ
 
 [Style Guide](#style-guide)
 
+[Branch naming conventions](#branch-naming-conventions)
 ## Getting Started
 
 Quail is a lightweight discontinuous Galerkin code written with the intention of being useful for teaching and prototyping. Quail is made up of a series of Python packages. These are all located in the `src` directory. They include the following:
@@ -150,3 +151,5 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
   output name: brief description [array shape if available]
   '''
   ```
+## Branch naming conventions
+
