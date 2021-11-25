@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing! We are excited to have you join our team!
 
-The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. We don't always have the best ideas so feel free to propose modifications to this document via a pull request. 
+The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. Feel free to propose modifications to this document via a pull request as we value others contributions. 
 
 ## Getting Started
 
@@ -105,5 +105,7 @@ Lastly, the user needs to use the setter function for the feature type to take t
 		raise NotImplementedError("Feature not supported")
 	return neat_feature
   ```
+  
+These interfaces allow the user to focus on the meat of there new feature while not having too much overhead in making the feature available to the users.
 
     
