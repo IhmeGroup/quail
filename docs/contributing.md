@@ -106,6 +106,6 @@ Lastly, the user needs to use the setter function for the feature type to take t
 	return neat_feature
   ```
   
-These interfaces allow the user to focus on the meat of there new feature while not having too much overhead in making the feature available to the users.
+These interfaces allow the user to focus on the meat of their new feature while not having too much overhead in making the feature available to the users.
 
     
