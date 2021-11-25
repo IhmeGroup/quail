@@ -9,6 +9,7 @@ The following is a set of guidelines for contributing to Quail [Ihme Group Organ
 [Getting Started](#getting-started)
   * [Video Tutorials](#some-video-tutorials)
   * [Interfaces](#neat-but-how-do-i-interface-with-quails-packages)
+[Style Guide](#style-guide)
 
 ## Getting Started
 
@@ -122,4 +123,29 @@ These interfaces allow the user to focus on the meat of their new feature while 
 * Limit lines to a maximum of 78 characters
 For more detailed guidelines, please refer to the [PEP 8 style guide for Python code](https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds), which we largely aim to follow.
 #### Commenting Style
-
+* Class commenting style
+  ```python
+  ’’’
+  Class: ClassName
+  -------------------
+  This class contains information about "blank"
+  
+  Attributes:
+  -----------
+  attribute name: brief description
+  ’’’
+  ```
+* Function definitions
+  ```python
+  ’’'
+  Brief description of function
+  
+  Inputs:
+  -------
+  input name: brief description [array shape if available]
+  
+  Outputs:
+  --------
+  output name: brief description [array shape if available]
+  '''
+  ```
