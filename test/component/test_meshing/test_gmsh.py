@@ -18,7 +18,7 @@ def test_two_triangles_should_be_loaded_correctly():
 	Make sure that
 	'''
 	# Path to mesh
-	file_path = os.path.dirname(os.path.realpath(__file__)) + '/test_data/two_triangles.msh'
+	file_path = os.path.dirname(os.path.realpath(__file__)) + '/test_data/two_triangles_v4.msh'
 	# Import mesh
 	mesh = mesh_gmsh.import_gmsh_mesh(file_path)
 
