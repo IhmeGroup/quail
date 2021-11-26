@@ -13,12 +13,18 @@ import meshing.gmsh as mesh_gmsh
 rtol = 1e-15
 atol = 1e-15
 
-def test_two_triangles_should_be_loaded_correctly():
+@pytest.mark.parametrize('mesh_file_name', [
+	# Name of gmsh file
+	'two_triangles_v4.msh',
+	'two_triangles_v2.msh',
+])
+def test_two_triangles_should_be_loaded_correctly(mesh_file_name):
 	'''
 	Make sure that
 	'''
 	# Path to mesh
-	file_path = os.path.dirname(os.path.realpath(__file__)) + '/test_data/two_triangles_v4.msh'
+	file_path = (os.path.dirname(os.path.realpath(__file__)) + '/test_data/' +
+			mesh_file_name)
 	# Import mesh
 	mesh = mesh_gmsh.import_gmsh_mesh(file_path)
 
