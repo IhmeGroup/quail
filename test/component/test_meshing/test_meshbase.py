@@ -8,7 +8,6 @@ import meshing.meshbase as mesh_defs
 rtol = 1e-15
 atol = 1e-15
 
-
 def test_interior_faces_should_be_constructed_to_zero():
 	'''
 	Make sure that interior faces are initialized to zero.

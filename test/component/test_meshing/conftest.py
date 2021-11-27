@@ -53,12 +53,18 @@ class BasisMock:
 	'''
 	NFACES = 3
 	NDIMS = 2
+	CENTROID = np.array([[1/3, 1/3]])
 	# Basis values at the geometric nodes
 	basis_val = np.identity(3)
 	def get_num_basis_coeff(*args, **kwargs):
 		return 3
-	def get_basis_val_grads(*args, **kwargs):
-		pass
+	def get_basis_val_grads(self, xref, get_val=True):
+		# If there are three points, assume they're the geometric nodes
+		if xref.shape[0] == 3:
+			self.basis_val = np.identity(3)
+		# Else, assume it's the centroid
+		else:
+			self.basis_val = np.array([[1/3, 1/3, 1/3]])
 	def get_quadrature_order(*args, **kwargs):
 		return 1
 	# Use the geometric nodes as quadrature points. This works for Q1.
