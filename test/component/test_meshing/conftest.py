@@ -32,14 +32,18 @@ def filled_mesh():
 	'''
 	# Make mesh
 	filled_mesh = make_empty_mesh()
-	# Add nodes: Two triangles in a unit square from (0, 1) x (0, 1).
+	# Add nodes: Two triangles in a double unit square from (0, 2) x (0, 2).
 	filled_mesh.elem_to_node_IDs = np.array([[0, 1, 2], [3, 2, 1]])
-	filled_mesh.node_coords = np.array([[0, 0], [1, 0], [0, 1], [1, 1]])
+	filled_mesh.node_coords = np.array([[0, 0], [1, 0], [0, 1], [1, 1]]) * 2
 	filled_mesh.interior_faces = [mesh_defs.InteriorFace()]
 	filled_mesh.interior_faces[0].elemL_ID = 0
 	filled_mesh.interior_faces[0].elemR_ID = 1
 	filled_mesh.interior_faces[0].faceL_ID = 0
 	filled_mesh.interior_faces[0].faceR_ID = 0
+	filled_mesh.elements = [ElementMock(), ElementMock()]
+	for elem_ID in range(2):
+		filled_mesh.elements[elem_ID].node_coords = filled_mesh.node_coords[
+				filled_mesh.elem_to_node_IDs[elem_ID]]
 	yield filled_mesh
 
 class BasisMock:
@@ -48,5 +52,27 @@ class BasisMock:
 	triangle.
 	'''
 	NFACES = 3
-	def get_num_basis_coeff(self, order):
+	NDIMS = 2
+	# Basis values at the geometric nodes
+	basis_val = np.identity(3)
+	def get_num_basis_coeff(*args, **kwargs):
 		return 3
+	def get_basis_val_grads(*args, **kwargs):
+		pass
+	def get_quadrature_order(*args, **kwargs):
+		return 1
+	# Use the geometric nodes as quadrature points. This works for Q1.
+	def get_quadrature_data(*args, **kwargs):
+		return np.array([[0, 0], [1, 0], [0, 1]]), np.ones((3, 1))/6
+	# The bases are: 1 - x - y, x, and y. Therefore, the x derivative is
+	# -1, 1, 0, and the y derivative is -1, 0, 1.
+	def get_grads(*args, **kwargs):
+		grads = np.array([[[-1, -1], [1, 0], [0, 1]]])
+		# There are three quadrature points
+		return np.tile(grads, (3, 1, 1))
+
+class ElementMock:
+	'''
+	Class used to mock elements, just containing node coordinates.
+	'''
+	node_coords = None
