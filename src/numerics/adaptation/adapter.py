@@ -36,11 +36,11 @@ lib.adapt_mesh.argtypes = [
 		# Boundary face information
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS'),
-		# Singular vectors
-		np.ctypeslib.ndpointer(dtype=np.float64, ndim=3,
-			flags='C_CONTIGUOUS'),
-		# Singular values
+		# Eigenvalues
 		np.ctypeslib.ndpointer(dtype=np.float64, ndim=2,
+			flags='C_CONTIGUOUS'),
+		# Eigenvectors
+		np.ctypeslib.ndpointer(dtype=np.float64, ndim=3,
 			flags='C_CONTIGUOUS'),
 		# Sizes
 		POINTER(ctypes.c_int), POINTER(ctypes.c_int), POINTER(ctypes.c_int),
@@ -78,9 +78,10 @@ class Adapter:
 
 	def adapt(self):
 		# TODO
-		skip_iter = 25
-		n_adaptation_steps = 100
-		if self.solver.itime > 100: skip_iter = 300
+		skip_iter = 100
+		n_adaptation_steps = 2
+		#if self.solver.itime > 100: skip_iter = 300
+
 		if self.solver.itime % skip_iter != 0: return
 		if self.solver.itime >= skip_iter * n_adaptation_steps: return
 
@@ -121,36 +122,82 @@ class Adapter:
 		nv = vertices.shape[0]
 		basis_phys_grad_vertices = np.empty([mesh.num_elems, nv,
 			Uc_old.shape[1], ndims])
+		basis_val_vertices = np.empty([mesh.num_elems, nv,
+			Uc_old.shape[1]])
 		for elem_ID in range(mesh.num_elems):
 			# Inverse Jacobian at element vertices
 			_, _, ijac_vertices = basis_tools.element_jacobian(mesh,
 					elem_ID, vertices, get_djac=True, get_jac=True,
 					get_ijac=True)
-			# Physical gradient at element vertices
+			# Basis value and physical gradient at element vertices
 			solver.basis.get_basis_val_grads(vertices, get_ref_grad=True,
 					get_phys_grad=True, ijac=ijac_vertices)
 			basis_phys_grad_vertices[elem_ID] = solver.basis.basis_phys_grad
+			basis_val_vertices[elem_ID] = solver.basis.basis_val
 
-		# Evaluate solution gradient at element vertices
-		grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_vertices, Uc_old)
+		# Evaluate solution and its gradient at element vertices
+		Uv = np.einsum('ijn, ink -> ijk', basis_val_vertices, Uc_old)
+		grad_Uv = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_vertices, Uc_old)
 		# Get momentum gradient tensor
-		smom = solver.physics.get_momentum_slice()
-		grad_mom = grad_Uq[:, :, smom]
-		# Do a singular value decomposition
-		u_elems, sigma_elems, _ = np.linalg.svd(grad_mom)
+		#smom = solver.physics.get_momentum_slice()
+		#grad_mom = grad_Uv[:, :, smom]
+
+		# Zero out the low gradients
+		for i in range(grad_Uv.shape[1]):
+			for j in range(grad_Uv.shape[2]):
+				for k in range(grad_Uv.shape[3]):
+					grad_Uv[np.abs(grad_Uv[:, i, j, k]) < 1e-1, i, j, k] = 0
+
+		#TODO: Hack to turn this into du/dx
+		dudU = np.zeros_like(Uv)
+		dudU[:, :, 1] = 1/Uv[:, :, 0]
+		dudU[:, :, 3] = 1/Uv[:, :, 1]
+		dvdU = np.zeros_like(Uv)
+		dvdU[:, :, 2] = 1/Uv[:, :, 0]
+		dvdU[:, :, 3] = 1/Uv[:, :, 2]
+		dveldU = np.stack((dudU, dvdU), axis=2)
+		grad_u_elems = np.einsum('ijlk, ijkm -> ijlm', dveldU, grad_Uv)
+
+		# Now we have the velocity gradient tensor at the nodes of each element.
+		# However, since multiple elements can share the same node, and there
+		# must be one value at each node, the tensor will be averaged across all
+		# elements meeting at a node.
 
 		# Average across equal nodes
-		u = np.zeros((mesh.num_nodes, ndims, ndims))
-		sigma = np.zeros((mesh.num_nodes, ndims))
+		grad_u = np.zeros((mesh.num_nodes, ndims, ndims))
 		count = np.zeros(mesh.num_nodes, dtype=int)
 		for elem_ID in range(mesh.num_elems):
 			node_IDs = mesh.elem_to_node_IDs[elem_ID]
-			u[node_IDs] += u_elems[elem_ID]
-			sigma[node_IDs] += sigma_elems[elem_ID]
+			grad_u[node_IDs] += grad_u_elems[elem_ID]
 			count[node_IDs] += 1
 		# Divide by the number of elements that contributed to this node
-		u = u / count.reshape(-1, 1, 1)
-		sigma = sigma / count.reshape(-1, 1)
+		grad_u /= count.reshape(-1, 1, 1)
+
+		# Get the symmetric part
+		sym_grad_u = .5 * (grad_u + np.transpose(grad_u, axes=[0, 2, 1]))
+
+		# Do an eigen decomposition
+		eigvals, eigvecs = np.linalg.eigh(sym_grad_u)
+
+		# Order from large magnitude to small magnitude
+		for i in range(eigvals.shape[0]):
+			if np.abs(eigvals[i, 1]) > np.abs(eigvals[i, 0]):
+				temp = eigvals[i, 0].copy()
+				eigvals[i, 0] = eigvals[i, 1]
+				eigvals[i, 1] = temp
+				temp = eigvecs[i, :, 0].copy()
+				eigvecs[i, :, 0] = eigvecs[i, :, 1]
+				eigvecs[i, :, 1] = temp
+
+		# Take absolute value of eigenvalues, since their magnitude is used in
+		# the C interface
+		eigvals = np.abs(eigvals)
+
+		# Normalize eigenvectors
+		#eigvecs /= np.linalg.norm(eigvecs, axis = 1, keepdims=True)
+		breakpoint()
+		# TODO:: Hack
+		#eigvecs[:] = np.identity(2)
 
 		# Sizing
 		num_nodes = ctypes.c_int(mesh.num_nodes)
@@ -161,12 +208,13 @@ class Adapter:
 		mmgSol = MMG5_pSol()
 		# TODO: For some reason mesh.node_coords is F contiguous???
 		adapt_mesh(np.ascontiguousarray(mesh.node_coords), mesh.elem_to_node_IDs,
-				bface_info, u, sigma, byref(num_nodes), byref(num_elems),
+				bface_info, eigvals, eigvecs, byref(num_nodes), byref(num_elems),
 				byref(num_edges), byref(mmgMesh), byref(mmgSol))
 		num_nodes = num_nodes.value
 		num_elems = num_elems.value
 		num_edges = num_edges.value
 		mesh.num_interior_faces = ((num_elems * 3) - num_edges) // 2
+		breakpoint()
 
 		# Create new arrays with the sizing given by Mmg
 		mesh.node_coords = np.empty((num_nodes, mesh.ndims))
@@ -288,6 +336,11 @@ class Adapter:
 		if solver.limiters:
 			for limiter in solver.limiters:
 				limiter.precompute_helpers(solver)
+
+		# Apply limiter after adaptation. This is helpful when adapting to
+		# shocks, since the L2 projection can be oscillatory, resulting in some
+		# negative density/pressure spots
+		solver.apply_limiter(solver.state_coeffs)
 
 # Find which element contains a point
 # TODO: Only works for Q1 triangles

@@ -680,13 +680,13 @@ class SolverBase(ABC):
 			# Print info
 			self.print_info(physics, res, self.itime, t, stepper.dt)
 
+			# Perform adaptation
+			self.adapter.adapt()
+
 			# Write data file
 			if (self.itime + 1) % write_interval == 0:
 				readwritedatafiles.write_data_file(self,
 						(self.itime + 1) // write_interval)
-
-			# Perform adaptation
-			self.adapter.adapt()
 
 			self.itime += 1
 
