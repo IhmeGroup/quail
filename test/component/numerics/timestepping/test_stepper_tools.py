@@ -204,7 +204,7 @@ def test_get_dt_from_timestepsize_and_numtimesteps():
 def test_get_dt_from_timestepsize_and_numtimesteps_finalstep():
 	'''
 	Checks the change to the final time step to make sure we get the 
-	correct final time
+	correct final time of the solution
 	'''
 	solver = create_solver_object()
 	solver.params["TimeStepSize"] = 0.01
