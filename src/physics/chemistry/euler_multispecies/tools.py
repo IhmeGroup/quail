@@ -66,6 +66,7 @@ def get_pressure(physics, Uq):
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
 	ns = Uq.shape[-1]
+	nsp = physics.NUM_SPECIES
 
 	filename = physics.c_cantera_file()
 
@@ -76,6 +77,8 @@ def get_pressure(physics, Uq):
 		ctypes.c_int(ne), 
 		ctypes.c_int(nq), 
 		ctypes.c_int(ns),
+		ctypes.c_int(nsp),
+		ctypes.c_int(physics.NDIMS),
 		physics.c_cantera_file()
 		)
 	return P
@@ -85,6 +88,7 @@ def get_temperature(physics, Uq):
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
 	ns = Uq.shape[-1]
+	nsp = physics.NUM_SPECIES
 
 	T = np.zeros([ne, nq, 1])
 	LIB.get_temperature(
@@ -93,6 +97,8 @@ def get_temperature(physics, Uq):
 		ctypes.c_int(ne), 
 		ctypes.c_int(nq), 
 		ctypes.c_int(ns),
+		ctypes.c_int(nsp),
+		ctypes.c_int(physics.NDIMS),
 		physics.c_cantera_file()
 			)
 	return T
@@ -102,7 +108,8 @@ def get_specificheatratio(physics, Uq):
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
 	ns = Uq.shape[-1]
-
+	nsp = physics.NUM_SPECIES
+	
 	gamma = np.zeros([ne, nq, 1])
 	LIB.get_specificheatratio(
 		ctypes.c_void_p(Uq.ctypes.data), 
@@ -110,6 +117,8 @@ def get_specificheatratio(physics, Uq):
 		ctypes.c_int(ne), 
 		ctypes.c_int(nq), 
 		ctypes.c_int(ns),
+		ctypes.c_int(nsp),
+		ctypes.c_int(physics.NDIMS),
 		physics.c_cantera_file()
 			)
 	return gamma

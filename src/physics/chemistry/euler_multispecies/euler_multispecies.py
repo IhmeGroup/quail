@@ -60,9 +60,6 @@ class EulerMultispecies(base.PhysicsBase):
 	'''
 	def __init__(self, mesh):
 		super().__init__(mesh)
-		# self.R = 0.
-		# self.gamma = 0.
-		# self.qo = 0.
 
 	def set_maps(self):
 		super().set_maps()
@@ -80,8 +77,40 @@ class EulerMultispecies(base.PhysicsBase):
 	def c_cantera_file(self):
 		return ctypes.c_char_p(self.CANTERA_FILENAME.encode('utf-8'))
 
+class EulerMultispecies1D(EulerMultispecies):
+	'''
+	This class corresponds to 1D multispecies Euler classes.
+	'''
+	NDIMS = 1
 
-class EulerMultispecies1D_2sp_air(EulerMultispecies):
+	def get_conv_flux_interior(self, Uq):
+
+		rho = Uq[:, :, 0]
+		rhou = Uq[:, :, 1]
+		rhoE = Uq[:, :, 2]
+
+		# Get velocity
+		u = rhou / rho
+		# Get squared velocity
+		u2 = u**2
+
+		# Calculate pressure
+		p = self.compute_variable("Pressure", Uq,
+			flag_non_physical=False)[:, :, 0]
+
+		# Get total enthalpy
+		H = rhoE + p
+
+		F = np.empty(Uq.shape + (self.NDIMS,))
+		F[:, :, 0, 0] = rhou
+		F[:, :, 1, 0] = rho * u2 + p
+		F[:, :, 2, 0] = H * u
+		F[:, :, 3:, 0] = np.expand_dims(rhou/rho, axis=-1)*Uq[:, :, 3:]
+
+		return F, (u2, rho, p)
+
+
+class EulerMultispecies1D_2sp_air(EulerMultispecies1D):
 	'''
 	This class corresponds to 1D Euler equations with simple chemistry.
 	It inherits attributes and methods from the Chemistry class.
@@ -91,7 +120,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 	'''
 	NUM_STATE_VARS = 4
 	NUM_SPECIES  = 2
-	NDIMS = 1
 	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies_2sp_air
 	CANTERA_FILENAME = "air_test.xml"
 
@@ -126,7 +154,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		XMomentum = "\\rho u"
 		Energy = "\\rho E"
 		rhoYO2 = "\\rho Y_{O2}"
-		# rhoYN2 = "\\rho Y_{N2}"
 
 	def set_physical_params(self):
 		gas = ct.Solution(self.CANTERA_FILENAME)
@@ -166,17 +193,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 				if np.any(rho < 0.):
 					raise errors.NotPhysicalError
 
-			''' Nested functions for common quantities '''
-			# def get_pressure():
-				# varq = (gamma - 1.)*(rhoE - 0.5*np.sum(mom*mom, axis=2,
-				# 		keepdims=True)/rho - qo*rhoY)
-				# if flag_non_physical:
-				# 	if np.any(varq < 0.):
-				# 		raise errors.NotPhysicalError
-				# return varq
-			# def get_temperature():
-				# return get_pressure()/(rho*R)
-
 			''' Get final scalars '''
 			vname = self.AdditionalVariables[var_name].name
 			if vname is self.AdditionalVariables["Pressure"].name:
@@ -186,14 +202,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 				varq = thermo_tools.get_temperature(self, Uq)
 			elif vname is self.AdditionalVariables["SpecificHeatRatio"].name:
 				varq = thermo_tools.get_specificheatratio(self, Uq)
-			# elif vname is self.AdditionalVariables["Entropy"].name:
-				# varq = np.log(get_pressure()/rho**gamma)
-			# elif vname is self.AdditionalVariables["InternalEnergy"].name:
-				# varq = rhoE - 0.5*np.sum(mom*mom, axis=2, keepdims=True)/rho
-			# elif vname is self.AdditionalVariables["TotalEnthalpy"].name:
-				# varq = (rhoE + get_pressure())/rho
-			# elif vname is self.AdditionalVariables["SoundSpeed"].name:
-				# varq = np.sqrt(gamma*get_pressure()/rho)
 			elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
 				varq = thermo_tools.get_maxwavespeed(self, Uq)
 			elif vname is self.AdditionalVariables["MassFractionO2"].name:
@@ -208,13 +216,11 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 
 			return varq
 
-
 	def get_state_indices(self):
 		irho = self.get_state_index("Density")
 		irhou = self.get_state_index("XMomentum")
 		irhoE = self.get_state_index("Energy")
 		irhoYO2 = self.get_state_index("rhoYO2")
-		# irhoYN2 = self.get_state_index("rhoYN2")
 
 		return irho, irhou, irhoE, irhoYO2
 
@@ -223,7 +229,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		srhou = self.get_state_slice("XMomentum")
 		srhoE = self.get_state_slice("Energy")
 		srhoYO2 = self.get_state_slice("rhoYO2")
-		# srhoYN2 = self.get_state_slice("rhoYN2")
 
 		return srho, srhou, srhoE, srhoYO2
 
@@ -232,33 +237,3 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		smom = slice(irhou, irhou+1)
 
 		return smom
-
-	def get_conv_flux_interior(self, Uq):
-
-		irho, irhou, irhoE, irhoYO2 = self.get_state_indices()
-		rho = Uq[:, :, irho]
-		rhou = Uq[:, :, irhou]
-		rhoE = Uq[:, :, irhoE]
-		rhoYO2 = Uq[:, :, irhoYO2]
-		# rhoYN2 = Uq[:, :, irhoYN2]
-
-		# Get velocity
-		u = rhou / rho
-		# Get squared velocity
-		u2 = u**2
-
-		# Calculate pressure
-		p = self.compute_variable("Pressure", Uq,
-			flag_non_physical=False)[:, :, 0]
-
-		# Get total enthalpy
-		H = rhoE + p
-
-		F = np.empty(Uq.shape + (self.NDIMS,))
-		F[:, :, irho, 0] = rhou
-		F[:, :, irhou, 0] = rho * u2 + p
-		F[:, :, irhoE, 0] = H * u
-		F[:, :, irhoYO2, 0] = rhou*rhoYO2/rho
-		# F[:, :, irhoYN2, 0] = rhou*rhoYN2/rho
-
-		return F, (u2, rho, p)
