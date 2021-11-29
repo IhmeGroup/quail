@@ -7,19 +7,20 @@ NumTimeSteps = 1500
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "TimeStepSize" : 1e-5,
+    "TimeStepSize" : 1.0e-5,
 #    "CFL" : 0.05,
-    "TimeStepper" : "ADER",
+#    "TimeStepper" : "ADER",
     "TimeStepper" : "SSPRK3",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 1,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-    "Solver" : "ADERDG",
+    "Solver" : "DG",
     "ArtificialViscosity" : True,
-    "AVParameter" : 100,
+    "AVParameter" : 1000,
+    "PredictorThreshold" : 1e-10,
 }
 
 Output = {

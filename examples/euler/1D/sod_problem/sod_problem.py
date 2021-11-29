@@ -9,30 +9,34 @@ TimeStepping = {
     "FinalTime" : FinalTime,
     "TimeStepSize" : 1e-5,
 #    "CFL" : 0.05,
-    "TimeStepper" : "SSPRK3",
+    "TimeStepper" : "ADER",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 0,
+    "SolutionOrder" : 3,
     "SolutionBasis" : "LagrangeSeg",
-    "Solver" : "DG",
-    "ApplyLimiters" : "PositivityPreserving",
+    "Solver" : "ADERDG",
+#    "ApplyLimiters" : "PositivityPreserving",
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
+    "ArtificialViscosity" : True,
+    "AVParameter" : 1000,
+    "PredictorThreshold" : 1e-9,
+
 }
 
 Output = {
-    "AutoPostProcess" : True,
+    "AutoPostProcess" : False,
     "Prefix" : "Data",
-    "WriteInterval" : 500
+#    "WriteInterval" : 500
 }
 
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 200,
+    "NumElemsX" : 100,
     "xmin" : -10.,
     "xmax" : 10.,
 }
@@ -41,7 +45,7 @@ Mesh = {
 Physics = {
     "Type" : "Euler",
     "ConvFluxNumerical" : "LaxFriedrichs",
-    #"GasConstant" :  289.036442535717,
+    #"GasConstant" :  189.036442535717,
     "SpecificHeatRatio" : 1.4,
 }
 
