@@ -89,7 +89,7 @@ An example of a defined `Enum` in `src/general.py` could look like this:
     Feature2 = auto()
     NeatFeature = auto()
    ```
-Lastly, the user needs to use the setter function for the feature type to take the appropriate parameter from the input deck and instantiate the corresponding class. These functions are located in the `src/<package-name>/tools.py` file and always start with `set_<name_of_instangtiated_object>`. For example, we could have a function called `set_neatfeatures` which would look like this:
+Lastly, the user needs to use the setter function for the feature type to take the appropriate parameter from the input deck and instantiate the corresponding class. These functions are located in the `src/<package-name>/tools.py` file and always start with `set_<name_of_instantiated_object>`. For example, we could have a function called `set_neatfeatures` which would look like this:
 
   ```python
   import numerics.neatfeatures as neat_feature_defs
