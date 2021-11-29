@@ -170,4 +170,3 @@ There are multiple branch types that are standard in Quail. These include the fo
 * `test`: branches used for the specific addition of unit tests (tests can also be added throughout feature dev in the appropriate branch).
 * `case`: branches that specifically create new cases for Quail to solve. These can incorporate more case specific ICs, BCs, and exact solutions.
 * `docs`: branches that specifically modify documentation.
-
