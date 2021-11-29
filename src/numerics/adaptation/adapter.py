@@ -70,6 +70,20 @@ lib.get_results.argtypes = [
 			flags='C_CONTIGUOUS')]
 get_results = lib.get_results
 
+# -- search_mesh -- #
+lib.search_mesh.restype = ctypes.c_int
+lib.search_mesh.argtypes = [
+		# Point
+		np.ctypeslib.ndpointer(dtype=np.float64, ndim=1,
+			flags='C_CONTIGUOUS'),
+		# Node coords
+		np.ctypeslib.ndpointer(dtype=np.float64, ndim=3,
+			flags='C_CONTIGUOUS'),
+		# Number of elements
+		ctypes.c_int,
+		]
+search_mesh = lib.search_mesh
+
 
 class Adapter:
 
@@ -206,7 +220,6 @@ class Adapter:
 		eigvals = np.abs(grad_p)
 		eigvecs[:, :, 0] = grad_p / np.linalg.norm(grad_p, axis=1, keepdims=True)
 		eigvecs[:, :, 1] = grad_p / np.linalg.norm(grad_p, axis=1, keepdims=True) @ np.array([[0, 1], [-1, 0]])
-		breakpoint()
 
 		# Sizing
 		num_nodes = ctypes.c_int(mesh.num_nodes)
@@ -223,7 +236,6 @@ class Adapter:
 		num_elems = num_elems.value
 		num_edges = num_edges.value
 		mesh.num_interior_faces = ((num_elems * 3) - num_edges) // 2
-		breakpoint()
 
 		# Create new arrays with the sizing given by Mmg
 		mesh.node_coords = np.empty((num_nodes, mesh.ndims))
@@ -302,7 +314,7 @@ class Adapter:
 				# have contained this point
 				search_time = time.time()
 				old_elem_ID = get_elem_containing_point(quad_pt_phys[0],
-						elem_node_coords_old, old_mesh_elements)
+						elem_node_coords_old)
 				search_time_total += time.time() - search_time
 				# Newton-solve to back out the point in reference space which
 				# corresponds to this point in physical space on the old element
@@ -351,9 +363,19 @@ class Adapter:
 		# negative density/pressure spots
 		solver.apply_limiter(solver.state_coeffs)
 
-# Find which element contains a point
+# Find which element contains a point, in C++
 # TODO: Only works for Q1 triangles
-def get_elem_containing_point(p, elem_node_coords, elements):
+def get_elem_containing_point(p, elem_node_coords):
+	elem_ID = search_mesh(p, elem_node_coords, elem_node_coords.shape[0])
+	# Search mesh
+	if elem_ID == -1:
+		print(f"No elements contain point {p}!")
+	else:
+		return elem_ID
+
+# Find which element contains a point, in Python
+# TODO: Only works for Q1 triangles
+def get_elem_containing_point_python(p, elem_node_coords, elements):
 	result = None
 	# Loop over elements
 	for elem_ID, (v1, v2, v3) in enumerate(elem_node_coords):
@@ -416,7 +438,6 @@ def get_elem_containing_point_directional(p, elem_node_coords, elements):
 	if result is None:
 		print()
 		print(f"No elements contain point {p}!")
-		breakpoint()
 	else:
 		return elem_ID
 

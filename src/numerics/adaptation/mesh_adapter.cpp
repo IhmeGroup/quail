@@ -285,4 +285,36 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
                    MMG5_ARG_end);
 }
 
+double edge_sign(double* p1, double* p2, double* p3) {
+    return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1]);
+}
+
+// Check if a point p is inside a triangle given by vertices v1, v2, v3
+bool point_in_triangle(double* p, double* v1, double* v2, double* v3) {
+    auto d1 = edge_sign(p, v1, v2);
+    auto d2 = edge_sign(p, v2, v3);
+    auto d3 = edge_sign(p, v3, v1);
+
+    auto has_neg = (d1 < 0) or (d2 < 0) or (d3 < 0);
+    auto has_pos = (d1 > 0) or (d2 > 0) or (d3 > 0);
+
+    return not (has_neg and has_pos);
+}
+
+int search_mesh(double* p, double* node_coords, int num_elems) {
+    int elem_ID_found = -1;
+    // Loop over elements
+    for (int elem_ID = 0; elem_ID < num_elems; elem_ID++) {
+        auto v1 = node_coords + elem_ID*6;
+        auto v2 = node_coords + elem_ID*6 + 2;
+        auto v3 = node_coords + elem_ID*6 + 4;
+        if (point_in_triangle(p, v1, v2, v3)) {
+            elem_ID_found = elem_ID;
+            break;
+        }
+    }
+    return elem_ID_found;
+}
+
+
 }
