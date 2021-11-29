@@ -143,7 +143,7 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
   ```
 * Function definitions
   ```python
-  def function_name(arg1, arg2, etc...):
+  def function_name(**args):
   	'''
   	Brief description of function
   
