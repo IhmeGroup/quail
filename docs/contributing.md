@@ -127,18 +127,23 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
 #### Commenting Style
 * Class commenting style
   ```python
+  class ClassName():
   ’’’
-  Class: ClassName
-  -------------------
-  This class contains information about "blank"
+  Brief description of the class
   
   Attributes:
   -----------
   attribute name: brief description
+  
+  Abstract Methods:
+  -----------------
+  abstract_method_name
+  	description of the abstract method
   ’’’
   ```
 * Function definitions
   ```python
+  def function_name(arg1, arg2, etc...):
   ’’'
   Brief description of function
   
@@ -149,7 +154,20 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
   Outputs:
   --------
   output name: brief description [array shape if available]
+  
+  Notes:
+  ------
+  additional notes and comments can be added here if needed
   '''
   ```
 ## Branch naming conventions
+
+Quail uses the following branch naming conventions:
+`<branch_type_name>/<branch_name>`
+There are multiple branch types that are standard in Quail. These include the following:
+* `bug`: these branches are designed for identifying, isolating, and fixing bugs that may exist throughout Quail. 
+* `feature`: these branches are designed for the addition of new features.
+* `test`: branches used for the specific addition of unit tests (tests can also be added throughout feature dev in the appropriate branch).
+* `case`: branches that specifically create new cases for Quail to solve. These can incorporate more case specific ICs, BCs, and exact solutions.
+* `docs`: branches that specifically modify documentation.
 
