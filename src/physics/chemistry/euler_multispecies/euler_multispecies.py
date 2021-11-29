@@ -89,7 +89,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 
 	Additional methods and attributes are commented below.
 	'''
-	NUM_STATE_VARS = 5
+	NUM_STATE_VARS = 4
 	NUM_SPECIES  = 2
 	NDIMS = 1
 	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies_2sp_air
@@ -126,7 +126,7 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		XMomentum = "\\rho u"
 		Energy = "\\rho E"
 		rhoYO2 = "\\rho Y_{O2}"
-		rhoYN2 = "\\rho Y_{N2}"
+		# rhoYN2 = "\\rho Y_{N2}"
 
 	def set_physical_params(self):
 		gas = ct.Solution(self.CANTERA_FILENAME)
@@ -152,14 +152,14 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 			# srhoY = self.get_state_slice("Mixture")
 			smom = self.get_momentum_slice()
 			srhoYO2 = self.get_state_slice("rhoYO2")
-			srhoYN2 = self.get_state_slice("rhoYN2")
+			# srhoYN2 = self.get_state_slice("rhoYN2")
 
 			rho = Uq[:, :, srho]
 			rhoE = Uq[:, :, srhoE]
 			mom = Uq[:, :, smom]
 			rhoYO2 = Uq[:, :, srhoYO2]
-			rhoYN2 = Uq[:, :, srhoYN2]
-
+			# rhoYN2 = Uq[:, :, srhoYN2]
+			rhoYN2 = rho * (1.0 - rhoYO2 / rho)
 
 			''' Flag non-physical state '''
 			if flag_non_physical:
@@ -214,18 +214,18 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		irhou = self.get_state_index("XMomentum")
 		irhoE = self.get_state_index("Energy")
 		irhoYO2 = self.get_state_index("rhoYO2")
-		irhoYN2 = self.get_state_index("rhoYN2")
+		# irhoYN2 = self.get_state_index("rhoYN2")
 
-		return irho, irhou, irhoE, irhoYO2, irhoYN2
+		return irho, irhou, irhoE, irhoYO2
 
 	def get_state_slices(self):
 		srho = self.get_state_slice("Density")
 		srhou = self.get_state_slice("XMomentum")
 		srhoE = self.get_state_slice("Energy")
 		srhoYO2 = self.get_state_slice("rhoYO2")
-		srhoYN2 = self.get_state_slice("rhoYN2")
+		# srhoYN2 = self.get_state_slice("rhoYN2")
 
-		return srho, srhou, srhoE, srhoYO2, srhoYN2
+		return srho, srhou, srhoE, srhoYO2
 
 	def get_momentum_slice(self):
 		irhou = self.get_state_index("XMomentum")
@@ -235,12 +235,12 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 
 	def get_conv_flux_interior(self, Uq):
 
-		irho, irhou, irhoE, irhoYO2, irhoYN2 = self.get_state_indices()
+		irho, irhou, irhoE, irhoYO2 = self.get_state_indices()
 		rho = Uq[:, :, irho]
 		rhou = Uq[:, :, irhou]
 		rhoE = Uq[:, :, irhoE]
 		rhoYO2 = Uq[:, :, irhoYO2]
-		rhoYN2 = Uq[:, :, irhoYN2]
+		# rhoYN2 = Uq[:, :, irhoYN2]
 
 		# Get velocity
 		u = rhou / rho
@@ -259,6 +259,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies):
 		F[:, :, irhou, 0] = rho * u2 + p
 		F[:, :, irhoE, 0] = H * u
 		F[:, :, irhoYO2, 0] = rhou*rhoYO2/rho
-		F[:, :, irhoYN2, 0] = rhou*rhoYN2/rho
+		# F[:, :, irhoYN2, 0] = rhou*rhoYN2/rho
 
 		return F, (u2, rho, p)

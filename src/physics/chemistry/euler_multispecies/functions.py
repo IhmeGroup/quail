@@ -62,7 +62,7 @@ class SodMultispeciesAir(FcnBase):
 
 		xshock = 0.0
 
-		srho, srhou, srhoE, srhoYO2, srhoYN2 = physics.get_state_slices()
+		srho, srhou, srhoE, srhoYO2 = physics.get_state_slices()
 
 		#gamma = physics.gamma
 		''' Pre-shock state '''
@@ -102,7 +102,7 @@ class SodMultispeciesAir(FcnBase):
 			Uq[elem_ID, iright, srhoYO2] = stateR[srhoYO2]
 			Uq[elem_ID, ileft, srhoYO2] = stateL[srhoYO2]	
 			# YN2
-			Uq[elem_ID, iright, srhoYN2] = stateR[srhoYN2]
-			Uq[elem_ID, ileft, srhoYN2] = stateL[srhoYN2]		
+			# Uq[elem_ID, iright, srhoYN2] = stateR[srhoYN2]
+			# Uq[elem_ID, ileft, srhoYN2] = stateL[srhoYN2]		
 
 		return Uq # [ne, nq, ns]

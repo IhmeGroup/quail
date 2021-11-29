@@ -14,7 +14,7 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	if physics.gas is None:
 		physics.gas = ct.Solution(physics.CANTERA_FILENAME)
 
-	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
+	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
 
 	# Get energy
 	e = Uq[irhoE] / Uq[irho] - 0.5 * (Uq[irhou]**2 / Uq[irho])
@@ -23,7 +23,7 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	# Get YO2
 	YO2 = Uq[irhoYO2] / Uq[irho]
 	# Get YN2
-	YN2 = Uq[irhoYN2] / Uq[irho]
+	YN2 = 1.0 - Uq[irhoYO2] / Uq[irho]
 
 	physics.gas.UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
@@ -33,12 +33,12 @@ def set_state_from_primitives(physics, rho, P, u, Y):
 	gas = physics.gas
 
 	U = np.zeros([physics.NUM_STATE_VARS])
-	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
+	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
 
 	U[irho] = rho
 	U[irhou] = rho*u
 	U[irhoYO2] = rho * Y[0]
-	U[irhoYN2] = rho * Y[1]
+	# U[irhoYN2] = rho * Y[1]
 
 	W = get_W_from_Y(gas.molecular_weights, Y)
 	T = get_T_from_rhop(rho, P, W)
@@ -120,7 +120,7 @@ def get_maxwavespeed(physics, Uq):
 	gamma = get_specificheatratio(physics, Uq)
 	P = get_pressure(physics, Uq)
 
-	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
+	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
 	smom = physics.get_momentum_slice()
 
 	rho = Uq[:, :, [irho]]
