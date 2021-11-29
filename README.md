@@ -33,6 +33,11 @@ A suite of example 1D and 2D cases for scalar equations, the compressible Euler 
 $ cd examples/euler/2D/isentropic_vortex/
 $ quail isentropic_vortex.py
 ```
+Depending on the configuration of your machine, the above command (`quail isentropic_vortex.py`) may not work. In that case, try replacing the first line of `src/quail` with `#!/usr/bin/env python3`. If that still doesn't work, run the following command instead:
+```sh
+$ python /your/quail/directory/src isentropic_vortex.py
+```
+Note that this command doesn't require the Quail src directory to be added to PATH.
 
 Additional tools for performing dissipation and dispersion analysis and plotting basis functions are available in the `tools` directory. To perform said analysis, do the following:
 ```sh
