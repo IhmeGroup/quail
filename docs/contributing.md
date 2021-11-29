@@ -147,17 +147,17 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
   	'''
   	Brief description of function
   
-	Inputs:
-	-------
-	input name: brief description [array shape if available]
+  	Inputs:
+  	-------
+  	input name: brief description [array shape if available]
 
-	Outputs:
-	--------
-	output name: brief description [array shape if available]
+  	Outputs:
+  	--------
+  	output name: brief description [array shape if available]
 
-	Notes:
-	------
-	additional notes and comments can be added here if needed
+  	Notes:
+  	------
+  	additional notes and comments can be added here if needed
   	'''
   ```
 ## Branch naming conventions
