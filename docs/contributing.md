@@ -128,37 +128,37 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
 * Class commenting style
   ```python
   class ClassName():
-  ’’’
-  Brief description of the class
+  	'''
+  	Brief description of the class
   
-  Attributes:
-  -----------
-  attribute name: brief description
+  	Attributes:
+  	-----------
+  	attribute name: brief description
   
-  Abstract Methods:
-  -----------------
-  abstract_method_name
-  	description of the abstract method
-  ’’’
+  	Abstract Methods:
+  	-----------------
+  	abstract_method_name
+  		description of the abstract method
+  	'''
   ```
 * Function definitions
   ```python
   def function_name(arg1, arg2, etc...):
-  ’’'
-  Brief description of function
+  	'''
+  	Brief description of function
   
-  Inputs:
-  -------
-  input name: brief description [array shape if available]
-  
-  Outputs:
-  --------
-  output name: brief description [array shape if available]
-  
-  Notes:
-  ------
-  additional notes and comments can be added here if needed
-  '''
+	Inputs:
+	-------
+	input name: brief description [array shape if available]
+
+	Outputs:
+	--------
+	output name: brief description [array shape if available]
+
+	Notes:
+	------
+	additional notes and comments can be added here if needed
+  	'''
   ```
 ## Branch naming conventions
 
