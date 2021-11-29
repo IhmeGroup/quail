@@ -8,7 +8,7 @@ import numerics.timestepping.tools as stepper_tools
 import meshing.common as mesh_common
 from general import StepperType
 import general
-# import physics.euler.euler as euler
+
 import physics.scalar.scalar as scalar
 import solver.DG as DG
 
@@ -153,6 +153,7 @@ def test_get_dt_from_num_time_steps_not_active_with_dt():
 
 	np.testing.assert_allclose(dt, 0.001, rtol, atol)
 
+
 def test_get_dt_from_cfl_yields_one():
 	'''
 	Checks unity CFL with all unity conditions in scalar
@@ -162,6 +163,29 @@ def test_get_dt_from_cfl_yields_one():
 	dt = stepper_tools.get_dt_from_cfl(solver.stepper, solver)
 
 	np.testing.assert_allclose(dt, 1.0, rtol, atol)
+
+
+def test_get_dt_from_timestepsize_and_finaltime():
+	'''
+	Checks the correct dt from time step size and tfinal
+	when time + dt < tfinal
+	'''
+	solver = create_solver_object()
+	solver.params["TimeStepSize"] = 2.0
+	dt = stepper_tools.get_dt_from_timestepsize(solver.stepper, solver)
+	np.testing.assert_allclose(dt, 2.0, rtol, atol)
+
+
+def test_get_dt_from_timestepsize_and_finaltime():
+	'''
+	Checks the correct dt from time step size and tfinal
+	when time + dt > tfinal
+	'''
+	solver = create_solver_object()
+	solver.params["TimeStepSize"] = 2.0
+	solver.time = 9.995
+	dt = stepper_tools.get_dt_from_timestepsize(solver.stepper, solver)
+	np.testing.assert_allclose(dt, 0.005, rtol, atol)
 
 
 def test_get_dt_from_timestepsize_and_numtimesteps():
@@ -194,4 +218,23 @@ def test_get_dt_from_timestepsize_and_numtimesteps_finalstep():
 	np.testing.assert_allclose(dt, 0.005, rtol, atol)
 
 
+def test_check_addition_of_explicit_and_implicit_sources():
+	'''
+	This test adds an explicit and implicit source term and checks
+	that they were properly added to the list
+	'''
+	solver = create_solver_object()
+	# Add an implicit and explicit source term
+	sparams = {"nu" : 1.0, "source_treatment" : "Explicit"}
+	solver.physics.set_source(source_type='SimpleSource', **sparams)
+	sparams = {"nu" : 1.0, "source_treatment" : "Implicit"}
+	solver.physics.set_source(source_type='SimpleSource', **sparams)
+	sparams = {"nu" : 1.0}
+	solver.physics.set_source(source_type='SimpleSource', **sparams)
 
+	stepper_tools.set_source_treatment(solver.physics)
+
+	# Assert the correct source treatment for each source (default is implicit)
+	assert(solver.physics.source_terms[0].source_treatment == 'Explicit')
+	assert(solver.physics.source_terms[1].source_treatment == 'Implicit')
+	assert(solver.physics.source_terms[2].source_treatment == 'Implicit')
