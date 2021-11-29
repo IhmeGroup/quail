@@ -48,9 +48,16 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
         check_error(error);
         // Set vertex requirements
         // TODO: How best to handle this in general?
-        error = MMG2D_Set_corner(mmgMesh, node_ID + 1);
+        // TODO: THIS IS VERY IMPORTANT!!!
+        //error = MMG2D_Set_corner(mmgMesh, node_ID + 1);
         check_error(error);
     }
+
+    // TODO: THIS IS VERY IMPORTANT!!!
+    error = MMG2D_Set_corner(mmgMesh, 1);
+    error = MMG2D_Set_corner(mmgMesh, 2);
+    error = MMG2D_Set_corner(mmgMesh, 3);
+    error = MMG2D_Set_corner(mmgMesh, 4);
 
     // Loop over elements
     for (int elem_ID = 0; elem_ID < num_elems; elem_ID++) {
@@ -89,19 +96,19 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
     // Give sol values and positions
     auto c = 1.28057912;
     for (int k = 1; k <= num_nodes; k++) {
-        // The value here sets the mesh density
-        auto coords = node_coords + 2*(k-1);
-        auto amp = 3*pow(coords[1] - c * coords[0], 2) + .05;
-        auto lambda1 = 1/(amp * amp * 1e-2);
-        auto lambda2 = 1/(amp * amp);
-        // For elements far from the shock, or with tiny gradients
-        double limit = 1e4;
-        if (amp > .05 or (eigvals[(k-1)*ndims] < limit) or (eigvals[(k-1)*ndims + 1] < limit)) {
-            amp = 10.;
+        // For elements with tiny gradients
+        double limit = 1e6;
+        if ((eigvals[(k-1)*ndims] < limit) or (eigvals[(k-1)*ndims + 1] < limit)) {
+            auto h = .1;
+            auto lambda = pow(h, -2);
             // Set isotropic metric
-            error = MMG2D_Set_tensorSol(mmgSol, 1/(amp * amp), 0., 1/(amp * amp), k);
+            error = MMG2D_Set_tensorSol(mmgSol, lambda, 0., lambda, k);
         // For elements near the shock
         } else {
+            auto h = .1;
+            auto ratio = .1;
+            auto lambda1 = pow(h * ratio, -2);
+            auto lambda2 = pow(h, -2);
             // matrix multiply with eigenvectors
             const double* V = eigvecs + (k-1)*ndims*ndims;
             const double V_T[4] = {V[0], V[2], V[1], V[3]};

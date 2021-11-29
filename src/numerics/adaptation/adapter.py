@@ -89,6 +89,7 @@ class Adapter:
 		mesh = self.solver.mesh
 		solver = self.solver
 		ndims = mesh.ndims
+		physics = solver.physics
 
 		# Copy the old nodes and solution and elements
 		Uc_old = self.solver.state_coeffs.copy()
@@ -142,6 +143,9 @@ class Adapter:
 		#smom = solver.physics.get_momentum_slice()
 		#grad_mom = grad_Uv[:, :, smom]
 
+		# Compute pressure gradient
+		grad_p_elems = physics.compute_pressure_gradient(Uv, grad_Uv)
+
 		# Zero out the low gradients
 		for i in range(grad_Uv.shape[1]):
 			for j in range(grad_Uv.shape[2]):
@@ -165,13 +169,16 @@ class Adapter:
 
 		# Average across equal nodes
 		grad_u = np.zeros((mesh.num_nodes, ndims, ndims))
+		grad_p = np.zeros((mesh.num_nodes, ndims))
 		count = np.zeros(mesh.num_nodes, dtype=int)
 		for elem_ID in range(mesh.num_elems):
 			node_IDs = mesh.elem_to_node_IDs[elem_ID]
 			grad_u[node_IDs] += grad_u_elems[elem_ID]
+			grad_p[node_IDs] += grad_p_elems[elem_ID]
 			count[node_IDs] += 1
 		# Divide by the number of elements that contributed to this node
 		grad_u /= count.reshape(-1, 1, 1)
+		grad_p /= count.reshape(-1, 1)
 
 		# Get the symmetric part
 		sym_grad_u = .5 * (grad_u + np.transpose(grad_u, axes=[0, 2, 1]))
@@ -195,9 +202,11 @@ class Adapter:
 
 		# Normalize eigenvectors
 		#eigvecs /= np.linalg.norm(eigvecs, axis = 1, keepdims=True)
-		breakpoint()
 		# TODO:: Hack
-		#eigvecs[:] = np.identity(2)
+		eigvals = np.abs(grad_p)
+		eigvecs[:, :, 0] = grad_p / np.linalg.norm(grad_p, axis=1, keepdims=True)
+		eigvecs[:, :, 1] = grad_p / np.linalg.norm(grad_p, axis=1, keepdims=True) @ np.array([[0, 1], [-1, 0]])
+		breakpoint()
 
 		# Sizing
 		num_nodes = ctypes.c_int(mesh.num_nodes)
