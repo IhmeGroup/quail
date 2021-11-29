@@ -36,10 +36,7 @@ lib.adapt_mesh.argtypes = [
 		# Boundary face information
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS'),
-		# Eigenvalues
-		np.ctypeslib.ndpointer(dtype=np.float64, ndim=2,
-			flags='C_CONTIGUOUS'),
-		# Eigenvectors
+		# Metric tensor
 		np.ctypeslib.ndpointer(dtype=np.float64, ndim=3,
 			flags='C_CONTIGUOUS'),
 		# Sizes
@@ -153,73 +150,44 @@ class Adapter:
 		# Evaluate solution and its gradient at element vertices
 		Uv = np.einsum('ijn, ink -> ijk', basis_val_vertices, Uc_old)
 		grad_Uv = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_vertices, Uc_old)
-		# Get momentum gradient tensor
-		#smom = solver.physics.get_momentum_slice()
-		#grad_mom = grad_Uv[:, :, smom]
 
 		# Compute pressure gradient
 		grad_p_elems = physics.compute_pressure_gradient(Uv, grad_Uv)
 
-		# Zero out the low gradients
-		for i in range(grad_Uv.shape[1]):
-			for j in range(grad_Uv.shape[2]):
-				for k in range(grad_Uv.shape[3]):
-					grad_Uv[np.abs(grad_Uv[:, i, j, k]) < 1e-1, i, j, k] = 0
-
-		#TODO: Hack to turn this into du/dx
-		dudU = np.zeros_like(Uv)
-		dudU[:, :, 1] = 1/Uv[:, :, 0]
-		dudU[:, :, 3] = 1/Uv[:, :, 1]
-		dvdU = np.zeros_like(Uv)
-		dvdU[:, :, 2] = 1/Uv[:, :, 0]
-		dvdU[:, :, 3] = 1/Uv[:, :, 2]
-		dveldU = np.stack((dudU, dvdU), axis=2)
-		grad_u_elems = np.einsum('ijlk, ijkm -> ijlm', dveldU, grad_Uv)
-
-		# Now we have the velocity gradient tensor at the nodes of each element.
+		# Now we have the pressure gradient at the nodes of each element.
 		# However, since multiple elements can share the same node, and there
-		# must be one value at each node, the tensor will be averaged across all
-		# elements meeting at a node.
+		# must be one value at each node, the gradient will be averaged across
+		# all elements meeting at a node.
 
 		# Average across equal nodes
-		grad_u = np.zeros((mesh.num_nodes, ndims, ndims))
 		grad_p = np.zeros((mesh.num_nodes, ndims))
 		count = np.zeros(mesh.num_nodes, dtype=int)
 		for elem_ID in range(mesh.num_elems):
 			node_IDs = mesh.elem_to_node_IDs[elem_ID]
-			grad_u[node_IDs] += grad_u_elems[elem_ID]
 			grad_p[node_IDs] += grad_p_elems[elem_ID]
 			count[node_IDs] += 1
 		# Divide by the number of elements that contributed to this node
-		grad_u /= count.reshape(-1, 1, 1)
 		grad_p /= count.reshape(-1, 1)
 
-		# Get the symmetric part
-		sym_grad_u = .5 * (grad_u + np.transpose(grad_u, axes=[0, 2, 1]))
+		# Metric tensor at vertices
+		h = .1
+		ratio = .05
+		limit = 1e6;
 
-		# Do an eigen decomposition
-		eigvals, eigvecs = np.linalg.eigh(sym_grad_u)
-
-		# Order from large magnitude to small magnitude
-		for i in range(eigvals.shape[0]):
-			if np.abs(eigvals[i, 1]) > np.abs(eigvals[i, 0]):
-				temp = eigvals[i, 0].copy()
-				eigvals[i, 0] = eigvals[i, 1]
-				eigvals[i, 1] = temp
-				temp = eigvecs[i, :, 0].copy()
-				eigvecs[i, :, 0] = eigvecs[i, :, 1]
-				eigvecs[i, :, 1] = temp
-
-		# Take absolute value of eigenvalues, since their magnitude is used in
-		# the C interface
-		eigvals = np.abs(eigvals)
-
-		# Normalize eigenvectors
-		#eigvecs /= np.linalg.norm(eigvecs, axis = 1, keepdims=True)
-		# TODO:: Hack
-		eigvals = np.abs(grad_p)
-		eigvecs[:, :, 0] = grad_p / np.linalg.norm(grad_p, axis=1, keepdims=True)
-		eigvecs[:, :, 1] = grad_p / np.linalg.norm(grad_p, axis=1, keepdims=True) @ np.array([[0, 1], [-1, 0]])
+		# Set mesh sizes, starting with isotropic
+		lambda_iso = h ** (-2)
+		lambda_aniso = (h * ratio) ** (-2)
+		eigenvalues = np.array([[lambda_aniso, 0], [0, lambda_iso]])
+		metric = np.tile(np.identity(mesh.ndims) * lambda_iso, (mesh.num_nodes, 1, 1))
+		eigenvectors = np.empty((2, 2))
+		rotation = np.array([[0, 1], [-1, 0]])
+		# For shock vertices
+		for vertex_ID in np.argwhere(np.abs(grad_p[:, :]) > 1e6)[:, 0]:
+			# Make near-shock elements anisotropic
+			# Construct the eigenvectors from the pressure gradient direction
+			eigenvectors[:, 0] = grad_p[vertex_ID] / np.linalg.norm(grad_p[vertex_ID], axis=0, keepdims=True)
+			eigenvectors[:, 1] = eigenvectors[:, 0] @ rotation
+			metric[vertex_ID] = eigenvectors @ eigenvalues @ eigenvectors.T
 
 		# Sizing
 		num_nodes = ctypes.c_int(mesh.num_nodes)
@@ -230,7 +198,7 @@ class Adapter:
 		mmgSol = MMG5_pSol()
 		# TODO: For some reason mesh.node_coords is F contiguous???
 		adapt_mesh(np.ascontiguousarray(mesh.node_coords), mesh.elem_to_node_IDs,
-				bface_info, eigvals, eigvecs, byref(num_nodes), byref(num_elems),
+				bface_info, metric, byref(num_nodes), byref(num_elems),
 				byref(num_edges), byref(mmgMesh), byref(mmgSol))
 		num_nodes = num_nodes.value
 		num_elems = num_elems.value

@@ -18,9 +18,8 @@ void check_error(int error) {
 extern "C" {
 
 void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
-        bface_info, const double* eigvals, const double* eigvecs, int&
-        num_nodes, int& num_elems, int& num_edges, MMG5_pMesh& mmgMesh,
-        MMG5_pSol& mmgSol) {
+        bface_info, const double* metric, int& num_nodes, int& num_elems, int&
+        num_edges, MMG5_pMesh& mmgMesh, MMG5_pSol& mmgSol) {
     int error;
     int ndims = 2;
 
@@ -94,32 +93,10 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
     check_error(error);
 
     // Give sol values and positions
-    auto c = 1.28057912;
     for (int k = 1; k <= num_nodes; k++) {
-        // For elements with tiny gradients
-        double limit = 1e6;
-        if ((eigvals[(k-1)*ndims] < limit) or (eigvals[(k-1)*ndims + 1] < limit)) {
-            auto h = .1;
-            auto lambda = pow(h, -2);
-            // Set isotropic metric
-            error = MMG2D_Set_tensorSol(mmgSol, lambda, 0., lambda, k);
-        // For elements near the shock
-        } else {
-            auto h = .1;
-            auto ratio = .1;
-            auto lambda1 = pow(h * ratio, -2);
-            auto lambda2 = pow(h, -2);
-            // matrix multiply with eigenvectors
-            const double* V = eigvecs + (k-1)*ndims*ndims;
-            const double V_T[4] = {V[0], V[2], V[1], V[3]};
-            double V_lambda[4] = {V[0] * lambda1, V[1] * lambda2, V[2] * lambda1, V[3] * lambda2};
-            double V_lambda_V_T[4] = {V_lambda[0] * V_T[0] + V_lambda[1] * V_T[2],
-                                      V_lambda[0] * V_T[1] + V_lambda[1] * V_T[3],
-                                      V_lambda[2] * V_T[0] + V_lambda[3] * V_T[2],
-                                      V_lambda[2] * V_T[1] + V_lambda[3] * V_T[3]};
-            // Set anisotropic metric
-            error = MMG2D_Set_tensorSol(mmgSol, V_lambda_V_T[0], V_lambda_V_T[1], V_lambda_V_T[3], k);
-        }
+        auto metric_k = metric + (k-1)*ndims*ndims;
+        // Set metric
+        error = MMG2D_Set_tensorSol(mmgSol, metric_k[0], metric_k[1], metric_k[3], k);
         check_error(error);
     }
 
