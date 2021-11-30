@@ -34,7 +34,7 @@ from physics.base.data import FcnBase, BCWeakRiemann, BCWeakPrescribed, \
 
 class FcnType(Enum):
 	'''
-	Enum class that stores the types of analytic functions for initial
+	Enum class that stores the types of analytical functions for initial
 	conditions, exact solutions, and/or boundary conditions. These
 	functions are specific to the available scalar equation sets.
 	'''

@@ -16,7 +16,7 @@ atol = 1e-14
 ])
 def test_legendre_spacetime_massmatrix(order):
 	'''
-	This test compares the analytic solution of the space-time MM to 
+	This test compares the analytical solution of the space-time MM to 
 	the computed one.
 	'''
 	basis = basis_defs.LegendreQuad(order)
@@ -59,7 +59,7 @@ def test_legendre_spacetime_massmatrix(order):
 ])
 def test_legendre_spacetime_massmatrix_phys(order):
 	'''
-	This test compares the analytic solution of the space-time MM to 
+	This test compares the analytical solution of the space-time MM to 
 	the computed one, but uses a physics element that spans [0.0, 0.5]
 	'''
 	basis = basis_defs.LegendreQuad(order)
@@ -102,7 +102,7 @@ def test_legendre_spacetime_massmatrix_phys(order):
 ])
 def test_temporal_flux_ader_tn(order):
 	'''
-	This test compares the analytic solution of the space-time temporal
+	This test compares the analytical solution of the space-time temporal
 	flux evaluated at t^{n} to the computed one.
 	'''
 	basis = basis_defs.LegendreSeg(order)
@@ -153,7 +153,7 @@ def test_temporal_flux_ader_tn(order):
 ])
 def test_temporal_flux_ader_tnp1(order):
 	'''
-	This test compares the analytic solution of the space-time temporal
+	This test compares the analytical solution of the space-time temporal
 	flux evaluated at t^{n+1} to the computed one.
 	'''
 	basis_st = basis_defs.LegendreQuad(order)
@@ -205,7 +205,7 @@ def test_temporal_flux_ader_tnp1(order):
 ])
 def test_legendre_spacetime_stiffnessmatrix_spacedir(dt, order):
 	'''
-	This test compares the analytic solution of the space-time 
+	This test compares the analytical solution of the space-time 
 	stiffness matrix in space to the computed one.
 	'''
 	basis = basis_defs.LegendreSeg(order)
@@ -258,7 +258,7 @@ def test_legendre_spacetime_stiffnessmatrix_spacedir(dt, order):
 ])
 def test_legendre_spacetime_stiffnessmatrix_spacedir_phys(dt, order):
 	'''
-	This test compares the analytic solution of the space-time 
+	This test compares the analytical solution of the space-time 
 	stiffness matrix in space to the computed one.
 	'''
 	basis = basis_defs.LegendreSeg(order)
@@ -316,7 +316,7 @@ def test_legendre_spacetime_stiffnessmatrix_spacedir_phys(dt, order):
 ])
 def test_legendre_spacetime_stiffnessmatrix_timedir(dt, order):
 	'''
-	This test compares the analytic solution of the space-time 
+	This test compares the analytical solution of the space-time 
 	stiffness matrix in time to the computed one.
 	'''
 	basis = basis_defs.LegendreSeg(order)
