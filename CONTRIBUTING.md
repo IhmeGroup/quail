@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing! We are excited to have you join our team!
 
-The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. Feel free to propose modifications to this document via a pull request as we value others contributions. 
+The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. Feel free to propose modifications to this document via a pull request as we value others' contributions. 
 
 #### Table Of Contents
 
@@ -17,10 +17,10 @@ The following is a set of guidelines for contributing to Quail [Ihme Group Organ
 
 Quail is a lightweight discontinuous Galerkin code written with the intention of being useful for teaching and prototyping. Quail is made up of a series of Python packages. These are all located in the `src` directory. They include the following:
 
-* [solver](https://github.com/IhmeGroup/quail/tree/main/src/solver) - which contains modules for various solvers (DG and ADER-DG). This is where the primary `solve` function is located which governs the loop around which iterations occur.
-* [meshing](https://github.com/IhmeGroup/quail/tree/main/src/meshing) - which contains modules for mesh-related classes and functions. Mesh generation tools are includedhere. For additional information on mesh generation, node ordering, and face ordering.
+* [solver](https://github.com/IhmeGroup/quail/tree/main/src/solver) - which contains modules for various solvers (DG and ADER-DG). This is where the primary `solve` function is located which advances the solution in time.
+* [meshing](https://github.com/IhmeGroup/quail/tree/main/src/meshing) - which contains modules for mesh-related classes and functions. Mesh generation tools are included here. For additional information on mesh generation, node ordering, and face ordering see the [documentation](https://github.com/IhmeGroup/quail/blob/main/docs/documentation.pdf)
 * [numerics](https://github.com/IhmeGroup/quail/tree/main/src/numerics) - which contains modules for basis functions, quadrature, limiters, and time stepping.
-* [physics](https://github.com/IhmeGroup/quail/tree/main/src/physics) - which contains modules for various equation sets and related analytic functions, boundary conditions,and numerical fluxes.
+* [physics](https://github.com/IhmeGroup/quail/tree/main/src/physics) - which contains modules for various equation sets and related analytical functions, boundary conditions,and numerical fluxes.
 * [processing](https://github.com/IhmeGroup/quail/tree/main/src/processing) - which contains modules for plotting, post-processing, and reading and writing data files.
 
 In addition to these packages are the driver function (`src/quail`), user-defined exceptions (`src/errors.py`), default parameters for input decks (`src/defaultparams`), and a list of constants and general `Enums` (`src/general.py`).
@@ -55,10 +55,10 @@ Let's look at a simple example of a base class:
     @abstractmethod
     def need_this_function(self, args**):
       '''
-      A function that everychild class of this type needs.
+      A function that every child class of this type needs.
       '''
   ```
-We utilize `@abstractmethod` to define attributes that must be overwritten by any derived class. This ensures that the user defines the minimally required members of the class. Lets imagine that we wish add a new feature called `NeatFeature` that builds on the `NeatFeatureBase` class. 
+We utilize `@abstractmethod` to define attributes that must be overwritten by any derived class. This ensures that the user defines the minimally required members of the class. Let's imagine that we wish add a new feature called `NeatFeature` that builds on the `NeatFeatureBase` class. 
 
   ```python
   class NeatFeature(NeatFeatureBase):
@@ -70,7 +70,7 @@ We utilize `@abstractmethod` to define attributes that must be overwritten by an
     # We define our abstract methods
     def need_this_function(self, args**):
       '''
-      How the new feature used this function.
+      How the new feature uses this function.
       '''
       print('This is different from before')
   ```
@@ -115,15 +115,17 @@ Lastly, the user needs to use the setter function for the feature type to take t
 	return neat_feature
   ```
   
-These interfaces allow the user to focus on the meat of their new feature while not having too much overhead in making the feature available to the users.
+These interfaces allow the user to focus on the meat of their new feature while simplifying the process of making the feature available to users.
 
 ## Style Guide
 
 #### Some general guidelines to follow are:
 * Use tabs with a length of four spaces
-* Indent continued linestwice
+* Indent continued lines twice
 * Limit lines to a maximum of 78 characters
+
 For more detailed guidelines, please refer to the [PEP 8 style guide for Python code](https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds), which we largely aim to follow.
+
 #### Commenting Style
 * Class commenting style
   ```python
@@ -167,6 +169,6 @@ Quail uses the following branch naming conventions:
 There are multiple branch types that are standard in Quail. These include the following:
 * `bug`: these branches are designed for identifying, isolating, and fixing bugs that may exist throughout Quail. 
 * `feature`: these branches are designed for the addition of new features.
-* `test`: branches used for the specific addition of unit tests (tests can also be added throughout feature dev in the appropriate branch).
-* `case`: branches that specifically create new cases for Quail to solve. These can incorporate more case specific ICs, BCs, and exact solutions.
+* `test`: branches used for the specific addition of unit tests.
+* `case`: branches that specifically create new cases for Quail to solve. These can incorporate more case-specific ICs, BCs, and exact solutions.
 * `docs`: branches that specifically modify documentation.
