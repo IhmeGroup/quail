@@ -47,6 +47,7 @@ def set_stepper(params, U):
 	    stepper: instantiated stepper object
 	'''
 	time_stepper = params["TimeStepper"]
+
 	if StepperType[time_stepper] == StepperType.FE:
 		stepper = stepper_defs.FE(U)
 	elif StepperType[time_stepper] == StepperType.RK4:
