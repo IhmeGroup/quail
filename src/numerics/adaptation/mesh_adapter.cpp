@@ -53,10 +53,12 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
     }
 
     // TODO: THIS IS VERY IMPORTANT!!!
-    error = MMG2D_Set_corner(mmgMesh, 1);
-    error = MMG2D_Set_corner(mmgMesh, 2);
-    error = MMG2D_Set_corner(mmgMesh, 3);
-    error = MMG2D_Set_corner(mmgMesh, 4);
+    // Use 4 for the oblique shock, 6 for the forward step.
+    int n_corners = 6;
+    for (int i = 1; i <= n_corners; i++) {
+        error = MMG2D_Set_corner(mmgMesh, i);
+        check_error(error);
+    }
 
     // Loop over elements
     for (int elem_ID = 0; elem_ID < num_elems; elem_ID++) {

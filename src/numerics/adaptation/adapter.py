@@ -8,6 +8,7 @@ from scipy import optimize
 import time
 
 import numerics.basis.tools  as basis_tools
+import numerics.helpers.helpers as numerics_helpers
 import meshing.meshbase as meshdefs
 import meshing.tools as mesh_tools
 import solver.tools as solver_tools
@@ -90,7 +91,7 @@ class Adapter:
 	def adapt(self):
 		# TODO
 		skip_iter = 100
-		n_adaptation_steps = 2
+		n_adaptation_steps = 100000
 		#if self.solver.itime > 100: skip_iter = 300
 
 		if self.solver.itime % skip_iter != 0: return
@@ -99,8 +100,10 @@ class Adapter:
 		# Unpack
 		mesh = self.solver.mesh
 		solver = self.solver
+		basis = solver.basis
 		ndims = mesh.ndims
 		physics = solver.physics
+		elem_helpers = solver.elem_helpers
 
 		# Copy the old nodes and solution and elements
 		Uc_old = self.solver.state_coeffs.copy()
@@ -130,6 +133,26 @@ class Adapter:
 				# Increment edge index
 				edge_idx += 1;
 
+		# -- Pressure Sensor -- #
+		# Get solution at quadrature points
+		Uq = numerics_helpers.evaluate_state(Uc_old, elem_helpers.basis_val,
+				skip_interp=basis.skip_interp)
+		# Get element average state
+		U_mean = numerics_helpers.get_element_mean(Uq, elem_helpers.quad_wts,
+				elem_helpers.djac_elems, elem_helpers.vol_elems)
+		# Compute element average pressure
+		p_mean = physics.compute_additional_variable("Pressure", U_mean,
+				flag_non_physical=False)
+		# Compute quadrature point pressure
+		p_quad = physics.compute_additional_variable("Pressure", Uq,
+				flag_non_physical=False)
+		# Compute integrand of sensor
+		integrand = (p_quad / p_mean - 1)**2
+		# Compute sensor for each element
+		sensor_elems = np.sqrt(numerics_helpers.get_element_mean(integrand,
+			elem_helpers.quad_wts, elem_helpers.djac_elems,
+			elem_helpers.vol_elems))[:, 0, 0]
+
 		vertices = solver.basis.PRINCIPAL_NODE_COORDS
 		nv = vertices.shape[0]
 		basis_phys_grad_vertices = np.empty([mesh.num_elems, nv,
@@ -158,36 +181,53 @@ class Adapter:
 		# However, since multiple elements can share the same node, and there
 		# must be one value at each node, the gradient will be averaged across
 		# all elements meeting at a node.
+		# Do the same for the sensor as well.
 
 		# Average across equal nodes
 		grad_p = np.zeros((mesh.num_nodes, ndims))
+		sensor = np.zeros(mesh.num_nodes)
 		count = np.zeros(mesh.num_nodes, dtype=int)
 		for elem_ID in range(mesh.num_elems):
 			node_IDs = mesh.elem_to_node_IDs[elem_ID]
 			grad_p[node_IDs] += grad_p_elems[elem_ID]
+			sensor[node_IDs] += sensor_elems[elem_ID]
 			count[node_IDs] += 1
 		# Divide by the number of elements that contributed to this node
 		grad_p /= count.reshape(-1, 1)
+		sensor /= count
+
+		# Shock vertices
+		threshold = .075
+		delta_thresh= .025
+		shock_vertices = np.argwhere(sensor > threshold)[:, 0]
 
 		# Metric tensor at vertices
-		h = .1
-		ratio = .05
-		limit = 1e6;
+		h = .2 # .05 for oblique shock
+		ratio = 20
+
+		# Anisotropy factor. Using Eric's sin-based smoothing. A factor of 0
+		# means purely isotropic, factor of 1 means purely anisotropic with the
+		# ratio given above.
+		aniso_factor = .5 * (1 + np.sin((np.pi / (2 * delta_thresh)) * (sensor -
+			threshold)))
+		aniso_factor[sensor < threshold - delta_thresh] = 0
+		aniso_factor[sensor > threshold + delta_thresh] = 1
 
 		# Set mesh sizes, starting with isotropic
 		lambda_iso = h ** (-2)
-		lambda_aniso = (h * ratio) ** (-2)
-		eigenvalues = np.array([[lambda_aniso, 0], [0, lambda_iso]])
-		metric = np.tile(np.identity(mesh.ndims) * lambda_iso, (mesh.num_nodes, 1, 1))
+		lambda_aniso = (h / (aniso_factor * (ratio - 1) + 1)) ** (-2)
+		num_nodes = mesh.num_nodes
+		eigenvalues = np.array([[lambda_aniso, np.zeros(num_nodes)],
+			[np.zeros(num_nodes), lambda_iso * np.ones(num_nodes)]])
+		metric = np.empty((num_nodes, ndims, ndims))
 		eigenvectors = np.empty((2, 2))
 		rotation = np.array([[0, 1], [-1, 0]])
 		# For shock vertices
-		for vertex_ID in np.argwhere(np.abs(grad_p[:, :]) > 1e6)[:, 0]:
-			# Make near-shock elements anisotropic
+		for vertex_ID in range(num_nodes):
 			# Construct the eigenvectors from the pressure gradient direction
 			eigenvectors[:, 0] = grad_p[vertex_ID] / np.linalg.norm(grad_p[vertex_ID], axis=0, keepdims=True)
 			eigenvectors[:, 1] = eigenvectors[:, 0] @ rotation
-			metric[vertex_ID] = eigenvectors @ eigenvalues @ eigenvectors.T
+			metric[vertex_ID] = eigenvectors @ eigenvalues[:, :, vertex_ID] @ eigenvectors.T
 
 		# Sizing
 		num_nodes = ctypes.c_int(mesh.num_nodes)
@@ -320,11 +360,27 @@ class Adapter:
 				solver.basis, solver.elem_helpers.quad_pts,
 				solver.elem_helpers.quad_wts, Uq, solver.state_coeffs)
 		print(f'done in {time.time() - start_time} s')
+		breakpoint()
 
 		# Recompute helpers for the limiters
 		if solver.limiters:
 			for limiter in solver.limiters:
 				limiter.precompute_helpers(solver)
+		breakpoint()
+
+		# TODO: Hack - correct negative solution elements
+		# TODO: This only works for Lagrange
+		#elem_helpers = solver.elem_helpers
+		#Uq = numerics_helpers.evaluate_state(solver.state_coeffs, basis.basis_val)
+		#U_mean = numerics_helpers.get_element_mean(Uq, elem_helpers.quad_wts,
+		#		elem_helpers.djac_elems, elem_helpers.vol_elems)
+		#p_mean = physics.compute_additional_variable("Pressure", U_mean, flag_non_physical=False)
+		#negatives = np.argwhere(p_mean[:, 0, 0] < 0).flatten()
+		#if negatives.size != 0: print('Correcting elements:', negatives)
+		#for elem_ID in negatives:
+		#	solver.state_coeffs[elem_ID] = np.tile(
+		#			np.mean(U_mean[solver.mesh.elements[elem_ID].face_to_neighbors],
+		#			axis =0), (1, solver.basis.nb, 1))
 
 		# Apply limiter after adaptation. This is helpful when adapting to
 		# shocks, since the L2 projection can be oscillatory, resulting in some

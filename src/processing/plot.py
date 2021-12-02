@@ -351,6 +351,17 @@ def interpolate_2D_soln_to_points(physics, x, var, xpoints):
 	if physics.NDIMS != 2:
 		raise ValueError
 	tris, utri = triangulate(physics, x, var)
+
+	# -- Begin hack -- #
+	# TODO: This is a hack to try to remove null triangles. Figure out why this
+	# is necessary.
+	xy = np.dstack((tris.x[tris.triangles], tris.y[tris.triangles]))  # shape (ntri,3,2)
+	twice_area = np.cross(xy[:,1,:] - xy[:,0,:], xy[:,2,:] - xy[:,0,:])  # shape (ntri)
+	mask = twice_area < 1e-10  # shape (ntri)
+	if np.any(mask):
+		tris.set_mask(mask)
+	# -- End hack -- #
+
 	interpolator = tri.LinearTriInterpolator(tris, utri)
 
 	var_points = interpolator(xpoints[:,0], xpoints[:,1])
@@ -466,7 +477,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 
 	# Get sample points in reference space
 	if equidistant:
-		xref = basis.equidistant_nodes(max([1, 3*order]))
+		xref = basis.equidistant_nodes(max([1, 20*order]))
 	else:
 		quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]),
 				physics=physics)
