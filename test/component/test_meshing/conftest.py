@@ -48,8 +48,9 @@ def filled_mesh():
 
 class BasisMock:
 	'''
-	Class used to mock the basis given to the mesh object, for the case of a Q1
-	triangle.
+	Class used to mock the basis given to the mesh object, for the case of a
+	Q1 triangle. The class being mocked is BasisBase from
+	numerics/basis/basis.py.
 	'''
 	NFACES = 3
 	NDIMS = 2
@@ -58,6 +59,7 @@ class BasisMock:
 	basis_val = np.identity(3)
 	def get_num_basis_coeff(*args, **kwargs):
 		return 3
+
 	def get_basis_val_grads(self, xref, get_val=True):
 		# If there are three points, assume they're the geometric nodes
 		if xref.shape[0] == 3:
@@ -65,11 +67,14 @@ class BasisMock:
 		# Else, assume it's the centroid
 		else:
 			self.basis_val = np.array([[1/3, 1/3, 1/3]])
+
 	def get_quadrature_order(*args, **kwargs):
 		return 1
+
 	# Use the geometric nodes as quadrature points. This works for Q1.
 	def get_quadrature_data(*args, **kwargs):
 		return np.array([[0, 0], [1, 0], [0, 1]]), np.ones((3, 1))/6
+
 	# The bases are: 1 - x - y, x, and y. Therefore, the x derivative is
 	# -1, 1, 0, and the y derivative is -1, 0, 1.
 	def get_grads(*args, **kwargs):
@@ -79,6 +84,7 @@ class BasisMock:
 
 class ElementMock:
 	'''
-	Class used to mock elements, just containing node coordinates.
+	Class used to mock elements, just containing node coordinates. The class
+	being mocked is Element from meshing/meshbase.py.
 	'''
 	node_coords = None
