@@ -17,7 +17,7 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
 
 	# Get energy
-	e = Uq[irhoE] / Uq[irho] - 0.5 * (Uq[irhou]**2 / Uq[irho])
+	e = (Uq[irhoE] - 0.5 * (Uq[irhou]**2 / Uq[irho])) / Uq[irho]
 	# Get specific volume
 	nu = 1./Uq[irho]
 	# Get YO2
