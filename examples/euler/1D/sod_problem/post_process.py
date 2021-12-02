@@ -22,10 +22,7 @@ plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=False,
 		plot_exact=False, plot_IC=False, plot_average=True,
 		create_new_figure=False, fmt='bo', legend_label="Numerical")
 
-if solver.params["ArtificialViscosity"]:
-    plot.save_figure(file_name='Density_AV', file_type='png')
-else:
-    plot.save_figure(file_name='Density', file_type='png')
+plot.save_figure(file_name='Density', file_type='png')
 
 ### Pressure
 # Exact solution
@@ -37,10 +34,7 @@ plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=False,
 		plot_exact=False, plot_IC=False, plot_average=True,
 		create_new_figure=False, fmt='bo', legend_label="Numerical")
 
-if solver.params["ArtificialViscosity"]:
-    plot.save_figure(file_name='Pressure_AV', file_type='png')
-else:
-    plot.save_figure(file_name='Pressure', file_type='png')
+plot.save_figure(file_name='Pressure', file_type='png')
 
 ### Velocity
 # Exact solution
@@ -52,9 +46,6 @@ plot.plot_solution(mesh, physics, solver, "Velocity", plot_numerical=False,
 		plot_exact=False, plot_IC=False, plot_average=True,
 		create_new_figure=False, fmt='bo', legend_label="Numerical")
 
-if solver.params["ArtificialViscosity"]:
-    plot.save_figure(file_name='Velocity_AV', file_type='png')
-else:
-    plot.save_figure(file_name='Velocity', file_type='png')
+plot.save_figure(file_name='Velocity', file_type='png')
 
 plot.show_plot()
