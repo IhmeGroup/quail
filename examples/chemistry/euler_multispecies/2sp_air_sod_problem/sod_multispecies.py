@@ -19,7 +19,7 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ArtificialViscosity" : True,
-    "AVParameter" : 1000,
+    "AVParameter" : 1e5,
     "PredictorThreshold" : 1e-10,
 }
 

@@ -6,7 +6,7 @@ GAS_CONSTANT = 8.3144621000e3 # [J / (K kmole)]
 def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 
 	if physics.gas is None:
-		physics.gas = ct.Solution('air_test.yaml')
+		physics.gas = ct.Solution(physics.CANTERA_FILENAME)
 
 	irho, irhou, irhoE = physics.get_state_indices()
 
