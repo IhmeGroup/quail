@@ -8,18 +8,18 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
     "TimeStepSize" : 1.0e-5,
-#    "CFL" : 0.05,
-#    "TimeStepper" : "ADER",
-    "TimeStepper" : "SSPRK3",
+    "TimeStepper" : "ADER",
+#    "TimeStepper" : "SSPRK3",
 }
 
 
 Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-    "Solver" : "DG",
+    "Solver" : "ADERDG",
+    #"Solver" : "DG",
     "ArtificialViscosity" : True,
-    "AVParameter" : 1e5,
+    "AVParameter" : 1e4,
     "PredictorThreshold" : 1e-10,
 }
 
@@ -45,13 +45,12 @@ Physics = {
     "ConvFluxNumerical" : "LaxFriedrichs",
 }
 
-
 state = { 
     "Function" : "SodMultispeciesAir",
 }
 
 InitialCondition = state
-ExactSolution = state
+
 BoundaryConditions = {
     "x1" : {
         "BCType" : "StateAll",
