@@ -36,7 +36,7 @@ External Library Locations
 --------------------------
 '''
 cantera_lib = '/home/ihme/bornhoft/utilities/\
-quail_cantera_interface/build/libcombustor.so'
+quail_cantera_interface/build/libquail_cantera_interface.so'
 
 
 '''
@@ -171,7 +171,9 @@ class PhysicsType(Enum):
 		# Model for PSR (with H2/Air chemistry)
 	EulerMultispecies_2sp_air = auto()
 		# Simple 2sp air transport (with variable cp)
-		
+	EulerMultispecies_1sp_air = auto()
+		# Simple 1sp air transport (with variable cp)
+
 class TransportType(Enum):
 	'''
 	This enum contains the available transport types for Navier-Stokes.
