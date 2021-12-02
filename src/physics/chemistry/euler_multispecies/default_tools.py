@@ -8,16 +8,16 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	if physics.gas is None:
 		physics.gas = ct.Solution('air_test.yaml')
 
-	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
+	irho, irhou, irhoE = physics.get_state_indices()
 
 	# Get energy
 	e = (Uq[irhoE] - 0.5 * (Uq[irhou]**2 / Uq[irho])) / Uq[irho]
 	# Get specific volume
 	nu = 1./Uq[irho]
 	# Get YO2
-	YO2 = Uq[irhoYO2] / Uq[irho]
+	YO2 = Uq[3] / Uq[irho]
 	# Get YN2
-	YN2 = 1.0 - Uq[irhoYO2] / Uq[irho]
+	YN2 = 1.0 - YO2
 
 	physics.gas.UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
