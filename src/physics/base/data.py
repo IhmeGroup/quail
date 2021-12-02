@@ -138,7 +138,7 @@ class BCWeakPrescribed(BCBase):
 	See BCBase for detailed comments of attributes and methods.
 	Child classes define their own get_boundary_state.
 
-	This class computes the boundary flux via the analytic flux based on
+	This class computes the boundary flux via the analytical flux based on
 	only the exterior state, i.e. F(UqB, n).
 	'''
 	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):

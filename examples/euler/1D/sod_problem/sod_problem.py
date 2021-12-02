@@ -17,6 +17,8 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiters" : "PositivityPreserving",
+    "ArtificialViscosity" : True,
+    "AVParameter" : 50.,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
@@ -44,12 +46,12 @@ Physics = {
 }
 
 
-state = { 
+state = {
     "Function" : "RiemannProblem",
-    "rhoL" : 1., 
+    "rhoL" : 1.,
     "uL" : 0.,
     "pL" : 1.,
-    "rhoR" : 0.125, 
+    "rhoR" : 0.125,
     "uR" : 0.,
     "pR" : 0.1,
     "xd" : 0.0,
@@ -62,7 +64,7 @@ BoundaryConditions = {
     "x1" : {
         "BCType" : "SlipWall"
         },
-    "x2" : { 
+    "x2" : {
         "BCType" : "SlipWall"
         }
 }
