@@ -17,7 +17,7 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
     "ApplyLimiters" : "PositivityPreserving",
-    "ArtificialViscosity" : True,
+    "ArtificialViscosity" : False,
     "AVParameter" : 50.,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
