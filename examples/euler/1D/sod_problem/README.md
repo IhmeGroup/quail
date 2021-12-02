@@ -1,10 +1,14 @@
 This case involves the well-known Sod problem configuration.
-The Sod problem is a specific type of Riemann problem.  
+The Sod problem is a specific type of Riemann problem.
   - Left and right states are defined as follows:
-    - `uL = [1., 0., 1.]` and `uR = [0., .1, .5]` 
+    - `uL = [1., 0., 1.]` and `uR = [0., .1, .5]`
     (`rho, u, p` respectively)
-  - Post-processing plots the exact solution against the 
+  - Post-processing plots the exact solution against the
   density, pressure, and velocity.
+  - By default, the case uses the positivity preserving limiter to improve
+    stability. Instead, artificial viscosity can be used, which has the added
+    benefit of smoothing out oscillations near discontinuities. This can be
+    turned on by changing `"ArtificialViscosity"` to `True` in the input file.
 
 
 <p align="left">
