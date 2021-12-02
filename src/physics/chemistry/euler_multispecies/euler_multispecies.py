@@ -83,6 +83,65 @@ class EulerMultispecies1D(EulerMultispecies):
 	'''
 	NDIMS = 1
 
+	def set_physical_params(self):
+		gas = ct.Solution(self.CANTERA_FILENAME)
+		# Save object to physics class before calculating inflow props
+		self.gas = gas
+
+	def get_momentum_slice(self):
+		irhou = self.get_state_index("XMomentum")
+		smom = slice(irhou, irhou+1)
+
+		return smom
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		''' Extract state variables '''
+		srho = self.get_state_slice("Density")
+		srhoE = self.get_state_slice("Energy")
+		smom = self.get_momentum_slice()
+
+		rho = Uq[:, :, srho]
+		rhoE = Uq[:, :, srhoE]
+		mom = Uq[:, :, smom]
+
+		''' Flag non-physical state '''
+		if flag_non_physical:
+			if np.any(rho < 0.):
+				raise errors.NotPhysicalError
+
+		''' Get final scalars '''
+		vname = self.AdditionalVariables[var_name].name
+		if vname is self.AdditionalVariables["Pressure"].name:
+			# T = thermo_tools.get_T_from_U(self, Uq)
+			varq = thermo_tools.get_pressure(self, Uq)
+		elif vname is self.AdditionalVariables["Temperature"].name:
+			varq = thermo_tools.get_temperature(self, Uq)
+		elif vname is self.AdditionalVariables["SpecificHeatRatio"].name:
+			varq = thermo_tools.get_specificheatratio(self, Uq)
+		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			varq = thermo_tools.get_maxwavespeed(self, Uq)
+		#NOTE: 1D only right now.
+		elif vname is self.AdditionalVariables["Velocity"].name:
+			varq = mom/rho
+		else:
+			raise NotImplementedError
+
+		return varq
+
+	def get_state_indices(self):
+		irho = self.get_state_index("Density")
+		irhou = self.get_state_index("XMomentum")
+		irhoE = self.get_state_index("Energy")
+
+		return irho, irhou, irhoE
+
+	def get_state_slices(self):
+		srho = self.get_state_slice("Density")
+		srhou = self.get_state_slice("XMomentum")
+		srhoE = self.get_state_slice("Energy")
+
+		return srho, srhou, srhoE
+
 	def get_conv_flux_interior(self, Uq):
 
 		rho = Uq[:, :, 0]
@@ -155,11 +214,6 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies1D):
 		Energy = "\\rho E"
 		rhoYO2 = "\\rho Y_{O2}"
 
-	def set_physical_params(self):
-		gas = ct.Solution(self.CANTERA_FILENAME)
-		# Save object to physics class before calculating inflow props
-		self.gas = gas
-
 	class AdditionalVariables(Enum):
 	    Pressure = "p"
 	    Temperature = "T"
@@ -173,67 +227,113 @@ class EulerMultispecies1D_2sp_air(EulerMultispecies1D):
 	    SpecificHeatRatio = "\\gamma"
 
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
-			''' Extract state variables '''
-			srho = self.get_state_slice("Density")
-			srhoE = self.get_state_slice("Energy")
-			# srhoY = self.get_state_slice("Mixture")
-			smom = self.get_momentum_slice()
-			srhoYO2 = self.get_state_slice("rhoYO2")
-			# srhoYN2 = self.get_state_slice("rhoYN2")
-
-			rho = Uq[:, :, srho]
-			rhoE = Uq[:, :, srhoE]
-			mom = Uq[:, :, smom]
-			rhoYO2 = Uq[:, :, srhoYO2]
-			# rhoYN2 = Uq[:, :, srhoYN2]
-			rhoYN2 = rho * (1.0 - rhoYO2 / rho)
-
-			''' Flag non-physical state '''
-			if flag_non_physical:
-				if np.any(rho < 0.):
-					raise errors.NotPhysicalError
-
-			''' Get final scalars '''
-			vname = self.AdditionalVariables[var_name].name
-			if vname is self.AdditionalVariables["Pressure"].name:
-				# T = thermo_tools.get_T_from_U(self, Uq)
-				varq = thermo_tools.get_pressure(self, Uq)
-			elif vname is self.AdditionalVariables["Temperature"].name:
-				varq = thermo_tools.get_temperature(self, Uq)
-			elif vname is self.AdditionalVariables["SpecificHeatRatio"].name:
-				varq = thermo_tools.get_specificheatratio(self, Uq)
-			elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
-				varq = thermo_tools.get_maxwavespeed(self, Uq)
-			elif vname is self.AdditionalVariables["MassFractionO2"].name:
-				varq = rhoYO2/rho
-			elif vname is self.AdditionalVariables["MassFractionN2"].name:
-				varq = rhoYN2/rho
-			#NOTE: 1D only right now.
-			elif vname is self.AdditionalVariables["Velocity"].name:
-				varq = mom/rho
-			else:
-				raise NotImplementedError
-
-			return varq
-
-	def get_state_indices(self):
-		irho = self.get_state_index("Density")
-		irhou = self.get_state_index("XMomentum")
-		irhoE = self.get_state_index("Energy")
-		irhoYO2 = self.get_state_index("rhoYO2")
-
-		return irho, irhou, irhoE, irhoYO2
-
-	def get_state_slices(self):
+		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
-		srhou = self.get_state_slice("XMomentum")
 		srhoE = self.get_state_slice("Energy")
-		srhoYO2 = self.get_state_slice("rhoYO2")
+		# srhoY = self.get_state_slice("Mixture")
+		smom = self.get_momentum_slice()
+		# srhoYN2 = self.get_state_slice("rhoYN2")
 
-		return srho, srhou, srhoE, srhoYO2
+		rho = Uq[:, :, srho]
+		rhoE = Uq[:, :, srhoE]
+		mom = Uq[:, :, smom]
+		rhoYO2 = Uq[:, :, [3]]
+		rhoYN2 = rho * (1.0 - rhoYO2 / rho)
 
-	def get_momentum_slice(self):
-		irhou = self.get_state_index("XMomentum")
-		smom = slice(irhou, irhou+1)
+		''' Flag non-physical state '''
+		if flag_non_physical:
+			if np.any(rho < 0.):
+				raise errors.NotPhysicalError
 
-		return smom
+		''' Get final scalars '''
+		vname = self.AdditionalVariables[var_name].name
+		if vname is self.AdditionalVariables["MassFractionO2"].name:
+			varq = rhoYO2/rho
+		elif vname is self.AdditionalVariables["MassFractionN2"].name:
+			varq = rhoYN2/rho
+		else:
+			varq = super().compute_additional_variable(var_name, Uq, 
+					flag_non_physical)
+		return varq
+
+
+class EulerMultispecies1D_1sp_air(EulerMultispecies1D):
+	'''
+	This class corresponds to 1D Euler equations with simple chemistry.
+	It inherits attributes and methods from the Chemistry class.
+	See Chemistry for detailed comments of attributes and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	NUM_STATE_VARS = 3
+	NUM_SPECIES  = 1
+	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies_1sp_air
+	CANTERA_FILENAME = "Nitrogen.xml"
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			euler_mult_fcn_type.SodMultispeciesAir1sp : \
+				euler_mult_fcns.SodMultispeciesAir1sp,
+			# chemistry_fcn_type.DensityWave : chemistry_fcns.DensityWave,
+			# chemistry_fcn_type.SimpleDetonation1 : \
+			# 		chemistry_fcns.SimpleDetonation1,
+			# chemistry_fcn_type.OverdrivenDetonation : \
+			# 		chemistry_fcns.OverdrivenDetonation,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+
+		# self.source_map.update({
+			# chemistry_source_type.Arrhenius : chemistry_fcns.Arrhenius,
+			# chemistry_source_type.Heaviside : chemistry_fcns.Heaviside,
+
+		# })
+
+		self.conv_num_flux_map.update({
+		})
+
+	class StateVariables(Enum):
+		Density = "\\rho"
+		XMomentum = "\\rho u"
+		Energy = "\\rho E"
+
+	class AdditionalVariables(Enum):
+	    Pressure = "p"
+	    Temperature = "T"
+	    Entropy = "s"
+	    InternalEnergy = "\\rho e"
+	    TotalEnthalpy = "H"
+	    SoundSpeed = "c"
+	    MaxWaveSpeed = "\\lambda"
+	    MassFractionN2 = "YN2"
+	    SpecificHeatRatio = "\\gamma"
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		''' Extract state variables '''
+		srho = self.get_state_slice("Density")
+		srhoE = self.get_state_slice("Energy")
+		# srhoY = self.get_state_slice("Mixture")
+		smom = self.get_momentum_slice()
+		# srhoYN2 = self.get_state_slice("rhoYN2")
+
+		rho = Uq[:, :, srho]
+		rhoE = Uq[:, :, srhoE]
+		mom = Uq[:, :, smom]
+
+		''' Flag non-physical state '''
+		if flag_non_physical:
+			if np.any(rho < 0.):
+				raise errors.NotPhysicalError
+
+		''' Get final scalars '''
+		vname = self.AdditionalVariables[var_name].name
+		if vname is self.AdditionalVariables["MassFractionN2"].name:
+			varq = rhoYN2/rho
+		else:
+			varq = super().compute_additional_variable(var_name, Uq, 
+					flag_non_physical)
+		return varq

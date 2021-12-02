@@ -28,30 +28,6 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	physics.gas.UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
 
 
-def set_state_from_primitives(physics, rho, P, u, Y):
-	
-	gas = physics.gas
-
-	U = np.zeros([physics.NUM_STATE_VARS])
-	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
-
-	U[irho] = rho
-	U[irhou] = rho*u
-	U[irhoYO2] = rho * Y[0]
-	# U[irhoYN2] = rho * Y[1]
-
-	W = get_W_from_Y(gas.molecular_weights, Y)
-	T = get_T_from_rhop(rho, P, W)
-	gas.TPY = T, P, "O2:{},N2:{}".format(Y[0, 0], Y[1, 0])
-
-	gamma = get_gamma(gas.cv, W)
-	
-	# Double check this definition
-	U[irhoE] = rho * gas.UV[0] + 0.5*rho*u*u
-
-	return U
-
-
 def get_W_from_Y(Wi, Y):
 	Wi1 = 1./Wi
 	return 1./np.dot(Wi1, Y)
@@ -71,7 +47,7 @@ def get_pressure(physics, Uq):
 	filename = physics.c_cantera_file()
 
 	P = np.zeros([ne, nq, 1])
-	LIB.get_pressure(
+	LIB.get_pressure_interface(
 		ctypes.c_void_p(Uq.ctypes.data), 
 		ctypes.c_void_p(P.ctypes.data),
 		ctypes.c_int(ne), 
@@ -91,7 +67,7 @@ def get_temperature(physics, Uq):
 	nsp = physics.NUM_SPECIES
 
 	T = np.zeros([ne, nq, 1])
-	LIB.get_temperature(
+	LIB.get_temperature_interface(
 		ctypes.c_void_p(Uq.ctypes.data), 
 		ctypes.c_void_p(T.ctypes.data),
 		ctypes.c_int(ne), 
@@ -109,9 +85,9 @@ def get_specificheatratio(physics, Uq):
 	nq = Uq.shape[1]
 	ns = Uq.shape[-1]
 	nsp = physics.NUM_SPECIES
-	
+
 	gamma = np.zeros([ne, nq, 1])
-	LIB.get_specificheatratio(
+	LIB.get_gamma_interface(
 		ctypes.c_void_p(Uq.ctypes.data), 
 		ctypes.c_void_p(gamma.ctypes.data),
 		ctypes.c_int(ne), 
@@ -125,11 +101,27 @@ def get_specificheatratio(physics, Uq):
 
 
 def get_maxwavespeed(physics, Uq):
+	ne = Uq.shape[0]
+	nq = Uq.shape[1]
+	ns = Uq.shape[-1]
+	nsp = physics.NUM_SPECIES
 
-	gamma = get_specificheatratio(physics, Uq)
-	P = get_pressure(physics, Uq)
+	gamma = np.zeros([ne, nq, 1])
+	P = np.zeros([ne, nq, 1])
 
-	irho, irhou, irhoE, irhoYO2 = physics.get_state_indices()
+	LIB.get_wavespeed_interface(
+		ctypes.c_void_p(Uq.ctypes.data), 
+		ctypes.c_void_p(gamma.ctypes.data),
+		ctypes.c_void_p(P.ctypes.data),
+		ctypes.c_int(ne), 
+		ctypes.c_int(nq), 
+		ctypes.c_int(ns),
+		ctypes.c_int(nsp),
+		ctypes.c_int(physics.NDIMS),
+		physics.c_cantera_file()
+			)
+
+	irho, irhou, irhoE = physics.get_state_indices()
 	smom = physics.get_momentum_slice()
 
 	rho = Uq[:, :, [irho]]
