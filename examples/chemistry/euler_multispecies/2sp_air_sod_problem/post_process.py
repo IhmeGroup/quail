@@ -5,24 +5,30 @@ import numpy as np
 from external.optional_cantera import ct
 
 # Read data file
-fname = "Data_aderdg_p2.pkl"
+fname = "Data_dg_p2_av1e4.pkl"
 solver = readwritedatafiles.read_data_file(fname)
 
 # Unpack
 mesh = solver.mesh
 physics = solver.physics
 
-fname = "Data_dg_p2.pkl"
-
+fname = "Data_base_p2_av1e4.pkl"
 solver2 = readwritedatafiles.read_data_file(fname)
 
 # Unpack
 mesh2 = solver2.mesh
 physics2 = solver2.physics
 
-name1 = "DG"
-name2 = "ADERDG"
+fname = "Data_aderdg_p2_av1e4.pkl"
+solver3 = readwritedatafiles.read_data_file(fname)
 
+# Unpack
+mesh3 = solver3.mesh
+physics3 = solver3.physics
+
+name1 = "Euler"
+name2 = "DG MultiSp"
+name3 = "ADERDG MultiSp"
 
 # Flag for num vs avg
 num = True
@@ -34,9 +40,9 @@ avg = False
 ### Density
 plot.prepare_plot()
 # Exact solution
-#plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=False, 
-#		plot_exact=True, plot_IC=False, create_new_figure=True, 
-#		fmt='k-.', legend_label="Exact")
+plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=False, 
+		plot_exact=True, plot_IC=False, create_new_figure=True, 
+		fmt='k-.', legend_label="Exact")
 ## Base solution
 plot.plot_solution(mesh2, physics2, solver2, "Density", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
@@ -46,23 +52,34 @@ plot.plot_solution(mesh, physics, solver, "Density", plot_numerical=num,
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label=name2)
 
+# ADERDG solution
+plot.plot_solution(mesh3, physics3, solver3, "Density", plot_numerical=num, 
+ 		plot_exact=False, plot_IC=False, plot_average=avg,
+ 		create_new_figure=False, fmt='g-', legend_label=name3)
+
 plot.save_figure(file_name='density', file_type='pdf', crop_level=2)
 
 #########################################################################################
 
 # ### Pressure
 # Exact solution
-#plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=False, 
-#		plot_exact=True, plot_IC=False, create_new_figure=True, 
-#		fmt='k-.', legend_label="Exact")
+plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=False, 
+		plot_exact=True, plot_IC=False, create_new_figure=True, 
+		fmt='k-.', legend_label="Exact")
 # Base solution
 plot.plot_solution(mesh2, physics2, solver2, "Pressure", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
- 		create_new_figure=True, fmt='bo-', legend_label=name1)
+ 		create_new_figure=False, fmt='bo-', legend_label=name1)
 # DG solution
 plot.plot_solution(mesh, physics, solver, "Pressure", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label=name2)
+
+# ADERDG solution
+plot.plot_solution(mesh3, physics3, solver3, "Pressure", plot_numerical=num, 
+ 		plot_exact=False, plot_IC=False, plot_average=avg,
+ 		create_new_figure=False, fmt='g-', legend_label=name3)
+
 
 plot.save_figure(file_name='pressure', file_type='pdf', crop_level=2)
 
@@ -82,6 +99,11 @@ plot.plot_solution(mesh, physics, solver, "Temperature", plot_numerical=num,
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label=name2)
 
+# ADERDG solution
+plot.plot_solution(mesh3, physics3, solver3, "Temperature", plot_numerical=num, 
+ 		plot_exact=False, plot_IC=False, plot_average=avg,
+ 		create_new_figure=False, fmt='g-', legend_label=name3)
+
 plot.save_figure(file_name='temperature', file_type='pdf', crop_level=2)
 
 #########################################################################################
@@ -95,28 +117,16 @@ plot.plot_solution(mesh2, physics2, solver2, "SpecificHeatRatio", plot_numerical
 plot.plot_solution(mesh2, physics2, solver2, "SpecificHeatRatio", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='bo-', legend_label=name1)
-## DG solution
+# DG solution
 plot.plot_solution(mesh, physics, solver, "SpecificHeatRatio", plot_numerical=num, 
  		plot_exact=False, plot_IC=False, plot_average=avg,
  		create_new_figure=False, fmt='ro-', legend_label=name2)
 
-plot.save_figure(file_name='gamma', file_type='pdf', crop_level=2)
+# ADERDG solution
+plot.plot_solution(mesh3, physics3, solver3, "SpecificHeatRatio", plot_numerical=num, 
+ 		plot_exact=False, plot_IC=False, plot_average=avg,
+ 		create_new_figure=False, fmt='g-', legend_label=name3)
 
-#########################################################################################
-## Velocity 
-# Exact solution
-#plot.plot_solution(mesh, physics, solver, "Velocity", plot_numerical=False, 
-#		plot_exact=True, plot_IC=False, create_new_figure=True, 
-#		fmt='k-.', legend_label="Exact")
-## DG solution
-#plot.plot_solution(mesh2, physics2, solver2, "Velocity", plot_numerical=num, 
-#		plot_exact=False, plot_IC=False, plot_average=avg,
-#		create_new_figure=False, fmt='bo-', legend_label="Euler")
-#
-## DG solution
-#plot.plot_solution(mesh, physics, solver, "Velocity", plot_numerical=num, 
-#		plot_exact=False, plot_IC=False, plot_average=avg,
-#		create_new_figure=False, fmt='ro-', legend_label="Euler+Multispecies")
-#
+plot.save_figure(file_name='gamma', file_type='pdf', crop_level=2)
 
 plot.show_plot()
