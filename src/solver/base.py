@@ -124,6 +124,7 @@ class SolverBase(ABC):
 		self.mesh = mesh
 
 		self.time = params["InitialTime"]
+		self.itime = 0
 
 		# Set solution basis and order
 		self.order = params["SolutionOrder"]
