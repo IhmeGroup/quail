@@ -16,7 +16,8 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	nu = 1./Uq[irho]
 
 	# Get Y
-	Y = np.array([physics.NUM_SPECIES])
+	nsp = physics.NUM_SPECIES
+	Y = np.array([nsp])
 	Y_last = 1.0
 	for isp in range(nsp - 1):
 		Y[isp] = Uq[irhoE + 1 + isp] * nu
