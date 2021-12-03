@@ -652,7 +652,7 @@ class SolverBase(ABC):
 		self.custom_user_function(self)
 
 		self.itime = 0
-		while solver.itime < stepper.num_time_steps:
+		while self.itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
 			self.min_state[:] = np.inf
@@ -671,12 +671,12 @@ class SolverBase(ABC):
 			self.custom_user_function(self)
 
 			# Print info
-			self.print_info(physics, res, solver.itime, t, stepper.dt)
+			self.print_info(physics, res, self.itime, t, stepper.dt)
 
 			# Write data file
-			if (solver.itime + 1) % write_interval == 0:
+			if (self.itime + 1) % write_interval == 0:
 				readwritedatafiles.write_data_file(self,
-						(solver.itime + 1) // write_interval)
+						(self.itime + 1) // write_interval)
 
 			self.itime += 1
 
