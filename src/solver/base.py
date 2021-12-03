@@ -676,7 +676,7 @@ class SolverBase(ABC):
 			# Write data file
 			if (solver.itime + 1) % write_interval == 0:
 				readwritedatafiles.write_data_file(self,
-                        (solver.itime + 1) // write_interval)
+						(solver.itime + 1) // write_interval)
 
 			solver.itime += 1
 
