@@ -3,12 +3,12 @@
 #       quail: A lightweight discontinuous Galerkin code for
 #              teaching and prototyping
 #		<https://github.com/IhmeGroup/quail>
-#       
+#
 #		Copyright (C) 2020-2021
 #
 #       This program is distributed under the terms of the GNU
 #		General Public License v3.0. You should have received a copy
-#       of the GNU General Public License along with this program.  
+#       of the GNU General Public License along with this program.
 #		If not, see <https://www.gnu.org/licenses/>.
 #
 # ------------------------------------------------------------------------ #
@@ -63,6 +63,8 @@ class SolverBase(ABC):
 		contains the geometric information for the solver's mesh
 	time: float
 		global time of the solution at the given time step
+	itime: int
+		global iteration count
 	basis: object
 		contains all the information and methods for the basis class
 	order: int
@@ -508,7 +510,7 @@ class SolverBase(ABC):
 		np.add.at(res, elemL_IDs, -RL)
 		np.add.at(res, elemR_IDs,  RR)
 
-		# Add the additional diffusion portion of the residual to the 
+		# Add the additional diffusion portion of the residual to the
 		# correct left/right states.
 		np.add.at(res, elemL_IDs,  RL_diff)
 		np.add.at(res, elemR_IDs,  RR_diff)
@@ -641,7 +643,6 @@ class SolverBase(ABC):
 			readwritedatafiles.write_data_file(self, 0)
 
 		t0 = time.time()
-		iwrite = 1
 
 		print("\n\nUNSTEADY SOLVE:")
 		print("--------------------------------------------------------" + \
@@ -650,8 +651,8 @@ class SolverBase(ABC):
 		# Custom user function initial iteration
 		self.custom_user_function(self)
 
-		itime = 0
-		while itime < stepper.num_time_steps:
+		solver.itime = 0
+		while solver.itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
 			self.min_state[:] = np.inf
@@ -670,15 +671,14 @@ class SolverBase(ABC):
 			self.custom_user_function(self)
 
 			# Print info
-			self.print_info(physics, res, itime, t, stepper.dt)
-
+			self.print_info(physics, res, solver.itime, t, stepper.dt)
 
 			# Write data file
-			if (itime + 1) % write_interval == 0:
-				readwritedatafiles.write_data_file(self, iwrite)
-				iwrite += 1
+			if (solver.itime + 1) % write_interval == 0:
+				readwritedatafiles.write_data_file(self,
+                        (solver.itime + 1) // write_interval)
 
-			itime += 1
+			solver.itime += 1
 
 		t1 = time.time()
 		print("\nWall clock time = %g seconds" % (t1 - t0))
