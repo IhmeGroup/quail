@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# TODO: This needs to be in LD_LIBRARY_PATH when Quail is run too, so figure out
-# some way to make that happen. For now, just run this export before running
-# Quail
-export LD_LIBRARY_PATH=/home/ali/software/mmg/lib:$LD_LIBRARY_PATH
-g++ -fPIC -shared -O3 -I/home/ali/software/mmg/include/ mesh_adapter.cpp -L/home/ali/software/mmg/lib -lmmg2d -o libmesh_adapter.so -std=c++17
+# TODO: This needs to be changed by the user
+Mmg_dir='/home/ali/software/mmg/'
+
+export LD_LIBRARY_PATH=$Mmg_dir/lib:$LD_LIBRARY_PATH
+g++ -fPIC -shared -O3 -I$Mmg_dir/include/ mesh_adapter.cpp -L$Mmg_dir/lib \
+        -Wl,-rpath=$Mmg_dir/lib -lmmg2d -o libmesh_adapter.so -std=c++17

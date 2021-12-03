@@ -3,12 +3,12 @@
 #       quail: A lightweight discontinuous Galerkin code for
 #              teaching and prototyping
 #		<https://github.com/IhmeGroup/quail>
-#       
+#
 #		Copyright (C) 2020-2021
 #
 #       This program is distributed under the terms of the GNU
 #		General Public License v3.0. You should have received a copy
-#       of the GNU General Public License along with this program.  
+#       of the GNU General Public License along with this program.
 #		If not, see <https://www.gnu.org/licenses/>.
 #
 # ------------------------------------------------------------------------ #
@@ -135,6 +135,8 @@ Numerics = {
 		# Sets the threshold requirement for the predictor step's
 		# nonlinear solve. Lower values can be chosen which speeds up
 		# the simulations, but at the cost of some error increase.
+	"Adaptation" : False,
+		# Flag to activate adaptation
 }
 
 
@@ -183,7 +185,7 @@ Physics = {
 		# Numerical diffusive flux
 		# See DiffNumFluxType in functions.py in the corresponding physics
 		# modules
-		
+
 	# Physical parameters specific to the physics type are also set here.
 	# Refer to the corresponding physics classes and the examples.
 }

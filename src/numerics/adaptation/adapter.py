@@ -89,6 +89,10 @@ class Adapter:
 		self.solver = solver
 
 	def adapt(self):
+		# If adaptation is turned off, then do not perform adaptation
+		if not self.solver.params["Adaptation"]:
+			return
+
 		# TODO
 		skip_iter = 100
 		n_adaptation_steps = 100000
