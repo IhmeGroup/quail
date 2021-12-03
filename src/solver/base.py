@@ -651,7 +651,6 @@ class SolverBase(ABC):
 		# Custom user function initial iteration
 		self.custom_user_function(self)
 
-		self.itime = 0
 		while self.itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
