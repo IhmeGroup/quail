@@ -33,6 +33,8 @@ from general import ModalOrNodal, NodeType, ShapeType, QuadratureType, \
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
 
+import numerics.adaptation.adapter as adapter_defs
+
 import numerics.basis.tools as basis_tools
 
 import numerics.helpers.helpers as helpers
@@ -166,6 +168,9 @@ class SolverBase(ABC):
 				# Set TVB Parameter
 				limiter.tvb_param = tvb_param
 				self.limiters.append(limiter)
+
+		# Create adapter object
+		self.adapter = adapter_defs.Adapter(self)
 
 		# Console output
 		self.verbose = params["Verbose"]
@@ -677,6 +682,9 @@ class SolverBase(ABC):
 			if (self.itime + 1) % write_interval == 0:
 				readwritedatafiles.write_data_file(self,
 						(self.itime + 1) // write_interval)
+
+			# Perform adaptation
+			self.adapter.adapt()
 
 			self.itime += 1
 
