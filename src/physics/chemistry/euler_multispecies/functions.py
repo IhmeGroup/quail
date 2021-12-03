@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/physics/chemistry/functions.py
+#       File : src/physics/chemistry/euler_multispecies/functions.py
 #
 #       Contains definitions of Functions, boundary conditions, and source
 #       terms for the 1D Euler equations with a simple transport equation
@@ -21,7 +21,7 @@ from external.optional_thermo import thermo_tools
 class FcnType(Enum):
     SodMultispeciesAir = auto()
     SodMultispeciesAir1sp = auto()
-
+    InertShockTube = auto()
 
 # class SourceType(Enum):
     # Arrhenius = auto()
@@ -216,12 +216,72 @@ class SodMultispeciesAir1sp(FcnBase):
 			Uq[elem_ID, ileft, srhou] = stateL[srhou]
 			# Energy
 			Uq[elem_ID, iright, srhoE] = stateR[srhoE]
-			Uq[elem_ID, ileft, srhoE] = stateL[srhoE]
+			Uq[elem_ID, ileft, srhoE] = stateL[srhoE]	
+
+		return Uq # [ne, nq, ns]
+
+
+class InertShockTube(FcnBase):
+	'''
+	Case simulates a multispecies inert shock tube
+	'''
+	def __init__(self):
+		'''
+		This method initializes the attributes.
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+
+	def get_state(self, physics, x, t):
+		# Need to reset physical params since gas objects cant be saved
+		# in pickle files
+		if physics.gas is None:
+			physics.gas = ct.Solution(physics.CANTERA_FILENAME)		
+
+		xshock = 0.05 # middle of the domain
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		# Set the left state first
+		physics.gas.TPX = 400.0, 8000.0, \
+			"H2:{}, O2:{}, AR:{}".format(2, 1, 7)
+
+		rhoL = physics.gas.DPY[0]
+		rhoEL = rhoL * physics.gas.UV[0] # ignore KE since u = 0
+		rhoYH2L = rhoL * physics.gas.DPY[2][0]
+		rhoYO2L = rhoL * physics.gas.DPY[2][1]
+
+		# Set the right state second
+		physics.gas.TPX = 1200.0, 80000.0, \
+			"H2:{}, O2:{}, AR:{}".format(2, 1, 7)
+
+		rhoR = physics.gas.DPY[0]
+		rhoER = rhoR * physics.gas.UV[0] # ignore KE since u = 0
+		rhoYH2R = rhoR * physics.gas.DPY[2][0]
+		rhoYO2R = rhoR * physics.gas.DPY[2][1]
+
+		''' Fill state '''
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		for elem_ID in range(Uq.shape[0]):
+			ileft = (x[elem_ID] < xshock).reshape(-1)
+			iright = (x[elem_ID] >= xshock).reshape(-1)
+
+			# Density
+			Uq[elem_ID, iright, srho] = rhoR
+			Uq[elem_ID, ileft, srho] = rhoL
+			# Momentum
+			Uq[elem_ID, iright, srhou] = 0.
+			Uq[elem_ID, ileft, srhou] = 0.
+			# Energy
+			Uq[elem_ID, iright, srhoE] = rhoER
+			Uq[elem_ID, ileft, srhoE] = rhoEL
+			# YH2
+			Uq[elem_ID, iright, 3] = rhoYH2R
+			Uq[elem_ID, ileft, 3] = rhoYH2L	
 			# YO2
-			# Uq[elem_ID, iright, srhoYO2] = stateR[srhoYO2]
-			# Uq[elem_ID, ileft, srhoYO2] = stateL[srhoYO2]	
-			# YN2
-			# Uq[elem_ID, iright, srhoYN2] = stateR[srhoYN2]
-			# Uq[elem_ID, ileft, srhoYN2] = stateL[srhoYN2]		
+			Uq[elem_ID, iright, 4] = rhoYO2R
+			Uq[elem_ID, ileft, 4] = rhoYO2L	
 
 		return Uq # [ne, nq, ns]

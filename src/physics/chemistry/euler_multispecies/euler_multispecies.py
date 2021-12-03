@@ -312,17 +312,61 @@ class EulerMultispecies1D_1sp_air(EulerMultispecies1D):
 	    MassFractionN2 = "YN2"
 	    SpecificHeatRatio = "\\gamma"
 
+
+class EulerMultispecies1D_3sp_H2O2_inert(EulerMultispecies1D):
+	'''
+	This class corresponds to 1D Euler equations with simple chemistry.
+	It inherits attributes and methods from the Chemistry class.
+	See Chemistry for detailed comments of attributes and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	NUM_STATE_VARS = 5
+	NUM_SPECIES  = 3
+	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies1D_3sp_H2O2_inert
+	CANTERA_FILENAME = "h2o2_inert.xml"
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			euler_mult_fcn_type.InertShockTube : \
+				euler_mult_fcns.InertShockTube,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+		self.conv_num_flux_map.update({
+		})
+
+	class StateVariables(Enum):
+		Density = "\\rho"
+		XMomentum = "\\rho u"
+		Energy = "\\rho E"
+		rhoYN2 = "\\rho Y_{H2}"
+		rhoYO2 = "\\rho Y_{O2}"
+
+	class AdditionalVariables(Enum):
+	    Pressure = "p"
+	    Temperature = "T"
+	    Entropy = "s"
+	    InternalEnergy = "\\rho e"
+	    TotalEnthalpy = "H"
+	    SoundSpeed = "c"
+	    MaxWaveSpeed = "\\lambda"
+	    MassFractionO2 = "Y_{O2}"
+	    MassFractionH2 = "Y_{H2}"
+	    MassFractionAR = "Y_{Ar}"
+	    SpecificHeatRatio = "\\gamma"
+
 	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
-		srhoE = self.get_state_slice("Energy")
-		# srhoY = self.get_state_slice("Mixture")
-		smom = self.get_momentum_slice()
-		# srhoYN2 = self.get_state_slice("rhoYN2")
-
 		rho = Uq[:, :, srho]
-		rhoE = Uq[:, :, srhoE]
-		mom = Uq[:, :, smom]
+		rhoYH2 = Uq[:, :, [3]]
+		rhoYO2 = Uq[:, :, [4]]
+		rhoYAR = rho * (1.0 - (rhoYO2 + rhoYH2) / rho)
 
 		''' Flag non-physical state '''
 		if flag_non_physical:
@@ -331,8 +375,12 @@ class EulerMultispecies1D_1sp_air(EulerMultispecies1D):
 
 		''' Get final scalars '''
 		vname = self.AdditionalVariables[var_name].name
-		if vname is self.AdditionalVariables["MassFractionN2"].name:
-			varq = rhoYN2/rho
+		if vname is self.AdditionalVariables["MassFractionH2"].name:
+			varq = rhoYH2/rho
+		elif vname is self.AdditionalVariables["MassFractionO2"].name:
+			varq = rhoYO2/rho
+		elif vname is self.AdditionalVariables["MassFractionAR"].name:
+			varq = rhoYAR/rho
 		else:
 			varq = super().compute_additional_variable(var_name, Uq, 
 					flag_non_physical)

@@ -173,7 +173,10 @@ class PhysicsType(Enum):
 		# Simple 2sp air transport (with variable cp)
 	EulerMultispecies_1sp_air = auto()
 		# Simple 1sp air transport (with variable cp)
+	EulerMultispecies1D_3sp_H2O2_inert = auto()
+		# 3sp H2/O2/Ar inert transport (with variable cp)
 
+		
 class TransportType(Enum):
 	'''
 	This enum contains the available transport types for Navier-Stokes.
