@@ -477,7 +477,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 
 	# Get sample points in reference space
 	if equidistant:
-		xref = basis.equidistant_nodes(max([1, 20*order]))
+		xref = basis.equidistant_nodes(max([1, 10*order]))
 	else:
 		quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]),
 				physics=physics)

@@ -360,27 +360,31 @@ class Adapter:
 				solver.basis, solver.elem_helpers.quad_pts,
 				solver.elem_helpers.quad_wts, Uq, solver.state_coeffs)
 		print(f'done in {time.time() - start_time} s')
-		breakpoint()
 
 		# Recompute helpers for the limiters
 		if solver.limiters:
 			for limiter in solver.limiters:
 				limiter.precompute_helpers(solver)
-		breakpoint()
 
 		# TODO: Hack - correct negative solution elements
-		# TODO: This only works for Lagrange
-		#elem_helpers = solver.elem_helpers
-		#Uq = numerics_helpers.evaluate_state(solver.state_coeffs, basis.basis_val)
-		#U_mean = numerics_helpers.get_element_mean(Uq, elem_helpers.quad_wts,
-		#		elem_helpers.djac_elems, elem_helpers.vol_elems)
-		#p_mean = physics.compute_additional_variable("Pressure", U_mean, flag_non_physical=False)
-		#negatives = np.argwhere(p_mean[:, 0, 0] < 0).flatten()
-		#if negatives.size != 0: print('Correcting elements:', negatives)
-		#for elem_ID in negatives:
-		#	solver.state_coeffs[elem_ID] = np.tile(
-		#			np.mean(U_mean[solver.mesh.elements[elem_ID].face_to_neighbors],
-		#			axis =0), (1, solver.basis.nb, 1))
+		elem_helpers = solver.elem_helpers
+		Uq_new = numerics_helpers.evaluate_state(solver.state_coeffs, basis.basis_val)
+		U_mean = numerics_helpers.get_element_mean(Uq, elem_helpers.quad_wts,
+				elem_helpers.djac_elems, elem_helpers.vol_elems)
+		p_mean = physics.compute_additional_variable("Pressure", U_mean, flag_non_physical=False)
+		# Get elements which have a mean negative pressure or density
+		negative_p_elems = np.argwhere(p_mean[:, 0, 0] < 0).flatten()
+		negative_rho_elems = np.argwhere(U_mean[:, 0, 0] < 0).flatten()
+		if negative_p_elems.size != 0:
+			print('Correcting the following elements for negative pressure:')
+			print(negative_p_elems)
+		if negative_rho_elems.size != 0:
+			print('Correcting the following elements for negative density:')
+			print(negative_rho_elems)
+		for negatives in [negative_p_elems, negative_rho_elems]:
+			for elem_ID in negatives:
+				solver.state_coeffs[elem_ID] = np.linalg.lstsq(
+						elem_helpers.basis_val, Uq[elem_ID], rcond=None)[0]
 
 		# Apply limiter after adaptation. This is helpful when adapting to
 		# shocks, since the L2 projection can be oscillatory, resulting in some

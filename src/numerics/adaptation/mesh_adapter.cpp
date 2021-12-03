@@ -141,7 +141,7 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
         exit(EXIT_FAILURE);
     }
 
-    /* Table to know if a coponant is corner and/or required */
+    /* Table to know if a component is corner and/or required */
     int* ridge = (int*)calloc(na+1 ,sizeof(int));
     if (!ridge) {
       perror("  ## Memory problem: calloc");
@@ -153,22 +153,16 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
     int nreq = 0;
     int ref;
     nreq = 0;
-    printf("\nVertices\n%d\n", np);
     for(int k = 1; k <= np; k++) {
         /** b) Vertex recovering */
         if ( MMG2D_Get_vertex(mmgMesh, &(Point[0]), &(Point[1]),
                             &ref, NULL, &(required[k])) != 1 ) {
             exit(EXIT_FAILURE);
         }
-        printf("%.15lg %.15lg %d \n", Point[0], Point[1], ref);
         // Store node coordinates
         node_coords[2*(k-1)] = Point[0];
         node_coords[2*(k-1) + 1] = Point[1];
         if (required[k])  nreq++;
-    }
-    printf("\nRequiredVertices\n%d\n", nreq);
-    for(int k = 1; k <= np; k++) {
-      if (required[k]) printf("%d \n", k);
     }
 
     // Get triangles
@@ -178,16 +172,13 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
     auto num_interior_faces = ((nt * 3) - na) / 2;
     int global_face_ID = 0;
     std::set<std::pair<int, int> > created_faces;
-    printf("\nTriangles\n%d\n", nt);
     for(int elem_ID = 1; elem_ID <= nt; elem_ID++) {
         // Triangles recovering
         if (MMG2D_Get_triangle(mmgMesh, &(Tria[0]), &(Tria[1]), &(Tria[2]),
                               &ref, &(required[elem_ID])) != 1) {
             exit(EXIT_FAILURE);
         }
-        printf("Nodes: %d %d %d %d \n",Tria[0],Tria[1],Tria[2],ref);
         if (MMG2D_Get_adjaTri(mmgMesh, elem_ID, neighbors) != 1) exit(EXIT_FAILURE);
-        cout << "Neighbors: " << neighbors[0] << " " << neighbors[1] << " " << neighbors[2] << endl;
         // Store node IDs, subtracting one to go back to 0-indexed
         node_IDs[3*(elem_ID - 1)] = Tria[0] - 1;
         node_IDs[3*(elem_ID - 1) + 1] = Tria[1] - 1;
@@ -219,17 +210,12 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
 
         if (required[elem_ID])  nreq++;
     }
-    printf("\nRequiredTriangles\n%d\n",nreq);
-    for(int k = 1; k <= nt; k++) {
-        if (required[k])  printf("%d \n",k);
-    }
 
     nreq = 0;
     int nr = 0;
     int Edge[2];
     int elem_IDs[2];
     int face_IDs[2];
-    printf("\nEdges\n%d\n",na);
     for(int edge_idx = 1; edge_idx <= na; edge_idx++) {
         // Get the vertices of the edge as well as its reference, and whether
         // it's a ridge or required edge
@@ -246,13 +232,8 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
         // Increment the number of faces in this group
         num_faces_per_bgroup[ref - 1]++;
 
-        printf("%d %d %d \n",Edge[0],Edge[1],ref);
         if ( ridge[edge_idx] )  nr++;
         if ( required[edge_idx] )  nreq++;
-    }
-    printf("\nRequiredEdges\n%d\n",nreq);
-    for(int k=1; k<=na; k++) {
-        if ( required[k] )  printf("%d \n",k);
     }
 
     free(ridge);
