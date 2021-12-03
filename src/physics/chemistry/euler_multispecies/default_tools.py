@@ -14,12 +14,16 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 	e = (Uq[irhoE] - 0.5 * (Uq[irhou]**2 / Uq[irho])) / Uq[irho]
 	# Get specific volume
 	nu = 1./Uq[irho]
-	# Get YO2
-	YO2 = Uq[3] / Uq[irho]
-	# Get YN2
-	YN2 = 1.0 - YO2
 
-	physics.gas.UVY = e, nu, "O2:{},N2:{}".format(YO2, YN2)
+	# Get Y
+	Y = np.array([physics.NUM_SPECIES])
+	Y_last = 1.0
+	for isp in range(nsp - 1):
+		Y[isp] = Uq[irhoE + 1 + isp] * nu
+		Y_last -= Y[isp]
+	Y[nsp] = Y_last
+
+	physics.gas.UVY = e, nu, Y
 
 
 def set_state_from_primitives(physics, rho, P, u, Y):
