@@ -3,8 +3,12 @@
 ![GitHub](https://img.shields.io/github/license/IhmeGroup/quail)
 <!-- [![GitHub issues](https://img.shields.io/github/issues/IhmeGroup/quail.svg)](https://github.com/IhmeGroup/quail/issues) -->
 
-<p align="center">
+<!-- <p align="center">
   <a href="https://github.com/IhmeGroup/quail"><img alt="quail_logo" src="https://user-images.githubusercontent.com/55554103/99025045-c0ddb780-251c-11eb-9cdb-0bed0269b434.png" width="55%"></a>
+</p> -->
+
+<p align="center">
+  <a href="https://github.com/IhmeGroup/quail"><img alt="quail_logo" src="https://user-images.githubusercontent.com/55554103/144659118-99e88718-694f-412f-9a63-565aacb19cfd.png" width="55%"></a>
 </p>
 
 Quail is a lightweight, open-source discontinuous Galerkin code written in Python for teaching and prototyping. Currently, Quail solves first-order and second-order nonlinear systems of partial differential equations.
