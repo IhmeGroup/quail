@@ -17,12 +17,13 @@ def set_state_from_conservatives(physics, elem_ID, quad_ID, Uq):
 
 	# Get Y
 	nsp = physics.NUM_SPECIES
-	Y = np.array([nsp])
+	Y = np.zeros([nsp])
+	
 	Y_last = 1.0
 	for isp in range(nsp - 1):
 		Y[isp] = Uq[irhoE + 1 + isp] * nu
 		Y_last -= Y[isp]
-	Y[nsp] = Y_last
+	Y[nsp - 1] = Y_last
 
 	physics.gas.UVY = e, nu, Y
 
