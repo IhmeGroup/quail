@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing! We are excited to have you join our team!
 
-The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. Feel free to propose modifications to this document via a pull request as we value others' contributions. 
+The following is a set of guidelines for contributing to Quail [Ihme Group Organization](https://github.com/IhmeGroup/quail) on GitHub. Feel free to propose modifications to this document via a pull request as we value others' contributions.
 
 #### Table Of Contents
 
@@ -37,7 +37,7 @@ We have a [YouTube channel](https://www.youtube.com/channel/UCElNsS_mm_0c6X41qVK
 
 ## Neat, but how do I interface with Quail's packages?
 
-Interfacing with Quail is meant to be user friendly and painless. We want users to be able to add new physics, limiters, time-steppers, and more to Quail for rapid prototyping! Our primary tool to do this are [abstract base classes](https://docs.python.org/3/library/abc.html). These are parent classes that provide a basic outline of the necessary attributes that a new class in its category would need. 
+Interfacing with Quail is meant to be user friendly and painless. We want users to be able to add new physics, limiters, time-steppers, and more to Quail for rapid prototyping! Our primary tool to do this are [abstract base classes](https://docs.python.org/3/library/abc.html). These are parent classes that provide a basic outline of the necessary attributes that a new class in its category would need.
 
 Let's look at a simple example of a base class:
 
@@ -58,7 +58,7 @@ Let's look at a simple example of a base class:
       A function that every child class of this type needs.
       '''
   ```
-We utilize `@abstractmethod` to define attributes that must be overwritten by any derived class. This ensures that the user defines the minimally required members of the class. Let's imagine that we wish add a new feature called `NeatFeature` that builds on the `NeatFeatureBase` class. 
+We utilize `@abstractmethod` to define attributes that must be overwritten by any derived class. This ensures that the user defines the minimally required members of the class. Let's imagine that we wish add a new feature called `NeatFeature` that builds on the `NeatFeatureBase` class.
 
   ```python
   class NeatFeature(NeatFeatureBase):
@@ -94,7 +94,7 @@ Lastly, the user needs to use the setter function for the feature type to take t
   ```python
   import numerics.neatfeatures as neat_feature_defs
   from general import NeatFeatureType
-  
+
   def set_neatfeatures(params):
 	'''
 	Given the NeatFeature parameter, set the neat_feature object
@@ -114,8 +114,13 @@ Lastly, the user needs to use the setter function for the feature type to take t
 		raise NotImplementedError("Feature not supported")
 	return neat_feature
   ```
-  
+
 These interfaces allow the user to focus on the meat of their new feature while simplifying the process of making the feature available to users.
+
+An API diagram showing the class hierarchy of Quail is shown below.
+<p align="center">
+  <img alt="API_diagram" src="https://user-images.githubusercontent.com/41877612/144659259-159e814d-7963-495e-96cf-231cc7a516fa.png" width="100%"></a>
+</p>
 
 ## Style Guide
 
@@ -132,11 +137,11 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
   class ClassName():
   	'''
   	Brief description of the class
-  
+
   	Attributes:
   	-----------
   	attribute name: brief description
-  
+
   	Abstract Methods:
   	-----------------
   	abstract_method_name
@@ -148,7 +153,7 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
   def function_name(**args):
   	'''
   	Brief description of function
-  
+
   	Inputs:
   	-------
   	input name: brief description [array shape if available]
@@ -167,7 +172,7 @@ For more detailed guidelines, please refer to the [PEP 8 style guide for Python 
 Quail uses the following branch naming conventions:
 `<branch_type_name>/<branch_name>`
 There are multiple branch types that are standard in Quail. These include the following:
-* `bug`: these branches are designed for identifying, isolating, and fixing bugs that may exist throughout Quail. 
+* `bug`: these branches are designed for identifying, isolating, and fixing bugs that may exist throughout Quail.
 * `feature`: these branches are designed for the addition of new features.
 * `test`: branches used for the specific addition of unit tests.
 * `case`: branches that specifically create new cases for Quail to solve. These can incorporate more case-specific ICs, BCs, and exact solutions.
