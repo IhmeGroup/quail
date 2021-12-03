@@ -651,7 +651,7 @@ class SolverBase(ABC):
 		# Custom user function initial iteration
 		self.custom_user_function(self)
 
-		solver.itime = 0
+		self.itime = 0
 		while solver.itime < stepper.num_time_steps:
 			# Reset min and max state
 			self.max_state[:] = -np.inf
@@ -678,7 +678,7 @@ class SolverBase(ABC):
 				readwritedatafiles.write_data_file(self,
 						(solver.itime + 1) // write_interval)
 
-			solver.itime += 1
+			self.itime += 1
 
 		t1 = time.time()
 		print("\nWall clock time = %g seconds" % (t1 - t0))
