@@ -96,6 +96,9 @@ def set_physics(mesh, physics_type):
 	elif PhysicsType[physics_type] == PhysicsType.EulerMultispecies1D_3sp_H2O2_inert \
 		and ndims==1:
 		physics_class = euler_multispecies.EulerMultispecies1D_3sp_H2O2_inert
+	elif PhysicsType[physics_type] == PhysicsType.EulerMultispecies1D_9sp_H2O2 \
+		and ndims==1:
+		physics_class = euler_multispecies.EulerMultispecies1D_9sp_H2O2
 	else:
 	    raise NotImplementedError
 

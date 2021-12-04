@@ -67,7 +67,7 @@ class EulerMultispecies(base.PhysicsBase):
 		self.BC_map.update({
 			base_BC_type.StateAll : base_fcns.StateAll,
 			# base_BC_type.Extrapolate : base_fcns.Extrapolate,
-			# euler_BC_type.SlipWall : euler_fcns.SlipWall,
+			euler_BC_type.SlipWall : euler_fcns.SlipWall,
 			# euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
 
@@ -381,6 +381,99 @@ class EulerMultispecies1D_3sp_H2O2_inert(EulerMultispecies1D):
 			varq = rhoYO2/rho
 		elif vname is self.AdditionalVariables["MassFractionAR"].name:
 			varq = rhoYAR/rho
+		else:
+			varq = super().compute_additional_variable(var_name, Uq, 
+					flag_non_physical)
+		return varq
+
+class EulerMultispecies1D_9sp_H2O2(EulerMultispecies1D):
+	'''
+	This class corresponds to 1D Euler equations with simple chemistry.
+	It inherits attributes and methods from the Chemistry class.
+	See Chemistry for detailed comments of attributes and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	NUM_STATE_VARS = 11
+	NUM_SPECIES  = 9
+	PHYSICS_TYPE = general.PhysicsType.EulerMultispecies1D_9sp_H2O2
+	CANTERA_FILENAME = "h2o2.xml"
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			euler_mult_fcn_type.ReactingShockTube : \
+				euler_mult_fcns.ReactingShockTube,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+		self.conv_num_flux_map.update({
+		})
+
+	class StateVariables(Enum):
+		Density = "\\rho"
+		XMomentum = "\\rho u"
+		Energy = "\\rho E"
+		rhoYN2 = "\\rho Y_{H2}"
+		rhoYH = "\\rho Y_{H}"
+		rhoYO = "\\rho Y_{O}"
+		rhoYO2 = "\\rho Y_{O2}"
+		rhoYOH = "\\rho Y_{OH}"
+		rhoYH2O = "\\rho Y_{H2O}"
+		rhoYHO2 = "\\rho Y_{HO2}"
+		rhoYH2O2 = "\\rho Y_{H2O2}"
+
+	class AdditionalVariables(Enum):
+	    Pressure = "p"
+	    Temperature = "T"
+	    Entropy = "s"
+	    InternalEnergy = "\\rho e"
+	    TotalEnthalpy = "H"
+	    SoundSpeed = "c"
+	    MaxWaveSpeed = "\\lambda"
+	    MassFractionH2 = "Y_{H2}"
+	    MassFractionH = "Y_{H}"
+	    MassFractionO = "Y_{O}"
+	    MassFractionO2 = "Y_{O2}"
+	    MassFractionOH = "Y_{OH}"
+	    MassFractionH2O = "Y_{H2O}"
+	    MassFractionHO2 = "Y_{HO2}"
+	    MassFractionH2O2 = "Y_{H2O2}"
+	    MassFractionAR = "Y_{Ar}"
+	    SpecificHeatRatio = "\\gamma"
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		''' Extract state variables '''
+		srho = self.get_state_slice("Density")
+		rho = Uq[:, :, srho]
+		rhoYH2 = Uq[:, :, [3]]
+		rhoYH = Uq[:, :, [4]]
+		rhoYO = Uq[:, :, [5]]
+		rhoYO2 = Uq[:, :, [6]]
+		rhoYOH = Uq[:, :, [7]]
+		rhoYH2O = Uq[:, :, [8]]
+		rhoYHO2 = Uq[:, :, [9]]
+		rhoYH2O2 = Uq[:, :, [10]]
+		# rhoYAR = rho * (1.0 - (rhoYO2 + rhoYH2) / rho)
+
+		''' Flag non-physical state '''
+		if flag_non_physical:
+			if np.any(rho < 0.):
+				raise errors.NotPhysicalError
+
+		''' Get final scalars ''' #need to add other mass fractions later
+		vname = self.AdditionalVariables[var_name].name
+		if vname is self.AdditionalVariables["MassFractionH2"].name:
+			varq = rhoYH2/rho
+		elif vname is self.AdditionalVariables["MassFractionH"].name:
+			varq = rhoYH2/rho
+		elif vname is self.AdditionalVariables["MassFractionO"].name:
+			varq = rhoYO/rho
+		elif vname is self.AdditionalVariables["MassFractionO2"].name:
+			varq = rhoYO2/rho
 		else:
 			varq = super().compute_additional_variable(var_name, Uq, 
 					flag_non_physical)

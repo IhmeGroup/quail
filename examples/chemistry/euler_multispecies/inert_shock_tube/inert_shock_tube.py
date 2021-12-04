@@ -7,20 +7,20 @@ NumTimeSteps = 1500
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : 0.5,
-#    "TimeStepSize" : 1.0e-5,
-#    "TimeStepper" : "ADER",
-    "TimeStepper" : "SSPRK3",
+#    "CFL" : 0.1,
+    "TimeStepSize" : 2.5e-8,
+    "TimeStepper" : "ADER",
+#    "TimeStepper" : "SSPRK3",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 0,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-#   "Solver" : "ADERDG",
-    "Solver" : "DG",
+    "Solver" : "ADERDG",
+#    "Solver" : "DG",
     "ArtificialViscosity" : True,
-    "AVParameter" : 1e4,
+    "AVParameter" : 1e7,
     "PredictorThreshold" : 1e-10,
 }
 
@@ -34,7 +34,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 200,
+    "NumElemsX" : 400,
     "xmin" : 0.0,
     "xmax" : 0.1,
 #    "PeriodicBoundariesX" : ["x1", "x2"]

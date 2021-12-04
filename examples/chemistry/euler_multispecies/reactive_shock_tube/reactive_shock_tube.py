@@ -1,7 +1,7 @@
 import numpy as np
 import copy
 
-FinalTime = 4.0e-5
+FinalTime = 17.0e-5
 NumTimeSteps = 1500
 
 TimeStepping = {
@@ -36,29 +36,28 @@ Mesh = {
     "ElementShape" : "Segment",
     "NumElemsX" : 200,
     "xmin" : 0.0,
-    "xmax" : 0.1,
+    "xmax" : 0.12,
 #    "PeriodicBoundariesX" : ["x1", "x2"]
 }
 
 
 Physics = {
-    "Type" : "EulerMultispecies1D_3sp_H2O2_inert",
+    "Type" : "EulerMultispecies1D_9sp_H2O2",
     "ConvFluxNumerical" : "LaxFriedrichs",
 }
 
 state = { 
-    "Function" : "InertShockTube",
+    "Function" : "ReactingShockTube",
 }
 
 InitialCondition = state
 
 BoundaryConditions = {
     "x1" : {
-        "BCType" : "StateAll",
-	"Function" : "InertShockTube",
+        "BCType" : "SlipWall",
        },
     "x2" : { 
         "BCType" : "StateAll",
-	"Function" : "InertShockTube",
+	"Function" : "ReactingShockTube",
        }
 }
