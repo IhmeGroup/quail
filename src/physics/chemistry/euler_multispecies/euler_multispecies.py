@@ -33,7 +33,8 @@ from physics.euler.functions import SourceType as euler_source_type
 import physics.chemistry.euler_multispecies.functions as euler_mult_fcns
 from physics.chemistry.euler_multispecies.functions import FcnType as \
 		euler_mult_fcn_type
-
+from physics.chemistry.euler_multispecies.functions import SourceType as \
+		euler_mult_source_type
 from external.optional_thermo import thermo_tools
 
 # from physics.chemistry.euler_multispecies.functions import SourceType as \
@@ -69,6 +70,9 @@ class EulerMultispecies(base.PhysicsBase):
 			# base_BC_type.Extrapolate : base_fcns.Extrapolate,
 			euler_BC_type.SlipWall : euler_fcns.SlipWall,
 			# euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
+		})
+		self.source_map.update({
+			euler_mult_source_type.Reacting : euler_mult_fcns.Reacting,
 		})
 
 	def set_physical_params(self):

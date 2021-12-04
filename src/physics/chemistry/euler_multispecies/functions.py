@@ -9,6 +9,7 @@
 # ------------------------------------------------------------------------ #
 from enum import Enum, auto
 import numpy as np
+import ctypes
 from external.optional_cantera import ct
 
 from scipy.optimize import fsolve, root
@@ -17,15 +18,21 @@ from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
         SourceBase, ConvNumFluxBase)
 from external.optional_thermo import thermo_tools
 
+import general
+
+GAS_CONSTANT = 8.3144621000e3 # [J / (K kmole)]
+
+LIB = ctypes.cdll.LoadLibrary(general.cantera_lib)
 
 class FcnType(Enum):
     SodMultispeciesAir = auto()
     SodMultispeciesAir1sp = auto()
     InertShockTube = auto()
     ReactingShockTube = auto()
-# class SourceType(Enum):
-    # Arrhenius = auto()
-    # Heaviside = auto()
+
+
+class SourceType(Enum):
+	Reacting = auto()
 
 
 # class ConvNumFluxType(Enum):
@@ -349,3 +356,49 @@ class ReactingShockTube(FcnBase):
 				Uq[elem_ID, ileft, 3 + isp] = rhoYL[isp]	
 
 		return Uq # [ne, nq, ns]
+
+'''
+---------------------
+Source term functions
+---------------------
+These classes inherit from the SourceBase class. See SourceBase for detailed
+comments of attributes and methods. Information specific to the
+corresponding child classes can be found below. These classes should
+correspond to the SourceType enum members above.
+'''
+
+
+class Reacting(SourceBase):
+	'''
+	Arrhenius source term wrapper for quail_cantera_interface
+	'''
+	def __init__(self, **kwargs):
+		super().__init__(kwargs)
+
+	def get_source(self, physics, Uq, x, t):
+		# Unpack T and Y
+		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
+
+		ne = Uq.shape[0]
+		nq = Uq.shape[1]
+		ns = Uq.shape[-1]
+		nsp = physics.NUM_SPECIES
+
+		filename = physics.c_cantera_file()
+		import code; code.interact(local=locals())
+		P = np.zeros([ne, nq, 1])
+		LIB.get_pressure_interface(
+			ctypes.c_void_p(Uq.ctypes.data), 
+			ctypes.c_void_p(P.ctypes.data),
+			ctypes.c_int(ne), 
+			ctypes.c_int(nq), 
+			ctypes.c_int(ns),
+			ctypes.c_int(nsp),
+			ctypes.c_int(physics.NDIMS),
+			physics.c_cantera_file()
+			)
+
+
+
+		return S # [1, nq, ns]
+

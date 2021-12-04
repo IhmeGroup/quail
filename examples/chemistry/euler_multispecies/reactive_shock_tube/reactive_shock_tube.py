@@ -61,3 +61,10 @@ BoundaryConditions = {
 	"Function" : "ReactingShockTube",
        }
 }
+
+SourceTerms = {
+	"Reacting" : { # Name of source term ("Source1") doesn't matter
+		"Function" : "Reacting",
+		"source_treatment" : "Implicit",
+	},
+}
