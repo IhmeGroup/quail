@@ -22,7 +22,7 @@ class FcnType(Enum):
     SodMultispeciesAir = auto()
     SodMultispeciesAir1sp = auto()
     InertShockTube = auto()
-
+    ReactingShockTube = auto()
 # class SourceType(Enum):
     # Arrhenius = auto()
     # Heaviside = auto()
@@ -283,5 +283,69 @@ class InertShockTube(FcnBase):
 			# YO2
 			Uq[elem_ID, iright, 4] = rhoYO2R
 			Uq[elem_ID, ileft, 4] = rhoYO2L	
+
+		return Uq # [ne, nq, ns]
+
+class ReactingShockTube(FcnBase):
+	'''
+	Case simulates a multispecies reacting shock tube
+	'''
+	def __init__(self):
+		'''
+		This method initializes the attributes.
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+
+	def get_state(self, physics, x, t):
+		# Need to reset physical params since gas objects cant be saved
+		# in pickle files
+		nsp = physics.NUM_SPECIES
+		if physics.gas is None:
+			physics.gas = ct.Solution(physics.CANTERA_FILENAME)		
+
+		xshock = 0.06 # middle of the domain
+		srho, srhou, srhoE = physics.get_state_slices()
+
+		# Set the left state first
+		rhoL = 0.072
+		physics.gas.DPX = rhoL, 7173.0, \
+			"H2:{}, O2:{}, AR:{}".format(2, 1, 7)
+		
+		rhoEL = rhoL * physics.gas.UV[0] # ignore KE since u = 0
+		rhoYL = rhoL * physics.gas.DPY[2]
+
+		# Set the right state second
+		uR = -487.34
+		rhoR = 0.18075
+		physics.gas.DPX = rhoR, 35594.0, \
+			"H2:{}, O2:{}, AR:{}".format(2, 1, 7)
+		
+		rhoER = rhoR * physics.gas.UV[0] + 0.5 * rhoR * uR * uR
+		rhoYR = rhoR * physics.gas.DPY[2]
+
+		''' Fill state '''
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		for elem_ID in range(Uq.shape[0]):
+			ileft = (x[elem_ID] < xshock).reshape(-1)
+			iright = (x[elem_ID] >= xshock).reshape(-1)
+
+			# Density
+			Uq[elem_ID, iright, srho] = rhoR
+			Uq[elem_ID, ileft, srho] = rhoL
+			# Momentum
+			Uq[elem_ID, iright, srhou] = rhoR * uR
+			Uq[elem_ID, ileft, srhou] = 0.
+			# Energy
+			Uq[elem_ID, iright, srhoE] = rhoER
+			Uq[elem_ID, ileft, srhoE] = rhoEL
+
+			for isp in range(nsp - 1):
+				# Y
+				Uq[elem_ID, iright, 3 + isp] = rhoYR[isp]
+				Uq[elem_ID, ileft, 3 + isp] = rhoYL[isp]	
 
 		return Uq # [ne, nq, ns]
