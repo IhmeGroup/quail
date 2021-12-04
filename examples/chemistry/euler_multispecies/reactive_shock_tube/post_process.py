@@ -4,13 +4,17 @@ import processing.readwritedatafiles as readwritedatafiles
 import numpy as np
 from external.optional_cantera import ct
 
-# Read data file
-fname = "Data_p2.pkl"
-solver = readwritedatafiles.read_data_file(fname)
+dgflag = True
+aderflag = False
 
-# Unpack
-mesh = solver.mesh
-physics = solver.physics
+if dgflag == True:
+	# Read data file
+	fname = "Data_p2.pkl"
+	solver = readwritedatafiles.read_data_file(fname)
+
+	# Unpack
+	mesh = solver.mesh
+	physics = solver.physics
 
 fname = "Data_ader_p2.pkl"
 solver3 = readwritedatafiles.read_data_file(fname)
