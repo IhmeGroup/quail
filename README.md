@@ -39,7 +39,7 @@ $ quail isentropic_vortex.py
 ```
 Depending on the configuration of your machine, the above command (`quail isentropic_vortex.py`) may not work. In that case, try replacing the first line of `src/quail` with `#!/usr/bin/env python3`. If that still doesn't work, run the following command instead:
 ```sh
-$ python /your/quail/directory/src isentropic_vortex.py
+$ python /your/quail/directory/src/quail isentropic_vortex.py
 ```
 Note that this command doesn't require the Quail src directory to be added to PATH.
 
