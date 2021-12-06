@@ -22,7 +22,6 @@ import general
 
 GAS_CONSTANT = 8.3144621000e3 # [J / (K kmole)]
 
-LIB = ctypes.cdll.LoadLibrary(general.cantera_lib)
 
 class FcnType(Enum):
     SodMultispeciesAir = auto()
@@ -378,25 +377,25 @@ class Reacting(SourceBase):
 	def get_source(self, physics, Uq, x, t):
 		# Unpack T and Y
 		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
+		thermo_tools.get_source_test(physics, Uq, S)
+		# ne = Uq.shape[0]
+		# nq = Uq.shape[1]
+		# ns = Uq.shape[-1]
+		# nsp = physics.NUM_SPECIES
 
-		ne = Uq.shape[0]
-		nq = Uq.shape[1]
-		ns = Uq.shape[-1]
-		nsp = physics.NUM_SPECIES
-
-		filename = physics.c_cantera_file()
-		import code; code.interact(local=locals())
-		P = np.zeros([ne, nq, 1])
-		LIB.get_pressure_interface(
-			ctypes.c_void_p(Uq.ctypes.data), 
-			ctypes.c_void_p(P.ctypes.data),
-			ctypes.c_int(ne), 
-			ctypes.c_int(nq), 
-			ctypes.c_int(ns),
-			ctypes.c_int(nsp),
-			ctypes.c_int(physics.NDIMS),
-			physics.c_cantera_file()
-			)
+		# filename = physics.c_cantera_file()
+		# import code; code.interact(local=locals())
+		# P = np.zeros([ne, nq, 1])
+		# LIB.get_pressure_interface(
+		# 	ctypes.c_void_p(Uq.ctypes.data), 
+		# 	ctypes.c_void_p(P.ctypes.data),
+		# 	ctypes.c_int(ne), 
+		# 	ctypes.c_int(nq), 
+		# 	ctypes.c_int(ns),
+		# 	ctypes.c_int(nsp),
+		# 	ctypes.c_int(physics.NDIMS),
+		# 	physics.c_cantera_file()
+		# 	)
 
 
 

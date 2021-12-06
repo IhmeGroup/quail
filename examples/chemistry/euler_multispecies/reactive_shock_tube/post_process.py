@@ -9,7 +9,7 @@ aderflag = False
 
 if dgflag == True:
 	# Read data file
-	fname = "Data_p2.pkl"
+	fname = "Data_test.pkl"
 	solver = readwritedatafiles.read_data_file(fname)
 
 	# Unpack
