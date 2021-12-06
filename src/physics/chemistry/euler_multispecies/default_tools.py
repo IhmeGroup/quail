@@ -103,7 +103,7 @@ def get_maxwavespeed(physics, Uq):
 	gamma = get_specificheatratio(physics, Uq)
 	P = get_pressure(physics, Uq)
 
-	irho, irhou, irhoE, irhoYO2, irhoYN2 = physics.get_state_indices()
+	irho, irhou, irhoE = physics.get_state_indices()
 	smom = physics.get_momentum_slice()
 
 	rho = Uq[:, :, [irho]]
