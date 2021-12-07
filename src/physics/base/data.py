@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #		File : src/physics/base/data.py
 #
 #		Contains definitions for base classes for Functions (for initial
@@ -123,7 +138,7 @@ class BCWeakPrescribed(BCBase):
 	See BCBase for detailed comments of attributes and methods.
 	Child classes define their own get_boundary_state.
 
-	This class computes the boundary flux via the analytic flux based on
+	This class computes the boundary flux via the analytical flux based on
 	only the exterior state, i.e. F(UqB, n).
 	'''
 	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):

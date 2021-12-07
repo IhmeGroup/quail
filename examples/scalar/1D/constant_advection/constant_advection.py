@@ -23,7 +23,7 @@ Mesh = {
 	"NumElemsX" : 16,
 	"xmin" : -1.,
 	"xmax" : 1.,
-	"PeriodicBoundariesX" : ["x1","x2"]
+	"PeriodicBoundariesX" : ["x1", "x2"]
 }
 
 Physics = {

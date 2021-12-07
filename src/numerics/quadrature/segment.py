@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #		File : numerics/quadrature/segment.py
 #
 #		Contains functions to evaluate quadrature for segment shapes

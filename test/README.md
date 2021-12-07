@@ -62,6 +62,8 @@ Guidelines for end-to-end tests are as follows.
  - When a new test case is added or existing cases are modified,
    `regression_data_generator.py` must be run to regenerate the regression test
    data, and `generate_tests.py` must be rerun to recreate the test scripts.
+ - When switching between branches it can be helpful to clean the test directories.
+   This can be done by running `clear_tests.py`.
  - If a future update to Quail changes the solution in any existing test case
    such that it does not pass the regression test, it is likely that a bug may
    have been introduced to the code (this is how new bugs are caught by

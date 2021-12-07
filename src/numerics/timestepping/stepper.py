@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : src/numerics/timestepping/stepper.py
 #
 #       Contains class definitions for timestepping methods.
@@ -44,6 +59,10 @@ class StepperBase(ABC):
 		- Backward Difference (BDF1)
 		- Trapezoidal Scheme (Trapezoidal)
 
+	Abstract Constants:
+	-------------------
+	STEPPER_TYPE
+		defines an enum from StepperType to identify the time scheme
 
 	Attributes:
 	-----------
@@ -65,6 +84,15 @@ class StepperBase(ABC):
 		method that takes a given time step for the solver depending on the
 		selected time-stepping scheme
 	'''
+	@property
+	@abstractmethod
+	def STEPPER_TYPE(self):
+		'''
+		Stores the StepperType enum to define the element's timestepping
+		scheme
+		'''
+		pass
+
 	def __init__(self, U):
 		self.res = np.zeros_like(U)
 		self.dt = 0.
@@ -75,6 +103,12 @@ class StepperBase(ABC):
 	def __repr__(self):
 		return '{self.__class__.__name__}(TimeStep={self.dt})'.format( \
 			self=self)
+
+	def __eq__(self, other): 
+		if not isinstance(other, StepperBase):
+			# don't attempt to compare against unrelated types
+			return NotImplementedError
+		return self.STEPPER_TYPE == other.STEPPER_TYPE
 
 	@abstractmethod
 	def take_time_step(self, solver):
@@ -101,6 +135,8 @@ class FE(StepperBase):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.FE
+
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
@@ -123,6 +159,8 @@ class RK4(StepperBase):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.RK4
+
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
@@ -173,6 +211,8 @@ class LSRK4(StepperBase):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.LSRK4
+
 	def __init__(self, U):
 		super().__init__(U)
 		'''
@@ -245,6 +285,8 @@ class SSPRK3(StepperBase):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.SSPRK3
+
 	def __init__(self, U):
 		super().__init__(U)
 		'''
@@ -307,6 +349,8 @@ class ADER(StepperBase):
 	Additional methods and attributes are commented below. Additional
 	information on the ADER scheme can be found in the documentation.
 	'''
+	STEPPER_TYPE = StepperType.ADER
+
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh = solver.mesh
@@ -343,6 +387,8 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.Strang
+
 	def set_split_schemes(self, explicit, implicit, U):
 		'''
 		Specifies the explicit and implicit schemes to be used in the
@@ -419,6 +465,8 @@ class Simpler(Strang):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.Simpler
+
 	def take_time_step(self, solver):
 		physics = solver.physics
 		mesh  = solver.mesh
@@ -466,6 +514,8 @@ class ODEIntegrator(StepperBase, source_stepper.SourceSolvers):
 
 	Additional methods and attributes are commented below.
 	'''
+	STEPPER_TYPE = StepperType.ODEIntegrator
+
 	def set_ode_integrator(self, ode_scheme, U):
 		'''
 		Sets the ode integrator from the list of available time integration

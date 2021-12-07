@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : src/numerics/limiting/positivitypreserving.py
 #
 #       Contains class definitions for positivity-preserving limiters.
@@ -18,6 +33,25 @@ import numerics.limiting.base as base
 
 
 POS_TOL = 1.e-10
+
+
+def trunc(a, decimals=8):
+	'''
+	This function truncates a float to a specified decimal place.
+	Adapted from:
+	https://stackoverflow.com/questions/42021972/
+	truncating-decimal-digits-numpy-array-of-floats
+
+	Inputs:
+	-------
+		a: value(s) to truncate
+		decimals: truncated decimal place
+
+	Outputs:
+	--------
+		truncated float
+	'''
+	return np.trunc(a*10**decimals)/(10**decimals)
 
 
 class PositivityPreserving(base.LimiterBase):
@@ -117,7 +151,10 @@ class PositivityPreserving(base.LimiterBase):
 				U_elem_faces)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
-		theta1 = np.minimum(1., np.min(theta, axis=1))
+		# Truncate theta1; otherwise, can get noticeably different
+		# results across machines, possibly due to poor conditioning in its
+		# calculation
+		theta1 = trunc(np.minimum(1., np.min(theta, axis=1)))
 
 		irho = physics.get_state_index(self.var_name1)
 		# Get IDs of elements that need limiting
@@ -148,10 +185,13 @@ class PositivityPreserving(base.LimiterBase):
 		elem_IDs = negative_p_indices[0]
 		i_neg_p  = negative_p_indices[1]
 
-		theta[elem_IDs, i_neg_p] = p_bar[elem_IDs, :, 0] / (
+		theta[elem_IDs, i_neg_p] = (p_bar[elem_IDs, :, 0] - POS_TOL) / (
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p, :])
 
-		theta2 = np.min(theta, axis=1)
+		# Truncate theta2; otherwise, can get noticeably different
+		# results across machines, possibly due to poor conditioning in its
+		# calculation
+		theta2 = trunc(np.min(theta, axis=1))
 		# Get IDs of elements that need limiting
 		elem_IDs = np.where(theta2 < 1.)[0]
 		# Modify coefficients
@@ -227,7 +267,10 @@ class PositivityPreservingChem(PositivityPreserving):
 				U_elem_faces)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
-		theta1 = np.minimum(1., np.min(theta, axis=1))
+		# Truncate theta1; otherwise, can get noticeably different
+		# results across machines, possibly due to poor conditioning in its
+		# calculation
+		theta1 = trunc(np.minimum(1., np.min(theta, axis=1)))
 
 		irho = physics.get_state_index(self.var_name1)
 		# Get IDs of elements that need limiting
@@ -253,7 +296,10 @@ class PositivityPreservingChem(PositivityPreserving):
 		''' Limit mass fraction '''
 		rhoY_elem_faces = physics.compute_variable(self.var_name3, U_elem_faces)
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
-		theta2 = np.minimum(1., np.amin(theta, axis=1))
+		# Truncate theta2; otherwise, can get noticeably different
+		# results across machines, possibly due to poor conditioning in its
+		# calculation
+		theta2 = trunc(np.minimum(1., np.amin(theta, axis=1)))
 
 		irhoY = physics.get_state_index(self.var_name3)
 		# Get IDs of elements that need limiting
@@ -286,7 +332,10 @@ class PositivityPreservingChem(PositivityPreserving):
 		theta[elem_IDs, i_neg_p] = p_bar[elem_IDs, :, 0] / (
 				p_bar[elem_IDs, :, 0] - p_elem_faces[elem_IDs, i_neg_p])
 
-		theta3 = np.min(theta, axis=1)
+		# Truncate theta3; otherwise, can get noticeably different
+		# results across machines, possibly due to poor conditioning in its
+		# calculation
+		theta3 = trunc(np.min(theta, axis=1))
 		# Get IDs of elements that need limiting
 		elem_IDs = np.where(theta3 < 1.)[0]
 		# Modify coefficients

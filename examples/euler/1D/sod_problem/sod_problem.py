@@ -50,9 +50,9 @@ Physics = {
 }
 
 
-state = { 
+state = {
     "Function" : "RiemannProblem",
-    "rhoL" : 1., 
+    "rhoL" : 1.,
     "uL" : 0.,
     "pL" : 100000.,
     "rhoR" : 0.125, 

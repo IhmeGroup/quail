@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : src/numerics/timestepping/tools.py
 #
 #       Contains helper functions for the stepper class.
@@ -32,6 +47,7 @@ def set_stepper(params, U):
 	    stepper: instantiated stepper object
 	'''
 	time_stepper = params["TimeStepper"]
+
 	if StepperType[time_stepper] == StepperType.FE:
 		stepper = stepper_defs.FE(U)
 	elif StepperType[time_stepper] == StepperType.RK4:
@@ -73,9 +89,9 @@ def set_source_treatment(physics):
 	physics.explicit_sources = []
 	physics.implicit_sources = []
 	for source in physics.source_terms:
-		if source.source_treatment is 'Explicit':
+		if source.source_treatment == 'Explicit':
 			physics.explicit_sources.append(source)
-		elif source.source_treatment is 'Implicit':
+		elif source.source_treatment == 'Implicit':
 			physics.implicit_sources.append(source)
 
 def set_time_stepping_approach(stepper, params):

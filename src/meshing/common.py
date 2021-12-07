@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : src/meshing/common.py
 #
 #       Contains functions for creating and modifying structured meshes.
@@ -20,13 +35,13 @@ def mesh_1D(num_elems=10, xmin=-1., xmax=1.):
 
 	Inputs:
 	-------
-	    num_elems: number of mesh elements
-	    xmin: minimum x-coordinate
-	    xmax: maximum x-coordinate
+		num_elems: number of mesh elements
+		xmin: minimum x-coordinate
+		xmax: maximum x-coordinate
 
 	Outputs:
 	--------
-	    mesh: mesh object
+		mesh: mesh object
 
 	Notes:
 	------
@@ -88,16 +103,16 @@ def mesh_2D(num_elems_x=10, num_elems_y =10, xmin=-1., xmax=1.,
 
 	Inputs:
 	-------
-	    num_elems_x: number of elements in x-direction
-	    num_elems_y: number of elements in y-direction
-	    xmin: minimum x-coordinate
-	    xmax: maximum x-coordinate
-	    ymin: minimum y-coordinate
-	    ymax: maximum y-coordinate
+		num_elems_x: number of elements in x-direction
+		num_elems_y: number of elements in y-direction
+		xmin: minimum x-coordinate
+		xmax: maximum x-coordinate
+		ymin: minimum y-coordinate
+		ymax: maximum y-coordinate
 
 	Outputs:
 	--------
-	    mesh: mesh object
+		mesh: mesh object
 
 	Notes:
 	------
@@ -211,11 +226,11 @@ def split_quadrils_into_tris(mesh_old):
 
 	Inputs:
 	-------
-	    mesh_old: quadrilateral mesh object to modify
+		mesh_old: quadrilateral mesh object to modify
 
 	Outputs:
 	--------
-	    mesh: new triangular mesh object
+		mesh: new triangular mesh object
 	'''
 	def convert_nodes(gorder, num_nodes_per_quad, num_nodes_per_tri):
 		'''
@@ -225,14 +240,14 @@ def split_quadrils_into_tris(mesh_old):
 
 		Inputs:
 		-------
-		    gorder: order of geometry interpolation
-		    num_nodes_per_quad: number of nodes per quadrilateral
-		    num_nodes_per_tri: number of nodes per triangle
+			gorder: order of geometry interpolation
+			num_nodes_per_quad: number of nodes per quadrilateral
+			num_nodes_per_tri: number of nodes per triangle
 
 		Outputs:
 		--------
-		    tri1_node_IDs: local node IDs of first triangle
-		    tri2_node_IDs: local node IDs of second triangle
+			tri1_node_IDs: local node IDs of first triangle
+			tri2_node_IDs: local node IDs of second triangle
 		'''
 		# Number of nodes per face
 		num_nodes_per_face = gorder + 1
@@ -270,13 +285,13 @@ def split_quadrils_into_tris(mesh_old):
 
 		Inputs:
 		-------
-		    elem_ID: element ID
-		    face_ID: local face ID
+			elem_ID: element ID
+			face_ID: local face ID
 
 		Outputs:
 		--------
-		    elem_ID: element ID (modified)
-		    face_ID: local face ID (modified)
+			elem_ID: element ID (modified)
+			face_ID: local face ID (modified)
 		'''
 		if face_ID == 1 or face_ID == 2:
 			elem_ID += num_elems_old

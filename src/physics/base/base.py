@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : src/physics/base/base.py
 #
 #       Contains definition and helper functions for base physics class.
@@ -126,7 +141,7 @@ class PhysicsBase(ABC):
 	Abstract Methods:
 	-----------------
 	get_conv_flux_interior
-		computes the convective analytic flux for element interiors
+		computes the convective analytical flux for element interiors
 
 	Methods:
 	--------
@@ -155,7 +170,7 @@ class PhysicsBase(ABC):
 		gets the recommended quadrature order associated with the given
 		physics class
 	get_conv_flux_projected
-		computes the analytic convective flux projected in a given
+		computes the analytical convective flux projected in a given
 		direction
 	get_conv_flux_numerical
 		computes the convective numerical flux
@@ -508,7 +523,7 @@ class PhysicsBase(ABC):
 	@abstractmethod
 	def get_conv_flux_interior(self, Uq):
 		'''
-		This method computes the convective analytic flux for element
+		This method computes the convective analytical flux for element
 		interiors.
 
 		Inputs:
@@ -524,7 +539,7 @@ class PhysicsBase(ABC):
 
 	def get_diff_flux_interior(self, Uq, gUq):
 		'''
-		This method computes the diffusive analytic flux for element
+		This method computes the diffusive analytical flux for element
 		interiors.
 
 		Inputs:
@@ -542,7 +557,7 @@ class PhysicsBase(ABC):
 
 	def get_conv_flux_projected(self, Uq, normals):
 		'''
-		This method computes the convective analytic flux projected in a
+		This method computes the convective analytical flux projected in a
 		given direction.
 
 		Inputs:

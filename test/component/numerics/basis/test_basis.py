@@ -18,7 +18,7 @@ atol = 1e-15
 	0, 1, 2, 3, 4, 5,
 ])
 @pytest.mark.parametrize('Basis', [
-	# Basis class representing the element geometry
+	# Basis class
 	basis_defs.LagrangeSeg, basis_defs.LagrangeTri, basis_defs.LagrangeQuad,
 ])
 def test_lagrange_basis_should_be_nodal(basis, order):
@@ -44,7 +44,7 @@ def test_lagrange_basis_should_be_nodal(basis, order):
 	0, 1, 2, 3, 4, 5,
 ])
 @pytest.mark.parametrize('Basis', [
-	# Basis class representing the element geometry
+	# Basis class
 	basis_defs.LegendreSeg, basis_defs.LegendreQuad
 ])
 def test_legendre_massmatrix_should_be_diagonal(basis, order):
@@ -90,7 +90,7 @@ def test_legendre_massmatrix_should_be_diagonal(basis, order):
 	0, 1, 2, 3, 4, 5,
 ])
 @pytest.mark.parametrize('Basis', [
-	# Basis class representing the element geometry
+	# Basis class
 	basis_defs.LagrangeSeg, basis_defs.LagrangeQuad,
 ])
 def test_lagrange_massmatrix_should_be_symmetric(basis, order):
@@ -129,4 +129,4 @@ def test_lagrange_massmatrix_should_be_symmetric(basis, order):
 	should_be_one = np.abs(iMM - iMM_T) + 1.0
 	expected=np.ones_like(iMM)
 
-	np.testing.assert_allclose(should_be_one, expected, 1e-13, 1e-13)
+	np.testing.assert_allclose(should_be_one, expected, 1e-12, 1e-12)

@@ -2,9 +2,7 @@ import numpy as np
 
 TimeStepping = {
 	"FinalTime" : 2e-4,
-	#"NumTimeSteps" : 0,
-	# "CFL" : 0.001,
-	"TimeStepSize" : 2e-5/4.,
+	"TimeStepSize" : 2e-5,
 	"TimeStepper" : "SSPRK3",
 }
 
@@ -14,13 +12,10 @@ Numerics = {
 	"SolutionBasis" : "LagrangeQuad",
 }
 
-nelem = 64 
+nelem = 16 
 num_elem_x = nelem
 num_elem_y = nelem
 
-#Mesh = {
-#	"File" : "box_4.msh",
-#}
 Mesh = {
 	"ElementShape" : "Quadrilateral",
 	"NumElemsX" : num_elem_x,
@@ -47,26 +42,3 @@ InitialCondition = {
 }
 
 ExactSolution = InitialCondition.copy()
-
-#BoundaryConditions = {
-#        "y1" : {
-#                "BCType" : "SlipWall",
-#        },
-#        "y2" : {
-#                "BCType" : "SlipWall",
-#        },
-#        "x2" : {
-#                "BCType" : "SlipWall",
-#        },
-#        "x1" : {
-#                "BCType" : "SlipWall",
-#        }
-#}
-
-Output = {
-	"Prefix" : "Data",
-	"WriteInterval" : 100,
-	"WriteInitialSolution" : True,
-	"WriteFinalSolution" : True,
-	"AutoPostProcess" : True,
-}

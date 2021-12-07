@@ -1,6 +1,21 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/physics/euler/functions.py
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
+#       File : src/physics/navierstokes/functions.py
 #
 #       Contains definitions of Functions, boundary conditions, and source
 #       terms for the Euler equations.
@@ -18,7 +33,7 @@ from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
 
 class FcnType(Enum):
 	'''
-	Enum class that stores the types of analytic functions for initial
+	Enum class that stores the types of analytical functions for initial
 	conditions, exact solutions, and/or boundary conditions. These
 	functions are specific to the available Euler equation sets.
 	'''

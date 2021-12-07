@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : src/meshing/gmsh.py
 #
 #       Contains functions for processing Gmsh files.
@@ -50,11 +65,11 @@ def gmsh_node_order_seg(gorder):
 
 	Inputs:
 	-------
-	    gorder: order of geometry interpolation
+		gorder: order of geometry interpolation
 
 	Outputs:
 	--------
-	    nodes: maps quail node ordering to gmsh node ordering
+		nodes: maps quail node ordering to gmsh node ordering
 	'''
 	num_nodes = gorder + 1
 	nodes = np.arange(num_nodes)
@@ -70,13 +85,13 @@ def populate_nodes_quadril(gorder, start, nodes):
 	quadrilaterals. Recursion is employed.
 
 	Inputs:
-	    gorder: order of geometry interpolation
-	    start: starting node
-	    nodes: array for mapping node orders
+		gorder: order of geometry interpolation
+		start: starting node
+		nodes: array for mapping node orders
 
 	Outputs:
-	    nodes: maps quail node ordering to gmsh node ordering
-	    	(modified)
+		nodes: maps quail node ordering to gmsh node ordering
+			(modified)
 	'''
 	if gorder == 0:
 		return start
@@ -114,10 +129,10 @@ def gmsh_node_order_quadril(gorder):
 	quadrilaterals.
 
 	Inputs:
-	    gorder: order of geometry interpolation
+		gorder: order of geometry interpolation
 
 	Outputs:
-	    nodes: maps quail node ordering to gmsh node ordering
+		nodes: maps quail node ordering to gmsh node ordering
 	'''
 	nodes = populate_nodes_quadril(gorder, 0, np.zeros([gorder+1, gorder+1],
 			dtype=int))
@@ -132,13 +147,13 @@ def populate_nodes_tri(gorder, start, nodes):
 	triangles. Recursion is employed.
 
 	Inputs:
-	    gorder: order of geometry interpolation
-	    start: starting node
-	    nodes: array for mapping node orders
+		gorder: order of geometry interpolation
+		start: starting node
+		nodes: array for mapping node orders
 
 	Outputs:
-	    nodes: maps quail node ordering to gmsh node ordering
-	    	(modified)
+		nodes: maps quail node ordering to gmsh node ordering
+			(modified)
 	'''
 	if gorder == 0:
 		return start
@@ -174,10 +189,10 @@ def gmsh_node_order_tri(gorder):
 	triangles.
 
 	Inputs:
-	    gorder: order of geometry interpolation
+		gorder: order of geometry interpolation
 
 	Outputs:
-	    nodes: maps quail node ordering to gmsh node ordering
+		nodes: maps quail node ordering to gmsh node ordering
 	'''
 	nodes = populate_nodes_tri(gorder, 0, np.zeros([gorder+1, gorder+1],
 			dtype=int)-1)
@@ -194,7 +209,7 @@ def create_gmsh_element_database():
 
 	Outputs:
 	--------
-	    gmsh_element_database: Gmsh element database
+		gmsh_element_database: Gmsh element database
 	'''
 	gmsh_element_database = {}
 
@@ -258,15 +273,15 @@ class PhysicalGroup(object):
 	Attributes:
 	-----------
 	ndims: int
-	    number of spatial dimensions
+		number of spatial dimensions
 	boundary_group_num: int
-	    boundary group number (in quail)
+		boundary group number (in quail)
 	gmsh_phys_num: int
-	    physical group number assigned by Gmsh
+		physical group number assigned by Gmsh
 	name: str
-	    name of physical group
+		name of physical group
 	entity_tags: set
-	    tags of entities associated with this physical group
+		tags of entities associated with this physical group
 	'''
 	def __init__(self):
 		self.ndims = 1
@@ -283,24 +298,24 @@ class FaceInfo(object):
 	Attributes:
 	-----------
 	num_adjacent_elems: int
-	    number of elements adjacent to given face
+		number of elements adjacent to given face
 	at_boundary: bool
-	    True if boundary face, False if interior face
+		True if boundary face, False if interior face
 	boundary_group_num: int
-	    boundary group number (in quail)
+		boundary group number (in quail)
 	elem_ID: int
-	    ID of current adjacent element
+		ID of current adjacent element
 	face_ID: int
-	    local ID of face from perspective of current adjacent element
+		local ID of face from perspective of current adjacent element
 	num_face_nodes: int
-	    number of face nodes (q = 1)
+		number of face nodes (q = 1)
 	node_IDs_sort: tuple
 		global IDs of face nodes sorted in ascending order
 
-    Methods:
-    ---------
-    set_info
-        sets attributes
+	Methods:
+	---------
+	set_info
+		sets attributes
 	'''
 	def __init__(self):
 		self.num_adjacent_elems = 0
@@ -334,8 +349,8 @@ def go_to_line_below_string(fo, string):
 
 	Inputs:
 	-------
-	    fo: file object
-	    string: input string
+		fo: file object
+		string: input string
 
 	Outputs:
 	--------
@@ -364,7 +379,7 @@ def check_mesh_format(fo):
 
 	Inputs:
 	-------
-	    fo: file object
+		fo: file object
 
 	Outputs:
 	--------
@@ -398,14 +413,14 @@ def import_physical_groups(fo, mesh):
 
 	Inputs:
 	-------
-	    fo: file object
-	    mesh: mesh object
+		fo: file object
+		mesh: mesh object
 
 	Outputs:
 	-------
 		fo: file object (current position is modified)
-	    phys_groups: list of physical group objects
-	    num_phys_groups: number of physical groups
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
 	'''
 	# Find beginning of section
 	go_to_line_below_string(fo, "$PhysicalNames")
@@ -453,7 +468,7 @@ def get_nodes_ver2(fo):
 
 	Inputs:
 	-------
-	    fo: file object
+		fo: file object
 
 	Outputs:
 	--------
@@ -501,7 +516,7 @@ def get_nodes_ver4(fo):
 
 	Inputs:
 	-------
-	    fo: file object
+		fo: file object
 
 	Outputs:
 	--------
@@ -556,9 +571,9 @@ def import_nodes(fo, ver, mesh):
 
 	Inputs:
 	-------
-	    fo: file object
-	    ver: Gmsh file version
-	    mesh: mesh object
+		fo: file object
+		ver: Gmsh file version
+		mesh: mesh object
 
 	Outputs:
 	--------
@@ -617,10 +632,10 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 
 	Inputs:
 	-------
-	    fo: file object
-	    ver: Gmsh file version
-	    mesh: mesh object
-	    phys_groups: list of physical group objects
+		fo: file object
+		ver: Gmsh file version
+		mesh: mesh object
+		phys_groups: list of physical group objects
 
 	Outputs:
 	--------
@@ -634,10 +649,10 @@ def import_mesh_entities(fo, ver, mesh, phys_groups):
 
 		Inputs:
 		-------
-		    fo: file object
-		    phys_groups: list of physical group objects
-		    num_phys_tags_idx: index to obtain number of physical tags
-		    phys_num_idx: index to obtain physical group number
+			fo: file object
+			phys_groups: list of physical group objects
+			num_phys_tags_idx: index to obtain number of physical tags
+			phys_num_idx: index to obtain physical group number
 
 		Outputs:
 		--------
@@ -709,11 +724,11 @@ def get_elem_bface_info_ver2(fo, mesh, phys_groups, num_phys_groups,
 
 	Inputs:
 	-------
-	    fo: file object
-	    mesh: mesh object
-	    phys_groups: list of physical group objects
-	    num_phys_groups: number of physical groups
-	    gmsh_element_database: database on Gmsh elements
+		fo: file object
+		mesh: mesh object
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
+		gmsh_element_database: database on Gmsh elements
 
 	Outputs:
 	--------
@@ -778,11 +793,11 @@ def get_elem_bface_info_ver4(fo, mesh, phys_groups, num_phys_groups,
 
 	Inputs:
 	-------
-	    fo: file object
-	    mesh: mesh object
-	    phys_groups: list of physical group objects
-	    num_phys_groups: number of physical groups
-	    gmsh_element_database: database on Gmsh elements
+		fo: file object
+		mesh: mesh object
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
+		gmsh_element_database: database on Gmsh elements
 
 	Outputs:
 	--------
@@ -864,12 +879,12 @@ def import_mesh_elems_boundary_faces(fo, ver, mesh, phys_groups,
 
 	Inputs:
 	-------
-	    fo: file object
-	    ver: Gmsh file version
-	    mesh: mesh object
-	    phys_groups: list of physical group objects
-	    num_phys_groups: number of physical groups
-	    gmsh_element_database: database on Gmsh elements
+		fo: file object
+		ver: Gmsh file version
+		mesh: mesh object
+		phys_groups: list of physical group objects
+		num_phys_groups: number of physical groups
+		gmsh_element_database: database on Gmsh elements
 
 	Outputs:
 	--------
@@ -903,20 +918,20 @@ def add_face_info_to_table(node0_to_faces_info, num_face_nodes, node_IDs,
 
 	Inputs:
 	-------
-	    node0_to_faces_info: list of dicts, where, for a given dict, each
-	    	key is a tuple containing the global node IDs defining a face
-	    	(in ascending order) and the corresponding value is an object
-	    	containing relevant info about the face; all the keys for a
-	    	given dict have the same node0, which is the smallest global
-	    	node ID of the keys (tuples); the list is indexed by node0;
-	    	this is used to connect faces to elements
-	    num_face_nodes: number of (q = 1) face nodes
-	    node_IDs: global IDs of nodes defining the face
-	    at_boundary: True if boundary face; False if interior face
-	    group_num: number of physical group if boundary face; -1 if
-	    	interior face
-	    elem_ID: element ID of current adjacent element
-	    face_ID: local face ID from perspective of current adjacent element
+		node0_to_faces_info: list of dicts, where, for a given dict, each
+			key is a tuple containing the global node IDs defining a face
+			(in ascending order) and the corresponding value is an object
+			containing relevant info about the face; all the keys for a
+			given dict have the same node0, which is the smallest global
+			node ID of the keys (tuples); the list is indexed by node0;
+			this is used to connect faces to elements
+		num_face_nodes: number of (q = 1) face nodes
+		node_IDs: global IDs of nodes defining the face
+		at_boundary: True if boundary face; False if interior face
+		group_num: number of physical group if boundary face; -1 if
+			interior face
+		elem_ID: element ID of current adjacent element
+		face_ID: local face ID from perspective of current adjacent element
 
 	Outputs:
 	--------
@@ -963,9 +978,9 @@ def delete_face_info_from_table(node0_to_faces_info, num_face_nodes,
 
 	Inputs:
 	-------
-	    node0_to_faces_info: see above description of add_face_info_to_table
-	    num_face_nodes: number of (q = 1) face nodes
-	    node_IDs: global IDs of nodes defining the face
+		node0_to_faces_info: see above description of add_face_info_to_table
+		num_face_nodes: number of (q = 1) face nodes
+		node_IDs: global IDs of nodes defining the face
 
 	Outputs:
 	--------
@@ -1001,14 +1016,14 @@ def process_elems_bfaces_ver2(fo, mesh, phys_groups, num_phys_groups,
 		gmsh_element_database: Gmsh element database
 		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 		num_bfaces_per_bgroup: number of boundary faces per boundary group
-	    node0_to_faces_info: see above description of add_face_info_to_table
+		node0_to_faces_info: see above description of add_face_info_to_table
 
 	Outputs:
 	--------
 		fo: file object (current position is modified)
 		mesh: mesh object (modified)
-	    node0_to_faces_info: see above description of add_face_info_to_table
-	    	(modified)
+		node0_to_faces_info: see above description of add_face_info_to_table
+			(modified)
 	'''
 	num_elems_bfaces = int(fo.readline())
 	num_elems = 0 # counter for number of elements
@@ -1099,14 +1114,14 @@ def process_elems_bfaces_ver4(fo, mesh, phys_groups, num_phys_groups,
 		gmsh_element_database: Gmsh element database
 		old_to_new_node_IDs: maps Gmsh-assigned (old) node IDs to new IDs
 		num_bfaces_per_bgroup: number of boundary faces per boundary group
-	    node0_to_faces_info: see above description of add_face_info_to_table
+		node0_to_faces_info: see above description of add_face_info_to_table
 
 	Outputs:
 	--------
 		fo: file object (current position is modified)
 		mesh: mesh object (modified)
-	    node0_to_faces_info: see above description of add_face_info_to_table
-	    	(modified)
+		node0_to_faces_info: see above description of add_face_info_to_table
+			(modified)
 	'''
 	fl = fo.readline()
 	lint = [int(l) for l in fl.split()]

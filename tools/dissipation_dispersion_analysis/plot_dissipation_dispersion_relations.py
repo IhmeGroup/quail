@@ -1,5 +1,20 @@
 # ------------------------------------------------------------------------ #
 #
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
+#
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
 #       File : tools/dissipation_dispersion_analysis/
 #			plot_dissipation_dispersion_relations.py
 #
@@ -129,9 +144,14 @@ params["RestartFile"] = params["File"] # necessary step to avoid error
 params["SolutionBasis"] = "LagrangeSeg"
 params["ElementQuadrature"] = "GaussLegendre"
 params["NodeType"] = "Equidistant"
-# params["ElementQuadrature"] = "GaussLobatto"
-# params["NodeType"] = "GaussLobatto"
-params["ColocatedPoints"] = False # True
+
+# Uncomment the following block for colocated Gauss-Lobatto scheme
+'''
+params["ElementQuadrature"] = "GaussLobatto"
+params["FaceQuadrature"] = "GaussLobatto"
+params["NodeType"] = "GaussLobatto"
+params["ColocatedPoints"] = True
+'''
 
 # Polynomial orders
 orders = range(1, 8)
