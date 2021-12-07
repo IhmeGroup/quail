@@ -473,7 +473,7 @@ class EulerMultispecies1D_9sp_H2O2(EulerMultispecies1D):
 		if vname is self.AdditionalVariables["MassFractionH2"].name:
 			varq = rhoYH2/rho
 		elif vname is self.AdditionalVariables["MassFractionH"].name:
-			varq = rhoYH2/rho
+			varq = rhoYH/rho
 		elif vname is self.AdditionalVariables["MassFractionO"].name:
 			varq = rhoYO/rho
 		elif vname is self.AdditionalVariables["MassFractionO2"].name:

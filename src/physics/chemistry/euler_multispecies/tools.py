@@ -87,11 +87,10 @@ def get_source_test(physics, Uq, S):
 	nsp = physics.NUM_SPECIES
 
 	filename = physics.c_cantera_file()
-	import code; code.interact(local=locals())
-	P = np.zeros([ne, nq, 1])
+
 	LIB.get_net_production_rates(
 		ctypes.c_void_p(Uq.ctypes.data), 
-		ctypes.c_void_p(P.ctypes.data),
+		ctypes.c_void_p(S.ctypes.data),
 		ctypes.c_int(ne), 
 		ctypes.c_int(nq), 
 		ctypes.c_int(ns),
