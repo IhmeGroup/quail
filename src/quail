@@ -4,12 +4,12 @@
 #       quail: A lightweight discontinuous Galerkin code for
 #              teaching and prototyping
 #		<https://github.com/IhmeGroup/quail>
-#       
+#
 #		Copyright (C) 2020-2021
 #
 #       This program is distributed under the terms of the GNU
 #		General Public License v3.0. You should have received a copy
-#       of the GNU General Public License along with this program.  
+#       of the GNU General Public License along with this program.
 #		If not, see <https://www.gnu.org/licenses/>.
 #
 # ------------------------------------------------------------------------ #
@@ -420,12 +420,14 @@ def driver(deck):
 					solver_old.basis, solver_old.order)
 		else:
 			solver.state_coeffs = solver_old.state_coeffs
-			# Time
+		# Start from the same time and iteration count
 		if restart_params["StartFromFileTime"]:
 			solver.time = solver_old.time
+			solver.itime = solver_old.itime
 			solver.stepper.dt = 0.
 			stepper_tools.set_time_stepping_approach(solver.stepper,
 					solver.params)
+			solver.stepper.num_time_steps += solver_old.stepper.num_time_steps
 
 
 	'''
