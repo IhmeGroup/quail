@@ -270,14 +270,14 @@ class SourceSolvers():
 
 			# Instantiate ode object
 			r = ode(self.rhs_sources, jac=None)
-			r.set_integrator('lsoda', nsteps=50000, atol=1e-14, rtol=1e-12)
+			r.set_integrator('lsoda', nsteps=50000, min_step=1e-14, atol=1e-8, rtol=1e-4)
 			r.set_initial_value(Uq0, t0).set_f_params(x_elems, Uq, 
 					solver, subiterations)
 
 			value = r.integrate(r.t+dt).reshape([res.shape[0], res.shape[1],
 				res.shape[2]])
 
-			subiterations = np.unique(subiterations)
+			# subiterations = np.unique(subiterations)
 
 			# Print the number of subiterations for each iteration and
 			# store the total number of ODE subiterations for the solver
@@ -311,7 +311,7 @@ class SourceSolvers():
 			'''
 			# Append to the subiteration counter
 			subiterations.append(t)
-
+			# print(len(subiterations))
 			# Reconstruct shapes for source term evaluation on the
 			# quadrature points.
 			Uq = Uq0.reshape(Uq.shape)
