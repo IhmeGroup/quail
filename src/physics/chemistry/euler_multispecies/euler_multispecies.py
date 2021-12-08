@@ -438,6 +438,7 @@ class EulerMultispecies1D_9sp_H2O2(EulerMultispecies1D):
 	    TotalEnthalpy = "H"
 	    SoundSpeed = "c"
 	    MaxWaveSpeed = "\\lambda"
+	    Velocity = "u"
 	    MassFractionH2 = "Y_{H2}"
 	    MassFractionH = "Y_{H}"
 	    MassFractionO = "Y_{O}"
@@ -468,7 +469,7 @@ class EulerMultispecies1D_9sp_H2O2(EulerMultispecies1D):
 			if np.any(rho < 0.):
 				raise errors.NotPhysicalError
 
-		''' Get final scalars ''' #need to add other mass fractions later
+		''' Get final scalars '''
 		vname = self.AdditionalVariables[var_name].name
 		if vname is self.AdditionalVariables["MassFractionH2"].name:
 			varq = rhoYH2/rho
@@ -478,6 +479,14 @@ class EulerMultispecies1D_9sp_H2O2(EulerMultispecies1D):
 			varq = rhoYO/rho
 		elif vname is self.AdditionalVariables["MassFractionO2"].name:
 			varq = rhoYO2/rho
+		elif vname is self.AdditionalVariables["MassFractionOH"].name:
+			varq = rhoYOH/rho
+		elif vname is self.AdditionalVariables["MassFractionH2O"].name:
+			varq = rhoYH2O/rho
+		elif vname is self.AdditionalVariables["MassFractionHO2"].name:
+			varq = rhoYHO2/rho		
+		elif vname is self.AdditionalVariables["MassFractionH2O2"].name:
+			varq = rhoYH2O2/rho		
 		else:
 			varq = super().compute_additional_variable(var_name, Uq, 
 					flag_non_physical)
