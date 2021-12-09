@@ -57,6 +57,8 @@ def set_basis_spacetime(mesh, order, basis_name):
 		basis_st = basis_defs.LegendreQuad(order)
 	elif BasisType[basis_name] == BasisType.LagrangeQuad:
 		basis_st = basis_defs.LagrangeHex(order)
+	elif BasisType[basis_name] == BasisType.LagrangeTri:
+		basis_st = basis_defs.LagrangePrism(order)
 	else:
 		raise NotImplementedError
 

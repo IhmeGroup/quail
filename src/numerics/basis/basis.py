@@ -689,6 +689,123 @@ class HexShape(ShapeBase):
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
+
+class PrismShape(ShapeBase):
+	'''
+	PrismShape inherits attributes and methods from the ShapeBase class.
+	See ShapeBase for detailed comments of attributes and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	SHAPE_TYPE = ShapeType.Prism
+	FACE_SHAPE = QuadShape()
+	NFACES = 5
+	NDIMS = 3
+	PRINCIPAL_NODE_COORDS = np.array([[0., 0., -1], [1., 0., -1], 
+			[0., 1., -1], [0., 0., 1.], [1., 0., 1.], [0., 1., 1]])
+	CENTROID = np.array([[1./3., 1./3., 0.]])
+	FACE_TIME_MAPPING = np.array([3, 4])
+
+	def get_num_basis_coeff(self, p):
+		return (p + 1)*(p + 1)*(p + 2)//2
+
+	def equidistant_nodes(self, p):
+		nb_tri = TriShape().get_num_basis_coeff(p)
+		nb = self.get_num_basis_coeff(p)
+		ndims = self.NDIMS
+
+		xnodes = np.zeros([nb_tri, ndims])
+
+		xnodes[:nb_tri, :ndims-1] = TriShape().equidistant_nodes(p)
+		xnodes = np.tile(xnodes, [(p + 1), 1])
+		xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+
+		# this could be vectorized (but its also only run for initialization)
+		for iseg in range(xseg.shape[0]):
+			for ib in range(nb_tri):
+				xnodes[iseg * nb_tri + ib, -1] = xseg[iseg]
+
+		return xnodes # [nb, ndims]
+
+	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
+		# Need to update
+		nq = face_pts.shape[0]
+		nq_s = int(np.sqrt(nq))
+		ndims = self.NDIMS
+
+		# Instantiate a lagrange quad basis for face_ID 0-2
+		lagrange_eq_quad = LagrangeQuad(self.order)
+		lagrange_eq_tri = LagrangeTri(self.order)
+		# Face_ID's 4-5 are prescriptive since face_ID 4 is 
+		# always when tau=-1 and face_ID 5 is always when
+		# tau=1 in reference time.
+		if face_ID < 3:
+			fnodes = lagrange_eq_tri.get_local_face_principal_node_nums(1, face_ID)
+
+			xn0_tri = lagrange_eq_tri.PRINCIPAL_NODE_COORDS[fnodes[0]]
+			xn1_tri = lagrange_eq_tri.PRINCIPAL_NODE_COORDS[fnodes[1]]
+
+			x0 = np.append(xn0_tri, -1.)
+			x1 = np.append(xn1_tri, -1.)
+			x2 = np.append(xn1_tri, 1.)
+			x3 = np.append(xn0_tri, 1.)
+
+		elem_pts = np.zeros([face_pts.shape[0], ndims])
+		if face_ID != 3 or face_ID !=4:
+			elem_pts_tri = lagrange_eq_tri.get_elem_ref_from_face_ref(
+				face_ID, face_pts[:nq_s, [0]])
+			elem_pts[:, :-1] = np.tile(elem_pts_tri, [nq_s, 1])
+			elem_pts[:, -1] = face_pts[:, -1]
+		elif face_ID ==3:
+			elem_pts_tri = lagrange_eq_tri.get_elem_ref_from_face_ref(
+				face_ID, face_pts[:nq_s, [0]])
+		# elif face_ID == 1:
+
+		# elif face_ID == 2:
+		# 	elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+		# 			face_pts[:, 0] * x0[0]) / 2., nq)
+		# 	elem_pts[:, 1] = 1.
+		# 	elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
+		# 			face_pts[:, 1] * x0[2]) / 2., nq)
+		# Bottom face (tau = -1 in ref time)
+		elif face_ID == 3:
+			# how do I do this???
+			x0 = [-1., -1., -1.]
+			x1 = [1., -1., -1.]
+			x2 = [1., 1., -1.]
+			x3 = [-1., 1., -1.]
+			elem_pts[:, 2] = -1.
+			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+					face_pts[:, 0] * x0[0]) / 2., nq)
+			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
+					face_pts[:, 1] * x0[1]) / 2., nq)
+		# Top face (tau = 1 in ref time)
+		elif face_ID == 4: 
+			x0 = [-1., -1., 1.]
+			x1 = [1., -1., 1.]
+			x2 = [1., 1., 1.]
+			x3 = [-1., 1., 1.]
+			elem_pts[:, 2] = 1.
+			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
+					face_pts[: , 0] * x0[0]) / 2., nq)
+			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
+					face_pts[:, 1] * x0[1]) / 2., nq)
+		else:
+			raise NotImplementedError
+		breakpoint()
+		return elem_pts # [face_pts.shape[0], ndims]
+
+	def get_quadrature_order(self, mesh, order, physics=None):
+		qorder = super().get_quadrature_order(mesh, order, physics)
+
+		return qorder
+
+	def get_quadrature_data(self, order):
+		quad_pts, quad_wts = hexahedron.get_quadrature_points_weights(
+				order, self.quadrature_type, self.num_pts_colocated)
+
+		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
+
 class BasisBase(ABC):
 	'''
 	This is an abstract base class used for the base attributes and methods
@@ -1339,6 +1456,98 @@ class LagrangeHex(BasisBase, HexShape):
 					basis_ref_grad=basis_ref_grad)
 
 		return basis_ref_grad # [nq, nb, ndims]
+
+
+class LagrangePrism(BasisBase, PrismShape):
+	'''
+	LagrangeTri inherits attributes and methods from the BasisBase class
+	and TriShape class. See BaseShape and TriShape for detailed comments
+	of attributes and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	BASIS_TYPE = BasisType.LagrangePrism
+	MODAL_OR_NODAL = ModalOrNodal.Nodal
+
+	def __init__(self, order):
+		super().__init__(order)
+		self.calculate_normals = basis_tools.calculate_2D_normals
+
+	def get_nodes(self, p):
+		# get_nodes only has equidistant_nodes option for triangles
+		return self.equidistant_nodes(p)
+
+	def get_values(self, quad_pts):
+		p = self.order
+		nb = self.nb
+		nq = quad_pts.shape[0]
+
+		basis_val = np.zeros([nq, nb])
+
+		if p == 0:
+			basis_val[:] = 1.
+		else:
+			xnodes = self.equidistant_nodes(p)
+			basis_tools.get_lagrange_basis_tri(quad_pts, p, xnodes,
+					basis_val)
+
+		return basis_val # [nq, nb]
+
+	def get_grads(self, quad_pts):
+		ndims = self.NDIMS
+		p = self.order
+		nb = self.nb
+		nq = quad_pts.shape[0]
+
+		basis_ref_grad = np.zeros([nq, nb, ndims])
+
+		if p > 0:
+			xnodes = self.equidistant_nodes(p)
+			basis_tools.get_lagrange_grad_tri(quad_pts, p, xnodes,
+					basis_ref_grad)
+
+		return basis_ref_grad # [nq, nb, ndims]
+
+	def get_local_face_node_nums(self, p, face_ID):
+		'''
+		Returns local IDs of all nodes on face
+
+		Inputs:
+		-------
+			p: order of polynomial space
+			face_ID: reference element face value
+
+		Outputs:
+		--------
+			fnode_nums: local IDs of all nodes on face
+		'''
+		if p < 1:
+			raise ValueError
+
+		nn = p + 1
+		fnode_nums = np.zeros(nn, dtype=int)
+
+		if face_ID == 0:
+			nstart = p
+			j = p
+			k = -1
+		elif face_ID == 1:
+			nstart = (p+1)*(p+2)//2 - 1
+			j = -2
+			k = -1
+		elif face_ID == 2:
+			nstart = 0
+			j = 1
+			k = 0
+		else:
+			raise ValueError
+
+		fnode_nums[0] = nstart
+		for i in range(1, p+1):
+			fnode_nums[i] = fnode_nums[i-1] + j
+			j += k
+
+		return fnode_nums
 
 
 class LegendreSeg(BasisBase, SegShape):
