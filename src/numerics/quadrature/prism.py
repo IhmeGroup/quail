@@ -44,7 +44,6 @@ def get_quadrature_points_weights(order, quad_type):
 	# Get quadrature points and weights for triangle
 	qpts_tri, qwts_tri = qtri.get_quadrature_points_weights(order, quad_type)
 
-
 	# Get quadrature points and weights for segment
 	qpts_seg, qwts_seg = qseg.get_quadrature_points_weights(order, 
 			general.QuadratureType.GaussLegendre)
@@ -57,7 +56,7 @@ def get_quadrature_points_weights(order, quad_type):
 	qpts = np.zeros([qwts.shape[0], 3])
 	qpts[:, :-1] = np.tile(qpts_tri, (qpts_seg.shape[0], 1))
 
-	# need to vectorize
+	# Fill the third dimension with correct segment quadrature
 	for iseg in range(qpts_seg.shape[0]):
 		for ib in range(qpts_tri.shape[0]):
 			qpts[iseg * qpts_tri.shape[0] + ib, -1] = qpts_seg[iseg]
