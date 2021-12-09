@@ -672,6 +672,27 @@ def get_tri_grad_area_coordinates(p, alpha, l):
 	return dN
 
 
+def get_lagrange_basis_prism(xq, p, nq_seg, xnodes, xnodes_seg, basis_val_tri, 
+		basis_val=None):
+
+	valz = np.zeros((xq.shape[0], xnodes_seg.shape[0]))
+	get_lagrange_basis_1D(xq[:, 2].reshape(-1, 1), xnodes_seg, valz)
+
+	# Tensor products to get 3D basis values
+	if basis_val is not None:	
+		for i in range(xq.shape[0]):
+			basis_val[i, :] = np.reshape(np.outer(basis_val_tri[i, :],
+					valz[i, :]), (-1, ), 'F')
+
+def get_lagrange_grad_prism(xq, p, nq_seg, xnodes, xnodes_seg, basis_val_tri, 
+		basis_val=None):
+	if basis_ref_grad is not None:
+		gradx = np.zeros((xq.shape[0], xnodes.shape[0], 1))
+		grady = np.zeros_like(gradx)
+		gradz = np.zeros_like(gradx)
+	else:
+		gradx = None; grady = None; gradz = None
+
 def get_legendre_basis_1D(xq, p, basis_val=None, basis_ref_grad=None):
 	'''
 	Calculates the 1D Legendre basis functions
