@@ -32,7 +32,7 @@ import numerics.basis.tools as basis_tools
 import numerics.basis.basis as basis_defs
 
 from numerics.quadrature import segment, quadrilateral, triangle, \
-		hexahedron
+		hexahedron, prism
 
 
 class ShapeBase(ABC):
@@ -563,6 +563,36 @@ class TriShape(ShapeBase):
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
 
+	def get_tiling_constants(self, bface_quad_pts_st):
+		'''
+		NEEDS TO BE FIXED
+
+
+		Precomputes the tiling constants for the ADER-DG scheme. Tiling
+		constants are used with the numpy 'tile' function to build arrays
+		to maintain consistency for the tensor multiplications throughout
+		the solver.
+
+		Inputs:
+		-------
+			bface_quad_pts_st: boundary face quad_pts used to define
+					the time_skip and time_tile value for 2D ADER 
+					approaches using Quads [nq_st, ndims]
+
+		Outputs:
+		--------
+			nq_t: quadrature points tiling constant
+			time_skip: Value to skip when building time
+					array for each bface in get_boundary_face_residual
+					in src/solver/ADERDG.py. Also used for tiling
+					in the interior and boundary face integral.
+			time_tile: time array tiling constant for each bface in 
+					get_boundary_face_residual in src/solver/ADERDG.py
+		'''
+		return int(np.sqrt(self.basis_val.shape[0])), \
+				int(np.sqrt(bface_quad_pts_st.shape[0])), \
+				int(np.sqrt(bface_quad_pts_st.shape[0]))
+
 
 class HexShape(ShapeBase):
 	'''
@@ -573,7 +603,7 @@ class HexShape(ShapeBase):
 	'''
 	SHAPE_TYPE = ShapeType.Hexahedron
 	FACE_SHAPE = QuadShape()
-	NFACES = 6
+	NFACES = 4 # Only include space flux faces (NEED EXTRA EXPLANATION FROM BRETT) 
 	NDIMS = 3
 	PRINCIPAL_NODE_COORDS = np.array([[-1., -1., -1.],[1., -1., -1.],
 			[-1., 1., -1.],[1., 1., -1.],[-1., -1., 1.],[1., -1., 1.],
@@ -652,7 +682,6 @@ class HexShape(ShapeBase):
 					face_pts[:, 1] * x0[2]) / 2., nq)
 		# Bottom face (tau = -1 in ref time)
 		elif face_ID == 4:
-
 			x0 = [-1., -1., -1.]
 			x1 = [1., -1., -1.]
 			x2 = [1., 1., -1.]
@@ -699,7 +728,7 @@ class PrismShape(ShapeBase):
 	'''
 	SHAPE_TYPE = ShapeType.Prism
 	FACE_SHAPE = QuadShape()
-	NFACES = 5
+	NFACES = 3 #Explin why not 5 
 	NDIMS = 3
 	PRINCIPAL_NODE_COORDS = np.array([[0., 0., -1], [1., 0., -1], 
 			[0., 1., -1], [0., 0., 1.], [1., 0., 1.], [0., 1., 1]])
@@ -736,8 +765,8 @@ class PrismShape(ShapeBase):
 		# Instantiate a lagrange quad basis for face_ID 0-2
 		lagrange_eq_quad = LagrangeQuad(self.order)
 		lagrange_eq_tri = LagrangeTri(self.order)
-		# Face_ID's 4-5 are prescriptive since face_ID 4 is 
-		# always when tau=-1 and face_ID 5 is always when
+		# Face_ID's 3-4 are prescriptive since face_ID 3 is 
+		# always when tau=-1 and face_ID 4 is always when
 		# tau=1 in reference time.
 		if face_ID < 3:
 			fnodes = lagrange_eq_tri.get_local_face_principal_node_nums(1, face_ID)
@@ -751,48 +780,20 @@ class PrismShape(ShapeBase):
 			x3 = np.append(xn0_tri, 1.)
 
 		elem_pts = np.zeros([face_pts.shape[0], ndims])
-		if face_ID != 3 or face_ID !=4:
+		if face_ID != 3 and face_ID !=4:
 			elem_pts_tri = lagrange_eq_tri.get_elem_ref_from_face_ref(
 				face_ID, face_pts[:nq_s, [0]])
 			elem_pts[:, :-1] = np.tile(elem_pts_tri, [nq_s, 1])
 			elem_pts[:, -1] = face_pts[:, -1]
 		elif face_ID ==3:
-			elem_pts_tri = lagrange_eq_tri.get_elem_ref_from_face_ref(
-				face_ID, face_pts[:nq_s, [0]])
-		# elif face_ID == 1:
-
-		# elif face_ID == 2:
-		# 	elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
-		# 			face_pts[:, 0] * x0[0]) / 2., nq)
-		# 	elem_pts[:, 1] = 1.
-		# 	elem_pts[:, 2] = np.reshape((face_pts[:, 1] * x3[2] - \
-		# 			face_pts[:, 1] * x0[2]) / 2., nq)
-		# Bottom face (tau = -1 in ref time)
-		elif face_ID == 3:
-			# how do I do this???
-			x0 = [-1., -1., -1.]
-			x1 = [1., -1., -1.]
-			x2 = [1., 1., -1.]
-			x3 = [-1., 1., -1.]
-			elem_pts[:, 2] = -1.
-			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
-					face_pts[:, 0] * x0[0]) / 2., nq)
-			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
-					face_pts[:, 1] * x0[1]) / 2., nq)
-		# Top face (tau = 1 in ref time)
-		elif face_ID == 4: 
-			x0 = [-1., -1., 1.]
-			x1 = [1., -1., 1.]
-			x2 = [1., 1., 1.]
-			x3 = [-1., 1., 1.]
-			elem_pts[:, 2] = 1.
-			elem_pts[:, 0] = np.reshape((face_pts[:, 0] * x1[0] - \
-					face_pts[: , 0] * x0[0]) / 2., nq)
-			elem_pts[:, 1] = np.reshape((face_pts[:, 1] * x3[1] - \
-					face_pts[:, 1] * x0[1]) / 2., nq)
+			elem_pts[:, :-1] = face_pts
+			elem_pts[:, -1] = -1.0
+		elif face_ID ==4:
+			elem_pts[:, :-1] = face_pts
+			elem_pts[:, -1] = 1.0
 		else:
 			raise NotImplementedError
-		breakpoint()
+
 		return elem_pts # [face_pts.shape[0], ndims]
 
 	def get_quadrature_order(self, mesh, order, physics=None):
@@ -801,10 +802,11 @@ class PrismShape(ShapeBase):
 		return qorder
 
 	def get_quadrature_data(self, order):
-		quad_pts, quad_wts = hexahedron.get_quadrature_points_weights(
-				order, self.quadrature_type, self.num_pts_colocated)
+		quad_pts, quad_wts = prism.get_quadrature_points_weights(
+				order, self.quadrature_type)
 
 		return quad_pts, quad_wts # [nq, ndims] and [nq, 1]
+
 
 class BasisBase(ABC):
 	'''
@@ -1437,7 +1439,7 @@ class LagrangeHex(BasisBase, HexShape):
 			basis_val[:] = 1.
 		else:
 			xnodes = self.get_1d_nodes(-1., 1., p+1)
-
+			
 			basis_tools.get_lagrange_basis_3D(quad_pts, xnodes, basis_val)
 
 		return basis_val # [nq, nb]
@@ -1460,8 +1462,8 @@ class LagrangeHex(BasisBase, HexShape):
 
 class LagrangePrism(BasisBase, PrismShape):
 	'''
-	LagrangeTri inherits attributes and methods from the BasisBase class
-	and TriShape class. See BaseShape and TriShape for detailed comments
+	LagrangePrism inherits attributes and methods from the BasisBase class
+	and PrismShape class. See BaseShape and PrismShape for detailed comments
 	of attributes and methods.
 
 	Additional methods and attributes are commented below.
@@ -1484,12 +1486,30 @@ class LagrangePrism(BasisBase, PrismShape):
 
 		basis_val = np.zeros([nq, nb])
 
+		# Get the triangle basis
+		basis_tri = LagrangeTri(p)
+		nb_tri = basis_tri.get_num_basis_coeff(p)
+		
+		unique = np.unique(quad_pts[:, -1], return_counts=True)
+		nq_seg = len(unique)
+
+		nq_tri = int(nq / nq_seg)
+
+		basis_val_tri = np.zeros([int(nq / nq_seg), nb_tri])
+
 		if p == 0:
 			basis_val[:] = 1.
 		else:
 			xnodes = self.equidistant_nodes(p)
-			basis_tools.get_lagrange_basis_tri(quad_pts, p, xnodes,
-					basis_val)
+			xnodes_seg = self.get_1d_nodes(-1., 1., p + 1)
+			xnodes_tri = basis_tri.equidistant_nodes(p)
+
+			basis_tools.get_lagrange_basis_tri(quad_pts[:nq_tri, :-1], 
+					p, xnodes_tri, basis_val_tri)
+
+			basis_tools.get_lagrange_basis_prism(quad_pts, p, nq_seg, xnodes,
+					xnodes_seg, np.tile(basis_val_tri, 
+					[nq_seg, 1]), basis_val)
 
 		return basis_val # [nq, nb]
 
