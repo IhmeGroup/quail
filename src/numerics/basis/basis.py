@@ -565,9 +565,6 @@ class TriShape(ShapeBase):
 
 	def get_tiling_constants(self, bface_quad_pts_st):
 		'''
-		NEEDS TO BE FIXED
-
-
 		Precomputes the tiling constants for the ADER-DG scheme. Tiling
 		constants are used with the numpy 'tile' function to build arrays
 		to maintain consistency for the tensor multiplications throughout
@@ -589,7 +586,7 @@ class TriShape(ShapeBase):
 			time_tile: time array tiling constant for each bface in 
 					get_boundary_face_residual in src/solver/ADERDG.py
 		'''
-		return int(np.sqrt(self.basis_val.shape[0])), \
+		return int(np.sqrt(bface_quad_pts_st.shape[0])), \
 				int(np.sqrt(bface_quad_pts_st.shape[0])), \
 				int(np.sqrt(bface_quad_pts_st.shape[0]))
 
@@ -1439,7 +1436,7 @@ class LagrangeHex(BasisBase, HexShape):
 			basis_val[:] = 1.
 		else:
 			xnodes = self.get_1d_nodes(-1., 1., p+1)
-			
+
 			basis_tools.get_lagrange_basis_3D(quad_pts, xnodes, basis_val)
 
 		return basis_val # [nq, nb]
@@ -1490,9 +1487,9 @@ class LagrangePrism(BasisBase, PrismShape):
 		basis_tri = LagrangeTri(p)
 		nb_tri = basis_tri.get_num_basis_coeff(p)
 		
-		unique = np.unique(quad_pts[:, -1], return_counts=True)
+		# Get number of quadrature points for tri / seg
+		unique, _ = np.unique(quad_pts[:, -1], return_counts=True)
 		nq_seg = len(unique)
-
 		nq_tri = int(nq / nq_seg)
 
 		basis_val_tri = np.zeros([int(nq / nq_seg), nb_tri])
@@ -1521,9 +1518,32 @@ class LagrangePrism(BasisBase, PrismShape):
 
 		basis_ref_grad = np.zeros([nq, nb, ndims])
 
+		# Get the triangle basis
+		basis_tri = LagrangeTri(p)
+		nb_tri = basis_tri.get_num_basis_coeff(p)
+
+		# Get number of quadrature points for tri / seg
+		unique, _ = np.unique(quad_pts[:, -1], return_counts=True)
+		nq_seg = len(unique)
+		nq_tri = int(nq / nq_seg)
+
+		basis_ref_grad_tri = np.zeros([int(nq / nq_seg), nb_tri, ndims])
+		basis_val_tri = np.zeros([int(nq / nq_seg), nb_tri])
+
 		if p > 0:
 			xnodes = self.equidistant_nodes(p)
-			basis_tools.get_lagrange_grad_tri(quad_pts, p, xnodes,
+			xnodes_seg = self.get_1d_nodes(-1., 1., p + 1)
+			xnodes_tri = basis_tri.equidistant_nodes(p)
+
+			basis_tools.get_lagrange_grad_tri(quad_pts[:nq_tri, :-1], p,
+					xnodes_tri, basis_ref_grad_tri)
+			
+			basis_tools.get_lagrange_basis_tri(quad_pts[:nq_tri, :-1], 
+					p, xnodes_tri, basis_val_tri)
+
+			basis_tools.get_lagrange_grad_prism(quad_pts, p, nq_seg,
+					xnodes, xnodes_seg, np.tile(basis_val_tri, [nq_seg, 1]),
+					np.tile(basis_ref_grad_tri, [nq_seg, 1, 1]), 
 					basis_ref_grad)
 
 		return basis_ref_grad # [nq, nb, ndims]
