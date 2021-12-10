@@ -574,7 +574,7 @@ class TriShape(ShapeBase):
 		-------
 			bface_quad_pts_st: boundary face quad_pts used to define
 					the time_skip and time_tile value for 2D ADER 
-					approaches using Quads [nq_st, ndims]
+					approaches using Tris [nq_st, ndims]
 
 		Outputs:
 		--------
@@ -600,7 +600,7 @@ class HexShape(ShapeBase):
 	'''
 	SHAPE_TYPE = ShapeType.Hexahedron
 	FACE_SHAPE = QuadShape()
-	NFACES = 4 # Only include space flux faces (NEED EXTRA EXPLANATION FROM BRETT) 
+	NFACES = 6
 	NDIMS = 3
 	PRINCIPAL_NODE_COORDS = np.array([[-1., -1., -1.],[1., -1., -1.],
 			[-1., 1., -1.],[1., 1., -1.],[-1., -1., 1.],[1., -1., 1.],
@@ -631,7 +631,6 @@ class HexShape(ShapeBase):
 		return xnodes # [nb, ndims]
 
 	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
-		
 		nq = face_pts.shape[0]
 		ndims = self.NDIMS
 
@@ -725,7 +724,7 @@ class PrismShape(ShapeBase):
 	'''
 	SHAPE_TYPE = ShapeType.Prism
 	FACE_SHAPE = QuadShape()
-	NFACES = 3 #Explin why not 5 
+	NFACES = 5
 	NDIMS = 3
 	PRINCIPAL_NODE_COORDS = np.array([[0., 0., -1], [1., 0., -1], 
 			[0., 1., -1], [0., 0., 1.], [1., 0., 1.], [0., 1., 1]])
@@ -740,13 +739,15 @@ class PrismShape(ShapeBase):
 		nb = self.get_num_basis_coeff(p)
 		ndims = self.NDIMS
 
+		# First get the nodes from a 2D triangle
 		xnodes = np.zeros([nb_tri, ndims])
-
 		xnodes[:nb_tri, :ndims-1] = TriShape().equidistant_nodes(p)
+
+		# Tile the nodes in the 3rd direction
 		xnodes = np.tile(xnodes, [(p + 1), 1])
 		xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
 
-		# this could be vectorized (but its also only run for initialization)
+		# Fill the third component with the segment nodes
 		for iseg in range(xseg.shape[0]):
 			for ib in range(nb_tri):
 				xnodes[iseg * nb_tri + ib, -1] = xseg[iseg]
@@ -754,38 +755,26 @@ class PrismShape(ShapeBase):
 		return xnodes # [nb, ndims]
 
 	def get_elem_ref_from_face_ref(self, face_ID, face_pts):
-		# Need to update
 		nq = face_pts.shape[0]
 		nq_s = int(np.sqrt(nq))
 		ndims = self.NDIMS
 
-		# Instantiate a lagrange quad basis for face_ID 0-2
-		lagrange_eq_quad = LagrangeQuad(self.order)
+		# Instantiate a lagrange tri basis for face_ID 0-2
 		lagrange_eq_tri = LagrangeTri(self.order)
+		elem_pts = np.zeros([face_pts.shape[0], ndims])
+		
 		# Face_ID's 3-4 are prescriptive since face_ID 3 is 
 		# always when tau=-1 and face_ID 4 is always when
 		# tau=1 in reference time.
-		if face_ID < 3:
-			fnodes = lagrange_eq_tri.get_local_face_principal_node_nums(1, face_ID)
-
-			xn0_tri = lagrange_eq_tri.PRINCIPAL_NODE_COORDS[fnodes[0]]
-			xn1_tri = lagrange_eq_tri.PRINCIPAL_NODE_COORDS[fnodes[1]]
-
-			x0 = np.append(xn0_tri, -1.)
-			x1 = np.append(xn1_tri, -1.)
-			x2 = np.append(xn1_tri, 1.)
-			x3 = np.append(xn0_tri, 1.)
-
-		elem_pts = np.zeros([face_pts.shape[0], ndims])
 		if face_ID != 3 and face_ID !=4:
 			elem_pts_tri = lagrange_eq_tri.get_elem_ref_from_face_ref(
 				face_ID, face_pts[:nq_s, [0]])
 			elem_pts[:, :-1] = np.tile(elem_pts_tri, [nq_s, 1])
 			elem_pts[:, -1] = face_pts[:, -1]
-		elif face_ID ==3:
+		elif face_ID == 3:
 			elem_pts[:, :-1] = face_pts
 			elem_pts[:, -1] = -1.0
-		elif face_ID ==4:
+		elif face_ID == 4:
 			elem_pts[:, :-1] = face_pts
 			elem_pts[:, -1] = 1.0
 		else:
@@ -818,6 +807,7 @@ class BasisBase(ABC):
 			Ref: Solin, P, Segeth, K. and Dolezel, I., "Higher-Order Finite
 			Element Methods" (Boca Raton, FL: Chapman and Hall/CRC). 2004.
 			pp. 55-60.
+		- Lagrange basis for 2D ADERDG [support for hexahedron and prisms]
 
 	Abstract Constants:
 	-------------------
@@ -1473,7 +1463,7 @@ class LagrangePrism(BasisBase, PrismShape):
 		self.calculate_normals = basis_tools.calculate_2D_normals
 
 	def get_nodes(self, p):
-		# get_nodes only has equidistant_nodes option for triangles
+		# get_nodes only has equidistant_nodes option for prisms
 		return self.equidistant_nodes(p)
 
 	def get_values(self, quad_pts):
@@ -1483,7 +1473,7 @@ class LagrangePrism(BasisBase, PrismShape):
 
 		basis_val = np.zeros([nq, nb])
 
-		# Get the triangle basis
+		# Get the shape of the triangle basis
 		basis_tri = LagrangeTri(p)
 		nb_tri = basis_tri.get_num_basis_coeff(p)
 		
@@ -1501,12 +1491,15 @@ class LagrangePrism(BasisBase, PrismShape):
 			xnodes_seg = self.get_1d_nodes(-1., 1., p + 1)
 			xnodes_tri = basis_tri.equidistant_nodes(p)
 
+			# Calculate the basis value for reference triangle
 			basis_tools.get_lagrange_basis_tri(quad_pts[:nq_tri, :-1], 
 					p, xnodes_tri, basis_val_tri)
 
-			basis_tools.get_lagrange_basis_prism(quad_pts, p, nq_seg, xnodes,
-					xnodes_seg, np.tile(basis_val_tri, 
-					[nq_seg, 1]), basis_val)
+			# Calculate the basis value for reference prism using 
+			# the triangle basis value
+			basis_tools.get_lagrange_basis_prism(quad_pts, nq_seg, xnodes,
+					xnodes_seg, np.tile(basis_val_tri, [nq_seg, 1]), 
+					basis_val)
 
 		return basis_val # [nq, nb]
 
@@ -1535,59 +1528,22 @@ class LagrangePrism(BasisBase, PrismShape):
 			xnodes_seg = self.get_1d_nodes(-1., 1., p + 1)
 			xnodes_tri = basis_tri.equidistant_nodes(p)
 
+			# Calculate the basis gradient for reference triangle
 			basis_tools.get_lagrange_grad_tri(quad_pts[:nq_tri, :-1], p,
 					xnodes_tri, basis_ref_grad_tri)
 			
+			# Calculate the basis value for reference triangle
 			basis_tools.get_lagrange_basis_tri(quad_pts[:nq_tri, :-1], 
 					p, xnodes_tri, basis_val_tri)
 
-			basis_tools.get_lagrange_grad_prism(quad_pts, p, nq_seg,
+			# Calculate the basis value for reference prism using
+			# the triangle basis value and gradient
+			basis_tools.get_lagrange_grad_prism(quad_pts, nq_seg,
 					xnodes, xnodes_seg, np.tile(basis_val_tri, [nq_seg, 1]),
 					np.tile(basis_ref_grad_tri, [nq_seg, 1, 1]), 
 					basis_ref_grad)
 
 		return basis_ref_grad # [nq, nb, ndims]
-
-	def get_local_face_node_nums(self, p, face_ID):
-		'''
-		Returns local IDs of all nodes on face
-
-		Inputs:
-		-------
-			p: order of polynomial space
-			face_ID: reference element face value
-
-		Outputs:
-		--------
-			fnode_nums: local IDs of all nodes on face
-		'''
-		if p < 1:
-			raise ValueError
-
-		nn = p + 1
-		fnode_nums = np.zeros(nn, dtype=int)
-
-		if face_ID == 0:
-			nstart = p
-			j = p
-			k = -1
-		elif face_ID == 1:
-			nstart = (p+1)*(p+2)//2 - 1
-			j = -2
-			k = -1
-		elif face_ID == 2:
-			nstart = 0
-			j = 1
-			k = 0
-		else:
-			raise ValueError
-
-		fnode_nums[0] = nstart
-		for i in range(1, p+1):
-			fnode_nums[i] = fnode_nums[i-1] + j
-			j += k
-
-		return fnode_nums
 
 
 class LegendreSeg(BasisBase, SegShape):
