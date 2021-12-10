@@ -723,7 +723,7 @@ class PrismShape(ShapeBase):
 	Additional methods and attributes are commented below.
 	'''
 	SHAPE_TYPE = ShapeType.Prism
-	FACE_SHAPE = QuadShape()
+	FACE_SHAPE = QuadShape() # only need the faces with spatial fluxes
 	NFACES = 5
 	NDIMS = 3
 	PRINCIPAL_NODE_COORDS = np.array([[0., 0., -1], [1., 0., -1], 
