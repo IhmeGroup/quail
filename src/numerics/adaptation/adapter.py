@@ -7,7 +7,8 @@ import numpy as np
 from scipy import optimize
 import time
 
-import numerics.basis.tools  as basis_tools
+import numerics.adaptation.error_estimator as error_estimator
+import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as numerics_helpers
 import meshing.meshbase as meshdefs
 import meshing.tools as mesh_tools
@@ -25,9 +26,9 @@ class MMG5_pSol(ctypes.c_void_p):
 lib_file = os.path.dirname(os.path.realpath(__file__)) + '/libmesh_adapter.so'
 lib = ctypes.cdll.LoadLibrary(lib_file)
 
-# -- adapt_mesh -- #
-lib.adapt_mesh.restype = None
-lib.adapt_mesh.argtypes = [
+# -- initialize -- #
+lib.initialize.restype = None
+lib.initialize.argtypes = [
 		# Node coords
 		np.ctypeslib.ndpointer(dtype=np.float64, ndim=2,
 			flags='C_CONTIGUOUS'),
@@ -37,6 +38,18 @@ lib.adapt_mesh.argtypes = [
 		# Boundary face information
 		np.ctypeslib.ndpointer(dtype=np.int64, ndim=2,
 			flags='C_CONTIGUOUS'),
+		# Sizes
+		POINTER(ctypes.c_int), POINTER(ctypes.c_int), POINTER(ctypes.c_int),
+		# Mmg structs for the mesh and sol
+		MMG5_pMesh, MMG5_pSol,
+		# Metric tensor
+		np.ctypeslib.ndpointer(dtype=np.float64, ndim=3,
+			flags='C_CONTIGUOUS')]
+initialize = lib.initialize
+
+# -- adapt_mesh -- #
+lib.adapt_mesh.restype = None
+lib.adapt_mesh.argtypes = [
 		# Metric tensor
 		np.ctypeslib.ndpointer(dtype=np.float64, ndim=3,
 			flags='C_CONTIGUOUS'),
@@ -136,6 +149,10 @@ class Adapter:
 						bgroup.number]
 				# Increment edge index
 				edge_idx += 1;
+
+		# Error estimator
+		estimator = error_estimator.SpectralDecayEstimator(solver)
+		epsilon = estimator()
 
 		# -- Pressure Sensor -- #
 		# Get solution at quadrature points
@@ -237,13 +254,22 @@ class Adapter:
 		num_nodes = ctypes.c_int(mesh.num_nodes)
 		num_elems = ctypes.c_int(mesh.num_elems)
 
-		# Run Mmg to do mesh adaptation
+		# Initialize Mmg and get the current metric
 		mmgMesh = MMG5_pMesh()
 		mmgSol = MMG5_pSol()
 		# TODO: For some reason mesh.node_coords is F contiguous???
-		adapt_mesh(np.ascontiguousarray(mesh.node_coords), mesh.elem_to_node_IDs,
-				bface_info, metric, byref(num_nodes), byref(num_elems),
+		initialize(np.ascontiguousarray(mesh.node_coords),
+				mesh.elem_to_node_IDs, bface_info, byref(num_nodes),
+				byref(num_elems), byref(num_edges), byref(mmgMesh),
+				byref(mmgSol), metric)
+		breakpoint()
+
+		# TODO: Do the metric computation here
+
+		# Run Mmg to do mesh adaptation
+		adapt_mesh(metric, byref(num_nodes), byref(num_elems),
 				byref(num_edges), byref(mmgMesh), byref(mmgSol))
+
 		num_nodes = num_nodes.value
 		num_elems = num_elems.value
 		num_edges = num_edges.value

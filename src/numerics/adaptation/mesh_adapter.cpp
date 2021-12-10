@@ -17,11 +17,10 @@ void check_error(int error) {
 
 extern "C" {
 
-void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
-        bface_info, const double* metric, int& num_nodes, int& num_elems, int&
-        num_edges, MMG5_pMesh& mmgMesh, MMG5_pSol& mmgSol) {
+void initialize(const double* node_coords, const long* node_IDs, const long*
+        bface_info, const int& num_nodes, const int& num_elems, const int&
+        num_edges, MMG5_pMesh& mmgMesh, MMG5_pSol& mmgSol, double* metric) {
     int error;
-    int ndims = 2;
 
     mmgMesh = NULL;
     mmgSol  = NULL;
@@ -80,11 +79,6 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
                 edge_ID + 1);
         check_error(error);
     }
-    // Set edge requirements
-    // TODO: How best to handle this in general?
-    //error = MMG2D_Set_requiredEdge(mmgMesh, 1);
-    //error = MMG2D_Set_requiredEdge(mmgMesh, 2);
-    //check_error(error);
 
     // Give info to the sol struct.
     // - the mesh and sol structs
@@ -93,6 +87,27 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
     // - the type of sol, which is scalar for now (isotropic)
     error = MMG2D_Set_solSize(mmgMesh, mmgSol, MMG5_Vertex, num_nodes, MMG5_Tensor);
     check_error(error);
+
+    // Compute the isotropic metric from the current mesh
+    error = MMG2D_doSol(mmgMesh, mmgSol);
+    check_error(error);
+    // Store
+    double m11, m12, m22;
+    for (int node_ID = 0; node_ID < num_nodes; node_ID++) {
+        error = MMG2D_Get_ithSol_inSolsAtVertices(mmgSol, 0, &m11, node_ID + 1);
+        error = MMG2D_Get_ithSol_inSolsAtVertices(mmgSol, 1, &m12, node_ID + 1);
+        error = MMG2D_Get_ithSol_inSolsAtVertices(mmgSol, 2, &m22, node_ID + 1);
+        metric[node_ID * 4] = m11;
+        metric[node_ID * 4 + 1] = m12;
+        metric[node_ID * 4 + 2] = m12;
+        metric[node_ID * 4 + 3] = m22;
+    }
+}
+
+void adapt_mesh(const double* metric, int& num_nodes, int& num_elems, int&
+        num_edges, MMG5_pMesh& mmgMesh, MMG5_pSol& mmgSol) {
+    int error;
+    int ndims = 2;
 
     // Give sol values and positions
     for (int k = 1; k <= num_nodes; k++) {
@@ -103,12 +118,12 @@ void adapt_mesh(const double* node_coords, const long* node_IDs, const long*
     }
 
     // (not mandatory): check if the number of given entities match with mesh size
-    error = MMG2D_Chk_meshData(mmgMesh,mmgSol);
+    error = MMG2D_Chk_meshData(mmgMesh, mmgSol);
     check_error(error);
 
     /** ------------------------------ STEP  II -------------------------- */
     // Remesh function
-    int ier = MMG2D_mmg2dlib(mmgMesh,mmgSol);
+    int ier = MMG2D_mmg2dlib(mmgMesh, mmgSol);
 
     if ( ier == MMG5_STRONGFAILURE ) {
         fprintf(stdout,"BAD ENDING OF MMG2DLIB: UNABLE TO SAVE MESH\n");
@@ -142,7 +157,7 @@ void get_results(MMG5_pMesh mmgMesh, MMG5_pSol mmgSol, double* node_coords, long
     }
 
     /* Table to know if a component is corner and/or required */
-    int* ridge = (int*)calloc(na+1 ,sizeof(int));
+    int* ridge = (int*)calloc(na + 1, sizeof(int));
     if (!ridge) {
       perror("  ## Memory problem: calloc");
       exit(EXIT_FAILURE);

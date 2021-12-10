@@ -200,7 +200,8 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 		# If the user defines levels force the plot to extend and set limits
 		# according to the user defined levels beginning and end.
 		levels = kwargs["levels"]
-		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both')
+		tcf = plt.tricontour(tris, var_tris, levels=kwargs["levels"],
+				extend='neither', colors = 'k')
 		if isinstance(levels, np.ndarray):
 			tcf.set_clim(levels[0],levels[-1])
 	else:

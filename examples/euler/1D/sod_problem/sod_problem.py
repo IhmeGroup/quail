@@ -7,18 +7,18 @@ NumTimeSteps = 1500
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : 0.2,
+    "CFL" : 0.05,
     "TimeStepper" : "SSPRK3",
 }
 
 
 Numerics = {
-    "SolutionOrder" : 1,
+    "SolutionOrder" : 3,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "ApplyLimiters" : "PositivityPreserving",
-    "ArtificialViscosity" : False,
-    "AVParameter" : 50.,
+    #"ApplyLimiters" : "PositivityPreserving",
+    "ArtificialViscosity" : True,
+    "AVParameter" : 25.,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",
@@ -32,7 +32,7 @@ Output = {
 Mesh = {
     "File" : None,
     "ElementShape" : "Segment",
-    "NumElemsX" : 100,
+    "NumElemsX" : 50,
     "xmin" : -5.,
     "xmax" : 5.,
 }
