@@ -5,7 +5,7 @@ sys.path.append('../src')
 
 import numerics.basis.basis as basis_defs
 from numerics.quadrature import segment, quadrilateral, triangle, \
-		hexahedron
+		hexahedron, prism
 import general
 
 import meshing.common as mesh_common
@@ -80,6 +80,17 @@ def test_quadrature_weights_sum(order):
 			dunavant_type)
 	np.testing.assert_allclose(np.sum(quad_wts), triangle_area, rtol, atol)
 
+	'''3D prism'''
+	prism_area = 1.0
+	# Gauss-Legendre
+	_, quad_wts = prism.get_quadrature_points_weights(order,
+			gauss_legendre_type)
+	np.testing.assert_allclose(np.sum(quad_wts), prism_area, rtol, atol)
+
+	_, quad_wts = prism.get_quadrature_points_weights(order,
+			dunavant_type)
+	np.testing.assert_allclose(np.sum(quad_wts), prism_area, rtol, atol)
+
 
 def integrate_basis_functions(basis, order):
 	# Get quadrature data
@@ -98,7 +109,7 @@ def integrate_basis_functions(basis, order):
 @pytest.mark.parametrize('Basis', [
 	# Basis class
 	basis_defs.LagrangeSeg, basis_defs.LagrangeQuad, basis_defs.LagrangeHex,
-	basis_defs.HierarchicH1Tri
+	basis_defs.HierarchicH1Tri, basis_defs.LagrangePrism
 ])
 def test_quadrature_order_vs_quadrature_order_plus_one(basis, order):
 	'''
@@ -111,7 +122,8 @@ def test_quadrature_order_vs_quadrature_order_plus_one(basis, order):
 		order: polynomial order of Legendre basis being tested
 	'''
 
-	if basis.SHAPE_TYPE == general.ShapeType.Triangle:
+	if basis.SHAPE_TYPE == general.ShapeType.Triangle or \
+			basis.SHAPE_TYPE == general.ShapeType.Prism:
 		''' Gauss-Legendre quadrature '''
 		basis.set_elem_quadrature_type("GaussLegendre")
 		# Integrate basis functions
