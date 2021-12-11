@@ -741,16 +741,17 @@ class PrismShape(ShapeBase):
 
 		# First get the nodes from a 2D triangle
 		xnodes = np.zeros([nb_tri, ndims])
-		xnodes[:nb_tri, :ndims-1] = TriShape().equidistant_nodes(p)
+		if p > 0:
+			xnodes[:nb_tri, :ndims-1] = TriShape().equidistant_nodes(p)
 
-		# Tile the nodes in the 3rd direction
-		xnodes = np.tile(xnodes, [(p + 1), 1])
-		xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
+			# Tile the nodes in the 3rd direction
+			xnodes = np.tile(xnodes, [(p + 1), 1])
+			xseg = basis_tools.equidistant_nodes_1D_range(-1., 1., p+1)
 
-		# Fill the third component with the segment nodes
-		for iseg in range(xseg.shape[0]):
-			for ib in range(nb_tri):
-				xnodes[iseg * nb_tri + ib, -1] = xseg[iseg]
+			# Fill the third component with the segment nodes
+			for iseg in range(xseg.shape[0]):
+				for ib in range(nb_tri):
+					xnodes[iseg * nb_tri + ib, -1] = xseg[iseg]
 
 		return xnodes # [nb, ndims]
 
