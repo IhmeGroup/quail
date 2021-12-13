@@ -292,3 +292,76 @@ def get_elem_mass_matrix_ader(mesh, basis, order, elem_ID=-1,
 			quad_wts * djac) # [nb_st, nb_st]
 
 	return MM # [nb_st, nb_st]
+
+
+def get_tiling_constants_segment(nq):
+	'''
+	Precomputes the tiling constants for the ADER-DG scheme on Segments. 
+	Tiling constants are used with the numpy 'tile' function to build
+	arrays to maintain consistency for the tensor multiplications 
+	throughout the solver.
+
+	Inputs:
+	-------
+		nq: number of quadrature points 
+
+	Outputs:
+	--------
+		nq_t: quadrature points tiling constant
+		nb_t: basis coefficients tiling constant
+		time_skip: Value to skip when building time
+				array for each bface in get_boundary_face_residual
+				in src/solver/ADERDG.py
+		time_tile: time array tiling constant for each bface in 
+				get_boundary_face_residual in src/solver/ADERDG.py
+	'''
+	return nq, 1, nq
+
+
+def get_tiling_constants_quad(nq, nq_bface):
+	'''
+	Precomputes the tiling constants for the ADER-DG scheme on quads. 
+	Tiling constants are used with the numpy 'tile' function to build
+	arrays to maintain consistency for the tensor multiplications 
+	throughout the solver.
+
+	Inputs:
+	-------
+		nq: number of quadrature points 
+		nq_bface: number of quadrature points on boundary face
+
+	Outputs:
+	--------
+		nq_t: quadrature points tiling constant
+		time_skip: Value to skip when building time
+				array for each bface in get_boundary_face_residual
+				in src/solver/ADERDG.py. Also used for tiling
+				in the interior and boundary face integral.
+		time_tile: time array tiling constant for each bface in 
+				get_boundary_face_residual in src/solver/ADERDG.py
+	'''
+	return int(np.sqrt(nq)), int(np.sqrt(nq_bface)), int(np.sqrt(nq_bface))
+
+
+def get_tiling_constants_tri(nq):
+	'''
+	Precomputes the tiling constants for the ADER-DG scheme on tris. 
+	Tiling constants are used with the numpy 'tile' function to build
+	arrays to maintain consistency for the tensor multiplications 
+	throughout the solver.
+
+	Inputs:
+	-------
+		nq: number of quadrature points
+
+	Outputs:
+	--------
+		nq_t: quadrature points tiling constant
+		time_skip: Value to skip when building time
+				array for each bface in get_boundary_face_residual
+				in src/solver/ADERDG.py. Also used for tiling
+				in the interior and boundary face integral.
+		time_tile: time array tiling constant for each bface in 
+				get_boundary_face_residual in src/solver/ADERDG.py
+	'''
+	return int(np.sqrt(nq)), int(np.sqrt(nq)), int(np.sqrt(nq))
