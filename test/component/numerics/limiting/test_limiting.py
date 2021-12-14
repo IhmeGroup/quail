@@ -31,7 +31,7 @@ def create_solver_object():
 			SolutionBasis="LagrangeSeg",
 			ApplyLimiters=["PositivityPreserving"])
 
-	physics = euler.Euler1D(mesh)
+	physics = euler.Euler1D()
 	physics.set_conv_num_flux("Roe")
 	physics.set_physical_params()
 	U = np.array([1., 0., 1.])

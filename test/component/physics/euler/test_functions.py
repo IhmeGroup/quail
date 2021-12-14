@@ -4,7 +4,6 @@ import sys
 sys.path.append('../src')
 
 import physics.euler.euler as euler
-import meshing.meshbase as meshbase
 
 rtol = 1e-15
 atol = 1e-15
@@ -19,8 +18,7 @@ def test_numerical_flux_1D_consistency(conv_num_flux_type):
 	This test ensures that the 1D numerical flux functions are 
 	consistent, .e. F_numerical(u, u, n) = F(u) dot n
 	'''
-	mesh = meshbase.Mesh()
-	physics = euler.Euler1D(mesh)
+	physics = euler.Euler1D()
 	physics.set_conv_num_flux(conv_num_flux_type)
 	physics.set_physical_params()
 
@@ -42,7 +40,7 @@ def test_numerical_flux_1D_consistency(conv_num_flux_type):
 	UqR = UqL.copy()
 
 	# Normals
-	normals = np.zeros([1, 1, mesh.ndims])
+	normals = np.zeros([1, 1, 1])
 	normals[:, :, 0] = 0.5
 
 	# Compute numerical flux
@@ -64,8 +62,7 @@ def test_numerical_flux_1D_conservation(conv_num_flux_type):
 	conservative, i.e. 
 	F_numerical(uL, uR, n) = -F_numerical(uR, uL, -n)
 	'''
-	mesh = meshbase.Mesh()
-	physics = euler.Euler1D(mesh)
+	physics = euler.Euler1D()
 	physics.set_conv_num_flux(conv_num_flux_type)
 	physics.set_physical_params()
 
@@ -96,7 +93,7 @@ def test_numerical_flux_1D_conservation(conv_num_flux_type):
 	UqR[:, :, irhoE] = rhoE
 
 	# Normals
-	normals = np.zeros([1, 1, mesh.ndims])
+	normals = np.zeros([1, 1, 1])
 	normals[:, :, 0] = 0.5
 
 	# Compute numerical flux
@@ -119,8 +116,7 @@ def test_numerical_flux_2D_consistency(conv_num_flux_type):
 	This test ensures that the 2D numerical flux functions are 
 	consistent, .e. F_numerical(u, u, n) = F(u) dot n
 	'''
-	mesh = meshbase.Mesh(ndims=2)
-	physics = euler.Euler2D(mesh)
+	physics = euler.Euler2D()
 	physics.set_conv_num_flux(conv_num_flux_type)
 	physics.set_physical_params()
 
@@ -144,7 +140,7 @@ def test_numerical_flux_2D_consistency(conv_num_flux_type):
 	UqR = UqL.copy()
 
 	# Normals
-	normals = np.zeros([1, 1, mesh.ndims])
+	normals = np.zeros([1, 1, 2])
 	normals[:, :, 0] = -0.4
 	normals[:, :, 1] = 0.7
 
@@ -167,8 +163,7 @@ def test_numerical_flux_2D_conservation(conv_num_flux_type):
 	conservative, i.e. 
 	F_numerical(uL, uR, n) = -F_numerical(uR, uL, -n)
 	'''
-	mesh = meshbase.Mesh(ndims=2)
-	physics = euler.Euler2D(mesh)
+	physics = euler.Euler2D()
 	physics.set_conv_num_flux(conv_num_flux_type)
 	physics.set_physical_params()
 
@@ -203,7 +198,7 @@ def test_numerical_flux_2D_conservation(conv_num_flux_type):
 	UqR[:, :, irhoE] = rhoE
 
 	# Normals
-	normals = np.zeros([1, 1, mesh.ndims])
+	normals = np.zeros([1, 1, 2])
 	normals[:, :, 0] = -0.4
 	normals[:, :, 1] = 0.7
 
