@@ -63,8 +63,8 @@ class ConstAdvScalar(base.PhysicsBase):
 	NUM_STATE_VARS = 1
 	PHYSICS_TYPE = general.PhysicsType.ConstAdvScalar
 
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 		self.c = 0.
 		self.cspeed = 0.
 
@@ -154,8 +154,8 @@ class ConstAdvScalar2D(ConstAdvScalar):
 	'''
 	NDIMS = 2
 
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 		self.c = np.zeros(2)
 		self.cspeed = 0.
 
@@ -224,8 +224,8 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 	NUM_STATE_VARS = 1
 	PHYSICS_TYPE = general.PhysicsType.ConstAdvDiffScalar
 
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 		self.c = 0.
 		self.cspeed = 0.
 
@@ -321,8 +321,8 @@ class ConstAdvDiffScalar2D(ConstAdvDiffScalar):
 	'''
 	NDIMS = 2
 
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 		self.c = np.zeros(2)
 		self.cspeed = 0.
 		self.al = np.zeros(2)
