@@ -63,4 +63,5 @@ Cases/Miscellaneous/Plot
 *.png
 *.swp
 *.coverage
+*.txt
 test_case_[0-9]*.py
