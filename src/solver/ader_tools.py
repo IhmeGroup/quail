@@ -874,10 +874,12 @@ def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 				basis_st, q)
 		flux_coeffs = solver.flux_coefficients(dt, order, basis_st,
 				q)	
-		zero = np.einsum('jk, ikm -> ijm',iK,
-				np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
-				np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
-				np.einsum('jk, ikm -> ijm', FTR, W)) - q
+		zero = iK @ ( MM @ source_coeffs - \
+			smsflux(SMS_elems, flux_coeffs) + FTR @ W ) - q
+		# zero = np.einsum('jk, ikm -> ijm',iK,
+		# 		np.einsum('jk, ikl -> ijl', MM, source_coeffs) -
+		# 		np.einsum('ijkl, ikml -> ijm', SMS_elems, flux_coeffs) +
+		# 		np.einsum('jk, ikm -> ijm', FTR, W)) - q
 		
 		q.reshape(-1) # reshape for the nonlinear solver
 		return zero.reshape(-1) # reshape for the nonlinear solver
