@@ -192,7 +192,7 @@ class PhysicsType(Enum):
 		# 3sp H2/O2/Ar inert transport (with variable cp)
 	EulerMultispecies1D_9sp_H2O2 = auto()
 		# 9sp H2/O2 combustion
-	EulerMultispecies1D_11sp_H2O2 = auto()
+	EulerMultispecies1D_10sp_H2O2 = auto()
 		# 11sp H2/O2 combustion
 
 		
