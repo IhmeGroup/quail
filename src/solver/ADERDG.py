@@ -25,7 +25,7 @@ from scipy.linalg import solve_sylvester
 
 import errors
 
-from general import ModalOrNodal, StepperType
+from general import ModalOrNodal, StepperType, ShapeType
 
 import meshing.meshbase as mesh_defs
 import meshing.tools as mesh_tools
@@ -370,8 +370,21 @@ class ADERHelpers(object):
 		'''
 		bface_quad_pts_st = bface_helpers_st.quad_pts
 
-		nq_t, time_skip, time_tile = basis.get_tiling_constants(
-				bface_quad_pts_st)
+		if basis.SHAPE_TYPE == ShapeType.Segment:
+			nq_t, time_skip, time_tile = \
+					basis_st_tools.get_tiling_constants_segment(
+					basis.basis_val.shape[0])
+		elif basis.SHAPE_TYPE == ShapeType.Quadrilateral:
+			nq_t, time_skip, time_tile = \
+					basis_st_tools.get_tiling_constants_quad(
+					basis.basis_val.shape[0], 
+					bface_quad_pts_st.shape[0])
+		elif basis.SHAPE_TYPE == ShapeType.Triangle:
+			nq_t, time_skip, time_tile = \
+					basis_st_tools.get_tiling_constants_tri(
+					bface_quad_pts_st.shape[0])
+		else:
+			NotImplementedError
 
 		elem_helpers_st.nq_tile_constant = nq_t
 		elem_helpers_st.time_skip = time_skip
