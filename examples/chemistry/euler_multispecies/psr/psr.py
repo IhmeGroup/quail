@@ -4,27 +4,35 @@ import copy
 
 def get_state():
 
-    gas = ct.Solution("h2o2_11sp_23rxn.xml")
-    gas.TPX = 1000.0, ct.one_atm,  \
-            "H2:{}, O2:{}, N2:{}".format(2, 1, 7)
+    gas = ct.Solution("h2o2_10sp_40rxn.cti")
+    # gas = ct.Solution("h2o2.xml")
+
+    # gas.TPX = 1000.0, ct.one_atm,  \
+    #         "H2:{}, O2:{}, AR:{}".format(2, 1, 7)
+    # rho = gas.DP[0]
+    P = 1e5
+    YH2 = 1.1189834407236525e-01
+    YO2 = 8.8810165592763479e-01
+    gas.TPY = 1100., P,  \
+        "H2:{}, O2:{}, Ar:{}".format(YH2, YO2, 1.0-YH2-YO2) 
     rho = gas.DP[0]
-    U = np.zeros([13])
+    U = np.zeros([12])
     U[0] = rho
     U[1] = 0.0
     U[2] = rho * gas.UV[0] # ignore KE since u = 0
-    for isp in range(10):
+    for isp in range(9):
         U[isp+3] = rho * gas.DPY[2][isp]
+    
     return U
 
 init_state = get_state()
-
-FinalTime = 0.00012
+FinalTime = 0.0001
 
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : 0.1,
-#    "TimeStepSize" : 1.0e-5,
+    # "CFL" : 0.001,
+    "TimeStepSize" : 1.0e-6/2.,
 #    "TimeStepper" : "ADER",
     "TimeStepper" : "Strang",
     "OperatorSplittingImplicit" : "LSODA",
@@ -33,17 +41,20 @@ TimeStepping = {
 
 
 Numerics = {
-    "SolutionOrder" : 0,
+    "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-#   "Solver" : "ADERDG",
+#    "Solver" : "ADERDG",
+    "SourceTreatmentADER" : "StiffImplicit",
     "Solver" : "DG",
     # "ArtificialViscosity" : True,
     # "AVParameter" : 1e4,
-    "PredictorThreshold" : 1e-10,
+    "PredictorThreshold" : 1e-8,
+    "PredictorGuessADER" : "ODEGuess",
+
 }
 
 Output = {
-    "AutoPostProcess" : True,
+    "AutoPostProcess" : False,
     "Prefix" : "Data",
 #    "WriteInterval" : 2,
     "WriteInitialSolution" : True,
@@ -60,9 +71,9 @@ Mesh = {
 
 
 Physics = {
-    "Type" : "EulerMultispecies1D_11sp_H2O2",
+    "Type" : "EulerMultispecies1D_10sp_H2O2",
     "ConvFluxNumerical" : "LaxFriedrichs",
-    "ReactorFlag" : True,
+    "ReactorFlag" : False,
 }
 
 state = { 
@@ -71,16 +82,6 @@ state = {
 }
 
 InitialCondition = state
-
-# BoundaryConditions = {
-#     "x1" : {
-#         "BCType" : "SlipWall",
-#        },
-#     "x2" : { 
-#         "BCType" : "StateAll",
-# 	"Function" : "ReactingShockTube",
-#        }
-# }
 
 SourceTerms = {
 	"Reacting" : { # Name of source term ("Source1") doesn't matter

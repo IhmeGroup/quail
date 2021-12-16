@@ -23,7 +23,9 @@
 import numpy as np
 from scipy.integrate import LSODA, ode
 from scipy.linalg import solve_sylvester
-from scipy.optimize import fsolve, root
+from scipy.optimize import fsolve, root, newton_krylov
+
+import scipy.optimize as optimize
 
 import general
 
@@ -344,7 +346,7 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 
 	# Initialize the integrator
 	r = ode(func, jac=None)
-	r.set_integrator('lsoda', nsteps=50000, atol=1e-14, rtol=1e-12)
+	r.set_integrator('lsoda', nsteps=50000, atol=1e-8, rtol=1e-8)
 	r.set_initial_value(W0, t0).set_f_params(x_elems, Sq_exp)
 
 	# Set constants for managing data and begin ODE integration loop
@@ -885,18 +887,25 @@ def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 		return zero.reshape(-1) # reshape for the nonlinear solver
 
 	# Iterate using root function
-	sol = root(rhs_weakform, U_pred.reshape(-1), tol=1e-15, jac=None, 
-			method='hybr', options={'maxfev':50000, 'xtol':1e-15})
+	sol = root(rhs_weakform, U_pred.reshape(-1), tol=1e-8, jac=None, 
+			method='hybr', options={'maxfev':50000, 'xtol':1e-8})
 	U_pred = np.copy(sol.x.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
 
-	
 	# Note: Other nonlinear solvers could be more efficient. Further work is
 	# needed to determine the most efficient method. Commented code below
 	# is another approach.
-	# sol = newton_krylov(fun, U_pred.reshape(-1), iter=None, 
+	# sol = newton_krylov(rhs_weakform, U_pred.reshape(-1), iter=None, 
 		# rdiff=None, method='lgmres', maxiter=100)
-	# U_pred = np.copy(sol.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
 
+	# Broyden methods don't seem towork well.
+	# sol = optimize.broyden1(rhs_weakform, U_pred.reshape(-1))
+	# sol = optimize.broyden2(rhs_weakform, U_pred.reshape(-1))
+	# sol = optimize.anderson(rhs_weakform, U_pred.reshape(-1))
+	# sol = optimize.excitingmixing(rhs_weakform, U_pred.reshape(-1))
+
+
+	# U_pred = np.copy(sol.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
+	# breakpoint()
 	return U_pred # [ne, nb_st, ns]
 
 

@@ -13,6 +13,7 @@ def custom_user_function(solver):
 
 		rho = Uq[0,0,0]
 		T = solver.physics.compute_variable("Temperature", Uq)
+		P = solver.physics.compute_variable("Pressure", Uq)
 		YH2 = solver.physics.compute_variable("MassFractionH2", Uq)
 		YOH = solver.physics.compute_variable("MassFractionOH", Uq)
 		YH = solver.physics.compute_variable("MassFractionH", Uq)
@@ -21,6 +22,9 @@ def custom_user_function(solver):
 		s = str(solver.time)
 		rho = str(Uq[0,0,0])
 		T = str(T[0,0,0])
+		P = str(P[0,0,0])
+		print("time: ", solver.time, " T: ", T, " P: ", P)
+
 		yh2 = str(YH2[0,0,0])
 		yoh = str(YOH[0,0,0])
 		yh = str(YH[0,0,0])
