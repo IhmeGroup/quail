@@ -209,7 +209,7 @@ class PhysicsBase(ABC):
 		'''
 		pass
 
-	def __init__(self, mesh):
+	def __init__(self):
 		'''
 		This method initializes the attributes (see above for attribute
 		details).
@@ -233,14 +233,10 @@ class PhysicsBase(ABC):
 		self.diff_num_flux_map = {}
 		self.IC = None
 		self.exact_soln = None
-		self.BCs = dict.fromkeys(mesh.boundary_groups.keys())
+		self.BCs = {}
 		self.source_terms = []
 		self.conv_flux_fcn = None
 		self.diff_flux_fcn = None
-
-		# Compatibility check
-		if mesh.ndims != self.NDIMS:
-			raise errors.IncompatibleError
 
 		# Set indices and slices corresponding to the state variables
 		set_state_indices_slices(self)
