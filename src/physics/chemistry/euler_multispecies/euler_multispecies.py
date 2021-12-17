@@ -87,11 +87,10 @@ class EulerMultispecies1D(EulerMultispecies):
 	'''
 	NDIMS = 1
 
-	def set_physical_params(self, ReactorFlag):
+	def set_physical_params(self):
 		gas = ct.Solution(self.CANTERA_FILENAME)
 		# Save object to physics class before calculating inflow props
 		self.gas = gas
-		self.reactor_flag = ReactorFlag
 
 	def get_momentum_slice(self):
 		irhou = self.get_state_index("XMomentum")
@@ -147,13 +146,6 @@ class EulerMultispecies1D(EulerMultispecies):
 		return srho, srhou, srhoE
 
 	def get_conv_flux_interior(self, Uq):
-
-		if self.reactor_flag:
-			# This can be zero or the mixing function.
-			F = np.zeros_like(Uq)
-			F = np.expand_dims(F, axis=-1)
-			return F, None
-
 		rho = Uq[:, :, 0]
 		rhou = Uq[:, :, 1]
 		rhoE = Uq[:, :, 2]

@@ -183,8 +183,6 @@ Physics = {
 		# Numerical diffusive flux
 		# See DiffNumFluxType in functions.py in the corresponding physics
 		# modules
-	"ReactorFlag" : False,
-		# Once True, this zeros out fluxes for reactor-like problems
 		
 	# Physical parameters specific to the physics type are also set here.
 	# Refer to the corresponding physics classes and the examples.

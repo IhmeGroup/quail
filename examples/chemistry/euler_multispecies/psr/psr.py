@@ -73,7 +73,6 @@ Mesh = {
 Physics = {
     "Type" : "EulerMultispecies1D_10sp_H2O2",
     "ConvFluxNumerical" : "LaxFriedrichs",
-    "ReactorFlag" : False,
 }
 
 state = { 
