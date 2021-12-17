@@ -25,7 +25,7 @@ def create_solver_object():
 	params = general.set_solver_params(SolutionOrder=1, 
 			FinalTime=10.0, NumTimeSteps=1000, ApplyLimiters=[])
 	
-	physics = scalar.ConstAdvScalar1D(mesh)
+	physics = scalar.ConstAdvScalar1D()
 	physics.set_conv_num_flux("LaxFriedrichs")
 	physics.set_physical_params()
 	U = np.array([1.])

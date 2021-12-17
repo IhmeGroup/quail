@@ -119,7 +119,7 @@ These interfaces allow the user to focus on the meat of their new feature while 
 
 An API diagram showing the class hierarchy of Quail is shown below.
 <p align="center">
-  <img alt="API_diagram" src="https://user-images.githubusercontent.com/41877612/144659259-159e814d-7963-495e-96cf-231cc7a516fa.png" width="100%"></a>
+  <img alt="API_diagram" src="https://user-images.githubusercontent.com/55554103/145645674-6f56997f-3237-406c-8d60-069c7e768d8a.png" width="100%"></a>
 </p>
 
 ## Style Guide

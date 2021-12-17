@@ -120,7 +120,7 @@ def set_physics(mesh, physics_type):
 	else:
 	    raise NotImplementedError
 
-	physics = physics_class(mesh)
+	physics = physics_class()
 
 	return physics
 
@@ -389,6 +389,8 @@ def driver(deck):
 		physics.set_exact(exact_type=exact_type, **eparams)
 
 	# Boundary conditions
+	physics.BCs = dict.fromkeys(mesh.boundary_groups.keys())
+
 	for bname, bparams in BC_params.items():
 		bparams = bparams.copy()
 		BC_type = bparams.pop("BCType")
@@ -406,7 +408,6 @@ def driver(deck):
 		sparams.pop("Function")
 		physics.set_source(source_type=sname, **sparams)
 
-
 	'''
 	Solver
 	'''
@@ -420,7 +421,6 @@ def driver(deck):
 		solver = ADERDG.ADERDG(solver_params, physics, mesh)
 	else:
 		raise NotImplementedError
-
 
 	'''
 	Restart file

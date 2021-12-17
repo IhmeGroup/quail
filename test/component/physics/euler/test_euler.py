@@ -4,7 +4,6 @@ import sys
 sys.path.append('../src')
 
 import physics.euler.euler as euler
-import meshing.meshbase as meshbase
 
 rtol = 1e-15
 atol = 1e-15
@@ -14,8 +13,7 @@ def test_convective_flux_1D():
 	'''
 	This tests the convective flux for a 1D case.
 	'''
-	mesh = meshbase.Mesh()
-	physics = euler.Euler1D(mesh)
+	physics = euler.Euler1D()
 
 	ns = physics.NUM_STATE_VARS
 
@@ -52,8 +50,7 @@ def test_convective_flux_1D_zero_velocity():
 	'''
 	This tests the convective flux for a 1D case but with zero vel
 	'''
-	mesh = meshbase.Mesh()
-	physics = euler.Euler1D(mesh)
+	physics = euler.Euler1D()
 
 	ns = physics.NUM_STATE_VARS
 
@@ -89,8 +86,7 @@ def test_convective_flux_2D():
 	'''
 	This tests the convective flux for a 2D case.
 	'''
-	mesh = meshbase.Mesh(ndims=2)
-	physics = euler.Euler2D(mesh)
+	physics = euler.Euler2D()
 
 	ns = physics.NUM_STATE_VARS
 
@@ -135,8 +131,7 @@ def test_convective_flux_2D_zero_velocity():
 	'''
 	This tests the convective flux for a 2D case with zero vel
 	'''
-	mesh = meshbase.Mesh(ndims=2)
-	physics = euler.Euler2D(mesh)
+	physics = euler.Euler2D()
 
 	ns = physics.NUM_STATE_VARS
 
@@ -180,8 +175,7 @@ def test_conv_eigenvectors_multiplied_is_identity():
 	This tests the convective eigenvectors in euler and ensures
 	that when dotted together they are identity
 	'''
-	mesh = meshbase.Mesh(ndims=1)
-	physics = euler.Euler1D(mesh)
+	physics = euler.Euler1D()
 	ns = physics.NUM_STATE_VARS
 	irho, irhou, irhoE = physics.get_state_indices()
 	physics.set_physical_params()

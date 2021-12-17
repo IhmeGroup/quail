@@ -5,7 +5,6 @@ sys.path.append('../src')
 
 import physics.navierstokes.navierstokes as navierstokes
 import physics.navierstokes.tools as ns_tools
-import meshing.meshbase as meshbase
 
 rtol = 1e-15
 atol = 1e-15
@@ -15,8 +14,7 @@ def test_diffusion_flux_2D():
 	'''
 	This tests the diffusive flux for a 2D case.
 	'''
-	mesh = meshbase.Mesh(ndims=2)
-	physics = navierstokes.NavierStokes2D(mesh)
+	physics = navierstokes.NavierStokes2D()
 	physics.set_physical_params()
 	physics.get_transport = ns_tools.set_transport("Sutherland")
 
@@ -62,7 +60,7 @@ def test_diffusion_flux_2D():
 	tauxy = mu * (dudy + dvdx)
 	tauyy = mu * (dvdy + dvdy - 2. / 3. * divu)
 
-	gUq = np.zeros([1, 1, ns, mesh.ndims])
+	gUq = np.zeros([1, 1, ns, 2])
 
 	gUq[:, :, irho, 0] = drdx
 	gUq[:, :, irhou, 0] = drdx * u + rho * dudx
@@ -97,8 +95,7 @@ def test_diffusion_flux_2D_zero_velocity():
 	'''
 	This tests the diffusive flux for a 2D case with zero vel
 	'''
-	mesh = meshbase.Mesh(ndims=2)
-	physics = navierstokes.NavierStokes2D(mesh)
+	physics = navierstokes.NavierStokes2D()
 	physics.set_physical_params()
 	physics.get_transport = ns_tools.set_transport("Sutherland")
 
@@ -138,7 +135,7 @@ def test_diffusion_flux_2D_zero_velocity():
 	dTdx = np.random.rand()
 	dTdy = np.random.rand()
 
-	gUq = np.zeros([1, 1, ns, mesh.ndims])
+	gUq = np.zeros([1, 1, ns, 2])
 	gUq[:, :, irho, 0] = drdx
 	gUq[:, :, irhoE, 0] = (R * T / (gamma - 1.)) * drdx \
 		+ rho * R / (gamma - 1.) * dTdx

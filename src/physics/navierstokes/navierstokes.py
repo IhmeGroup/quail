@@ -66,8 +66,8 @@ class NavierStokes(euler.Euler):
 	'''
 	PHYSICS_TYPE = general.PhysicsType.NavierStokes
 
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 		self.R = 0.
 		self.gamma = 0.
 
@@ -192,8 +192,8 @@ class NavierStokes2D(NavierStokes, euler.Euler2D):
 	NUM_STATE_VARS = 4
 	NDIMS = 2
 
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 
 	def set_maps(self):
 		super().set_maps()

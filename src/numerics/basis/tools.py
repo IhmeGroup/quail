@@ -672,6 +672,66 @@ def get_tri_grad_area_coordinates(p, alpha, l):
 	return dN
 
 
+def get_lagrange_basis_prism(xq, nq_seg, xnodes, xnodes_seg, basis_val_tri, 
+		basis_val=None):
+	'''
+	Calculates the 3D Lagrange basis functions for a prism
+
+	Inputs:
+	-------
+		xq: coordinates of quadrature points [nq, ndims]
+		nq_seg: number of quadrature points for the 3rd direction
+		xnodes: coordinates of nodes in ref space [nb, ndims]
+		xnodes_seg: coordinates of nodes in 1D ref space [nb, ndims]
+		basis_val_tri: evaluated basis for triangle [nq, nb]
+
+	Outputs:
+	--------
+		basis_val: evaluated basis [nq, nb]
+	'''
+	valz = np.zeros((xq.shape[0], xnodes_seg.shape[0]))
+	get_lagrange_basis_1D(xq[:, 2].reshape(-1, 1), xnodes_seg, valz)
+
+	# Tensor products to get 3D basis values
+	if basis_val is not None:	
+		for i in range(xq.shape[0]):
+			basis_val[i, :] = np.reshape(np.outer(basis_val_tri[i, :],
+					valz[i, :]), (-1, ), 'F')
+
+
+def get_lagrange_grad_prism(xq, nq_seg, xnodes, xnodes_seg, 
+		basis_val_tri, basis_ref_grad_tri, basis_ref_grad=None):
+	'''
+	Calculates the gradient of a 3D Lagrange basis for a reference prism
+
+	Inputs:
+	-------
+		xq: coordinates of quadrature points [nq, ndims]
+		nq_seg: number of quadrature points for the 3rd direction
+		xnodes: coordinates of nodes in ref space [nb, ndims]
+		xnodes_seg: coordinates of nodes in 1D ref space [nb, ndims]
+		basis_val_tri: evaluated basis for triangle [nq, nb]
+		basis_ref_grad_tri: evaluated gradient of the triangle basis 
+			[nq, nb, ndims]
+
+	Outputs:
+	--------
+		basis_ref_grad: evaluated gradient of basis [nq, nb, ndims]
+	'''
+	valz = np.zeros((xq.shape[0], xnodes_seg.shape[0]))
+	gradz = np.zeros((xq.shape[0], xnodes_seg.shape[0], 1))
+	get_lagrange_basis_1D(xq[:, 2].reshape(-1, 1), xnodes_seg, valz, gradz)
+
+	# Tensor products to get 3D basis gradients
+	for i in range(xq.shape[0]):
+		basis_ref_grad[i, :, 0] = np.reshape(np.outer(
+			basis_ref_grad_tri[i, :, 0], valz[i, :]), (-1, ), 'F')
+		basis_ref_grad[i, :, 1] = np.reshape(np.outer(
+			basis_ref_grad_tri[i, :, 1], valz[i, :]), (-1, ), 'F')	
+		basis_ref_grad[i, :, 2] = np.reshape(np.outer(
+			basis_val_tri[i, :], gradz[i, :, 0]), (-1, ), 'F')	
+
+
 def get_legendre_basis_1D(xq, p, basis_val=None, basis_ref_grad=None):
 	'''
 	Calculates the 1D Legendre basis functions

@@ -24,7 +24,8 @@ case_dirs = {
 	'scalar/2D/constant_advection/dg' : [[two_d, dg], [1e-9, 1e-13]],
 	'euler/1D/smooth_isentropic_flow' : [[two_d, dg], [rtol, atol]],
 	'euler/2D/flow_over_bump' : [[two_d, dg], [rtol, atol]],
-	'euler/2D/isentropic_vortex' : [[two_d, dg], [rtol, atol]],
+	'euler/2D/isentropic_vortex/dg' : [[two_d, dg], [rtol, atol]],
+	'euler/2D/isentropic_vortex/ader' : [[two_d, ader], [rtol, atol]],
 	'scalar/1D/constant_advection_diffusion/dg' : [[one_d, dg, diffusion],
 		[rtol, atol]],
 	'scalar/1D/constant_advection_diffusion/ader/interpolate' : \

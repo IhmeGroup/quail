@@ -70,7 +70,7 @@ class ShapeType(Enum):
 	Quadrilateral = auto()
 	Triangle = auto()
 	Hexahedron = auto()
-
+	Prism = auto()
 
 class BasisType(Enum):
 	'''
@@ -85,6 +85,8 @@ class BasisType(Enum):
 		# Lagrange basis polynomials for triangles
 	LagrangeHex = auto()
 		# Lagrange basis polynomials for hexahedra
+	LagrangePrism = auto()
+		# Lagrange basis polynomials for prisms
 	LegendreSeg = auto()
 		# Legendre basis polynomials for segments
 	LegendreQuad = auto()
