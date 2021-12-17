@@ -32,9 +32,9 @@ TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
     # "CFL" : 0.001,
-    "TimeStepSize" : 1.0e-6/2.,
-#    "TimeStepper" : "ADER",
-    "TimeStepper" : "Strang",
+    "TimeStepSize" : 1.0e-7,
+    "TimeStepper" : "ADER",
+    #"TimeStepper" : "Strang",
     "OperatorSplittingImplicit" : "LSODA",
 
 }
@@ -43,9 +43,9 @@ TimeStepping = {
 Numerics = {
     "SolutionOrder" : 2,
     "SolutionBasis" : "LagrangeSeg",
-#    "Solver" : "ADERDG",
+    "Solver" : "ADERDG",
     "SourceTreatmentADER" : "StiffImplicit",
-    "Solver" : "DG",
+#    "Solver" : "DG",
     # "ArtificialViscosity" : True,
     # "AVParameter" : 1e4,
     "PredictorThreshold" : 1e-8,
