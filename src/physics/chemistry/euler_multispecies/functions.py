@@ -16,7 +16,7 @@ from scipy.optimize import fsolve, root
 
 from physics.base.data import (FcnBase, BCWeakRiemann, BCWeakPrescribed,
         SourceBase, ConvNumFluxBase)
-from external.optional_thermo import thermo_tools
+from external.optional_multispecies import multispecies_tools
 
 import general
 
@@ -72,11 +72,11 @@ class SodMultispeciesAir(FcnBase):
 
 		U[irhoE+1:] = rho * Y[:-1]
 
-		W = thermo_tools.get_W_from_Y(gas.molecular_weights, Y)
-		T = thermo_tools.get_T_from_rhop(rho, P, W)
+		W = multispecies_tools.get_W_from_Y(gas.molecular_weights, Y)
+		T = multispecies_tools.get_T_from_rhop(rho, P, W)
 		gas.TPY = T, P, "O2:{},N2:{}".format(Y[0, 0], Y[1, 0])
 
-		gamma = thermo_tools.get_gamma(gas.cv, W)
+		gamma = multispecies_tools.get_gamma(gas.cv, W)
 		
 		# Double check this definition
 		U[irhoE] = rho * gas.UV[0] + 0.5*rho*u*u
@@ -168,11 +168,11 @@ class SodMultispeciesAir1sp(FcnBase):
 
 		U[irhoE+1:] = rho * Y[0]
 
-		W = thermo_tools.get_W_from_Y(gas.molecular_weights, Y)
-		T = thermo_tools.get_T_from_rhop(rho, P, W)
+		W = multispecies_tools.get_W_from_Y(gas.molecular_weights, Y)
+		T = multispecies_tools.get_T_from_rhop(rho, P, W)
 		gas.TPY = T, P, "N2:{}".format(Y[0, 0])
 
-		gamma = thermo_tools.get_gamma(gas.cv, W)
+		gamma = multispecies_tools.get_gamma(gas.cv, W)
 		
 		# Double check this definition
 		U[irhoE] = rho * gas.UV[0] + 0.5*rho*u*u
@@ -377,27 +377,7 @@ class Reacting(SourceBase):
 	def get_source(self, physics, Uq, x, t):
 		# Unpack T and Y
 		S = np.zeros([Uq.shape[0], Uq.shape[1], physics.NUM_STATE_VARS])
-		thermo_tools.get_source_test(physics, Uq, S)
-		# ne = Uq.shape[0]
-		# nq = Uq.shape[1]
-		# ns = Uq.shape[-1]
-		# nsp = physics.NUM_SPECIES
-
-		# filename = physics.c_cantera_file()
-		# import code; code.interact(local=locals())
-		# P = np.zeros([ne, nq, 1])
-		# LIB.get_pressure_interface(
-		# 	ctypes.c_void_p(Uq.ctypes.data), 
-		# 	ctypes.c_void_p(P.ctypes.data),
-		# 	ctypes.c_int(ne), 
-		# 	ctypes.c_int(nq), 
-		# 	ctypes.c_int(ns),
-		# 	ctypes.c_int(nsp),
-		# 	ctypes.c_int(physics.NDIMS),
-		# 	physics.c_cantera_file()
-		# 	)
-
-
+		multispecies_tools.get_net_production_rates(physics, Uq, S)
 
 		return S # [1, nq, ns]
 

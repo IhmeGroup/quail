@@ -79,7 +79,7 @@ def get_temperature(physics, Uq):
 			)
 	return T
 
-def get_source_test(physics, Uq, S):
+def get_net_production_rates(physics, Uq, S):
 
 	ne = Uq.shape[0]
 	nq = Uq.shape[1]
@@ -88,7 +88,7 @@ def get_source_test(physics, Uq, S):
 
 	filename = physics.c_cantera_file()
 
-	LIB.get_net_production_rates(
+	LIB.get_net_production_rates_interface(
 		ctypes.c_void_p(Uq.ctypes.data), 
 		ctypes.c_void_p(S.ctypes.data),
 		ctypes.c_int(ne), 

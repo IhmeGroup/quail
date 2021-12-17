@@ -35,7 +35,7 @@ from physics.chemistry.euler_multispecies.functions import FcnType as \
 		euler_mult_fcn_type
 from physics.chemistry.euler_multispecies.functions import SourceType as \
 		euler_mult_source_type
-from external.optional_thermo import thermo_tools
+from external.optional_multispecies import multispecies_tools
 
 # from physics.chemistry.euler_multispecies.functions import SourceType as \
 # 		euler_mult_source_type
@@ -117,14 +117,13 @@ class EulerMultispecies1D(EulerMultispecies):
 		''' Get final scalars '''
 		vname = self.AdditionalVariables[var_name].name
 		if vname is self.AdditionalVariables["Pressure"].name:
-			# T = thermo_tools.get_T_from_U(self, Uq)
-			varq = thermo_tools.get_pressure(self, Uq)
+			varq = multispecies_tools.get_pressure(self, Uq)
 		elif vname is self.AdditionalVariables["Temperature"].name:
-			varq = thermo_tools.get_temperature(self, Uq)
+			varq = multispecies_tools.get_temperature(self, Uq)
 		elif vname is self.AdditionalVariables["SpecificHeatRatio"].name:
-			varq = thermo_tools.get_specificheatratio(self, Uq)
+			varq = multispecies_tools.get_specificheatratio(self, Uq)
 		elif vname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			varq = thermo_tools.get_maxwavespeed(self, Uq)
+			varq = multispecies_tools.get_maxwavespeed(self, Uq)
 		#NOTE: 1D only right now.
 		elif vname is self.AdditionalVariables["Velocity"].name:
 			varq = mom/rho
