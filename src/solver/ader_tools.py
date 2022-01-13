@@ -346,7 +346,7 @@ def spacetime_odeguess(solver, W, U_pred, dt=None):
 
 	# Initialize the integrator
 	r = ode(func, jac=None)
-	r.set_integrator('lsoda', nsteps=50000, atol=1e-8, rtol=1e-8)
+	r.set_integrator('lsoda', nsteps=50000, atol=1e-12, rtol=1e-12)
 	r.set_initial_value(W0, t0).set_f_params(x_elems, Sq_exp)
 
 	# Set constants for managing data and begin ODE integration loop
@@ -887,8 +887,16 @@ def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 		return zero.reshape(-1) # reshape for the nonlinear solver
 
 	# Iterate using root function
-	sol = root(rhs_weakform, U_pred.reshape(-1), tol=1e-8, jac=None, 
-			method='hybr', options={'maxfev':50000, 'xtol':1e-8})
+	# try:
+	# 	sol = newton_krylov(rhs_weakform, U_pred.reshape(-1), iter=None, 
+	# 			rdiff=None, method='lgmres', maxiter=5)
+
+	# 	U_pred = np.copy(sol.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
+
+	# except:
+		# print('Newton Krylov no convergence -> try root')
+	sol = root(rhs_weakform, U_pred.reshape(-1), tol=1e-12, jac=None, 
+			method='hybr', options={'maxfev':50000, 'xtol':1e-12})
 	U_pred = np.copy(sol.x.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
 
 	# Note: Other nonlinear solvers could be more efficient. Further work is
@@ -904,7 +912,6 @@ def predictor_elem_stiffimplicit(solver, dt, W, U_pred):
 	# sol = optimize.excitingmixing(rhs_weakform, U_pred.reshape(-1))
 
 
-	# U_pred = np.copy(sol.reshape([U_pred.shape[0], U_pred.shape[1], ns]))
 	# breakpoint()
 	return U_pred # [ne, nb_st, ns]
 
