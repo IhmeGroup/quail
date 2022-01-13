@@ -270,7 +270,7 @@ class SourceSolvers():
 
 			# Instantiate ode object
 			r = ode(self.rhs_sources, jac=None)
-			r.set_integrator('lsoda', nsteps=50000, min_step=1e-14, atol=1e-8, rtol=1e-4)
+			r.set_integrator('lsoda', nsteps=50000, min_step=1e-14, atol=1e-12, rtol=1e-12)
 			r.set_initial_value(Uq0, t0).set_f_params(x_elems, Uq, 
 					solver, subiterations)
 

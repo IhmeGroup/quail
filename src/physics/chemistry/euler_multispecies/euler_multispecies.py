@@ -59,8 +59,8 @@ class EulerMultispecies(base.PhysicsBase):
 	-----------
 
 	'''
-	def __init__(self, mesh):
-		super().__init__(mesh)
+	def __init__(self):
+		super().__init__()
 
 	def set_maps(self):
 		super().set_maps()
