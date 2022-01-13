@@ -27,6 +27,14 @@ def get_state():
 
 init_state = get_state()
 FinalTime = 0.0001
+#FinalTime = 3.503e-5
+Restart = {
+#	"File" : 'Data_restart.pkl',
+		# If file name provided (str), then will restart from said data file
+		# (pickle format)
+#	"StartFromFileTime" : True
+		# If True, then will restart from time saved in restart file
+}
 
 TimeStepping = {
     "InitialTime" : 0.,
@@ -45,10 +53,10 @@ Numerics = {
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "ADERDG",
     "SourceTreatmentADER" : "StiffImplicit",
-#    "Solver" : "DG",
+    #"Solver" : "DG",
     # "ArtificialViscosity" : True,
     # "AVParameter" : 1e4,
-    "PredictorThreshold" : 1e-8,
+    "PredictorThreshold" : 1e-12,
     "PredictorGuessADER" : "ODEGuess",
 
 }
@@ -56,7 +64,7 @@ Numerics = {
 Output = {
     "AutoPostProcess" : False,
     "Prefix" : "Data",
-#    "WriteInterval" : 2,
+#    "WriteInterval" : 325,
     "WriteInitialSolution" : True,
 }
 
