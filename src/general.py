@@ -196,7 +196,8 @@ class PhysicsType(Enum):
 		# 9sp H2/O2 combustion
 	EulerMultispecies1D_10sp_H2O2 = auto()
 		# 11sp H2/O2 combustion
-
+	NavierStokesMultispecies1D_4sp_CH4 = auto()
+		# 4sp CH4 diffusion test mechanism
 		
 class TransportType(Enum):
 	'''

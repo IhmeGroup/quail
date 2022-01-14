@@ -1,9 +1,23 @@
 # ------------------------------------------------------------------------ #
 #
-#       File : src/physics/chemistry/chemistry.py
+#       quail: A lightweight discontinuous Galerkin code for
+#              teaching and prototyping
+#		<https://github.com/IhmeGroup/quail>
+#       
+#		Copyright (C) 2020-2021
 #
-#       Contains class definitions for 1D Euler equations with a simple
-# 		transport equation for mass fraction.
+#       This program is distributed under the terms of the GNU
+#		General Public License v3.0. You should have received a copy
+#       of the GNU General Public License along with this program.  
+#		If not, see <https://www.gnu.org/licenses/>.
+#
+# ------------------------------------------------------------------------ #
+
+# ------------------------------------------------------------------------ #
+#
+#      File : src/physics/chemistry/euler_multispecies/euler_multispecies.py
+#
+#      Contains class definitions for multispecies Euler equations
 #
 # ------------------------------------------------------------------------ #
 from enum import Enum
@@ -346,7 +360,7 @@ class EulerMultispecies1D_3sp_H2O2_inert(EulerMultispecies1D):
 		Density = "\\rho"
 		XMomentum = "\\rho u"
 		Energy = "\\rho E"
-		rhoYN2 = "\\rho Y_{H2}"
+		rhoYH2 = "\\rho Y_{H2}"
 		rhoYO2 = "\\rho Y_{O2}"
 
 	class AdditionalVariables(Enum):

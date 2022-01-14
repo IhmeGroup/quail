@@ -44,7 +44,8 @@ import physics.scalar.scalar as scalar
 import physics.chemistry.chemistry as chemistry
 import physics.chemistry.euler_multispecies.euler_multispecies \
 	as euler_multispecies
-
+import physics.chemistry.navierstokes_multispecies.navierstokes_multispecies \
+	as navierstokes_multispecies
 import physics.navierstokes.tools as ns_tools
 
 import processing.readwritedatafiles as readwritedatafiles
@@ -117,6 +118,9 @@ def set_physics(mesh, physics_type):
 	elif PhysicsType[physics_type] == PhysicsType.EulerMultispecies1D_10sp_H2O2 \
 		and ndims==1:
 		physics_class = euler_multispecies.EulerMultispecies1D_10sp_H2O2
+	elif PhysicsType[physics_type] == PhysicsType.NavierStokesMultispecies1D_4sp_CH4 \
+		and ndims==1:
+		physics_class = navierstokes_multispecies.NavierStokesMultispecies1D_4sp_CH4
 	else:
 	    raise NotImplementedError
 
