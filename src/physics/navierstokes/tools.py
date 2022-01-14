@@ -22,32 +22,7 @@
 #
 # ------------------------------------------------------------------------ #
 import numpy as np
-from general import TransportType
-
-
-def set_transport(transport_type):
-	'''
-	Given the Transport parameter, set the get_transport function
-
-	Inputs:
-	-------
-		transport_type: string to determine transport type
-
-	Outputs:
-	--------
-		fcn: name of function to be passed
-	'''
-	
-	if TransportType[transport_type] == TransportType.Constant:
-		fcn = get_constant_transport
-	elif TransportType[transport_type] == TransportType.Sutherland:
-		fcn = get_sutherland_transport
-	elif TransportType[transport_type] == TransportType.NotNeeded:
-		fcn = None
-	else:
-		raise NotImplementedError("Transport not supported")
-
-	return fcn
+# from general import TransportType
 
 
 def get_constant_transport(physics, Uq, flag_non_physical=None):

@@ -29,7 +29,7 @@ import sys
 
 import defaultparams as default_deck
 import errors
-from general import ShapeType, SolverType, PhysicsType
+from general import ShapeType, SolverType, PhysicsType, TransportType
 
 import meshing.common as mesh_common
 import meshing.gmsh as mesh_gmsh
@@ -127,6 +127,31 @@ def set_physics(mesh, physics_type):
 	physics = physics_class()
 
 	return physics
+
+
+def set_transport(transport_type):
+	'''
+	Given the Transport parameter, set the get_transport function
+
+	Inputs:
+	-------
+		transport_type: string to determine transport type
+
+	Outputs:
+	--------
+		fcn: name of function to be passed
+	'''
+	
+	if TransportType[transport_type] == TransportType.Constant:
+		fcn = ns_tools.get_constant_transport
+	elif TransportType[transport_type] == TransportType.Sutherland:
+		fcn = ns_tools.get_sutherland_transport
+	elif TransportType[transport_type] == TransportType.NotNeeded:
+		fcn = None
+	else:
+		raise NotImplementedError("Transport not supported")
+
+	return fcn
 
 
 def overwrite_params(params, params_new, allow_new_keys=False):
@@ -368,8 +393,8 @@ def driver(deck):
 
 	# Create physics object
 	physics = set_physics(mesh, physics_params["Type"])
-	# Add tranport if using Navier-Stokes
-	physics.get_transport = ns_tools.set_transport(physics_params["Transport"])
+	# Add transport if using Navier-Stokes
+	physics.get_transport = set_transport(physics_params["Transport"])
 	# Set parameters
 	pparams = physics_params.copy()
 	pparams.pop("Type") # don't pass this key
