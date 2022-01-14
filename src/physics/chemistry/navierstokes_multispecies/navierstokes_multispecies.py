@@ -87,7 +87,7 @@ class NavierStokesMultispecies(euler_multispecies.EulerMultispecies):
 			base_diff_num_flux_type.SIP : 
 				base_fcns.SIP,
 			})
-		
+
 
 class NavierStokesMultispecies1D(NavierStokesMultispecies, 
 		euler_multispecies.EulerMultispecies1D):
@@ -154,9 +154,10 @@ class NavierStokesMultispecies1D_4sp_CH4(NavierStokesMultispecies1D):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		rho = Uq[:, :, srho]
-		rhoYH2 = Uq[:, :, [3]]
+		rhoYCH4 = Uq[:, :, [3]]
 		rhoYO2 = Uq[:, :, [4]]
-		rhoYAR = rho * (1.0 - (rhoYO2 + rhoYH2) / rho)
+		rhoYH2O = Uq[:, :, [5]]
+		rhoYN2 = rho * (1.0 - (rhoYO2 + rhoYH2O + rhoYCH4) / rho)
 
 		''' Flag non-physical state '''
 		if flag_non_physical:
