@@ -317,6 +317,9 @@ class InteriorFaceHelpers(ElemHelpers):
 	ijacR_elems: numpy array
 		stores the evaluated inverse of the geometric Jacobian for each
 		right element
+	self.x_faces: numpy array
+		stores the coordinates of the quadrature points for each
+		interior face
 
 
 	Methods:
@@ -350,6 +353,7 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.faceR_IDs = np.empty(0, dtype=int)
 		self.ijacL_elems = np.zeros(0)
 		self.ijacR_elems = np.zeros(0)
+		self.faces_to_xref = np.zeros(0)
 
 	def get_gaussian_quadrature(self, mesh, physics, basis, order):
 		'''
@@ -408,6 +412,9 @@ class InteriorFaceHelpers(ElemHelpers):
 				[num_interior_faces, nq, ndims, ndims]
 			self.face_lengths: stores the precomputed length of each face
 				[num_interior_faces, 1]
+			self.x_faces: stores the coordinates of the quadrature points
+				for each interior face
+				[num_interior_faces, nq, ndims]
 		
 		Note(s):
 		--------
@@ -439,7 +446,9 @@ class InteriorFaceHelpers(ElemHelpers):
 		self.normals_int_faces = np.zeros([mesh.num_interior_faces, nq,
 				ndims])
 		djac_faces = np.zeros([mesh.num_interior_faces, nq])
-
+		
+		self.x_faces = np.zeros([nfaces, nq, ndims])
+		
 		# Get values on each face (from both left and right perspectives) 
 		# for both the basis and the reference gradient of the basis
 		for face_ID in range(nfaces_per_elem):
@@ -470,12 +479,16 @@ class InteriorFaceHelpers(ElemHelpers):
 			_, _, ijacL = basis_tools.element_jacobian(mesh, 
 					interior_face.elemL_ID, elem_pts, get_djac=False,
 					get_jac=False, get_ijac=True)
-
+					
+			x = mesh_tools.ref_to_phys(mesh, interior_face.elemL_ID, elem_pts)
+			# Store
+			self.x_faces[i] = x
+			
 			# Right state
 			# Convert from face ref space to element ref space
 			elem_pts = basis.get_elem_ref_from_face_ref(
 					interior_face.faceR_ID, quad_pts[::-1])
-			_, _, ijacR = basis_tools.element_jacobian(mesh, 
+			_, _, ijacR = basis_tools.element_jacobian(mesh,
 					interior_face.elemR_ID, elem_pts, get_djac=False,
 					get_jac=False, get_ijac=True)
 
@@ -849,7 +862,7 @@ class DG(base.SolverBase):
 
 		if fluxes:
 			# Evaluate the inviscid flux integral
-			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
+			Fq = physics.get_conv_flux_interior(Uq, x_elems)[0] # [ne, nq, ns, ndims]
 
 			if physics.diff_flux_fcn:
 				# Evaluate the diffusion flux
@@ -888,6 +901,7 @@ class DG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		vol_elems = elem_helpers.vol_elems
 		face_lengths = int_face_helpers.face_lengths
+		x_faces = int_face_helpers.x_faces
 
 		quad_wts = int_face_helpers.quad_wts
 		faces_to_basisL = int_face_helpers.faces_to_basisL
@@ -933,7 +947,7 @@ class DG(base.SolverBase):
 
 		if fluxes:
 			# Compute numerical flux
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces, x_faces)
 					# [nf, nq, ns]
 
 			# Compute diffusion flux

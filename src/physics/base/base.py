@@ -517,7 +517,7 @@ class PhysicsBase(ABC):
 		return 2*order+1
 
 	@abstractmethod
-	def get_conv_flux_interior(self, Uq):
+	def get_conv_flux_interior(self, Uq, x):
 		'''
 		This method computes the convective analytical flux for element
 		interiors.
@@ -526,7 +526,9 @@ class PhysicsBase(ABC):
 		-------
 			Uq: values of the state variables (typically at the quadrature
 				points) [ne, nq, ns]
-
+			x:  physical coordinates (if needed) (typically at the quadrature
+				points) [ne, nq, ns]
+				
 		Outputs:
 		--------
 			Fq: flux values [ne, nq, ns, ndims]
@@ -551,7 +553,7 @@ class PhysicsBase(ABC):
 		'''
 		pass
 
-	def get_conv_flux_projected(self, Uq, normals):
+	def get_conv_flux_projected(self, Uq, normals, x):
 		'''
 		This method computes the convective analytical flux projected in a
 		given direction.
@@ -567,7 +569,7 @@ class PhysicsBase(ABC):
 			projected flux values [nf, nq, ns]
 			tuple of extra variables computed by interior flux
 		'''
-		Fq, vars = self.get_conv_flux_interior(Uq) # [nf, nq, ns, ndims]
+		Fq, vars = self.get_conv_flux_interior(Uq, x) # [nf, nq, ns, ndims]
 		
 		# Check needed for ADER shapes to be consistent. This appears to 
 		# be a minimally invasive approach.
@@ -576,7 +578,7 @@ class PhysicsBase(ABC):
 
 		return np.einsum('ijkl, ijl -> ijk', Fq, normals), vars
 
-	def get_conv_flux_numerical(self, UqL, UqR, normals):
+	def get_conv_flux_numerical(self, UqL, UqR, normals, x):
 		'''
 		This method computes the convective numerical flux.
 
@@ -592,7 +594,7 @@ class PhysicsBase(ABC):
 		--------
 			Fnum: numerical flux values [nf, nq, ns]
 		'''
-		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals)
+		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals, x)
 
 		return Fnum
 

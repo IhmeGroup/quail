@@ -430,3 +430,89 @@ class Burgers1D(base.PhysicsBase):
 
 		return scalar
 	
+class NonConstAdvScalar(base.PhysicsBase):
+	'''
+	This class corresponds to scalar advection with a non-constant velocity.
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods. This
+	class should not be instantiated directly. Instead, the 1D and 2D
+	variants, which inherit from this class (see below), should be
+	instantiated.
+
+	Additional methods and attributes are commented below.
+
+	Attributes:
+	-----------
+	c: float or numpy array
+		advection velocity
+	cspeed: float
+		advection speed
+	'''
+	NUM_STATE_VARS = 1
+	NDIMS = 1
+	PHYSICS_TYPE = general.PhysicsType.NonConstAdvScalar
+
+	def __init__(self):
+		super().__init__()
+		self.c = 0.
+		self.cspeed = 0.
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.Sine : scalar_fcns.Sine,
+			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
+			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
+			scalar_fcn_type.Heaviside : scalar_fcns.Heaviside,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+		
+		self.source_map.update({
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+		})
+		
+	def set_physical_params(self, ConstVelocity=1.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			ConstVelocity: constant advection velocity
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.c = ConstVelocity
+		self.cspeed = np.abs(self.c)
+
+	class StateVariables(Enum):
+		Scalar = "u"
+
+	class AdditionalVariables(Enum):
+	    MaxWaveSpeed = "\\lambda"
+
+	def get_conv_flux_interior(self, Uq, x):
+		cc = 1.0 + x
+		#cc = self.Linear(x)
+		FF = cc*Uq
+		F = np.expand_dims(FF, axis=-1)
+
+		return F, None
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+		sname = self.AdditionalVariables[var_name].name
+
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is the advection speed
+			scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
+		else:
+			raise NotImplementedError
+
+		return scalar

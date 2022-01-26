@@ -186,16 +186,16 @@ class LaxFriedrichs(ConvNumFluxBase):
 	'''
 	This class corresponds to the local Lax-Friedrichs flux function.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals):
+	def compute_flux(self, physics, UqL, UqR, normals, x):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL,_ = physics.get_conv_flux_projected(UqL, n_hat)
+		FqL,_ = physics.get_conv_flux_projected(UqL, n_hat, x)
 
 		# Right flux
-		FqR,_ = physics.get_conv_flux_projected(UqR, n_hat)
+		FqR,_ = physics.get_conv_flux_projected(UqR, n_hat, x)
 
 		# Jump
 		dUq = UqR - UqL
