@@ -263,7 +263,7 @@ class Euler1D(Euler):
 
 		return smom
 
-	def get_conv_flux_interior(self, Uq):
+	def get_conv_flux_interior(self, Uq, x=None):
 		# Get indices of state variables
 		irho, irhou, irhoE = self.get_state_indices()
 
@@ -427,7 +427,7 @@ class Euler2D(Euler):
 
 		return smom
 
-	def get_conv_flux_interior(self, Uq):
+	def get_conv_flux_interior(self, Uq, x=None):
 		# Get indices/slices of state variables
 		irho, irhou, irhov, irhoE = self.get_state_indices()
 		smom = self.get_momentum_slice()

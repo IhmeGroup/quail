@@ -434,7 +434,7 @@ class ExactLinearFlux(ConvNumFluxBase):
 		Uq_upwind[iL, :] = UqL[iL, :]
 
 		# Flux
-		Fq,_ = physics.get_conv_flux_projected(Uq_upwind, n_hat)
+		Fq,_ = physics.get_conv_flux_projected(Uq_upwind, n_hat, x=None)
 
 		# Put together
 		return n_mag*Fq

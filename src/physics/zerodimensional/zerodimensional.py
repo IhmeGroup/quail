@@ -68,7 +68,7 @@ class ZeroDimensional(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def get_conv_flux_interior(self, Uq):
+	def get_conv_flux_interior(self, Uq, x=None):
 
 		# This can be zero or the mixing function.
 		F = np.zeros_like(Uq)

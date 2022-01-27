@@ -44,10 +44,10 @@ def test_numerical_flux_1D_consistency(conv_num_flux_type):
 	normals[:, :, 0] = 0.5
 
 	# Compute numerical flux
-	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals)
+	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals, x=None)
 
 	# Physical flux projected in normal direction
-	F_expected, _ = physics.get_conv_flux_projected(UqL, normals)
+	F_expected, _ = physics.get_conv_flux_projected(UqL, normals, x=None)
 
 	np.testing.assert_allclose(Fnum, F_expected, rtol, atol)
 
@@ -97,12 +97,12 @@ def test_numerical_flux_1D_conservation(conv_num_flux_type):
 	normals[:, :, 0] = 0.5
 
 	# Compute numerical flux
-	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals)
+	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals, x=None)
 
 	# Compute numerical flux, but switch left and right states and negate 
 	# normals
 	F_expected = physics.conv_flux_fcn.compute_flux(physics, UqR, UqL, 
-			-normals)
+			-normals, x=None)
 
 	np.testing.assert_allclose(Fnum, -F_expected, rtol, atol)
 
@@ -145,10 +145,10 @@ def test_numerical_flux_2D_consistency(conv_num_flux_type):
 	normals[:, :, 1] = 0.7
 
 	# Compute numerical flux
-	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals)
+	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals, x=None)
 
 	# Physical flux projected in normal direction
-	F_expected, _ = physics.get_conv_flux_projected(UqL, normals)
+	F_expected, _ = physics.get_conv_flux_projected(UqL, normals, x=None)
 
 	np.testing.assert_allclose(Fnum, F_expected, rtol, atol)
 
@@ -203,11 +203,11 @@ def test_numerical_flux_2D_conservation(conv_num_flux_type):
 	normals[:, :, 1] = 0.7
 
 	# Compute numerical flux
-	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals)
+	Fnum = physics.conv_flux_fcn.compute_flux(physics, UqL, UqR, normals, x=None)
 
 	# Compute numerical flux, but switch left and right states and negate 
 	# normals
 	F_expected = physics.conv_flux_fcn.compute_flux(physics, UqR, UqL, 
-			-normals)
+			-normals, x=None)
 
 	np.testing.assert_allclose(Fnum, -F_expected, rtol, atol)

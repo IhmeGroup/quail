@@ -930,16 +930,16 @@ class LaxFriedrichs1D(ConvNumFluxBase):
 	Euler1D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat)
+		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat, x=None)
 
 		# Right flux
-		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat)
+		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat, x=None)
 
 		# Jump
 		dUq = UqR - UqL
@@ -962,18 +962,18 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 	Euler2D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
 		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
-				n_hat)
+				n_hat, x=None)
 
 		# Right flux
 		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
-				n_hat)
+				n_hat, x=None)
 
 		# Jump
 		dUq = UqR - UqL
@@ -1223,7 +1223,7 @@ class Roe1D(ConvNumFluxBase):
 
 		return R
 
-	def compute_flux(self, physics, UqL_std, UqR_std, normals):
+	def compute_flux(self, physics, UqL_std, UqR_std, normals, x=None):
 		# Reshape arrays
 		n = UqL_std.shape[0]
 		nq = UqL_std.shape[1]
@@ -1298,10 +1298,10 @@ class Roe1D(ConvNumFluxBase):
 		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_hat)
 
 		# Left flux
-		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat)
+		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat, x=None)
 
 		# Right flux
-		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat)
+		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat, x=None)
 
 		return .5*n_mag*(FL + FR - FRoe) # [nf, nq, ns]
 

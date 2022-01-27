@@ -586,7 +586,7 @@ class ADERDG(base.SolverBase):
 
 		if fluxes:
 			# Evaluate the flux volume integral.
-			Fq = physics.get_conv_flux_interior(Uq)[0] # [ne, nq, ns, ndims]
+			Fq = physics.get_conv_flux_interior(Uq, x=None)[0] # [ne, nq, ns, ndims]
 			
 			if physics.diff_flux_fcn:
 				# Evaluate the diffusion flux
@@ -692,7 +692,7 @@ class ADERDG(base.SolverBase):
 		
 		if fluxes:
 			# Compute numerical flux
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces)
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces, x=None)
 					# [nf, nq_st, ns]
 
 			# Compute diffusion flux
@@ -879,7 +879,7 @@ class ADERDG(base.SolverBase):
 		# Flux coefficient calc from interpolation or L2-projection
 		if InterpolateFluxADER:
 			# Calculate flux
-			Fq = physics.get_conv_flux_interior(Up)[0]
+			Fq = physics.get_conv_flux_interior(Up, x=None)[0]
 
 			if physics.diff_flux_fcn:
 				# Calculate the gradient of the state
@@ -912,7 +912,7 @@ class ADERDG(base.SolverBase):
 			gUq = self.ref_to_phys_grad(ijac_elems_st, gUq_ref)
 
 			# Evaluate the inviscid flux
-			Fq = physics.get_conv_flux_interior(Uq)[0]
+			Fq = physics.get_conv_flux_interior(Uq, x=None)[0]
 			
 			# Evaluate the diffusive flux
 			if physics.diff_flux_fcn:

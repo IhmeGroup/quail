@@ -228,7 +228,7 @@ class Chemistry1D(Chemistry):
 
 		return smom
 
-	def get_conv_flux_interior(self, Uq):
+	def get_conv_flux_interior(self, Uq, x=None):
 
 		irho, irhou, irhoE, irhoY = self.get_state_indices()
 
