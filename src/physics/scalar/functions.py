@@ -69,6 +69,7 @@ class ConvNumFluxType(Enum):
 	numerical fluxes are specific to the available Euler equation sets.
 	'''
 	ExactLinearFlux = auto()
+	LaxFriedrichs_THINC = auto()
 
 '''
 ---------------
@@ -424,7 +425,7 @@ class ExactLinearFlux(ConvNumFluxBase):
 	'''
 	This class corresponds to the exact flux for linear advection.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
@@ -438,3 +439,58 @@ class ExactLinearFlux(ConvNumFluxBase):
 
 		# Put together
 		return n_mag*Fq
+		
+		
+class LaxFriedrichs_THINC(ConvNumFluxBase):
+	'''
+	This class corresponds to the local Lax-Friedrichs flux function
+	coupled with a THINC reconstruction (implemented only for p=0).
+	'''
+	def compute_flux(self, physics, UqL, UqR, normals, x):
+		# Normalize the normal vectors
+		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
+		n_hat = normals/n_mag
+		
+		# THINC ALGORITHM
+		varepsilon = 1e-3
+		for ll in range(0,len(UqL[:,0,0])):
+			beta = 2.3
+			Ull = UqL[ll,0,0]
+			Urr = UqR[ll,0,0]
+			Ull = max(0.0,UqL[ll,0,0])
+			Ull = min(1.0,Ull)
+			Urr = max(0.0,UqR[ll,0,0])
+			Urr = min(1.0,Urr)
+			if (np.abs(Ull) > varepsilon) and (np.abs(Ull-1.0) > varepsilon):
+				sigma = (Urr-Ull)/(np.abs(Urr-Ull)+1e-15)
+				A = np.exp(2.0*beta*sigma)
+				B = np.exp(2.0*beta*Ull*sigma)
+				xx = 1.0/(2.0*beta)*np.log((B-1.0+1e-15)/(A-B+1e-15))
+				UqL[ll,0,0] = 0.5*(1.0 + np.tanh(beta*(sigma+xx)))
+			if (np.abs(Urr) > varepsilon) and (np.abs(Urr-1.0) > varepsilon):
+				sigma = (Urr-Ull)/(np.abs(Urr-Ull)+1e-15)
+				A = np.exp(2.0*beta*sigma)
+				B = np.exp(2.0*beta*Urr*sigma)
+				xx = 1.0/(2.0*beta)*np.log((B-1.0+1e-15)/(A-B+1e-15))
+				UqR[ll,0,0] = 0.5*(1.0 + np.tanh(beta*xx))
+
+		# Left flux
+		FqL,_ = physics.get_conv_flux_projected(UqL, n_hat, x)
+
+		# Right flux
+		FqR,_ = physics.get_conv_flux_projected(UqR, n_hat, x)
+
+		# Jump
+		dUq = UqR - UqL
+
+		# Calculate max wave speeds at each point
+		a = physics.compute_variable("MaxWaveSpeed", UqL,
+				flag_non_physical=True)
+		aR = physics.compute_variable("MaxWaveSpeed", UqR,
+				flag_non_physical=True)
+
+		idx = aR > a
+		a[idx] = aR[idx]
+
+		# Put together
+		return n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)

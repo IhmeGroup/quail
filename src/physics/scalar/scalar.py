@@ -477,6 +477,12 @@ class NonConstAdvScalar(base.PhysicsBase):
 			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
 		})
 		
+		self.conv_num_flux_map.update({
+			scalar_conv_num_flux_type.LaxFriedrichs_THINC :
+					scalar_fcns.LaxFriedrichs_THINC,
+		})
+
+		
 	def set_physical_params(self, ConstVelocity=1.):
 		'''
 		This method sets physical parameters.
@@ -512,6 +518,7 @@ class NonConstAdvScalar(base.PhysicsBase):
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
 			scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
+			#scalar = np.abs(1.0 + x)
 		else:
 			raise NotImplementedError
 
