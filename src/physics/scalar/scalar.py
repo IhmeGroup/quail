@@ -92,7 +92,7 @@ class ConstAdvScalar(base.PhysicsBase):
 
 		return F, None
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
@@ -255,7 +255,7 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
@@ -419,7 +419,7 @@ class Burgers1D(base.PhysicsBase):
 
 		return F, None
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
@@ -512,13 +512,13 @@ class NonConstAdvScalar(base.PhysicsBase):
 
 		return F, None
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
-			scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
-			#scalar = np.abs(1.0 + x)
+			#scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
+			scalar = np.abs(1.0 + x)
 		else:
 			raise NotImplementedError
 

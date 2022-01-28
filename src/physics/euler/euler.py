@@ -103,7 +103,7 @@ class Euler(base.PhysicsBase):
 		XVelocity = "u"
 		YVelocity = "v"
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")

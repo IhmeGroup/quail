@@ -484,9 +484,9 @@ class LaxFriedrichs_THINC(ConvNumFluxBase):
 		dUq = UqR - UqL
 
 		# Calculate max wave speeds at each point
-		a = physics.compute_variable("MaxWaveSpeed", UqL,
+		a = physics.compute_variable("MaxWaveSpeed", UqL, x,
 				flag_non_physical=True)
-		aR = physics.compute_variable("MaxWaveSpeed", UqR,
+		aR = physics.compute_variable("MaxWaveSpeed", UqR, x,
 				flag_non_physical=True)
 
 		idx = aR > a

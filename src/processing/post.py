@@ -94,8 +94,8 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	u = helpers.evaluate_state(U, basis.basis_val)
 
 	# Computed requested quantity
-	s = physics.compute_variable(var_name, u)
-	s_exact = physics.compute_variable(var_name, u_exact)
+	s = physics.compute_variable(var_name, u, x=None)
+	s_exact = physics.compute_variable(var_name, u_exact, x=None)
 
 	# Loop through elements
 	for elem_ID in range(mesh.num_elems):
@@ -189,7 +189,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
 
 	# Get requested variable
-	varq = physics.compute_variable(var_name, Uq) # [nf, nq, 1]
+	varq = physics.compute_variable(var_name, Uq, x=None) # [nf, nq, 1]
 
 	# Normals
 	normals = normals_bgroups[boundary_num] # [nf, nq, ndims]

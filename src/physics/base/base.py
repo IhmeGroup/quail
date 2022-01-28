@@ -701,7 +701,7 @@ class PhysicsBase(ABC):
 
 		return jac
 
-	def compute_variable(self, var_name, Uq, flag_non_physical=False):
+	def compute_variable(self, var_name, Uq, x, flag_non_physical=False):
 		'''
 		This method computes a given variable.
 
@@ -725,11 +725,11 @@ class PhysicsBase(ABC):
 		except KeyError:
 			# Now try additional
 			varq = self.compute_additional_variable(var_name, Uq,
-					flag_non_physical)
+					flag_non_physical, x)
 
 		return varq
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x):
 		'''
 		This method computes a variable that is not a state variable.
 

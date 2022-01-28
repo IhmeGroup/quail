@@ -61,10 +61,10 @@ def compute_variable(solver, Uc, var_name):
 			limiter.djac_elems, limiter.elem_vols)
 	# Compute variable at quadrature points
 	var_elem_faces = physics.compute_variable(var_name,
-			U_elem_faces)
+			U_elem_faces, x=None)
 	# Compute mean
 	var_bar = physics.compute_variable(var_name,
-			U_bar)
+			U_bar, x=None)
 
 	return var_elem_faces, var_bar
 

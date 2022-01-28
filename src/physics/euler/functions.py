@@ -751,13 +751,13 @@ class PressureOutlet(BCWeakPrescribed):
 			print("Incoming flow at outlet")
 
 		# Interior pressure
-		pI = physics.compute_variable("Pressure", UqI)
+		pI = physics.compute_variable("Pressure", UqI, x=None)
 
 		if np.any(pI < 0.):
 			raise errors.NotPhysicalError
 
 		# Interior speed of sound
-		cI = physics.compute_variable("SoundSpeed", UqI)
+		cI = physics.compute_variable("SoundSpeed", UqI, x=None)
 		JI = velnI + 2.*cI/(gamma - 1.)
 		# Interior velocity in tangential direction
 		veltI = velI - velnI*n_hat
@@ -1109,8 +1109,8 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		rhoL_sqrt = np.sqrt(UqL[:, :, srho])
 		rhoR_sqrt = np.sqrt(UqR[:, :, srho])
-		HL = physics.compute_variable("TotalEnthalpy", UqL)
-		HR = physics.compute_variable("TotalEnthalpy", UqR)
+		HL = physics.compute_variable("TotalEnthalpy", UqL, x=None)
+		HR = physics.compute_variable("TotalEnthalpy", UqR, x=None)
 
 		velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -1143,8 +1143,8 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		dvel = velR - velL
 		drho = UqR[:, :, srho] - UqL[:, :, srho]
-		dp = physics.compute_variable("Pressure", UqR) - \
-				physics.compute_variable("Pressure", UqL)
+		dp = physics.compute_variable("Pressure", UqR, x=None) - \
+				physics.compute_variable("Pressure", UqL, x=None)
 
 		return drho, dvel, dp
 

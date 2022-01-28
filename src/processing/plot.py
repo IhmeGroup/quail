@@ -510,7 +510,7 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	else:
 		U_plot = fcn_data.get_state(physics, x=x, t=time)
 
-	var_plot = physics.compute_variable(var_name, U_plot)
+	var_plot = physics.compute_variable(var_name, U_plot, x=None)
 
 	return var_plot
 
@@ -536,7 +536,7 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 			[num_elems, num_pts, 1]
 	'''
 	Uq = helpers.evaluate_state(U, basis.basis_val)
-	var_numer = physics.compute_variable(var_name, Uq)
+	var_numer = physics.compute_variable(var_name, Uq, x=None)
 
 	return var_numer
 
@@ -583,7 +583,7 @@ def get_average_solution(physics, solver, x, basis, var_name):
 	Uq = helpers.evaluate_state(U, basis.basis_val)
 
 	Ubar = helpers.get_element_mean(Uq, quad_wts, djacs, vols)
-	var_numer = physics.compute_variable(var_name, Ubar)
+	var_numer = physics.compute_variable(var_name, Ubar, x=None)
 
 	x_bar = np.sum(x, axis=1).reshape([x.shape[0], 1, 1])/x.shape[1]
 
