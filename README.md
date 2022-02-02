@@ -75,4 +75,4 @@ author = {Eric J. Ching and Brett Bornhoft and Ali Lasemi and Matthias Ihme},
 ````
 
 ### Additional information
-For those interested in contributing to Quail, please see [`CONTRIBUTING.md`](https://github.com/IhmeGroup/quail/blob/main/CONTRIBUTING.md). Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation ([`docs/documentation.pdf`](https://github.com/IhmeGroup/quail/blob/main/docs/documentation.pdf). Links to video tutorials are provided as well. Please submit issues and questions on the github page.
+For those interested in contributing to Quail, please see [`CONTRIBUTING.md`](https://github.com/IhmeGroup/quail/blob/main/CONTRIBUTING.md). Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation ([`docs/documentation.pdf`](https://github.com/IhmeGroup/quail/blob/main/docs/documentation.pdf)). Links to video tutorials are provided as well. Please submit issues and questions on the github page.
