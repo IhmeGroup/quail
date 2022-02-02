@@ -56,6 +56,23 @@ $ python plot_segment_basis_fcn.py
 ```
 Settings can be changed directly in `plot_segment_basis_fcn.py`. Basis functions for triangles and quadrilaterals can also be plotted.
 
+### Citing Quail
+
+If you publish work which mentions Quail, please cite the following paper:
+
+````BibTex
+@article{CHING2022100982,
+title = {Quail: A lightweight open-source discontinuous Galerkin code in Python for teaching and prototyping},
+journal = {SoftwareX},
+volume = {17},
+pages = {100982},
+year = {2022},
+issn = {2352-7110},
+doi = {https://doi.org/10.1016/j.softx.2022.100982},
+url = {https://www.sciencedirect.com/science/article/pii/S235271102200005X},
+author = {Eric J. Ching and Brett Bornhoft and Ali Lasemi and Matthias Ihme},
+}
+````
 
 ### Additional information
-For those interested in contributing to Quail, please see `CONTRIBUTING.md`. Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation (`docs/documentation.pdf`). Links to video tutorials are provided as well. Please submit issues and questions on the github page.
+For those interested in contributing to Quail, please see [`CONTRIBUTING.md`](https://github.com/IhmeGroup/quail/blob/main/CONTRIBUTING.md). Additional details on Quail and the discontinuous Galerkin method can be found in the included documentation ([`docs/documentation.pdf`](https://github.com/IhmeGroup/quail/blob/main/docs/documentation.pdf). Links to video tutorials are provided as well. Please submit issues and questions on the github page.
