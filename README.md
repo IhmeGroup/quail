@@ -58,7 +58,7 @@ Settings can be changed directly in `plot_segment_basis_fcn.py`. Basis functions
 
 ### Citing Quail
 
-If you publish work which mentions Quail, please cite the following paper:
+If you publish work which mentions Quail, please cite the following [paper](https://authors.elsevier.com/sd/article/S235271102200005X):
 
 ````BibTex
 @article{CHING2022100982,
