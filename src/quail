@@ -84,6 +84,8 @@ def set_physics(mesh, physics_type):
 		physics_class = scalar.Burgers1D
 	elif PhysicsType[physics_type] == PhysicsType.NonConstAdvScalar and ndims == 1:
 		physics_class = scalar.NonConstAdvScalar
+	elif PhysicsType[physics_type] == PhysicsType.NonConstAdvDiffScalar and ndims == 1:
+		physics_class = scalar.NonConstAdvDiffScalar
 	elif PhysicsType[physics_type] == PhysicsType.ModelProblem:
 		physics_class = zerod.ModelProblem
 	elif PhysicsType[physics_type] == PhysicsType.ModelPSRScalar:

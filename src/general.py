@@ -163,6 +163,8 @@ class PhysicsType(Enum):
 		# coefficients
 	NonConstAdvScalar = auto()
 		# Scalar advection with non constant velocity (1D)
+	NonConstAdvDiffScalar = auto()
+		# Scalar advection with non constant velocity (1D)
 	Burgers = auto()
 		# Burgers equation (1D only)
 	Euler = auto()

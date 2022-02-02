@@ -163,7 +163,8 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		super().set_maps()
 
 		d = {
-			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
+			scalar_fcn_type.Circle : scalar_fcns.Circle
 		}
 
 		self.IC_fcn_map.update(d)
@@ -331,12 +332,17 @@ class ConstAdvDiffScalar2D(ConstAdvDiffScalar):
 		super().set_maps()
 
 		d = {
-			scalar_fcn_type.DiffGaussian2D : scalar_fcns.DiffGaussian2D
+			scalar_fcn_type.DiffGaussian2D : scalar_fcns.DiffGaussian2D,
+			scalar_fcn_type.Circle : scalar_fcns.Circle
 		}
 
 		self.IC_fcn_map.update(d)
 		self.exact_fcn_map.update(d)
 		self.BC_fcn_map.update(d)
+		
+		self.source_map.update({
+			scalar_source_type.SharpeningSource : scalar_fcns.SharpeningSource,
+		})
 
 	def set_physical_params(self, ConstXVelocity=1., ConstYVelocity=1., 
 			DiffCoefficientX=1., DiffCoefficientY=1.):
@@ -518,6 +524,113 @@ class NonConstAdvScalar(base.PhysicsBase):
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
 			#scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
+			scalar = np.abs(1.0 + x)
+		else:
+			raise NotImplementedError
+
+		return scalar
+		
+class NonConstAdvDiffScalar(base.PhysicsBase):
+	'''
+	This class corresponds to scalar advection with a non-constant velocity.
+	It inherits attributes and methods from the PhysicsBase class. See
+	PhysicsBase for detailed comments of attributes and methods. This
+	class should not be instantiated directly. Instead, the 1D and 2D
+	variants, which inherit from this class (see below), should be
+	instantiated.
+
+	Additional methods and attributes are commented below.
+
+	Attributes:
+	-----------
+	c: float or numpy array
+		advection velocity
+	cspeed: float
+		advection speed
+	'''
+	NUM_STATE_VARS = 1
+	NDIMS = 1
+	PHYSICS_TYPE = general.PhysicsType.NonConstAdvScalar
+
+	def __init__(self):
+		super().__init__()
+		self.c = 0.
+		self.cspeed = 0.
+		self.al = 0.
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			base_fcn_type.Uniform : base_fcns.Uniform,
+			scalar_fcn_type.Sine : scalar_fcns.Sine,
+			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
+			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
+			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
+			scalar_fcn_type.Heaviside : scalar_fcns.Heaviside,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+		
+		self.source_map.update({
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+			scalar_source_type.SharpeningSource : scalar_fcns.SharpeningSource,
+		})
+		
+		self.conv_num_flux_map.update({
+			scalar_conv_num_flux_type.LaxFriedrichs_THINC :
+					scalar_fcns.LaxFriedrichs_THINC,
+		})
+		
+		self.diff_num_flux_map.update({
+			base_diff_num_flux_type.SIP :
+				base_fcns.SIP,
+			})
+
+		
+	def set_physical_params(self, ConstVelocity=1., DiffCoefficient=1.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			ConstVelocity: constant advection velocity
+
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.c = ConstVelocity
+		self.cspeed = np.abs(self.c)
+		self.al = DiffCoefficient
+
+	class StateVariables(Enum):
+		Scalar = "u"
+
+	class AdditionalVariables(Enum):
+	    MaxWaveSpeed = "\\lambda"
+
+	def get_conv_flux_interior(self, Uq, x):
+		cc = 1.0 + x
+		#cc = self.Linear(x)
+		FF = cc*Uq
+		F = np.expand_dims(FF, axis=-1)
+
+		return F, None
+		
+	def get_diff_flux_interior(self, Uq, gUq):
+		al = self.al
+		F = al * gUq
+
+		return F
+
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x):
+		sname = self.AdditionalVariables[var_name].name
+
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is the advection speed
 			scalar = np.abs(1.0 + x)
 		else:
 			raise NotImplementedError

@@ -45,6 +45,7 @@ class FcnType(Enum):
 	DiffGaussian = auto()
 	DiffGaussian2D = auto()
 	Heaviside = auto()
+	Circle = auto()
 
 
 class BCType(Enum):
@@ -61,6 +62,7 @@ class SourceType(Enum):
 	source terms are specific to the available scalar equation sets.
 	'''
 	SimpleSource = auto()
+	SharpeningSource = auto()
 	
 
 class ConvNumFluxType(Enum):
@@ -357,13 +359,68 @@ class DiffGaussian2D(FcnBase):
 		return Uq
 
 class Heaviside(FcnBase):
-	def __init__(self, xc=-0.75):
+	def __init__(self, xc=0., thick=0., wide=0.0):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    xc    : center
+		    thick : thickness
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
 		self.xc = xc
+		self.thick = thick
+		self.wide = wide
 
 	def get_state(self, physics, x, t):
 		c = physics.c
-		Uq = np.heaviside(((x-self.xc)-c*t),0.5) * \
-			 (1.0-np.heaviside(((x-(self.xc+0.5))-c*t),0.5))
+		#Uq = np.heaviside(((x-self.xc)-c*t),0.5) * \
+		#	 (1.0-np.heaviside(((x-(self.xc+0.5))-c*t),0.5))
+			 
+		Uq = 0.5*(1.0+np.tanh(self.thick*(x-self.xc)-c*t)) * \
+			 (1.0-0.5*(1.0+np.tanh(self.thick*(x-self.xc-self.wide-c*t))))
+
+		return Uq
+		
+class Circle(FcnBase):
+	'''
+	Gaussian profile.
+
+	Attributes:
+	-----------
+	sig: float
+		standard deviation
+	x0: float
+		center
+	'''
+	def __init__(self, x0=0., radius=0., thick=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.x0 = x0
+		self.radius = radius
+		self.thick = thick
+
+	def get_state(self, physics, x, t):
+
+		r = np.linalg.norm(x[:] - self.x0, axis=2,
+				keepdims=True)
+		
+		Uq = 1.0-0.5*(1.0+np.tanh(self.thick*(r-self.radius)))
+		
 
 		return Uq
 
@@ -404,6 +461,43 @@ class SimpleSource(SourceBase):
 	def get_source(self, physics, Uq, x, t):
 		nu = self.nu
 		S = nu*Uq
+
+		return S
+
+	def get_jacobian(self, physics, Uq, x, t):
+		return self.nu
+
+class SharpeningSource(SourceBase):
+	'''
+	Simple source term of the form S = nu*U
+
+	Attributes:
+	-----------
+	nu: float
+		source term parameter
+	'''
+	def __init__(self, nu=-1, eta=-1, **kwargs):
+		super().__init__(kwargs)
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    nu: source term parameter
+		    eta: second source term parameter
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.nu  = nu
+		self.eta = eta
+
+	def get_source(self, physics, Uq, x, t):
+		nu = self.nu
+		eta = self.eta
+		
+		S = nu*Uq + 0.5*eta*Uq*(1.0-Uq)*(Uq-0.5)
 
 		return S
 
