@@ -233,6 +233,103 @@ class MovingShock(FcnBase):
 
 		return Uq # [ne, nq, ns]
 
+# class WildfireBurn(FcnBase):
+# 	'''
+# 	Isentropic vortex problem from the following reference:
+# 		[1] C.-W. Shu, "Essentially non-oscillatory and weighted essentially
+# 		non-oscillatory schemes for hyperbolic conservation laws," in:
+# 		Advanced Numerical Approximation of Nonlinear Hyperbolic Equations,
+# 		Springer-Verlag, Berlin/New York, 1998, pp. 325–432.
+
+# 	Attributes:
+# 	-----------
+# 	rhob: float
+# 		base density
+# 	ub: float
+# 		base x-velocity
+# 	vb: float
+# 		base y-velocity
+# 	pb: float
+# 		base pressure
+# 	vs: float
+# 		vortex strength
+# 	'''
+# 	def __init__(self, rhob=1., ub=1., vb=1., pb=1., vs=5.):
+# 		'''
+# 		This method initializes the attributes.
+
+# 		Inputs:
+# 		-------
+# 			rhob: base density
+# 			ub: base x-velocity
+# 			vb: base y-velocity
+# 			pb: base pressure
+# 			vs: vortex strength
+
+# 		Outputs:
+# 		--------
+# 		    self: attributes initialized
+# 		'''
+# 		self.rhob = rhob
+# 		self.ub = ub
+# 		self.vb = vb
+# 		self.pb = pb
+# 		self.vs = vs
+
+# 	def get_state(self, physics, x, t):
+# 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+# 		gamma = physics.gamma
+# 		Rg = physics.R
+
+# 		''' Base flow '''
+# 		# Density
+# 		rhob = self.rhob
+# 		# x-velocity
+# 		ub = self.ub
+# 		# y-velocity
+# 		vb = self.vb
+# 		# Pressure
+# 		pb = self.pb
+# 		# Vortex strength
+# 		vs = self.vs
+# 		# Make sure Rg is 1
+# 		if Rg != 1.:
+# 			raise ValueError
+
+# 		# Base temperature
+# 		Tb = pb/(rhob*Rg)
+
+# 		# Entropy
+# 		s = pb/rhob**gamma
+
+# 		# Track center of vortex
+# 		xr = x[:, :, 0] - ub*t
+# 		yr = x[:, :, 1] - vb*t
+# 		r = np.sqrt(xr**2. + yr**2.)
+
+# 		# Perturbations
+# 		dU = vs/(2.*np.pi)*np.exp(0.5*(1-r**2.))
+# 		du = dU*-yr
+# 		dv = dU*xr
+
+# 		dT = -(gamma - 1.)*vs**2./(8.*gamma*np.pi**2.)*np.exp(1. - r**2.)
+
+# 		u = ub + du
+# 		v = vb + dv
+# 		T = Tb + dT
+
+# 		# Convert to conservative variables
+# 		rho = np.power(T/s, 1./(gamma - 1.))
+# 		rhou = rho*u
+# 		rhov = rho*v
+# 		rhoE = rho*Rg/(gamma - 1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
+
+# 		Uq[:, :, 0] = rho
+# 		Uq[:, :, 1] = rhou
+# 		Uq[:, :, 2] = rhov
+# 		Uq[:, :, 3] = rhoE
+
+# 		return Uq # [ne, nq, ns]
 
 class IsentropicVortex(FcnBase):
 	'''
@@ -895,6 +992,7 @@ class GravitySource(SourceBase):
 		    self: attributes initialized
 		'''
 		self.gravity = gravity
+		# print(gravity)
 
 	def get_source(self, physics, Uq, x, t):
 		# Unpack
