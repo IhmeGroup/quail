@@ -55,6 +55,7 @@ class BCType(Enum):
 	'''
 	SlipWall = auto()
 	PressureOutlet = auto()
+	ConstantTemp = auto()
 
 
 class SourceType(Enum):
@@ -236,11 +237,7 @@ class MovingShock(FcnBase):
 
 class WildfireBurn(FcnBase):
 	'''
-	Isentropic vortex problem from the following reference:
-		[1] C.-W. Shu, "Essentially non-oscillatory and weighted essentially
-		non-oscillatory schemes for hyperbolic conservation laws," in:
-		Advanced Numerical Approximation of Nonlinear Hyperbolic Equations,
-		Springer-Verlag, Berlin/New York, 1998, pp. 325-432.
+	Initial conditions of the wildfire 
 
 	Attributes:
 	-----------
@@ -255,7 +252,7 @@ class WildfireBurn(FcnBase):
 	vs: float
 		vortex strength
 	'''
-	def __init__(self, rho_woodi=1., rho_wateri=1000., Tsi=298):
+	def __init__(self, rho_woodi=1., rho_wateri=1000., Tsi=298.):
 		'''
 		This method initializes the attributes.
 
@@ -887,6 +884,16 @@ class PressureOutlet(BCWeakPrescribed):
 
 		return UqB
 
+class ConstantTemp(BCWeakPrescribed):
+	def __init__(self, Tsu=1.):
+		self.Tsu = Tsu; 
+	def get_boundary_state(self,physics,UqI,normals,x,t):
+		UqB = UqI.copy() # get the interior state 
+
+		UqB[:,:,Ts] = self.Tsu # set temperature of the boundary to the user specified value. (~400 K)
+
+		return UqB 
+
 
 '''
 ---------------------
@@ -899,12 +906,13 @@ correspond to the SourceType enum members above.
 '''
 
 class WildfireSource(SourceBase): 
-		'''
+	'''
 	Source term for the Wildfire model (see above). Reference:
 		[1] Linn, R., Reisner, J., Colman, J. J., & Winterkamp, J. (2002). 
 		Studying wildfire behavior using FIRETEC. International journal of 
 		wildland fire, 11(4), 233-246.
 	'''
+	
 	def get_source(self, physics, Uq, x, t):
 		Cpwood = physics.Cpwood
 		Nwood = physics.Nwood
