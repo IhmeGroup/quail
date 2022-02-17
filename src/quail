@@ -98,8 +98,10 @@ def set_physics(mesh, physics_type):
 		physics_class = navierstokes.NavierStokes1D
 	elif PhysicsType[physics_type] == PhysicsType.NavierStokes and ndims == 2:
 		physics_class = navierstokes.NavierStokes2D
-	elif PhysicsType[physics_type] == PhysicsType.Chemistry and ndims ==1:
+	elif PhysicsType[physics_type] == PhysicsType.Chemistry and ndims == 1:
 		physics_class = chemistry.Chemistry1D
+	elif PhysicsType[physics_type] == PhysicsType.Wildfire and ndims == 2:
+		physics_class = wildfire.Wildfire2D
 	else:
 	    raise NotImplementedError
 
