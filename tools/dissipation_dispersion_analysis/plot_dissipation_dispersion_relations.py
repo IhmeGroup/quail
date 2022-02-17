@@ -39,6 +39,8 @@ import physics.scalar.scalar as scalar
 import processing.plot as plot
 import solver.DG as DG
 
+import solver.ADERDG as ADERDG
+
 
 def get_physical_modes(mesh, params, order, nL):
 	'''
@@ -60,7 +62,7 @@ def get_physical_modes(mesh, params, order, nL):
 	'''
 	# Set physics
 	params["SolutionOrder"] = order 
-	physics = scalar.ConstAdvScalar1D(mesh)
+	physics = scalar.ConstAdvScalar1D()
 	physics.set_IC(IC_type="Sine")
 	physics.set_conv_num_flux(conv_num_flux_type="LaxFriedrichs")
 		# This won't affect results; just to avoid error
@@ -212,6 +214,8 @@ plt.plot(np.array([Lplot[0], Lplot[-1]])/np.pi, np.array([0., 0.]),
 plt.xlabel("$\\Lambda/\\pi$")
 plt.ylabel("$\\Omega_i/N_p$")
 plt.legend(loc="best")
+breakpoint()
+
 plot.save_figure(file_name='Dissipation', file_type='pdf', crop_level=2)
 
 plt.show()
