@@ -235,107 +235,107 @@ class MovingShock(FcnBase):
 		return Uq # [ne, nq, ns]
 
 # class WildfireBurn(FcnBase):
-	'''
-	Isentropic vortex problem from the following reference:
-		[1] C.-W. Shu, "Essentially non-oscillatory and weighted essentially
-		non-oscillatory schemes for hyperbolic conservation laws," in:
-		Advanced Numerical Approximation of Nonlinear Hyperbolic Equations,
-		Springer-Verlag, Berlin/New York, 1998, pp. 325-432.
+	# '''
+	# Isentropic vortex problem from the following reference:
+	# 	[1] C.-W. Shu, "Essentially non-oscillatory and weighted essentially
+	# 	non-oscillatory schemes for hyperbolic conservation laws," in:
+	# 	Advanced Numerical Approximation of Nonlinear Hyperbolic Equations,
+	# 	Springer-Verlag, Berlin/New York, 1998, pp. 325-432.
 
-	Attributes:
-	-----------
-	rhob: float
-		base density
-	ub: float
-		base x-velocity
-	vb: float
-		base y-velocity
-	pb: float
-		base pressure
-	vs: float
-		vortex strength
-	'''
-	def __init__(self, rho_woodi=1., rho_wateri=1000., Tsi=298):
-		'''
-		This method initializes the attributes.
+	# Attributes:
+	# -----------
+	# rhob: float
+	# 	base density
+	# ub: float
+	# 	base x-velocity
+	# vb: float
+	# 	base y-velocity
+	# pb: float
+	# 	base pressure
+	# vs: float
+	# 	vortex strength
+	# '''
+	# def __init__(self, rho_woodi=1., rho_wateri=1000., Tsi=298):
+	# 	'''
+	# 	This method initializes the attributes.
 
-		Inputs:
-		-------
-			rho_woodi: initial density of the fuel [kg/m^3]
-			rho_wateri: initial density of the water [kg/m^3]
-			Tsi: initial temperature of the fuel (K)
+	# 	Inputs:
+	# 	-------
+	# 		rho_woodi: initial density of the fuel [kg/m^3]
+	# 		rho_wateri: initial density of the water [kg/m^3]
+	# 		Tsi: initial temperature of the fuel (K)
 
-		Outputs:
-		--------
-		    self: attributes initialized
-		'''
-		self.rho_woodi = rho_woodi
-		self.rho_wateri = rho_wateri
-		self.Tsi = Tsi
+	# 	Outputs:
+	# 	--------
+	# 	    self: attributes initialized
+	# 	'''
+	# 	self.rho_woodi = rho_woodi
+	# 	self.rho_wateri = rho_wateri
+	# 	self.Tsi = Tsi
 
-	def get_state(self, physics, x, t):
-		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
-		Nwood = physics.Nwood
-		Cpwood = physics.Cpwood
+	# def get_state(self, physics, x, t):
+	# 	Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+	# 	Nwood = physics.Nwood
+	# 	Cpwood = physics.Cpwood
 
-		''' Base flow '''
-		rho_woodi = self.rho_woodi
-		rho_wateri = self.rho_wateri
-		Tsi = self.Tsi 
+	# 	''' Base flow '''
+	# 	rho_woodi = self.rho_woodi
+	# 	rho_wateri = self.rho_wateri
+	# 	Tsi = self.Tsi 
 
-		# # Density
-		# rhob = self.rhob
-		# # x-velocity
-		# ub = self.ub
-		# # y-velocity
-		# vb = self.vb
-		# # Pressure
-		# pb = self.pb
-		# # Vortex strength
-		# vs = self.vs
-		# # Make sure Rg is 1
-		# if Rg != 1.:
-		# 	raise ValueError
+	# 	# # Density
+	# 	# rhob = self.rhob
+	# 	# # x-velocity
+	# 	# ub = self.ub
+	# 	# # y-velocity
+	# 	# vb = self.vb
+	# 	# # Pressure
+	# 	# pb = self.pb
+	# 	# # Vortex strength
+	# 	# vs = self.vs
+	# 	# # Make sure Rg is 1
+	# 	# if Rg != 1.:
+	# 	# 	raise ValueError
 
-		# # Base temperature
-		# Tb = pb/(rhob*Rg)
+	# 	# # Base temperature
+	# 	# Tb = pb/(rhob*Rg)
 
-		# # Entropy
-		# s = pb/rhob**gamma
+	# 	# # Entropy
+	# 	# s = pb/rhob**gamma
 
-		# # Track center of vortex
-		# xr = x[:, :, 0] - ub*t
-		# yr = x[:, :, 1] - vb*t
-		# r = np.sqrt(xr**2. + yr**2.)
+	# 	# # Track center of vortex
+	# 	# xr = x[:, :, 0] - ub*t
+	# 	# yr = x[:, :, 1] - vb*t
+	# 	# r = np.sqrt(xr**2. + yr**2.)
 
-		# # Perturbations
-		# dU = vs/(2.*np.pi)*np.exp(0.5*(1-r**2.))
-		# du = dU*-yr
-		# dv = dU*xr
+	# 	# # Perturbations
+	# 	# dU = vs/(2.*np.pi)*np.exp(0.5*(1-r**2.))
+	# 	# du = dU*-yr
+	# 	# dv = dU*xr
 
-		# dT = -(gamma - 1.)*vs**2./(8.*gamma*np.pi**2.)*np.exp(1. - r**2.)
+	# 	# dT = -(gamma - 1.)*vs**2./(8.*gamma*np.pi**2.)*np.exp(1. - r**2.)
 
-		# u = ub + du
-		# v = vb + dv
-		# T = Tb + dT
+	# 	# u = ub + du
+	# 	# v = vb + dv
+	# 	# T = Tb + dT
 
-		# # Convert to conservative variables
-		# rho = np.power(T/s, 1./(gamma - 1.))
-		# rhou = rho*u
-		# rhov = rho*v
-		# rhoE = rho*Rg/(gamma - 1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
+	# 	# # Convert to conservative variables
+	# 	# rho = np.power(T/s, 1./(gamma - 1.))
+	# 	# rhou = rho*u
+	# 	# rhov = rho*v
+	# 	# rhoE = rho*Rg/(gamma - 1.)*T + 0.5*(rhou*rhou + rhov*rhov)/rho
 
-		# Uq[:, :, 0] = rho
-		# Uq[:, :, 1] = rhou
-		# Uq[:, :, 2] = rhov
-		# Uq[:, :, 3] = rhoE
+	# 	# Uq[:, :, 0] = rho
+	# 	# Uq[:, :, 1] = rhou
+	# 	# Uq[:, :, 2] = rhov
+	# 	# Uq[:, :, 3] = rhoE
 
-		Uq[:, :, 0] = rho_woodi
-		Uq[:, :, 1] = rho_wateri
-		Uq[:, :, 2] = Tsi 
-		# Uq[:, :, 3] = rhoE
+	# 	Uq[:, :, 0] = rho_woodi
+	# 	Uq[:, :, 1] = rho_wateri
+	# 	Uq[:, :, 2] = Tsi 
+	# 	# Uq[:, :, 3] = rhoE
 
-		return Uq # [ne, nq, ns]
+	# 	return Uq # [ne, nq, ns]
 
 class IsentropicVortex(FcnBase):
 	'''
@@ -898,33 +898,33 @@ corresponding child classes can be found below. These classes should
 correspond to the SourceType enum members above.
 '''
 
-# class WildfireSource(SourceBase): 
-		'''
-	Source term for the Wildfire model (see above). Reference:
-		[1] Linn, R., Reisner, J., Colman, J. J., & Winterkamp, J. (2002). 
-		Studying wildfire behavior using FIRETEC. International journal of 
-		wildland fire, 11(4), 233-246.
-	'''
-	def get_source(self, physics, Uq, x, t):
-		Cpwood = physics.Cpwood
-		Nwood = physics.Nwood
-		Fwood = physics.Fwood 
-		Fwater = physics.Fwater 
-		Z = physics.Z
+# # class WildfireSource(SourceBase): 
+# 	'''
+# 	Source term for the Wildfire model (see above). Reference:
+# 		[1] Linn, R., Reisner, J., Colman, J. J., & Winterkamp, J. (2002). 
+# 		Studying wildfire behavior using FIRETEC. International journal of 
+# 		wildland fire, 11(4), 233-246.
+# 	'''
+# 	def get_source(self, physics, Uq, x, t):
+# 		Cpwood = physics.Cpwood
+# 		Nwood = physics.Nwood
+# 		Fwood = physics.Fwood 
+# 		Fwater = physics.Fwater 
+# 		Z = physics.Z
 
-		irhowood, irhowater, iTs = physics.get_state_indices()
+# 		irhowood, irhowater, iTs = physics.get_state_indices()
 
-		S = np.zeros_like(Uq)
+# 		S = np.zeros_like(Uq)
 
-		S[irhowood,:,:] = -Nwood*Fwood 
-		S[:,irhowater,:] = -Fwater
-		S[:,:,iTs] = Z 
+# 		S[irhowood,:,:] = -Nwood*Fwood 
+# 		S[:,irhowater,:] = -Fwater
+# 		S[:,:,iTs] = Z 
 		
-		# S[:, :, iTs] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, :, 0])*
-		# 		np.cos(np.pi*x[:, :, 1]) - np.cos(np.pi*x[:, :, 0])*np.cos(3.*
-		# 		np.pi*x[:, :, 1]))
+# 		# S[:, :, iTs] = np.pi/(4.*(gamma - 1.))*(np.cos(3.*np.pi*x[:, :, 0])*
+# 		# 		np.cos(np.pi*x[:, :, 1]) - np.cos(np.pi*x[:, :, 0])*np.cos(3.*
+# 		# 		np.pi*x[:, :, 1]))
 
-		return S
+# 		return S
 
 class StiffFriction(SourceBase):
 	'''

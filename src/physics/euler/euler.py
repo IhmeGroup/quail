@@ -34,8 +34,7 @@ from physics.base.functions import FcnType as base_fcn_type
 
 import physics.euler.functions as euler_fcns
 from physics.euler.functions import BCType as euler_BC_type
-from physics.euler.functions import ConvNumFluxType as \
-		euler_conv_num_flux_type
+from physics.euler.functions import ConvNumFluxType as euler_conv_num_flux_type
 from physics.euler.functions import FcnType as euler_fcn_type
 from physics.euler.functions import SourceType as euler_source_type
 
