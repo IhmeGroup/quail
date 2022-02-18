@@ -172,7 +172,7 @@ class WildfireSource(SourceBase):
 		Cpwood = physics.Cpwood
 		Nwood = physics.Nwood
 		Fwood = physics.Fwood 
-		Fwater = physics.Fwater 
+		Fwater = physics.Fwater
 		Z = physics.Z
 
 		irhowood, irhowater, iTs = physics.get_state_indices()
