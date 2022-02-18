@@ -38,6 +38,13 @@ from physics.euler.functions import ConvNumFluxType as \
 from physics.euler.functions import FcnType as euler_fcn_type
 from physics.euler.functions import SourceType as euler_source_type
 
+import physics.wildfire.functions as wildfire_fcns
+# from physics.wildfire.functions import BCType as wildfire_BC_type
+# from physics.wildfire.functions import ConvNumFluxType as \
+# 		wildfire_conv_num_flux_type
+from physics.wildfire.functions import FcnType as wildfire_fcn_type
+from physics.wildfire.functions import SourceType as wildfire_source_type
+
 
 class Wildfire(base.PhysicsBase):
 	'''
@@ -75,7 +82,7 @@ class Wildfire(base.PhysicsBase):
 			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
 
-	def set_physical_params(self, WoodMolarCoefficient=0.4552., SpecificHeat=1760., Fwood=1. ,Fwater=1., Z=0.5.):
+	def set_physical_params(self, WoodMolarCoefficient=0.4552, SpecificHeat=1760., Fwood=1., Fwater=1., Z=0.5):
 		'''
 		This method sets physical parameters.
 
@@ -95,20 +102,16 @@ class Wildfire(base.PhysicsBase):
 		self.Z = Z 
 
 	# class AdditionalVariables(Enum):
-		Pressure = "p"
-		Temperature = "T"
-		Entropy = "s"
-		InternalEnergy = "\\rho e"
-		TotalEnthalpy = "H"
-		SoundSpeed = "c"
-		MaxWaveSpeed = "\\lambda"
-		Velocity = "|u|"
-		XVelocity = "u"
-		YVelocity = "v"
-
-	    Wood Density = "\\rho wood"
-		Water Density = "\\rho water"
-		Temperature = "\\T s"
+		# Pressure = "p"
+		# Temperature = "T"
+		# Entropy = "s"
+		# InternalEnergy = "\\rho e"
+		# TotalEnthalpy = "H"
+		# SoundSpeed = "c"
+		# MaxWaveSpeed = "\\lambda"
+		# Velocity = "|u|"
+		# XVelocity = "u"
+		# YVelocity = "v"
 
 	# def compute_additional_variable(self, var_name, Uq, flag_non_physical):
 		# ''' Extract state variables ''' 
@@ -220,48 +223,43 @@ class Wildfire2D(Wildfire):
 		super().set_maps()
 
 		d = {
-			euler_fcn_type.SmoothIsentropicFlow :
-					euler_fcns.SmoothIsentropicFlow,
-			euler_fcn_type.MovingShock : euler_fcns.MovingShock,
-			euler_fcn_type.DensityWave : euler_fcns.DensityWave,
-			euler_fcn_type.RiemannProblem : euler_fcns.RiemannProblem,
-			euler_fcn_type.ShuOsherProblem :
-					euler_fcns.ShuOsherProblem,
+			wildfire_fcn_type.WildfireBurn :
+					wildfire_fcns.WildfireBurn,
 		}
 
 		self.IC_fcn_map.update(d)
 		self.exact_fcn_map.update(d)
 		self.BC_fcn_map.update(d)
 
-		self.BC_map.update({
-			wildfire_BC_type.ConstantTemp : wildfire_fcns.ConstantTemp, 
-		}) # tells solver which maps can be used by a given physics class 
+		# self.BC_map.update({
+		# 	wildfire_BC_type.ConstantTemp : wildfire_fcns.ConstantTemp, 
+		# }) # tells solver which maps can be used by a given physics class 
 
 		self.source_map.update({
-			euler_source_type.StiffFriction : euler_fcns.StiffFriction,
+			wildfire_source_type.WildfireSource : wildfire_fcns.WildfireSource,
 		})
 
 		self.conv_num_flux_map.update({
 			base_conv_num_flux_type.LaxFriedrichs :
-					euler_fcns.LaxFriedrichs1D,
-			euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
+					base_fcns.LaxFriedrichs,
+			# euler_conv_num_flux_type.Roe : euler_fcns.Roe1D,
 		})
 
 	class StateVariables(Enum):
-		Wood Density = "\\rho wood"
-		Water Density = "\\rho water"
+		WoodDensity = "\\rho wood"
+		WaterDensity = "\\rho water"
 		Temperature = "\\T s"
 
 	def get_state_indices(self):
-		irhowood = self.get_state_index("Wood Density")
-		irhowater = self.get_state_index("Water Density")
+		irhowood = self.get_state_index("WoodDensity")
+		irhowater = self.get_state_index("WaterDensity")
 		iTs = self.get_state_index("Temperature")
 
 		return irhowood, irhowater, iTs
 
 	def get_state_slices(self):
-		srhowood = self.get_state_slice("Wood Density")
-		srhowater = self.get_state_slice("Water Density")
+		srhowood = self.get_state_slice("WoodDensity")
+		srhowater = self.get_state_slice("WaterDensity")
 		sTs = self.get_state_slice("Temperature")
 
 		return srhowood, srhowater, sTs
@@ -297,7 +295,7 @@ class Wildfire2D(Wildfire):
 		# F[:, :, irhoE, 0] = H * u        # Flux of energy
 
 		# return F, (u2, rho, p)
-		return F
+		return F, None
 
 	# def get_conv_eigenvectors(self, U_bar):
 		# '''

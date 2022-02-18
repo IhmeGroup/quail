@@ -6,26 +6,27 @@ TimeStepping = {
 
 Numerics = {
 	"SolutionOrder" : 2,
-	"SolutionBasis" : "LagrangeTri",
-	"ElementQuadrature" : "Dunavant",
-	"FaceQuadrature" : "GaussLegendre",
+	"SolutionBasis" : "LagrangeQuad",
+	"ConvFluxSwitch" : False,
 }
 
+nelem = 2; 
+
 Mesh = {
-	"ElementShape" : "Triangle",
-	"NumElemsX" : 5,
-	"NumElemsY" : 5,
-	"xmin" : -5.,
-	"xmax" : 5.,
-	"ymin" : -5.,
-	"ymax" : 5.,
-	# "PeriodicBoundariesX" : ["x2", "x1"],
+	"ElementShape" : "Quadrilateral",
+	"NumElemsX" : nelem,
+	"NumElemsY" : nelem,
+	"xmin" : -1.,
+	"xmax" : 1.,
+	"ymin" : -1.,
+	"ymax" : 1.,
+	"PeriodicBoundariesX" : ["x2", "x1"],
+	"PeriodicBoundariesY" : ["y2", "y1"], 
 }
 
 Physics = {
 	"Type" : "Wildfire",
 	"ConvFluxNumerical" : "LaxFriedrichs",
-	# "GasConstant" : 1.,
 }
 
 InitialCondition = {
@@ -39,32 +40,19 @@ InitialCondition = {
 # 		"Function" : "IsentropicVortex",
 # }
 
-BoundaryConditions = {
-	"y1" : d,
-	"y2" : d,
-}
+# BoundaryConditions = {
+# 	"y1" : d,
+# 	"y2" : d,
+# }
 
 SourceTerms = {
-	"Wood Density Source" : {
-		"Function" : "WildfireSource", 
-		"Nwood" : 1., 
-		"Fwood" : 1.,  
+	"Wildfire Source Terms" : {
+		"Function" : "WildfireSource",  
 	},
 
-	"Water Density Source" : {
-		"Function" : "WildfireSource", 
-		"Fwater" : 1., 
-		
-	},
-
-	"Temperature Source" : {
-		"Function" : "WildfireSource",
-		"Z" : 1., 
-		
-	},
 }
 
 Output = {
-	"AutoPostProcess" : True,
+	"AutoPostProcess" : False,
 	"Verbose" : True,
 }
