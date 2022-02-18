@@ -42,6 +42,7 @@ import physics.euler.euler as euler
 import physics.navierstokes.navierstokes as navierstokes
 import physics.scalar.scalar as scalar
 import physics.chemistry.chemistry as chemistry
+import physics.wildfire.wildfire as wildfire 
 
 import physics.navierstokes.tools as ns_tools
 
