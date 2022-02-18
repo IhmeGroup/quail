@@ -39,9 +39,6 @@ import physics.scalar.scalar as scalar
 import processing.plot as plot
 import solver.DG as DG
 
-import solver.ADERDG as ADERDG
-
-
 def get_physical_modes(mesh, params, order, nL):
 	'''
 	This function computes the eigenvalues of the physical modes
@@ -214,7 +211,6 @@ plt.plot(np.array([Lplot[0], Lplot[-1]])/np.pi, np.array([0., 0.]),
 plt.xlabel("$\\Lambda/\\pi$")
 plt.ylabel("$\\Omega_i/N_p$")
 plt.legend(loc="best")
-breakpoint()
 
 plot.save_figure(file_name='Dissipation', file_type='pdf', crop_level=2)
 
