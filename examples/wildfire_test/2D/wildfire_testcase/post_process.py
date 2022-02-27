@@ -5,15 +5,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read data file
-fname = "state_variables_time_hist.txt"
+fname = "state_variables_time_hist_TsSource.txt"
 file = open(fname)
-time = np.zeros((22,1))
-rho_wood = np.zeros((22,1))
-rho_water = np.zeros((22,1))
-Ts = np.zeros((22,1))
+time = np.zeros((201,1))
+rho_wood = np.zeros((201,1))
+rho_water = np.zeros((201,1))
+Ts = np.zeros((201,1))
 i = 0
 for line in file:
-	if i < 22: 
+	if i < 201: 
 		UqData = line.strip().split()
 		time[i,:] = UqData[0]
 		rho_wood[i,:] = UqData[2]
@@ -28,8 +28,8 @@ for line in file:
 # Density of Wood Plot
 plt.figure(0)
 plt.plot(time,rho_wood,label=r'$\rho_{wood}$',color='black')
-plt.xlabel('t [s]',fontsize=12)
-plt.ylabel('Density [kg/m^3]',fontsize=12)
+plt.xlabel(r'$t\:[s]$',fontsize=12)
+plt.ylabel(r'$\rho\:[kg/m^3]$',fontsize=12)
 # plt.xlim([0,200])
 plt.legend(fontsize=10)
 
@@ -37,19 +37,18 @@ plt.legend(fontsize=10)
 # Density of Water Plot
 plt.figure(1)
 plt.plot(time[1:],rho_water[1:],label=r'$\rho_{water}$',color='darkblue')
-plt.xlabel('t [s]',fontsize=12)
-plt.ylabel('Density [kg/m^3]',fontsize=12)
+plt.xlabel(r'$t\:[s]$',fontsize=12)
+plt.ylabel(r'$\rho\:[kg/m^3]$',fontsize=12)
 # plt.xlim([0,200])
 plt.legend(fontsize=10)
 
 # Temperature 
 plt.figure(2)
 plt.plot(time[1:],Ts[1:],label=r'$T_s$',color='darkorange')
-plt.xlabel('t [s]',fontsize=12)
-plt.ylabel('Temperature [K]',fontsize=12)
+plt.xlabel(r'$t\:[s]$',fontsize=12)
+plt.ylabel(r'$T\:[K]$',fontsize=12)
 # plt.xlim([0,200])
 plt.legend(fontsize=10)
-
 
 plot.show_plot(0)
 plot.show_plot(1)

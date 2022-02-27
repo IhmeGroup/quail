@@ -18,7 +18,7 @@ def custom_user_function(solver):
 		Uc = solver.state_coeffs
 		basis_val = solver.elem_helpers.basis_val
 		Uq = helpers.evaluate_state(Uc, basis_val)
-		time_hist = open('state_variables_time_hist.txt', 'a') # Opens a file for appending, creates the file if it does not exist
+		time_hist = open('state_variables_time_hist_TsSource.txt', 'a') # Opens a file for appending, creates the file if it does not exist
 		
 		# Convert applicable variables to strings
 		s = str(solver.time)
