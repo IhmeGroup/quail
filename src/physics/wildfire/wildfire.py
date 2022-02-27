@@ -48,11 +48,13 @@ from physics.wildfire.functions import SourceType as wildfire_source_type
 
 class Wildfire(base.PhysicsBase):
 	'''
-	This class corresponds to the compressible Euler equations for a
-	calorically perfect gas. It inherits attributes and methods from the
+	This class corresponds to a simple wildfire model based on [1] Linn, R., 
+	Reisner, J., Colman, J. J., & Winterkamp, J. (2002). Studying wildfire 
+	behavior using FIRETEC. International journal of wildland fire, 11(4), 233-246.
+	It inherits attributes and methods from the
 	PhysicsBase class. See PhysicsBase for detailed comments of attributes
 	and methods. This class should not be instantiated directly. Instead,
-	the 1D and 2D variants, which inherit from this class (see below),
+	the 2D variant, which inherit from this class (see below),
 	should be instantiated.
 
 	Additional methods and attributes are commented below.
@@ -88,8 +90,12 @@ class Wildfire(base.PhysicsBase):
 
 		Inputs:
 		-------
-			GasConstant: mass-specific gas constant
-			SpecificHeatRatio: ratio of specific heats
+			WoodMolarCoefficient: Stoichiometric number of moles in the combustion of biomass [1]
+			SpecificHeat: Constant pressure specific heat capacity of wood [J/kgK]
+			Fwood: Rate of consumption of wood within a given volume [kg/sm^3]
+			Fwater: " " water " "
+			Z: Normalized source term of Equation 5 in [1]. This parameter governs 
+			   the rate of temperature increase. More refinement of this parameter is necessary 
 
 		Outputs:
 		--------
@@ -216,7 +222,7 @@ class Wildfire2D(Wildfire):
 
 	Additional methods and attributes are commented below.
 	'''
-	NUM_STATE_VARS = 3
+	NUM_STATE_VARS = 3 # 3 for the simple ODe model, more for when transport equations are included 
 	NDIMS = 2
 
 	def set_maps(self):
@@ -271,6 +277,7 @@ class Wildfire2D(Wildfire):
 		# return smom
 
 	def get_conv_flux_interior(self, Uq):
+		# Uncomment lines below this message for non zero flux terms 
 		# # Get indices of state variables
 		# irho, irhou, irhoE = self.get_state_indices()
 

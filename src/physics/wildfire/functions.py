@@ -82,18 +82,14 @@ class WildfireBurn(FcnBase):
 
 	Attributes:
 	-----------
-	rhob: float
-		base density
-	ub: float
-		base x-velocity
-	vb: float
-		base y-velocity
-	pb: float
-		base pressure
-	vs: float
-		vortex strength
+	rho_woodi: float
+		base density of wood
+	rho_wateri: float
+		base water density
+	Tsi: float
+		base temperature of the fuel 
 	'''
-	def __init__(self, rho_woodi=1., rho_wateri=1000., Tsi=298.):
+	def __init__(self, rho_woodi=10., rho_wateri=1000., Tsi=298.):
 		'''
 		This method initializes the attributes.
 
@@ -176,12 +172,13 @@ class WildfireSource(SourceBase):
 		Z = physics.Z
 
 		irhowood, irhowater, iTs = physics.get_state_indices()
+		srhowood, srhowater, sTs = physics.get_state_slices()
 
 		S = np.zeros_like(Uq)
 
 		S[irhowood,:,:] = -Nwood*Fwood 
 		S[:,irhowater,:] = -Fwater
-		S[:,:,iTs] = Z 
+		S[:,:,iTs] = Z+iTs
 
 		return S
 
