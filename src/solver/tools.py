@@ -188,11 +188,11 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 	Uq = helpers.evaluate_state(Uc, basis_val)
 	# Evaluate solution gradient at quadrature points
 	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
-	# Compute pressure
-	pressure = physics.compute_additional_variable("Pressure", Uq,
-			flag_non_physical=False, x=None)[:, :, 0]
 	# For Euler equations, use pressure as the smoothness variable
 	if physics.PHYSICS_TYPE == general.PhysicsType.Euler:
+		# Compute pressure
+		pressure = physics.compute_additional_variable("Pressure", Uq,
+			flag_non_physical=False, x=None)[:, :, 0]
 		# Compute pressure gradient
 		grad_p = physics.compute_pressure_gradient(Uq, grad_Uq)
 		# Compute its magnitude

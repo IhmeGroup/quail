@@ -88,7 +88,7 @@ class BCBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
+	def get_boundary_flux(self, physics, UqI, normals, x, t):
 		'''
 		This method computes the flux at a boundary face.
 
@@ -120,8 +120,7 @@ class BCWeakRiemann(BCBase):
 	'''
 	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
-		F = physics.get_conv_flux_numerical(UqI, UqB, normals, x)
-
+		F = physics.get_conv_flux_numerical(UqI, UqB, normals, x, t)
 		# Compute diffusive boundary fluxes if needed
 		if physics.diff_flux_fcn:
 			Fv, FvB = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
@@ -143,7 +142,7 @@ class BCWeakPrescribed(BCBase):
 	'''
 	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
-		F,_ = physics.get_conv_flux_projected(UqB, normals, x)
+		F,_ = physics.get_conv_flux_projected(UqB, normals, x, t)
 		
 		# Compute diffusive boundary fluxes if needed
 		if physics.diff_flux_fcn:
@@ -263,7 +262,7 @@ class ConvNumFluxBase(ABC):
 		self.__init__(Uq)
 
 	@abstractmethod
-	def compute_flux(self, physics, UqL, UqR, normals, x=None):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
 		'''
 		This method computes the numerical flux.
 
@@ -330,7 +329,7 @@ class DiffNumFluxBase(ABC):
 		self.__init__(Uq)
 
 	@abstractmethod
-	def compute_flux(self, physics, UqL, UqR, normals, x=None):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
 		'''
 		This method computes the numerical flux.
 

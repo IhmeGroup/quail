@@ -102,7 +102,7 @@ def get_sutherland_transport(physics, Uq, flag_non_physical=None):
 	beta = physics.beta
 
 	T = physics.compute_variable("Temperature",
-			Uq, flag_non_physical=flag_non_physical, x=None)
+			Uq, flag_non_physical=flag_non_physical, x=None, t=None)
 
 	mu0 = 0.1; s = 1.; T0 = 1.; beta = 1.5;
 	cv = 1./(gamma - 1) * R

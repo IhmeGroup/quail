@@ -42,7 +42,7 @@ def test_diffusion_flux_2D():
 	nu = mu / rho
 
 	# Get temperature
-	T = physics.compute_variable("Temperature", Uq, x=None,
+	T = physics.compute_variable("Temperature", Uq, x=None, t=None,
 		flag_non_physical=True)[0, 0, 0]
 
 	np.random.seed(10)
@@ -125,7 +125,7 @@ def test_diffusion_flux_2D_zero_velocity():
 	nu = mu / rho
 
 	# Get temperature
-	T = physics.compute_variable("Temperature", Uq, x=None,
+	T = physics.compute_variable("Temperature", Uq, x=None, t=None,
 		flag_non_physical=True)[0, 0, 0]
 
 	np.random.seed(10)

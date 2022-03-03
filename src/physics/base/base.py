@@ -517,7 +517,7 @@ class PhysicsBase(ABC):
 		return 2*order+1
 
 	@abstractmethod
-	def get_conv_flux_interior(self, Uq, x):
+	def get_conv_flux_interior(self, Uq, x, t):
 		'''
 		This method computes the convective analytical flux for element
 		interiors.
@@ -553,7 +553,7 @@ class PhysicsBase(ABC):
 		'''
 		pass
 
-	def get_conv_flux_projected(self, Uq, normals, x):
+	def get_conv_flux_projected(self, Uq, normals, x, t):
 		'''
 		This method computes the convective analytical flux projected in a
 		given direction.
@@ -569,7 +569,7 @@ class PhysicsBase(ABC):
 			projected flux values [nf, nq, ns]
 			tuple of extra variables computed by interior flux
 		'''
-		Fq, vars = self.get_conv_flux_interior(Uq, x) # [nf, nq, ns, ndims]
+		Fq, vars = self.get_conv_flux_interior(Uq, x, t) # [nf, nq, ns, ndims]
 		
 		# Check needed for ADER shapes to be consistent. This appears to 
 		# be a minimally invasive approach.
@@ -578,7 +578,7 @@ class PhysicsBase(ABC):
 
 		return np.einsum('ijkl, ijl -> ijk', Fq, normals), vars
 
-	def get_conv_flux_numerical(self, UqL, UqR, normals, x):
+	def get_conv_flux_numerical(self, UqL, UqR, normals, x, t):
 		'''
 		This method computes the convective numerical flux.
 
@@ -594,7 +594,7 @@ class PhysicsBase(ABC):
 		--------
 			Fnum: numerical flux values [nf, nq, ns]
 		'''
-		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals, x)
+		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals, x, t)
 
 		return Fnum
 
@@ -701,7 +701,7 @@ class PhysicsBase(ABC):
 
 		return jac
 
-	def compute_variable(self, var_name, Uq, x, flag_non_physical=False):
+	def compute_variable(self, var_name, Uq, x, t, flag_non_physical=False):
 		'''
 		This method computes a given variable.
 
@@ -725,11 +725,11 @@ class PhysicsBase(ABC):
 		except KeyError:
 			# Now try additional
 			varq = self.compute_additional_variable(var_name, Uq,
-					flag_non_physical, x)
+					flag_non_physical, x, t)
 
 		return varq
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x, t):
 		'''
 		This method computes a variable that is not a state variable.
 

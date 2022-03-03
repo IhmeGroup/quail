@@ -103,7 +103,7 @@ class Euler(base.PhysicsBase):
 		XVelocity = "u"
 		YVelocity = "v"
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None, t=None):
 		''' Extract state variables '''
 		srho = self.get_state_slice("Density")
 		srhoE = self.get_state_slice("Energy")
@@ -263,7 +263,7 @@ class Euler1D(Euler):
 
 		return smom
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 		# Get indices of state variables
 		irho, irhou, irhoE = self.get_state_indices()
 
@@ -427,7 +427,7 @@ class Euler2D(Euler):
 
 		return smom
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 		# Get indices/slices of state variables
 		irho, irhou, irhov, irhoE = self.get_state_indices()
 		smom = self.get_momentum_slice()

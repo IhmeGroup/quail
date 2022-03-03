@@ -862,7 +862,7 @@ class DG(base.SolverBase):
 
 		if fluxes:
 			# Evaluate the inviscid flux integral
-			Fq = physics.get_conv_flux_interior(Uq, x_elems)[0] # [ne, nq, ns, ndims]
+			Fq = physics.get_conv_flux_interior(Uq, x_elems, self.time)[0] # [ne, nq, ns, ndims]
 
 			if physics.diff_flux_fcn:
 				# Evaluate the diffusion flux
@@ -947,7 +947,7 @@ class DG(base.SolverBase):
 
 		if fluxes:
 			# Compute numerical flux
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces, x_faces)
+			Fq = physics.get_conv_flux_numerical(UqL, UqR, normals_int_faces, x_faces, self.time)
 					# [nf, nq, ns]
 
 			# Compute diffusion flux

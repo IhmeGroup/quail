@@ -45,7 +45,8 @@ class FcnType(Enum):
 	DiffGaussian = auto()
 	DiffGaussian2D = auto()
 	Heaviside = auto()
-	Circle = auto()
+	Zalesak = auto()
+	Rider = auto()
 
 
 class BCType(Enum):
@@ -63,6 +64,8 @@ class SourceType(Enum):
 	'''
 	SimpleSource = auto()
 	SharpeningSource = auto()
+	ZalesakSource = auto()
+	RiderSource = auto()
 	
 
 class ConvNumFluxType(Enum):
@@ -386,16 +389,18 @@ class Heaviside(FcnBase):
 
 		return Uq
 		
-class Circle(FcnBase):
+class Zalesak(FcnBase):
 	'''
-	Gaussian profile.
+	Zalesak's disk.
 
 	Attributes:
 	-----------
-	sig: float
-		standard deviation
 	x0: float
 		center
+	radius: float
+		radius
+	thick: float
+		Heaviside thickness
 	'''
 	def __init__(self, x0=0., radius=0., thick=0.):
 		'''
@@ -416,13 +421,129 @@ class Circle(FcnBase):
 
 	def get_state(self, physics, x, t):
 
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		tol =1e-6 #1e-4
+		
 		r = np.linalg.norm(x[:] - self.x0, axis=2,
 				keepdims=True)
 		
-		Uq = 1.0-0.5*(1.0+np.tanh(self.thick*(r-self.radius)))
+		#xabs = (1.0/(20.5*self.thick))*np.log(np.cosh(20.5*self.thick*x[:,:,0]))
+		xabs = np.abs(x[:,:,0])
+
+		Hr = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		Hy = 0.5*(1.0+np.tanh(self.thick*(x[:,:,1]-0.1)))
+		Habsx = 0.5*(1.0+np.tanh(self.thick*(xabs-0.025)))
+
+		#########################
+		# Phase field
+		#########################
+		Uq[:,:,0] = tol + (1.0-2.0*tol)*(1.0-Hr)*(1.0-(1.0-Hy)*(1.0-Habsx))
+
+		#########################
+		# Phase Field's Gradient
+		#########################
+		par = 0.5 # less than 0.5
 		
+		#xabs = (1.0/(par*self.thick))*np.log(np.cosh(par*self.thick*x[:,:,0]))
+		xabs = np.abs(x[:,:,0])
+		
+		Hr    = 0.5*(1.0+np.tanh(par*self.thick*(r[:,:,0]-self.radius)))
+		Hy    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,1]-0.1)))
+		Habsx = 0.5*(1.0+np.tanh(par*self.thick*(xabs-0.025)))
+		
+		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
+		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
+		
+		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
+		dHydy    = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,1]-0.1))**2)
+		dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(2.0*self.thick*x[:,:,0])
+		#dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(par*self.thick*x[:,:,0])
+		
+		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Hy)*dHabsxdx
+		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Habsx)*dHydy
+		
+		return Uq
+		
+	def get_advection(self, physics, x, t):
+	
+		cc = np.zeros(x.shape)
+
+		cc[:,:,0] = -x[:,:,1]/0.2
+		cc[:,:,1] = x[:,:,0]/0.2
+					
+		return cc
+		
+class Rider(FcnBase):
+	'''
+	Rider's disk.
+
+	Attributes:
+	-----------
+	x0: float
+		center
+	radius: float
+		radius
+	thick: float
+		Heaviside thickness
+	'''
+	def __init__(self, x0=0., radius=0., thick=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.x0 = x0
+		self.radius = radius
+		self.thick = thick
+
+	def get_state(self, physics, x, t):
+		
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+	
+		tol = 1e-4
+
+		r = np.linalg.norm(x[:] - self.x0, axis=2,
+				keepdims=True)
+		
+		#########################
+		# Phase field
+		#########################
+		Hr    = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		Uq[:,:,0] = tol + (1.0-2.0*tol)*(1.0-Hr)
+		
+		#########################
+		# Phase field's Gradient
+		#########################
+		par = 0.01 # less than 0.01
+		
+		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
+		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
+		
+		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
+		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx
+		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy
 
 		return Uq
+		
+	def get_advection(self, physics, x, t):
+	
+		cc = np.zeros(x.shape)
+		T = 4.0
+		cc[:,:,0] = -np.sin(np.pi*(x[:,:,0]+0.5))**2* \
+					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
+		cc[:,:,1] = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
+					np.sin(np.pi*(x[:,:,1]+0.5))**2*np.cos(np.pi*t/T)
+
+		return cc
+	
 
 '''
 ---------------------
@@ -466,7 +587,7 @@ class SimpleSource(SourceBase):
 
 	def get_jacobian(self, physics, Uq, x, t):
 		return self.nu
-
+		
 class SharpeningSource(SourceBase):
 	'''
 	Simple source term of the form S = nu*U
@@ -476,7 +597,7 @@ class SharpeningSource(SourceBase):
 	nu: float
 		source term parameter
 	'''
-	def __init__(self, nu=-1, eta=-1, **kwargs):
+	def __init__(self, eta=-1, **kwargs):
 		super().__init__(kwargs)
 		'''
 		This method initializes the attributes.
@@ -494,10 +615,96 @@ class SharpeningSource(SourceBase):
 		self.eta = eta
 
 	def get_source(self, physics, Uq, x, t):
-		nu = self.nu
+		nu  = self.nu
 		eta = self.eta
 		
-		S = nu*Uq + 0.5*eta*Uq*(1.0-Uq)*(Uq-0.5)
+		S = np.zeros(Uq.shape)
+		
+		# Zalesak
+		S[:,:,0] = nu*Uq[:,:,0] + 0.5*eta*Uq[:,:,0]*(1.0-Uq[:,:,0])*(Uq[:,:,0]-0.5)
+		S[:,:,1] = 0.0
+		S[:,:,2] = 0.0
+
+		return S
+
+class ZalesakSource(SourceBase):
+	'''
+	Simple source term of the form S = nu*U
+
+	Attributes:
+	-----------
+	nu: float
+		source term parameter
+	'''
+	def __init__(self, eta=-1, **kwargs):
+		super().__init__(kwargs)
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    nu: source term parameter
+		    eta: second source term parameter
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.eta = eta
+
+	def get_source(self, physics, Uq, x, t):
+		eta = self.eta
+		
+		S = np.zeros(Uq.shape)
+		
+		# Zalesak
+		S[:,:,0] = 0.0
+		S[:,:,1] = -1.0/0.2*Uq[:,:,2]
+		S[:,:,2] = 1.0/0.2*Uq[:,:,1]
+
+		return S
+		
+class RiderSource(SourceBase):
+	'''
+	Simple source term of the form S = nu*U
+
+	Attributes:
+	-----------
+	nu: float
+		source term parameter
+	'''
+	def __init__(self, eta=-1, **kwargs):
+		super().__init__(kwargs)
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    nu: source term parameter
+		    eta: second source term parameter
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.eta = eta
+
+	def get_source(self, physics, Uq, x, t):
+		eta = self.eta
+		
+		S = np.zeros(Uq.shape)
+		
+		T  = 4.0
+		xx = np.pi*(x[:,:,0]+0.5)
+		yy = np.pi*(x[:,:,1]+0.5)
+		tt = np.pi*t/T
+		#Rider-Korthe
+		S[:,:,0] = 0.0
+		S[:,:,1] = 2.0*np.pi*np.sin(xx)*np.cos(xx)*np.sin(2.0*yy)*np.cos(tt)*Uq[:,:,1]-\
+				   2.0*np.pi*np.cos(2.0*xx)*np.sin(yy)**2*np.cos(tt)*Uq[:,:,2]
+					
+		S[:,:,2] = 2.0*np.pi*np.cos(2.0*yy)*np.sin(xx)**2*np.cos(tt)*Uq[:,:,1]-\
+				   2.0*np.pi*np.sin(yy)*np.cos(yy)*np.sin(2.0*xx)*np.cos(tt)*Uq[:,:,2]
 
 		return S
 
@@ -519,7 +726,7 @@ class ExactLinearFlux(ConvNumFluxBase):
 	'''
 	This class corresponds to the exact flux for linear advection.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x=None):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
@@ -529,7 +736,7 @@ class ExactLinearFlux(ConvNumFluxBase):
 		Uq_upwind[iL, :] = UqL[iL, :]
 
 		# Flux
-		Fq,_ = physics.get_conv_flux_projected(Uq_upwind, n_hat, x=None)
+		Fq,_ = physics.get_conv_flux_projected(Uq_upwind, n_hat, x=None, t=None)
 
 		# Put together
 		return n_mag*Fq

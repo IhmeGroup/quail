@@ -86,13 +86,13 @@ class ConstAdvScalar(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 		c = self.c
 		F = np.expand_dims(c*Uq, axis=-1)
 
 		return F, None
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None, t=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
@@ -164,7 +164,8 @@ class ConstAdvScalar2D(ConstAdvScalar):
 
 		d = {
 			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
-			scalar_fcn_type.Circle : scalar_fcns.Circle
+			scalar_fcn_type.Zalesak : scalar_fcns.Zalesak,
+			scalar_fcn_type.Rider : scalar_fcns.Rider
 		}
 
 		self.IC_fcn_map.update(d)
@@ -191,7 +192,7 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		self.c = np.array([ConstXVelocity, ConstYVelocity])
 		self.cspeed = np.linalg.norm(self.c)
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 		c = self.c
 
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -244,7 +245,7 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 		c = self.c
 		F = np.expand_dims(c*Uq, axis=-1)
 
@@ -256,7 +257,7 @@ class ConstAdvDiffScalar(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None, t=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
@@ -333,7 +334,6 @@ class ConstAdvDiffScalar2D(ConstAdvDiffScalar):
 
 		d = {
 			scalar_fcn_type.DiffGaussian2D : scalar_fcns.DiffGaussian2D,
-			scalar_fcn_type.Circle : scalar_fcns.Circle
 		}
 
 		self.IC_fcn_map.update(d)
@@ -365,7 +365,7 @@ class ConstAdvDiffScalar2D(ConstAdvDiffScalar):
 		self.al = np.array([DiffCoefficientX, DiffCoefficientY])
 		self.cspeed = np.linalg.norm(self.c)
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 		c = self.c
 
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -419,13 +419,13 @@ class Burgers1D(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def get_conv_flux_interior(self, Uq, x=None):
+	def get_conv_flux_interior(self, Uq, x=None, t=None):
 
 		F = np.expand_dims(Uq*Uq/2., axis=-1)
 
 		return F, None
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x=None, t=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
@@ -510,7 +510,7 @@ class NonConstAdvScalar(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def get_conv_flux_interior(self, Uq, x):
+	def get_conv_flux_interior(self, Uq, x, t):
 		cc = 1.0 + x
 		#cc = self.Linear(x)
 		FF = cc*Uq
@@ -532,7 +532,8 @@ class NonConstAdvScalar(base.PhysicsBase):
 		
 class NonConstAdvDiffScalar(base.PhysicsBase):
 	'''
-	This class corresponds to scalar advection with a non-constant velocity.
+	This class corresponds to scalar advection/diffusion with a
+	non-constant velocity.
 	It inherits attributes and methods from the PhysicsBase class. See
 	PhysicsBase for detailed comments of attributes and methods. This
 	class should not be instantiated directly. Instead, the 1D and 2D
@@ -547,6 +548,8 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 		advection velocity
 	cspeed: float
 		advection speed
+	al: float
+		diffusion coefficient
 	'''
 	NUM_STATE_VARS = 1
 	NDIMS = 1
@@ -576,7 +579,6 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 		
 		self.source_map.update({
 			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
-			scalar_source_type.SharpeningSource : scalar_fcns.SharpeningSource,
 		})
 		
 		self.conv_num_flux_map.update({
@@ -597,6 +599,7 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 		Inputs:
 		-------
 			ConstVelocity: constant advection velocity
+			DiffCoefficient: constant diffusion coefficient
 
 		Outputs:
 		--------
@@ -612,9 +615,8 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 	class AdditionalVariables(Enum):
 	    MaxWaveSpeed = "\\lambda"
 
-	def get_conv_flux_interior(self, Uq, x):
+	def get_conv_flux_interior(self, Uq, x, t=None):
 		cc = 1.0 + x
-		#cc = self.Linear(x)
 		FF = cc*Uq
 		F = np.expand_dims(FF, axis=-1)
 
@@ -626,13 +628,151 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 
 		return F
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x):
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x, t=None):
 		sname = self.AdditionalVariables[var_name].name
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
-			scalar = np.abs(1.0 + x)
+			adv = (1.0 + x)
+			scalar = np.abs(adv + 0.0*(1.0-2.0*Uq)) + 1e-15
 		else:
 			raise NotImplementedError
 
 		return scalar
+
+class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
+	'''
+	This class corresponds to 2D scalar /diffusion with a constant
+	velocity and diffusion coefficient.
+
+	It inherits attributes and methods from the ConstAdvDiffScalar
+	class. See ConstAdvDiffScalar for detailed comments of attributes
+	and methods.
+
+	Additional methods and attributes are commented below.
+	'''
+	NUM_STATE_VARS = 3
+	NDIMS = 2
+	PHYSICS_TYPE = general.PhysicsType.NonConstAdvScalar
+
+	def __init__(self):
+		super().__init__()
+		self.c = np.zeros(2)
+		self.cspeed = 0.
+		self.al = np.zeros(2)
+
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			scalar_fcn_type.DiffGaussian2D : scalar_fcns.DiffGaussian2D,
+			scalar_fcn_type.Zalesak : scalar_fcns.Zalesak,
+			scalar_fcn_type.Rider : scalar_fcns.Rider,
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+		
+		self.source_map.update({
+			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+			scalar_source_type.SharpeningSource : scalar_fcns.SharpeningSource,
+			scalar_source_type.ZalesakSource : scalar_fcns.ZalesakSource,
+			scalar_source_type.RiderSource : scalar_fcns.RiderSource,
+		})
+
+
+	def set_physical_params(self, ConstXVelocity=1., ConstYVelocity=1.,
+			DiffCoefficientX=1., DiffCoefficientY=1.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+			ConstXVelocity: constant advection velocity in the x-direction
+			ConstYVelocity: constant advection velocity in the y-direction
+			DiffCoefficientX: constant diffusion coefficient in the
+				x-direction
+			DiffCoefficientY: constant diffusion coefficient in the
+				y-direction
+		Outputs:
+		--------
+			self: physical parameters set
+		'''
+		self.c = np.array([ConstXVelocity, ConstYVelocity])
+		self.al = np.array([DiffCoefficientX, DiffCoefficientY])
+		self.cspeed = np.linalg.norm(self.c)
+
+	def get_conv_flux_interior(self, Uq, x, t):
+		c = self.c
+
+		cc = self.IC.get_advection(self,x,t)
+		
+		n = np.zeros(cc.shape)
+
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+
+		n[:,:,0] = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-15)
+		n[:,:,1] = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-15)
+
+		F[:, :, 0, 0] = cc[:,:,0] * Uq[:,:,0] + 1.0*Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,0]
+		F[:, :, 0, 1] = cc[:,:,1] * Uq[:,:,0] + 1.0*Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,1]
+		
+		F[:, :, 1, 0] = cc[:,:,0] * Uq[:,:,1]
+		F[:, :, 1, 1] = cc[:,:,1] * Uq[:,:,1]
+		
+		F[:, :, 2, 0] = cc[:,:,0] * Uq[:,:,2]
+		F[:, :, 2, 1] = cc[:,:,1] * Uq[:,:,2]
+	
+
+		return F, None
+
+	def get_diff_flux_interior(self, Uq, gUq):
+		al = self.al
+		
+		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+		
+		F[:, :, 0, 0] = al[0] * gUq[:, :, 0, 0]
+		F[:, :, 0, 1] = al[1] * gUq[:, :, 0, 1]
+		
+		return F
+		
+	class StateVariables(Enum):
+		Scalar = "u"
+		Scalarx = "ux"
+		Scalary = "uy"
+		
+	class AdditionalVariables(Enum):
+		MaxWaveSpeed = "\\lambda"
+		Normal_x = "NX"
+		Normal_y = "NY"
+		adv_x = "advx"
+		adv_y = "advy"
+		
+	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x, t):
+		sname = self.AdditionalVariables[var_name].name
+
+		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			# Max wave speed is the advection speed
+			cc = self.IC.get_advection(self,x,t)
+			adv = np.zeros(Uq.shape)
+			adv[:,:,0] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15) + 1.0
+			adv[:,:,1] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15)
+			adv[:,:,2] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15)
+			scalar = adv
+		elif sname is self.AdditionalVariables["Normal_x"].name:
+			scalar = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-15)
+		elif sname is self.AdditionalVariables["Normal_y"].name:
+			scalar = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-15)
+		elif sname is self.AdditionalVariables["adv_x"].name:
+			cc = self.IC.get_advection(self,x,t)
+			scalar = cc[:,:,0]
+		elif sname is self.AdditionalVariables["adv_y"].name:
+			cc = self.IC.get_advection(self,x,t)
+			scalar = cc[:,:,1]
+		else:
+			raise NotImplementedError
+
+		return scalar
+	
+

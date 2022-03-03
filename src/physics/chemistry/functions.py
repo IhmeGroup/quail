@@ -336,7 +336,7 @@ class Arrhenius(SourceBase):
 		irho, irhou, irhoE, irhoY = physics.get_state_indices()
 
 		# Get temperature and calculate arrhenius rate constant
-		T = physics.compute_variable("Temperature", Uq)
+		T = physics.compute_variable("Temperature", Uq, x=None, t=None)
 		K = A * T**b * np.exp(-Tign / T)
 
 		# Calculate source term
@@ -357,7 +357,7 @@ class Arrhenius(SourceBase):
 		# Allocate jacobian matrix
 		jac = np.zeros([ne, nq, Uq.shape[-1], Uq.shape[-1]])
 
-		T = physics.compute_variable("Temperature", Uq)
+		T = physics.compute_variable("Temperature", Uq, x=None, t=None)
 		K = A * np.exp(-Tign / T)
 
 		elem_IDs = np.where(T<0)[0]

@@ -136,8 +136,8 @@ class PositivityPreserving(base.LimiterBase):
 				self.elem_vols)
 
 		# Density and pressure from averaged state
-		rho_bar = physics.compute_variable(self.var_name1, U_bar, x=None)
-		p_bar = physics.compute_variable(self.var_name2, U_bar, x=None)
+		rho_bar = physics.compute_variable(self.var_name1, U_bar, x=None, t=None)
+		p_bar = physics.compute_variable(self.var_name2, U_bar, x=None, t=None)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.):
 			raise errors.NotPhysicalError
@@ -148,7 +148,7 @@ class PositivityPreserving(base.LimiterBase):
 		''' Limit density '''
 		# Compute density at quadrature points
 		rho_elem_faces = physics.compute_variable(self.var_name1,
-				U_elem_faces, x=None)
+				U_elem_faces, x=None, t=None)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		# Truncate theta1; otherwise, can get noticeably different
@@ -178,7 +178,7 @@ class PositivityPreserving(base.LimiterBase):
 
 		''' Limit pressure '''
 		# Compute pressure at quadrature points
-		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces, x=None)
+		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces, x=None, t=None)
 		theta[:] = 1.
 		# Indices where pressure is negative
 		negative_p_indices = np.where(p_elem_faces < 0.)
@@ -250,9 +250,9 @@ class PositivityPreservingChem(PositivityPreserving):
 				self.elem_vols)
 		ne = self.elem_vols.shape[0]
 		# Density and pressure from averaged state
-		rho_bar = physics.compute_variable(self.var_name1, U_bar, x=None)
-		p_bar = physics.compute_variable(self.var_name2, U_bar)
-		rhoY_bar = physics.compute_variable(self.var_name3, U_bar, x=None)
+		rho_bar = physics.compute_variable(self.var_name1, U_bar, x=None, t=None)
+		p_bar = physics.compute_variable(self.var_name2, U_bar, x=None, t=None)
+		rhoY_bar = physics.compute_variable(self.var_name3, U_bar, x=None, t=None)
 
 		if np.any(rho_bar < 0.) or np.any(p_bar < 0.) or np.any(
 				rhoY_bar < 0.):
@@ -264,7 +264,7 @@ class PositivityPreservingChem(PositivityPreserving):
 		''' Limit density '''
 		# Compute density
 		rho_elem_faces = physics.compute_variable(self.var_name1,
-				U_elem_faces, x=None)
+				U_elem_faces, x=None, t=None)
 		# Check if limiting is needed
 		theta = np.abs((rho_bar - POS_TOL)/(rho_bar - rho_elem_faces))
 		# Truncate theta1; otherwise, can get noticeably different
@@ -294,7 +294,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 
 		''' Limit mass fraction '''
-		rhoY_elem_faces = physics.compute_variable(self.var_name3, U_elem_faces, x=None)
+		rhoY_elem_faces = physics.compute_variable(self.var_name3, U_elem_faces, x=None, t=None)
 		theta = np.abs(rhoY_bar/(rhoY_bar-rhoY_elem_faces+POS_TOL))
 		# Truncate theta2; otherwise, can get noticeably different
 		# results across machines, possibly due to poor conditioning in its
@@ -322,7 +322,7 @@ class PositivityPreservingChem(PositivityPreserving):
 
 		''' Limit pressure '''
 		# Compute pressure at quadrature points
-		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces, x=None)
+		p_elem_faces = physics.compute_variable(self.var_name2, U_elem_faces, x=None, t=None)
 		theta[:] = 1.
 		# Indices where pressure is negative
 		negative_p_indices = np.where(p_elem_faces < 0.)

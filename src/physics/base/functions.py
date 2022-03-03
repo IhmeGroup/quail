@@ -186,24 +186,24 @@ class LaxFriedrichs(ConvNumFluxBase):
 	'''
 	This class corresponds to the local Lax-Friedrichs flux function.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x):
+	def compute_flux(self, physics, UqL, UqR, normals, x, t):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL,_ = physics.get_conv_flux_projected(UqL, n_hat, x)
+		FqL,_ = physics.get_conv_flux_projected(UqL, n_hat, x, t)
 
 		# Right flux
-		FqR,_ = physics.get_conv_flux_projected(UqR, n_hat, x)
+		FqR,_ = physics.get_conv_flux_projected(UqR, n_hat, x, t)
 
 		# Jump
 		dUq = UqR - UqL
 
 		# Calculate max wave speeds at each point
-		a = physics.compute_variable("MaxWaveSpeed", UqL, x,
+		a = physics.compute_variable("MaxWaveSpeed", UqL, x, t,
 				flag_non_physical=True)
-		aR = physics.compute_variable("MaxWaveSpeed", UqR, x,
+		aR = physics.compute_variable("MaxWaveSpeed", UqR, x, t,
 				flag_non_physical=True)
 
 		idx = aR > a

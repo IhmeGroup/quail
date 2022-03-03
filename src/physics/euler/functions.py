@@ -751,13 +751,13 @@ class PressureOutlet(BCWeakPrescribed):
 			print("Incoming flow at outlet")
 
 		# Interior pressure
-		pI = physics.compute_variable("Pressure", UqI, x=None)
+		pI = physics.compute_variable("Pressure", UqI, x=None, t=None)
 
 		if np.any(pI < 0.):
 			raise errors.NotPhysicalError
 
 		# Interior speed of sound
-		cI = physics.compute_variable("SoundSpeed", UqI, x=None)
+		cI = physics.compute_variable("SoundSpeed", UqI, x=None, t=None)
 		JI = velnI + 2.*cI/(gamma - 1.)
 		# Interior velocity in tangential direction
 		veltI = velI - velnI*n_hat
@@ -930,16 +930,16 @@ class LaxFriedrichs1D(ConvNumFluxBase):
 	Euler1D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x=None):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat, x=None)
+		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat, x=None, t=None)
 
 		# Right flux
-		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat, x=None)
+		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat, x=None, t=None)
 
 		# Jump
 		dUq = UqR - UqL
@@ -962,18 +962,18 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 	Euler2D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x=None):
+	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
 		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
-				n_hat, x=None)
+				n_hat, x=None, t=None)
 
 		# Right flux
 		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
-				n_hat, x=None)
+				n_hat, x=None, t=None)
 
 		# Jump
 		dUq = UqR - UqL
@@ -1109,8 +1109,8 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		rhoL_sqrt = np.sqrt(UqL[:, :, srho])
 		rhoR_sqrt = np.sqrt(UqR[:, :, srho])
-		HL = physics.compute_variable("TotalEnthalpy", UqL, x=None)
-		HR = physics.compute_variable("TotalEnthalpy", UqR, x=None)
+		HL = physics.compute_variable("TotalEnthalpy", UqL, x=None, t=None)
+		HR = physics.compute_variable("TotalEnthalpy", UqR, x=None, t=None)
 
 		velRoe = (rhoL_sqrt*velL + rhoR_sqrt*velR)/(rhoL_sqrt+rhoR_sqrt)
 		HRoe = (rhoL_sqrt*HL + rhoR_sqrt*HR)/(rhoL_sqrt+rhoR_sqrt)
@@ -1143,8 +1143,8 @@ class Roe1D(ConvNumFluxBase):
 		'''
 		dvel = velR - velL
 		drho = UqR[:, :, srho] - UqL[:, :, srho]
-		dp = physics.compute_variable("Pressure", UqR, x=None) - \
-				physics.compute_variable("Pressure", UqL, x=None)
+		dp = physics.compute_variable("Pressure", UqR, x=None, t=None) - \
+				physics.compute_variable("Pressure", UqL, x=None, t=None)
 
 		return drho, dvel, dp
 
@@ -1223,7 +1223,7 @@ class Roe1D(ConvNumFluxBase):
 
 		return R
 
-	def compute_flux(self, physics, UqL_std, UqR_std, normals, x=None):
+	def compute_flux(self, physics, UqL_std, UqR_std, normals, x=None, t=None):
 		# Reshape arrays
 		n = UqL_std.shape[0]
 		nq = UqL_std.shape[1]
@@ -1298,10 +1298,10 @@ class Roe1D(ConvNumFluxBase):
 		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_hat)
 
 		# Left flux
-		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat, x=None)
+		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat, x=None, t=None)
 
 		# Right flux
-		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat, x=None)
+		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat, x=None, t=None)
 
 		return .5*n_mag*(FL + FR - FRoe) # [nf, nq, ns]
 

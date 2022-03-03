@@ -18,7 +18,7 @@ import numerics.helpers.helpers as helpers
 
 def prepare_plot(reset=False, defaults=False, close_all=True, fontsize=12.,
 		font={'family':'serif', 'serif': ['DejaVu Sans']}, linewidth=1.5,
-		markersize=4.0, axis=None, cmap='viridis', equal_AR=False):
+		markersize=4.0, axis=None, cmap='seismic', equal_AR=False):
 	'''
 	This function sets parameters for plotting.
 
@@ -200,16 +200,56 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 		# If the user defines levels force the plot to extend and set limits
 		# according to the user defined levels beginning and end.
 		levels = kwargs["levels"]
-		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both') 
+		tcf = plt.tricontourf(tris, var_tris, levels=kwargs["levels"], extend='both')
 		if isinstance(levels, np.ndarray):
 			tcf.set_clim(levels[0],levels[-1])
 	else:
 		tcf = plt.tricontourf(tris, var_tris)
+			
 
-	# Show triangulation if requested
-	if "show_triangulation" in kwargs:
-		if kwargs["show_triangulation"]:
-			plt.triplot(tris, lw=0.5, color='white')
+	return tcf.levels
+	
+def plot_2D_interface(physics, x, var_plot, **kwargs):
+	'''
+	This function plots 2D contours via a triangulation of the coordinates
+	stored in x. This is appropriate only for regular domains since the
+	entire domain is triangulated at once.
+
+	Inputs:
+	-------
+		physics: physics object
+	    x: xy-coordinates; 3D array of shape [num_elems, num_pts, 2], where
+	    	num_pts is the number of points per element
+	    var_plot: variable to plot evaluated at x; 3D array of shape
+	    	[num_elems, num_pts, num_state_vars], where num_pts is the
+	    	number of points per element
+	    kwargs: keyword arguments (see below)
+
+	Outputs:
+	--------
+		tcf.levels: contour levels
+		x: xy-coordinates (duplicates removed and reshaped)
+		var_plot: variable to plot evaluated at x (duplicates remove and
+			reshaped)
+
+	Notes:
+	------
+		For coarse solutions, the resulting plot may misrepresent the actual
+		solution due to bias in the triangulation.
+	'''
+	# Get triangulation and plot
+	tris, var_tris = triangulate(physics, x, var_plot)
+
+	linestyles=kwargs["linestyles"]
+	linewidth = kwargs["linewidths"]
+	levels = kwargs["levels"]
+	clr = kwargs["clr"]
+	# If the user defines levels force the plot to extend and set limits
+	# according to the user defined levels beginning and end.
+	tcf = plt.tricontour(tris, var_tris, levels, extend='both', colors=clr, linewidths=linewidth, linestyles=linestyles)
+	if isinstance(levels, np.ndarray):
+		tcf.set_clim(levels[0],levels[-1])
+			
 
 	return tcf.levels
 
@@ -291,10 +331,14 @@ def plot_2D(physics, x, var_plot, ylabel, regular_2D, equal_AR=False,
 		solution due to bias in the triangulation.
 	'''
 	''' Plot solution '''
-	if regular_2D:
-		plot_2D_regular(physics, x, var_plot, **kwargs)
+	interface=kwargs["Interface"]
+	if interface:
+		plot_2D_interface(physics, x, var_plot, **kwargs)
 	else:
-		plot_2D_general(physics, x, var_plot, **kwargs)
+		if regular_2D:
+			plot_2D_regular(physics, x, var_plot, **kwargs)
+		else:
+			plot_2D_general(physics, x, var_plot, **kwargs)
 
 	''' Label plot '''
 	if "ignore_colorbar" in kwargs and kwargs["ignore_colorbar"]:
@@ -403,11 +447,11 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	yline = np.linspace(y1, y2, num_pts)
 
 	''' Interpolation '''
-	x = get_sample_points(mesh, solver, physics, solver.basis, True)
+	x = get_sample_points(mesh, solver, physics, solver.basis, False)
 	xyline = np.array([xline, yline]).transpose()
 
 	if plot_numerical:
-		var = get_numerical_solution(physics, solver.state_coeffs, x,
+		var = get_numerical_solution(physics, solver, solver.state_coeffs, x, t,
 				solver.basis, var_name)
 		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
 		default_label = "Numerical"
@@ -468,8 +512,10 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	if equidistant:
 		xref = basis.equidistant_nodes(max([1, 3*order]))
 	else:
-		quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]),
+		quad_order = basis.get_quadrature_order(mesh, order-2,
 				physics=physics)
+		#quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]),
+		#		physics=physics)
 		gbasis = mesh.gbasis
 		xref, _ = gbasis.get_quadrature_data(quad_order)
 
@@ -510,12 +556,12 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 	else:
 		U_plot = fcn_data.get_state(physics, x=x, t=time)
 
-	var_plot = physics.compute_variable(var_name, U_plot, x=None)
+	var_plot = physics.compute_variable(var_name, U_plot, x=x, t=time)
 
 	return var_plot
 
 
-def get_numerical_solution(physics, U, x, basis, var_name):
+def get_numerical_solution(physics,solver, U, x, t, basis, var_name):
 	'''
 	This function evaluates the numerical solution at a set of points.
 
@@ -536,7 +582,13 @@ def get_numerical_solution(physics, U, x, basis, var_name):
 			[num_elems, num_pts, 1]
 	'''
 	Uq = helpers.evaluate_state(U, basis.basis_val)
-	var_numer = physics.compute_variable(var_name, Uq, x=None)
+	
+	# Interpolate gradient of state at quad points
+	elem_helpers = solver.elem_helpers
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+	gUq = solver.evaluate_gradient(U, basis_phys_grad_elems)
+	
+	var_numer = physics.compute_variable(var_name, Uq, x, t)
 
 	return var_numer
 
@@ -583,7 +635,7 @@ def get_average_solution(physics, solver, x, basis, var_name):
 	Uq = helpers.evaluate_state(U, basis.basis_val)
 
 	Ubar = helpers.get_element_mean(Uq, quad_wts, djacs, vols)
-	var_numer = physics.compute_variable(var_name, Ubar, x=None)
+	var_numer = physics.compute_variable(var_name, Ubar, x, t)
 
 	x_bar = np.sum(x, axis=1).reshape([x.shape[0], 1, 1])/x.shape[1]
 
@@ -761,7 +813,7 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 
 	''' Evaluate desired variable at sample points '''
 	if plot_numerical:
-		var_plot = get_numerical_solution(physics, solver.state_coeffs, x,
+		var_plot = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
 				solver.basis, var_name)
 		default_label = "Numerical"
 	elif plot_exact:
@@ -796,3 +848,91 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 
 	# Final embellishments
 	finalize_plot(**kwargs)
+
+
+def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
+		plot_exact=False, plot_average=False, plot_IC=False,
+		create_new_figure=True, ylabel=None, fmt='k-', legend_label=None,
+		equidistant_pts=True, include_mesh=False, regular_2D=False,
+		equal_AR=False, skip=None, **kwargs):
+	'''
+	This function plots the solution. For 2D calculations, the solution will
+	be plotted using a triangulation.
+
+	Inputs:
+	-------
+	    mesh: mesh object
+	    physics: physics object
+	    solver: solver object
+	    var_name: name of variable to plot
+	    plot_numerical: plot numerical solution
+	    plot_average: plot average solution
+	    plot_exact: plot exact solution
+	    plot_IC: plot initial condition
+	    create_new_figure: if True, will create new figure before plotting
+	    ylabel: y-axis label
+		fmt: format string for plotting, e.g. "bo" for blue circles
+	    legend_label: legend label
+	    equidistant_pts: if True, then solution will be evaluated at
+	    	equidistant points (within each element); if False, then solution
+	    	will be evaluated at quadrature points
+	    include_mesh: if True, then the mesh will be superimposed
+	    regular_2D: if True, then entire domain will be triangulated at once
+	    	(appropriate only for regular domains); if False, then each
+	    	element will be triangulated one-by-one (appropriate for
+	    	general domains)
+	    equal_AR: if True, will set equal aspect ratio
+		skip: integer value that determines the increment between each point
+			to skip when plotting (only matters for 1D)
+	    kwargs: keyword arguments (see below)
+	'''
+	''' Compatibility check '''
+	plot_sum = plot_numerical + plot_exact + plot_IC + plot_average
+	if plot_sum >= 2:
+		raise ValueError("Can only plot one solution at a time")
+	elif plot_sum == 0:
+		raise ValueError("Need to plot a solution")
+
+	# Extract params
+	time = solver.time
+	ndims = mesh.ndims
+
+	# Get sample points
+	x = get_sample_points(mesh, solver, physics, solver.basis,
+			equidistant_pts)
+			
+	if var_name=="Normal":
+		strx = "Normal_x"
+		stry = "Normal_y"
+	elif var_name=="adv":
+		strx = "adv_x"
+		stry = "adv_y"
+		
+	''' Evaluate desired variable at sample points '''
+	if plot_numerical:
+		var_plot_x = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
+				solver.basis, strx)
+		default_label = "Numerical"
+		var_plot_y= get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
+				solver.basis, stry)
+		default_label = "Numerical"
+	if legend_label is None:
+		legend_label = default_label
+
+	x = np.reshape(x,[len(x[:,0,0])*len(x[0,:,0]),2])
+	x1 = x[:,0]
+	var_plot_x = np.reshape(var_plot_x, x1.shape)
+	var_plot_y = np.reshape(var_plot_y, x1.shape)
+	''' Plot '''
+	if create_new_figure:
+		plt.figure()
+		
+	length=kwargs["length"]
+	skips=kwargs["skips"]
+		
+	q=plt.quiver(x[::skips,0], x[::skips,1],var_plot_x[::skips],var_plot_y[::skips], scale = length)
+
+	# Final embellishments
+	finalize_plot(**kwargs)
+
+

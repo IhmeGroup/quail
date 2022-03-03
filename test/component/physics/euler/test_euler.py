@@ -38,7 +38,7 @@ def test_convective_flux_1D():
 	Fref[:, :, irhoE, 0] = (rhoE + P) * u
 
 	physics.set_physical_params()
-	F, (u2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None)
+	F, (u2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None, t=None)
 
 	np.testing.assert_allclose(rhoc, rho, rtol, atol)	
 	np.testing.assert_allclose(u2c, u*u, rtol, atol)	
@@ -74,7 +74,7 @@ def test_convective_flux_1D_zero_velocity():
 	Fref[:, :, irhoE, 0] = 0.
 
 	physics.set_physical_params()
-	F, (u2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None)
+	F, (u2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None, t=None)
 
 	np.testing.assert_allclose(rhoc, rho, rtol, atol)	
 	np.testing.assert_allclose(u2c, 0., rtol, atol)	
@@ -118,7 +118,7 @@ def test_convective_flux_2D():
 	Fref[:, :, irhoE, 1] = (rhoE + P) * v
 
 	physics.set_physical_params()
-	F, (u2c, v2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None)
+	F, (u2c, v2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None, t=None)
 
 	np.testing.assert_allclose(rhoc, rho, rtol, atol)	
 	np.testing.assert_allclose(u2c, u*u, rtol, atol)	
@@ -161,7 +161,7 @@ def test_convective_flux_2D_zero_velocity():
 	Fref[:, :, irhoE, 1] = 0.
 
 	physics.set_physical_params()
-	F, (u2c, v2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None)
+	F, (u2c, v2c, rhoc, pc) = physics.get_conv_flux_interior(Uq, x=None, t=None)
 
 	np.testing.assert_allclose(rhoc, rho, rtol, atol)	
 	np.testing.assert_allclose(u2c, 0., rtol, atol)	
