@@ -435,102 +435,9 @@ class Burgers1D(base.PhysicsBase):
 			raise NotImplementedError
 
 		return scalar
-	
-class NonConstAdvScalar(base.PhysicsBase):
-	'''
-	This class corresponds to scalar advection with a non-constant velocity.
-	It inherits attributes and methods from the PhysicsBase class. See
-	PhysicsBase for detailed comments of attributes and methods. This
-	class should not be instantiated directly. Instead, the 1D and 2D
-	variants, which inherit from this class (see below), should be
-	instantiated.
 
-	Additional methods and attributes are commented below.
 
-	Attributes:
-	-----------
-	c: float or numpy array
-		advection velocity
-	cspeed: float
-		advection speed
-	'''
-	NUM_STATE_VARS = 1
-	NDIMS = 1
-	PHYSICS_TYPE = general.PhysicsType.NonConstAdvScalar
-
-	def __init__(self):
-		super().__init__()
-		self.c = 0.
-		self.cspeed = 0.
-
-	def set_maps(self):
-		super().set_maps()
-
-		d = {
-			base_fcn_type.Uniform : base_fcns.Uniform,
-			scalar_fcn_type.Sine : scalar_fcns.Sine,
-			scalar_fcn_type.DampingSine : scalar_fcns.DampingSine,
-			scalar_fcn_type.ShockBurgers : scalar_fcns.ShockBurgers,
-			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
-			scalar_fcn_type.Heaviside : scalar_fcns.Heaviside,
-		}
-
-		self.IC_fcn_map.update(d)
-		self.exact_fcn_map.update(d)
-		self.BC_fcn_map.update(d)
-		
-		self.source_map.update({
-			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
-		})
-		
-		self.conv_num_flux_map.update({
-			scalar_conv_num_flux_type.LaxFriedrichs_THINC :
-					scalar_fcns.LaxFriedrichs_THINC,
-		})
-
-		
-	def set_physical_params(self, ConstVelocity=1.):
-		'''
-		This method sets physical parameters.
-
-		Inputs:
-		-------
-			ConstVelocity: constant advection velocity
-
-		Outputs:
-		--------
-			self: physical parameters set
-		'''
-		self.c = ConstVelocity
-		self.cspeed = np.abs(self.c)
-
-	class StateVariables(Enum):
-		Scalar = "u"
-
-	class AdditionalVariables(Enum):
-	    MaxWaveSpeed = "\\lambda"
-
-	def get_conv_flux_interior(self, Uq, x, t):
-		cc = 1.0 + x
-		#cc = self.Linear(x)
-		FF = cc*Uq
-		F = np.expand_dims(FF, axis=-1)
-
-		return F, None
-
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x):
-		sname = self.AdditionalVariables[var_name].name
-
-		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			# Max wave speed is the advection speed
-			#scalar = np.full([Uq.shape[0], 1, 1], self.cspeed)
-			scalar = np.abs(1.0 + x)
-		else:
-			raise NotImplementedError
-
-		return scalar
-		
-class NonConstAdvDiffScalar(base.PhysicsBase):
+class NonConstAdvDiffScalar(ConstAdvDiffScalar):
 	'''
 	This class corresponds to scalar advection/diffusion with a
 	non-constant velocity.
@@ -551,7 +458,7 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 	al: float
 		diffusion coefficient
 	'''
-	NUM_STATE_VARS = 1
+	NUM_STATE_VARS = 2
 	NDIMS = 1
 	PHYSICS_TYPE = general.PhysicsType.NonConstAdvScalar
 
@@ -579,6 +486,7 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 		
 		self.source_map.update({
 			scalar_source_type.SimpleSource : scalar_fcns.SimpleSource,
+			scalar_source_type.HeavisideSource : scalar_fcns.HeavisideSource,
 		})
 		
 		self.conv_num_flux_map.update({
@@ -611,20 +519,33 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 
 	class StateVariables(Enum):
 		Scalar = "u"
+		Scalarx = "ux"
 
 	class AdditionalVariables(Enum):
-	    MaxWaveSpeed = "\\lambda"
+		MaxWaveSpeed = "\\lambda"
+		Normal_x = "NX"
+		adv_x = "adv"
 
 	def get_conv_flux_interior(self, Uq, x, t=None):
-		cc = 1.0 + x
-		FF = cc*Uq
-		F = np.expand_dims(FF, axis=-1)
+		cc = self.IC.get_advection(self,x,t)
+		
+		n = np.zeros(cc.shape)
+
+		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+
+		n[:,:,0] = Uq[:,:,1]/np.abs(Uq[:,:,1] + 1e-15)
+
+		F[:, :, 0, 0] = cc[:,:,0] * Uq[:,:,0] + 1.0*Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,0]
+		F[:, :, 1, 0] = cc[:,:,0] * Uq[:,:,1]
 
 		return F, None
 		
 	def get_diff_flux_interior(self, Uq, gUq):
 		al = self.al
-		F = al * gUq
+		
+		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+		
+		F[:, :, 0, 0] = al * gUq[:, :, 0, 0]
 
 		return F
 
@@ -633,8 +554,16 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 
 		if sname is self.AdditionalVariables["MaxWaveSpeed"].name:
 			# Max wave speed is the advection speed
-			adv = (1.0 + x)
-			scalar = np.abs(adv + 0.0*(1.0-2.0*Uq)) + 1e-15
+			cc = self.IC.get_advection(self,x,t)
+			adv = np.zeros(Uq.shape)
+			adv[:,:,0] = np.abs(cc[:,:,0] + 1e-15) + np.abs(1.0-2.0*Uq[:,:,0])
+			adv[:,:,1] = np.abs(cc[:,:,0] + 1e-15)
+			scalar = adv
+		elif sname is self.AdditionalVariables["Normal_x"].name:
+			scalar = Uq[:,:,1]/np.abs(Uq[:,:,1] + 1e-15)
+		elif sname is self.AdditionalVariables["adv_x"].name:
+			cc = self.IC.get_advection(self,x,t)
+			scalar = cc[:,:,0]
 		else:
 			raise NotImplementedError
 
@@ -642,8 +571,8 @@ class NonConstAdvDiffScalar(base.PhysicsBase):
 
 class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 	'''
-	This class corresponds to 2D scalar /diffusion with a constant
-	velocity and diffusion coefficient.
+	This class corresponds to the gradient-augmented approach for the
+	linear-advection equation involving sharp interfaces.
 
 	It inherits attributes and methods from the ConstAdvDiffScalar
 	class. See ConstAdvDiffScalar for detailed comments of attributes
@@ -704,7 +633,6 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 		self.cspeed = np.linalg.norm(self.c)
 
 	def get_conv_flux_interior(self, Uq, x, t):
-		c = self.c
 
 		cc = self.IC.get_advection(self,x,t)
 		
@@ -756,7 +684,8 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 			# Max wave speed is the advection speed
 			cc = self.IC.get_advection(self,x,t)
 			adv = np.zeros(Uq.shape)
-			adv[:,:,0] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15) + 1.0
+			adv[:,:,0] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15) +\
+				np.abs(1.0-2.0*Uq[:,:,0])
 			adv[:,:,1] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15)
 			adv[:,:,2] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15)
 			scalar = adv
@@ -775,4 +704,3 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 
 		return scalar
 	
-

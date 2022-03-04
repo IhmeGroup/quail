@@ -214,6 +214,8 @@ def plot_2D_interface(physics, x, var_plot, **kwargs):
 	This function plots 2D contours via a triangulation of the coordinates
 	stored in x. This is appropriate only for regular domains since the
 	entire domain is triangulated at once.
+	This function is just a slightly modified version of the standard plot_2D
+	to plot the interface only with certain aesthetics requirements 
 
 	Inputs:
 	-------
@@ -856,8 +858,7 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 		equidistant_pts=True, include_mesh=False, regular_2D=False,
 		equal_AR=False, skip=None, **kwargs):
 	'''
-	This function plots the solution. For 2D calculations, the solution will
-	be plotted using a triangulation.
+	This function plots the quiver of a 2D vector field.
 
 	Inputs:
 	-------

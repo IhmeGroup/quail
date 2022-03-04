@@ -63,6 +63,7 @@ class SourceType(Enum):
 	source terms are specific to the available scalar equation sets.
 	'''
 	SimpleSource = auto()
+	HeavisideSource = auto()
 	SharpeningSource = auto()
 	ZalesakSource = auto()
 	RiderSource = auto()
@@ -381,13 +382,33 @@ class Heaviside(FcnBase):
 
 	def get_state(self, physics, x, t):
 		c = physics.c
-		#Uq = np.heaviside(((x-self.xc)-c*t),0.5) * \
-		#	 (1.0-np.heaviside(((x-(self.xc+0.5))-c*t),0.5))
+		
+		tol = 1e-6
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		
+		Hx1 	  = 0.5*(1.0+np.tanh(self.thick*(x[:,:,0]-self.xc)))
+		Hx2 	  = 0.5*(1.0+np.tanh(self.thick*(x[:,:,0]-self.xc-self.wide)))
+		
+		# Phase field
+		Uq[:,:,0] = tol + (1.0-2.0*tol)*Hx1*(1.0-Hx2)
+		
+		# Gradient
+		par = 0.05
+		Hx1    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,0]-self.xc)))
+		Hx2    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,0]-self.xc-self.wide)))
+		dHx1dx = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,0]-self.xc))**2)
+		dHx2dx = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,0]-self.xc-self.wide))**2)
 			 
-		Uq = 0.5*(1.0+np.tanh(self.thick*(x-self.xc)-c*t)) * \
-			 (1.0-0.5*(1.0+np.tanh(self.thick*(x-self.xc-self.wide-c*t))))
+		Uq[:,:,1] = (1.0-2.0*tol)*(dHx1dx*(1.0-Hx2) - Hx1*dHx2dx)
 
 		return Uq
+		
+	def get_advection(self, physics, x, t):
+	
+		cc = np.zeros(x.shape)
+		cc[:,:,0] = 1.0 - 0.5*np.sin(np.pi*(x[:,:,0] + 1.0))
+					
+		return cc
 		
 class Zalesak(FcnBase):
 	'''
@@ -476,7 +497,7 @@ class Zalesak(FcnBase):
 		
 class Rider(FcnBase):
 	'''
-	Rider's disk.
+	Rider-Korther vortex
 
 	Attributes:
 	-----------
@@ -590,7 +611,7 @@ class SimpleSource(SourceBase):
 		
 class SharpeningSource(SourceBase):
 	'''
-	Simple source term of the form S = nu*U
+	Non-conservative sharperning source term
 
 	Attributes:
 	-----------
@@ -619,41 +640,35 @@ class SharpeningSource(SourceBase):
 		eta = self.eta
 		
 		S = np.zeros(Uq.shape)
-		
-		# Zalesak
+
 		S[:,:,0] = nu*Uq[:,:,0] + 0.5*eta*Uq[:,:,0]*(1.0-Uq[:,:,0])*(Uq[:,:,0]-0.5)
 		S[:,:,1] = 0.0
 		S[:,:,2] = 0.0
 
 		return S
+		
+		
+class HeavisideSource(SourceBase):
+	'''
+	1D Heaviside source term
+
+	'''
+
+	def get_source(self, physics, Uq, x, t):
+		
+		S = np.zeros(Uq.shape)
+
+		S[:,:,0] = -0.5*Uq[:,:,0]*np.cos(np.pi*(x[:,:,0] + 1.0))*np.pi
+		S[:,:,1] = 0.0
+
+		return S
 
 class ZalesakSource(SourceBase):
 	'''
-	Simple source term of the form S = nu*U
-
-	Attributes:
-	-----------
-	nu: float
-		source term parameter
+	Source for the Zalesak case of the type -\nabla u \cdot \psi
 	'''
-	def __init__(self, eta=-1, **kwargs):
-		super().__init__(kwargs)
-		'''
-		This method initializes the attributes.
-
-		Inputs:
-		-------
-		    nu: source term parameter
-		    eta: second source term parameter
-
-		Outputs:
-		--------
-		    self: attributes initialized
-		'''
-		self.eta = eta
 
 	def get_source(self, physics, Uq, x, t):
-		eta = self.eta
 		
 		S = np.zeros(Uq.shape)
 		
@@ -666,31 +681,10 @@ class ZalesakSource(SourceBase):
 		
 class RiderSource(SourceBase):
 	'''
-	Simple source term of the form S = nu*U
-
-	Attributes:
-	-----------
-	nu: float
-		source term parameter
+	Source for the Rider-Korthe case of the type -\nabla u \cdot \psi
 	'''
-	def __init__(self, eta=-1, **kwargs):
-		super().__init__(kwargs)
-		'''
-		This method initializes the attributes.
-
-		Inputs:
-		-------
-		    nu: source term parameter
-		    eta: second source term parameter
-
-		Outputs:
-		--------
-		    self: attributes initialized
-		'''
-		self.eta = eta
-
+	
 	def get_source(self, physics, Uq, x, t):
-		eta = self.eta
 		
 		S = np.zeros(Uq.shape)
 		
