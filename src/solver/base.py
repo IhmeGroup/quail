@@ -505,16 +505,16 @@ class SolverBase(ABC):
 		# Calculate face residuals for left and right elements
 		RL, RR, RL_diff, RR_diff = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
 				UR)
-		## UNCOMMENT WHEN FLUX TERMS ARE NEEDED 
-		# # Add this residual back to the global. The np.add.at function is
-		# # used to correctly handle duplicate element IDs.
-		# np.add.at(res, elemL_IDs, -RL)
-		# np.add.at(res, elemR_IDs,  RR)
+		# ## UNCOMMENT WHEN FLUX TERMS ARE NEEDED FOR THE TRANSPORT MODEL 
+		# Add this residual back to the global. The np.add.at function is
+		# used to correctly handle duplicate element IDs.
+		np.add.at(res, elemL_IDs, -RL)
+		np.add.at(res, elemR_IDs,  RR)
 
-		# # Add the additional diffusion portion of the residual to the
-		# # correct left/right states.
-		# np.add.at(res, elemL_IDs,  RL_diff)
-		# np.add.at(res, elemR_IDs,  RR_diff)
+		# Add the additional diffusion portion of the residual to the
+		# correct left/right states.
+		np.add.at(res, elemL_IDs,  RL_diff)
+		np.add.at(res, elemR_IDs,  RR_diff)
 
 	def get_boundary_face_residuals(self, U, res):
 		'''

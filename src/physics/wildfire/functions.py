@@ -169,16 +169,15 @@ class WildfireSource(SourceBase):
 		Nwood = physics.Nwood
 		Fwood = physics.Fwood 
 		Fwater = physics.Fwater
-		Z = physics.Z
+		Z = physics.Z # temperature source term 
 
 		irhowood, irhowater, iTs = physics.get_state_indices()
-		srhowood, srhowater, sTs = physics.get_state_slices()
 
 		S = np.zeros_like(Uq)
 
 		S[irhowood,:,:] = -Nwood*Fwood 
 		S[:,irhowater,:] = -Fwater
-		S[:,:,iTs] = Z+iTs
+		S[:,:,iTs] = Z-Uq[:,:,iTs]
 
 		return S
 

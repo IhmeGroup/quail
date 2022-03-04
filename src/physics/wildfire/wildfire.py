@@ -84,7 +84,7 @@ class Wildfire(base.PhysicsBase):
 			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
 
-	def set_physical_params(self, WoodMolarCoefficient=0.4552, SpecificHeat=1760., Fwood=1., Fwater=1., Z=0.5):
+	def set_physical_params(self, WoodMolarCoefficient=0.4552, SpecificHeat=1760., Fwood=1., Fwater=1., Z=400., Viscosity = 1., PrandtlNumber = 0.71, SpecificHeatRatio = 1.4, GasConstant = 287.):
 		'''
 		This method sets physical parameters.
 
@@ -106,6 +106,11 @@ class Wildfire(base.PhysicsBase):
 		self.Fwood = Fwood
 		self.Fwater = Fwater 
 		self.Z = Z 
+		# Uncomment for transport model 
+		self.mu0 = Viscosity
+		self.Pr = PrandtlNumber
+		self.gamma = SpecificHeatRatio
+		self.R = GasConstant
 
 	# class AdditionalVariables(Enum):
 		# Pressure = "p"
@@ -296,7 +301,7 @@ class Wildfire2D(Wildfire):
 		# H = rhoE + p
 
 		# Assemble flux matrix
-		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims] # zero flux 
 		# F[:, :, irho, 0] = rhou         # Flux of mass
 		# F[:, :, irhou, 0] = rho * u2 + p # Flux of momentum
 		# F[:, :, irhoE, 0] = H * u        # Flux of energy
