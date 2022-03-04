@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read data file
-fname = "state_variables_time_hist_TsSource.txt"
+fname = "state_variables_time_hist_TsSource_Tgas_FwoodTerm.txt"
 file = open(fname)
 time = np.zeros((201,1))
 rho_wood = np.zeros((201,1))
