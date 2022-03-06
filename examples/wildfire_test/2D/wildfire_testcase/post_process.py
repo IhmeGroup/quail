@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Read data file
-fname = "state_variables_time_hist_TsSource_Tgas_FwoodTerm.txt"
+fname = "state_variables_time_hist_TsSource_Tgas.txt"
 file = open(fname)
 time = np.zeros((201,1))
 rho_wood = np.zeros((201,1))
@@ -22,21 +22,49 @@ for line in file:
 		i = i+1
 		# print(i)
 
+# # Analytical Solution - baseline 
+rho_wood_exact = np.zeros((201,1))
+rho_water_exact = np.zeros((201,1))
+# Ts_exact = np.zeros((201,1))
+
+S1 = -0.4552
+S2 = -1. 
+S3 = 0.5
+rho_woodi = 10. 
+rho_wateri = 1000. 
+Tsi = 298. 
+
+rho_wood_exact = rho_woodi + time*S1
+rho_water_exact = rho_wateri + time*S2
+Ts_exact = Tsi + time*S3; 
+
+# Analytical Solution - Feedback
+Ts_exact_coupled = np.zeros((201,1))
+Tsi = 298
+Z = 400
+Ts_exact_coupled = Z-(Z-Tsi)*np.exp(-time)
+
+# j = 50
+# print(time[j])
+# print(rho_wood_exact[j])
+# print(rho_wood[j])
+
 # x = 5
 # breakpoint()
 
 # Density of Wood Plot
 plt.figure(0)
-plt.plot(time,rho_wood,label=r'$\rho_{wood}$',color='black')
+plt.plot(time,rho_wood,label=r'$\rho_{wood}\: DG$',color='black')
+plt.plot(time,rho_wood_exact,label=r'$\rho_{wood}\: Analytical$',color='blue')
 plt.xlabel(r'$t\:[s]$',fontsize=12)
 plt.ylabel(r'$\rho\:[kg/m^3]$',fontsize=12)
 # plt.xlim([0,200])
 plt.legend(fontsize=10)
 
-
 # Density of Water Plot
 plt.figure(1)
-plt.plot(time[1:],rho_water[1:],label=r'$\rho_{water}$',color='darkblue')
+plt.plot(time[1:],rho_water[1:],label=r'$\rho_{water}\; DG$',color='black')
+plt.plot(time,rho_water_exact,label=r'$\rho_{water}\; Analytical$',color='blue')
 plt.xlabel(r'$t\:[s]$',fontsize=12)
 plt.ylabel(r'$\rho\:[kg/m^3]$',fontsize=12)
 # plt.xlim([0,200])
@@ -44,7 +72,8 @@ plt.legend(fontsize=10)
 
 # Temperature 
 plt.figure(2)
-plt.plot(time[1:],Ts[1:],label=r'$T_s$',color='darkorange')
+plt.plot(time[1:],Ts[1:],label=r'$T_s\; DG$',color='black')
+plt.plot(time[1:],Ts_exact_coupled[1:],label=r'$T_s\; Analytical$',color='darkorange')
 plt.xlabel(r'$t\:[s]$',fontsize=12)
 plt.ylabel(r'$T\:[K]$',fontsize=12)
 # plt.xlim([0,200])
