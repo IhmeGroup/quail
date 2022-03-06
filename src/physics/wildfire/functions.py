@@ -89,7 +89,7 @@ class WildfireBurn(FcnBase):
 	Tsi: float
 		base temperature of the fuel 
 	'''
-	def __init__(self, rho_woodi=10., rho_wateri=1000., Tsi=298.):
+	def __init__(self, rho_woodi=10., rho_wateri=1000., Tsi=298., YO2i=0.2, rho_gasi=1.2, ui=0., vi=0.):
 		'''
 		This method initializes the attributes.
 
@@ -106,6 +106,11 @@ class WildfireBurn(FcnBase):
 		self.rho_woodi = rho_woodi
 		self.rho_wateri = rho_wateri
 		self.Tsi = Tsi
+		# Uncomment for 2D transport model
+		self.YO2i = YO2i
+		self.rho_gasi = rho_gasi
+		self.ui = ui
+		self.vi = vi 
 
 	def get_state(self, physics, x, t):
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
@@ -116,14 +121,23 @@ class WildfireBurn(FcnBase):
 		rho_woodi = self.rho_woodi
 		rho_wateri = self.rho_wateri
 		Tsi = self.Tsi 
+		# Uncomment for 2D transport model
+		YO2i = self.YO2i
+		rho_gasi = self.rho_gasi
+		ui = self.ui
+		vi = self.vi 
 
 		Uq[:, :, 0] = rho_woodi
 		Uq[:, :, 1] = rho_wateri
 		Uq[:, :, 2] = Tsi 
-
+		# Uncomment for 2D transport model
+		Uq[:, :, 3] = YO2i*rho_gasi
+		Uq[:, :, 4] = rho_gasi
+		Uq[:, :, 5] = ui*rho_gasi
+		Uq[:, :, 6] = vi*rho_gasi
+		Uq[:, :, 7] = rho_gasi*Tsi 
 
 		return Uq # [ne, nq, ns]
-
 
 '''
 -------------------
@@ -166,19 +180,40 @@ class WildfireSource(SourceBase):
 	
 	def get_source(self, physics, Uq, x, t):
 		Cpwood = physics.Cpwood
+		Cpgas = physics.Cpgas
+		Cpwater = physics.Cpwater
 		Nwood = physics.Nwood
+		NO2 = 1-Nwood # molar coefficient of oxygen 
 		Fwood = physics.Fwood 
 		Fwater = physics.Fwater
 		Z = physics.Z # temperature source term 
-
-		irhowood, irhowater, iTs = physics.get_state_indices()
+		
+		# # Uncomment for Baseline Model 
+		# irhowood, irhowater, iTs = physics.get_state_indices()
+		
+		# Uncomment for 2D transport model
+		irhowood, irhowater, iTs, iYO2rhogas, irhogas, iurhogas, ivrhogas, irhogasTgas = physics.get_state_indices()
 
 		S = np.zeros_like(Uq)
 
-		S[irhowood,:,:] = -Nwood*Fwood 
-		S[:,irhowater,:] = -Fwater
-		S[:,:,iTs] = Z-Uq[:,:,iTs]
+		# # Uncomment for Baseline Model 
+		# S[:,:,irhowood] = -Nwood*Fwood
+		# S[:,:,irhowater] = -Fwater
+		# S[:,:,iTs] = Z - Uq[:,:,iTs]
 
+		# Uncomment for 2D transport model
+		S[:,:,irhowood] = -Nwood*Fwood 
+		S[:,:,irhowater] = -Fwater
+		S[:,:,iTs] = Z-Uq[:,:,iTs] 
+		S[:,:,iYO2rhogas] = -Fwood*NO2 
+		S[:,:,irhogas] = Nwood*Fwood + Fwater
+		S[:,:,iurhogas] = 0
+		S[:,:,ivrhogas] = 0
+		# S = Tgas/Cpgas + hA*(Ts-Tgas)/Tgas
+		S[:,:,irhogasTgas] = (Uq[:,:,irhogasTgas]/Uq[:,:,irhogas])*(1/Cpgas)+ \
+		                     (Cpwater*Uq[:,:,irhowater]+Cpwood*Uq[:,:,irhowood])* \
+							 ((Uq[:,:,iTs]-(Uq[:,:,irhogasTgas]/Uq[:,:,irhogas]))/ \
+							 (Uq[:,:,irhogasTgas]/Uq[:,:,irhogas]))
 		return S
 
 '''

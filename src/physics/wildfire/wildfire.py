@@ -14,9 +14,9 @@
 
 # ------------------------------------------------------------------------ #
 #
-#       File : src/physics/euler/euler.py
+#       File : src/physics/wildfire/wildfire.py
 #
-#       Contains class definitions for 1D and 2D Euler equations.
+#       Contains class definitions for the 2D Wildfire equations.
 #
 # ------------------------------------------------------------------------ #
 from enum import Enum
@@ -51,11 +51,10 @@ class Wildfire(base.PhysicsBase):
 	This class corresponds to a simple wildfire model based on [1] Linn, R., 
 	Reisner, J., Colman, J. J., & Winterkamp, J. (2002). Studying wildfire 
 	behavior using FIRETEC. International journal of wildland fire, 11(4), 233-246.
-	It inherits attributes and methods from the
-	PhysicsBase class. See PhysicsBase for detailed comments of attributes
-	and methods. This class should not be instantiated directly. Instead,
-	the 2D variant, which inherit from this class (see below),
-	should be instantiated.
+	It inherits attributes and methods from the PhysicsBase class. See PhysicsBase 
+	for detailed comments of attributes and methods. This class should not be 
+	instantiated directly. Instead,the 2D variant, which inherit from this class 
+	(see below), should be instantiated.
 
 	Additional methods and attributes are commented below.
 
@@ -66,7 +65,7 @@ class Wildfire(base.PhysicsBase):
 	Cpwood: float
 		specific heat of wood [J/kgK]
 	'''
-	# PHYSICS_TYPE = general.PhysicsType.Euler
+	
 	PHYSICS_TYPE = general.PhysicsType.Wildfire
 
 	def __init__(self):
@@ -84,7 +83,7 @@ class Wildfire(base.PhysicsBase):
 			euler_BC_type.PressureOutlet : euler_fcns.PressureOutlet,
 		})
 
-	def set_physical_params(self, WoodMolarCoefficient=0.4552, SpecificHeat=1760., Fwood=1., Fwater=1., Z=400., Viscosity = 1., PrandtlNumber = 0.71, SpecificHeatRatio = 1.4, GasConstant = 287.):
+	def set_physical_params(self, WoodMolarCoefficient=0.4552, WoodSpecificHeat=1760., GasSpecificHeat=1006., WaterSpecificHeat=4184., Fwood=1., Fwater=1., Z=400., Viscosity = 1., PrandtlNumber = 0.71, SpecificHeatRatio = 1.4, GasConstant = 287.):
 		'''
 		This method sets physical parameters.
 
@@ -102,7 +101,9 @@ class Wildfire(base.PhysicsBase):
 			self: physical parameters set
 		'''
 		self.Nwood = WoodMolarCoefficient
-		self.Cpwood = SpecificHeat
+		self.Cpwood = WoodSpecificHeat
+		self.Cpgas = GasSpecificHeat
+		self.Cpwater = WaterSpecificHeat
 		self.Fwood = Fwood
 		self.Fwater = Fwater 
 		self.Z = Z 
@@ -227,7 +228,9 @@ class Wildfire2D(Wildfire):
 
 	Additional methods and attributes are commented below.
 	'''
-	NUM_STATE_VARS = 3 # 3 for the simple ODe model, more for when transport equations are included 
+
+	# CHECK FOR WHICH MODEL YOU ARE USING 
+	NUM_STATE_VARS = 8 # 3 for the simple ODE model, 8 for transport equations are included 
 	NDIMS = 2
 
 	def set_maps(self):
@@ -260,54 +263,99 @@ class Wildfire2D(Wildfire):
 		WoodDensity = "\\rho wood"
 		WaterDensity = "\\rho water"
 		Temperature = "\\T s"
+		# # Uncomment for Transport Model
+		MassFractionDensityGas = "\\YO2 rhogas"
+		GasDensity = "rho gas"
+		UVelocityDensityGas = "u rhogas"
+		VVelocityDensityGas = "v rhogas"
+		GasTemperatureDensity = "rhogas Tgas"
 
 	def get_state_indices(self):
 		irhowood = self.get_state_index("WoodDensity")
 		irhowater = self.get_state_index("WaterDensity")
 		iTs = self.get_state_index("Temperature")
 
-		return irhowood, irhowater, iTs
+		# # Uncomment for Baseline Model 
+		# return irhowood, irhowater, iTs
+		
+		# # Uncomment for Transport Model
+		iYO2rhogas = self.get_state_index("MassFractionDensityGas")
+		irhogas = self.get_state_index("GasDensity")
+		iurhogas = self.get_state_index("UVelocityDensityGas")
+		ivrhogas = self.get_state_index("VVelocityDensityGas")
+		irhogasTgas = self.get_state_index("GasTemperatureDensity")
+
+		return irhowood, irhowater, iTs, iYO2rhogas, irhogas, iurhogas, ivrhogas, irhogasTgas
 
 	def get_state_slices(self):
 		srhowood = self.get_state_slice("WoodDensity")
 		srhowater = self.get_state_slice("WaterDensity")
 		sTs = self.get_state_slice("Temperature")
+		# # Uncomment for Baseline Model 
+		# return srhowood, srhowater, sTs
+		
+		# Uncomment for Transport Model
+		sYO2rhogas = self.get_state_slice("MassFractionDensityGas")
+		srhogas = self.get_state_slice("GasDensity")
+		surhogas = self.get_state_slice("UVelocityDensityGas")
+		svrhogas = self.get_state_slice("VVelocityDensityGas")
+		srhogasTgas = self.get_state_slice("GasTemperatureDensity")
 
-		return srhowood, srhowater, sTs
+		# Uncomment for 2D Transport Model 
+		return srhowood, srhowater, sTs, sYO2rhogas, srhogas, surhogas, svrhogas, srhogasTgas
 
-	# def get_momentum_slice(self):
-		# irhou = self.get_state_index("XMomentum")
-		# smom = slice(irhou, irhou+1)
+	# Uncomment for Transport Model 
+	def get_momentum_slice(self):
+		iurhogas = self.get_state_index("UVelocityDensityGas")
+		smom = slice(iurhogas, iurhogas+1)
 
-		# return smom
+		return smom
 
 	def get_conv_flux_interior(self, Uq):
-		# Uncomment lines below this message for non zero flux terms 
-		# # Get indices of state variables
-		# irho, irhou, irhoE = self.get_state_indices()
 
-		# rho  = Uq[:, :, irho]  # [n, nq]
-		# rhou = Uq[:, :, irhou] # [n, nq]
-		# rhoE = Uq[:, :, irhoE] # [n, nq]
+		# # Uncomment for Baseline Model 
+		# irhowood, irhowater, iTs = self.get_state_indices()
 
-		# # Get velocity
-		# u = rhou / rho
-		# # Get squared velocitiy
-		# u2 = u**2
+		# Uncomment lines below this message for non zero flux terms for the Transport Model 
+		# Get indices of state variables
+		irhowood, irhowater, iTs, iYO2rhogas, irhogas, iurhogas, ivrhogas, irhogasTgas = self.get_state_indices()
 
-		# # Calculate pressure using the Ideal Gas Law
-		# p = (self.gamma - 1.)*(rhoE - 0.5 * rho * u2) # [n, nq]
-		# # Get total enthalpy
-		# H = rhoE + p
+		YO2rhogas  = Uq[:, :, iYO2rhogas]  # [n, nq]
+		rhogas = Uq[:, :, irhogas]         # [n, nq]
+		urhogas = Uq[:, :, iurhogas]       # [n, nq]
+		vrhogas = Uq[:, :, ivrhogas]       # [n, nq]
+		rhogasTgas = Uq[:, :, irhogasTgas] # [n, nq]
 
-		# Assemble flux matrix
-		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims] # zero flux 
-		# F[:, :, irho, 0] = rhou         # Flux of mass
-		# F[:, :, irhou, 0] = rho * u2 + p # Flux of momentum
-		# F[:, :, irhoE, 0] = H * u        # Flux of energy
+		# Get velocity
+		u = urhogas / rhogas
+		v = vrhogas / rhogas 
+		# Get squared velocitiy
+		u2 = u**2
+		v2 = v**2 
+		# Get temperature 
+		T =  rhogasTgas / rhogas
 
-		# return F, (u2, rho, p)
-		return F, None
+		# # Calculate pressure using the Ideal Gas La
+		p = rhogas*(self.R)*T # [n, nq] [Pa]
+
+		# # Uncomment for Baseline Model 
+		# F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims] # zero flux 
+		
+		# Uncomment for Transport Model 
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+
+		# Assemble flux matrix - Uncomment for Transport Model 
+		# x component + y component 
+		F[:, :, iYO2rhogas, 0] = u*YO2rhogas + v*YO2rhogas     # Flux of oxygen 
+		F[:, :, irhogas, 0] = urhogas + vrhogas                # Flux of mass of air
+		F[:, :, iurhogas, 0] = u2*rhogas+p + u*v*rhogas        # Flux of mass of air and x momentum 
+		F[:, :, ivrhogas, 0] = u*v*rhogas + v2*rhogas+p        # Flux of mass of air and y momentum
+		F[:, :, irhogasTgas, 0] = u*rhogasTgas + v*rhogasTgas  # Flux of heat
+
+		return F, (u2, v2, rhogas, p) 
+
+		# # Uncomment for Baseline Model
+		# return F, None
 
 	# def get_conv_eigenvectors(self, U_bar):
 		# '''
