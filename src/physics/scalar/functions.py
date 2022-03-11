@@ -47,6 +47,7 @@ class FcnType(Enum):
 	Heaviside = auto()
 	Zalesak = auto()
 	Rider = auto()
+	Droplet_translation = auto()
 
 
 class BCType(Enum):
@@ -562,6 +563,78 @@ class Rider(FcnBase):
 					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
 		cc[:,:,1] = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
 					np.sin(np.pi*(x[:,:,1]+0.5))**2*np.cos(np.pi*t/T)
+
+		return cc
+		
+		
+class Droplet_translation(FcnBase):
+	'''
+	Droplet translation test case
+
+	Attributes:
+	-----------
+	x0: float
+		center
+	radius: float
+		radius
+	thick: float
+		Heaviside thickness
+	'''
+	def __init__(self, x0=0., radius=0., thick=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.x0 = x0
+		self.radius = radius
+		self.thick = thick
+
+	def get_state(self, physics, x, t):
+		
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+	
+		tol = 1e-4
+		
+		xx = np.zeros(x.shape)
+		xx[:,:,0] = x[:,:,0] - 1.0*t
+		xx[:,:,1] = x[:,:,1]
+
+		r = np.linalg.norm(xx[:] - self.x0, axis=2,
+				keepdims=True)
+		
+		#########################
+		# Phase field
+		#########################
+		Hr    = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		Uq[:,:,0] = tol + (1.0-2.0*tol)*(1.0-Hr)
+		
+		#########################
+		# Phase field's Gradient
+		#########################
+		par = 0.001 # less than 0.01
+		
+		drdx = (xx[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
+		drdy = (xx[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
+		
+		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
+		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx
+		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy
+
+		return Uq
+		
+	def get_advection(self, physics, x, t):
+	
+		cc = np.zeros(x.shape)
+		cc[:,:,0] = 1.0
+		cc[:,:,1] = 0.0
 
 		return cc
 	

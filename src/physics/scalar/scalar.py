@@ -165,7 +165,8 @@ class ConstAdvScalar2D(ConstAdvScalar):
 		d = {
 			scalar_fcn_type.Gaussian : scalar_fcns.Gaussian,
 			scalar_fcn_type.Zalesak : scalar_fcns.Zalesak,
-			scalar_fcn_type.Rider : scalar_fcns.Rider
+			scalar_fcn_type.Rider : scalar_fcns.Rider,
+			scalar_fcn_type.Droplet_translation : scalar_fcns.Droplet_translation
 		}
 
 		self.IC_fcn_map.update(d)
@@ -597,6 +598,7 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 			scalar_fcn_type.DiffGaussian2D : scalar_fcns.DiffGaussian2D,
 			scalar_fcn_type.Zalesak : scalar_fcns.Zalesak,
 			scalar_fcn_type.Rider : scalar_fcns.Rider,
+			scalar_fcn_type.Droplet_translation : scalar_fcns.Droplet_translation
 		}
 
 		self.IC_fcn_map.update(d)
