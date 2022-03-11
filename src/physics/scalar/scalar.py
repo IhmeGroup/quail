@@ -556,8 +556,8 @@ class NonConstAdvDiffScalar(ConstAdvDiffScalar):
 			# Max wave speed is the advection speed
 			cc = self.IC.get_advection(self,x,t)
 			adv = np.zeros(Uq.shape)
-			adv[:,:,0] = np.abs(cc[:,:,0] + 1e-15) + np.abs(1.0-2.0*Uq[:,:,0])
-			adv[:,:,1] = np.abs(cc[:,:,0] + 1e-15)
+			adv[:,:,0] = np.abs(cc[:,:,0]) + np.abs(1.0-2.0*Uq[:,:,0])
+			adv[:,:,1] = np.abs(cc[:,:,0])
 			scalar = adv
 		elif sname is self.AdditionalVariables["Normal_x"].name:
 			scalar = Uq[:,:,1]/np.abs(Uq[:,:,1] + 1e-15)
@@ -684,15 +684,15 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 			# Max wave speed is the advection speed
 			cc = self.IC.get_advection(self,x,t)
 			adv = np.zeros(Uq.shape)
-			adv[:,:,0] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15) +\
+			adv[:,:,0] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2) +\
 				np.abs(1.0-2.0*Uq[:,:,0])
-			adv[:,:,1] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15)
-			adv[:,:,2] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2 + 1e-15)
+			adv[:,:,1] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2)
+			adv[:,:,2] = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2)
 			scalar = adv
 		elif sname is self.AdditionalVariables["Normal_x"].name:
-			scalar = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-15)
+			scalar = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-100)
 		elif sname is self.AdditionalVariables["Normal_y"].name:
-			scalar = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-15)
+			scalar = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-100)
 		elif sname is self.AdditionalVariables["adv_x"].name:
 			cc = self.IC.get_advection(self,x,t)
 			scalar = cc[:,:,0]

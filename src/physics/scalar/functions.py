@@ -452,8 +452,8 @@ class Zalesak(FcnBase):
 		#xabs = (1.0/(20.5*self.thick))*np.log(np.cosh(20.5*self.thick*x[:,:,0]))
 		xabs = np.abs(x[:,:,0])
 
-		Hr = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
-		Hy = 0.5*(1.0+np.tanh(self.thick*(x[:,:,1]-0.1)))
+		Hr    = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		Hy    = 0.5*(1.0+np.tanh(self.thick*(x[:,:,1]-0.35)))
 		Habsx = 0.5*(1.0+np.tanh(self.thick*(xabs-0.025)))
 
 		#########################
@@ -470,19 +470,19 @@ class Zalesak(FcnBase):
 		xabs = np.abs(x[:,:,0])
 		
 		Hr    = 0.5*(1.0+np.tanh(par*self.thick*(r[:,:,0]-self.radius)))
-		Hy    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,1]-0.1)))
+		Hy    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,1]-0.35)))
 		Habsx = 0.5*(1.0+np.tanh(par*self.thick*(xabs-0.025)))
 		
 		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
 		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
 		
 		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
-		dHydy    = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,1]-0.1))**2)
-		dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(2.0*self.thick*x[:,:,0])
+		dHydy    = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,1]-0.35))**2)
+		dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(20.0*self.thick*x[:,:,0])
 		#dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(par*self.thick*x[:,:,0])
 		
-		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Hy)*dHabsxdx
-		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Habsx)*dHydy
+		Uq[:,:,1] = (-dHrdr*drdx*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Hy)*dHabsxdx)*(1.0-2.0*tol)
+		Uq[:,:,2] = (-dHrdr*drdy*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Habsx)*dHydy)*(1.0-2.0*tol)
 		
 		return Uq
 		
@@ -490,8 +490,8 @@ class Zalesak(FcnBase):
 	
 		cc = np.zeros(x.shape)
 
-		cc[:,:,0] = -x[:,:,1]/0.2
-		cc[:,:,1] = x[:,:,0]/0.2
+		cc[:,:,0] = -x[:,:,1]
+		cc[:,:,1] = x[:,:,0]
 					
 		return cc
 		
@@ -674,8 +674,8 @@ class ZalesakSource(SourceBase):
 		
 		# Zalesak
 		S[:,:,0] = 0.0
-		S[:,:,1] = -1.0/0.2*Uq[:,:,2]
-		S[:,:,2] = 1.0/0.2*Uq[:,:,1]
+		S[:,:,1] = -Uq[:,:,2]
+		S[:,:,2] = Uq[:,:,1]
 
 		return S
 		

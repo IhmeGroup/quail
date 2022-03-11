@@ -453,7 +453,7 @@ def plot_line_probe(mesh, physics, solver, var_name, xy1, xy2, num_pts=101,
 	xyline = np.array([xline, yline]).transpose()
 
 	if plot_numerical:
-		var = get_numerical_solution(physics, solver, solver.state_coeffs, x, t,
+		var = get_numerical_solution(physics, solver, solver.state_coeffs, x, solver.time,
 				solver.basis, var_name)
 		var_plot = interpolate_2D_soln_to_points(physics, x, var, xyline)
 		default_label = "Numerical"
@@ -516,8 +516,6 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 	else:
 		quad_order = basis.get_quadrature_order(mesh, order-2,
 				physics=physics)
-		#quad_order = basis.get_quadrature_order(mesh, max([2, 2*order]),
-		#		physics=physics)
 		gbasis = mesh.gbasis
 		xref, _ = gbasis.get_quadrature_data(quad_order)
 
@@ -584,11 +582,6 @@ def get_numerical_solution(physics,solver, U, x, t, basis, var_name):
 			[num_elems, num_pts, 1]
 	'''
 	Uq = helpers.evaluate_state(U, basis.basis_val)
-	
-	# Interpolate gradient of state at quad points
-	elem_helpers = solver.elem_helpers
-	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-	gUq = solver.evaluate_gradient(U, basis_phys_grad_elems)
 	
 	var_numer = physics.compute_variable(var_name, Uq, x, t)
 
