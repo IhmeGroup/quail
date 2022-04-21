@@ -509,9 +509,8 @@ class SolverBase(ABC):
 			f = np.ones(U.shape)
 			epsilon = physics.al[0]*av_param*f/1.5
 			
-			for ii in range(0, len(f[0,:,0])):
-				f[:,ii,1] = sens0[:]
-			U[:,:,2] = f[:,:,1]
+#			for ii in range(0, len(f[0,:,0])):
+#				f[:,ii,1] = sens0[:]
 		else:
 			epsilon = np.zeros(U.shape)
 
@@ -735,15 +734,8 @@ class SolverBase(ABC):
 				if iteration % 2000 == 0:
 					#Re-initialisation
 					ratio=1e10
-					#Uq[:,:,1] = Uq[:,:,0]-0.5
 					U = self.state_coeffs
 					U[:,:,1] = U[:,:,0]-0.5
-#					eps = physics.al[0]
-#					UU = np.zeros(U[:,:,0].shape)
-#					UU[:,:] = U[:,:,0]
-#					UU[UU<0] = 1e-16
-#					UU[UU>1] = 1-1e-16
-#					U[:,:,1] = eps*np.log(UU/(1.0-UU))
 					scaling = 1.5/self.params["AVParameter"]
 					stepper.dt = scaling*stepper.dt
 					itmax = 120 #50

@@ -857,15 +857,6 @@ class DG(base.SolverBase):
 		# Interpolate gradient of state at quad points
 		gUq = self.evaluate_gradient(Uc, basis_phys_grad_elems)
 
-#		mag2 = np.sqrt(gUq[:,:,:,0]**2 + gUq[:,:,:,1]**2 + 1e-32)
-#		psic = physics.al[0]*mag2-Uc*(1.0-Uc)
-#		
-#		# Interpolate gradient of state at quad points
-#		gpsic = self.evaluate_gradient(psic, basis_phys_grad_elems)
-#		
-#		Uq[:,:,1] = gpsic[:,:,0,0]
-#		Uq[:,:,2] = gpsic[:,:,0,1]
-
 		if self.verbose:
 			# Get min and max of state variables for reporting
 			self.get_min_max_state(Uq)
@@ -873,7 +864,6 @@ class DG(base.SolverBase):
 		if fluxes:
 			# Evaluate the inviscid flux integral
 			Fq = physics.get_conv_flux_interior(Uq, gUq, x_elems, self.time)[0] # [ne, nq, ns, ndims]
-			#Fq = physics.get_conv_flux_interior(Uq, gpsic, x_elems, self.time)[0] # [ne, nq, ns, ndims]
 
 			if physics.diff_flux_fcn:
 				# Evaluate the diffusion flux
@@ -897,12 +887,6 @@ class DG(base.SolverBase):
 
 			res_elem += solver_tools.calculate_source_term_integral(
 					elem_helpers, Sq) # [ne, nb, ns]
-
-		# Add artificial viscosity term
-#		if self.params["ArtificialViscosity"]:
-#			av_param = self.params["AVParameter"]
-#			res_elem -= solver_tools.calculate_artificial_viscosity_integral(
-#					physics, elem_helpers, Uc, av_param, self.order)
 
 		return res_elem # [ne, nb, ns]
 
@@ -953,24 +937,6 @@ class DG(base.SolverBase):
 		# Make gradient the physical gradient at L/R states
 		gUqL = self.ref_to_phys_grad(ijacL_elems, gUqL_ref)
 		gUqR = self.ref_to_phys_grad(ijacR_elems, gUqR_ref)
-#
-#		UcL[UcL<0] = 0.0
-#		UcL[UcL>1] = 1.0
-#		UcR[UcR<0] = 0.0
-#		UcR[UcR>1] = 1.0
-#		alpha = 0.1
-#		psicL = UcL**alpha/(UcL**alpha + (1.0-UcL)**alpha)
-#		psicR = UcR**alpha/(UcR**alpha + (1.0-UcR)**alpha)
-#
-#		# Interpolate gradient of state at quad points
-#		gpsiL_ref = self.evaluate_gradient(psicL,
-#				faces_to_basis_ref_gradL[faceL_IDs])
-#		gpsiR_ref = self.evaluate_gradient(psicR,
-#				faces_to_basis_ref_gradR[faceR_IDs])
-#
-#		# Make gradient the physical gradient at L/R states
-#		gpsicL = self.ref_to_phys_grad(ijacL_elems, gpsiL_ref)
-#		gpsicR = self.ref_to_phys_grad(ijacR_elems, gpsiR_ref)
 
 		# Allocate resL and resR (needed for operator splitting)
 		nifL = self.int_face_helpers.elemL_IDs.shape[0]
@@ -987,11 +953,8 @@ class DG(base.SolverBase):
 		if fluxes:
 			# Compute numerical flux
 			Fq = physics.get_conv_flux_numerical(UqL, UqR, gUqL, gUqR, normals_int_faces, x_faces, self.time)
-			#Fq = physics.get_conv_flux_numerical(UqL, UqR, gpsicL, gpsicR, normals_int_faces, x_faces, self.time)
-					# [nf, nq, ns]
 
 			# Compute diffusion flux
-			#epsilon = physics.al[0]*av_param
 			Fq_diff, FL, FR = physics.get_diff_flux_numerical(UqL, UqR,
 					gUqL, gUqR, normals_int_faces, x_faces, self.time, epsilon) # [nf, nq, ns],
 					# [nf, nq, ns, ndims], [nf, nq, ns, ndims]
@@ -1063,8 +1026,8 @@ class DG(base.SolverBase):
 			Fq, FqB = BC.get_boundary_flux(physics, UqI, normals, x, self.time, gUq, epsilon)
 			FqB_phys = self.ref_to_phys_grad(ijac, FqB)
 			
-			FqB_phys[:,:,:,:] = 0.0
-			Fq[:,:,:] = 0.0
+#			FqB_phys[:,:,:,:] = 0.0
+#			Fq[:,:,:] = 0.0
 
 			# Compute contribution to adjacent element residual
 			resB = solver_tools.calculate_boundary_flux_integral(

@@ -819,58 +819,8 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 
 	''' Evaluate desired variable at sample points '''
 	if plot_numerical:
-		var_plot1 = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
+		var_plot = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
 				solver.basis, var_name)
-
-		var_plot2 = get_analytical_solution(physics, physics.IC, x, 0.,
-				var_name)
-		var_plot2.shape = x.shape[0], x.shape[1], -1
-
-		var_plot2 = get_analytical_solution(physics, physics.exact_soln, x,
-				time, var_name)
-		#var_plot2.shape = x.shape[0], x.shape[1], -1
-
-		var_plot = np.abs(var_plot1-var_plot2)
-#
-#		elem_helpers = solver.elem_helpers
-#		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-#		# Interpolate gradient of state at quad points
-#		gUq = solver.evaluate_gradient(solver.state_coeffs, basis_phys_grad_elems)
-#		Uq = helpers.evaluate_state(solver.state_coeffs, solver.basis.basis_val)
-#
-#		norm_grad_U0 = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2)
-#		# Calculate smoothness switch
-#		norm_grad_U1 = np.sqrt(gUq[:, :, 2, 0]**2 + gUq[:, :, 2, 1]**2)
-#		h =(2./16./4.)
-#		f = 0.5*(norm_grad_U1+norm_grad_U0)
-#		par = 1.0/h
-#		f[f<par] = 0.0
-#		f = f*h*1.0
-		
-#		plotgUqx = np.zeros(var_plot1.shape)
-#		plotgUqy = np.zeros(var_plot1.shape)
-#
-#		plotgUqx = gUq[:,:,0,0]/(np.sqrt(gUq[:,:,0,0]**2+gUq[:,:,0,1]**2)+1e-100)
-#		plotgUqy = gUq[:,:,0,1]/(np.sqrt(gUq[:,:,0,0]**2+gUq[:,:,0,1]**2)+1e-100)
-#
-#		if var_name == "Normal_x":
-#			#var_plot = np.abs(var_plot1-plotgUqx)+1e-200
-#			var_plot = var_plot1
-#			#var_plot = plotgUqx
-#		else:
-
-		
-		var_plot = var_plot1
-		
-#		for ii in range(0,len(var_plot[:,0,0])):
-#			for  jj in range(0,len(var_plot[0,:,0])):
-#				if var_plot[ii,jj,0]<0:
-#					var_plot[ii,jj,0]=0.0
-#				elif var_plot[ii,jj,0]>1:
-#					var_plot[ii,jj,0]=1.0
-		
-		#var_plot = f
-		
 		default_label = "Numerical"
 	elif plot_exact:
 		var_plot = get_analytical_solution(physics, physics.exact_soln, x,
@@ -955,35 +905,12 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 	# Get sample points
 	x = get_sample_points(mesh, solver, physics, solver.basis,
 			equidistant_pts)
-			
-	if var_name=="Normal":
-		strx = "Normal_x"
-		stry = "Normal_y"
-	elif var_name=="adv":
-		strx = "adv_x"
-		stry = "adv_y"
-		
-	''' Evaluate desired variable at sample points '''
-	if plot_numerical:
-		var_plot_x = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
-				solver.basis, strx)
-		default_label = "Numerical"
-		var_plot_y= get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
-				solver.basis, stry)
-		default_label = "Numerical"
-		var_plot_extra= get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
-				solver.basis, "Scalar")
-	if legend_label is None:
-		legend_label = default_label
 
 	elem_helpers = solver.elem_helpers
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 	UU = solver.state_coeffs
 	# Interpolate gradient of state at quad points
 	gUq = solver.evaluate_gradient(solver.state_coeffs, basis_phys_grad_elems)
-
-	plotgUqx = np.zeros(var_plot_x.shape)
-	plotgUqy = np.zeros(var_plot_y.shape)
 	
 	mask = np.ones(UU[:,:,0].shape)
 	mask[UU[:,:,0]>0.65] = 0.0
@@ -994,8 +921,6 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 
 	x = np.reshape(x,[len(x[:,0,0])*len(x[0,:,0]),2])
 	x1 = x[:,0]
-#	var_plot_x = np.reshape(var_plot_x, x1.shape)
-#	var_plot_y = np.reshape(var_plot_y, x1.shape)
 
 	plotgUqx = np.reshape(plotgUqx, x1.shape)
 	plotgUqy = np.reshape(plotgUqy, x1.shape)
@@ -1006,14 +931,7 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 	length=kwargs["length"]
 	skips=kwargs["skips"]
 		
-#	plt.quiver(x[::skips,0], x[::skips,1],var_plot_x[::skips],var_plot_y[::skips], scale = length, color="k")
 	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
-#	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
-#
-#	errx = np.abs(var_plot_x[::skips]-plotgUqx[::skips])
-#	erry = np.abs(var_plot_y[::skips]-plotgUqy[::skips])
-#
-#	plt.quiver(x[::skips,0], x[::skips,1],errx,erry, scale = length, color="k")
 
 	# Final embellishments
 	finalize_plot(**kwargs)
