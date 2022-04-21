@@ -7,6 +7,7 @@
 # ------------------------------------------------------------------------ #
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+from matplotlib import ticker
 import matplotlib.tri as tri
 import numpy as np
 
@@ -120,8 +121,11 @@ def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=None):
 	var_plot = var_plot[idx]
 
 	# Plot
-	plt.plot(x[::skip], var_plot[::skip], fmt, label=legend_label)
+	plt.plot(x[::skip], var_plot[::skip], fmt, linewidth=2, label=legend_label)
+	#plt.semilogy(x[::skip], var_plot[::skip], fmt, linewidth=2, label=legend_label)
 	plt.ylabel(ylabel)
+	
+	#plt.ylim(bottom=1e-16)
 
 
 def triangulate(physics, x, var):
@@ -205,6 +209,7 @@ def plot_2D_regular(physics, x, var_plot, **kwargs):
 			tcf.set_clim(levels[0],levels[-1])
 	else:
 		tcf = plt.tricontourf(tris, var_tris)
+		#tcf = plt.tricontourf(tris, var_tris, locator=ticker.LogLocator())
 			
 
 	return tcf.levels
@@ -512,7 +517,7 @@ def get_sample_points(mesh, solver, physics, basis, equidistant=True):
 
 	# Get sample points in reference space
 	if equidistant:
-		xref = basis.equidistant_nodes(max([1, 3*order]))
+		xref = basis.equidistant_nodes(max([1, order]))
 	else:
 		quad_order = basis.get_quadrature_order(mesh, order-2,
 				physics=physics)
@@ -555,8 +560,10 @@ def get_analytical_solution(physics, fcn_data, x, time, var_name):
 		U_plot = fcn_data.get_state(physics, x=np.expand_dims(x,0), t=time)
 	else:
 		U_plot = fcn_data.get_state(physics, x=x, t=time)
+	
+	gU_plot = np.zeros((len(U_plot[:,0,0]),len(U_plot[0,:,0]),len(U_plot[0,0,:]),2))
 
-	var_plot = physics.compute_variable(var_name, U_plot, x=x, t=time)
+	var_plot = physics.compute_variable(var_name, U_plot, gU_plot, x=x, t=time)
 
 	return var_plot
 
@@ -583,7 +590,11 @@ def get_numerical_solution(physics,solver, U, x, t, basis, var_name):
 	'''
 	Uq = helpers.evaluate_state(U, basis.basis_val)
 	
-	var_numer = physics.compute_variable(var_name, Uq, x, t)
+	elem_helpers = solver.elem_helpers
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+	gUq = solver.evaluate_gradient(U, basis_phys_grad_elems)
+	
+	var_numer = physics.compute_variable(var_name, Uq, gUq, x, t)
 
 	return var_numer
 
@@ -630,7 +641,7 @@ def get_average_solution(physics, solver, x, basis, var_name):
 	Uq = helpers.evaluate_state(U, basis.basis_val)
 
 	Ubar = helpers.get_element_mean(Uq, quad_wts, djacs, vols)
-	var_numer = physics.compute_variable(var_name, Ubar, x, t)
+	var_numer = physics.compute_variable(var_name, Ubar, Ubar, x, t)
 
 	x_bar = np.sum(x, axis=1).reshape([x.shape[0], 1, 1])/x.shape[1]
 
@@ -808,8 +819,58 @@ def plot_solution(mesh, physics, solver, var_name, plot_numerical=True,
 
 	''' Evaluate desired variable at sample points '''
 	if plot_numerical:
-		var_plot = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
+		var_plot1 = get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
 				solver.basis, var_name)
+
+		var_plot2 = get_analytical_solution(physics, physics.IC, x, 0.,
+				var_name)
+		var_plot2.shape = x.shape[0], x.shape[1], -1
+
+		var_plot2 = get_analytical_solution(physics, physics.exact_soln, x,
+				time, var_name)
+		#var_plot2.shape = x.shape[0], x.shape[1], -1
+
+		var_plot = np.abs(var_plot1-var_plot2)
+#
+#		elem_helpers = solver.elem_helpers
+#		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+#		# Interpolate gradient of state at quad points
+#		gUq = solver.evaluate_gradient(solver.state_coeffs, basis_phys_grad_elems)
+#		Uq = helpers.evaluate_state(solver.state_coeffs, solver.basis.basis_val)
+#
+#		norm_grad_U0 = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2)
+#		# Calculate smoothness switch
+#		norm_grad_U1 = np.sqrt(gUq[:, :, 2, 0]**2 + gUq[:, :, 2, 1]**2)
+#		h =(2./16./4.)
+#		f = 0.5*(norm_grad_U1+norm_grad_U0)
+#		par = 1.0/h
+#		f[f<par] = 0.0
+#		f = f*h*1.0
+		
+#		plotgUqx = np.zeros(var_plot1.shape)
+#		plotgUqy = np.zeros(var_plot1.shape)
+#
+#		plotgUqx = gUq[:,:,0,0]/(np.sqrt(gUq[:,:,0,0]**2+gUq[:,:,0,1]**2)+1e-100)
+#		plotgUqy = gUq[:,:,0,1]/(np.sqrt(gUq[:,:,0,0]**2+gUq[:,:,0,1]**2)+1e-100)
+#
+#		if var_name == "Normal_x":
+#			#var_plot = np.abs(var_plot1-plotgUqx)+1e-200
+#			var_plot = var_plot1
+#			#var_plot = plotgUqx
+#		else:
+
+		
+		var_plot = var_plot1
+		
+#		for ii in range(0,len(var_plot[:,0,0])):
+#			for  jj in range(0,len(var_plot[0,:,0])):
+#				if var_plot[ii,jj,0]<0:
+#					var_plot[ii,jj,0]=0.0
+#				elif var_plot[ii,jj,0]>1:
+#					var_plot[ii,jj,0]=1.0
+		
+		#var_plot = f
+		
 		default_label = "Numerical"
 	elif plot_exact:
 		var_plot = get_analytical_solution(physics, physics.exact_soln, x,
@@ -910,13 +971,34 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 		var_plot_y= get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
 				solver.basis, stry)
 		default_label = "Numerical"
+		var_plot_extra= get_numerical_solution(physics, solver, solver.state_coeffs, x, time,
+				solver.basis, "Scalar")
 	if legend_label is None:
 		legend_label = default_label
 
+	elem_helpers = solver.elem_helpers
+	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+	UU = solver.state_coeffs
+	# Interpolate gradient of state at quad points
+	gUq = solver.evaluate_gradient(solver.state_coeffs, basis_phys_grad_elems)
+
+	plotgUqx = np.zeros(var_plot_x.shape)
+	plotgUqy = np.zeros(var_plot_y.shape)
+	
+	mask = np.ones(UU[:,:,0].shape)
+	mask[UU[:,:,0]>0.65] = 0.0
+	mask[UU[:,:,0]<0.35] = 0.0
+
+	plotgUqx = gUq[:,:,1,0]/(np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)+1e-100)*mask
+	plotgUqy = gUq[:,:,1,1]/(np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)+1e-100)*mask
+
 	x = np.reshape(x,[len(x[:,0,0])*len(x[0,:,0]),2])
 	x1 = x[:,0]
-	var_plot_x = np.reshape(var_plot_x, x1.shape)
-	var_plot_y = np.reshape(var_plot_y, x1.shape)
+#	var_plot_x = np.reshape(var_plot_x, x1.shape)
+#	var_plot_y = np.reshape(var_plot_y, x1.shape)
+
+	plotgUqx = np.reshape(plotgUqx, x1.shape)
+	plotgUqy = np.reshape(plotgUqy, x1.shape)
 	''' Plot '''
 	if create_new_figure:
 		plt.figure()
@@ -924,7 +1006,14 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 	length=kwargs["length"]
 	skips=kwargs["skips"]
 		
-	q=plt.quiver(x[::skips,0], x[::skips,1],var_plot_x[::skips],var_plot_y[::skips], scale = length)
+#	plt.quiver(x[::skips,0], x[::skips,1],var_plot_x[::skips],var_plot_y[::skips], scale = length, color="k")
+	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
+#	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
+#
+#	errx = np.abs(var_plot_x[::skips]-plotgUqx[::skips])
+#	erry = np.abs(var_plot_y[::skips]-plotgUqy[::skips])
+#
+#	plt.quiver(x[::skips,0], x[::skips,1],errx,erry, scale = length, color="k")
 
 	# Final embellishments
 	finalize_plot(**kwargs)

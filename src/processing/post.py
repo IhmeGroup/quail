@@ -93,16 +93,20 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 	basis.get_basis_val_grads(quad_pts, True)
 	u = helpers.evaluate_state(U, basis.basis_val)
 
+	gu = np.zeros((len(u[:,0,0]),len(u[0,:,0]),len(u[0,0,:]),2))
+
 	# Computed requested quantity
-	s = physics.compute_variable(var_name, u, x=None, t=None)
-	s_exact = physics.compute_variable(var_name, u_exact, x=None, t=None)
+	s = physics.compute_variable(var_name, u, gu, x=xphys, t=time)
+	s_exact = physics.compute_variable(var_name, u_exact, gu, x=xphys, t=time)
 
 	# Loop through elements
 	for elem_ID in range(mesh.num_elems):
 		# Calculate element-local error
 		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts,
 				get_djac=True)
-		err = np.sum((np.abs(s[elem_ID] - s_exact[elem_ID]))**ord*quad_wts*djac)
+		#err = np.sum((np.abs(s[elem_ID] - s_exact[elem_ID]))**ord*quad_wts*djac)
+		err = np.sum((s[elem_ID])**ord*quad_wts*djac)
+		#err = np.sum((s_exact[elem_ID])**ord*quad_wts*djac)
 		err_elems[elem_ID] = err
 		tot_err += err_elems[elem_ID]
 
@@ -189,7 +193,7 @@ def get_boundary_info(solver, mesh, physics, bname, var_name,
 	Uq = helpers.evaluate_state(solver.state_coeffs[elem_ID], basis_val)
 
 	# Get requested variable
-	varq = physics.compute_variable(var_name, Uq, x=None, t=None) # [nf, nq, 1]
+	varq = physics.compute_variable(var_name, Uq, gUq=None, x=None, t=None) # [nf, nq, 1]
 
 	# Normals
 	normals = normals_bgroups[boundary_num] # [nf, nq, ndims]

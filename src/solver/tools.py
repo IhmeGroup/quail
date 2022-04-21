@@ -186,6 +186,11 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 
 	# Evaluate solution at quadrature points
 	Uq = helpers.evaluate_state(Uc, basis_val)
+	
+	U_bar = helpers.get_element_mean(Uc, quad_wts, djac_elems,vol_elems)
+	UU_bar = helpers.get_element_mean((Uc/(U_bar+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
+	volume = helpers.get_element_mean(np.ones(Uc.shape), quad_wts, djac_elems,vol_elems)
+	
 	# Evaluate solution gradient at quadrature points
 	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
 	# For Euler equations, use pressure as the smoothness variable
@@ -201,11 +206,25 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 		f = norm_grad_p / (pressure + 1e-12)
 	# For everything else, use the first solution variable
 	else:
-		U0 = Uq[:, :, 0]
-		grad_U0 = grad_Uq[:, :, 0]
+		U0 = Uq[:, :, 1]
+		grad_U0 = grad_Uq[:, :, 1]
 		norm_grad_U0 = np.linalg.norm(grad_U0, axis = 2)
 		# Calculate smoothness switch
-		f =  norm_grad_U0 / (U0 + 1e-12)
+		f =  norm_grad_U0 #/ (U0 + 1e-12)
+#		f = np.ones(norm_grad_U0.shape)
+		sens = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
+
+		for ii in range(0, len(sens)):
+			if sens[ii]<0.125-0.025:
+				sens[ii] = 0.0
+			elif sens[ii]>0.125-0.025 and sens[ii]<0.125+0.025:
+				sens[ii] = 0.5*sens[ii]*(1.0+np.sin(0.5*np.pi/0.025*(sens[ii]-0.125)))
+		
+		for ii in range(0, len(f[0,:])):
+			f[:,ii] = sens[ii]
+			
+		f = np.ones(norm_grad_U0.shape)
+		
 
 	# Compute s_k
 	s = np.zeros((Uc.shape[0], ndims))
@@ -225,13 +244,16 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 	# Scale with polynomial order
 	h_tilde = h / (p + 1)
 	# Compute dissipation scaling
-	epsilon = av_param *  np.einsum('ij, il -> ijl', f, h_tilde**3)
+	epsilon = av_param *  np.einsum('ij, il -> ijl', f, h_tilde)
 	# Calculate integral, with state coeffs factored out
 	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
 				basis_phys_grad_elems, basis_phys_grad_elems, quad_wts,
 				djac_elems)
 	# Calculate residual
 	res_elem = np.einsum('ipn, ipk -> ink', integral, Uc)
+	
+	res_elem[:,:,0] = 0.0
+	res_elem[:,:,2] = 0.0
 
 	return res_elem # [ne, nb, ns]
 

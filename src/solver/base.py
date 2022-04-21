@@ -453,14 +453,75 @@ class SolverBase(ABC):
 			res[:] = 0.
 		else:
 			res[:] = stepper.balance_const
+		
+		switch = physics.switch
+		if self.params["ArtificialViscosity"] and switch==0:
+			elem_helpers = self.elem_helpers
+			quad_wts = elem_helpers.quad_wts
+			quad_pts = elem_helpers.quad_pts
+			djac_elems=elem_helpers.djac_elems
+			vol_elems = elem_helpers.vol_elems
+
+#			basis_type  = self.params["SolutionBasis"]
+#			basis_proj = basis_tools.set_basis(self.order-1, basis_type)
+#			# Quadrature
+#			order = 2*(self.order-1)
+#			quad_order2 = self.basis.get_quadrature_order(mesh, order)
+#			basis_proj.quadrature_type = self.basis.quadrature_type
+#			basis_proj.num_pts_colocated = self.order**2
+#			quad_pts2, quad_wts2 = basis_proj.get_quadrature_data(quad_order2)
+#			eval_pts2 = quad_pts2
+#			iMM_elems2 = basis_tools.get_inv_mass_matrices(mesh, basis_proj, self.order-1)
+#
+#			self.basis.get_basis_val_grads(eval_pts2, get_val=True)
+#			Uq_old = helpers.evaluate_state(U, self.basis.basis_val)
+#
+#			U_proj=np.zeros((len(U[:,0,0]),self.order**2,len(U[0,0,:])))
+#
+#			solver_tools.L2_projection(mesh, iMM_elems2, basis_proj, quad_pts2,
+#					quad_wts2, Uq_old, U_proj)
+
+			U_bar = helpers.get_element_mean(U, quad_wts, djac_elems,vol_elems)
+			U_bar_ext = np.zeros(U.shape)
+			for ii in range(0, len(U_bar_ext[0,:])):
+				U_bar_ext[:,ii,:] = U_bar[:,0,:]
+
+			UU_bar = helpers.get_element_mean((U/(U_bar+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
+			volume = helpers.get_element_mean(np.ones(U.shape), quad_wts, djac_elems,vol_elems)
+			sens0 = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
+			sens = np.zeros(sens0.shape)
+
+			k0 = 0.125 #0.125
+			kappa = 0.025
+			for ii in range(0, len(sens)):
+				if sens0[ii]<k0 - kappa:
+					sens[ii] = 0.0
+				elif sens0[ii]>k0 - kappa and sens0[ii]<k0 + kappa:
+					sens[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens0[ii]-kappa)))
+				elif sens0[ii]>k0 + kappa:
+					sens[ii] = 1.0
+
+			f = np.zeros(U.shape)
+			for ii in range(0, len(f[0,:,0])):
+				f[:,ii,1] = sens[:]
+				
+			av_param = self.params["AVParameter"]
+			f = np.ones(U.shape)
+			epsilon = physics.al[0]*av_param*f/1.5
+			
+			for ii in range(0, len(f[0,:,0])):
+				f[:,ii,1] = sens0[:]
+			U[:,:,2] = f[:,:,1]
+		else:
+			epsilon = np.zeros(U.shape)
 
 		self.get_boundary_face_residuals(U, res)
-		self.get_element_residuals(U, res)
-		self.get_interior_face_residuals(U, res)
+		self.get_element_residuals(U, res, epsilon)
+		self.get_interior_face_residuals(U, res, epsilon)
 
 		return res
 
-	def get_element_residuals(self, U, res):
+	def get_element_residuals(self, U, res, epsilon):
 		'''
 		Wrapper for get_element_residual (just for consistency with how
 		interior/boundary face contributions are computed).
@@ -474,9 +535,9 @@ class SolverBase(ABC):
 			res: calculated residual array
 		'''
 
-		res = self.get_element_residual(U, res)
+		res = self.get_element_residual(U, res, epsilon)
 
-	def get_interior_face_residuals(self, U, res):
+	def get_interior_face_residuals(self, U, res, epsilon):
 		'''
 		Computes interior face residual contributions.
 
@@ -501,10 +562,12 @@ class SolverBase(ABC):
 		# this interior face
 		UL = U[elemL_IDs]
 		UR = U[elemR_IDs]
+		epsilonL = epsilon[elemL_IDs]
+		epsilonR = epsilon[elemR_IDs]
 
 		# Calculate face residuals for left and right elements
 		RL, RR, RL_diff, RR_diff = self.get_interior_face_residual(faceL_IDs, faceR_IDs, UL,
-				UR)
+				UR, epsilonL, epsilonR)
 
 		# Add this residual back to the global. The np.add.at function is
 		# used to correctly handle duplicate element IDs.
@@ -666,6 +729,43 @@ class SolverBase(ABC):
 			# Increment time
 			t += stepper.dt
 			self.time = t
+			
+			if stepper.dt != 0:
+				iteration = self.itime + 1
+				if iteration % 2000 == 0:
+					#Re-initialisation
+					ratio=1e10
+					#Uq[:,:,1] = Uq[:,:,0]-0.5
+					U = self.state_coeffs
+					U[:,:,1] = U[:,:,0]-0.5
+#					eps = physics.al[0]
+#					UU = np.zeros(U[:,:,0].shape)
+#					UU[:,:] = U[:,:,0]
+#					UU[UU<0] = 1e-16
+#					UU[UU>1] = 1-1e-16
+#					U[:,:,1] = eps*np.log(UU/(1.0-UU))
+					scaling = 1.5/self.params["AVParameter"]
+					stepper.dt = scaling*stepper.dt
+					itmax = 120 #50
+					tmax = (physics.al[0])*1.5
+					print(tmax)
+					iter = 0
+					t = 0.
+					while t<tmax and iter<itmax: #0.8 for res**2 0.995
+						physics.switch = 0.0
+						res  = stepper.take_time_step(self)
+						res2 = np.reshape(res[:,:,1], -1)
+						nrmres = np.linalg.norm(res2)/np.sqrt(len(res2))
+						if iter ==0:
+							nrmres0 = nrmres
+					
+						ratio = nrmres/nrmres0
+						print(ratio,iter,t)
+						iter = iter+1
+						t = t + stepper.dt
+				
+					physics.switch = 1.0
+					
 
 			# Custom user function definition
 			self.custom_user_function(self)

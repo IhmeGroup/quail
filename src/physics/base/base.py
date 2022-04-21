@@ -517,7 +517,7 @@ class PhysicsBase(ABC):
 		return 2*order+1
 
 	@abstractmethod
-	def get_conv_flux_interior(self, Uq, x, t):
+	def get_conv_flux_interior(self, Uq, gUq, x, t):
 		'''
 		This method computes the convective analytical flux for element
 		interiors.
@@ -535,7 +535,7 @@ class PhysicsBase(ABC):
 		'''
 		pass
 
-	def get_diff_flux_interior(self, Uq, gUq):
+	def get_diff_flux_interior(self, Uq, gUq, x, t, epsilon):
 		'''
 		This method computes the diffusive analytical flux for element
 		interiors.
@@ -553,7 +553,7 @@ class PhysicsBase(ABC):
 		'''
 		pass
 
-	def get_conv_flux_projected(self, Uq, normals, x, t):
+	def get_conv_flux_projected(self, Uq, gUq, normals, x, t):
 		'''
 		This method computes the convective analytical flux projected in a
 		given direction.
@@ -569,7 +569,7 @@ class PhysicsBase(ABC):
 			projected flux values [nf, nq, ns]
 			tuple of extra variables computed by interior flux
 		'''
-		Fq, vars = self.get_conv_flux_interior(Uq, x, t) # [nf, nq, ns, ndims]
+		Fq, vars = self.get_conv_flux_interior(Uq, gUq, x, t) # [nf, nq, ns, ndims]
 		
 		# Check needed for ADER shapes to be consistent. This appears to 
 		# be a minimally invasive approach.
@@ -578,7 +578,7 @@ class PhysicsBase(ABC):
 
 		return np.einsum('ijkl, ijl -> ijk', Fq, normals), vars
 
-	def get_conv_flux_numerical(self, UqL, UqR, normals, x, t):
+	def get_conv_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals, x, t):
 		'''
 		This method computes the convective numerical flux.
 
@@ -594,11 +594,11 @@ class PhysicsBase(ABC):
 		--------
 			Fnum: numerical flux values [nf, nq, ns]
 		'''
-		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, normals, x, t)
+		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, gUqL, gUqR, normals, x, t)
 
 		return Fnum
 
-	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals):
+	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals, x, t, epsilon):
 		'''
 		This method computes the diffusive numerical flux.
 
@@ -625,14 +625,14 @@ class PhysicsBase(ABC):
 		if self.diff_flux_fcn:
 			# Compute the diffusion fluxes
 			Fnum, FL, FR = self.diff_flux_fcn.compute_flux(self, UqL, UqR, 
-					gUqL, gUqR, normals)
+					gUqL, gUqR, normals, x, t, epsilon)
 
 			return Fnum, FL, FR # [nf, nq, ns], [nf, nq, ns, ndim], 
 				# [nf, nq, ns, ndim]
 		else:
 			return 0., 0., 0. # Return zeros when diffusion fluxes not needed
 
-	def get_diff_boundary_flux_numerical(self, UqI, UqB, gUq, normals):
+	def get_diff_boundary_flux_numerical(self, UqI, UqB, gUq, normals, x, t, epsilon):
 		'''
 		This method computes the diffusive numerical flux at a boundary state.
 
@@ -653,11 +653,11 @@ class PhysicsBase(ABC):
 				[nf, nq, ns, ndims]
 		'''
 		Fnum, FB = self.diff_flux_fcn.compute_boundary_flux(self, UqI, UqB, gUq,
-				normals)
+				normals, x, t, epsilon)
 
 		return Fnum, FB # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
 
-	def eval_source_terms(self, Uq, xphys, time, Sq):
+	def eval_source_terms(self, Uq, gUq, ggUqx, ggUqy, xphys, time, Sq):
 		'''
 		This method computes the source term(s).
 
@@ -675,7 +675,7 @@ class PhysicsBase(ABC):
 			Sq: sum of the values of source term(s) [ne, nq, ns]
 		'''
 		for source in self.source_terms:
-			Sq += source.get_source(self, Uq, xphys, time)
+			Sq += source.get_source(self, Uq, gUq, ggUqx, ggUqy, xphys, time)
 
 		return Sq
 
@@ -701,7 +701,7 @@ class PhysicsBase(ABC):
 
 		return jac
 
-	def compute_variable(self, var_name, Uq, x, t, flag_non_physical=False):
+	def compute_variable(self, var_name, Uq, gUq, x, t, flag_non_physical=False):
 		'''
 		This method computes a given variable.
 
@@ -724,12 +724,12 @@ class PhysicsBase(ABC):
 			varq = Uq[:, :, sidx:sidx+1].copy()
 		except KeyError:
 			# Now try additional
-			varq = self.compute_additional_variable(var_name, Uq,
+			varq = self.compute_additional_variable(var_name, Uq, gUq,
 					flag_non_physical, x, t)
 
 		return varq
 
-	def compute_additional_variable(self, var_name, Uq, flag_non_physical, x, t):
+	def compute_additional_variable(self, var_name, Uq, gUq, flag_non_physical, x, t):
 		'''
 		This method computes a variable that is not a state variable.
 

@@ -186,24 +186,24 @@ class LaxFriedrichs(ConvNumFluxBase):
 	'''
 	This class corresponds to the local Lax-Friedrichs flux function.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x, t):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x, t):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL,_ = physics.get_conv_flux_projected(UqL, n_hat, x, t)
+		FqL,_ = physics.get_conv_flux_projected(UqL, gUqL, n_hat, x, t)
 
 		# Right flux
-		FqR,_ = physics.get_conv_flux_projected(UqR, n_hat, x, t)
+		FqR,_ = physics.get_conv_flux_projected(UqR, gUqR, n_hat, x, t)
 
 		# Jump
 		dUq = UqR - UqL
 
 		# Calculate max wave speeds at each point
-		a = physics.compute_variable("MaxWaveSpeed", UqL, x, t,
+		a = physics.compute_variable("MaxWaveSpeed", UqL, gUqL, x, t,
 				flag_non_physical=True)
-		aR = physics.compute_variable("MaxWaveSpeed", UqR, x, t,
+		aR = physics.compute_variable("MaxWaveSpeed", UqR, gUqR, x, t,
 				flag_non_physical=True)
 
 		idx = aR > a
@@ -303,7 +303,7 @@ class SIP(DiffNumFluxBase):
 
 		return etas[i] * mesh.gbasis.NFACES
 
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals):		
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x, t, epsilon):
 		'''
 		See definition of compute_flux in physics/data.py. Additional 
 		comments are below:
@@ -332,8 +332,8 @@ class SIP(DiffNumFluxBase):
 		dUxn = np.einsum('ijk, ijl -> ijlk', n_hat, dU)
 
 		# Left State
-		Fv_dir = 0.5 * physics.get_diff_flux_interior(UqL, gUqL)
-		Fv_dir_jump = physics.get_diff_flux_interior(UqL, dUxn)
+		Fv_dir = 0.5 * physics.get_diff_flux_interior(UqL, gUqL, x, t, epsilon)
+		Fv_dir_jump = physics.get_diff_flux_interior(UqL, dUxn, x, t, epsilon)
 
 		C4 = 0.5 * eta / hL
 		C5 = 0.5 * n_mag
@@ -342,8 +342,8 @@ class SIP(DiffNumFluxBase):
 		FvL = np.einsum('ijv, ijkl -> ijkl', C5, Fv_dir_jump)
 
 		# Right State
-		Fv_dir += 0.5 * physics.get_diff_flux_interior(UqR, gUqR)
-		Fv_dir_jump = physics.get_diff_flux_interior(UqR, dUxn)
+		Fv_dir += 0.5 * physics.get_diff_flux_interior(UqR, gUqR, x, t, epsilon)
+		Fv_dir_jump = physics.get_diff_flux_interior(UqR, dUxn, x, t, epsilon)
 		
 		C4 = 0.5 * eta / hR
 		C5 = 0.5 * n_mag
@@ -356,7 +356,7 @@ class SIP(DiffNumFluxBase):
 		return Fv, FvL, FvR # [nf, nq, ns], [nf, nq, ns, ndims] 
 			# [nf, nq, ns, ndims]
 
-	def compute_boundary_flux(self, physics, UqI, UqB, gUq, normals):	
+	def compute_boundary_flux(self, physics, UqI, UqB, gUq, normals, x, t, epsilon):
 		'''
 		Flux computation for the diffusion terms on the boundary faces.
 		See SIP's class definition of compute_flux for nomenclature 
@@ -394,10 +394,10 @@ class SIP(DiffNumFluxBase):
 		dUxn = np.einsum('ijk, ijl -> ijlk', n_hat, dU)
 
 		# Boundary State
-		Fv_dir = physics.get_diff_flux_interior(UqB, gUq)
+		Fv_dir = physics.get_diff_flux_interior(UqB, gUq, x, t, epsilon)
 
 		# Right State
-		Fv_dir_jump = physics.get_diff_flux_interior(UqB, dUxn)
+		Fv_dir_jump = physics.get_diff_flux_interior(UqB, dUxn, x, t, epsilon)
 
 		C4 = - eta / h
 		C5 = n_mag

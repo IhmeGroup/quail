@@ -160,7 +160,7 @@ class SourceSolvers():
 			# Evaluate the source term Jacobian [ne, nq, ns, ns]
 			Sjac = np.zeros([nelem, nq, ns, ns])
 			Sjac = physics.eval_source_term_jacobians(Uq, x_elems,
-					solver.time, Sjac)
+					solver.time, Sjac, gUq=None)
 
 			# Call solver helper to get dRdU (see solver/tools.py)
 			dRdU = solver_tools.calculate_dRdU(elem_helpers, Sjac)
@@ -230,11 +230,11 @@ class SourceSolvers():
 			# Point at n
 			Sq = np.zeros_like(Uq)
 			Sq = solver.physics.eval_source_terms(Uq, x, solver.time,
-					Sq)
+					Sq, gUq=None)
 			# Point at n+1
 			Sq_new = np.zeros_like(Uq_new)
 			Sq_new = solver.physics.eval_source_terms(Uq_new, x, solver.time,
-					Sq_new)
+					Sq_new, gUq=None)
 			# Return RHS of trapezoid rule
 			return (Uq_new - Uq - .5*dt*(Sq_new + Sq))[0, 0] # [ns]
 
@@ -318,6 +318,6 @@ class SourceSolvers():
 			Sq = np.zeros_like(Uq)
 
 			# Evaluate source term on quadrature points
-			Sq = solver.physics.eval_source_terms(Uq, x, t, Sq)
+			Sq = solver.physics.eval_source_terms(Uq, x, t, Sq, gUq=None)
 
 			return Sq.reshape(-1) # ode function requires stacked array

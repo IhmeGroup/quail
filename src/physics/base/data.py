@@ -88,7 +88,7 @@ class BCBase(ABC):
 		pass
 
 	@abstractmethod
-	def get_boundary_flux(self, physics, UqI, normals, x, t):
+	def get_boundary_flux(self, physics, UqI, normals, x, t, epsilon):
 		'''
 		This method computes the flux at a boundary face.
 
@@ -118,13 +118,13 @@ class BCWeakRiemann(BCBase):
 	This class computes the boundary flux via the numerical flux, which
 	depends on the interior and exterior states, i.e. Fnum(UqI, UqB, n).
 	'''
-	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
+	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq, epsilon):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
-		F = physics.get_conv_flux_numerical(UqI, UqB, normals, x, t)
+		F = physics.get_conv_flux_numerical(UqI, UqB, gUq, gUq, normals, x, t)
 		# Compute diffusive boundary fluxes if needed
 		if physics.diff_flux_fcn:
 			Fv, FvB = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
-					gUq, normals) # [nf, nq, ns]
+					gUq, normals, x, t, epsilon) # [nf, nq, ns]
 			F -= Fv
 			return F, FvB # [nf, nq, ns], [nf, nq, ns, ndims]
 		else:
@@ -140,14 +140,14 @@ class BCWeakPrescribed(BCBase):
 	This class computes the boundary flux via the analytical flux based on
 	only the exterior state, i.e. F(UqB, n).
 	'''
-	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq=None):
+	def get_boundary_flux(self, physics, UqI, normals, x, t, gUq, epsilon):
 		UqB = self.get_boundary_state(physics, UqI, normals, x, t)
-		F,_ = physics.get_conv_flux_projected(UqB, normals, x, t)
+		F,_ = physics.get_conv_flux_projected(UqB, gUq, normals, x, t)
 		
 		# Compute diffusive boundary fluxes if needed
 		if physics.diff_flux_fcn:
 			Fv, FvB = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
-					gUq, normals) # [nf, nq, ns]
+					gUq, normals, x, t, epsilon) # [nf, nq, ns]
 			F -= Fv
 			return F, FvB # [nf, nq, ns], [nf, nq, ns, ndims]
 		else:
@@ -177,7 +177,7 @@ class SourceBase(ABC):
 			self.source_treatment = 'Implicit'
 
 	@abstractmethod
-	def get_source(self, physics, Uq, x, t):
+	def get_source(self, physics, Uq, gUq, x, t):
 		'''
 		This method evaluates the source term.
 
@@ -262,7 +262,7 @@ class ConvNumFluxBase(ABC):
 		self.__init__(Uq)
 
 	@abstractmethod
-	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x=None, t=None):
 		'''
 		This method computes the numerical flux.
 
@@ -329,7 +329,7 @@ class DiffNumFluxBase(ABC):
 		self.__init__(Uq)
 
 	@abstractmethod
-	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x=None, t=None):
 		'''
 		This method computes the numerical flux.
 

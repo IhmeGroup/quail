@@ -384,30 +384,37 @@ class Heaviside(FcnBase):
 	def get_state(self, physics, x, t):
 		c = physics.c
 		
-		tol = 1e-6
+		tol = 1e-14
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 		
-		Hx1 	  = 0.5*(1.0+np.tanh(self.thick*(x[:,:,0]-self.xc)))
-		Hx2 	  = 0.5*(1.0+np.tanh(self.thick*(x[:,:,0]-self.xc-self.wide)))
+		xx = np.zeros(x.shape)
 		
-		# Phase field
-		Uq[:,:,0] = tol + (1.0-2.0*tol)*Hx1*(1.0-Hx2)
+		xx[:,:,0] = x[:,:,0] - 0.0*t
+		
+		Hx1 	  = 0.5*(1.0+np.tanh(self.thick*(xx[:,:,0]-self.xc)))
+		Hx2 	  = 0.5*(1.0+np.tanh(self.thick*(xx[:,:,0]-self.xc-self.wide)))
+		
+		Uq[:,:,0] = (Hx1-Hx2)
 		
 		# Gradient
-		par = 0.05
-		Hx1    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,0]-self.xc)))
-		Hx2    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,0]-self.xc-self.wide)))
-		dHx1dx = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,0]-self.xc))**2)
-		dHx2dx = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,0]-self.xc-self.wide))**2)
+		par = 0.1
+		
+		dHx1dx    = 0.5*par*self.thick/(np.cosh(par*self.thick*(xx[:,:,0]-self.xc))**2)
+		dHx2dx    = 0.5*par*self.thick/(np.cosh(par*self.thick*(xx[:,:,0]-self.xc-self.wide))**2)
 			 
-		Uq[:,:,1] = (1.0-2.0*tol)*(dHx1dx*(1.0-Hx2) - Hx1*dHx2dx)
-
+		Uq[:,:,1] = dHx1dx - dHx2dx
+		
+#		Hx3	  = 0.5*(1.0+np.tanh(par*self.thick*(xx[:,:,0])))
+#		Uq[:,:,1] = (2.0*(1.0-Hx3)-1.0)
+		
 		return Uq
 		
 	def get_advection(self, physics, x, t):
 	
 		cc = np.zeros(x.shape)
-		cc[:,:,0] = 1.0 - 0.5*np.sin(np.pi*(x[:,:,0] + 1.0))
+		#cc[:,:,0] = physics.c #- 0.5*np.sin(np.pi*(x[:,:,0] + 1.0))
+		T = 0.5
+		cc[:,:,0] = np.sin(np.pi*x[:,:,0])*np.cos(np.pi*t/T)
 					
 		return cc
 		
@@ -447,14 +454,31 @@ class Zalesak(FcnBase):
 
 		tol =1e-6 #1e-4
 		
-		r = np.linalg.norm(x[:] - self.x0, axis=2,
+		omega = 1.0
+		theta = -omega*t
+		
+		R = np.zeros((2,2))
+		
+		R[0,0] = np.cos(theta)
+		R[0,1] = -np.sin(theta)
+		R[1,0] = np.sin(theta)
+		R[1,1] = np.cos(theta)
+		
+		xnew = np.zeros(x.shape)
+		
+		for ii in range(len(x[:,0,0])):
+			for jj in range(len(x[0,:,0])):
+				xnew[ii,jj,0] = R[0,0]*x[ii,jj,0] + R[0,1]*x[ii,jj,1]
+				xnew[ii,jj,1] = R[1,0]*x[ii,jj,0] + R[1,1]*x[ii,jj,1]
+		
+		r = np.linalg.norm(xnew[:] - self.x0, axis=2,
 				keepdims=True)
 		
 		#xabs = (1.0/(20.5*self.thick))*np.log(np.cosh(20.5*self.thick*x[:,:,0]))
-		xabs = np.abs(x[:,:,0])
+		xabs = np.abs(xnew[:,:,0])
 
 		Hr    = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
-		Hy    = 0.5*(1.0+np.tanh(self.thick*(x[:,:,1]-0.35)))
+		Hy    = 0.5*(1.0+np.tanh(self.thick*(xnew[:,:,1]-0.35)))
 		Habsx = 0.5*(1.0+np.tanh(self.thick*(xabs-0.025)))
 
 		#########################
@@ -465,25 +489,28 @@ class Zalesak(FcnBase):
 		#########################
 		# Phase Field's Gradient
 		#########################
-		par = 0.5 # less than 0.5
-		
-		#xabs = (1.0/(par*self.thick))*np.log(np.cosh(par*self.thick*x[:,:,0]))
-		xabs = np.abs(x[:,:,0])
-		
-		Hr    = 0.5*(1.0+np.tanh(par*self.thick*(r[:,:,0]-self.radius)))
-		Hy    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,1]-0.35)))
-		Habsx = 0.5*(1.0+np.tanh(par*self.thick*(xabs-0.025)))
-		
-		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
-		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
-		
-		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
-		dHydy    = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,1]-0.35))**2)
-		dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(20.0*self.thick*x[:,:,0])
-		#dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(par*self.thick*x[:,:,0])
-		
-		Uq[:,:,1] = (-dHrdr*drdx*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Hy)*dHabsxdx)*(1.0-2.0*tol)
-		Uq[:,:,2] = (-dHrdr*drdy*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Habsx)*dHydy)*(1.0-2.0*tol)
+#		par = 0.5 # less than 0.5
+#
+#		#xabs = (1.0/(par*self.thick))*np.log(np.cosh(par*self.thick*x[:,:,0]))
+#		xabs = np.abs(x[:,:,0])
+#
+#		Hr    = 0.5*(1.0+np.tanh(par*self.thick*(r[:,:,0]-self.radius)))
+#		Hy    = 0.5*(1.0+np.tanh(par*self.thick*(x[:,:,1]-0.35)))
+#		Habsx = 0.5*(1.0+np.tanh(par*self.thick*(xabs-0.025)))
+#
+#		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
+#		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
+#
+#		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
+#		dHydy    = 0.5*par*self.thick/(np.cosh(par*self.thick*(x[:,:,1]-0.35))**2)
+#		dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(20.0*self.thick*x[:,:,0])
+#		#dHabsxdx = 0.5*par*self.thick/(np.cosh(par*self.thick*(xabs-0.025))**2)*np.tanh(par*self.thick*x[:,:,0])
+#
+#		Uq[:,:,1] = (-dHrdr*drdx*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Hy)*dHabsxdx)*(1.0-2.0*tol)
+#		Uq[:,:,2] = (-dHrdr*drdy*(1.0-(1.0-Hy)*(1.0-Habsx)) + (1.0-Hr)*(1.0-Habsx)*dHydy)*(1.0-2.0*tol)
+
+		Uq[:,:,1] = physics.al[0]*np.log(Uq[:,:,0]/(1.0-Uq[:,:,0]))
+		Uq[:,:,2] = 0.0
 		
 		return Uq
 		
@@ -491,8 +518,10 @@ class Zalesak(FcnBase):
 	
 		cc = np.zeros(x.shape)
 
-		cc[:,:,0] = -x[:,:,1]
-		cc[:,:,1] = x[:,:,0]
+		switch = physics.switch
+
+		cc[:,:,0] = -x[:,:,1]*switch
+		cc[:,:,1] = x[:,:,0]*switch
 					
 		return cc
 		
@@ -530,10 +559,15 @@ class Rider(FcnBase):
 		
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 	
-		tol = 1e-4
+		tol = 1e-14
+		
+#		self.x0[0] = 0.0
+#		self.x0[1] = 0.0
+#		self.radius = 0.25
 
 		r = np.linalg.norm(x[:] - self.x0, axis=2,
 				keepdims=True)
+				
 		
 		#########################
 		# Phase field
@@ -546,12 +580,69 @@ class Rider(FcnBase):
 		#########################
 		par = 0.01 # less than 0.01
 		
-		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
-		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
-		
+		drdx = (x[:,:,0]-self.x0[0])/(r[:,:,0]+1e-2)
+		drdy = (x[:,:,1]-self.x0[1])/(r[:,:,0]+1e-2)
+
 		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
-		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx
-		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy
+#
+#		Uq_temp = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+#
+#		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx
+#		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy
+				
+#		Uq[:,:,2] = 0.0
+#		alpha = 0.1
+#
+#		scale = (Uq[:,:,0]*(1.0-Uq[:,:,0]))**(1.0-alpha)*((Uq[:,:,0]**alpha+(1.0-Uq[:,:,0])**alpha))**2
+		
+#		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx#*alpha/scale
+#		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy#*alpha/scale
+#
+#		mag = np.sqrt(Uq_temp[:,:,1]**2+Uq_temp[:,:,2]**2)
+#
+#		Uq[:,:,1] = Uq_temp[:,:,1]#/(mag+1e-16)
+#		Uq[:,:,2] = Uq_temp[:,:,2]#/(mag+1e-16)
+#
+#		Uq[:,:,1] = -0.5*drdx*self.thick
+#		Uq[:,:,2] = -0.5*drdy*self.thick
+#
+#		Uq[:,:,1] = -drdx/np.sqrt(drdx**2 + drdy**2 + 1e-32)
+#		Uq[:,:,2] = -drdy/np.sqrt(drdx**2 + drdy**2 + 1e-32)
+#
+		Uq[:,:,1] = -(r[:,:,0]-0.15) #LS
+
+		th = np.arctan(x[:,:,1]/(x[:,:,0]+1e-16))
+		dist = 0.15/10.0*np.sin(np.pi*(0.15-r[:,:,0])/(2.0*0.15))*np.sin(10.0*th)
+		
+		#Uq[:,:,1] = -(r[:,:,0]-0.15) #+ dist #LS
+		
+		#Uq[:,:,1] = ((x[:,:,0]-0.25)**2 + (x[:,:,1]-0.25)**2 + 0.1/4.0)*(np.sqrt(x[:,:,0]**2 + x[:,:,1]**2)-0.25)
+		
+		#Uq[:,:,0] = 0.0
+		
+		r = np.linalg.norm(x[:], axis=2, keepdims=True)
+		Hr = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-0.25)))
+
+		UU = tol + (1.0-2.0*tol)*(1.0-Hr) - 0.5
+
+		#Uq[:,:,1] = (1.0-Hr) - 0.5
+		
+#		alpha = 0.1
+		
+#		Uq[:,:,1] = Uq[:,:,0]**alpha/(Uq[:,:,0]**alpha+(1.-Uq[:,:,0])**alpha)
+#		Uq[:,:,1] = - (r[:,:,0]**2 - 0.15**2) #LS
+		
+#		Uq[:,:,1] = -2.0*(x[:,:,0]-self.x0[0])
+#		Uq[:,:,2] = -2.0*(x[:,:,1]-self.x0[1])
+		
+#		for i in range(len(Uq[:,0,0])):
+#			for j in range(len(Uq[0,:,0])):
+#				Uq[i,j,1] = -(1.0-2.0*tol)*dHrdr[i,j]*drdx[i,j]
+#				Uq[i,j,2] = -(1.0-2.0*tol)*dHrdr[i,j]*drdy[i,j]
+#				mag = np.sqrt(Uq[i,j,1]**2+Uq[i,j,2]**2)
+#				if mag<1e-1:
+#					Uq[i,j,1] = 1e-1
+#					Uq[i,j,2] = 1e-1
 
 		return Uq
 		
@@ -559,11 +650,14 @@ class Rider(FcnBase):
 	
 		cc = np.zeros(x.shape)
 		T = 4.0
-		cc[:,:,0] = -np.sin(np.pi*(x[:,:,0]+0.5))**2* \
-					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
+		
+		switch = physics.switch
+		
+		cc[:,:,0] = -np.sin(np.pi*(x[:,:,0]+0.5))**2.0* \
+					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)*switch
 		cc[:,:,1] = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
-					np.sin(np.pi*(x[:,:,1]+0.5))**2*np.cos(np.pi*t/T)
-
+					np.sin(np.pi*(x[:,:,1]+0.5))**2.0*np.cos(np.pi*t/T)*switch
+	
 		return cc
 		
 		
@@ -601,7 +695,7 @@ class Droplet_translation(FcnBase):
 		
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 	
-		tol = 1e-4
+		tol = 1e-14
 		
 		xx = np.zeros(x.shape)
 		xx[:,:,0] = x[:,:,0] - 1.0*t
@@ -619,14 +713,26 @@ class Droplet_translation(FcnBase):
 		#########################
 		# Phase field's Gradient
 		#########################
-		par = 0.001 # less than 0.01
+		par = 1.0 # less than 0.01
 		
-		drdx = (xx[:,:,0]-self.x0[0])/(r[:,:,0]+1e-15)
-		drdy = (xx[:,:,1]-self.x0[1])/(r[:,:,0]+1e-15)
+		drdx = (xx[:,:,0]-self.x0[0])/(r[:,:,0] + 1e-100)
+		drdy = (xx[:,:,1]-self.x0[1])/(r[:,:,0] + 1e-100)
 		
 		dHrdr    = 0.5*par*self.thick/(np.cosh(par*self.thick*(r[:,:,0]-self.radius))**2)
+		
+		Uq_temp = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+		
 		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx
 		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy
+
+#		Uq_temp[:,:,1] = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2+Uq[:,:,2]**2 + 1e-100)
+#		Uq_temp[:,:,2] = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2+Uq[:,:,2]**2 + 1e-100)
+		
+#		Hx    = 0.5*(1.0+np.tanh(5.0*self.thick*(x[:,:,0]-self.x0[0])))
+#		Hy    = 0.5*(1.0+np.tanh(5.0*self.thick*(x[:,:,1]-self.x0[1])))
+
+#		Uq[:,:,1] = Uq_temp[:,:,1]*r[:,:,0]/(r[:,:,0] + 1.0/(2.0*self.thick))
+#		Uq[:,:,2] = Uq_temp[:,:,2]*r[:,:,0]/(r[:,:,0] + 1.0/(2.0*self.thick))
 
 		return Uq
 		
@@ -706,7 +812,7 @@ class SharpeningSource(SourceBase):
 		    self: attributes initialized
 		'''
 		self.nu  = nu
-		self.eta = eta
+		self.eta = eta #0.1 standard value
 
 	def get_source(self, physics, Uq, x, t):
 		nu  = self.nu
@@ -724,14 +830,15 @@ class SharpeningSource(SourceBase):
 class HeavisideSource(SourceBase):
 	'''
 	1D Heaviside source term
-
 	'''
 
 	def get_source(self, physics, Uq, x, t):
-		
+		al = physics.al
 		S = np.zeros(Uq.shape)
 
-		S[:,:,0] = -0.5*Uq[:,:,0]*np.cos(np.pi*(x[:,:,0] + 1.0))*np.pi
+		T=0.5
+		#S[:,:,0] = -0.5*Uq[:,:,0]*np.cos(np.pi*(x[:,:,0] + 1.0))*np.pi
+		S[:,:,0] = np.pi*np.cos(np.pi*x[:,:,0])*np.cos(np.pi*t/T)*Uq[:,:,0]
 		S[:,:,1] = 0.0
 
 		return S
@@ -741,14 +848,27 @@ class ZalesakSource(SourceBase):
 	Source for the Zalesak case of the type -\nabla u \cdot \psi
 	'''
 
-	def get_source(self, physics, Uq, x, t):
+	def get_source(self, physics, Uq, gUq, ggUqx, ggUqy, x, t):
 		
 		S = np.zeros(Uq.shape)
 		
 		# Zalesak
-		S[:,:,0] = 0.0
-		S[:,:,1] = -Uq[:,:,2]
-		S[:,:,2] = Uq[:,:,1]
+#		S[:,:,0] = 0.0
+#		S[:,:,1] = -Uq[:,:,2]
+#		S[:,:,2] = Uq[:,:,1]
+
+		eps = physics.al[0]
+		switch = physics.switch
+		
+		psi0 = Uq[:,:,0]-0.5
+		Uqx = gUq[:,:,0,0]
+		Uqy = gUq[:,:,0,1]
+		mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-32)
+		sgn = np.tanh(0.5*(psi0)/eps/mag3)
+		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
+
+		l = 1.0
+		S[:,:,1] = (1.0-mag)*sgn*l*(1.0-switch)
 
 		return S
 		
@@ -757,7 +877,7 @@ class RiderSource(SourceBase):
 	Source for the Rider-Korthe case of the type -\nabla u \cdot \psi
 	'''
 	
-	def get_source(self, physics, Uq, x, t):
+	def get_source(self, physics, Uq, gUq, ggUqx, ggUqy, x, t):
 		
 		S = np.zeros(Uq.shape)
 		
@@ -765,13 +885,156 @@ class RiderSource(SourceBase):
 		xx = np.pi*(x[:,:,0]+0.5)
 		yy = np.pi*(x[:,:,1]+0.5)
 		tt = np.pi*t/T
+		
 		#Rider-Korthe
-		S[:,:,0] = 0.0
-		S[:,:,1] = 2.0*np.pi*np.sin(xx)*np.cos(xx)*np.sin(2.0*yy)*np.cos(tt)*Uq[:,:,1]-\
-				   2.0*np.pi*np.cos(2.0*xx)*np.sin(yy)**2*np.cos(tt)*Uq[:,:,2]
-					
-		S[:,:,2] = 2.0*np.pi*np.cos(2.0*yy)*np.sin(xx)**2*np.cos(tt)*Uq[:,:,1]-\
-				   2.0*np.pi*np.sin(yy)*np.cos(yy)*np.sin(2.0*xx)*np.cos(tt)*Uq[:,:,2]
+		
+#		Uq_temp = Uq
+#		Uq_temp[:,:,1] = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2+Uq[:,:,2]**2 + 1e-32)
+#		Uq_temp[:,:,2] = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2+Uq[:,:,2]**2 + 1e-32)
+#		Uq = Uq_temp
+
+#		u11 = -2.0*np.pi*np.sin(xx)*np.cos(xx)*np.sin(2.0*yy)*np.cos(tt)
+#		u12 = -2.0*np.pi*np.cos(2.0*yy)*np.sin(xx)**2.0*np.cos(tt)
+#		u21 =  2.0*np.pi*np.cos(2.0*xx)*np.sin(yy)**2.0*np.cos(tt)
+#		u22 =  2.0*np.pi*np.sin(yy)*np.cos(yy)*np.sin(2.0*xx)*np.cos(tt)
+#
+#		niuijnj = Uq[:,:,1]*u11*Uq[:,:,1] + Uq[:,:,1]*u12*Uq[:,:,2] + \
+#				  Uq[:,:,2]*u21*Uq[:,:,1] + Uq[:,:,2]*u22*Uq[:,:,2]
+#
+#		S[:,:,1] = (-u11*Uq[:,:,1]-u21*Uq[:,:,2])
+#		S[:,:,2] = (-u12*Uq[:,:,1]-u22*Uq[:,:,2])
+		
+#		S[:,:,1] = (-u11*gUq[:,:,0,0]-u21*gUq[:,:,0,1])
+#		S[:,:,2] = (-u12*gUq[:,:,0,0]-u22*gUq[:,:,0,1])
+#
+#		Uq_temp = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+#
+#		Uq[:,:,1] = -(1.0-2.0*tol)*dHrdr*drdx
+#		Uq[:,:,2] = -(1.0-2.0*tol)*dHrdr*drdy
+
+#		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
+		eps = physics.al[0]
+#		UU = Uq
+#		UU[UU>1] = 1.0-1e-16
+#		UU[UU<0] = 1e-16
+		#psi0 = eps*np.log(UU[:,:,0]/(1.0-UU[:,:,0]))
+		#psi0 = UU[:,:,0]-0.5
+
+#		rr = np.sqrt(x[:,:,0]**2 + x[:,:,1]**2 +1e-32)
+#
+#		UU = ((x[:,:,0]-0.25)**2 + (x[:,:,1]-0.25)**2 + 0.1/4.0)*(rr-0.25)
+#
+#		psi0 = UU
+#		Uqx = (x[:,:,0]/rr)*((x[:,:,0]-0.25)**2 + (x[:,:,1]-0.25)**2 + 0.1/4.0) + \
+#			  2.0*(x[:,:,0]-0.25)*(rr-0.25)
+#		Uqy = (x[:,:,1]/rr)*((x[:,:,0]-0.25)**2 + (x[:,:,1]-0.25)**2 + 0.1/4.0) + \
+#			  2.0*(x[:,:,1]-0.25)*(rr-0.25)
+		
+		#########################
+		# Phase field's Gradient
+		#########################
+		
+#		Hr    = 0.5*(1.0+np.tanh((0.5/eps)*(rr-0.25)))
+#
+#		psi0 = (1.0-Hr)-0.5
+#
+#		drdx = x[:,:,0]/(rr + 1e-16)
+#		drdy = x[:,:,1]/(rr + 1e-16)
+#
+#		dHrdr    = 2.0*0.5*(0.5/eps)/(np.cosh(0.5/eps*(rr-0.25)))**2
+#
+#		Uqx = -dHrdr*drdx
+#		Uqy = -dHrdr*drdy
+		
+		switch = physics.switch
+		
+		psi0 = Uq[:,:,0]-0.5
+		Uqx = gUq[:,:,0,0]
+		Uqy = gUq[:,:,0,1]
+		
+#		UU = np.zeros(Uq[:,:,0].shape)
+#		UU[:,:] = Uq[:,:,0]
+#		UU[UU<0] = 1e-16
+#		UU[UU>1] = 1-1e-16
+#		psi0 = eps*np.log((UU)/(1.0-UU))
+#		Uqx = (1.0/UU + 1.0/(1.0-UU))*gUq[:,:,0,0]
+#		Uqy = (1.0/UU + 1.0/(1.0-UU))*gUq[:,:,0,1]
+
+		mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-32)
+		sgn = np.tanh(0.5*(psi0)/eps/mag3)
+		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
+#		sgn = psi0/(np.sqrt(psi0**2+(mag3*eps)**2))
+#		sgn = psi0/(np.sqrt(psi0**2+(eps)**2))
+		l = 1.0
+		S[:,:,1] = (1.0-mag)*sgn*l*(1.0-switch)
+
+		#if t % ddt < 1e-14:
+		#S[:,:,1] = (1.0-mag)*sgn*l
+
+#		cc = np.zeros(x.shape)
+#		T = 4.0
+#
+#		cc[:,:,0] = -np.sin(np.pi*(x[:,:,0]+0.5))**2.0* \
+#					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
+#		cc[:,:,1] = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
+#					np.sin(np.pi*(x[:,:,1]+0.5))**2.0*np.cos(np.pi*t/T)
+#
+#		mag2 = np.sqrt(cc[:,:,0]**2 + cc[:,:,1]**2)
+#
+#		gamma = np.max(mag2)
+#
+#		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
+#
+#		n = np.zeros(cc.shape)
+#		n[:,:,0] = gUq[:, :, 1, 0]/mag
+#		n[:,:,1] = gUq[:, :, 1, 1]/mag
+#
+#		mag3 = np.sqrt(gUq[:, :, 0, 0]**2 + gUq[:, :, 0, 1]**2 + 1e-32)
+#		eps = physics.al[0]
+#
+#		Kx1 = eps*(gUq[:, :, 0, 0]*ggUqx[:, :, 0, 0]+gUq[:, :, 0, 1]*ggUqx[:, :, 0, 1])/mag3
+#		Kx2 = gUq[:, :, 0, 0]*(2.0*Uq[:,:,0]-1.0)
+#
+#		Ky1 = eps*(gUq[:, :, 0, 0]*ggUqy[:, :, 0, 0]+gUq[:, :, 0, 1]*ggUqy[:, :, 0, 1])/mag3
+#		Ky2 = gUq[:, :, 0, 1]*(2.0*Uq[:,:,0]-1.0)
+#
+#		L = np.zeros(Kx1.shape)
+#		for ii in range(len(L[:,0])):
+#			for jj in range(len(L[0,:])):
+#				if Uq[ii,jj,0]>1e-4 and Uq[ii,jj,0]<1.-1e-4:
+#					L[ii,jj] = np.tanh((Uq[ii,jj,0]*(1.0-Uq[ii,jj,0])/1e-2)**2)
+#
+#
+#		S[:,:,0] = gamma*(n[:,:,0]*(Kx1+Kx2)+n[:,:,1]*(Ky1+Ky2))*L
+		
+		#S[:,:,0] = gamma*(n[:,:,0]*ggUqx[:, :, 0, 0]+n[:,:,1]*ggUqx[:, :, 0, 1])*L
+
+#		for ii in range(len(S[:,0,0])):
+#			for jj in range(len(S[0,:,0])):
+#				if (Uq[ii,jj,0]>1e-4 and Uq[ii,jj,0]<1.-1e-4):
+#					S[ii,jj,0] = gamma*(n[ii,jj,0]*(Kx1[ii,jj]+Kx2[ii,jj])+n[ii,jj,1]*(Ky1[ii,jj]+Ky2[ii,jj]))
+			
+#
+#		cc = np.zeros(x.shape)
+#		T = 4.0
+#		cc[:,:,0] = -np.sin(np.pi*(x[:,:,0]+0.5))**2.0* \
+#					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
+#		cc[:,:,1] = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
+#					np.sin(np.pi*(x[:,:,1]+0.5))**2.0*np.cos(np.pi*t/T)
+#
+#		mag = np.sqrt(cc[:,:,0]**2+cc[:,:,1]**2)
+#
+#		gamma = np.max(mag)
+#
+#		n = np.zeros(cc.shape)
+#
+#		mag2 = np.sqrt(gUq[:,:,0,0]**2 + gUq[:,:,0,1]**2 + 1e-32)
+#
+#		n[:,:,0] = gUq[:,:,0,0]/mag2
+#		n[:,:,1] = gUq[:,:,0,1]/mag2
+#
+#		S[:,:,0] = 2.5*Uq[:,:,0]*(1.0-Uq[:,:,0])*(Uq[:,:,0]-0.5)
+
 
 		return S
 
