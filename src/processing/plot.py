@@ -1006,8 +1006,8 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 	length=kwargs["length"]
 	skips=kwargs["skips"]
 		
-#	plt.quiver(x[::skips,0], x[::skips,1],var_plot_x[::skips],var_plot_y[::skips], scale = length, color="k")
-	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
+	plt.quiver(x[::skips,0], x[::skips,1],var_plot_x[::skips],var_plot_y[::skips], scale = length, color="k")
+#	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
 #	plt.quiver(x[::skips,0], x[::skips,1],plotgUqx[::skips],plotgUqy[::skips], scale = length, color="b")
 #
 #	errx = np.abs(var_plot_x[::skips]-plotgUqx[::skips])

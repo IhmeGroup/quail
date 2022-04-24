@@ -602,7 +602,6 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 		self.c = np.zeros(2)
 		self.cspeed = 0.
 		self.al = np.zeros(2)
-		self.switch = 1
 
 	def set_maps(self):
 		super().set_maps()
@@ -655,38 +654,15 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 
-#		n[:,:,0] = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-32)
-#		n[:,:,1] = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-32)
-#
-		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-
-		n[:,:,0] = gUq[:, :, 1, 0]/mag
-		n[:,:,1] = gUq[:, :, 1, 1]/mag
-		
-#		Uqtemp = self.IC.get_state(self, x, t)
-#
-#		Uq[:,:,1] = Uqtemp[:,:,1]
-#		Uq[:,:,2] = Uqtemp[:,:,2]
-#
-#		n[:,:,0] = Uqtemp[:,:,1]/np.sqrt(Uqtemp[:,:,1]**2 + Uqtemp[:,:,2]**2 + 1e-100)
-#		n[:,:,1] = Uqtemp[:,:,2]/np.sqrt(Uqtemp[:,:,1]**2 + Uqtemp[:,:,2]**2 + 1e-100)
+		n[:,:,0] = Uq[:,:,1]
+		n[:,:,1] = Uq[:,:,2]
 
 		mag2 = np.sqrt(cc[:,:,0]**2 + cc[:,:,1]**2)
-		
-#		alpha = 1e-4
-#		beta = 10
-#		smooth = (self.al[0]*mag)/((self.al[0]*mag)**2 + alpha**2*np.exp(-beta*(self.al[0]*mag)**2))**(0.5)
 		gamma = np.max(mag2)
 
 		F[:, :, 0, 0] = cc[:,:,0] * Uq[:,:,0] + gamma*Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,0]
 		F[:, :, 0, 1] = cc[:,:,1] * Uq[:,:,0] + gamma*Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,1]
 
-#		F[:, :, 0, 0] = cc[:,:,0] * Uq[:,:,0] + (1.0-mag)*0.25*gamma*(1.0-(np.tanh(0.5*Uq[:,:,1]/self.al[0]))**2.)*n[:,:,0]
-#		F[:, :, 0, 1] = cc[:,:,1] * Uq[:,:,0] + (1.0-mag)*0.25*gamma*(1.0-(np.tanh(0.5*Uq[:,:,1]/self.al[0]))**2.)*n[:,:,1]
-
-#		F[:, :, 0, 0] = cc[:,:,0] * Uq[:,:,0] + (0.25*gamma*(1.0/np.cosh(0.5*Uq[:,:,1]/self.al[0]))**2.)*n[:,:,0]
-#		F[:, :, 0, 1] = cc[:,:,1] * Uq[:,:,0] + (0.25*gamma*(1.0/np.cosh(0.5*Uq[:,:,1]/self.al[0]))**2.)*n[:,:,1]
-		
 		F[:, :, 1, 0] = cc[:,:,0] * Uq[:,:,1]
 		F[:, :, 1, 1] = cc[:,:,1] * Uq[:,:,1]
 		
@@ -706,59 +682,15 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 		mag2 = np.sqrt(cc[:,:,0]**2 + cc[:,:,1]**2)
 		
 		gamma = np.max(mag2)
-		
-#		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-#		alpha = 1e-4
-#		beta = 10
-#		smooth = (self.al[0]*mag)/((self.al[0]*mag)**2 + alpha**2*np.exp(-beta*(self.al[0]*mag)**2))**(0.5)
-		#gamma = np.max(mag2)*1.0
-		
-#		l = 1e-3
-#		#print(mag)
-#		coeff = (1.0-1.0/(mag + 1e-1))
-#
-		
-#		F[:, :, 1, 0] = al[0] * gUq[:, :, 1, 0]*0.2 #0.05
-#		F[:, :, 1, 1] = al[1] * gUq[:, :, 1, 1]*0.2 #0.05
-
-		switch = self.switch
-
-#		F[:, :, 1, 0] = al[0] * gUq[:, :, 1, 0]*0.1*(1.0-switch) #0.2
-#		F[:, :, 1, 1] = al[1] * gUq[:, :, 1, 1]*0.1*(1.0-switch) #0.2
-		
-		F[:, :, 1, 0] = epsilon[:,:,1] * gUq[:, :, 1, 0]#0.2
-		F[:, :, 1, 1] = epsilon[:,:,1] * gUq[:, :, 1, 1]#0.2
 
 		F[:, :, 0, 0] = gamma*al[0] * gUq[:, :, 0, 0]
 		F[:, :, 0, 1] = gamma*al[1] * gUq[:, :, 0, 1]
-
-#		n = np.zeros(cc.shape)
-#		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-#
-#		n[:,:,0] = gUq[:, :, 1, 0]/mag
-#		n[:,:,1] = gUq[:, :, 1, 1]/mag
-#
-#		F[:, :, 0, 0] = gamma*al[0] * (gUq[:, :, 0, 0] + Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,0])
-#		F[:, :, 0, 1] = gamma*al[1] * (gUq[:, :, 0, 1] + Uq[:,:,0]*(1.0-Uq[:,:,0])*n[:,:,1])
 		
-#		ll = 0.5*self.al[0]**2
-#
-#		mag2 = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-#
-#		F[:, :, 1, 0] = gamma*al[0] * gUq[:, :, 1, 0]
-#		F[:, :, 1, 1] = gamma*al[0] * gUq[:, :, 1, 1]
-#
-#		n = np.zeros(cc.shape)
+		F[:, :, 1, 0] = epsilon[:,:,1] * gUq[:, :, 1, 0]
+		F[:, :, 1, 1] = epsilon[:,:,1] * gUq[:, :, 1, 1]
+		F[:, :, 2, 0] = epsilon[:,:,2] * gUq[:, :, 2, 0]
+		F[:, :, 2, 1] = epsilon[:,:,2] * gUq[:, :, 2, 1]
 
-#		n[:,:,0] = Uq[:,:,1]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-32)
-#		n[:,:,1] = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-32)
-
-#		n[:,:,0] = gUq[:, :, 1, 0]/np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-#		n[:,:,1] = gUq[:, :, 1, 1]/np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-##
-#		F[:, :, 0, 0] = gamma*al[0] * (gUq[:, :, 0, 0]*n[:,:,0] + gUq[:, :, 0, 1]*n[:,:,1])*n[:,:,0]
-#		F[:, :, 0, 1] = gamma*al[1] * (gUq[:, :, 0, 0]*n[:,:,0] + gUq[:, :, 0, 1]*n[:,:,1])*n[:,:,1]
-		
 		return F
 		
 	class StateVariables(Enum):
@@ -787,12 +719,8 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 			adv[:,:,2] = mag
 			scalar = adv
 		elif sname is self.AdditionalVariables["Normal_x"].name:
-			scalar = Uq[:,:,1]+0.5#/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-32)
+			scalar = Uq[:,:,1]
 		elif sname is self.AdditionalVariables["Normal_y"].name:
-			norm_grad_U0 = np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)
-			#scalar = Uq[:,:,2]/np.sqrt(Uq[:,:,1]**2 + Uq[:,:,2]**2 + 1e-32)
-			scalar = norm_grad_U0
-			scalar[scalar<1.2] = 0
 			scalar = Uq[:,:,2]
 		elif sname is self.AdditionalVariables["adv_x"].name:
 			cc = self.IC.get_advection(self,x,t)

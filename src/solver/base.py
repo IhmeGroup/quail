@@ -454,8 +454,7 @@ class SolverBase(ABC):
 		else:
 			res[:] = stepper.balance_const
 		
-		switch = physics.switch
-		if self.params["ArtificialViscosity"] and switch==0:
+		if self.params["ArtificialViscosity"]:
 			elem_helpers = self.elem_helpers
 			quad_wts = elem_helpers.quad_wts
 			quad_pts = elem_helpers.quad_pts
@@ -488,30 +487,36 @@ class SolverBase(ABC):
 
 			UU_bar = helpers.get_element_mean((U/(U_bar+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
 			volume = helpers.get_element_mean(np.ones(U.shape), quad_wts, djac_elems,vol_elems)
-			sens0 = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
-			sens = np.zeros(sens0.shape)
+			sens1 = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
+			sens2 = np.sqrt(UU_bar[:,0,2]/volume[:,0,2])
+			sens11 = np.zeros(sens1.shape)
+			sens22 = np.zeros(sens2.shape)
 
 			k0 = 0.125 #0.125
 			kappa = 0.025
 			for ii in range(0, len(sens)):
-				if sens0[ii]<k0 - kappa:
-					sens[ii] = 0.0
-				elif sens0[ii]>k0 - kappa and sens0[ii]<k0 + kappa:
-					sens[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens0[ii]-kappa)))
-				elif sens0[ii]>k0 + kappa:
-					sens[ii] = 1.0
+				if sens1[ii]<k0 - kappa:
+					sens11[ii] = 0.0
+				elif sens1[ii]>k0 - kappa and sens1[ii]<k0 + kappa:
+					sens11[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens1[ii]-kappa)))
+				elif sens1[ii]>k0 + kappa:
+					sens11[ii] = 1.0
+					
+				if sens2[ii]<k0 - kappa:
+					sens22[ii] = 0.0
+				elif sens2[ii]>k0 - kappa and sens2[ii]<k0 + kappa:
+					sens22[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens2[ii]-kappa)))
+				elif sens2[ii]>k0 + kappa:
+					sens122[ii] = 1.0
 
 			f = np.zeros(U.shape)
 			for ii in range(0, len(f[0,:,0])):
-				f[:,ii,1] = sens[:]
-				
+				f1[:,ii,1] = sens1[:]
+				f2[:,ii,2] = sens2[:]
+
 			av_param = self.params["AVParameter"]
-			f = np.ones(U.shape)
+			#f = np.ones(U.shape)
 			epsilon = physics.al[0]*av_param*f/1.5
-			
-			for ii in range(0, len(f[0,:,0])):
-				f[:,ii,1] = sens0[:]
-			U[:,:,2] = f[:,:,1]
 		else:
 			epsilon = np.zeros(U.shape)
 
@@ -729,43 +734,6 @@ class SolverBase(ABC):
 			# Increment time
 			t += stepper.dt
 			self.time = t
-			
-			if stepper.dt != 0:
-				iteration = self.itime + 1
-				if iteration % 2000 == 0:
-					#Re-initialisation
-					ratio=1e10
-					#Uq[:,:,1] = Uq[:,:,0]-0.5
-					U = self.state_coeffs
-					U[:,:,1] = U[:,:,0]-0.5
-#					eps = physics.al[0]
-#					UU = np.zeros(U[:,:,0].shape)
-#					UU[:,:] = U[:,:,0]
-#					UU[UU<0] = 1e-16
-#					UU[UU>1] = 1-1e-16
-#					U[:,:,1] = eps*np.log(UU/(1.0-UU))
-					scaling = 1.5/self.params["AVParameter"]
-					stepper.dt = scaling*stepper.dt
-					itmax = 120 #50
-					tmax = (physics.al[0])*1.5
-					print(tmax)
-					iter = 0
-					t = 0.
-					while t<tmax and iter<itmax: #0.8 for res**2 0.995
-						physics.switch = 0.0
-						res  = stepper.take_time_step(self)
-						res2 = np.reshape(res[:,:,1], -1)
-						nrmres = np.linalg.norm(res2)/np.sqrt(len(res2))
-						if iter ==0:
-							nrmres0 = nrmres
-					
-						ratio = nrmres/nrmres0
-						print(ratio,iter,t)
-						iter = iter+1
-						t = t + stepper.dt
-				
-					physics.switch = 1.0
-					
 
 			# Custom user function definition
 			self.custom_user_function(self)
