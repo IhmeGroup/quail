@@ -653,7 +653,7 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 		
 		n = np.zeros(cc.shape)
 
-		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+		F = np.zeros(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 		
 		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
 		n[:,:,0] = gUq[:, :, 1, 0]/mag
@@ -690,8 +690,8 @@ class NonConstAdvDiffScalar2D(NonConstAdvDiffScalar):
 		return F
 		
 	class StateVariables(Enum):
-		Phasefield = "phi"
-		Levelset = "psi"
+		Scalar = "\\phi"
+		Levelset = "\\psi"
 		
 	class AdditionalVariables(Enum):
 		MaxWaveSpeed = "\\lambda"

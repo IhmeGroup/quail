@@ -770,18 +770,18 @@ class RiderSource(SourceBase):
 	def get_source(self, physics, Uq, gUq, ggUqx, ggUqy, x, t):
 		
 		S = np.zeros(Uq.shape)
-		eps = physics.al[0]
 		switch = physics.switch
 		
-		psi0 = Uq[:,:,0]-0.5
-		Uqx = gUq[:,:,0,0]
-		Uqy = gUq[:,:,0,1]
-
-		mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-32)
-		sgn = np.tanh(0.5*(psi0)/eps/mag3)
-		mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
-		l = 1.0
-		S[:,:,1] = (1.0-mag)*sgn*l*(1.0-switch)
+		if switch == 0:
+			eps = physics.al[0]
+			psi0 = Uq[:,:,0]-0.5
+			Uqx = gUq[:,:,0,0]
+			Uqy = gUq[:,:,0,1]
+			mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-32)
+			sgn = np.tanh(0.5*(psi0)/eps/mag3)
+			mag = np.sqrt(gUq[:, :, 1, 0]**2 + gUq[:, :, 1, 1]**2 + 1e-32)
+			l = 1.0
+			S[:,:,1] = (1.0-mag)*sgn*l*(1.0-switch)
 
 		return S
 

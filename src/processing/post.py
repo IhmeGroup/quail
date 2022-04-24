@@ -104,9 +104,7 @@ def get_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 		# Calculate element-local error
 		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts,
 				get_djac=True)
-		#err = np.sum((np.abs(s[elem_ID] - s_exact[elem_ID]))**ord*quad_wts*djac)
-		err = np.sum((s[elem_ID])**ord*quad_wts*djac)
-		#err = np.sum((s_exact[elem_ID])**ord*quad_wts*djac)
+		err = np.sum((np.abs(s[elem_ID] - s_exact[elem_ID]))**ord*quad_wts*djac)
 		err_elems[elem_ID] = err
 		tot_err += err_elems[elem_ID]
 
