@@ -494,7 +494,7 @@ class SolverBase(ABC):
 
 			k0 = 0.125 #0.125
 			kappa = 0.025
-			for ii in range(0, len(sens)):
+			for ii in range(0, len(sens1)):
 				if sens1[ii]<k0 - kappa:
 					sens11[ii] = 0.0
 				elif sens1[ii]>k0 - kappa and sens1[ii]<k0 + kappa:
@@ -507,12 +507,15 @@ class SolverBase(ABC):
 				elif sens2[ii]>k0 - kappa and sens2[ii]<k0 + kappa:
 					sens22[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens2[ii]-kappa)))
 				elif sens2[ii]>k0 + kappa:
-					sens122[ii] = 1.0
+					sens22[ii] = 1.0
 
 			f = np.zeros(U.shape)
 			for ii in range(0, len(f[0,:,0])):
-				f1[:,ii,1] = sens1[:]
-				f2[:,ii,2] = sens2[:]
+				f[:,ii,1] = sens11[:]
+				f[:,ii,2] = sens22[:]
+
+			print(np.max(f[:,:,1]),np.max(sens1))
+			print(np.max(f[:,:,2]),np.max(sens2))
 
 			av_param = self.params["AVParameter"]
 			#f = np.ones(U.shape)
