@@ -456,71 +456,72 @@ class SolverBase(ABC):
 		
 		switch = physics.switch
 		if self.params["ArtificialViscosity"] and switch==0:
-			elem_helpers = self.elem_helpers
-			quad_wts = elem_helpers.quad_wts
-			quad_pts = elem_helpers.quad_pts
-			djac_elems=elem_helpers.djac_elems
-			vol_elems = elem_helpers.vol_elems
-			basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-
-			basis_type  = self.params["SolutionBasis"]
-			basis_proj = basis_tools.set_basis(self.order-1, basis_type)
-			# Quadrature
-			order = 2*(self.order-1)
-			quad_order2 = self.basis.get_quadrature_order(mesh, order)
-			basis_proj.quadrature_type = self.basis.quadrature_type
-			basis_proj.num_pts_colocated = self.order**2
-			quad_pts2, quad_wts2 = basis_proj.get_quadrature_data(quad_order2)
-			eval_pts2 = quad_pts2
-			iMM_elems2 = basis_tools.get_inv_mass_matrices(mesh, basis_proj, self.order-1)
-
-			# Evaluate p solution on p-1 basis
-			self.basis.get_basis_val_grads(eval_pts2, get_val=True)
-			Uq_old = helpers.evaluate_state(U, self.basis.basis_val)
-
-			# L2 projection on p-1
-			U_proj=np.zeros((len(U[:,0,0]),self.order**2,len(U[0,0,:])))
-			solver_tools.L2_projection(mesh, iMM_elems2, basis_proj, quad_pts2,
-					quad_wts2, Uq_old, U_proj)
-
-			# Evaluate p-1 solution on p basis
-			basis_proj.get_basis_val_grads(quad_pts, get_val=True)
-			Uq_new = helpers.evaluate_state(U_proj, basis_proj.basis_val)
-
-			# Sensor by Persson & Peraire
-
-			U_bar = helpers.get_element_mean((U-Uq_new)**2, quad_wts, djac_elems,vol_elems)
-			U_bar2 = helpers.get_element_mean(U**2, quad_wts, djac_elems,vol_elems)
-
-			sens0 = np.log10(U_bar[:,0,1]/U_bar2[:,0,1])
-
-#			U_bar = helpers.get_element_mean(U, quad_wts, djac_elems,vol_elems)
-#			U_bar_ext = np.zeros(U.shape)
-#			for ii in range(0, len(U_bar_ext[0,:])):
-#				U_bar_ext[:,ii,:] = U_bar[:,0,:]
+#			elem_helpers = self.elem_helpers
+#			quad_wts = elem_helpers.quad_wts
+#			quad_pts = elem_helpers.quad_pts
+#			djac_elems=elem_helpers.djac_elems
+#			vol_elems = elem_helpers.vol_elems
+#			basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 #
-#			UU_bar = helpers.get_element_mean((U/(U_bar+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
-#			volume = helpers.get_element_mean(np.ones(U.shape), quad_wts, djac_elems,vol_elems)
-#			sens0 = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
-
-			sens = np.zeros(sens0.shape)
-
-			k0 = -5 #0.125
-			kappa = 2
-			for ii in range(0, len(sens)):
-				if sens0[ii]<k0 - kappa:
-					sens[ii] = 0.0
-				elif sens0[ii]>k0 - kappa and sens0[ii]<k0 + kappa:
-					sens[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens0[ii]-k0)))
-				elif sens0[ii]>k0 + kappa:
-					sens[ii] = 1.0
-
-			f = np.zeros(U.shape)
-			for ii in range(0, len(f[0,:,0])):
-				f[:,ii,1] = sens[:]
+#			basis_type  = self.params["SolutionBasis"]
+#			basis_proj = basis_tools.set_basis(self.order-1, basis_type)
+#			# Quadrature
+#			order = 2*(self.order-1)
+#			quad_order2 = self.basis.get_quadrature_order(mesh, order)
+#			basis_proj.quadrature_type = self.basis.quadrature_type
+#			basis_proj.num_pts_colocated = self.order**2
+#			quad_pts2, quad_wts2 = basis_proj.get_quadrature_data(quad_order2)
+#			eval_pts2 = quad_pts2
+#			iMM_elems2 = basis_tools.get_inv_mass_matrices(mesh, basis_proj, self.order-1)
+#
+#			# Evaluate p solution on p-1 basis
+#			self.basis.get_basis_val_grads(eval_pts2, get_val=True)
+#			Uq_old = helpers.evaluate_state(U, self.basis.basis_val)
+#
+#			# L2 projection on p-1
+#			U_proj=np.zeros((len(U[:,0,0]),self.order**2,len(U[0,0,:])))
+#			solver_tools.L2_projection(mesh, iMM_elems2, basis_proj, quad_pts2,
+#					quad_wts2, Uq_old, U_proj)
+#
+#			# Evaluate p-1 solution on p basis
+#			basis_proj.get_basis_val_grads(quad_pts, get_val=True)
+#			Uq_new = helpers.evaluate_state(U_proj, basis_proj.basis_val)
+#
+#			# Sensor by Persson & Peraire
+#
+#			U_bar = helpers.get_element_mean((U-Uq_new)**2, quad_wts, djac_elems,vol_elems)
+#			U_bar2 = helpers.get_element_mean(U**2, quad_wts, djac_elems,vol_elems)
+#
+#			sens0 = np.log10(U_bar[:,0,1]/U_bar2[:,0,1])
+#
+##			U_bar = helpers.get_element_mean(U, quad_wts, djac_elems,vol_elems)
+##			U_bar_ext = np.zeros(U.shape)
+##			for ii in range(0, len(U_bar_ext[0,:])):
+##				U_bar_ext[:,ii,:] = U_bar[:,0,:]
+##
+##			UU_bar = helpers.get_element_mean((U/(U_bar+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
+##			volume = helpers.get_element_mean(np.ones(U.shape), quad_wts, djac_elems,vol_elems)
+##			sens0 = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
+#
+#			sens = np.zeros(sens0.shape)
+#
+#			k0 = -5 #0.125
+#			kappa = 2
+#			for ii in range(0, len(sens)):
+#				if sens0[ii]<k0 - kappa:
+#					sens[ii] = 0.0
+#				elif sens0[ii]>k0 - kappa and sens0[ii]<k0 + kappa:
+#					sens[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens0[ii]-k0)))
+#				elif sens0[ii]>k0 + kappa:
+#					sens[ii] = 1.0
+#
+#			f = np.zeros(U.shape)
+#			for ii in range(0, len(f[0,:,0])):
+#				f[:,ii,1] = sens[:]
 
 			av_param = self.params["AVParameter"]
 
+			f = np.ones(U.shape)
 			epsilon = physics.al[0]*av_param*f/1.5
 			
 		else:
@@ -748,16 +749,18 @@ class SolverBase(ABC):
 					print("re-initialisation")
 					#Re-initialisation
 					U = self.state_coeffs
-					U[:,:,1] = U[:,:,0]-0.5
+					U[:,:,1] = (U[:,:,0]-0.5)
+					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
 					scaling = 1.5/self.params["AVParameter"]
-					stepper.dt = scaling*stepper.dt/2.0
+					stepper.dt = scaling*stepper.dt
 					itmax = 70 #50
 					tmax = (physics.al[0])*40.0
 					iter = 0
 					tt = 0.
 					U0 = np.zeros(U.shape)
 					residual_norm = 1e10
-					while iter<itmax and residual_norm>0.5: #0.8 for res**2 0.995
+					ratio = 1e10
+					while iter<itmax and ratio>0.95: #0.8 for res**2 0.995
 					
 						for ii in range(len(U[:,0,1])):
 							for jj in range(len(U[0,:,1])):
@@ -767,7 +770,12 @@ class SolverBase(ABC):
 						
 						residual = (U0[:,:,1]-U[:,:,1])/stepper.dt
 						residual_norm = np.linalg.norm(np.reshape(residual, -1))/np.sqrt(len(residual))
-						print(residual_norm,nrmres,iter,tt)
+						
+						if iter==0:
+							res_norm0 = residual_norm
+						
+						ratio = residual_norm/res_norm0
+						print(residual_norm,ratio,iter,tt)
 						iter = iter+1
 						tt = tt + stepper.dt
 				
