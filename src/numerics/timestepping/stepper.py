@@ -111,7 +111,7 @@ class StepperBase(ABC):
 		return self.STEPPER_TYPE == other.STEPPER_TYPE
 
 	@abstractmethod
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		'''
 		Takes a time step using the specified time-stepping scheme for the
 		solution.
@@ -137,13 +137,13 @@ class FE(StepperBase):
 	'''
 	STEPPER_TYPE = StepperType.FE
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = solver.state_coeffs
 
 		res = self.res
-		res = solver.get_residual(U, res)
+		res = solver.get_residual(U, res, epsilon)
 		dU = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		U += dU
 
@@ -161,7 +161,7 @@ class RK4(StepperBase):
 	'''
 	STEPPER_TYPE = StepperType.RK4
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = solver.state_coeffs
@@ -169,27 +169,27 @@ class RK4(StepperBase):
 		res = self.res
 
 		# First stage
-		res = solver.get_residual(U, res)
+		res = solver.get_residual(U, res, epsilon)
 		dU1 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		Utemp = U + 0.5*dU1
 		solver.apply_limiter(Utemp)
 
 		# Second stage
 		solver.time += self.dt/2.
-		res = solver.get_residual(Utemp, res)
+		res = solver.get_residual(Utemp, res, epsilon)
 		dU2 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		Utemp = U + 0.5*dU2
 		solver.apply_limiter(Utemp)
 
 		# Third stage
-		res = solver.get_residual(Utemp, res)
+		res = solver.get_residual(Utemp, res, epsilon)
 		dU3 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		Utemp = U + dU3
 		solver.apply_limiter(Utemp)
 
 		# Fourth stage
 		solver.time += self.dt/2.
-		res = solver.get_residual(Utemp, res)
+		res = solver.get_residual(Utemp, res, epsilon)
 		dU4 = solver_tools.mult_inv_mass_matrix(mesh, solver, self.dt, res)
 		dU = 1./6.*(dU1 + 2.*dU2 + 2.*dU3 + dU4)
 		U += dU
@@ -246,7 +246,7 @@ class LSRK4(StepperBase):
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = solver.state_coeffs
@@ -258,7 +258,7 @@ class LSRK4(StepperBase):
 		for istage in range(self.nstages):
 			dt = self.dt
 
-			res = solver.get_residual(U, res)
+			res = solver.get_residual(U, res, epsilon)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
 			solver.time = Time + self.rk4c[istage]*dt
 
@@ -309,7 +309,7 @@ class SSPRK3(StepperBase):
 		self.nstages = 5
 		self.dU = np.zeros_like(U)
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh = solver.mesh
 		U = solver.state_coeffs
@@ -321,7 +321,7 @@ class SSPRK3(StepperBase):
 		for istage in range(self.nstages):
 			dt = self.dt
 
-			res = solver.get_residual(U, res)
+			res = solver.get_residual(U, res, epsilon)
 			dUtemp = solver_tools.mult_inv_mass_matrix(mesh, solver, dt, res)
 			solver.time = Time + dt
 
@@ -351,7 +351,7 @@ class ADER(StepperBase):
 	'''
 	STEPPER_TYPE = StepperType.ADER
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh = solver.mesh
 		W = solver.state_coeffs
@@ -419,7 +419,7 @@ class Strang(StepperBase, source_stepper.SourceSolvers):
 		else:
 			raise NotImplementedError("Time scheme not supported")
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh  = solver.mesh
 		U = solver.state_coeffs
@@ -467,7 +467,7 @@ class Simpler(Strang):
 	'''
 	STEPPER_TYPE = StepperType.Simpler
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		physics = solver.physics
 		mesh  = solver.mesh
 		U = solver.state_coeffs
@@ -560,7 +560,7 @@ class ODEIntegrator(StepperBase, source_stepper.SourceSolvers):
 
 		self.ode_integrator = ode_integrator
 
-	def take_time_step(self, solver):
+	def take_time_step(self, solver, epsilon):
 		self.ode_integrator.dt = self.dt
 		R = self.ode_integrator.take_time_step(solver)
 

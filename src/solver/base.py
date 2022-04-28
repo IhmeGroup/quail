@@ -432,7 +432,7 @@ class SolverBase(ABC):
 			solver_tools.L2_projection(mesh, iMM_elems, basis, quad_pts,
 					quad_wts, Uq_old, U)
 
-	def get_residual(self, U, res):
+	def get_residual(self, U, res, epsilon):
 		'''
 		Calculates the surface + volume integral for the DG formulation
 
@@ -453,75 +453,6 @@ class SolverBase(ABC):
 			res[:] = 0.
 		else:
 			res[:] = stepper.balance_const
-		
-		if self.params["ArtificialViscosity"]:
-			elem_helpers = self.elem_helpers
-			quad_wts = elem_helpers.quad_wts
-			quad_pts = elem_helpers.quad_pts
-			djac_elems=elem_helpers.djac_elems
-			vol_elems = elem_helpers.vol_elems
-
-#			basis_type  = self.params["SolutionBasis"]
-#			basis_proj = basis_tools.set_basis(self.order-1, basis_type)
-#			# Quadrature
-#			order = 2*(self.order-1)
-#			quad_order2 = self.basis.get_quadrature_order(mesh, order)
-#			basis_proj.quadrature_type = self.basis.quadrature_type
-#			basis_proj.num_pts_colocated = self.order**2
-#			quad_pts2, quad_wts2 = basis_proj.get_quadrature_data(quad_order2)
-#			eval_pts2 = quad_pts2
-#			iMM_elems2 = basis_tools.get_inv_mass_matrices(mesh, basis_proj, self.order-1)
-#
-#			self.basis.get_basis_val_grads(eval_pts2, get_val=True)
-#			Uq_old = helpers.evaluate_state(U, self.basis.basis_val)
-#
-#			U_proj=np.zeros((len(U[:,0,0]),self.order**2,len(U[0,0,:])))
-#
-#			solver_tools.L2_projection(mesh, iMM_elems2, basis_proj, quad_pts2,
-#					quad_wts2, Uq_old, U_proj)
-
-			U_bar = helpers.get_element_mean(U, quad_wts, djac_elems,vol_elems)
-			U_bar_ext = np.zeros(U.shape)
-			for ii in range(0, len(U_bar_ext[0,:])):
-				U_bar_ext[:,ii,:] = U_bar[:,0,:]
-
-			UU_bar = helpers.get_element_mean((U/(U_bar+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
-			volume = helpers.get_element_mean(np.ones(U.shape), quad_wts, djac_elems,vol_elems)
-			sens1 = np.sqrt(UU_bar[:,0,1]/volume[:,0,1])
-			sens2 = np.sqrt(UU_bar[:,0,2]/volume[:,0,2])
-			sens11 = np.zeros(sens1.shape)
-			sens22 = np.zeros(sens2.shape)
-
-			k0 = 0.125 #0.125
-			kappa = 0.025
-			for ii in range(0, len(sens1)):
-				if sens1[ii]<k0 - kappa:
-					sens11[ii] = 0.0
-				elif sens1[ii]>k0 - kappa and sens1[ii]<k0 + kappa:
-					sens11[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens1[ii]-kappa)))
-				elif sens1[ii]>k0 + kappa:
-					sens11[ii] = 1.0
-					
-				if sens2[ii]<k0 - kappa:
-					sens22[ii] = 0.0
-				elif sens2[ii]>k0 - kappa and sens2[ii]<k0 + kappa:
-					sens22[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens2[ii]-kappa)))
-				elif sens2[ii]>k0 + kappa:
-					sens22[ii] = 1.0
-
-			f = np.zeros(U.shape)
-			for ii in range(0, len(f[0,:,0])):
-				f[:,ii,1] = sens11[:]
-				f[:,ii,2] = sens22[:]
-
-			print(np.max(f[:,:,1]),np.max(sens1))
-			print(np.max(f[:,:,2]),np.max(sens2))
-
-			av_param = self.params["AVParameter"]
-			#f = np.ones(U.shape)
-			epsilon = physics.al[0]*av_param*f/1.5
-		else:
-			epsilon = np.zeros(U.shape)
 
 		self.get_boundary_face_residuals(U, res)
 		self.get_element_residuals(U, res, epsilon)
@@ -730,9 +661,116 @@ class SolverBase(ABC):
 
 			# Get time step size
 			stepper.dt = stepper.get_time_step(stepper, self)
+			
+			if self.params["ArtificialViscosity"]:
+				elem_helpers = self.elem_helpers
+				quad_wts = elem_helpers.quad_wts
+				quad_pts = elem_helpers.quad_pts
+				djac_elems=elem_helpers.djac_elems
+				vol_elems = elem_helpers.vol_elems
+
+				if self.itime==0:
+					basis_type  = self.params["SolutionBasis"]
+					basis_proj = basis_tools.set_basis(self.order-1, basis_type)
+					# Quadrature
+					order = 2*(self.order-1)
+					quad_order2 = self.basis.get_quadrature_order(mesh, order)
+					basis_proj.quadrature_type = self.basis.quadrature_type
+					basis_proj.num_pts_colocated = self.order**2
+					quad_pts2, quad_wts2 = basis_proj.get_quadrature_data(quad_order2)
+					eval_pts2 = quad_pts2
+					iMM_elems2 = basis_tools.get_inv_mass_matrices(mesh, basis_proj, self.order-1)
+
+				UU = self.state_coeffs
+				
+				# Evaluate p solution on p-1 quadrature points
+				self.basis.get_basis_val_grads(eval_pts2, get_val=True)
+				Uq_old = helpers.evaluate_state(UU, self.basis.basis_val)
+
+				# L2 projection on p-1
+				U_proj=np.zeros((len(UU[:,0,0]),self.order**2,len(UU[0,0,:])))
+				solver_tools.L2_projection(mesh, iMM_elems2, basis_proj, quad_pts2,
+				quad_wts2, Uq_old, U_proj)
+
+				# Evaluate p-1 solution on p quadrature points
+				basis_proj.get_basis_val_grads(quad_pts, get_val=True)
+				Uq_new = helpers.evaluate_state(U_proj, basis_proj.basis_val)
+
+				# Shock sensor by Persson & Peraire
+
+				U_bar = helpers.get_element_mean((UU-Uq_new)**2, quad_wts, djac_elems,vol_elems)
+				U_bar2 = helpers.get_element_mean(UU**2, quad_wts, djac_elems,vol_elems)
+
+				sens1 = np.log10(U_bar[:,0,1]/U_bar2[:,0,1])
+				sens2 = np.log10(U_bar[:,0,2]/U_bar2[:,0,2])
+
+				# Shock sensor by Eric Ching et al.
+
+#				U_bar = helpers.get_element_mean(U, quad_wts, djac_elems,vol_elems)
+#				U_bar_ext = np.zeros(U.shape)
+#				for ii in range(0, len(U_bar_ext[0,:])):
+#					U_bar_ext[:,ii,:] = U_bar[:,0,:]
+#
+#				UU_bar = helpers.get_element_mean((U/(U_bar_ext+1e-16)-1.0)**2, quad_wts, djac_elems,vol_elems)
+#				sens1 = np.sqrt(UU_bar[:,0,1])
+#				sens2 = np.sqrt(UU_bar[:,0,2])
+
+				# Shock sensor by Persson & Peraire
+				sk = 0.0
+				k0 = sk - 4.25*np.log(self.order)
+				k0 = -1.4
+				kappa = 0.2
+				# Shock sensor by Eric Ching et al.
+#				k0 = 0.125
+#				kappa = 0.025
+				sens11 = np.zeros(sens1.shape)
+				sens22 = np.zeros(sens2.shape)
+				for ii in range(0, len(sens1)):
+					if sens1[ii]<k0 - kappa:
+						sens11[ii] = 0.0
+					elif np.abs(sens1[ii]-k0)<kappa:
+						sens11[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens1[ii]-k0)))
+					elif sens1[ii]>k0 + kappa:
+						sens11[ii] = 1.0
+
+					if sens2[ii]<k0 - kappa:
+						sens22[ii] = 0.0
+					elif np.abs(sens2[ii]-k0)<kappa:
+						sens22[ii] = 0.5*(1.0+np.sin(0.5*np.pi/kappa*(sens2[ii]-k0)))
+					elif sens2[ii]>k0 + kappa:
+						sens22[ii] = 1.0
+
+				f = np.zeros(UU.shape)
+				for ii in range(0, len(f[0,:,0])):
+					f[:,ii,1] = sens11[:]
+					f[:,ii,2] = sens22[:]
+
+				print("normal_x ",np.max(f[:,:,1]),np.max(sens1))
+				print("normal_y ",np.max(f[:,:,2]),np.max(sens2))
+
+				av_param = self.params["AVParameter"]
+#				mag = np.sqrt(U[:,:,1]**2+U[:,:,2]**2)
+				f = np.ones(UU.shape)
+#				f[:,:,1]=f[:,:,1]*np.abs(1.0-mag)
+#				f[:,:,2]=f[:,:,2]*np.abs(1.0-mag)
+#				f[f>1] = 1.0
+				epsilon = physics.al[0]*av_param*f/1.5
+				
+#				U = np.zeros(UU.shape)
+#				for ii in range(len(U[:,0,0])):
+#					for jj in range(len(U[0,:,0])):
+#						mag = np.sqrt(UU[ii,jj,1]**2+UU[ii,jj,2]**2)
+#						if mag>1.0:
+#							U[ii,jj,1] = UU[ii,jj,1]/mag
+#							U[ii,jj,2] = UU[ii,jj,2]/mag
+#						else:
+#							U[ii,jj,1] = UU[ii,jj,1]
+#							U[ii,jj,2] = UU[ii,jj,2]
+			else:
+				epsilon = np.zeros(U.shape)
 
 			# Integrate in time
-			res = stepper.take_time_step(self)
+			res = stepper.take_time_step(self, epsilon)
 
 			# Increment time
 			t += stepper.dt
