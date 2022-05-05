@@ -962,17 +962,17 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 	Euler2D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x=None, t=None):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL,
+		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, gUqL,
 				n_hat, x=None, t=None)
 
 		# Right flux
-		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,
+		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,gUqR,
 				n_hat, x=None, t=None)
 
 		# Jump
@@ -981,8 +981,8 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		# Max wave speeds at each point
 		aL = np.empty(pL.shape + (1,))
 		aR = np.empty(pR.shape + (1,))
-		aL[:, :, 0] = np.sqrt(u2L + v2L) + np.sqrt(physics.gamma * pL / rhoL)
-		aR[:, :, 0] = np.sqrt(u2R + v2R) + np.sqrt(physics.gamma * pR / rhoR)
+		aL[:, :, 0] = np.sqrt(u2L + v2L) #+ np.sqrt(physics.gamma * pL / rhoL)
+		aR[:, :, 0] = np.sqrt(u2R + v2R) #+ np.sqrt(physics.gamma * pR / rhoR)
 		idx = aR > aL
 		aL[idx] = aR[idx]
 

@@ -39,6 +39,7 @@ class FcnType(Enum):
 	'''
 	TaylorGreenVortexNS = auto()
 	ManufacturedSolution = auto()
+	Bubble = auto()
 
 class BCType(Enum):
 	'''
@@ -55,6 +56,7 @@ class SourceType(Enum):
 	source terms are specific to the available Euler equation sets.
 	'''
 	ManufacturedSource = auto()
+	BubbleSource = auto()
 
 
 '''
@@ -159,6 +161,77 @@ class TaylorGreenVortexNS(FcnBase):
 			Uq[:, :, irhov]*Uq[:, :, irhov]) / Uq[:, :, irho]
 
 		return Uq
+
+class Bubble(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, x0=0., radius=0., thick=0., u=0., v=0., pressure=1., \
+			rho1_in=1., rho2_in=1.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.x0 = x0
+		self.radius = radius
+		self.thick = thick
+		self.u = u
+		self.v = v
+		self.pressure = pressure
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		
+	def get_state(self, physics, x, t):
+	
+		r = np.linalg.norm(x[:] - self.x0, axis=2,
+				keepdims=True)
+				
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-6
+		
+		Hr  = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		
+		# Phase-field and Level-set
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-Hr)
+		Uq[:,:,iLS] = -(r[:,:,0]-self.radius)
+		
+		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
+		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
+		
+		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
+		
+		Uq[:,:,irhou] = self.u*rho
+		Uq[:,:,irhov] = self.v*rho
+		
+		p = self.pressure
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoe = (p + gamma*pinf)*one_over_gamma
+		
+		Uq[:,:,irhoE] = rhoe + 0.5*rho*(self.u**2+self.v**2)
+		
+		return Uq
+		
+	
 
 '''
 -------------------
@@ -455,6 +528,38 @@ class ManufacturedSource(SourceBase):
 
 		
 		return S_rho, S_rhou, S_rhov, S_rhoE
+
+class BubbleSource(SourceBase):
+	'''
+	Source for bubble case
+	'''
+	
+	def get_source(self, physics, Uq, gUq, x, t):
+		
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+
+		rho1phi1  = Uq[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = Uq[:, :, irho2phi2] # [n, nq]
+		rhou      = Uq[:, :, irhou]     # [n, nq]
+		rhov      = Uq[:, :, irhov]     # [n, nq]
+
+		Sq = np.zeros_like(Uq)
+		
+		# Separate x and y gradients
+		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
+		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
+		
+		# Get velocity in each dimension
+		rho   = rho1phi1 + rho2phi2
+		u = rhou / rho
+		v = rhov / rho
+		
+		dudx = gUx[:,:,2] - u * (gUx[:,:,0] + gUx[:,:,1])
+		dvdy = gUy[:,:,3] - v * (gUy[:,:,0] + gUy[:,:,1])
+		
+		Sq[:,:,iPF] = Uq[:,:,iPF]*(dudx+dvdy)
+
+		return Sq
 
 '''
 -------------------

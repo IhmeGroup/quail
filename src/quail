@@ -107,6 +107,8 @@ def set_physics(mesh, physics_type):
 		physics_class = navierstokes.NavierStokes2D
 	elif PhysicsType[physics_type] == PhysicsType.Chemistry and ndims ==1:
 		physics_class = chemistry.Chemistry1D
+	elif PhysicsType[physics_type] == PhysicsType.Twophase:
+		physics_class = navierstokes.Twophase
 	else:
 	    raise NotImplementedError
 

@@ -877,12 +877,9 @@ class DG(base.SolverBase):
 			# Evaluate the source term integral
 			# eval_source_terms is an additive function so source needs to be
 			# initialized to zero for each time step
-			uu = physics.al[0]*np.sqrt(gUq[:,:,:,0]**2+gUq[:,:,:,1]**2)-Uq*(1.0-Uq)
-			ggUqx = self.evaluate_gradient(uu, basis_phys_grad_elems)
-			ggUqy = self.evaluate_gradient(gUq[:,:,:,1], basis_phys_grad_elems)
 			
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
-			Sq = physics.eval_source_terms(Uq, gUq, ggUqx, ggUqy, x_elems, self.time, Sq)
+			Sq = physics.eval_source_terms(Uq, gUq, x_elems, self.time, Sq)
 					# [ne, nq, ns]
 
 			res_elem += solver_tools.calculate_source_term_integral(

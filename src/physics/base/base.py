@@ -657,7 +657,7 @@ class PhysicsBase(ABC):
 
 		return Fnum, FB # [nf, nq, ns, ndim], [nf, nq, nb, ndim], 
 
-	def eval_source_terms(self, Uq, gUq, ggUqx, ggUqy, xphys, time, Sq):
+	def eval_source_terms(self, Uq, gUq, xphys, time, Sq):
 		'''
 		This method computes the source term(s).
 
@@ -675,7 +675,7 @@ class PhysicsBase(ABC):
 			Sq: sum of the values of source term(s) [ne, nq, ns]
 		'''
 		for source in self.source_terms:
-			Sq += source.get_source(self, Uq, gUq, ggUqx, ggUqy, xphys, time)
+			Sq += source.get_source(self, Uq, gUq, xphys, time)
 
 		return Sq
 

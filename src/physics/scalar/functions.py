@@ -551,7 +551,7 @@ class Rider(FcnBase):
 		#########################
 		# Level-set
 		#########################
-		Uq[:,:,1] = -(r[:,:,0]-0.15) #LS
+		Uq[:,:,1] = -(r[:,:,0]-self.radius) #LS
 		
 		return Uq
 		
