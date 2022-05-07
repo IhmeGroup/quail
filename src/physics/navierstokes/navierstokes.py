@@ -660,7 +660,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
 			p = rhoe/one_over_gamma - gamma*pinf
 			c2 = np.abs(gamma*(p+pinf)/rho)
-			maxwave = np.sqrt(c2)*0.0 + np.sqrt(u2+v2)
+			maxwave = np.sqrt(c2) + np.sqrt(u2+v2) 
 			scalar = maxwave
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
 			gamma1=self.gamma1
@@ -705,6 +705,236 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			p = rhoe/one_over_gamma - gamma*pinf
 			c2 = np.abs(gamma*(p+pinf)/rho)
 			scalar = np.sqrt(u2+v2 + 1e-16)/np.sqrt(c2)
+		else:
+			raise NotImplementedError
+
+		return scalar
+
+class EDAC2D(NavierStokes2D, euler.Euler2D):
+	'''
+	This class corresponds to 2D Two-phase Navier-Stokes equations. It
+	inherits attributes and methods from the Navier-Stokes2D class as
+	well as the Euler2D class.
+
+	Additional methods and attributes are commented below.
+	'''
+	NUM_STATE_VARS = 5
+	NDIMS = 2
+	PHYSICS_TYPE = general.PhysicsType.EDAC2D
+
+	def __init__(self):
+		super().__init__()
+		self.mu = 0.
+		self.rho1 = 0.
+		self.rho2 = 0.
+		self.cs = 0.
+		self.nuP = 0.
+		
+		self.eps = 0.
+		self.switch = 0.
+		
+	def set_maps(self):
+		super().set_maps()
+
+		d = {
+			navierstokes_fcn_type.Bubble2 :
+					navierstokes_fcns.Bubble2
+		}
+
+		self.IC_fcn_map.update(d)
+		self.exact_fcn_map.update(d)
+		self.BC_fcn_map.update(d)
+
+		self.source_map.update({
+			navierstokes_source_type.BubbleSource2 :
+					navierstokes_fcns.BubbleSource2,
+		})
+		
+	def set_physical_params(self, mu=1., rho1=1., rho2=1., eps=0., cs=0.,nuP=0.):
+		'''
+		This method sets physical parameters.
+
+		Inputs:
+		-------
+		Outputs:
+		--------
+		'''
+		self.mu = mu
+		self.rho1 = rho1
+		self.rho2 = rho2
+		self.eps = eps
+		self.cs = cs
+		self.nuP = nuP
+
+	class StateVariables(Enum):
+		XMomentum = "\\rho u"
+		YMomentum = "\\rho v"
+		Pressure = "p"
+		PhaseField = "\\phi"
+		LevelSet = "\\psi"
+		
+	class AdditionalVariables(Enum):
+		XVelocity = "v_x"
+		YVelocity = "v_y"
+		MaxWaveSpeed = "\\lambda"
+		
+	def get_state_indices(self):
+		irhou = self.get_state_index("XMomentum")
+		irhov = self.get_state_index("YMomentum")
+		ip    = self.get_state_index("Pressure")
+		iPF = self.get_state_index("PhaseField")
+		iLS = self.get_state_index("LevelSet")
+
+		return irhou, irhov, ip, iPF, iLS
+
+
+	def get_conv_flux_interior(self, Uq, gUq, x=None, t=None):
+		# Get indices/slices of state variables
+		irhou, irhov, ip, iPF, iLS = self.get_state_indices()
+
+		rhou      = Uq[:, :, irhou]     # [n, nq]
+		rhov      = Uq[:, :, irhov]     # [n, nq]
+		p         = Uq[:, :, ip]        # [n, nq]
+		phi1      = Uq[:, :, iPF]       # [n, nq]
+		LS        = Uq[:, :, iLS]       # [n, nq]
+		
+		gLS = gUq[:,:,iPF,:]
+		n = np.zeros(gLS.shape)
+		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
+		n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
+		n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
+
+		# Get velocity in each dimension
+		rho1 = self.rho1
+		rho2 = self.rho2
+		rho  = rho1*phi1 + rho2*(1.0-phi1)
+		u = rhou / rho
+		v = rhov / rho
+		# Get squared velocities
+		u2 = u**2
+		v2 = v**2
+		mag = np.sqrt(u2+v2)
+		gam = np.max(mag)
+
+		# Get off-diagonal momentum
+		rhouv = rho * u * v
+
+		# Correction terms
+		a1x = -gam*phi1*(1.0-phi1)*n[:,:,0]*0.0
+		a1y = -gam*phi1*(1.0-phi1)*n[:,:,1]*0.0
+		
+		cs = self.cs
+		c2 = cs**2
+
+		# Assemble flux matrix (missing a correction term in energy equation)
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+		F[:,:,irhou, 0] = rho * u2 + p     # x-flux of x-momentum
+		F[:,:,irhov, 0] = rhouv            # x-flux of y-momentum
+		F[:,:,irhou, 1] = rhouv            # y-flux of x-momentum
+		F[:,:,irhov, 1] = rho * v2 + p     # y-flux of y-momentum
+		F[:,:,ip,    0] = p * u + c2*rhou  # x-flux of pressure
+		F[:,:,ip,    1] = p * v + c2*rhov  # y-flux of pressure
+		F[:,:,iPF,   0] = u * phi1 - a1x   # x-flux of phi1
+		F[:,:,iPF,   1] = v * phi1 - a1y   # y-flux of phi1
+		F[:,:,iLS,   0] = u * LS           # x-flux of Levelset
+		F[:,:,iLS,   1] = v * LS           # y-flux of Levelset
+
+		return F, (u2, v2, rho, p)
+
+
+	def get_diff_flux_interior(self, Uq, gUq, x, t, epsilon):
+		# Get indices/slices of state variables
+		irhou, irhov, ip, iPF, iLS = self.get_state_indices()
+
+		rhou      = Uq[:, :, irhou]     # [n, nq]
+		rhov      = Uq[:, :, irhov]     # [n, nq]
+		p         = Uq[:, :, ip]     # [n, nq]
+		phi1      = Uq[:, :, iPF]       # [n, nq]
+		LS        = Uq[:, :, iLS]       # [n, nq]
+
+		# Separate x and y gradients
+		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
+		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
+
+		# Get velocity in each dimension
+		rho1 = self.rho1
+		rho2 = self.rho2
+		rho  = rho1*phi1 + rho2*(1.0-phi1)
+		u = rhou / rho
+		v = rhov / rho
+		
+		nuP = self.nuP
+		
+		# Get squared velocities
+		u2 = u**2
+		v2 = v**2
+		mag = np.sqrt(u2+v2)
+		gam = np.max(mag)
+		
+		# Correction terms
+		eps = self.eps
+		a1x = gam*eps*gUx[:,:,iPF]*0.0
+		a1y = gam*eps*gUy[:,:,iPF]*0.0
+
+		# Assemble flux matrix
+		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
+
+		# x-direction
+		F[:,:,irhou, 0] = 0.0 # x-flux of x-momentum
+		F[:,:,irhov, 0] = 0.0 # x-flux of y-momentum
+		F[:,:,ip,    0] = nuP*gUx[:,:,ip]#*phi1*(1.-phi1)
+
+		# y-direction
+		F[:,:,irhou, 1] = 0.0 # x-flux of x-momentum
+		F[:,:,irhov, 1] = 0.0 # x-flux of y-momentum
+		F[:,:,ip,    1] = nuP*gUy[:,:,ip]#*phi1*(1.-phi1)
+			
+		# phase field and level set
+		F[:,:,iPF,  0]  = a1x # x-flux of phi1
+		F[:,:,iPF,  1]  = a1y # y-flux of phi1
+		F[:,:,iLS,  0]  = 0.0       # x-flux of Levelset
+		F[:,:,iLS,  1]  = 0.0       # y-flux of Levelset
+
+		return F # [n, nq, ns, ndims]
+
+	def compute_additional_variable(self, var_name, Uq, gUq, flag_non_physical, x, t):
+		sname = self.AdditionalVariables[var_name].name
+		# Get indices/slices of state variables
+		irhou, irhov, ip, iPF, iLS = self.get_state_indices()
+
+		rhou      = Uq[:, :, irhou]     # [n, nq]
+		rhov      = Uq[:, :, irhov]     # [n, nq]
+		p         = Uq[:, :, ip]     # [n, nq]
+		phi1      = Uq[:, :, iPF]       # [n, nq]
+		LS        = Uq[:, :, iLS]       # [n, nq]
+		
+
+		if sname is self.AdditionalVariables["XVelocity"].name:
+			# Get velocity in each dimension
+			rho1 = self.rho1
+			rho2 = self.rho2
+			rho  = rho1*phi1 + rho2*(1.0-phi1)
+			u = rhou / rho
+			scalar = u
+		elif sname is self.AdditionalVariables["YVelocity"].name:
+			# Get velocity in each dimension
+			rho1 = self.rho1
+			rho2 = self.rho2
+			rho  = rho1*phi1 + rho2*(1.0-phi1)
+			v = rhov / rho
+			scalar = v
+		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
+			rho1 = self.rho1
+			rho2 = self.rho2
+			rho   = rho1*phi1 + rho2*(1.0-phi1)
+			# Get velocity in each dimension
+			u = rhou / rho
+			v = rhov / rho
+			u2 = u**2
+			v2 = v**2
+			cs = self.cs
+			maxwave = np.sqrt(cs**2 + u2 + v2 ) + np.sqrt(u2+v2)
+			scalar = maxwave
 		else:
 			raise NotImplementedError
 

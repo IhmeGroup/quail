@@ -172,7 +172,9 @@ class PhysicsType(Enum):
 	NavierStokes = auto()
 		# Navier-Stokes equations (1D and 2D)
 	Twophase = auto()
-		# Two-phase 
+		# Two-phase
+	EDAC2D = auto()
+		# Two-phase
 	Chemistry = auto()
 		# Euler equations with chemistry (1D and 2D)
 	ModelProblem = auto()

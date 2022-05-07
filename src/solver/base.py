@@ -754,7 +754,7 @@ class SolverBase(ABC):
 #
 #			self.state_coeffs = UU
 
-			print("MAX:  ",np.max(UU[:,:,5]),"MIN:  ",np.min(UU[:,:,5]))
+			print("MAX:  ",np.max(UU[:,:,3]),"MIN:  ",np.min(UU[:,:,3]))
 			
 			if stepper.dt != 0:
 				iteration = self.itime + 1

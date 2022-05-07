@@ -40,6 +40,7 @@ class FcnType(Enum):
 	TaylorGreenVortexNS = auto()
 	ManufacturedSolution = auto()
 	Bubble = auto()
+	Bubble2 = auto()
 
 class BCType(Enum):
 	'''
@@ -57,7 +58,7 @@ class SourceType(Enum):
 	'''
 	ManufacturedSource = auto()
 	BubbleSource = auto()
-
+	BubbleSource2 = auto()
 
 '''
 ---------------
@@ -228,6 +229,63 @@ class Bubble(FcnBase):
 		rhoe = (p + gamma*pinf)*one_over_gamma
 		
 		Uq[:,:,irhoE] = rhoe + 0.5*rho*(self.u**2+self.v**2)
+		
+		return Uq
+		
+class Bubble2(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, x0=0., radius=0., thick=0., u=0., v=0., pressure=1., \
+			rho1=1., rho2=1.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.x0 = x0
+		self.radius = radius
+		self.thick = thick
+		self.u = u
+		self.v = v
+		self.pressure = pressure
+		self.rho1 = rho1
+		self.rho2 = rho2
+		
+	def get_state(self, physics, x, t):
+	
+		r = np.linalg.norm(x[:] - self.x0, axis=2,
+				keepdims=True)
+				
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irhou, irhov, ip, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-3
+		
+		Hr  = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		
+		# Phase-field and Level-set
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-Hr)
+		Uq[:,:,iLS] = -(r[:,:,0]-self.radius)
+		
+		rho1 = self.rho1
+		rho2 = self.rho2
+		rho = rho1*Uq[:,:,iPF] + rho2*(1.0-Uq[:,:,iPF])
+		
+		Uq[:,:,irhou] = self.u*rho
+		Uq[:,:,irhov] = self.v*rho
+		
+		p = self.pressure
+		
+		Uq[:,:,ip] = p
 		
 		return Uq
 		
@@ -566,6 +624,41 @@ class BubbleSource(SourceBase):
 		
 		Sq[:,:,iPF] = phi1*div
 		Sq[:,:,iLS] = LS*div
+
+		return Sq
+		
+class BubbleSource2(SourceBase):
+	'''
+	Source for bubble case
+	'''
+	
+	def get_source(self, physics, Uq, gUq, x, t):
+		
+		irhou, irhov, ip, iPF, iLS = physics.get_state_indices()
+
+		rhou      = Uq[:, :, irhou]     # [n, nq]
+		rhov      = Uq[:, :, irhov]     # [n, nq]
+		p         = Uq[:, :, ip]     # [n, nq]
+		phi1      = Uq[:, :, iPF]       # [n, nq]
+		LS        = Uq[:, :, iLS]       # [n, nq]
+
+		Sq = np.zeros(Uq.shape)
+		
+		# Separate x and y gradients
+		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
+		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
+		
+		# Get velocity in each dimension
+		rho1  = physics.rho1
+		rho2  = physics.rho2
+		cs = physics.cs
+		c2 = cs**2
+		
+		rho   = rho1*phi1 + rho2*(1.0-phi1)
+		u = rhou / rho
+		v = rhov / rho
+		
+		Sq[:,:,ip] = c2*(rho1-rho2)*(u*gUx[:,:,iPF]+v*gUy[:,:,iPF])
 
 		return Sq
 
