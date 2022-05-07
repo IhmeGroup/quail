@@ -972,7 +972,7 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 				n_hat, x=None, t=None)
 
 		# Right flux
-		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR,gUqR,
+		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, gUqR,
 				n_hat, x=None, t=None)
 
 		# Jump
@@ -981,8 +981,13 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		# Max wave speeds at each point
 		aL = np.empty(pL.shape + (1,))
 		aR = np.empty(pR.shape + (1,))
-		aL[:, :, 0] = np.sqrt(u2L + v2L) #+ np.sqrt(physics.gamma * pL / rhoL)
-		aR[:, :, 0] = np.sqrt(u2R + v2R) #+ np.sqrt(physics.gamma * pR / rhoR)
+		
+		# Calculate max wave speeds at each point
+		aL[:,:,0] = physics.compute_variable("MaxWaveSpeed", UqL, gUqL, x, t,
+				flag_non_physical=True)
+		aR[:,:,0] = physics.compute_variable("MaxWaveSpeed", UqR, gUqR, x, t,
+				flag_non_physical=True)
+				
 		idx = aR > aL
 		aL[idx] = aR[idx]
 

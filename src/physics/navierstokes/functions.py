@@ -198,7 +198,7 @@ class Bubble(FcnBase):
 
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 		
-		tol = 1e-6
+		tol = 1e-3
 		
 		Hr  = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
 		
@@ -542,8 +542,11 @@ class BubbleSource(SourceBase):
 		rho2phi2  = Uq[:, :, irho2phi2] # [n, nq]
 		rhou      = Uq[:, :, irhou]     # [n, nq]
 		rhov      = Uq[:, :, irhov]     # [n, nq]
+		rhoE      = Uq[:, :, irhoE]     # [n, nq]
+		phi1      = Uq[:, :, iPF]       # [n, nq]
+		LS        = Uq[:, :, iLS]       # [n, nq]
 
-		Sq = np.zeros_like(Uq)
+		Sq = np.zeros(Uq.shape)
 		
 		# Separate x and y gradients
 		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
@@ -554,10 +557,15 @@ class BubbleSource(SourceBase):
 		u = rhou / rho
 		v = rhov / rho
 		
-		dudx = gUx[:,:,2] - u * (gUx[:,:,0] + gUx[:,:,1])
-		dvdy = gUy[:,:,3] - v * (gUy[:,:,0] + gUy[:,:,1])
+		rhodudx = gUx[:,:,irhou] - u * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2])
+		rhodvdy = gUy[:,:,irhov] - v * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2])
 		
-		Sq[:,:,iPF] = Uq[:,:,iPF]*(dudx+dvdy)
+		div = (rhodudx + rhodvdy)/rho
+		
+		print(np.max(np.abs(div)))
+		
+		Sq[:,:,iPF] = phi1*div
+		Sq[:,:,iLS] = LS*div
 
 		return Sq
 

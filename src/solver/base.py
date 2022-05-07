@@ -742,9 +742,23 @@ class SolverBase(ABC):
 			t += stepper.dt
 			self.time = t
 			
+			# Clipping
+			UU = self.state_coeffs
+
+#			for ii in range(0,len(UU[:,0,0])):
+#				for jj in range(0,len(UU[0,:,0])):
+#					if UU[ii,jj,5]<0.0:
+#						UU[ii,jj,5] = 1e-10
+#					elif UU[ii,jj,5]>1.0:
+#						UU[ii,jj,5] = 1.0-1e-10
+#
+#			self.state_coeffs = UU
+
+			print("MAX:  ",np.max(UU[:,:,5]),"MIN:  ",np.min(UU[:,:,5]))
+			
 			if stepper.dt != 0:
 				iteration = self.itime + 1
-				if iteration % 2000 == 0:
+				if iteration % 20000000 == 0:
 					physics.switch = 0.0
 					print("re-initialisation")
 					#Re-initialisation
