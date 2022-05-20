@@ -949,22 +949,23 @@ class DG(base.SolverBase):
 
 		if fluxes:
 			# Compute numerical flux
-			Fq = physics.get_conv_flux_numerical(UqL, UqR, gUqL, gUqR, normals_int_faces, x_faces, self.time)
+			FqL, FqR = physics.get_conv_flux_numerical(UqL, UqR, gUqL, gUqR, normals_int_faces, x_faces, self.time)
 
 			# Compute diffusion flux
 			Fq_diff, FL, FR = physics.get_diff_flux_numerical(UqL, UqR,
 					gUqL, gUqR, normals_int_faces, x_faces, self.time, epsilon) # [nf, nq, ns],
 					# [nf, nq, ns, ndims], [nf, nq, ns, ndims]
-			Fq -= Fq_diff
+			FqL -= Fq_diff
+			FqR -= Fq_diff
 
 			FL_phys = self.ref_to_phys_grad(ijacL_elems, FL)
 			FR_phys = self.ref_to_phys_grad(ijacR_elems, FR)
 
 			# Compute contribution to left and right element residuals
 			resL = solver_tools.calculate_boundary_flux_integral(
-					faces_to_basisL[faceL_IDs], quad_wts, Fq)
+					faces_to_basisL[faceL_IDs], quad_wts, FqL)
 			resR = solver_tools.calculate_boundary_flux_integral(
-					faces_to_basisR[faceR_IDs], quad_wts, Fq)
+					faces_to_basisR[faceR_IDs], quad_wts, FqR)
 
 			# Compute additional boundary flux integrals for diffusion terms
 			resL_diff = self.calculate_boundary_flux_integral_sum(

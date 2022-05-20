@@ -195,17 +195,19 @@ class Bubble(FcnBase):
 		r = np.linalg.norm(x[:] - self.x0, axis=2,
 				keepdims=True)
 				
+		r = np.sqrt((x[:,:,0])**2+(x[:,:,1])**2 + 1e-10)
+		
 		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
 
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 		
-		tol = 1e-3
+		tol = 1e-10
 		
-		Hr  = 0.5*(1.0+np.tanh(self.thick*(r[:,:,0]-self.radius)))
+		Hr  = 0.5*(1.0+np.tanh(self.thick*(r-self.radius)))
 		
 		# Phase-field and Level-set
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-Hr)
-		Uq[:,:,iLS] = -(r[:,:,0]-self.radius)
+		Uq[:,:,iLS] = -(r-self.radius)
 		
 		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
 		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
@@ -615,16 +617,22 @@ class BubbleSource(SourceBase):
 		u = rhou / rho
 		v = rhov / rho
 		
-		rhodudx = gUx[:,:,irhou] - u * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2])
-		rhodvdy = gUy[:,:,irhov] - v * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2])
+		switch = physics.switch
 		
-		div = (rhodudx + rhodvdy)/rho
+		Sq[:,:,iPF] = -(u*gUx[:,:,iPF] + v*gUy[:,:,iPF])*switch
+		Sq[:,:,iLS] = -(u*gUx[:,:,iLS] + v*gUy[:,:,iLS])*switch
 		
-		print(np.max(np.abs(div)))
+		if switch == 0:
+			eps = physics.eps
+			psi0 = Uq[:,:,iPF]-0.5
+			Uqx = gUq[:,:,iPF,0]
+			Uqy = gUq[:,:,iPF,1]
+			mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-32)
+			sgn = np.tanh(0.5*(psi0)/eps/mag3)
+			mag = np.sqrt(gUq[:, :, iLS, 0]**2 + gUq[:, :, iLS, 1]**2 + 1e-32)
+			l = 1.0
+			Sq[:,:,iLS] = (1.0-mag)*sgn*l
 		
-		Sq[:,:,iPF] = phi1*div
-		Sq[:,:,iLS] = LS*div
-
 		return Sq
 		
 class BubbleSource2(SourceBase):

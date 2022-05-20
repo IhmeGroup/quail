@@ -208,9 +208,12 @@ class LaxFriedrichs(ConvNumFluxBase):
 
 		idx = aR > a
 		a[idx] = aR[idx]
+		
+		FL = n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)
+		FR = n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)
 
 		# Put together
-		return n_mag*(0.5*(FqL+FqR) - 0.5*a*dUq)
+		return FL, FR
 
 
 class SIP(DiffNumFluxBase):

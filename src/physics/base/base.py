@@ -594,9 +594,9 @@ class PhysicsBase(ABC):
 		--------
 			Fnum: numerical flux values [nf, nq, ns]
 		'''
-		Fnum = self.conv_flux_fcn.compute_flux(self, UqL, UqR, gUqL, gUqR, normals, x, t)
+		FnumL, FnumR = self.conv_flux_fcn.compute_flux(self, UqL, UqR, gUqL, gUqR, normals, x, t)
 
-		return Fnum
+		return FnumL, FnumR
 
 	def get_diff_flux_numerical(self, UqL, UqR, gUqL, gUqR, normals, x, t, epsilon):
 		'''

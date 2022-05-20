@@ -339,7 +339,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		})
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
-			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1., eps=0.):
+			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1., eps=0., switch=1.):
 		'''
 		This method sets physical parameters.
 
@@ -359,6 +359,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.rho01 = rho01
 		self.rho02 = rho02
 		self.eps = eps
+		self.switch = switch
 
 	class StateVariables(Enum):
 		Density1 = "\\rho1 \\phi1"
@@ -378,6 +379,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		MaxWaveSpeed = "\\lambda"
 		SoundSpeed = "c"
 		Mach = "Mach"
+		Divergence = "\\nabla \\cdot u"
+		LevelSet2 = "\\psi+0.5"
 		
 	def get_state_indices(self):
 		irho1phi1 = self.get_state_index("Density1")
@@ -403,11 +406,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		phi1      = Uq[:, :, iPF]       # [n, nq]
 		LS        = Uq[:, :, iLS]       # [n, nq]
 		
-		gLS = gUq[:,:,iPF,:]
+		gLS = gUq[:,:,iLS,:]
 		n = np.zeros(gLS.shape)
 		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
-		n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
-		n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
+		n[:,:,0] = gLS[:,:,0]/(mag)
+		n[:,:,1] = gLS[:,:,1]/(mag)
 
 		# Get velocity in each dimension
 		rho  = rho1phi1 + rho2phi2
@@ -427,17 +430,19 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		pinf2=self.pinf2
 		rho01=self.rho01
 		rho02=self.rho02
+		
+		switch = self.switch
 
 		# Calculate pressure using the Ideal Gas Law
 #		p = (self.gamma - 1.)*(rhoE - rho * k) # [n, nq]
 
 		# Stiffened gas EOS
 		# Get properties of the fluid: gamma_l, pinf_l
-		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+		rhoe = (rhoE - 0.5 * (rhou*rhou + rhov*rhov)/rho) # [n, nq]
 		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
 		gamma = (one_over_gamma+1.0)/one_over_gamma
 		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe/one_over_gamma - gamma*pinf
+		p = rhoe*(gamma-1.0) - gamma*pinf
 
 		# Get off-diagonal momentum
 		rhouv = rho * u * v
@@ -453,10 +458,10 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		rho1 = rho1phi1/(phi1+1e-16)
-		rho2 = rho2phi2/(1.0-phi1+1e-16)
-		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1.0)+1e-16)
-		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1.0)+1e-16)
+		rho1 = rho1phi1/(phi1)
+		rho2 = rho2phi2/(1.0-phi1)
+		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1.0))
+		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1.0))
 
 		# Assemble flux matrix (missing a correction term in energy equation)
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -470,10 +475,12 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhov, 1] = rho * v2 + p - fy * v   # y-flux of y-momentum
 		F[:,:,irhoE, 0] = H * u        - fx * k - (rho1*h1-rho2*h2)*a1x # x-flux of energy
 		F[:,:,irhoE, 1] = H * v        - fy * k - (rho1*h1-rho2*h2)*a1y # y-flux of energy
-		F[:,:,iPF,   0] = u * phi1 - a1x  # x-flux of phi1
-		F[:,:,iPF,   1] = v * phi1 - a1y  # y-flux of phi1
-		F[:,:,iLS,   0] = u * LS          # x-flux of Levelset
-		F[:,:,iLS,   1] = v * LS          # y-flux of Levelset
+		F[:,:,iPF,   0] = - a1x  # x-flux of phi1
+		F[:,:,iPF,   1] = - a1y  # y-flux of phi1
+		F[:,:,iLS,   0] = 0.         # x-flux of Levelset
+		F[:,:,iLS,   1] = 0.         # y-flux of Levelset
+		
+		F = F*switch
 
 		return F, (u2, v2, rho, p)
 
@@ -501,6 +508,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		pinf2=self.pinf2
 		rho01=self.rho01
 		rho02=self.rho02
+		
+		switch = self.switch
 			
 		mu    = mu1*phi1 + mu2*(1.0-phi1)
 		kappa = kappa1*phi1 + kappa2*(1.0-phi1)
@@ -544,8 +553,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		a2x = -a1x
 		a2y = -a1y
 		
-		fx = rho01*a1x + rho02*a2x
-		fy = rho01*a1y + rho02*a2y
+		fx = (rho01*a1x + rho02*a2x)
+		fy = (rho01*a1y + rho02*a2y)
 		
 		# Stiffened gas EOS
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
@@ -581,8 +590,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# phase field and level set
 		F[:,:,iPF,  0]  = a1x # x-flux of phi1
 		F[:,:,iPF,  1]  = a1y # y-flux of phi1
-		F[:,:,iLS,  0]  = 0.0       # x-flux of Levelset
-		F[:,:,iLS,  1]  = 0.0       # y-flux of Levelset
+		
+		F = F*switch
+		
+		F[:,:,iLS,  0]  =  epsilon[:,:,0]*gUx[:,:,iLS]*(1.0-switch)
+		F[:,:,iLS,  1]  =  epsilon[:,:,0]*gUy[:,:,iLS]*(1.0-switch)
 
 		return F # [n, nq, ns, ndims]
 
@@ -659,8 +671,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			gamma = (one_over_gamma+1.0)/one_over_gamma
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
 			p = rhoe/one_over_gamma - gamma*pinf
-			c2 = np.abs(gamma*(p+pinf)/rho)
-			maxwave = np.sqrt(c2) + np.sqrt(u2+v2) 
+			c2 = np.maximum(gamma*(p+pinf)/rho,0.5*(p**2)/(rho*rhoe))
+			maxwave = np.sqrt(c2) + np.sqrt(u2+v2)
 			scalar = maxwave
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
 			gamma1=self.gamma1
@@ -705,6 +717,22 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			p = rhoe/one_over_gamma - gamma*pinf
 			c2 = np.abs(gamma*(p+pinf)/rho)
 			scalar = np.sqrt(u2+v2 + 1e-16)/np.sqrt(c2)
+		elif sname is self.AdditionalVariables["Divergence"].name:
+			# Separate x and y gradients
+			gUx = gUq[:, :, :, 0] # [ne, nq, ns]
+			gUy = gUq[:, :, :, 1] # [ne, nq, ns]
+		
+			# Get velocity in each dimension
+			rho   = rho1phi1 + rho2phi2
+			u = rhou / rho
+			v = rhov / rho
+		
+			rhodudx = gUx[:,:,irhou] - u * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2])
+			rhodvdy = gUy[:,:,irhov] - v * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2])
+		
+			scalar = np.abs((rhodudx + rhodvdy)/rho)
+		elif sname is self.AdditionalVariables["LevelSet2"].name:
+			scalar = LS+0.5
 		else:
 			raise NotImplementedError
 
@@ -820,8 +848,8 @@ class EDAC2D(NavierStokes2D, euler.Euler2D):
 		rhouv = rho * u * v
 
 		# Correction terms
-		a1x = -gam*phi1*(1.0-phi1)*n[:,:,0]*0.0
-		a1y = -gam*phi1*(1.0-phi1)*n[:,:,1]*0.0
+		a1x = -gam*phi1*(1.0-phi1)*n[:,:,0]
+		a1y = -gam*phi1*(1.0-phi1)*n[:,:,1]
 		
 		cs = self.cs
 		c2 = cs**2
@@ -873,8 +901,8 @@ class EDAC2D(NavierStokes2D, euler.Euler2D):
 		
 		# Correction terms
 		eps = self.eps
-		a1x = gam*eps*gUx[:,:,iPF]*0.0
-		a1y = gam*eps*gUy[:,:,iPF]*0.0
+		a1x = gam*eps*gUx[:,:,iPF]
+		a1y = gam*eps*gUy[:,:,iPF]
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]

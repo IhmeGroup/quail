@@ -951,9 +951,12 @@ class LaxFriedrichs1D(ConvNumFluxBase):
 		aR[:, :, 0] = np.sqrt(u2R) + np.sqrt(physics.gamma * pR / rhoR)
 		idx = aR > aL
 		aL[idx] = aR[idx]
+		
+		FL = 0.5 * n_mag * (FqL + FqR - aL*dUq)
+		FR = 0.5 * n_mag * (FqL + FqR - aL*dUq)
 
 		# Put together
-		return 0.5 * n_mag * (FqL + FqR - aL*dUq)
+		return FL, FR
 
 
 class LaxFriedrichs2D(ConvNumFluxBase):
@@ -968,11 +971,11 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, gUqL,
+		FqL0, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, gUqL,
 				n_hat, x=None, t=None)
 
 		# Right flux
-		FqR, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, gUqR,
+		FqR0, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, gUqR,
 				n_hat, x=None, t=None)
 
 		# Jump
@@ -990,9 +993,65 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 				
 		idx = aR > aL
 		aL[idx] = aR[idx]
+		
+		FL = 0.5 * n_mag * (FqL0 + FqR0 - aL*dUq)
+		FR = 0.5 * n_mag * (FqL0 + FqR0 - aL*dUq)
+		
+		# Get velocity in each dimension
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		rho1phi1  = UqL[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqL[:, :, irho2phi2] # [n, nq]
+		rhou      = UqL[:, :, irhou]     # [n, nq]
+		rhov      = UqL[:, :, irhov]     # [n, nq]
+		rho  = rho1phi1 + rho2phi2
+		uL = rhou / rho
+		vL = rhov / rho
+		rho1phi1  = UqL[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqL[:, :, irho2phi2] # [n, nq]
+		rhou      = UqL[:, :, irhou]     # [n, nq]
+		rhov      = UqL[:, :, irhov]     # [n, nq]
+		rho  = rho1phi1 + rho2phi2
+		uR = rhou / rho
+		vR = rhov / rho
+		
+		FqL = np.empty(UqL.shape + (physics.NDIMS,)) # [n, nq, ns, ndims]
+		FqR = np.empty(UqR.shape + (physics.NDIMS,)) # [n, nq, ns, ndims]
+		
+		phiL = UqL[:,:,iPF]
+		phiR = UqR[:,:,iPF]
 
+		psiL = UqL[:,:,iLS]
+		psiR = UqR[:,:,iLS]
+
+		FqL[:,:,iPF,0] = 0.5*(uL*phiR+uL*phiL)-uL*phiL
+		FqR[:,:,iPF,0] = 0.5*(uR*phiR+uR*phiL)-uR*phiR
+					 
+		FqL[:,:,iPF,1] = 0.5*(vL*phiR+vL*phiL)-vL*phiL
+		FqR[:,:,iPF,1] = 0.5*(vR*phiR+vR*phiL)-vR*phiR
+					 
+		FqL[:,:,iLS,0] = 0.5*(uL*psiR+uL*psiL)-uL*psiL
+		FqR[:,:,iLS,0] = 0.5*(uR*psiR+uR*psiL)-uR*psiR
+					 
+		FqL[:,:,iLS,1] = 0.5*(vL*psiR+vL*psiL)-vL*psiL
+		FqR[:,:,iLS,1] = 0.5*(vR*psiR+vR*psiL)-vR*psiR
+		
+		FnL = np.einsum('ijkl, ijl -> ijk', FqL, normals)
+		FnR = np.einsum('ijkl, ijl -> ijk', FqR, normals)
+		
+		FL[:,:,iPF] = 0.5 * n_mag[:,:,0] * (FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
+					(FnL[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*(phiR-phiL))
+		FR[:,:,iPF] = 0.5 * n_mag[:,:,0] * (FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
+					(FnR[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*(phiR-phiL))
+		FL[:,:,iLS] = (FnL[:,:,iLS]-0.5*n_mag[:,:,0]*aL[:,:,0]*(psiR-psiL))
+		FR[:,:,iLS] = (FnR[:,:,iLS]-0.5*n_mag[:,:,0]*aL[:,:,0]*(psiR-psiL))
+		
+		switch=physics.switch
+		
+		FL = FL*switch
+		FR = FR*switch
+		
 		# Put together
-		return 0.5 * n_mag * (FqL + FqR - aL*dUq)
+		return FL, FR
 
 
 class Roe1D(ConvNumFluxBase):

@@ -522,8 +522,7 @@ class SolverBase(ABC):
 			av_param = self.params["AVParameter"]
 
 			f = np.ones(U.shape)
-			epsilon = physics.al[0]*av_param*f/1.5
-			
+			epsilon = physics.eps*av_param*f/1.5
 		else:
 			epsilon = np.zeros(U.shape)
 
@@ -726,6 +725,8 @@ class SolverBase(ABC):
 
 		# Custom user function initial iteration
 		self.custom_user_function(self)
+		
+		f= open("pbar.txt","w+")
 
 		while self.itime < stepper.num_time_steps:
 			# Reset min and max state
@@ -754,47 +755,80 @@ class SolverBase(ABC):
 #
 #			self.state_coeffs = UU
 
-			print("MAX:  ",np.max(UU[:,:,3]),"MIN:  ",np.min(UU[:,:,3]))
+			print("MAX:  ",np.max(UU[:,:,5]),"MIN:  ",np.min(UU[:,:,5]))
 			
 			if stepper.dt != 0:
 				iteration = self.itime + 1
-				if iteration % 20000000 == 0:
+				if iteration % 2000 == 0:
 					physics.switch = 0.0
 					print("re-initialisation")
 					#Re-initialisation
 					U = self.state_coeffs
-					U[:,:,1] = (U[:,:,0]-0.5)
+					U[:,:,iLS] = U[:,:,iPF]-0.5
 					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
 					scaling = 1.5/self.params["AVParameter"]
-					stepper.dt = scaling*stepper.dt
-					itmax = 70 #50
-					tmax = (physics.al[0])*40.0
+					stepper.dt = scaling*stepper.dt*5.
+					itmax = 100 #50
 					iter = 0
 					tt = 0.
 					U0 = np.zeros(U.shape)
 					residual_norm = 1e10
 					ratio = 1e10
 					while iter<itmax and ratio>0.95: #0.8 for res**2 0.995
-					
-						for ii in range(len(U[:,0,1])):
-							for jj in range(len(U[0,:,1])):
-								U0[ii,jj,1] = U[ii,jj,1]
+
+						for ii in range(len(U[:,0,iLS])):
+							for jj in range(len(U[0,:,iLS])):
+								U0[ii,jj,iLS] = U[ii,jj,iLS]
 
 						res  = stepper.take_time_step(self)
-						
-						residual = (U0[:,:,1]-U[:,:,1])/stepper.dt
+
+						residual = (U0[:,:,iLS]-U[:,:,iLS])/stepper.dt
 						residual_norm = np.linalg.norm(np.reshape(residual, -1))/np.sqrt(len(residual))
-						
+
 						if iter==0:
 							res_norm0 = residual_norm
-						
+
 						ratio = residual_norm/res_norm0
-						print(residual_norm,ratio,iter,tt)
+						print(iter,residual_norm,ratio,tt)
 						iter = iter+1
 						tt = tt + stepper.dt
 				
+					self.state_coeffs = U
 					physics.switch = 1.0
-					
+			
+			if physics.switch == 1.0:
+				irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+
+				U = self.state_coeffs
+				rho1phi1  = U[:, :, irho1phi1] # [n, nq]
+				rho2phi2  = U[:, :, irho2phi2] # [n, nq]
+				rhou      = U[:, :, irhou]     # [n, nq]
+				rhov      = U[:, :, irhov]     # [n, nq]
+				rhoE      = U[:, :, irhoE]     # [n, nq]
+				phi1      = U[:, :, iPF]       # [n, nq]
+				LS        = U[:, :, iLS]       # [n, nq]
+				# Calculate transport
+				gamma1=physics.gamma1
+				gamma2=physics.gamma2
+				pinf1=physics.pinf1
+				pinf2=physics.pinf2
+				rho  = rho1phi1 + rho2phi2
+				one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+				gamma = (one_over_gamma+1.0)/one_over_gamma
+				# Get velocity in each dimension
+				u = rhou / rho
+				v = rhov / rho
+				u2 = u**2
+				v2 = v**2
+				rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+				one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+				gamma = (one_over_gamma+1.0)/one_over_gamma
+				pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
+				p = (rhoe/one_over_gamma - gamma*pinf)
+		
+				pbar = np.mean((p-1.0)**2)
+			
+				f.write(str(t) + " " + str(pbar) + "\n")
 
 			# Custom user function definition
 			self.custom_user_function(self)
