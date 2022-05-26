@@ -757,6 +757,10 @@ class SolverBase(ABC):
 
 			print("MAX:  ",np.max(UU[:,:,5]),"MIN:  ",np.min(UU[:,:,5]))
 			
+			if (np.max(UU[:,:,5])>1.0 or np.min(UU[:,:,5])<0.0):
+				print("BOUNDS VIOLATED")
+				f.write(str(t) + " " + str(1e10) + "\n")
+			
 			if stepper.dt != 0:
 				iteration = self.itime + 1
 				if iteration % 2000 == 0:
@@ -766,15 +770,16 @@ class SolverBase(ABC):
 					U = self.state_coeffs
 					U[:,:,iLS] = U[:,:,iPF]-0.5
 					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
-					scaling = 1.5/self.params["AVParameter"]
-					stepper.dt = scaling*stepper.dt*5.
+					scaling = 2.0/self.params["AVParameter"]
+					dx = physics.eps/2.0
+					stepper.dt = scaling*stepper.dt*10.
 					itmax = 100 #50
+					tmax = 2.0*dx #2dx
 					iter = 0
 					tt = 0.
 					U0 = np.zeros(U.shape)
-					residual_norm = 1e10
 					ratio = 1e10
-					while iter<itmax and ratio>0.95: #0.8 for res**2 0.995
+					while iter<itmax and ratio>0.95 and tt<tmax: #0.8 for res**2 0.995
 
 						for ii in range(len(U[:,0,iLS])):
 							for jj in range(len(U[0,:,iLS])):
@@ -789,46 +794,43 @@ class SolverBase(ABC):
 							res_norm0 = residual_norm
 
 						ratio = residual_norm/res_norm0
-						print(iter,residual_norm,ratio,tt)
+						print(iter,residual_norm,ratio,tt/tmax)
 						iter = iter+1
 						tt = tt + stepper.dt
 				
-					self.state_coeffs = U
 					physics.switch = 1.0
 			
-			if physics.switch == 1.0:
-				irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 
-				U = self.state_coeffs
-				rho1phi1  = U[:, :, irho1phi1] # [n, nq]
-				rho2phi2  = U[:, :, irho2phi2] # [n, nq]
-				rhou      = U[:, :, irhou]     # [n, nq]
-				rhov      = U[:, :, irhov]     # [n, nq]
-				rhoE      = U[:, :, irhoE]     # [n, nq]
-				phi1      = U[:, :, iPF]       # [n, nq]
-				LS        = U[:, :, iLS]       # [n, nq]
-				# Calculate transport
-				gamma1=physics.gamma1
-				gamma2=physics.gamma2
-				pinf1=physics.pinf1
-				pinf2=physics.pinf2
-				rho  = rho1phi1 + rho2phi2
-				one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-				gamma = (one_over_gamma+1.0)/one_over_gamma
-				# Get velocity in each dimension
-				u = rhou / rho
-				v = rhov / rho
-				u2 = u**2
-				v2 = v**2
-				rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-				one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-				gamma = (one_over_gamma+1.0)/one_over_gamma
-				pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-				p = (rhoe/one_over_gamma - gamma*pinf)
+			rho1phi1  = UU[:, :, irho1phi1] # [n, nq]
+			rho2phi2  = UU[:, :, irho2phi2] # [n, nq]
+			rhou      = UU[:, :, irhou]     # [n, nq]
+			rhov      = UU[:, :, irhov]     # [n, nq]
+			rhoE      = UU[:, :, irhoE]     # [n, nq]
+			phi1      = UU[:, :, iPF]       # [n, nq]
+			LS        = UU[:, :, iLS]       # [n, nq]
+			# Calculate transport
+			gamma1=physics.gamma1
+			gamma2=physics.gamma2
+			pinf1=physics.pinf1
+			pinf2=physics.pinf2
+			rho  = rho1phi1 + rho2phi2
+			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma+1.0)/one_over_gamma
+			# Get velocity in each dimension
+			u = rhou / rho
+			v = rhov / rho
+			u2 = u**2
+			v2 = v**2
+			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma+1.0)/one_over_gamma
+			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
+			p = (rhoe/one_over_gamma - gamma*pinf)
 		
-				pbar = np.mean((p-1.0)**2)
+			pbar = np.mean((p-1.0)**2)
 			
-				f.write(str(t) + " " + str(pbar) + "\n")
+			f.write(str(t) + " " + str(pbar) + "\n")
 
 			# Custom user function definition
 			self.custom_user_function(self)
@@ -838,6 +840,7 @@ class SolverBase(ABC):
 
 			# Write data file
 			if (self.itime + 1) % write_interval == 0:
+				self.time = t
 				readwritedatafiles.write_data_file(self,
 						(self.itime + 1) // write_interval)
 

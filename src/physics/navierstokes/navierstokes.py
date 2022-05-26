@@ -409,13 +409,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		gLS = gUq[:,:,iLS,:]
 		n = np.zeros(gLS.shape)
 		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
-		n[:,:,0] = gLS[:,:,0]/(mag)
-		n[:,:,1] = gLS[:,:,1]/(mag)
+		n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
+		n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
 
 		# Get velocity in each dimension
 		rho  = rho1phi1 + rho2phi2
-		u = rhou / rho
-		v = rhov / rho
+		u = rhou / (rho+1e-16)
+		v = rhov / (rho+1e-16)
 		# Get squared velocities
 		u2 = u**2
 		v2 = v**2
@@ -458,8 +458,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		rho1 = rho1phi1/(phi1)
-		rho2 = rho2phi2/(1.0-phi1)
+		rho1 = rho1phi1/(phi1+1e-16)
+		rho2 = rho2phi2/(1.0-phi1+1e-16)
 		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1.0))
 		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1.0))
 
@@ -672,6 +672,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
 			p = rhoe/one_over_gamma - gamma*pinf
 			c2 = np.maximum(gamma*(p+pinf)/rho,0.5*(p**2)/(rho*rhoe))
+			c2 = np.abs(c2)
 			maxwave = np.sqrt(c2) + np.sqrt(u2+v2)
 			scalar = maxwave
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
