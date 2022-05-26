@@ -41,7 +41,8 @@ class FcnType(Enum):
 	ManufacturedSolution = auto()
 	Bubble = auto()
 	Bubble2 = auto()
-
+	RayleighTaylor = auto()
+	
 class BCType(Enum):
 	'''
 	Enum class that stores the types of boundary conditions. These
@@ -291,7 +292,90 @@ class Bubble2(FcnBase):
 		
 		return Uq
 		
+class RayleighTaylor(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, d=0., thick=0., u=0., v=0., pressure=1., \
+			rho1_in=1., rho2_in=1.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.d = d
+		self.thick = thick
+		self.u = u
+		self.v = v
+		self.pressure = pressure
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		
+	def get_state(self, physics, x, t):
 	
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-10
+		
+		d = self.d
+		
+		x_I = np.linspace(0,self.d,1000)
+		y_I = 2.*d + 0.1*d*np.cos(2.*np.pi*x_I/d)
+		
+		dist = np.zeros(x[:,:,0].shape)
+		for i in range(len(x[:,0,0])):
+			for j in range(len(x[0,:,0])):
+				dist_min = 1e10
+				pt_I = np.zeros(2)
+				for ll in range(0,len(x_I)):
+					dist_loc = np.sqrt((x[i,j,0]-x_I[ll])**2+(x[i,j,1]-y_I[ll])**2)
+					if dist_loc<dist_min:
+						dist_min = dist_loc
+						pt_I[0] = x_I[ll]
+						pt_I[1] = y_I[ll]
+		
+				if pt_I[1]>x[i,j,1]:
+					Uq[i,j,iLS] = -dist_min
+				else:
+					Uq[i,j,iLS] = dist_min
+		
+		Hd = 0.5*(1.0+np.tanh(-self.thick*Uq[:,:,iLS]))
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-Hd)
+		
+		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
+		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
+		
+		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
+		
+		Uq[:,:,irhou] = self.u*rho
+		Uq[:,:,irhov] = self.v*rho
+		
+		p = self.pressure
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoe = (p + gamma*pinf)*one_over_gamma
+		
+		Uq[:,:,irhoE] = rhoe + 0.5*rho*(self.u**2+self.v**2)
+		
+		return Uq
+		
 
 '''
 -------------------
@@ -619,6 +703,10 @@ class BubbleSource(SourceBase):
 		
 		switch = physics.switch
 		
+		# gravity
+		Sq[:,:,irhov] = -rho*physics.g*switch
+		
+		# transport equations
 		Sq[:,:,iPF] = -(u*gUx[:,:,iPF] + v*gUy[:,:,iPF])*switch
 		Sq[:,:,iLS] = -(u*gUx[:,:,iLS] + v*gUy[:,:,iLS])*switch
 		

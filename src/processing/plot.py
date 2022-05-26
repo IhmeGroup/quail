@@ -125,7 +125,7 @@ def plot_1D(physics, x, var_plot, ylabel, fmt, legend_label, skip=None):
 	#plt.semilogy(x[::skip], var_plot[::skip], fmt, linewidth=2, label=legend_label)
 	plt.ylabel(ylabel)
 	
-	plt.ylim(5-1e-6, 5+1e-6)
+#	plt.ylim(5-1e-6, 5+1e-6)
 
 
 def triangulate(physics, x, var):

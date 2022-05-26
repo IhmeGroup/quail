@@ -125,7 +125,7 @@ class BCWeakRiemann(BCBase):
 		if physics.diff_flux_fcn:
 			Fv, FvB = physics.get_diff_boundary_flux_numerical(UqI, UqB, 
 					gUq, normals, x, t, epsilon) # [nf, nq, ns]
-			F -= Fv
+			FL -= Fv
 			return FL, FvB # [nf, nq, ns], [nf, nq, ns, ndims]
 		else:
 			return FL, None
