@@ -632,8 +632,6 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			pinf2=self.pinf2
 
 			rho   = rho1phi1 + rho2phi2
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
 			# Get velocity in each dimension
 			u = rhou / rho
 			v = rhov / rho

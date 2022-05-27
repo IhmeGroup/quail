@@ -771,7 +771,7 @@ found below. These classes should correspond to the BCType enum members
 above.
 '''
 
-class NoSlipWall(BCWeakPrescribed):
+class NoSlipWall(BCWeakRiemann):
 	'''
 	This class corresponds to a slip wall. See documentation for more
 	details.
@@ -790,29 +790,22 @@ class NoSlipWall(BCWeakPrescribed):
 		phi1      = UqB[:, :, iPF]       # [n, nq]
 		LS        = UqB[:, :, iLS]       # [n, nq]
 		
-		gamma1=physics.gamma1
-		gamma2=physics.gamma2
-		pinf1=physics.pinf1
-		pinf2=physics.pinf2
+		for ii in range(len(x[:,0,0])):
+			for jj in range(len(x[0,:,0])):
+				if x[ii,jj,1]>2.0:
+					UqB[ii,jj,iPF] = 1.0-1e-10
+				else:
+					UqB[ii,jj,iPF] = 1e-10
 
-		rho   = rho1phi1 + rho2phi2
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
-		# Get velocity in each dimension
-		u = rhou / rho
-		v = rhov / rho
-		u2 = u**2
-		v2 = v**2
-		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
-		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe/one_over_gamma - gamma*pinf
+		UqB[:,:,irho1phi1] = physics.rho01*UqB[:,:,iPF]
+		UqB[:,:,irho2phi2] = physics.rho02*(1.0-UqB[:,:,iPF])
+
+		rho = UqB[:,:,irho1phi1] + UqB[:,:,irho2phi2]
 		
-		UqB[:,:,irhou] = 0.0
-		UqB[:,:,irhov] = 0.0
+		UqB[:,:,irhou] = 0.
+		UqB[:,:,irhov] = 0.
 		
-		rhoe = (p + gamma*pinf)*one_over_gamma
+		rhoe = (0. + physics.gamma1*physics.pinf1)/(physics.gamma1-1.)
 		
 		UqB[:,:,irhoE] = rhoe
 		
