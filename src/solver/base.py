@@ -770,9 +770,9 @@ class SolverBase(ABC):
 					U = self.state_coeffs
 					U[:,:,iLS] = U[:,:,iPF]-0.5
 					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
-					scaling = 2.0/self.params["AVParameter"]
-					dx = physics.eps/2.0
-					stepper.dt = scaling*stepper.dt*10.
+					scaling = physics.scl_eps/self.params["AVParameter"]
+					dx = physics.eps
+					stepper.dt = scaling*stepper.dt*5.
 					itmax = 100 #50
 					tmax = 2.0*dx #2dx
 					iter = 0

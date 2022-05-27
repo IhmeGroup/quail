@@ -711,7 +711,7 @@ class BubbleSource(SourceBase):
 		Sq[:,:,iLS] = -(u*gUx[:,:,iLS] + v*gUy[:,:,iLS])*switch
 		
 		if switch == 0:
-			eps = physics.eps
+			eps = physics.scl_eps*physics.eps
 			psi0 = Uq[:,:,iPF]-0.5
 			Uqx = gUq[:,:,iPF,0]
 			Uqy = gUq[:,:,iPF,1]

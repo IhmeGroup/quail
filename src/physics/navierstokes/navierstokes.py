@@ -342,7 +342,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
 			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1.,\
-			eps=0., switch=1., g=0.):
+			eps=0., scl_eps=1.0, switch=1., g=0.):
 		'''
 		This method sets physical parameters.
 
@@ -364,6 +364,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.eps = eps
 		self.switch = switch
 		self.g = g
+		self.scl_eps = scl_eps
 
 	class StateVariables(Enum):
 		Density1 = "\\rho1 \\phi1"
@@ -551,7 +552,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		tauyy = 2.0*mu*(dvdy - 1.0/2.0*(dudx + dvdx))
 		
 		# Correction terms
-		eps = self.eps
+		eps = self.scl_eps*self.eps
 		a1x = gam*eps*gUx[:,:,iPF]
 		a1y = gam*eps*gUy[:,:,iPF]
 		a2x = -a1x
