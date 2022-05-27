@@ -42,6 +42,7 @@ from physics.euler.functions import FcnType as euler_fcn_type
 from physics.euler.functions import SourceType as euler_source_type
 
 import physics.navierstokes.functions as navierstokes_fcns
+from physics.navierstokes.functions import BCType as navierstokes_BC_type
 from physics.navierstokes.functions import FcnType as navierstokes_fcn_type
 from physics.navierstokes.functions import SourceType as \
 		navierstokes_source_type
@@ -338,6 +339,12 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.source_map.update({
 			navierstokes_source_type.BubbleSource :
 					navierstokes_fcns.BubbleSource,
+		})
+		
+		self.BC_map.update({
+			base_BC_type.StateAll : base_fcns.StateAll,
+			base_BC_type.Extrapolate : base_fcns.Extrapolate,
+			navierstokes_BC_type.NoSlipWall : navierstokes_fcns.NoSlipWall,
 		})
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \

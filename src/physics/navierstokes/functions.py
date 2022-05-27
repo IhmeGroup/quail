@@ -48,6 +48,8 @@ class BCType(Enum):
 	Enum class that stores the types of boundary conditions. These
 	boundary conditions are specific to the available Euler equation sets.
 	'''
+	NoSlipWall = auto()
+	
 	pass
 
 
@@ -769,6 +771,52 @@ found below. These classes should correspond to the BCType enum members
 above.
 '''
 
+class NoSlipWall(BCWeakPrescribed):
+	'''
+	This class corresponds to a slip wall. See documentation for more
+	details.
+	'''
+	def get_boundary_state(self, physics, UqI, normals, x, t):
+		#UqB = self.function.get_state(physics, x, t)
+		UqB = UqI.copy()
+		
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+
+		rho1phi1  = UqB[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqB[:, :, irho2phi2] # [n, nq]
+		rhou      = UqB[:, :, irhou]     # [n, nq]
+		rhov      = UqB[:, :, irhov]     # [n, nq]
+		rhoE      = UqB[:, :, irhoE]     # [n, nq]
+		phi1      = UqB[:, :, iPF]       # [n, nq]
+		LS        = UqB[:, :, iLS]       # [n, nq]
+		
+		gamma1=physics.gamma1
+		gamma2=physics.gamma2
+		pinf1=physics.pinf1
+		pinf2=physics.pinf2
+
+		rho   = rho1phi1 + rho2phi2
+		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		# Get velocity in each dimension
+		u = rhou / rho
+		v = rhov / rho
+		u2 = u**2
+		v2 = v**2
+		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
+		p = rhoe/one_over_gamma - gamma*pinf
+		
+		UqB[:,:,irhou] = 0.0
+		UqB[:,:,irhov] = 0.0
+		
+		rhoe = (p + gamma*pinf)*one_over_gamma
+		
+		UqB[:,:,irhoE] = rhoe
+		
+		return UqB
 
 '''
 ------------------------
