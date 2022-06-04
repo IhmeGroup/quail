@@ -330,6 +330,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 					navierstokes_fcns.Bubble,
 			navierstokes_fcn_type.RayleighTaylor :
 					navierstokes_fcns.RayleighTaylor,
+			navierstokes_fcn_type.DamBreak :
+					navierstokes_fcns.DamBreak,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -386,6 +388,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		Pressure = "p"
 		XVelocity = "v_x"
 		YVelocity = "v_y"
+		Velocity = "v"
 		Density = "\\rho"
 		Gamma = "\\gamma"
 		MaxWaveSpeed = "\\lambda"
@@ -651,6 +654,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			rho   = rho1phi1 + rho2phi2
 			# Get velocity in each dimension
 			scalar = rhov / rho
+		elif sname is self.AdditionalVariables["Velocity"].name:
+			rho   = rho1phi1 + rho2phi2
+			# Get velocity in each dimension
+			normv = np.sqrt((rhou / rho)**2 + (rhov / rho)**2)
+			scalar = normv
 		elif sname is self.AdditionalVariables["Density"].name:
 			rho   = rho1phi1 + rho2phi2
 			# Get velocity in each dimension
