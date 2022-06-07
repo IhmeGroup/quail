@@ -745,15 +745,19 @@ class SolverBase(ABC):
 			
 			# Clipping
 			UU = self.state_coeffs
+			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+			
+			mmin = np.min(UU[:,:,iPF])
+			mmax = np.max(UU[:,:,iPF])
+			if mmin<0.0 or mmax>1.0:
+				for ii in range(0,len(UU[:,0,0])):
+					for jj in range(0,len(UU[0,:,0])):
+						if UU[ii,jj,iPF]<0.0:
+							UU[ii,jj,iPF] = 1e-15
+						elif UU[ii,jj,iPF]>1.0:
+							UU[ii,jj,iPF] = 1.0-1e-15
 
-#			for ii in range(0,len(UU[:,0,0])):
-#				for jj in range(0,len(UU[0,:,0])):
-#					if UU[ii,jj,5]<0.0:
-#						UU[ii,jj,5] = 1e-10
-#					elif UU[ii,jj,5]>1.0:
-#						UU[ii,jj,5] = 1.0-1e-10
-#
-#			self.state_coeffs = UU
+			self.state_coeffs = UU
 
 			print("MAX:  ",np.max(UU[:,:,5]),"MIN:  ",np.min(UU[:,:,5]))
 			
@@ -773,7 +777,7 @@ class SolverBase(ABC):
 					scaling = physics.scl_eps/self.params["AVParameter"]
 					dx = physics.eps
 					stepper.dt = scaling*stepper.dt*5.
-					itmax = 100 #50
+					itmax = 1 #50
 					tmax = 2.0*dx #2dx
 					iter = 0
 					tt = 0.
@@ -799,8 +803,6 @@ class SolverBase(ABC):
 						tt = tt + stepper.dt
 				
 					physics.switch = 1.0
-			
-			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 
 #			rho1phi1  = UU[:, :, irho1phi1] # [n, nq]
 #			rho2phi2  = UU[:, :, irho2phi2] # [n, nq]

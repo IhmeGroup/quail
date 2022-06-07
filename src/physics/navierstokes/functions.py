@@ -50,7 +50,7 @@ class BCType(Enum):
 	boundary conditions are specific to the available Euler equation sets.
 	'''
 	NoSlipWall = auto()
-	
+	PressureOutlet_NS = auto()
 	pass
 
 
@@ -369,11 +369,11 @@ class RayleighTaylor(FcnBase):
 		pinf1  = physics.pinf1
 		pinf2  = physics.pinf2
 		
-		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
+		one_over_gammam1 = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gammam1+1.0)/one_over_gammam1
 		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
 		
-		rhoe = (p + gamma*pinf)*one_over_gamma
+		rhoe = (p + gamma*pinf)*one_over_gammam1
 		
 		Uq[:,:,irhoE] = rhoe + 0.5*rho*(self.u**2+self.v**2)
 		
@@ -421,6 +421,8 @@ class DamBreak(FcnBase):
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-(1.0-Hx*Hy))
 		
 		Uq[:,:,iLS] = Uq[:,:,iPF] - 0.5
+		eps = physics.scl_eps*physics.eps
+		Uq[:,:,iLS] = eps*np.log(Uq[:,:,iPF]/(1.0-Uq[:,:,iPF]))
 		
 		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
 		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
@@ -870,12 +872,57 @@ class NoSlipWall(BCWeakRiemann):
 #		UqB[:,:,irho1phi1] = physics.rho01*UqB[:,:,iPF]
 #		UqB[:,:,irho2phi2] = physics.rho02*(1.0-UqB[:,:,iPF])
 		
-		UqB[:,:,irhou] = 0.
-		UqB[:,:,irhov] = 0.
+#		UqB[:,:,irhou] = 0.
+#		UqB[:,:,irhov] = 0.
+		
+		# Unit normals
+		n_hat = normals/np.linalg.norm(normals, axis=2, keepdims=True)
+		
+		for ii in range(len(n_hat[:,0,0])):
+			for jj in range(len(n_hat[0,:,0])):
+				if n_hat[ii,jj,0] == 0.:
+					UqB[ii,jj,irhov] = 0.
+				elif n_hat[ii,jj,1] == 0.:
+					UqB[ii,jj,irhou] = 0.
 		
 #		rhoe = (1. + physics.gamma1*physics.pinf1)/(physics.gamma1-1.)
 #
 #		UqB[:,:,irhoE] = rhoe
+		
+		return UqB
+		
+class PressureOutlet_NS(BCWeakRiemann):
+	'''
+	This class corresponds to a slip wall. See documentation for more
+	details.
+	'''
+	def get_boundary_state(self, physics, UqI, normals, x, t):
+		#UqB = self.function.get_state(physics, x, t)
+		UqB = UqI.copy()
+		
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+
+		rho1phi1  = UqB[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqB[:, :, irho2phi2] # [n, nq]
+		rhou      = UqB[:, :, irhou]     # [n, nq]
+		rhov      = UqB[:, :, irhov]     # [n, nq]
+		rhoE      = UqB[:, :, irhoE]     # [n, nq]
+		phi1      = UqB[:, :, iPF]       # [n, nq]
+		LS        = UqB[:, :, iLS]       # [n, nq]
+
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma_m1 = UqB[:,:,iPF]/(gamma1-1.0) + (1.0-UqB[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma_m1 + 1.0)/one_over_gamma_m1
+		pinf = (gamma-1.0)/gamma*(UqB[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-UqB[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoe = (0. + gamma*pinf)/one_over_gamma_m1
+
+		rho = rho1phi1 + rho2phi2
+		UqB[:,:,irhoE] = rhoe + 0.5*(rhou**2+rhov**2)/rho
 		
 		return UqB
 

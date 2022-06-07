@@ -347,6 +347,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			base_BC_type.StateAll : base_fcns.StateAll,
 			base_BC_type.Extrapolate : base_fcns.Extrapolate,
 			navierstokes_BC_type.NoSlipWall : navierstokes_fcns.NoSlipWall,
+			navierstokes_BC_type.PressureOutlet_NS : navierstokes_fcns.PressureOutlet_NS,
 		})
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
@@ -700,18 +701,16 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			pinf2=self.pinf2
 
 			rho   = rho1phi1 + rho2phi2
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			# Get velocity in each dimension
 			u = rhou / rho
 			v = rhov / rho
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
+			p = rhoe/one_over_gamma_m1 - gamma*pinf
 			c2 = np.abs(gamma*(p+pinf)/rho)
 			maxwave = np.sqrt(c2)
 			scalar = maxwave
