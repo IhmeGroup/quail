@@ -747,15 +747,17 @@ class SolverBase(ABC):
 			UU = self.state_coeffs
 			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 			
+			elem_helpers = self.elem_helpers
+			x_elems = elem_helpers.x_elems
 			mmin = np.min(UU[:,:,iPF])
 			mmax = np.max(UU[:,:,iPF])
 			if mmin<0.0 or mmax>1.0:
 				for ii in range(0,len(UU[:,0,0])):
 					for jj in range(0,len(UU[0,:,0])):
 						if UU[ii,jj,iPF]<0.0:
-							UU[ii,jj,iPF] = 1e-15
+							UU[ii,jj,iPF] = 1e-10
 						elif UU[ii,jj,iPF]>1.0:
-							UU[ii,jj,iPF] = 1.0-1e-15
+							UU[ii,jj,iPF] = 1.0-1e-10
 
 			self.state_coeffs = UU
 
@@ -777,7 +779,7 @@ class SolverBase(ABC):
 					scaling = physics.scl_eps/self.params["AVParameter"]
 					dx = physics.eps
 					stepper.dt = scaling*stepper.dt*5.
-					itmax = 1 #50
+					itmax = 100 #50
 					tmax = 2.0*dx #2dx
 					iter = 0
 					tt = 0.

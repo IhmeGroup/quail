@@ -430,13 +430,22 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 
 		# Get velocity in each dimension
 		rho  = rho1phi1 + rho2phi2
-		u = rhou / (rho+1e-16)
-		v = rhov / (rho+1e-16)
+		u = rhou / rho
+		v = rhov / rho
 		# Get squared velocities
 		u2 = u**2
 		v2 = v**2
 		mag = np.sqrt(u2+v2)
-		gam = np.max(mag)
+		#gam = np.max(mag)
+		ll = len(Uq[:, 0, irhoE])
+		
+		#HACK
+		if ll<300:
+			gam = 0.
+		else:
+			#gam = mag
+			gam = np.max(mag)*0.
+		
 		k = 0.5*(u2 + v2)
 		
 		# Calculate transport
@@ -449,19 +458,14 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 		switch = self.switch
 
-		# Calculate pressure using the Ideal Gas Law
-#		p = (self.gamma - 1.)*(rhoE - rho * k) # [n, nq]
-
 		# Stiffened gas EOS
 		# Get properties of the fluid: gamma_l, pinf_l
-		rhoe = (rhoE - 0.5 * (rhou*rhou + rhov*rhov)/rho) # [n, nq]
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
-		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe*(gamma-1.0) - gamma*pinf
+		rhoe = rhoE - rho*k # [n, nq]
+		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.) - (1.0-phi1)*gamma2*pinf2/(gamma2-1.)))*one_over_gamma_m1
 
 		# Get off-diagonal momentum
-		rhouv = rho * u * v
+		rhouv = rhou * rhov / rho
 		# Get total enthalpy
 		H = rhoE + p
 
@@ -474,10 +478,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		rho1 = rho1phi1/(phi1+1e-16)
-		rho2 = rho2phi2/(1.0-phi1+1e-16)
-		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1.0))
-		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1.0))
+		h1 = (p + pinf1)*gamma1/(gamma1-1.0)
+		h2 = (p + pinf2)*gamma2/(gamma2-1.0)
 
 		# Assemble flux matrix (missing a correction term in energy equation)
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -489,8 +491,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhov, 0] = rhouv        - fx * v   # x-flux of y-momentum
 		F[:,:,irhou, 1] = rhouv        - fy * u   # y-flux of x-momentum
 		F[:,:,irhov, 1] = rho * v2 + p - fy * v   # y-flux of y-momentum
-		F[:,:,irhoE, 0] = H * u        - fx * k - (rho1*h1-rho2*h2)*a1x # x-flux of energy
-		F[:,:,irhoE, 1] = H * v        - fy * k - (rho1*h1-rho2*h2)*a1y # y-flux of energy
+		F[:,:,irhoE, 0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
+		F[:,:,irhoE, 1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
 		F[:,:,iPF,   0] = - a1x  # x-flux of phi1
 		F[:,:,iPF,   1] = - a1y  # y-flux of phi1
 		F[:,:,iLS,   0] = 0.         # x-flux of Levelset
@@ -527,11 +529,9 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 		switch = self.switch
 			
-		mu    = mu1*phi1 + mu2*(1.0-phi1)
+		mu    = mu1*phi1    + mu2*(1.0-phi1)
 		kappa = kappa1*phi1 + kappa2*(1.0-phi1)
-		rho   = rho1phi1 + rho2phi2
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
+		rho   = rho1phi1    + rho2phi2
 
 		# Separate x and y gradients
 		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
@@ -541,26 +541,34 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		u = rhou / rho
 		v = rhov / rho
 		
-		# Get E
-		E = rhoE / rho
-		
 		# Get squared velocities
 		u2 = u**2
 		v2 = v**2
 		mag = np.sqrt(u2+v2)
-		gam = np.max(mag)
+		#gam = np.max(mag)
+		
+		# HACK
+		ll = len(Uq[:, 0, irhoE])
+		if ll<300:
+			gam = 0.
+		else:
+			#gam = mag
+			gam = np.max(mag)*0.
+		
 		k = 0.5*(u2 + v2)
 
 		# Get the stress tensor (use product rules to write in
 		# terms of the conservative gradients)
-		dudx = gUx[:,:,2] - u * (gUx[:,:,0] + gUx[:,:,1])
-		dudy = gUy[:,:,2] - u * (gUy[:,:,0] + gUy[:,:,1])
-		dvdx = gUx[:,:,3] - v * (gUx[:,:,0] + gUx[:,:,1])
-		dvdy = gUy[:,:,3] - v * (gUy[:,:,0] + gUy[:,:,1])
+		dudx = (gUx[:,:,irhou] - u * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2]))/rho
+		dudy = (gUy[:,:,irhou] - u * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2]))/rho
+		dvdx = (gUx[:,:,irhov] - v * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2]))/rho
+		dvdy = (gUy[:,:,irhov] - v * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2]))/rho
 		
-		tauxx = 2.0*mu*(dudx - 1.0/2.0*(dudx + dvdx))
-		tauxy = 1.0*mu*(dudy + dvdx)
-		tauyy = 2.0*mu*(dvdy - 1.0/2.0*(dudx + dvdx))
+		div = dudx + dvdy
+		
+		tauxx = 2.0*mu*(dudx - 1.0/2.0*div)
+		tauxy =     mu*(dudy + dvdx)
+		tauyy = 2.0*mu*(dvdy - 1.0/2.0*div)
 		
 		# Correction terms
 		eps = self.scl_eps*self.eps
@@ -573,16 +581,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fy = (rho01*a1y + rho02*a2y)
 		
 		# Stiffened gas EOS
-		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
-		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe/one_over_gamma - gamma*pinf
+		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		#gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+		rhoe = rhoE - rho*k
+		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.) - (1.0-phi1)*gamma2*pinf2/(gamma2-1.)))*one_over_gamma_m1
 		
-		rho1 = rho1phi1/phi1
-		rho2 = rho2phi2/(1.0-phi1)
-		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1))
-		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1))
+		h1 = (p + pinf1)*gamma1/(gamma1-1.)
+		h2 = (p + pinf2)*gamma2/(gamma2-1.)
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -595,13 +600,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhou, 0] = tauxx + fx * u # x-flux of x-momentum
 		F[:,:,irhov, 0] = tauxy + fx * v # x-flux of y-momentum
 		F[:,:,irhoE, 0] = u * tauxx + v * tauxy  \
-			+ fx * k + (rho1*h1-rho2*h2)*a1x
+			+ fx * k + (h1-h2)*a1x
 
 		# y-direction
 		F[:,:,irhou, 1] = tauxy + fy * u # y-flux of x-momentum
 		F[:,:,irhov, 1] = tauyy + fy * v # y-flux of y-momentum
 		F[:,:,irhoE, 1] = u * tauxy + v * tauyy + \
-			+ fy * k + (rho1*h1-rho2*h2)*a1y
+			+ fy * k + (h1-h2)*a1y
 			
 		# phase field and level set
 		F[:,:,iPF,  0]  = a1x # x-flux of phi1
@@ -642,10 +647,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
-			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.) - (1.0-phi1)*gamma2*pinf2/(gamma2-1.)))*one_over_gamma_m1
 			scalar = p
 		elif sname is self.AdditionalVariables["XVelocity"].name:
 			rho   = rho1phi1 + rho2phi2
@@ -667,34 +670,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		elif sname is self.AdditionalVariables["Gamma"].name:
 			gamma1=self.gamma1
 			gamma2=self.gamma2
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			# Get velocity in each dimension
 			scalar = gamma
 		elif sname is self.AdditionalVariables["MaxWaveSpeed"].name:
-			gamma1=self.gamma1
-			gamma2=self.gamma2
-			pinf1=self.pinf1
-			pinf2=self.pinf2
-
-			rho   = rho1phi1 + rho2phi2
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
-			# Get velocity in each dimension
-			u = rhou / rho
-			v = rhov / rho
-			u2 = u**2
-			v2 = v**2
-			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
-			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
-			c2 = np.maximum(gamma*(p+pinf)/rho,0.5*(p**2)/(rho*rhoe))
-			c2 = np.abs(c2)
-			maxwave = np.sqrt(c2) + np.sqrt(u2+v2)
-			scalar = maxwave
-		elif sname is self.AdditionalVariables["SoundSpeed"].name:
 			gamma1=self.gamma1
 			gamma2=self.gamma2
 			pinf1=self.pinf1
@@ -709,10 +689,37 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma_m1 - gamma*pinf
-			c2 = np.abs(gamma*(p+pinf)/rho)
-			maxwave = np.sqrt(c2)
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+			gampinf_over_gamma_m1= phi1*gamma1*pinf1/(gamma1-1.) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.)
+			p = (rhoe - gampinf_over_gamma_m1)*one_over_gamma_m1
+			csq = (gamma*p + gampinf_over_gamma_m1/one_over_gamma_m1)/rho
+			maxwave = np.sqrt(csq) + np.sqrt(u2+v2)
+			scalar = maxwave
+		elif sname is self.AdditionalVariables["SoundSpeed"].name:
+			gamma1=self.gamma1
+			gamma2=self.gamma2
+			pinf1=self.pinf1
+			pinf2=self.pinf2
+
+			rho   = rho1phi1 + rho2phi2
+			one_over_gamma_m1_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1_m1+1.0)/one_over_gamma_m1_m1
+			# Get velocity in each dimension
+			u = rhou / rho
+			v = rhov / rho
+			u2 = u**2
+			v2 = v**2
+			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+			gampinf_over_gamma_m1= phi1*gamma1*pinf1/(gamma1-1.) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.)
+			p = (rhoe - gampinf_over_gamma_m1)*one_over_gamma_m1
+			
+			csq = (gamma*p + gampinf_over_gamma_m1/one_over_gamma_m1)/rho
+			#c2 = np.maximum(gamma*(p+pinf)/rho,0.5*(p**2)/(rho*rhoe))
+			csq = np.abs(csq)
+			maxwave = np.sqrt(csq)
 			scalar = maxwave
 		elif sname is self.AdditionalVariables["Mach"].name:
 			gamma1=self.gamma1
@@ -721,20 +728,21 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			pinf2=self.pinf2
 
 			rho   = rho1phi1 + rho2phi2
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			# Get velocity in each dimension
 			u = rhou / rho
 			v = rhov / rho
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
-			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
-			c2 = np.abs(gamma*(p+pinf)/rho)
-			scalar = np.sqrt(u2+v2 + 1e-16)/np.sqrt(c2)
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+			gampinf_over_gamma_m1= phi1*gamma1*pinf1/(gamma1-1.) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.)
+			p = (rhoe - gampinf_over_gamma_m1)*one_over_gamma_m1
+			
+			csq = (gamma*p + gampinf_over_gamma_m1/one_over_gamma_m1)/rho
+			scalar = np.sqrt(u2+v2)/np.sqrt(csq)
 		elif sname is self.AdditionalVariables["Divergence"].name:
 			# Separate x and y gradients
 			gUx = gUq[:, :, :, 0] # [ne, nq, ns]
@@ -748,7 +756,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			rhodudx = gUx[:,:,irhou] - u * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2])
 			rhodvdy = gUy[:,:,irhov] - v * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2])
 		
-			scalar = np.abs((rhodudx + rhodvdy)/rho)
+			scalar = (rhodudx + rhodvdy)/rho
 		elif sname is self.AdditionalVariables["LevelSet2"].name:
 			scalar = LS+0.5
 		else:

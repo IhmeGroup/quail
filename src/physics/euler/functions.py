@@ -1023,27 +1023,27 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		psiL = UqL[:,:,iLS]
 		psiR = UqR[:,:,iLS]
 
-		FqL[:,:,iPF,0] = 0.5*(uL*phiR+uL*phiL)-uL*phiL
-		FqR[:,:,iPF,0] = 0.5*(uR*phiR+uR*phiL)-uR*phiR
+		FqL[:,:,iPF,0] = uL*(0.5*(phiR+phiL)-phiL)
+		FqR[:,:,iPF,0] = uR*(0.5*(phiR+phiL)-phiR)
 					 
-		FqL[:,:,iPF,1] = 0.5*(vL*phiR+vL*phiL)-vL*phiL
-		FqR[:,:,iPF,1] = 0.5*(vR*phiR+vR*phiL)-vR*phiR
+		FqL[:,:,iPF,1] = vL*(0.5*(phiR+phiL)-phiL)
+		FqR[:,:,iPF,1] = vR*(0.5*(phiR+phiL)-phiR)
 					 
-		FqL[:,:,iLS,0] = 0.5*(uL*psiR+uL*psiL)-uL*psiL
-		FqR[:,:,iLS,0] = 0.5*(uR*psiR+uR*psiL)-uR*psiR
+		FqL[:,:,iLS,0] = uL*(0.5*(psiR+psiL)-psiL)
+		FqR[:,:,iLS,0] = uR*(0.5*(psiR+psiL)-psiR)
 					 
-		FqL[:,:,iLS,1] = 0.5*(vL*psiR+vL*psiL)-vL*psiL
-		FqR[:,:,iLS,1] = 0.5*(vR*psiR+vR*psiL)-vR*psiR
+		FqL[:,:,iLS,1] = vL*(0.5*(psiR+psiL)-psiL)
+		FqR[:,:,iLS,1] = vR*(0.5*(psiR+psiL)-psiR)
 		
-		FnL = np.einsum('ijkl, ijl -> ijk', FqL, normals)
-		FnR = np.einsum('ijkl, ijl -> ijk', FqR, normals)
+		FnL = np.einsum('ijkl, ijl -> ijk', FqL, n_hat)
+		FnR = np.einsum('ijkl, ijl -> ijk', FqR, n_hat)
 		
-		FL[:,:,iPF] = 0.5 * n_mag[:,:,0] * (FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
-					(FnL[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*(phiR-phiL))
-		FR[:,:,iPF] = 0.5 * n_mag[:,:,0] * (FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
-					(FnR[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*(phiR-phiL))
-		FL[:,:,iLS] = (FnL[:,:,iLS]-0.5*n_mag[:,:,0]*aL[:,:,0]*(psiR-psiL))
-		FR[:,:,iLS] = (FnR[:,:,iLS]-0.5*n_mag[:,:,0]*aL[:,:,0]*(psiR-psiL))
+		FL[:,:,iPF] = 0.5 * n_mag[:,:,0] * ((FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
+					2.0*FnL[:,:,iPF]-aL[:,:,0]*dUq[:,:,iPF])
+		FR[:,:,iPF] = 0.5 * n_mag[:,:,0] * ((FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
+					2.0*FnR[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*dUq[:,:,iPF])
+		FL[:,:,iLS] = 0.5 * n_mag[:,:,0] *(2.0*FnL[:,:,iLS]-aL[:,:,0]*dUq[:,:,iLS])
+		FR[:,:,iLS] = 0.5 * n_mag[:,:,0] *(2.0*FnR[:,:,iLS]-aL[:,:,0]*dUq[:,:,iLS])
 		
 		switch=physics.switch
 		
