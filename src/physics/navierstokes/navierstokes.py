@@ -470,10 +470,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		rho1 = rho1phi1/(phi1+1e-16)
-		rho2 = rho2phi2/(1.0-phi1+1e-16)
-		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1.0))
-		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1.0))
+		h1 = (p + pinf1)*gamma1/(gamma1-1.0)
+		h2 = (p + pinf2)*gamma2/(gamma2-1.0)
 
 		# Assemble flux matrix (missing a correction term in energy equation)
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -485,8 +483,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhov, 0] = rhouv        - fx * v   # x-flux of y-momentum
 		F[:,:,irhou, 1] = rhouv        - fy * u   # y-flux of x-momentum
 		F[:,:,irhov, 1] = rho * v2 + p - fy * v   # y-flux of y-momentum
-		F[:,:,irhoE, 0] = H * u        - fx * k - (rho1*h1-rho2*h2)*a1x # x-flux of energy
-		F[:,:,irhoE, 1] = H * v        - fy * k - (rho1*h1-rho2*h2)*a1y # y-flux of energy
+		F[:,:,irhoE, 0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
+		F[:,:,irhoE, 1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
 		F[:,:,iPF,   0] = - a1x  # x-flux of phi1
 		F[:,:,iPF,   1] = - a1y  # y-flux of phi1
 		F[:,:,iLS,   0] = 0.         # x-flux of Levelset
@@ -549,14 +547,14 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 
 		# Get the stress tensor (use product rules to write in
 		# terms of the conservative gradients)
-		dudx = gUx[:,:,2] - u * (gUx[:,:,0] + gUx[:,:,1])
-		dudy = gUy[:,:,2] - u * (gUy[:,:,0] + gUy[:,:,1])
-		dvdx = gUx[:,:,3] - v * (gUx[:,:,0] + gUx[:,:,1])
-		dvdy = gUy[:,:,3] - v * (gUy[:,:,0] + gUy[:,:,1])
+		dudx = (gUx[:,:,2] - u * (gUx[:,:,0] + gUx[:,:,1]))/rho
+		dudy = (gUy[:,:,2] - u * (gUy[:,:,0] + gUy[:,:,1]))/rho
+		dvdx = (gUx[:,:,3] - v * (gUx[:,:,0] + gUx[:,:,1]))/rho
+		dvdy = (gUy[:,:,3] - v * (gUy[:,:,0] + gUy[:,:,1]))/rho
 		
-		tauxx = 2.0*mu*(dudx - 1.0/2.0*(dudx + dvdx))
+		tauxx = 2.0*mu*(dudx - 1.0/2.0*(dudx + dvdy))
 		tauxy = 1.0*mu*(dudy + dvdx)
-		tauyy = 2.0*mu*(dvdy - 1.0/2.0*(dudx + dvdx))
+		tauyy = 2.0*mu*(dvdy - 1.0/2.0*(dudx + dvdy))
 		
 		# Correction terms
 		eps = self.scl_eps*self.eps
@@ -575,10 +573,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
 		p = rhoe/one_over_gamma - gamma*pinf
 		
-		rho1 = rho1phi1/phi1
-		rho2 = rho2phi2/(1.0-phi1)
-		h1 = (p + pinf1)*gamma1/(rho1*(gamma1-1))
-		h2 = (p + pinf2)*gamma2/(rho2*(gamma2-1))
+		h1 = (p + pinf1)*gamma1/(gamma1-1)
+		h2 = (p + pinf2)*gamma2/(gamma2-1)
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -591,13 +587,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhou, 0] = tauxx + fx * u # x-flux of x-momentum
 		F[:,:,irhov, 0] = tauxy + fx * v # x-flux of y-momentum
 		F[:,:,irhoE, 0] = u * tauxx + v * tauxy  \
-			+ fx * k + (rho1*h1-rho2*h2)*a1x
+			+ fx * k + (h1-h2)*a1x
 
 		# y-direction
 		F[:,:,irhou, 1] = tauxy + fy * u # y-flux of x-momentum
 		F[:,:,irhov, 1] = tauyy + fy * v # y-flux of y-momentum
 		F[:,:,irhoE, 1] = u * tauxy + v * tauyy + \
-			+ fy * k + (rho1*h1-rho2*h2)*a1y
+			+ fy * k + (h1-h2)*a1y
 			
 		# phase field and level set
 		F[:,:,iPF,  0]  = a1x # x-flux of phi1

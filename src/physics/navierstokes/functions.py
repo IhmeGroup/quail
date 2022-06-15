@@ -707,6 +707,7 @@ class BubbleSource(SourceBase):
 		
 		# gravity
 		Sq[:,:,irhov] = -rho*physics.g*switch
+		Sq[:,:,irhoE] = -rhov*physics.g*switch
 		
 		# transport equations
 		Sq[:,:,iPF] = -(u*gUx[:,:,iPF] + v*gUy[:,:,iPF])*switch
