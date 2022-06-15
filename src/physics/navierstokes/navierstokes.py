@@ -445,16 +445,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 		switch = self.switch
 
-		# Calculate pressure using the Ideal Gas Law
-#		p = (self.gamma - 1.)*(rhoE - rho * k) # [n, nq]
-
 		# Stiffened gas EOS
 		# Get properties of the fluid: gamma_l, pinf_l
-		rhoe = (rhoE - 0.5 * (rhou*rhou + rhov*rhov)/rho) # [n, nq]
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
+		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe*(gamma-1.0) - gamma*pinf
+		p = rhoe/one_over_gamma_m1 - gamma*pinf
 
 		# Get off-diagonal momentum
 		rhouv = rho * u * v
@@ -475,20 +472,20 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 
 		# Assemble flux matrix (missing a correction term in energy equation)
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
-		F[:,:,irho1phi1,  0] = u * rho1phi1 - rho01*a1x # x-mass1 flux
-		F[:,:,irho1phi1,  1] = v * rho1phi1 - rho01*a1y # y-mass1 flux
-		F[:,:,irho2phi2,  0] = u * rho2phi2 - rho02*a2x # x-mass2 flux
-		F[:,:,irho2phi2,  1] = v * rho2phi2 - rho02*a2y # y-mass2 flux
-		F[:,:,irhou, 0] = rho * u2 + p - fx * u   # x-flux of x-momentum
-		F[:,:,irhov, 0] = rhouv        - fx * v   # x-flux of y-momentum
-		F[:,:,irhou, 1] = rhouv        - fy * u   # y-flux of x-momentum
-		F[:,:,irhov, 1] = rho * v2 + p - fy * v   # y-flux of y-momentum
-		F[:,:,irhoE, 0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
-		F[:,:,irhoE, 1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
-		F[:,:,iPF,   0] = - a1x  # x-flux of phi1
-		F[:,:,iPF,   1] = - a1y  # y-flux of phi1
-		F[:,:,iLS,   0] = 0.         # x-flux of Levelset
-		F[:,:,iLS,   1] = 0.         # y-flux of Levelset
+		F[:,:,irho1phi1,  0] = u * rho1phi1 - rho01*a1x            # x-mass1 flux
+		F[:,:,irho1phi1,  1] = v * rho1phi1 - rho01*a1y            # y-mass1 flux
+		F[:,:,irho2phi2,  0] = u * rho2phi2 - rho02*a2x            # x-mass2 flux
+		F[:,:,irho2phi2,  1] = v * rho2phi2 - rho02*a2y            # y-mass2 flux
+		F[:,:,irhou,      0] = rho * u2 + p - fx * u               # x-flux of x-momentum
+		F[:,:,irhov,      0] = rhouv        - fx * v               # x-flux of y-momentum
+		F[:,:,irhou,      1] = rhouv        - fy * u               # y-flux of x-momentum
+		F[:,:,irhov,      1] = rho * v2 + p - fy * v               # y-flux of y-momentum
+		F[:,:,irhoE,      0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
+		F[:,:,irhoE,      1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
+		F[:,:,iPF,        0] = - a1x                               # x-flux of phi1
+		F[:,:,iPF,        1] = - a1y                               # y-flux of phi1
+		F[:,:,iLS,        0] = 0.                                  # x-flux of Levelset
+		F[:,:,iLS,        1] = 0.                                  # y-flux of Levelset
 		
 		F = F*switch
 
@@ -521,11 +518,9 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 		switch = self.switch
 			
-		mu    = mu1*phi1 + mu2*(1.0-phi1)
+		mu    = mu1   *phi1 + mu2   *(1.0-phi1)
 		kappa = kappa1*phi1 + kappa2*(1.0-phi1)
-		rho   = rho1phi1 + rho2phi2
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
+		rho   = rho1phi1    + rho2phi2
 
 		# Separate x and y gradients
 		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
@@ -534,9 +529,6 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# Get velocity in each dimension
 		u = rhou / rho
 		v = rhov / rho
-		
-		# Get E
-		E = rhoE / rho
 		
 		# Get squared velocities
 		u2 = u**2
@@ -568,32 +560,32 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 		# Stiffened gas EOS
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-		one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
+		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe/one_over_gamma - gamma*pinf
+		p = rhoe/one_over_gamma_m1 - gamma*pinf
 		
 		h1 = (p + pinf1)*gamma1/(gamma1-1)
 		h2 = (p + pinf2)*gamma2/(gamma2-1)
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
-		F[:,:,irho1phi1,  0] = rho01*a1x # x-mass1 flux
-		F[:,:,irho1phi1,  1] = rho01*a1y # y-mass1 flux
-		F[:,:,irho2phi2,  0] = rho02*a2x # x-mass2 flux
-		F[:,:,irho2phi2,  1] = rho02*a2y # y-mass2 flux
 
 		# x-direction
-		F[:,:,irhou, 0] = tauxx + fx * u # x-flux of x-momentum
-		F[:,:,irhov, 0] = tauxy + fx * v # x-flux of y-momentum
-		F[:,:,irhoE, 0] = u * tauxx + v * tauxy  \
-			+ fx * k + (h1-h2)*a1x
+		F[:,:,irho1phi1,  0] = rho01*a1x                 # x-mass1 flux
+		F[:,:,irho2phi2,  0] = rho02*a2x                 # x-mass2 flux
+		F[:,:,irhou,      0] = tauxx + fx * u            # x-flux of x-momentum
+		F[:,:,irhov,      0] = tauxy + fx * v            # x-flux of y-momentum
+		F[:,:,irhoE,      0] = u * tauxx + v * tauxy  \
+			+ fx * k + (h1-h2)*a1x                       # x-flux of energy
 
 		# y-direction
-		F[:,:,irhou, 1] = tauxy + fy * u # y-flux of x-momentum
-		F[:,:,irhov, 1] = tauyy + fy * v # y-flux of y-momentum
-		F[:,:,irhoE, 1] = u * tauxy + v * tauyy + \
-			+ fy * k + (h1-h2)*a1y
+		F[:,:,irho1phi1,  1] = rho01*a1y                 # y-mass1 flux
+		F[:,:,irho2phi2,  1] = rho02*a2y                 # y-mass2 flux
+		F[:,:,irhou,      1] = tauxy + fy * u            # y-flux of x-momentum
+		F[:,:,irhov,      1] = tauyy + fy * v            # y-flux of y-momentum
+		F[:,:,irhoE,      1] = u * tauxy + v * tauyy  \
+			+ fy * k + (h1-h2)*a1y                       # y-flux of energy
 			
 		# phase field and level set
 		F[:,:,iPF,  0]  = a1x # x-flux of phi1
