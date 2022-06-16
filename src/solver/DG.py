@@ -1024,9 +1024,6 @@ class DG(base.SolverBase):
 			Fq, FqB = BC.get_boundary_flux(physics, UqI, normals, x, self.time, gUq, epsilon)
 			FqB_phys = self.ref_to_phys_grad(ijac, FqB)
 			
-#			FqB_phys[:,:,:,:] = 0.0
-#			Fq[:,:,:] = 0.0
-
 			# Compute contribution to adjacent element residual
 			resB = solver_tools.calculate_boundary_flux_integral(
 					basis_val, quad_wts, Fq)

@@ -42,6 +42,7 @@ class FcnType(Enum):
 	Bubble = auto()
 	Bubble2 = auto()
 	RayleighTaylor = auto()
+	Channel = auto()
 	
 class BCType(Enum):
 	'''
@@ -49,6 +50,9 @@ class BCType(Enum):
 	boundary conditions are specific to the available Euler equation sets.
 	'''
 	NoSlipWall = auto()
+	Subsonic_Outlet = auto()
+	Subsonic_Inlet = auto()
+#	PressureOutletNS = auto()
 	
 	pass
 
@@ -375,6 +379,79 @@ class RayleighTaylor(FcnBase):
 		rhoe = (p + gamma*pinf)*one_over_gamma
 		
 		Uq[:,:,irhoE] = rhoe + 0.5*rho*(self.u**2+self.v**2)
+		
+		return Uq
+		
+class Channel(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, d=0., thick=0., uavg=0., pressure=1., \
+			rho1_in=1., rho2_in=1., x0=0., y0=0., r0=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.d = d
+		self.thick = thick
+		self.uavg = uavg
+		self.pressure = pressure
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		self.x0 = x0
+		self.y0 = y0
+		self.r0 = r0
+		
+	def get_state(self, physics, x, t):
+	
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-10
+		
+		r = np.sqrt((x[:,:,0]-self.x0)**2+(x[:,:,1]-self.y0)**2)
+		
+		Hr = 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
+		Hr = 0.5*(1.0+np.tanh(0.5*self.thick*(r-self.r0)))
+		Uq[:,:,iLS] = tol + (1.0-2.0*tol)*Hr
+		
+#		Uq[:,:,iPF] = 1.
+#		Uq[:,:,iLS] = 1.
+		
+		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
+		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
+		
+		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
+		
+		A = self.uavg*6.0/self.d**2
+		
+		Uq[:,:,irhou] = -A*(x[:,:,1]**2-0.25*self.d**2)*rho
+		Uq[:,:,irhov] = 0.
+		
+		p = self.pressure
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoe = (p + gamma*pinf)*one_over_gamma
+		
+		Uq[:,:,irhoE] = rhoe + 0.5*(Uq[:,:,irhou]**2+Uq[:,:,irhov]**2)/rho
 		
 		return Uq
 		
@@ -791,27 +868,212 @@ class NoSlipWall(BCWeakRiemann):
 		phi1      = UqB[:, :, iPF]       # [n, nq]
 		LS        = UqB[:, :, iLS]       # [n, nq]
 		
-		for ii in range(len(x[:,0,0])):
-			for jj in range(len(x[0,:,0])):
-				if x[ii,jj,1]>2.0:
-					UqB[ii,jj,iPF] = 1.0-1e-10
-				else:
-					UqB[ii,jj,iPF] = 1e-10
-
-		UqB[:,:,irho1phi1] = physics.rho01*UqB[:,:,iPF]
-		UqB[:,:,irho2phi2] = physics.rho02*(1.0-UqB[:,:,iPF])
-
-		rho = UqB[:,:,irho1phi1] + UqB[:,:,irho2phi2]
-		
 		UqB[:,:,irhou] = 0.
 		UqB[:,:,irhov] = 0.
 		
-		rhoe = (0. + physics.gamma1*physics.pinf1)/(physics.gamma1-1.)
+		return UqB
+
+class Subsonic_Outlet(BCWeakRiemann):
+	'''
+	This class corresponds to a slip wall. See documentation for more
+	details.
+	'''
+	def __init__(self, p):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+			p: pressure
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.p = p
 		
-		UqB[:,:,irhoE] = rhoe
+	def get_boundary_state(self, physics, UqI, normals, x, t):
+		#UqB = self.function.get_state(physics, x, t)
+		UqB = UqI.copy()
+		
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+
+		rho1phi1  = UqB[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqB[:, :, irho2phi2] # [n, nq]
+		rhou      = UqB[:, :, irhou]     # [n, nq]
+		rhov      = UqB[:, :, irhov]     # [n, nq]
+		rhoE      = UqB[:, :, irhoE]     # [n, nq]
+		phi1      = UqB[:, :, iPF]       # [n, nq]
+		LS        = UqB[:, :, iLS]       # [n, nq]
+		
+		p = self.p
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		rho = rho1phi1 + rho2phi2
+		rhoe = rhoE - 0.5 * (rhou**2+rhov**2)/rho # [n, nq]
+		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
+		pI = rhoe/one_over_gamma_m1 - gamma*pinf
+		
+		rhoe = ((2.0*p-pI) + gamma*pinf)*one_over_gamma_m1
+		
+		UqB[:,:,irhoE] = rhoe + 0.5*(rhou**2 + rhov**2)/(rho1phi1+rho2phi2)
 		
 		return UqB
 
+class Subsonic_Inlet(BCWeakRiemann):
+	'''
+	This class corresponds to a slip wall. See documentation for more
+	details.
+	'''
+	def __init__(self, d=0., thick=0., uavg=0., \
+			rho1_in=1., rho2_in=1.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.d = d
+		self.thick = thick
+		self.uavg = uavg
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		
+	def get_boundary_state(self, physics, UqI, normals, x, t):
+		#UqB = self.function.get_state(physics, x, t)
+		UqB = UqI.copy()
+		
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		rho1phi1  = UqB[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqB[:, :, irho2phi2] # [n, nq]
+		rhou      = UqB[:, :, irhou]     # [n, nq]
+		rhov      = UqB[:, :, irhov]     # [n, nq]
+		rhoE      = UqB[:, :, irhoE]     # [n, nq]
+		phi1      = UqB[:, :, iPF]       # [n, nq]
+		LS        = UqB[:, :, iLS]       # [n, nq]
+
+		UqB[:,:,iPF] = 1.-1e-10
+		UqB[:,:,iLS] = 1.-1e-10
+		
+		UqB[:,:,irho1phi1] = self.rho1_in*UqB[:,:,iPF]
+		UqB[:,:,irho2phi2] = self.rho2_in*(1.0-UqB[:,:,iPF])
+		
+		rhoB = UqB[:,:,irho1phi1] + UqB[:,:,irho2phi2]
+		
+		A = self.uavg*6.0/self.d**2
+		
+		UqB[:,:,irhou] = -A*(x[:,:,1]**2-0.25*self.d**2)*rhoB
+		UqB[:,:,irhov] = 0.
+		
+		rho = rho1phi1 + rho2phi2
+		rhoe = (rhoE - 0.5 * (rhou**2+rhov**2)/rho) # [n, nq]
+		
+		UqB[:,:,irhoE] = rhoe + 0.5*(UqB[:,:,irhou]**2+UqB[:,:,irhov]**2)/rhoB
+		
+		return UqB
+
+#class PressureOutletNS(BCWeakPrescribed):
+#	'''
+#	This class corresponds to an outflow boundary condition with static
+#	pressure prescribed. See documentation for more details.
+#
+#	Attributes:
+#	-----------
+#	p: float
+#		pressure
+#	'''
+#	def __init__(self, p):
+#		'''
+#		This method initializes the attributes.
+#
+#		Inputs:
+#		-------
+#			p: pressure
+#
+#		Outputs:
+#		--------
+#		    self: attributes initialized
+#		'''
+#		self.p = p
+#
+#	def get_boundary_state(self, physics, UqI, normals, x, t):
+#		#UqB = self.function.get_state(physics, x, t)
+#		UqB = UqI.copy()
+#		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+#
+#		# Pressure
+#		pB = self.p
+#
+#		# Unit normals
+#		n_hat = normals/np.linalg.norm(normals, axis=2, keepdims=True)
+#
+#		# Interior velocity in normal direction
+#		rhoI  = UqI[:, :, irho1phi1] + UqI[:, :, irho2phi2]
+#		velxI = UqI[:, :, irhou]/rhoI
+#		velyI = UqI[:, :, irhov]/rhoI
+#
+#		velnI = velxI*n_hat[:,:,0] + velyI*n_hat[:,:,1]
+#
+#		if np.any(velnI < 0.):
+#			print("Incoming flow at outlet")
+#
+#		# Interior pressure
+#		gamma1 = physics.gamma1
+#		gamma2 = physics.gamma2
+#		pinf1  = physics.pinf1
+#		pinf2  = physics.pinf2
+#
+#		rhoe = UqI[:, :, irhoE] - 0.5 * (UqI[:, :, irhou]**2+UqI[:, :, irhov]**2)/rhoI # [n, nq]
+#		one_over_gamma_m1 = UqI[:, :, iPF]/(gamma1-1.0) + (1.0-UqI[:, :, iPF])/(gamma2-1.0)
+#		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+#		pinf = (gamma-1.0)/gamma*(UqI[:, :, iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-UqI[:, :, iPF])*gamma2*pinf2/(gamma2-1.0))
+#		pI = rhoe/one_over_gamma_m1 - gamma*pinf
+#
+#		if np.any(pI < 0.):
+#			raise errors.NotPhysicalError
+#
+#		# Interior speed of sound
+#		cI = np.abs(gamma*(pI+pinf)/rhoI)
+#		JI = velnI + 2.*cI/(gamma - 1.)
+#		# Interior velocity in tangential direction
+#		veltxI = velxI - velnI*n_hat[:,:,0]
+#		veltyI = velyI - velnI*n_hat[:,:,1]
+#
+#		# Normal Mach number
+#		Mn = velnI/cI
+#		if np.any(Mn >= 1.):
+#			# If supersonic, then extrapolate interior to exterior
+#			return UqB
+#
+#		# Boundary density from interior entropy
+#		rhoB = rhoI*np.power(pB/pI, 1./gamma)
+#
+#		# Boundary speed of sound
+#		cB = np.sqrt(gamma*(pB+pinf)/rhoB)
+#		# Boundary velocity
+#		velxB = (JI - 2.*cB/(gamma-1.))*n_hat[:,:,0] + veltxI
+#		velyB = (JI - 2.*cB/(gamma-1.))*n_hat[:,:,1] + veltyI
+#		UqB[:, :, irhou] = rhoB*velxB
+#		UqB[:, :, irhov] = rhoB*velyB
+#
+#		# Boundary energy
+#		rhovel2B = rhoB*(velxB**2+velyB**2)
+#		UqB[:, :, irhoE] = pB/(gamma - 1.) + 0.5*rhovel2B
+#
+#		return UqB
 '''
 ------------------------
 Numerical flux functions
