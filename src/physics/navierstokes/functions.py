@@ -422,7 +422,7 @@ class Channel(FcnBase):
 		
 		Hr = 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
-		Hr = 0.5*(1.0+np.tanh(0.5*self.thick*(r-self.r0)))
+		Hr = 0.5*(1.0+np.tanh(0.5*self.thick*(r-self.r0))) - 0.5
 		Uq[:,:,iLS] = tol + (1.0-2.0*tol)*Hr
 		
 #		Uq[:,:,iPF] = 1.
@@ -795,9 +795,9 @@ class BubbleSource(SourceBase):
 			psi0 = Uq[:,:,iPF]-0.5
 			Uqx = gUq[:,:,iPF,0]
 			Uqy = gUq[:,:,iPF,1]
-			mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-32)
+			mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-16)
 			sgn = np.tanh(0.5*(psi0)/eps/mag3)
-			mag = np.sqrt(gUq[:, :, iLS, 0]**2 + gUq[:, :, iLS, 1]**2 + 1e-32)
+			mag = np.sqrt(gUq[:, :, iLS, 0]**2 + gUq[:, :, iLS, 1]**2)
 			l = 1.0
 			Sq[:,:,iLS] = (1.0-mag)*sgn*l
 		
@@ -966,7 +966,7 @@ class Subsonic_Inlet(BCWeakRiemann):
 		LS        = UqB[:, :, iLS]       # [n, nq]
 
 		UqB[:,:,iPF] = 1.-1e-10
-		UqB[:,:,iLS] = 1.-1e-10
+		UqB[:,:,iLS] = 0.5-1e-10
 		
 		UqB[:,:,irho1phi1] = self.rho1_in*UqB[:,:,iPF]
 		UqB[:,:,irho2phi2] = self.rho2_in*(1.0-UqB[:,:,iPF])

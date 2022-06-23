@@ -431,13 +431,15 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 
 		# Get velocity in each dimension
 		rho  = rho1phi1 + rho2phi2
-		u = rhou / (rho+1e-16)
-		v = rhov / (rho+1e-16)
+		u = rhou / rho
+		v = rhov / rho
 		# Get squared velocities
 		u2 = u**2
 		v2 = v**2
 		mag = np.sqrt(u2+v2)
 		gam = np.max(mag)
+		#gam = mag
+		#gam = 0.
 		k = 0.5*(u2 + v2)
 		
 		# Calculate transport
@@ -454,9 +456,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# Get properties of the fluid: gamma_l, pinf_l
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
-		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe/one_over_gamma_m1 - gamma*pinf
+		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 
 		# Get off-diagonal momentum
 		rhouv = rho * u * v
@@ -540,6 +540,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		v2 = v**2
 		mag = np.sqrt(u2+v2)
 		gam = np.max(mag)
+#		gam = mag
+#		gam = 0.
 		k = 0.5*(u2 + v2)
 
 		# Get the stress tensor (use product rules to write in
@@ -566,12 +568,10 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# Stiffened gas EOS
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
-		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		p = rhoe/one_over_gamma_m1 - gamma*pinf
+		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 		
-		h1 = (p + pinf1)*gamma1/(gamma1-1)
-		h2 = (p + pinf2)*gamma2/(gamma2-1)
+		h1 = (p + pinf1)*gamma1/(gamma1-1.)
+		h2 = (p + pinf2)*gamma2/(gamma2-1.)
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -634,7 +634,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
 			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma_m1 - gamma*pinf
+			#p = rhoe/one_over_gamma_m1 - gamma*pinf
+			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			scalar = p
 		elif sname is self.AdditionalVariables["XVelocity"].name:
 			rho   = rho1phi1 + rho2phi2
@@ -670,10 +671,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
+			#p = rhoe/one_over_gamma - gamma*pinf
+			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			c2 = np.maximum(gamma*(p+pinf)/rho,0.5*(p**2)/(rho*rhoe))
 			c2 = np.abs(c2)
 			maxwave = np.sqrt(c2) + np.sqrt(u2+v2)
@@ -693,10 +695,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
+			#p = rhoe/one_over_gamma - gamma*pinf
+			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			c2 = np.abs(gamma*(p+pinf)/rho)
 			maxwave = np.sqrt(c2)
 			scalar = maxwave
@@ -715,10 +718,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			u2 = u**2
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			gamma = (one_over_gamma+1.0)/one_over_gamma
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			p = rhoe/one_over_gamma - gamma*pinf
+			#p = rhoe/one_over_gamma - gamma*pinf
+			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			c2 = np.abs(gamma*(p+pinf)/rho)
 			scalar = np.sqrt(u2+v2 + 1e-16)/np.sqrt(c2)
 		elif sname is self.AdditionalVariables["Divergence"].name:
