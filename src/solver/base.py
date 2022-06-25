@@ -768,7 +768,7 @@ class SolverBase(ABC):
 			
 			if stepper.dt != 0:
 				iteration = self.itime + 1
-				if iteration % 2000 == 0:
+				if iteration % 20000 == 0:
 					physics.switch = 0.0
 					print("re-initialisation")
 					#Re-initialisation
@@ -784,7 +784,7 @@ class SolverBase(ABC):
 					tt = 0.
 					U0 = np.zeros(U.shape)
 					ratio = 1e10
-					while iter<itmax and ratio>0.95 and tt<tmax: #0.8 for res**2 0.995
+					while iter<itmax and ratio>0.5 and tt<tmax: #0.8 for res**2 0.995
 
 						for ii in range(len(U[:,0,iLS])):
 							for jj in range(len(U[0,:,iLS])):

@@ -878,8 +878,24 @@ class DG(base.SolverBase):
 			# eval_source_terms is an additive function so source needs to be
 			# initialized to zero for each time step
 			
+			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+			gLS = gUq[:,:,iLS,:]
+			n = np.zeros(gLS.shape)
+			mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
+			n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
+			n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
+
+			UUq = np.zeros(Uq.shape)
+			UUq[:,:,0] = n[:,:,0]
+			UUq[:,:,1] = n[:,:,1]
+			
+			# Interpolate gradient of state at quad points
+			gn1 = self.evaluate_gradient(UUq, basis_phys_grad_elems)
+			
+			kk = gn1[:,:,0,0] + gn1[:,:,1,1]
+ 
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
-			Sq = physics.eval_source_terms(Uq, gUq, x_elems, self.time, Sq)
+			Sq = physics.eval_source_terms(Uq, gUq, x_elems, self.time, Sq, kk)
 					# [ne, nq, ns]
 
 			res_elem += solver_tools.calculate_source_term_integral(

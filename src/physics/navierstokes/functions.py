@@ -425,6 +425,8 @@ class Channel(FcnBase):
 		Hr = 0.5*(1.0+np.tanh(0.5*self.thick*(r-self.r0))) - 0.5
 		Uq[:,:,iLS] = tol + (1.0-2.0*tol)*Hr
 		
+		Uq[:,:,iLS] = 0.5/self.thick*np.log(Uq[:,:,iPF]/(1.0-Uq[:,:,iPF]))
+		
 #		Uq[:,:,iPF] = 1.
 #		Uq[:,:,iLS] = 1.
 		
@@ -438,7 +440,7 @@ class Channel(FcnBase):
 		Uq[:,:,irhou] = -A*(x[:,:,1]**2-0.25*self.d**2)*rho
 		Uq[:,:,irhov] = 0.
 		
-		p = self.pressure
+		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.r0)*(1.0-Uq[:,:,iPF])
 		
 		gamma1 = physics.gamma1
 		gamma2 = physics.gamma2
@@ -757,7 +759,7 @@ class BubbleSource(SourceBase):
 	Source for bubble case
 	'''
 	
-	def get_source(self, physics, Uq, gUq, x, t):
+	def get_source(self, physics, Uq, gUq, x, t, kk):
 		
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 
@@ -781,10 +783,37 @@ class BubbleSource(SourceBase):
 		v = rhov / rho
 		
 		switch = physics.switch
+		sigma = physics.sigma
+#		gLS = gUq[:,:,iLS,:]
+#		n = np.zeros(gLS.shape)
+#		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
+#		n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
+#		n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
+#		magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
+#
+#		alpha = 2.0*physics.scl_eps*physics.eps
+#		ddelta = np.zeros(LS.shape)
+#		for ii in range(len(Uq[:,0,0])):
+#			for jj in range(len(Uq[0,:,0])):
+#				if np.abs(LS[ii,jj])<alpha:
+#					ddelta[ii,jj] = 0.5/alpha*(1.0+np.cos(np.pi*LS[ii,jj]/alpha))
 		
-		# gravity
-		Sq[:,:,irhov] = -rho*physics.g*switch
-		Sq[:,:,irhoE] = -rhov*physics.g*switch
+#		ddelta = 0.5/alpha*(1.0+np.cos(np.pi*LS/alpha))*(0.5*(np.abs(LS)-alpha - np.abs(np.abs(LS)-alpha)))/(np.abs(LS)-alpha + 1e-16)
+		
+#		LS2 = alpha*np.log(phi1/(1.0-phi1))
+#		ddelta = 0.5/alpha*(1.0+np.cos(np.pi*LS2/alpha))*(0.5*(np.abs(LS2)-alpha - np.abs(np.abs(LS2)-alpha)))/(np.abs(LS2)-alpha + 1e-16)
+		
+		# gravity + surface tension
+		Sq[:,:,irhou] =                        - sigma*kk*gUx[:,:,iPF]*switch
+		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*gUy[:,:,iPF]*switch
+
+#		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*magPF*switch
+#		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*magPF*switch
+
+#		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*ddelta*switch
+#		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*ddelta*switch
+		
+		Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
 		
 		# transport equations
 		Sq[:,:,iPF] = -(u*gUx[:,:,iPF] + v*gUy[:,:,iPF])*switch
@@ -803,40 +832,40 @@ class BubbleSource(SourceBase):
 		
 		return Sq
 		
-class BubbleSource2(SourceBase):
-	'''
-	Source for bubble case
-	'''
-	
-	def get_source(self, physics, Uq, gUq, x, t):
-		
-		irhou, irhov, ip, iPF, iLS = physics.get_state_indices()
-
-		rhou      = Uq[:, :, irhou]     # [n, nq]
-		rhov      = Uq[:, :, irhov]     # [n, nq]
-		p         = Uq[:, :, ip]     # [n, nq]
-		phi1      = Uq[:, :, iPF]       # [n, nq]
-		LS        = Uq[:, :, iLS]       # [n, nq]
-
-		Sq = np.zeros(Uq.shape)
-		
-		# Separate x and y gradients
-		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
-		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
-		
-		# Get velocity in each dimension
-		rho1  = physics.rho1
-		rho2  = physics.rho2
-		cs = physics.cs
-		c2 = cs**2
-		
-		rho   = rho1*phi1 + rho2*(1.0-phi1)
-		u = rhou / rho
-		v = rhov / rho
-		
-		Sq[:,:,ip] = c2*(rho1-rho2)*(u*gUx[:,:,iPF]+v*gUy[:,:,iPF])
-
-		return Sq
+#class BubbleSource2(SourceBase):
+#	'''
+#	Source for bubble case
+#	'''
+#
+#	def get_source(self, physics, Uq, gUq, x, t):
+#
+#		irhou, irhov, ip, iPF, iLS = physics.get_state_indices()
+#
+#		rhou      = Uq[:, :, irhou]     # [n, nq]
+#		rhov      = Uq[:, :, irhov]     # [n, nq]
+#		p         = Uq[:, :, ip]     # [n, nq]
+#		phi1      = Uq[:, :, iPF]       # [n, nq]
+#		LS        = Uq[:, :, iLS]       # [n, nq]
+#
+#		Sq = np.zeros(Uq.shape)
+#
+#		# Separate x and y gradients
+#		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
+#		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
+#
+#		# Get velocity in each dimension
+#		rho1  = physics.rho1
+#		rho2  = physics.rho2
+#		cs = physics.cs
+#		c2 = cs**2
+#
+#		rho   = rho1*phi1 + rho2*(1.0-phi1)
+#		u = rhou / rho
+#		v = rhov / rho
+#
+#		Sq[:,:,ip] = c2*(rho1-rho2)*(u*gUx[:,:,iPF]+v*gUy[:,:,iPF])
+#
+#		return Sq
 
 '''
 -------------------
@@ -966,7 +995,7 @@ class Subsonic_Inlet(BCWeakRiemann):
 		LS        = UqB[:, :, iLS]       # [n, nq]
 
 		UqB[:,:,iPF] = 1.-1e-10
-		UqB[:,:,iLS] = 0.5-1e-10
+#		UqB[:,:,iLS] = 0.5-1e-10
 		
 		UqB[:,:,irho1phi1] = self.rho1_in*UqB[:,:,iPF]
 		UqB[:,:,irho2phi2] = self.rho2_in*(1.0-UqB[:,:,iPF])

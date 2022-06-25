@@ -177,7 +177,7 @@ class SourceBase(ABC):
 			self.source_treatment = 'Implicit'
 
 	@abstractmethod
-	def get_source(self, physics, Uq, gUq, x, t):
+	def get_source(self, physics, Uq, gUq, x, t, kk):
 		'''
 		This method evaluates the source term.
 

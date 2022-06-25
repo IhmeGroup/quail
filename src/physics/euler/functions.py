@@ -1025,13 +1025,13 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 
 		FqL[:,:,iPF,0] = 0.5*(uL*phiR+uL*phiL)-uL*phiL
 		FqR[:,:,iPF,0] = 0.5*(uR*phiR+uR*phiL)-uR*phiR
-					 
+		
 		FqL[:,:,iPF,1] = 0.5*(vL*phiR+vL*phiL)-vL*phiL
 		FqR[:,:,iPF,1] = 0.5*(vR*phiR+vR*phiL)-vR*phiR
-					 
+		
 		FqL[:,:,iLS,0] = 0.5*(uL*psiR+uL*psiL)-uL*psiL
 		FqR[:,:,iLS,0] = 0.5*(uR*psiR+uR*psiL)-uR*psiR
-					 
+		
 		FqL[:,:,iLS,1] = 0.5*(vL*psiR+vL*psiL)-vL*psiL
 		FqR[:,:,iLS,1] = 0.5*(vR*psiR+vR*psiL)-vR*psiR
 		
