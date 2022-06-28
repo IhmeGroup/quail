@@ -751,6 +751,8 @@ class SolverBase(ABC):
 			mmin = np.min(UU[:,:,iPF])
 			mmax = np.max(UU[:,:,iPF])
 			if mmin<0.0 or mmax>1.0:
+				print("BOUNDS VIOLATED")
+				#f.write(str(t) + " " + str(1e10) + "\n")
 				for ii in range(0,len(UU[:,0,0])):
 					for jj in range(0,len(UU[0,:,0])):
 						if UU[ii,jj,iPF]<0.0:
@@ -760,26 +762,23 @@ class SolverBase(ABC):
 
 			self.state_coeffs = UU
 
-			print("MAX:  ",np.max(UU[:,:,5]),"MIN:  ",np.min(UU[:,:,5]))
-			
-			if (np.max(UU[:,:,5])>1.0 or np.min(UU[:,:,5])<0.0):
-				print("BOUNDS VIOLATED")
-				f.write(str(t) + " " + str(1e10) + "\n")
+			print("MAX:  ",mmax,"MIN:  ",mmin)
 			
 			if stepper.dt != 0:
 				iteration = self.itime + 1
-				if iteration % 20000 == 0:
+				if iteration % 2000 == 0:
 					physics.switch = 0.0
 					print("re-initialisation")
 					#Re-initialisation
 					U = self.state_coeffs
-					U[:,:,iLS] = U[:,:,iPF]-0.5
+#					U[:,:,iLS] =  physics.scl_eps*physics.eps*(U[:,:,iPF]-0.5)
+					U[:,:,iLS] =  (U[:,:,iPF]-0.5)
 					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
 					scaling = physics.scl_eps/self.params["AVParameter"]
 					dx = physics.eps
-					stepper.dt = scaling*stepper.dt*1.
-					itmax = 200 #50
-					tmax = 2.0*dx #2dx
+					stepper.dt = scaling*stepper.dt*2.
+					itmax = 2000 #50
+					tmax = 4.0*dx #2dx
 					iter = 0
 					tt = 0.
 					U0 = np.zeros(U.shape)

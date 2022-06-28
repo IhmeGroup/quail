@@ -422,10 +422,10 @@ class Channel(FcnBase):
 		
 		Hr = 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
-		Hr = 0.5*(1.0+np.tanh(0.5*self.thick*(r-self.r0))) - 0.5
-		Uq[:,:,iLS] = tol + (1.0-2.0*tol)*Hr
+		Hr = 0.5*(1.0+np.tanh(0.25*self.thick*(r-self.r0))) - 0.5
+		Uq[:,:,iLS] = (tol + (1.0-2.0*tol)*Hr)
 		
-		Uq[:,:,iLS] = 0.5/self.thick*np.log(Uq[:,:,iPF]/(1.0-Uq[:,:,iPF]))
+#		Uq[:,:,iLS] = 0.5/self.thick*np.log(Uq[:,:,iPF]/(1.0-Uq[:,:,iPF]))
 		
 #		Uq[:,:,iPF] = 1.
 #		Uq[:,:,iLS] = 1.

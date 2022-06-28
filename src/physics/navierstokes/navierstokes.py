@@ -467,8 +467,6 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# Correction terms
 		a1x = -gam*phi1*(1.0-phi1)*n[:,:,0]
 		a1y = -gam*phi1*(1.0-phi1)*n[:,:,1]
-		a2x = -a1x
-		a2y = -a1y
 
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
@@ -480,11 +478,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 		F[:,:,irho1phi1,  0] = u * rho1phi1 - rho01*a1x            # x-mass1 flux
 		F[:,:,irho1phi1,  1] = v * rho1phi1 - rho01*a1y            # y-mass1 flux
-		F[:,:,irho2phi2,  0] = u * rho2phi2 - rho02*a2x            # x-mass2 flux
-		F[:,:,irho2phi2,  1] = v * rho2phi2 - rho02*a2y            # y-mass2 flux
+		F[:,:,irho2phi2,  0] = u * rho2phi2 + rho02*a1x            # x-mass2 flux
+		F[:,:,irho2phi2,  1] = v * rho2phi2 + rho02*a1y            # y-mass2 flux
 		F[:,:,irhou,      0] = rho * u2 + p - fx * u               # x-flux of x-momentum
-		F[:,:,irhov,      0] = rhouv        - fx * v               # x-flux of y-momentum
-		F[:,:,irhou,      1] = rhouv        - fy * u               # y-flux of x-momentum
+		F[:,:,irhov,      0] = rhouv        - fy * u               # x-flux of y-momentum
+		F[:,:,irhou,      1] = rhouv        - fx * v               # y-flux of x-momentum
 		F[:,:,irhov,      1] = rho * v2 + p - fy * v               # y-flux of y-momentum
 		F[:,:,irhoE,      0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
 		F[:,:,irhoE,      1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
@@ -560,35 +558,33 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		eps = self.scl_eps*self.eps
 		a1x = gam*eps*gUx[:,:,iPF]
 		a1y = gam*eps*gUy[:,:,iPF]
-		a2x = -a1x
-		a2y = -a1y
-		
-		fx = (rho01*a1x + rho02*a2x)
-		fy = (rho01*a1y + rho02*a2y)
 		
 		# Stiffened gas EOS
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
 		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 		
-		h1 = (p + pinf1)*gamma1/(gamma1-1.)
-		h2 = (p + pinf2)*gamma2/(gamma2-1.)
+		fx = (rho01-rho02)*a1x
+		fy = (rho01-rho02)*a1y
+		
+		h1 = (p + pinf1)*gamma1/(gamma1-1.0)
+		h2 = (p + pinf2)*gamma2/(gamma2-1.0)
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
 
 		# x-direction
-		F[:,:,irho1phi1,  0] = rho01*a1x                 # x-mass1 flux
-		F[:,:,irho2phi2,  0] = rho02*a2x                 # x-mass2 flux
+		F[:,:,irho1phi1,  0] =  rho01*a1x                # x-mass1 flux
+		F[:,:,irho2phi2,  0] = -rho02*a1x                # x-mass2 flux
 		F[:,:,irhou,      0] = tauxx + fx * u            # x-flux of x-momentum
-		F[:,:,irhov,      0] = tauxy + fx * v            # x-flux of y-momentum
+		F[:,:,irhov,      0] = tauxy + fy * u            # x-flux of y-momentum
 		F[:,:,irhoE,      0] = u * tauxx + v * tauxy  \
 			+ fx * k + (h1-h2)*a1x                       # x-flux of energy
 
 		# y-direction
-		F[:,:,irho1phi1,  1] = rho01*a1y                 # y-mass1 flux
-		F[:,:,irho2phi2,  1] = rho02*a2y                 # y-mass2 flux
-		F[:,:,irhou,      1] = tauxy + fy * u            # y-flux of x-momentum
+		F[:,:,irho1phi1,  1] =  rho01*a1y                # y-mass1 flux
+		F[:,:,irho2phi2,  1] = -rho02*a1y                # y-mass2 flux
+		F[:,:,irhou,      1] = tauxy + fx * v            # y-flux of x-momentum
 		F[:,:,irhov,      1] = tauyy + fy * v            # y-flux of y-momentum
 		F[:,:,irhoE,      1] = u * tauxy + v * tauyy  \
 			+ fy * k + (h1-h2)*a1y                       # y-flux of energy
@@ -675,11 +671,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
 			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			#p = rhoe/one_over_gamma - gamma*pinf
 			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-			c2 = np.maximum(gamma*(p+pinf)/rho,0.5*(p**2)/(rho*rhoe))
-			c2 = np.abs(c2)
-			maxwave = np.sqrt(c2) + np.sqrt(u2+v2)
+			# Wood speed of sound
+			csq1rho1 = gamma1*(p + pinf1)
+			csq2rho2 = gamma2*(p + pinf2)
+			one_over_rho_csq = phi1/csq1rho1 + (1.0-phi1)/csq2rho2
+			cw = np.sqrt(1.0/(rho*one_over_rho_csq))
+			maxwave = cw + np.sqrt(u2+v2)
 			scalar = maxwave
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:
 			gamma1=self.gamma1
@@ -699,11 +697,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
 			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			#p = rhoe/one_over_gamma - gamma*pinf
 			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-			c2 = np.abs(gamma*(p+pinf)/rho)
-			maxwave = np.sqrt(c2)
-			scalar = maxwave
+			# Wood speed of sound
+			csq1rho1 = gamma1*(p + pinf1)
+			csq2rho2 = gamma2*(p + pinf2)
+			one_over_rho_csq = phi1/csq1rho1 + (1.0-phi1)/csq2rho2
+			cw = np.sqrt(1.0/(rho*one_over_rho_csq))
+			scalar = cw
 		elif sname is self.AdditionalVariables["Mach"].name:
 			gamma1=self.gamma1
 			gamma2=self.gamma2
@@ -722,10 +722,13 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
 			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-			#p = rhoe/one_over_gamma - gamma*pinf
 			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-			c2 = np.abs(gamma*(p+pinf)/rho)
-			scalar = np.sqrt(u2+v2 + 1e-16)/np.sqrt(c2)
+			# Wood speed of sound
+			csq1rho1 = gamma1*(p + pinf1)
+			csq2rho2 = gamma2*(p + pinf2)
+			one_over_rho_csq = phi1/csq1rho1 + (1.0-phi1)/csq2rho2
+			cw = np.sqrt(1.0/(rho*one_over_rho_csq))
+			scalar = np.sqrt(u2+v2)/cw
 		elif sname is self.AdditionalVariables["Divergence"].name:
 			# Separate x and y gradients
 			gUx = gUq[:, :, :, 0] # [ne, nq, ns]
@@ -739,7 +742,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			rhodudx = gUx[:,:,irhou] - u * (gUx[:,:,irho1phi1] + gUx[:,:,irho2phi2])
 			rhodvdy = gUy[:,:,irhov] - v * (gUy[:,:,irho1phi1] + gUy[:,:,irho2phi2])
 		
-			scalar = np.abs((rhodudx + rhodvdy)/rho)
+			scalar = (rhodudx + rhodvdy)/rho
 		elif sname is self.AdditionalVariables["LevelSet2"].name:
 			scalar = LS+0.5
 		else:

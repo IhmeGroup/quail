@@ -1006,10 +1006,10 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		rho  = rho1phi1 + rho2phi2
 		uL = rhou / rho
 		vL = rhov / rho
-		rho1phi1  = UqL[:, :, irho1phi1] # [n, nq]
-		rho2phi2  = UqL[:, :, irho2phi2] # [n, nq]
-		rhou      = UqL[:, :, irhou]     # [n, nq]
-		rhov      = UqL[:, :, irhov]     # [n, nq]
+		rho1phi1  = UqR[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqR[:, :, irho2phi2] # [n, nq]
+		rhou      = UqR[:, :, irhou]     # [n, nq]
+		rhov      = UqR[:, :, irhov]     # [n, nq]
 		rho  = rho1phi1 + rho2phi2
 		uR = rhou / rho
 		vR = rhov / rho
