@@ -595,8 +595,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 		F = F*switch
 		
-		F[:,:,iLS,  0]  =  epsilon[:,:,0]*gUx[:,:,iLS]*(1.0-switch)
-		F[:,:,iLS,  1]  =  epsilon[:,:,0]*gUy[:,:,iLS]*(1.0-switch)
+		F[:,:,iLS,  0]  =  0.75*self.eps*gUx[:,:,iLS]*(1.0-switch)
+		F[:,:,iLS,  1]  =  0.75*self.eps*gUy[:,:,iLS]*(1.0-switch)
 
 		return F # [n, nq, ns, ndims]
 
@@ -677,6 +677,10 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			csq2rho2 = gamma2*(p + pinf2)
 			one_over_rho_csq = phi1/csq1rho1 + (1.0-phi1)/csq2rho2
 			cw = np.sqrt(1.0/(rho*one_over_rho_csq))
+			
+			c1 = gamma1*(p + pinf1)/self.rho01
+			c2 = gamma2*(p + pinf2)/self.rho02
+			cw = np.sqrt(phi1*c1 + (1.-phi1)*c2)
 			maxwave = cw + np.sqrt(u2+v2)
 			scalar = maxwave
 		elif sname is self.AdditionalVariables["SoundSpeed"].name:

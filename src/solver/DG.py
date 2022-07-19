@@ -37,6 +37,7 @@ import numerics.timestepping.stepper as stepper_defs
 
 import solver.base as base
 import solver.tools as solver_tools
+import numerics.limiting.tools as limiter_tools
 
 
 class ElemHelpers(object):
@@ -104,6 +105,7 @@ class ElemHelpers(object):
 		self.basis_val = np.zeros(0)
 		self.basis_ref_grad = np.zeros(0)
 		self.basis_phys_grad_elems = np.zeros(0)
+		self.basis_phys_hessian_elems = np.zeros(0)
 		self.jac_elems = np.zeros(0)
 		self.ijac_elems = np.zeros(0)
 		self.djac_elems = np.zeros(0)
@@ -181,6 +183,7 @@ class ElemHelpers(object):
 		self.djac_elems = np.zeros([num_elems, nq, 1])
 		self.x_elems = np.zeros([num_elems, nq, ndims])
 		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, basis.NDIMS])
+		self.basis_phys_hessian_elems = np.zeros([num_elems, nq, nb, basis.NDIMS**2])
 		self.normals_elems = np.empty([num_elems, mesh.gbasis.NFACES,
 			self.face_quad_pts.shape[0], ndims])
 
@@ -190,6 +193,7 @@ class ElemHelpers(object):
 
 		self.basis_val = basis.basis_val
 		self.basis_ref_grad = basis.basis_ref_grad
+		self.basis_ref_hessian = basis.basis_ref_hessian
 
 		for elem_ID in range(mesh.num_elems):
 			# Jacobian
@@ -210,6 +214,8 @@ class ElemHelpers(object):
 				basis.get_basis_val_grads(quad_pts, get_phys_grad=True,
 						ijac=ijac)
 				self.basis_phys_grad_elems[elem_ID] = basis.basis_phys_grad
+					# [nq, nb, ndims]
+				self.basis_phys_hessian_elems[elem_ID] = basis.basis_phys_hessian
 					# [nq, nb, ndims]
 
 			# Face normals
@@ -841,6 +847,7 @@ class DG(base.SolverBase):
 		elem_helpers = self.elem_helpers
 		basis_val = elem_helpers.basis_val
 		basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
+		basis_phys_hessian_elems = elem_helpers.basis_phys_hessian_elems
 		quad_wts = elem_helpers.quad_wts
 		djac_elems=elem_helpers.djac_elems
 		ijac_elems = elem_helpers.ijac_elems
@@ -882,18 +889,23 @@ class DG(base.SolverBase):
 			gLS = gUq[:,:,iLS,:]
 			n = np.zeros(gLS.shape)
 			mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
-			n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
-			n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
-
-			UUq = np.zeros(Uq.shape)
-			UUq[:,:,0] = n[:,:,0]
-			UUq[:,:,1] = n[:,:,1]
+#			n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
+#			n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
+#
+#			UUq = np.zeros(Uq.shape)
+#			UUq[:,:,0] = n[:,:,0]
+#			UUq[:,:,1] = n[:,:,1]
 			
 			# Interpolate gradient of state at quad points
-			gn1 = self.evaluate_gradient(UUq, basis_phys_grad_elems)
+#			gn1 = self.evaluate_gradient(UUq, basis_phys_grad_elems)
+#			kk = gn1[:,:,0,0] + gn1[:,:,1,1]
+			hess_Uc = np.einsum('ikjl, ijn -> iknl', basis_phys_hessian_elems, Uc)
 			
-			kk = gn1[:,:,0,0] + gn1[:,:,1,1]
- 
+			if  physics.switch == 1:
+				kk = (hess_Uc[:,:,iLS,0]*gLS[:,:,1]**2 + hess_Uc[:,:,iLS,1]*gLS[:,:,0]**2 - 2.0*hess_Uc[:,:,iLS,2]*gLS[:,:,0]*gLS[:,:,1])/(mag+1e-16)**3.
+			else:
+				kk = 0.
+
 			Sq = np.zeros_like(Uq) # [ne, nq, ns]
 			Sq = physics.eval_source_terms(Uq, gUq, x_elems, self.time, Sq, kk)
 					# [ne, nq, ns]

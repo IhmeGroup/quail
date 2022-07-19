@@ -869,6 +869,7 @@ class BasisBase(ABC):
 		nb = self.nb
 
 		basis_ref_grad = self.basis_ref_grad
+		basis_ref_hessian = self.basis_ref_hessian
 		nq = basis_ref_grad.shape[0]
 
 		if nq == 0:
@@ -880,8 +881,18 @@ class BasisBase(ABC):
 
 		basis_phys_grad = np.transpose(np.matmul(ijac.transpose(0, 2, 1),
 				basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
+		
+#		ijac2 = np.einsum('ijk,ijk->ijk', ijac, ijac)
+#		basis_phys_hessian = np.einsum('ijk, ikk -> ijk',
+#				basis_ref_hessian, ijac2)
+	
+		# hack
+		print(basis_ref_hessian.shape,ijac.shape)
+		basis_phys_hessian = basis_ref_hessian*14705.882352941177*14705.882352941177
+#		basis_phys_hessian = np.einsum('ijkl, ikl, -> ijkl',ijac, basis_ref_hessian, ijac)
 
-		return basis_phys_grad # [nq, nb, ndims]
+		return basis_phys_grad, basis_phys_hessian # [nq, nb, ndims]
+
 
 	def get_basis_val_grads(self, quad_pts, get_val=True, get_ref_grad=False,
 			get_phys_grad=False, ijac=None):
@@ -913,11 +924,11 @@ class BasisBase(ABC):
 		if get_val:
 			self.basis_val = self.get_values(quad_pts)
 		if get_ref_grad:
-			self.basis_ref_grad = self.get_grads(quad_pts)
+			self.basis_ref_grad, self.basis_ref_hessian = self.get_grads(quad_pts)
 		if get_phys_grad:
 			if ijac is None:
 				raise Exception("Need Jacobian data")
-			self.basis_phys_grad = self.get_physical_grads(ijac)
+			self.basis_phys_grad,self.basis_phys_hessian = self.get_physical_grads(ijac)
 
 	def get_basis_face_val_grads(self, mesh, face_ID, face_pts, basis=None,
 			get_val=True, get_ref_grad=False, get_phys_grad=False,
@@ -1058,13 +1069,15 @@ class LagrangeSeg(BasisBase, SegShape):
 		nq = quad_pts.shape[0]
 
 		basis_ref_grad = np.zeros([nq, nb, ndims])
-
+		basis_ref_hessian = np.zeros([nq, nb, ndims**2])
+		
 		if p > 0:
 			xnodes = self.get_1d_nodes(-1., 1., p+1)
 			basis_tools.get_lagrange_basis_1D(quad_pts, xnodes,
-					basis_ref_grad=basis_ref_grad)
+					basis_ref_grad=basis_ref_grad,
+					basis_ref_hessian=basis_ref_hessian)
 
-		return basis_ref_grad # [nq, nb, ndims]
+		return basis_ref_grad, basis_ref_hessian # [nq, nb, ndims]
 
 	def get_local_face_node_nums(self, p, face_ID):
 		'''
@@ -1154,13 +1167,15 @@ class LagrangeQuad(BasisBase, QuadShape):
 		nq = quad_pts.shape[0]
 
 		basis_ref_grad = np.zeros([nq, nb, ndims])
+		basis_ref_hessian = np.zeros([nq, nb, ndims**2])
 
 		if p > 0:
 			xnodes = self.get_1d_nodes(-1., 1., p + 1)
 			basis_tools.get_lagrange_basis_2D(quad_pts, xnodes,
-					basis_ref_grad=basis_ref_grad)
+					basis_ref_grad=basis_ref_grad,
+					basis_ref_hessian=basis_ref_hessian)
 
-		return basis_ref_grad # [nq, nb, ndims]
+		return basis_ref_grad, basis_ref_hessian # [nq, nb, ndims]
 
 	def get_local_face_node_nums(self, p, face_ID):
 		'''

@@ -319,7 +319,7 @@ def element_jacobian(mesh, elem_ID, quad_pts, get_djac=False, get_jac=False,
 	ndims = gbasis.NDIMS
 
 	# Gradients in reference space
-	basis_ref_grad = gbasis.get_grads(quad_pts) # [nq, nb, ndims]
+	basis_ref_grad, basis_ref_hessian = gbasis.get_grads(quad_pts) # [nq, nb, ndims]
 
 	if ndims != mesh.ndims:
 		raise Exception("Dimensions don't match")
@@ -398,7 +398,7 @@ def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
 	# Instantiate segment basis
 	basis_seg = basis_defs.LagrangeSeg(gorder)
 	# Compute basis values
-	basis_ref_grad = basis_seg.get_grads(quad_pts)
+	basis_ref_grad, basis_ref_hessian = basis_seg.get_grads(quad_pts)
 	# Extract coordinates of face nodes
 	face_coords = elem_coords[fnodes]
 
@@ -411,7 +411,7 @@ def calculate_2D_normals(mesh, elem_ID, face_ID, quad_pts):
 	return normals # [nq, ndims]
 
 
-def get_lagrange_basis_1D(xq, xnodes, basis_val=None, basis_ref_grad=None):
+def get_lagrange_basis_1D(xq, xnodes, basis_val=None, basis_ref_grad=None, basis_ref_hessian=None):
 	'''
 	Calculates the 1D Lagrange basis functions
 
@@ -455,9 +455,24 @@ def get_lagrange_basis_1D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 
 				mask[i] = True
 			mask[j] = True
+	
+	if basis_ref_hessian is not None:
+		basis_ref_hessian[:] = 0.
+
+		for j in range(nnodes):
+			for i in range(nnodes):
+				if i != j:
+					for k in range(nnodes):
+						if (k != i) and (k != j):
+							h = 1./(xnodes[j]-xnodes[i]) * 1./(xnodes[j]- \
+									xnodes[k])
+							for l in range(nnodes):
+								if (l != i) and (l != j) and (l !=k ):
+									h *= (xq - xnodes[l])/(xnodes[j] - xnodes[l])
+							basis_ref_hessian[:, j, :] += h
 
 
-def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
+def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None, basis_ref_hessian=None):
 	'''
 	Calculates the 2D Lagrange basis functions
 
@@ -474,8 +489,11 @@ def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 	if basis_ref_grad is not None:
 		gradx = np.zeros((xq.shape[0], xnodes.shape[0], 1))
 		grady = np.zeros_like(gradx)
+		gradxx = np.zeros((xq.shape[0], xnodes.shape[0], 1))
+		gradyy = np.zeros_like(gradxx)
 	else:
 		gradx = None; grady = None
+		gradxx = None; gradyy = None
 	# Always need basis_val
 	valx = np.zeros((xq.shape[0], xnodes.shape[0]))
 	valy = np.zeros_like(valx)
@@ -483,8 +501,9 @@ def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 	# Get 1D basis values first
 	nnodes_1D = xnodes.shape[0]
 	lagrange_eq_seg = basis_defs.LagrangeSeg(nnodes_1D-1)
-	get_lagrange_basis_1D(xq[:, 0].reshape(-1, 1), xnodes, valx, gradx)
-	get_lagrange_basis_1D(xq[:, 1].reshape(-1, 1), xnodes, valy, grady)
+	
+	get_lagrange_basis_1D(xq[:, 0].reshape(-1, 1), xnodes, valx, gradx, gradxx)
+	get_lagrange_basis_1D(xq[:, 1].reshape(-1, 1), xnodes, valy, grady, gradyy)
 
 	# Tensor products to get 2D basis values
 	if basis_val is not None:
@@ -497,7 +516,16 @@ def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 					valy[i, :]), (-1, ), 'F')
 			basis_ref_grad[i, :, 1] = np.reshape(np.outer(valx[i, :],
 					grady[i, :, 0]), (-1, ), 'F')
-
+	if basis_ref_hessian is not None:
+		for i in range(xq.shape[0]):
+			basis_ref_hessian[i, :, 0] = np.reshape(np.outer(gradxx[i, :, 0],
+					valy[i, :]), (-1, ), 'F')
+			basis_ref_hessian[i, :, 1] = np.reshape(np.outer(valx[i, :],
+					gradyy[i, :, 0]), (-1, ), 'F')
+			basis_ref_hessian[i, :, 2] = np.reshape(np.outer(gradx[i, :,0],
+					grady[i, :, 0]), (-1, ), 'F')
+			basis_ref_hessian[i, :, 3] = np.reshape(np.outer(grady[i, :,0],
+					gradx[i, :, 0]), (-1, ), 'F')
 
 def get_lagrange_basis_3D(xq, xnodes, basis_val=None, basis_ref_grad=None):
 	'''

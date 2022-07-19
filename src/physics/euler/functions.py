@@ -999,20 +999,22 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		
 		# Get velocity in each dimension
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
-		rho1phi1  = UqL[:, :, irho1phi1] # [n, nq]
-		rho2phi2  = UqL[:, :, irho2phi2] # [n, nq]
-		rhou      = UqL[:, :, irhou]     # [n, nq]
-		rhov      = UqL[:, :, irhov]     # [n, nq]
-		rho  = rho1phi1 + rho2phi2
-		uL = rhou / rho
-		vL = rhov / rho
-		rho1phi1  = UqR[:, :, irho1phi1] # [n, nq]
-		rho2phi2  = UqR[:, :, irho2phi2] # [n, nq]
-		rhou      = UqR[:, :, irhou]     # [n, nq]
-		rhov      = UqR[:, :, irhov]     # [n, nq]
-		rho  = rho1phi1 + rho2phi2
-		uR = rhou / rho
-		vR = rhov / rho
+		
+		rho1phi1L  = UqL[:, :, irho1phi1] # [n, nq]
+		rho2phi2L  = UqL[:, :, irho2phi2] # [n, nq]
+		rhouL      = UqL[:, :, irhou]     # [n, nq]
+		rhovL      = UqL[:, :, irhov]     # [n, nq]
+		rhoL       = rho1phi1L + rho2phi2L
+		uL = rhouL / rhoL
+		vL = rhovL / rhoL
+		
+		rho1phi1R  = UqR[:, :, irho1phi1] # [n, nq]
+		rho2phi2R  = UqR[:, :, irho2phi2] # [n, nq]
+		rhouR      = UqR[:, :, irhou]     # [n, nq]
+		rhovR      = UqR[:, :, irhov]     # [n, nq]
+		rhoR       = rho1phi1R + rho2phi2R
+		uR = rhouR / rhoR
+		vR = rhovR / rhoR
 		
 		FqL = np.empty(UqL.shape + (physics.NDIMS,)) # [n, nq, ns, ndims]
 		FqR = np.empty(UqR.shape + (physics.NDIMS,)) # [n, nq, ns, ndims]
@@ -1037,13 +1039,12 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		
 		FnL = np.einsum('ijkl, ijl -> ijk', FqL, normals)
 		FnR = np.einsum('ijkl, ijl -> ijk', FqR, normals)
-		
-		FL[:,:,iPF] = 0.5 * n_mag[:,:,0] * (FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
-					(FnL[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*(phiR-phiL))
-		FR[:,:,iPF] = 0.5 * n_mag[:,:,0] * (FqL0[:,:,iPF] + FqR0[:,:,iPF]) + \
-					(FnR[:,:,iPF]-0.5*n_mag[:,:,0]*aL[:,:,0]*(phiR-phiL))
-		FL[:,:,iLS] = (FnL[:,:,iLS]-0.5*n_mag[:,:,0]*aL[:,:,0]*(psiR-psiL))
-		FR[:,:,iLS] = (FnR[:,:,iLS]-0.5*n_mag[:,:,0]*aL[:,:,0]*(psiR-psiL))
+
+		FL[:,:,iPF] += FnL[:,:,iPF]
+		FR[:,:,iPF] += FnR[:,:,iPF]
+
+		FL[:,:,iLS] += FnL[:,:,iLS]
+		FR[:,:,iLS] += FnR[:,:,iLS]
 		
 		switch=physics.switch
 		
