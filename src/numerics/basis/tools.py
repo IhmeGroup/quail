@@ -518,13 +518,13 @@ def get_lagrange_basis_2D(xq, xnodes, basis_val=None, basis_ref_grad=None, basis
 					grady[i, :, 0]), (-1, ), 'F')
 	if basis_ref_hessian is not None:
 		for i in range(xq.shape[0]):
-			basis_ref_hessian[i, :, 0] = np.reshape(np.outer(gradxx[i, :, 0],
+			basis_ref_hessian[i, :, 0, 0] = np.reshape(np.outer(gradxx[i, :, 0],
 					valy[i, :]), (-1, ), 'F')
-			basis_ref_hessian[i, :, 1] = np.reshape(np.outer(valx[i, :],
+			basis_ref_hessian[i, :, 1, 1] = np.reshape(np.outer(valx[i, :],
 					gradyy[i, :, 0]), (-1, ), 'F')
-			basis_ref_hessian[i, :, 2] = np.reshape(np.outer(gradx[i, :,0],
+			basis_ref_hessian[i, :, 1, 0] = np.reshape(np.outer(gradx[i, :,0],
 					grady[i, :, 0]), (-1, ), 'F')
-			basis_ref_hessian[i, :, 3] = np.reshape(np.outer(grady[i, :,0],
+			basis_ref_hessian[i, :, 0, 1] = np.reshape(np.outer(grady[i, :,0],
 					gradx[i, :, 0]), (-1, ), 'F')
 
 def get_lagrange_basis_3D(xq, xnodes, basis_val=None, basis_ref_grad=None):
