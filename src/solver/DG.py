@@ -183,7 +183,7 @@ class ElemHelpers(object):
 		self.djac_elems = np.zeros([num_elems, nq, 1])
 		self.x_elems = np.zeros([num_elems, nq, ndims])
 		self.basis_phys_grad_elems = np.zeros([num_elems, nq, nb, basis.NDIMS])
-		self.basis_phys_hessian_elems = np.zeros([num_elems, nq, nb, basis.NDIMS, basis.NDIMS])
+		self.basis_phys_hessian_elems = np.zeros([num_elems, nq, nb, basis.NDIMS**2])
 		self.normals_elems = np.empty([num_elems, mesh.gbasis.NFACES,
 			self.face_quad_pts.shape[0], ndims])
 
@@ -887,10 +887,11 @@ class DG(base.SolverBase):
 			
 			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 			gLS = gUq[:,:,iLS,:]
-			hess_Uc = np.einsum('ikjlp, ijn -> iknlp', basis_phys_hessian_elems, Uc)
+			mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
+			hess_Uc = np.einsum('ikjl, ijn -> iknl', basis_phys_hessian_elems, Uc)
 
 			if  physics.switch == 1:
-				kk = (hess_Uc[:,:,iLS,0,0]*gLS[:,:,1]**2 + hess_Uc[:,:,iLS,1,1]*gLS[:,:,0]**2 - 2.0*hess_Uc[:,:,iLS,0,1]*gLS[:,:,0]*gLS[:,:,1])/(mag+1e-16)**3.
+				kk = (hess_Uc[:,:,iLS,0]*gLS[:,:,1]**2 + hess_Uc[:,:,iLS,1]*gLS[:,:,0]**2 - 2.0*hess_Uc[:,:,iLS,2]*gLS[:,:,0]*gLS[:,:,1])/(mag+1e-16)**3.
 			else:
 				kk = 0.
 

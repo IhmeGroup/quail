@@ -882,8 +882,11 @@ class BasisBase(ABC):
 		basis_phys_grad = np.transpose(np.matmul(ijac.transpose(0, 2, 1),
 				basis_ref_grad.transpose(0, 2, 1)), (0, 2, 1))
 		
-		basis_phys_hessian = np.einsum('ikl, ijkp, ipm -> ijlm',ijac,
-				basis_ref_hessian, ijac)
+		basis_phys_hessian = np.zeros_like(basis_ref_hessian)
+		basis_phys_hessian[:,:,0] = basis_ref_hessian[:,:,0]*ijac[0,0,0]**2
+		basis_phys_hessian[:,:,1] = basis_ref_hessian[:,:,1]*ijac[0,1,1]**2
+		basis_phys_hessian[:,:,2] = basis_ref_hessian[:,:,2]*ijac[0,0,0]*ijac[0,1,1]
+		basis_phys_hessian[:,:,3] = basis_ref_hessian[:,:,3]*ijac[0,0,0]*ijac[0,1,1]
 		
 		return basis_phys_grad, basis_phys_hessian # [nq, nb, ndims]
 
@@ -1063,7 +1066,7 @@ class LagrangeSeg(BasisBase, SegShape):
 		nq = quad_pts.shape[0]
 
 		basis_ref_grad = np.zeros([nq, nb, ndims])
-		basis_ref_hessian = np.zeros([nq, nb, ndims, ndims])
+		basis_ref_hessian = np.zeros([nq, nb, ndims**2])
 		
 		if p > 0:
 			xnodes = self.get_1d_nodes(-1., 1., p+1)
@@ -1161,7 +1164,7 @@ class LagrangeQuad(BasisBase, QuadShape):
 		nq = quad_pts.shape[0]
 
 		basis_ref_grad = np.zeros([nq, nb, ndims])
-		basis_ref_hessian = np.zeros([nq, nb, ndims, ndims])
+		basis_ref_hessian = np.zeros([nq, nb, ndims**2])
 
 		if p > 0:
 			xnodes = self.get_1d_nodes(-1., 1., p + 1)
