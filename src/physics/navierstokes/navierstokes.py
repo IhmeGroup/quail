@@ -392,6 +392,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		Pressure = "p"
 		XVelocity = "v_x"
 		YVelocity = "v_y"
+		Velocity = "v"
 		Density = "\\rho"
 		Gamma = "\\gamma"
 		MaxWaveSpeed = "\\lambda"
@@ -642,6 +643,12 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			rho   = rho1phi1 + rho2phi2
 			# Get velocity in each dimension
 			scalar = rhov / rho
+		elif sname is self.AdditionalVariables["Velocity"].name:
+			rho   = rho1phi1 + rho2phi2
+			# Get velocity in each dimension
+			v = rhov / rho
+			u = rhou / rho
+			scalar = np.sqrt(u**2+v**2)
 		elif sname is self.AdditionalVariables["Density"].name:
 			rho   = rho1phi1 + rho2phi2
 			# Get velocity in each dimension

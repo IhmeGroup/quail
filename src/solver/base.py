@@ -725,8 +725,6 @@ class SolverBase(ABC):
 
 		# Custom user function initial iteration
 		self.custom_user_function(self)
-		
-		f= open("yloc.txt","w+")
 
 		while self.itime < stepper.num_time_steps:
 			# Reset min and max state
@@ -776,8 +774,8 @@ class SolverBase(ABC):
 					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
 					scaling = physics.scl_eps/self.params["AVParameter"]
 					dx = physics.eps
-					stepper.dt = scaling*stepper.dt*1.
-					itmax = 50 #50
+					stepper.dt = scaling*stepper.dt*10.
+					itmax = 100 #50
 					tmax = 4.0*dx #2dx
 					iter = 0
 					tt = 0.
@@ -803,52 +801,6 @@ class SolverBase(ABC):
 						tt = tt + stepper.dt
 				
 					physics.switch = 1.0
-
-#			rho1phi1  = UU[:, :, irho1phi1] # [n, nq]
-#			rho2phi2  = UU[:, :, irho2phi2] # [n, nq]
-#			rhou      = UU[:, :, irhou]     # [n, nq]
-#			rhov      = UU[:, :, irhov]     # [n, nq]
-#			rhoE      = UU[:, :, irhoE]     # [n, nq]
-#			phi1      = UU[:, :, iPF]       # [n, nq]
-#			LS        = UU[:, :, iLS]       # [n, nq]
-#			# Calculate transport
-#			gamma1=physics.gamma1
-#			gamma2=physics.gamma2
-#			pinf1=physics.pinf1
-#			pinf2=physics.pinf2
-#			rho  = rho1phi1 + rho2phi2
-#			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-#			gamma = (one_over_gamma+1.0)/one_over_gamma
-#			# Get velocity in each dimension
-#			u = rhou / rho
-#			v = rhov / rho
-#			u2 = u**2
-#			v2 = v**2
-#			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-#			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-#			gamma = (one_over_gamma+1.0)/one_over_gamma
-#			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-#			p = (rhoe/one_over_gamma - gamma*pinf)
-#
-#			pbar = np.mean((p-1.0)**2)
-#
-#			f.write(str(t) + " " + str(pbar) + "\n")
-
-			elem_helpers = self.elem_helpers
-			x_elems = elem_helpers.x_elems
-			ymin = 1e10
-			ymax = -1e10
-			for ii in range(len(UU[:,0,0])):
-				for jj in range(len(UU[0,:,0])):
-					if UU[ii,jj,iPF]>0.5:
-						ymin = min(ymin,x_elems[ii,jj,1])
-					else:
-						ymax = max(ymax,x_elems[ii,jj,1])
-
-			ymin = ymin-2.0
-			ymax = ymax-2.0
-
-			f.write(str(t) + " " + str(ymin) + " " + str(ymax) + "\n")
 
 			# Custom user function definition
 			self.custom_user_function(self)

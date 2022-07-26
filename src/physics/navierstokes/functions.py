@@ -333,29 +333,11 @@ class RayleighTaylor(FcnBase):
 		tol = 1e-10
 		
 		d = self.d
-		
-		x_I = np.linspace(0,self.d,1000)
-		y_I = 2.*d + 0.1*d*np.cos(2.*np.pi*x_I/d)
-		
-		dist = np.zeros(x[:,:,0].shape)
-		for i in range(len(x[:,0,0])):
-			for j in range(len(x[0,:,0])):
-				dist_min = 1e10
-				pt_I = np.zeros(2)
-				for ll in range(0,len(x_I)):
-					dist_loc = np.sqrt((x[i,j,0]-x_I[ll])**2+(x[i,j,1]-y_I[ll])**2)
-					if dist_loc<dist_min:
-						dist_min = dist_loc
-						pt_I[0] = x_I[ll]
-						pt_I[1] = y_I[ll]
-		
-				if pt_I[1]>x[i,j,1]:
-					Uq[i,j,iLS] = -dist_min
-				else:
-					Uq[i,j,iLS] = dist_min
-		
-		Hd = 0.5*(1.0+np.tanh(-self.thick*Uq[:,:,iLS]))
+		h = 2.*d + 0.1*d*np.cos(2.*np.pi*x[:,:,0]/d)
+		Hd = 0.5*(1.0+np.tanh(self.thick*(h-x[:,:,1])))
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-Hd)
+		Hd = 0.5*(1.0+np.tanh(0.5*self.thick*(h-x[:,:,1])))
+		Uq[:,:,iLS] = tol + (1.0-2.0*tol)*(1.0-Hd) - 0.5
 		
 		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
 		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
