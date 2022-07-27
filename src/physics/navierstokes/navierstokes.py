@@ -482,8 +482,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irho2phi2,  0] = u * rho2phi2 + rho02*a1x            # x-mass2 flux
 		F[:,:,irho2phi2,  1] = v * rho2phi2 + rho02*a1y            # y-mass2 flux
 		F[:,:,irhou,      0] = rho * u2 + p - fx * u               # x-flux of x-momentum
-		F[:,:,irhov,      0] = rhouv        - fy * u               # x-flux of y-momentum
-		F[:,:,irhou,      1] = rhouv        - fx * v               # y-flux of x-momentum
+		F[:,:,irhov,      0] = rhouv        - fx * v               # x-flux of y-momentum
+		F[:,:,irhou,      1] = rhouv        - fy * u               # y-flux of x-momentum
 		F[:,:,irhov,      1] = rho * v2 + p - fy * v               # y-flux of y-momentum
 		F[:,:,irhoE,      0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
 		F[:,:,irhoE,      1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
@@ -578,14 +578,14 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irho1phi1,  0] =  rho01*a1x                # x-mass1 flux
 		F[:,:,irho2phi2,  0] = -rho02*a1x                # x-mass2 flux
 		F[:,:,irhou,      0] = tauxx + fx * u            # x-flux of x-momentum
-		F[:,:,irhov,      0] = tauxy + fy * u            # x-flux of y-momentum
+		F[:,:,irhov,      0] = tauxy + fx * v            # x-flux of y-momentum
 		F[:,:,irhoE,      0] = u * tauxx + v * tauxy  \
 			+ fx * k + (h1-h2)*a1x                       # x-flux of energy
 
 		# y-direction
 		F[:,:,irho1phi1,  1] =  rho01*a1y                # y-mass1 flux
 		F[:,:,irho2phi2,  1] = -rho02*a1y                # y-mass2 flux
-		F[:,:,irhou,      1] = tauxy + fx * v            # y-flux of x-momentum
+		F[:,:,irhou,      1] = tauxy + fy * u            # y-flux of x-momentum
 		F[:,:,irhov,      1] = tauyy + fy * v            # y-flux of y-momentum
 		F[:,:,irhoE,      1] = u * tauxy + v * tauyy  \
 			+ fy * k + (h1-h2)*a1y                       # y-flux of energy

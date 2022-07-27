@@ -208,7 +208,7 @@ class Bubble(FcnBase):
 
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 		
-		tol = 1e-10
+		tol = 1e-6
 		
 		Hr  = 0.5*(1.0+np.tanh(self.thick*(r-self.radius)))
 		
@@ -330,7 +330,7 @@ class RayleighTaylor(FcnBase):
 
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 		
-		tol = 1e-10
+		tol = 1e-8
 		
 		d = self.d
 		h = 2.*d + 0.1*d*np.cos(2.*np.pi*x[:,:,0]/d)

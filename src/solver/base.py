@@ -774,7 +774,7 @@ class SolverBase(ABC):
 					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
 					scaling = physics.scl_eps/self.params["AVParameter"]
 					dx = physics.eps
-					stepper.dt = scaling*stepper.dt*10.
+					stepper.dt = scaling*stepper.dt*5.
 					itmax = 100 #50
 					tmax = 4.0*dx #2dx
 					iter = 0
