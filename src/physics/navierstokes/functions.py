@@ -835,12 +835,12 @@ class BubbleSource(SourceBase):
 		
 		switch = physics.switch
 		sigma = physics.sigma
-#		gLS = gUq[:,:,iLS,:]
-#		n = np.zeros(gLS.shape)
-#		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
-#		n[:,:,0] = gLS[:,:,0]/(mag+1e-16)
-#		n[:,:,1] = gLS[:,:,1]/(mag+1e-16)
-#		magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
+		gLS = gUq[:,:,iLS,:]
+		n = np.zeros(gLS.shape)
+		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
+		n[:,:,0] = gLS[:,:,0]/(mag+1e-32)
+		n[:,:,1] = gLS[:,:,1]/(mag+1e-32)
+		magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
 #
 #		alpha = 2.0*physics.scl_eps*physics.eps
 #		ddelta = np.zeros(LS.shape)
@@ -855,11 +855,11 @@ class BubbleSource(SourceBase):
 #		ddelta = 0.5/alpha*(1.0+np.cos(np.pi*LS2/alpha))*(0.5*(np.abs(LS2)-alpha - np.abs(np.abs(LS2)-alpha)))/(np.abs(LS2)-alpha + 1e-16)
 		
 		# gravity + surface tension
-		Sq[:,:,irhou] =                        - sigma*kk*gUx[:,:,iPF]*switch
-		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*gUy[:,:,iPF]*switch
+#		Sq[:,:,irhou] =                        - sigma*kk*gUx[:,:,iPF]*switch
+#		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*gUy[:,:,iPF]*switch
 
-#		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*magPF*switch
-#		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*magPF*switch
+		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*magPF*switch
+		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*magPF*switch
 
 #		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*ddelta*switch
 #		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*ddelta*switch
