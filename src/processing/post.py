@@ -373,3 +373,97 @@ def get_mass_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 #		print("Total error = %.15f" % (tot_err))
 
 	return tot_err
+	
+def get_cetroid(mesh, physics, solver, var_name, ord=2, print_error=True,
+		normalize_by_volume=True):
+	'''
+	This function computes the Lp-error, where p is the "ord" input argument.
+
+	Inputs:
+	-------
+	    mesh: mesh object
+	    physics: physics object
+	    solver: solver object
+	    var_name: name of variable to compute error of
+	    ord: order of the error
+	    print_error: if True, will print total error
+	    normalize_by_volume: if True, will normalize the error by the
+	    	volume of the domain
+
+	Outputs:
+	--------
+	    tot_err: total error
+	    err_elems: error over each element [num_elems]
+	'''
+	# Extract info
+	time = solver.time
+	U = solver.state_coeffs
+	basis = solver.basis
+	order = solver.order
+	if physics.exact_soln is None:
+		raise ValueError("No exact solution provided")
+
+	# Get element volumes
+	if normalize_by_volume:
+		_, tot_vol = mesh_tools.element_volumes(mesh, solver)
+	else:
+		tot_vol = 1.
+
+	# Allocate, initialize
+	err_elems = np.zeros([mesh.num_elems])
+	err_elems0 = np.zeros([mesh.num_elems])
+	err_elems2 = np.zeros([mesh.num_elems])
+	tot_err = 0.
+	tot_err0 = 0.
+	tot_err2 = 0.
+
+	# Get quadrature data
+	quad_order = basis.get_quadrature_order(mesh, 2*np.amax([order, 1]),
+			physics=physics)
+
+	gbasis = mesh.gbasis
+	quad_pts, quad_wts = gbasis.get_quadrature_data(quad_order)
+
+	# Get x for each element
+	xphys = np.empty((mesh.num_elems,) + quad_pts.shape)
+	for elem_ID in range(mesh.num_elems):
+		xphys[elem_ID] = mesh_tools.ref_to_phys(mesh, elem_ID, quad_pts)
+
+	# Evaluate exact solution at quadrature points
+	u_exact = physics.exact_soln.get_state(physics, x=xphys, t=time)
+
+	# Interpolate state to quadrature points
+	basis.get_basis_val_grads(quad_pts, True)
+	u = helpers.evaluate_state(U, basis.basis_val)
+
+	gu = np.zeros((len(u[:,0,0]),len(u[0,:,0]),len(u[0,0,:]),2))
+
+	# Computed requested quantity
+	s = physics.compute_variable(var_name, u, gu, x=xphys, t=time)
+	s_exact = physics.compute_variable(var_name, u_exact, gu, x=xphys, t=time)
+
+	s2 = physics.compute_variable("YVelocity", u, gu, x=xphys, t=time)
+
+	xx = xphys[:,:,0]
+	yy = xphys[:,:,1]
+	# Loop through elements
+	for elem_ID in range(mesh.num_elems):
+		# Calculate element-local error
+		djac, _, _ = basis_tools.element_jacobian(mesh, elem_ID, quad_pts,
+				get_djac=True)
+		err = np.sum(((1.0-s[elem_ID])*yy[elem_ID])*quad_wts*djac)
+		err_elems[elem_ID] = err
+		tot_err += err_elems[elem_ID]
+		
+		err2 = np.sum(((1.0-s[elem_ID])*s2[elem_ID])*quad_wts*djac)
+		err_elems2[elem_ID] = err2
+		tot_err2 += err_elems2[elem_ID]
+		
+		err0 = np.sum((1.0-s[elem_ID])*quad_wts*djac)
+		err_elems0[elem_ID] = err0
+		tot_err0 += err_elems0[elem_ID]
+	
+	tot_err = (tot_err / tot_err0)/100.
+	tot_err2 = (tot_err2 / tot_err0)/100.
+
+	return tot_err, tot_err2

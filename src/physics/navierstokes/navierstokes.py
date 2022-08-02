@@ -332,6 +332,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 					navierstokes_fcns.RayleighTaylor,
 			navierstokes_fcn_type.Channel :
 					navierstokes_fcns.Channel,
+			navierstokes_fcn_type.Rising_bubble :
+					navierstokes_fcns.Rising_bubble,
 		}
 
 		self.IC_fcn_map.update(d)
@@ -354,7 +356,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
 			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1.,\
-			eps=0., scl_eps=1.0, switch=1., g=0., sigma=0.):
+			eps=0., scl_eps=1.0, switch=1., g=0., sigma=0., dt_LS=1., \
+			cp1=1., cp2=1.):
 		'''
 		This method sets physical parameters.
 
@@ -378,6 +381,9 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.g = g
 		self.scl_eps = scl_eps
 		self.sigma = sigma
+		self.dt_LS = dt_LS
+		self.cp1 = cp1
+		self.cp2 = cp2
 
 	class StateVariables(Enum):
 		Density1 = "\\rho1 \\phi1"
@@ -396,6 +402,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		Density = "\\rho"
 		Gamma = "\\gamma"
 		MaxWaveSpeed = "\\lambda"
+		Temperature = "T"
 		SoundSpeed = "c"
 		Mach = "Mach"
 		Divergence = "\\nabla \\cdot u"
@@ -715,6 +722,31 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			one_over_rho_csq = phi1/csq1rho1 + (1.0-phi1)/csq2rho2
 			cw = np.sqrt(1.0/(rho*one_over_rho_csq))
 			scalar = cw
+		elif sname is self.AdditionalVariables["Temperature"].name:
+#			gamma1=self.gamma1
+#			gamma2=self.gamma2
+#			pinf1=self.pinf1
+#			pinf2=self.pinf2
+#			cp1=self.cp1
+#			cp2=self.cp2
+#
+#			rho   = rho1phi1 + rho2phi2
+#			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+#			cp = cp1*phi1 + cp2*(1.0-phi1)
+#			gamma = (one_over_gamma+1.0)/one_over_gamma
+#			# Get velocity in each dimension
+#			u = rhou / rho
+#			v = rhov / rho
+#			u2 = u**2
+#			v2 = v**2
+#			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+#			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+#			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+#			pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
+#			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+#			T = 1.0/(rho*cp)*((p+pinf)*one_over_gamma_m1)
+#			scalar = T
+			scalar = 0.
 		elif sname is self.AdditionalVariables["Mach"].name:
 			gamma1=self.gamma1
 			gamma2=self.gamma2

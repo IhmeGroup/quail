@@ -43,7 +43,8 @@ class FcnType(Enum):
 	Bubble2 = auto()
 	RayleighTaylor = auto()
 	Channel = auto()
-	
+	Rising_bubble = auto()
+
 class BCType(Enum):
 	'''
 	Enum class that stores the types of boundary conditions. These
@@ -436,6 +437,74 @@ class Channel(FcnBase):
 		rhoe = (p + gamma*pinf)*one_over_gamma
 		
 		Uq[:,:,irhoE] = rhoe + 0.5*(Uq[:,:,irhou]**2+Uq[:,:,irhov]**2)/rho
+		
+		return Uq
+		
+class Rising_bubble(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, d=0., thick=0., uavg=0., pressure=1., \
+			rho1_in=1., rho2_in=1., x0=0., y0=0., r0=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.d = d
+		self.thick = thick
+		self.uavg = uavg
+		self.pressure = pressure
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		self.x0 = x0
+		self.y0 = y0
+		self.r0 = r0
+		
+	def get_state(self, physics, x, t):
+	
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-10
+		
+		r = np.sqrt((x[:,:,0]-self.x0)**2+(x[:,:,1]-self.y0)**2)
+		
+		Hr = 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
+		Hr = 0.5*(1.0+np.tanh(0.25*self.thick*(r-self.r0))) - 0.5
+		Uq[:,:,iLS] = (tol + (1.0-2.0*tol)*Hr)
+		
+		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
+		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
+		
+		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
+		
+		Uq[:,:,irhou] = 0.
+		Uq[:,:,irhov] = 0.
+		
+		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.r0)*(1.0-Uq[:,:,iPF])
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoe = (p + gamma*pinf)*one_over_gamma
+		
+		Uq[:,:,irhoE] = rhoe
 		
 		return Uq
 		

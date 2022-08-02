@@ -741,27 +741,6 @@ class SolverBase(ABC):
 			t += stepper.dt
 			self.time = t
 			
-			# Clipping
-			UU = self.state_coeffs
-
-			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
-			
-			mmin = np.min(UU[:,:,iPF])
-			mmax = np.max(UU[:,:,iPF])
-			if mmin<0.0 or mmax>1.0:
-				print("BOUNDS VIOLATED")
-				#f.write(str(t) + " " + str(1e10) + "\n")
-				for ii in range(0,len(UU[:,0,0])):
-					for jj in range(0,len(UU[0,:,0])):
-						if UU[ii,jj,iPF]<0.0:
-							UU[ii,jj,iPF] = 1e-10
-						elif UU[ii,jj,iPF]>1.0:
-							UU[ii,jj,iPF] = 1.0-1e-10
-
-			self.state_coeffs = UU
-
-			print("MAX:  ",mmax,"MIN:  ",mmin)
-			
 			if stepper.dt != 0:
 				iteration = self.itime + 1
 				if iteration % 2000 == 0:
@@ -769,13 +748,11 @@ class SolverBase(ABC):
 					print("re-initialisation")
 					#Re-initialisation
 					U = self.state_coeffs
-#					U[:,:,iLS] =  physics.scl_eps*physics.eps*(U[:,:,iPF]-0.5)
-					U[:,:,iLS] =  (U[:,:,iPF]-0.5)
-					#U[:,:,1] = physics.al[0]*np.log(U[:,:,0]/(1.0-U[:,:,0]))
-					scaling = physics.scl_eps/self.params["AVParameter"]
+					irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+					U[:,:,iLS] =  U[:,:,iPF]-0.5
 					dx = physics.eps
-					stepper.dt = scaling*stepper.dt*5.
-					itmax = 100 #50
+					stepper.dt = stepper.dt*physics.dt_LS
+					itmax = 50 #50
 					tmax = 4.0*dx #2dx
 					iter = 0
 					tt = 0.
@@ -807,6 +784,27 @@ class SolverBase(ABC):
 
 			# Print info
 			self.print_info(physics, res, self.itime, t, stepper.dt)
+
+			# Clipping
+			UU = self.state_coeffs
+			irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+			
+			mmin = np.min(UU[:,:,iPF])
+			mmax = np.max(UU[:,:,iPF])
+			if mmin<0.0 or mmax>1.0:
+#				print("BOUNDS VIOLATED")
+				#f.write(str(t) + " " + str(1e10) + "\n")
+				for ii in range(0,len(UU[:,0,0])):
+					for jj in range(0,len(UU[0,:,0])):
+						if UU[ii,jj,iPF]<0.0:
+							UU[ii,jj,iPF] = 1e-10
+						elif UU[ii,jj,iPF]>1.0:
+							UU[ii,jj,iPF] = 1.0-1e-10
+
+			self.state_coeffs = UU
+			mmin = np.min(UU[:,:,iPF])
+			mmax = np.max(UU[:,:,iPF])
+			print("MAX:  ",mmax,"MIN:  ",mmin)
 
 			# Write data file
 			if (self.itime + 1) % write_interval == 0:
