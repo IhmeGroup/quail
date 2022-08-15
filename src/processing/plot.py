@@ -910,14 +910,19 @@ def plot_quiver(mesh, physics, solver, var_name, plot_numerical=True,
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
 	UU = solver.state_coeffs
 	# Interpolate gradient of state at quad points
-	gUq = solver.evaluate_gradient(solver.state_coeffs, basis_phys_grad_elems)
-	
-	mask = np.ones(UU[:,:,0].shape)
-	mask[UU[:,:,0]>0.65] = 0.0
-	mask[UU[:,:,0]<0.35] = 0.0
+#	gUq = solver.evaluate_gradient(solver.state_coeffs, basis_phys_grad_elems)
+#
+#	mask = np.ones(UU[:,:,0].shape)
+#	mask[UU[:,:,0]>0.65] = 0.0
+#	mask[UU[:,:,0]<0.35] = 0.0
+#
+#	plotgUqx = gUq[:,:,1,0]/(np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)+1e-100)*mask
+#	plotgUqy = gUq[:,:,1,1]/(np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)+1e-100)*mask
 
-	plotgUqx = gUq[:,:,1,0]/(np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)+1e-100)*mask
-	plotgUqy = gUq[:,:,1,1]/(np.sqrt(gUq[:,:,1,0]**2+gUq[:,:,1,1]**2)+1e-100)*mask
+	irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+	rho = UU[:,:,irho1phi1] + UU[:,:,irho2phi2]
+	plotgUqx = UU[:,:,irhou]/rho
+	plotgUqy = UU[:,:,irhov]/rho
 
 	x = np.reshape(x,[len(x[:,0,0])*len(x[0,:,0]),2])
 	x1 = x[:,0]

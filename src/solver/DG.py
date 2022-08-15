@@ -891,7 +891,7 @@ class DG(base.SolverBase):
 			hess_Uc = np.einsum('ikjl, ijn -> iknl', basis_phys_hessian_elems, Uc)
 
 			if  physics.switch == 1:
-				kk = (hess_Uc[:,:,iLS,0]*gLS[:,:,1]**2 + hess_Uc[:,:,iLS,1]*gLS[:,:,0]**2 - 2.0*hess_Uc[:,:,iLS,2]*gLS[:,:,0]*gLS[:,:,1])/(mag+1e-16)**3.
+				kk = -(hess_Uc[:,:,iLS,0]*gLS[:,:,1]**2 + hess_Uc[:,:,iLS,1]*gLS[:,:,0]**2 - 2.0*hess_Uc[:,:,iLS,2]*gLS[:,:,0]*gLS[:,:,1])/(mag+1e-16)**3.
 			else:
 				kk = 0.
 

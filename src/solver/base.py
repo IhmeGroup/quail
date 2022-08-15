@@ -753,12 +753,12 @@ class SolverBase(ABC):
 					dx = physics.eps
 					stepper.dt = stepper.dt*physics.dt_LS
 					itmax = physics.iter_LS #50
-					tmax = 4.0*dx #2dx
+					tmax = 1.*dx #2dx
 					iter = 0
 					tt = 0.
 					U0 = np.zeros(U.shape)
 					ratio = 1e10
-					while iter<itmax and ratio>0.5 and tt<tmax: #0.8 for res**2 0.995
+					while iter<itmax and ratio>0.005 and tt<tmax: #0.8 for res**2 0.995
 
 						for ii in range(len(U[:,0,iLS])):
 							for jj in range(len(U[0,:,iLS])):

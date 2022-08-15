@@ -215,7 +215,10 @@ class Bubble(FcnBase):
 		
 		# Phase-field and Level-set
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*(1.0-Hr)
-		Uq[:,:,iLS] = -(r-self.radius)
+#		Uq[:,:,iLS] = -(r-self.radius)
+		
+		Hr  = 0.5*(1.0+np.tanh(0.5*self.thick*(r-self.radius)))
+		Uq[:,:,iLS] = tol + (1.0-2.0*tol)*(1.0-Hr) - 0.5
 		
 		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
 		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
@@ -225,7 +228,10 @@ class Bubble(FcnBase):
 		Uq[:,:,irhou] = self.u*rho
 		Uq[:,:,irhov] = self.v*rho
 		
-		p = self.pressure
+		Uq[:,:,irhou] = 1.0/self.rho2_in*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
+		Uq[:,:,irhov] = 1.0/self.rho2_in*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
+		
+		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.radius)*(1.0-Uq[:,:,iPF])
 		
 		gamma1 = physics.gamma1
 		gamma2 = physics.gamma2
@@ -238,7 +244,7 @@ class Bubble(FcnBase):
 		
 		rhoe = (p + gamma*pinf)*one_over_gamma
 		
-		Uq[:,:,irhoE] = rhoe + 0.5*rho*(self.u**2+self.v**2)
+		Uq[:,:,irhoE] = rhoe + 0.5*(Uq[:,:,irhou]**2 + Uq[:,:,irhov]**2)/rho
 		
 		return Uq
 		
@@ -841,35 +847,51 @@ class BubbleSource(SourceBase):
 		n[:,:,0] = gLS[:,:,0]/(mag+1e-32)
 		n[:,:,1] = gLS[:,:,1]/(mag+1e-32)
 		magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
-#
-#		alpha = 2.0*physics.scl_eps*physics.eps
-#		ddelta = np.zeros(LS.shape)
-#		for ii in range(len(Uq[:,0,0])):
-#			for jj in range(len(Uq[0,:,0])):
-#				if np.abs(LS[ii,jj])<alpha:
-#					ddelta[ii,jj] = 0.5/alpha*(1.0+np.cos(np.pi*LS[ii,jj]/alpha))
-		
-#		ddelta = 0.5/alpha*(1.0+np.cos(np.pi*LS/alpha))*(0.5*(np.abs(LS)-alpha - np.abs(np.abs(LS)-alpha)))/(np.abs(LS)-alpha + 1e-16)
-		
-#		LS2 = alpha*np.log(phi1/(1.0-phi1))
-#		ddelta = 0.5/alpha*(1.0+np.cos(np.pi*LS2/alpha))*(0.5*(np.abs(LS2)-alpha - np.abs(np.abs(LS2)-alpha)))/(np.abs(LS2)-alpha + 1e-16)
-		
-		# gravity + surface tension
-#		Sq[:,:,irhou] =                        - sigma*kk*gUx[:,:,iPF]*switch
-#		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*gUy[:,:,iPF]*switch
 
-		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*magPF*switch
-		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*magPF*switch
-
-#		Sq[:,:,irhou] =                        - sigma*kk*n[:,:,0]*ddelta*switch
-#		Sq[:,:,irhov] = -rho*physics.g*switch  - sigma*kk*n[:,:,1]*ddelta*switch
+		Sq[:,:,irhou] =                        + sigma*kk*n[:,:,0]*magPF*switch
+		Sq[:,:,irhov] = -rho*physics.g*switch  + sigma*kk*n[:,:,1]*magPF*switch
 		
 		Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
 		
-		# transport equations
-		Sq[:,:,iPF] = -(u*gUx[:,:,iPF] + v*gUy[:,:,iPF])*switch
-		Sq[:,:,iLS] = -(u*gUx[:,:,iLS] + v*gUy[:,:,iLS])*switch
+#		mdot = 1000.*physics.rho01*np.pi*(200e-6-1e-3*t)**2.
+		mdot = -1.0
+		rho1 = rho1phi1/(phi1+1e-16)
+		rho2 = rho2phi2/(1.-phi1+1e-16)
+#		mdot = physics.rho01*np.pi*(200e-6-1e-3*t)**2.
+
+		gamma1=physics.gamma1
+		gamma2=physics.gamma2
+		pinf1=physics.pinf1
+		pinf2=physics.pinf2
+		# Get velocity in each dimension
+		u2 = u**2
+		v2 = v**2
+		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 		
+		c1sq = gamma1*(p+pinf1)/rho1
+		c2sq = gamma2*(p+pinf2)/rho2
+		
+		rhoI = (rho1*c1sq/phi1 + rho2*c2sq/(1.0-phi1))/(c1sq/phi1 + c2sq/(1.0-phi1))
+#		rhoI = (rho1*c1sq + rho2*c2sq)/(c1sq + c2sq)
+#		rhoI = physics.rho01
+#		rhoI = (1.0/physics.rho02 + 1.0/physics.rho01)
+		rhoI = (phi1*physics.rho02*c2sq + (1.-phi1)*physics.rho01*c1sq)/((1.0-phi1)*c1sq+phi1*c2sq)
+		rhoI = physics.rho02
+		rhoI = 1.0/(1.0/physics.rho02 + 1.0/physics.rho01) # should be more or less like rhoI = rho2
+
+		# transport equations
+		Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] + mdot*magPF/rhoI)*switch
+		Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS])*switch
+		
+		Sq[:,:,irho1phi1] = mdot*magPF*switch
+		Sq[:,:,irho2phi2] = -mdot*magPF*switch
+
+#		hlg = 2.3e6
+#
+#		Sq[:,:,irhoE] = -hlg*magPF*mdot*switch
+
 		if switch == 0:
 			eps = physics.scl_eps*physics.eps
 			psi0 = Uq[:,:,iPF]-0.5
