@@ -228,8 +228,8 @@ class Bubble(FcnBase):
 		Uq[:,:,irhou] = self.u*rho
 		Uq[:,:,irhov] = self.v*rho
 		
-		Uq[:,:,irhou] = 1.0/self.rho2_in*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
-		Uq[:,:,irhov] = 1.0/self.rho2_in*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
+		Uq[:,:,irhou] = physics.mdot/self.rho1_in*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
+		Uq[:,:,irhov] = physics.mdot/self.rho1_in*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
 		
 		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.radius)*(1.0-Uq[:,:,iPF])
 		
@@ -847,43 +847,45 @@ class BubbleSource(SourceBase):
 		n[:,:,0] = gLS[:,:,0]/(mag+1e-32)
 		n[:,:,1] = gLS[:,:,1]/(mag+1e-32)
 		magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
-
+		magLS = np.sqrt(gUq[:,:,iLS,0]**2+gUq[:,:,iLS,1]**2)
+		
 		Sq[:,:,irhou] =                        + sigma*kk*n[:,:,0]*magPF*switch
 		Sq[:,:,irhov] = -rho*physics.g*switch  + sigma*kk*n[:,:,1]*magPF*switch
 		
 		Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
 		
 #		mdot = 1000.*physics.rho01*np.pi*(200e-6-1e-3*t)**2.
-		mdot = -1.0
-		rho1 = rho1phi1/(phi1+1e-16)
-		rho2 = rho2phi2/(1.-phi1+1e-16)
+		mdot = -physics.mdot
+#		rho1 = rho1phi1/(phi1+1e-16)
+#		rho2 = rho2phi2/(1.-phi1+1e-16)
 #		mdot = physics.rho01*np.pi*(200e-6-1e-3*t)**2.
+#
+#		gamma1=physics.gamma1
+#		gamma2=physics.gamma2
+#		pinf1=physics.pinf1
+#		pinf2=physics.pinf2
+#		# Get velocity in each dimension
+#		u2 = u**2
+#		v2 = v**2
+#		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
+#		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+#		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+#
+#		c1sq = gamma1*(p+pinf1)/rho1
+#		c2sq = gamma2*(p+pinf2)/rho2
 
-		gamma1=physics.gamma1
-		gamma2=physics.gamma2
-		pinf1=physics.pinf1
-		pinf2=physics.pinf2
-		# Get velocity in each dimension
-		u2 = u**2
-		v2 = v**2
-		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-		
-		c1sq = gamma1*(p+pinf1)/rho1
-		c2sq = gamma2*(p+pinf2)/rho2
-		
-		rhoI = (rho1*c1sq/phi1 + rho2*c2sq/(1.0-phi1))/(c1sq/phi1 + c2sq/(1.0-phi1))
+#		rhoI = (rho1*c1sq/phi1 + rho2*c2sq/(1.0-phi1))/(c2sq/phi1 + c1sq/(1.0-phi1))
 #		rhoI = (rho1*c1sq + rho2*c2sq)/(c1sq + c2sq)
 #		rhoI = physics.rho01
 #		rhoI = (1.0/physics.rho02 + 1.0/physics.rho01)
-		rhoI = (phi1*physics.rho02*c2sq + (1.-phi1)*physics.rho01*c1sq)/((1.0-phi1)*c1sq+phi1*c2sq)
-		rhoI = physics.rho02
+#		rhoI = (phi1*physics.rho02*c2sq + (1.-phi1)*physics.rho01*c1sq)/((1.0-phi1)*c1sq+phi1*c2sq)
+#		rhoI = physics.rho02
 		rhoI = 1.0/(1.0/physics.rho02 + 1.0/physics.rho01) # should be more or less like rhoI = rho2
+#		rhoI = (rho1*c1sq/phi1 + rho2*c2sq/(1.0-phi1))/(c1sq/phi1 + c2sq/(1.0-phi1))
 
 		# transport equations
 		Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] + mdot*magPF/rhoI)*switch
-		Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS])*switch
+		Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS] + mdot*magLS/rhoI)*switch
 		
 		Sq[:,:,irho1phi1] = mdot*magPF*switch
 		Sq[:,:,irho2phi2] = -mdot*magPF*switch

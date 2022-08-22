@@ -318,9 +318,17 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.kappa2 = 0.
 		self.rho01 = 0.
 		self.rho02 = 0.
-		
 		self.eps = 0.
+		self.scl_eps = 0.
+		self.gam = 1.
 		self.switch = 0.
+		self.g = 0.
+		self.sigma = 0.
+		self.dt_LS = 0.
+		self.iter_LS = 0.
+		self.cp1 = 0.
+		self.cp2 = 0.
+		self.mdot = 0.
 		
 	def set_maps(self):
 		super().set_maps()
@@ -356,8 +364,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
 			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1.,\
-			eps=0., scl_eps=1.0, switch=1., g=0., sigma=0., dt_LS=1., iter_LS=50, \
-			cp1=1., cp2=1.):
+			eps=0., scl_eps=1.0, gam=1.0, switch=1., g=0., sigma=0., dt_LS=2., iter_LS=200, \
+			cp1=1., cp2=1., mdot = 0.):
 		'''
 		This method sets physical parameters.
 
@@ -377,14 +385,16 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.rho01 = rho01
 		self.rho02 = rho02
 		self.eps = eps
+		self.scl_eps = scl_eps
+		self.gam = gam
 		self.switch = switch
 		self.g = g
-		self.scl_eps = scl_eps
 		self.sigma = sigma
 		self.dt_LS = dt_LS
 		self.iter_LS = iter_LS
 		self.cp1 = cp1
 		self.cp2 = cp2
+		self.mdot = mdot
 
 	class StateVariables(Enum):
 		Density1 = "\\rho1 \\phi1"
@@ -447,7 +457,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		u2 = u**2
 		v2 = v**2
 		mag = np.sqrt(u2+v2)
-		gam = np.max(mag)
+		gam = self.gam*np.max(mag)
 		#gam = mag
 		#gam = 0.
 		k = 0.5*(u2 + v2)
@@ -547,7 +557,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		u2 = u**2
 		v2 = v**2
 		mag = np.sqrt(u2+v2)
-		gam = np.max(mag)
+		gam = self.gam*np.max(mag)
 #		gam = mag
 #		gam = 0.
 		k = 0.5*(u2 + v2)

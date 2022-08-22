@@ -374,7 +374,7 @@ def get_mass_error(mesh, physics, solver, var_name, ord=2, print_error=True,
 
 	return tot_err
 	
-def get_cetroid(mesh, physics, solver, var_name, ord=2, print_error=True,
+def get_centroid(mesh, physics, solver, var_name, ord=2, print_error=True,
 		normalize_by_volume=True):
 	'''
 	This function computes the Lp-error, where p is the "ord" input argument.
@@ -463,7 +463,7 @@ def get_cetroid(mesh, physics, solver, var_name, ord=2, print_error=True,
 		err_elems0[elem_ID] = err0
 		tot_err0 += err_elems0[elem_ID]
 	
-	tot_err = (tot_err / tot_err0)/100.
-	tot_err2 = (tot_err2 / tot_err0)/100.
+	tot_err = (tot_err / tot_err0)/len(u[0,:,0])
+	tot_err2 = (tot_err2 / tot_err0)/len(u[0,:,0])
 
 	return tot_err, tot_err2
