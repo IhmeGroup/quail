@@ -224,11 +224,14 @@ def get_dt_from_cfl(stepper, solver):
 	Uq = helpers.evaluate_state(U, basis_val,
 			skip_interp=solver.basis.skip_interp) # [ne, nq, ns]
 
+	dUq = None
 	# Calculate max wavespeed
-	a = physics.compute_variable("MaxWaveSpeed", Uq, x_elems, time,
+	a = physics.compute_variable("MaxWaveSpeed", Uq, dUq, x_elems, time,
 			flag_non_physical=True)
+	
+	amax = np.amax(a, axis=1)
 	# Calculate the dt for each element
-	dt_elems = cfl*vol_elems**(1./ndims)/a
+	dt_elems = cfl*vol_elems**(1./ndims)/amax
 
 	# take minimum to set appropriate dt
 	dt = np.min(dt_elems)

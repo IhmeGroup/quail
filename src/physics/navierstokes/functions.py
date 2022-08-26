@@ -228,8 +228,8 @@ class Bubble(FcnBase):
 		Uq[:,:,irhou] = self.u*rho
 		Uq[:,:,irhov] = self.v*rho
 		
-		Uq[:,:,irhou] = physics.mdot/self.rho1_in*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
-		Uq[:,:,irhov] = physics.mdot/self.rho1_in*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
+		Uq[:,:,irhou] = physics.mdot*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
+		Uq[:,:,irhov] = physics.mdot*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
 		
 		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.radius)*(1.0-Uq[:,:,iPF])
 		
@@ -436,11 +436,12 @@ class Channel(FcnBase):
 		pinf1  = physics.pinf1
 		pinf2  = physics.pinf2
 		
-		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
+		one_over_gamma_m1 = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
 		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
 		
-		rhoe = (p + gamma*pinf)*one_over_gamma
+		rhoq = Uq[:,:,irho1phi1]*physics.q1 + Uq[:,:,irho2phi2]*physics.q2
+		rhoe = (p + gamma*pinf)*one_over_gamma_m1 + rhoq
 		
 		Uq[:,:,irhoE] = rhoe + 0.5*(Uq[:,:,irhou]**2+Uq[:,:,irhov]**2)/rho
 		
@@ -972,6 +973,34 @@ class NoSlipWall(BCWeakRiemann):
 		phi1      = UqB[:, :, iPF]       # [n, nq]
 		LS        = UqB[:, :, iLS]       # [n, nq]
 		
+		# Classic (adiabatic?)
+		rho = rho1phi1 + rho2phi2
+		UqB[:,:,irhoE] = rhoE - 0.5*(rhou**2 + rhov**2)/rho
+		# Isothermal
+#		Twall = 290.0
+#		cp1   = physics.cp1
+#		cp2   = physics.cp2
+#		pinf1 = physics.pinf1
+#		pinf2 = physics.pinf2
+#		gamma1= physics.gamma1
+#		gamma2= physics.gamma2
+#		rho = rho1phi1 + rho2phi2
+#		rhoe = rhoE - 0.5 * (rhou**2+rhov**2)/rho # [n, nq]
+#		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+#		rhoq = rho1phi1*physics.q1 + rho2phi2*physics.q2
+#		pI = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+#		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+#		pinf = (phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))/one_over_gamma_m1/gamma
+#
+#		rhoI1 = (pI + pinf1)/(cp1*Twall*(gamma1-1.))
+#		rhoI2 = (pI + pinf2)/(cp2*Twall*(gamma2-1.))
+#		UqB[:,:,irho1phi1] = rhoI1*phi1
+#		UqB[:,:,irho2phi2] = rhoI2*(1.0-phi1)
+#
+#		rhocp  = rho1phi1*cp1 + rho2phi2*cp2
+#
+#		UqB[:,:,irhoE] = rhocp*Twall + pinf + rhoq
+
 		UqB[:,:,irhou] = 0.
 		UqB[:,:,irhov] = 0.
 		
@@ -1020,11 +1049,9 @@ class Subsonic_Outlet(BCWeakRiemann):
 		rho = rho1phi1 + rho2phi2
 		rhoe = rhoE - 0.5 * (rhou**2+rhov**2)/rho # [n, nq]
 		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
-		pinf = (gamma-1.0)/gamma*(phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))
-		pI = rhoe/one_over_gamma_m1 - gamma*pinf
+		pI = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 		
-		rhoe = ((2.0*p-pI) + gamma*pinf)*one_over_gamma_m1
+		rhoe = ((2.0*p-pI) + (phi1*gamma1/(gamma1-1.0)*pinf1+(1.0-phi1)*gamma2/(gamma2-1.0)*pinf2))*one_over_gamma_m1
 		
 		UqB[:,:,irhoE] = rhoe + 0.5*(rhou**2 + rhov**2)/(rho1phi1+rho2phi2)
 		
@@ -1054,6 +1081,7 @@ class Subsonic_Inlet(BCWeakRiemann):
 		self.uavg = uavg
 		self.rho1_in = rho1_in
 		self.rho2_in = rho2_in
+		self.phi0 = phi0
 		
 	def get_boundary_state(self, physics, UqI, normals, x, t):
 		#UqB = self.function.get_state(physics, x, t)
@@ -1069,8 +1097,7 @@ class Subsonic_Inlet(BCWeakRiemann):
 		phi1      = UqB[:, :, iPF]       # [n, nq]
 		LS        = UqB[:, :, iLS]       # [n, nq]
 
-		UqB[:,:,iPF] = 1.-1e-10
-#		UqB[:,:,iLS] = 0.5-1e-10
+		UqB[:,:,iPF] = self.phi0
 		
 		UqB[:,:,irho1phi1] = self.rho1_in*UqB[:,:,iPF]
 		UqB[:,:,irho2phi2] = self.rho2_in*(1.0-UqB[:,:,iPF])

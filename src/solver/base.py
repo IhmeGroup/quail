@@ -751,8 +751,8 @@ class SolverBase(ABC):
 					irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 					U[:,:,iLS] =  U[:,:,iPF]-0.5
 					dx = physics.eps
-					stepper.dt = stepper.dt*physics.dt_LS
-					itmax = physics.iter_LS #50
+					stepper.dt = physics.CFL_LS*dx
+					itmax = 2.0/physics.CFL_LS
 					tmax = 1.*dx #2dx
 					iter = 0
 					tt = 0.

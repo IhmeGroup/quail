@@ -364,8 +364,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
 			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1.,\
-			eps=0., scl_eps=1.0, gam=1.0, switch=1., g=0., sigma=0., dt_LS=2., iter_LS=200, \
-			cp1=1., cp2=1., mdot = 0.):
+			eps=0., scl_eps=1.0, gam=1.0, switch=1., g=0., sigma=0., CFL_LS=0., \
+			cp1=1., cp2=1., mdot = 0., q1 = 0., q2 = 0.):
 		'''
 		This method sets physical parameters.
 
@@ -384,16 +384,18 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.kappa2 = kappa2
 		self.rho01 = rho01
 		self.rho02 = rho02
+		self.q1 = q1
+		self.q2 = q2
+		self.cp1 = cp1
+		self.cp2 = cp2
+		
 		self.eps = eps
 		self.scl_eps = scl_eps
 		self.gam = gam
 		self.switch = switch
 		self.g = g
 		self.sigma = sigma
-		self.dt_LS = dt_LS
-		self.iter_LS = iter_LS
-		self.cp1 = cp1
-		self.cp2 = cp2
+		self.CFL_LS = CFL_LS
 		self.mdot = mdot
 
 	class StateVariables(Enum):
@@ -467,6 +469,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		gamma2=self.gamma2
 		pinf1=self.pinf1
 		pinf2=self.pinf2
+		q1=self.q1
+		q2=self.q2
 		rho01=self.rho01
 		rho02=self.rho02
 		
@@ -476,7 +480,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# Get properties of the fluid: gamma_l, pinf_l
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+		rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+		p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 
 		# Get off-diagonal momentum
 		rhouv = rho * u * v
@@ -490,8 +495,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		h1 = (p + pinf1)*gamma1/(gamma1-1.0)
-		h2 = (p + pinf2)*gamma2/(gamma2-1.0)
+		h1 = (p + pinf1)*gamma1/(gamma1-1.0) + q1
+		h2 = (p + pinf2)*gamma2/(gamma2-1.0) + q2
 
 		# Assemble flux matrix (missing a correction term in energy equation)
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -552,6 +557,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		gamma2=self.gamma2
 		pinf1=self.pinf1
 		pinf2=self.pinf2
+		q1=self.q1
+		q2=self.q2
 		rho01=self.rho01
 		rho02=self.rho02
 		cp1 = self.cp1
@@ -593,7 +600,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		# Stiffened gas EOS
 		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+		rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+		p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 		
 		if (kappa1 != 0.) :
 			# get temperature gradient (a goddamn nightmare)
@@ -603,19 +611,22 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			drhoedy = drhoEdy - 0.5*(2.0*(rhou*drhoudy + rhov*drhovdy)*rho \
 				- (drhody)*(rhou**2 + rhov**2))/rho**2
 			
+			drhoqdx = drho1phi1dx*self.q1 + drho2phi2dx*self.q2
+			drhoqdy = drho1phi1dy*self.q1 + drho2phi2dy*self.q2
+			
 			done_over_gamma_m1dx = (1.0/(gamma1-1.) - 1.0/(gamma2-1.))*dphi1dx
 			done_over_gamma_m1dy = (1.0/(gamma1-1.) - 1.0/(gamma2-1.))*dphi1dy
 			
 			dgamma_m1dx = - done_over_gamma_m1dx/one_over_gamma_m1**2
 			dgamma_m1dy = - done_over_gamma_m1dy/one_over_gamma_m1**2
 
-			dpdx = ((drhoedx - aux1*dphi1dx)*one_over_gamma_m1 - \
+			dpdx = ((drhoedx - drhoqdx - aux1*dphi1dx)*one_over_gamma_m1 - \
 				done_over_gamma_m1dx* \
-				(rhoe-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/(one_over_gamma_m1**2)
+				(rhoe - rhoq - phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/(one_over_gamma_m1**2)
 
-			dpdy = ((drhoedy - aux1*dphi1dy)*one_over_gamma_m1 - \
+			dpdy = ((drhoedy - drhoqdy - aux1*dphi1dy)*one_over_gamma_m1 - \
 				done_over_gamma_m1dy* \
-				(rhoe-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/(one_over_gamma_m1**2)
+				(rhoe - rhoq - phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/(one_over_gamma_m1**2)
 				
 			done_over_Tdx = ((drho1phi1dx*(p+pinf1) - dpdx*rho1phi1)*(gamma1-1.)*cp1)/(p+pinf1)**2 + \
 				   ((drho2phi2dx*(p+pinf2) - dpdx*rho2phi2)*(gamma2-1.)*cp2)/(p+pinf2)**2
@@ -624,9 +635,24 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 				
 			one_over_T = rho1phi1*(gamma1-1.)*cp1/(p+pinf1) + rho2phi2*(gamma2-1.)*cp2/(p+pinf2)
 			T = 1./one_over_T
-			
 			dTdx = -T**2.*done_over_Tdx
 			dTdy = -T**2.*done_over_Tdy
+			
+#			dTdx = drhoedx/cp1
+#			dTdy = drhoedy/cp1
+		
+#			rho1 = rho1phi1/phi1
+#			rho2 = rho2phi2/(1.0-phi1)
+#			drho1dx = (drho1phi1dx*phi1-rho1phi1*dphi1dx)/phi1**2
+#			drho1dy = (drho1phi1dy*phi1-rho1phi1*dphi1dy)/phi1**2
+#			drho2dx = (drho2phi2dx*(1.0-phi1)+rho2phi2*dphi1dx)/(1.0-phi1)**2
+#			drho2dy = (drho2phi2dy*(1.0-phi1)+rho2phi2*dphi1dy)/(1.0-phi1)**2
+#
+#			q1x   = kappa1*1.0/((gamma1-1.0)*cp1)*(dpdx*phi1*rho1phi1+dphi1dx*p*rho1phi1-drho1phi1dx*phi1*(p+pinf1))/rho1phi1**2
+#			q2x   = kappa2*1.0/((gamma2-1.0)*cp2)*(dpdx*(1.0-phi1)*rho2phi2-dphi1dx*p*rho2phi2-drho2phi2dx*(1.0-phi1)*(p+pinf1))/rho2phi2**2
+#			q1y   = kappa1*1.0/((gamma1-1.0)*cp1)*(dpdy*phi1*rho1phi1+dphi1dy*p*rho1phi1-drho1phi1dy*phi1*(p+pinf1))/rho1phi1**2
+#			q2y   = kappa2*1.0/((gamma2-1.0)*cp2)*(dpdy*(1.0-phi1)*rho2phi2-dphi1dy*p*rho2phi2-drho2phi2dy*(1.0-phi1)*(p+pinf1))/rho2phi2**2
+		
 		else:
 			dTdx = 0.
 			dTdy = 0.
@@ -639,8 +665,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		h1 = (p + pinf1)*gamma1/(gamma1-1.0)
-		h2 = (p + pinf2)*gamma2/(gamma2-1.0)
+		h1 = (p + pinf1)*gamma1/(gamma1-1.0) + q1
+		h2 = (p + pinf2)*gamma2/(gamma2-1.0) + q2
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -701,7 +727,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+			rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			scalar = p
 		elif sname is self.AdditionalVariables["XVelocity"].name:
 			rho   = rho1phi1 + rho2phi2
@@ -744,7 +771,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+			rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			# Wood speed of sound
 #			csq1rho1 = gamma1*(p + pinf1)
 #			csq2rho2 = gamma2*(p + pinf2)
@@ -772,7 +800,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+			rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			# Wood speed of sound
 			csq1rho1 = gamma1*(p + pinf1)
 			csq2rho2 = gamma2*(p + pinf2)
@@ -798,10 +827,10 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-			pinf = (phi1*gamma1*pinf1/(gamma1-1.)+(1.0-phi1)*gamma2*pinf2/(gamma2-1.))/one_over_gamma_m1/gamma
+			rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			# that's how I would write the mixture temperature
-			T = (p+pinf)/(cp*rho)*one_over_gamma_m1
+			#T = (p+pinf)/(cp*rho)*one_over_gamma_m1
 			# but maybe it can be written also like this
 			one_over_T = rho1phi1*(gamma1-1.)*cp1/(p+pinf1) + rho2phi2*(gamma2-1.)*cp2/(p+pinf2)
 			T = 1./one_over_T
@@ -824,7 +853,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			v2 = v**2
 			rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
 			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+			rhoq = rho1phi1*self.q1 + rho2phi2*self.q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
 			# Wood speed of sound
 			csq1rho1 = gamma1*(p + pinf1)
 			csq2rho2 = gamma2*(p + pinf2)
