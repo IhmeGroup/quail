@@ -36,7 +36,7 @@ for i in range(33):
 			include_mesh=True, regular_2D=True, equal_AR=False, show_elem_IDs=False, ignore_colorbar=ignore_colorbar,
 			levels=levels)
 
-	imgs = ax.collections.copy()
+	imgs = ax.collections
 
 	# Add to imgs_all
 	if j == 0:

@@ -32,7 +32,7 @@ for i in range(101):
 	plot.plot_solution(mesh, physics, solver, "Scalar", plot_numerical=True, create_new_figure=False, 
 			include_mesh=True, regular_2D=True, equal_AR=False, show_elem_IDs=True, ignore_colorbar=ignore_colorbar)
 
-	imgs = ax.collections.copy()
+	imgs = ax.collections
 
 	# Add to imgs_all
 	if j == 0:
