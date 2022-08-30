@@ -326,8 +326,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.sigma = 0.
 		self.dt_LS = 0.
 		self.iter_LS = 0.
-		self.cp1 = 0.
-		self.cp2 = 0.
+		self.cv1 = 0.
+		self.cv2 = 0.
 		self.mdot = 0.
 		
 	def set_maps(self):
@@ -365,7 +365,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 	def set_physical_params(self, gamma1=1., gamma2=1., mu1=1., mu2=1., \
 			kappa1=1., kappa2=1., pinf1=1., pinf2=1., rho01=1., rho02=1.,\
 			eps=0., scl_eps=1.0, gam=1.0, switch=1., g=0., sigma=0., CFL_LS=0., \
-			cp1=1., cp2=1., mdot = 0., q1 = 0., q2 = 0.):
+			cv1=1., cv2=1., mdot = 0., q1 = 0., q2 = 0.):
 		'''
 		This method sets physical parameters.
 
@@ -386,8 +386,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		self.rho02 = rho02
 		self.q1 = q1
 		self.q2 = q2
-		self.cp1 = cp1
-		self.cp2 = cp2
+		self.cv1 = cv1
+		self.cv2 = cv2
 		
 		self.eps = eps
 		self.scl_eps = scl_eps
@@ -495,25 +495,25 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		h1 = (p + pinf1)*gamma1/(gamma1-1.0) + q1
-		h2 = (p + pinf2)*gamma2/(gamma2-1.0) + q2
+		rho1h1 = (p + pinf1)*gamma1/(gamma1-1.0) + rho01*q1
+		rho2h2 = (p + pinf2)*gamma2/(gamma2-1.0) + rho02*q2
 
 		# Assemble flux matrix (missing a correction term in energy equation)
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
-		F[:,:,irho1phi1,  0] = u * rho1phi1 - rho01*a1x            # x-mass1 flux
-		F[:,:,irho1phi1,  1] = v * rho1phi1 - rho01*a1y            # y-mass1 flux
-		F[:,:,irho2phi2,  0] = u * rho2phi2 + rho02*a1x            # x-mass2 flux
-		F[:,:,irho2phi2,  1] = v * rho2phi2 + rho02*a1y            # y-mass2 flux
-		F[:,:,irhou,      0] = rho * u2 + p - fx * u               # x-flux of x-momentum
-		F[:,:,irhov,      0] = rhouv        - fx * v               # x-flux of y-momentum
-		F[:,:,irhou,      1] = rhouv        - fy * u               # y-flux of x-momentum
-		F[:,:,irhov,      1] = rho * v2 + p - fy * v               # y-flux of y-momentum
-		F[:,:,irhoE,      0] = H * u        - fx * k - (h1-h2)*a1x # x-flux of energy
-		F[:,:,irhoE,      1] = H * v        - fy * k - (h1-h2)*a1y # y-flux of energy
-		F[:,:,iPF,        0] = - a1x                               # x-flux of phi1
-		F[:,:,iPF,        1] = - a1y                               # y-flux of phi1
-		F[:,:,iLS,        0] = 0.                                  # x-flux of Levelset
-		F[:,:,iLS,        1] = 0.                                  # y-flux of Levelset
+		F[:,:,irho1phi1,  0] = u * rho1phi1 - rho01*a1x                    # x-mass1 flux
+		F[:,:,irho1phi1,  1] = v * rho1phi1 - rho01*a1y                    # y-mass1 flux
+		F[:,:,irho2phi2,  0] = u * rho2phi2 + rho02*a1x                    # x-mass2 flux
+		F[:,:,irho2phi2,  1] = v * rho2phi2 + rho02*a1y                    # y-mass2 flux
+		F[:,:,irhou,      0] = rho * u2 + p - fx * u                       # x-flux of x-momentum
+		F[:,:,irhov,      0] = rhouv        - fx * v                       # x-flux of y-momentum
+		F[:,:,irhou,      1] = rhouv        - fy * u                       # y-flux of x-momentum
+		F[:,:,irhov,      1] = rho * v2 + p - fy * v                       # y-flux of y-momentum
+		F[:,:,irhoE,      0] = H * u        - fx * k - (rho1h1-rho2h2)*a1x # x-flux of energy
+		F[:,:,irhoE,      1] = H * v        - fy * k - (rho1h1-rho2h2)*a1y # y-flux of energy
+		F[:,:,iPF,        0] = - a1x                                       # x-flux of phi1
+		F[:,:,iPF,        1] = - a1y                                       # y-flux of phi1
+		F[:,:,iLS,        0] = 0.                                          # x-flux of Levelset
+		F[:,:,iLS,        1] = 0.                                          # y-flux of Levelset
 		
 		F = F*switch
 
@@ -561,8 +561,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		q2=self.q2
 		rho01=self.rho01
 		rho02=self.rho02
-		cp1 = self.cp1
-		cp2 = self.cp2
+		cv1 = self.cv1
+		cv2 = self.cv2
 		
 		switch = self.switch
 			
@@ -611,14 +611,11 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			drhoedy = drhoEdy - 0.5*(2.0*(rhou*drhoudy + rhov*drhovdy)*rho \
 				- (drhody)*(rhou**2 + rhov**2))/rho**2
 			
-			drhoqdx = drho1phi1dx*self.q1 + drho2phi2dx*self.q2
-			drhoqdy = drho1phi1dy*self.q1 + drho2phi2dy*self.q2
+			drhoqdx = drho1phi1dx*q1 + drho2phi2dx*q2
+			drhoqdy = drho1phi1dy*q1 + drho2phi2dy*q2
 			
 			done_over_gamma_m1dx = (1.0/(gamma1-1.) - 1.0/(gamma2-1.))*dphi1dx
 			done_over_gamma_m1dy = (1.0/(gamma1-1.) - 1.0/(gamma2-1.))*dphi1dy
-			
-			dgamma_m1dx = - done_over_gamma_m1dx/one_over_gamma_m1**2
-			dgamma_m1dy = - done_over_gamma_m1dy/one_over_gamma_m1**2
 
 			dpdx = ((drhoedx - drhoqdx - aux1*dphi1dx)*one_over_gamma_m1 - \
 				done_over_gamma_m1dx* \
@@ -628,12 +625,12 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 				done_over_gamma_m1dy* \
 				(rhoe - rhoq - phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/(one_over_gamma_m1**2)
 				
-			done_over_Tdx = ((drho1phi1dx*(p+pinf1) - dpdx*rho1phi1)*(gamma1-1.)*cp1)/(p+pinf1)**2 + \
-				   ((drho2phi2dx*(p+pinf2) - dpdx*rho2phi2)*(gamma2-1.)*cp2)/(p+pinf2)**2
-			done_over_Tdy = ((drho1phi1dy*(p+pinf1) - dpdy*rho1phi1)*(gamma1-1.)*cp1)/(p+pinf1)**2 + \
-				   ((drho2phi2dy*(p+pinf2) - dpdy*rho2phi2)*(gamma2-1.)*cp2)/(p+pinf2)**2
+			done_over_Tdx = ((drho1phi1dx*(p+pinf1) - dpdx*rho1phi1)*(gamma1-1.)*cv1)/(p+pinf1)**2 + \
+				   ((drho2phi2dx*(p+pinf2) - dpdx*rho2phi2)*(gamma2-1.)*cv2)/(p+pinf2)**2
+			done_over_Tdy = ((drho1phi1dy*(p+pinf1) - dpdy*rho1phi1)*(gamma1-1.)*cv1)/(p+pinf1)**2 + \
+				   ((drho2phi2dy*(p+pinf2) - dpdy*rho2phi2)*(gamma2-1.)*cv2)/(p+pinf2)**2
 				
-			one_over_T = rho1phi1*(gamma1-1.)*cp1/(p+pinf1) + rho2phi2*(gamma2-1.)*cp2/(p+pinf2)
+			one_over_T = rho1phi1*(gamma1-1.)*cv1/(p+pinf1) + rho2phi2*(gamma2-1.)*cv2/(p+pinf2)
 			T = 1./one_over_T
 			dTdx = -T**2.*done_over_Tdx
 			dTdy = -T**2.*done_over_Tdy
@@ -665,8 +662,8 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		fx = (rho01-rho02)*a1x
 		fy = (rho01-rho02)*a1y
 		
-		h1 = (p + pinf1)*gamma1/(gamma1-1.0) + q1
-		h2 = (p + pinf2)*gamma2/(gamma2-1.0) + q2
+		rho1h1 = (p + pinf1)*gamma1/(gamma1-1.0) + rho01*q1
+		rho2h2 = (p + pinf2)*gamma2/(gamma2-1.0) + rho02*q2
 
 		# Assemble flux matrix
 		F = np.empty(Uq.shape + (self.NDIMS,)) # [n, nq, ns, ndims]
@@ -677,7 +674,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhou,      0] = tauxx + fx * u            # x-flux of x-momentum
 		F[:,:,irhov,      0] = tauxy + fx * v            # x-flux of y-momentum
 		F[:,:,irhoE,      0] = u * tauxx + v * tauxy + kappa*dTdx  \
-			+ fx * k + (h1-h2)*a1x                       # x-flux of energy
+			+ fx * k + (rho1h1-rho2h2)*a1x                       # x-flux of energy
 
 		# y-direction
 		F[:,:,irho1phi1,  1] =  rho01*a1y                # y-mass1 flux
@@ -685,7 +682,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 		F[:,:,irhou,      1] = tauxy + fy * u            # y-flux of x-momentum
 		F[:,:,irhov,      1] = tauyy + fy * v            # y-flux of y-momentum
 		F[:,:,irhoE,      1] = u * tauxy + v * tauyy + kappa*dTdy\
-			+ fy * k + (h1-h2)*a1y                       # y-flux of energy
+			+ fy * k + (rho1h1-rho2h2)*a1y                       # y-flux of energy
 			
 		# phase field and level set
 		F[:,:,iPF,  0]  = a1x # x-flux of phi1
@@ -813,12 +810,12 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			gamma2=self.gamma2
 			pinf1=self.pinf1
 			pinf2=self.pinf2
-			cp1=self.cp1
-			cp2=self.cp2
+			cv1=self.cv1
+			cv2=self.cv2
 
 			rho   = rho1phi1 + rho2phi2
 			one_over_gamma = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-			cp = cp1*phi1 + cp2*(1.0-phi1)
+			cv = cv1*phi1 + cv2*(1.0-phi1)
 			gamma = (one_over_gamma+1.0)/one_over_gamma
 			# Get velocity in each dimension
 			u = rhou / rho
@@ -832,7 +829,7 @@ class Twophase(NavierStokes2D, euler.Euler2D):
 			# that's how I would write the mixture temperature
 			#T = (p+pinf)/(cp*rho)*one_over_gamma_m1
 			# but maybe it can be written also like this
-			one_over_T = rho1phi1*(gamma1-1.)*cp1/(p+pinf1) + rho2phi2*(gamma2-1.)*cp2/(p+pinf2)
+			one_over_T = rho1phi1*(gamma1-1.)*cv1/(p+pinf1) + rho2phi2*(gamma2-1.)*cv2/(p+pinf2)
 			T = 1./one_over_T
 #			cprho = cp1*rho1phi1 + cp2*rho2phi2
 #			T = (p+pinf)/(cprho)*one_over_gamma_m1

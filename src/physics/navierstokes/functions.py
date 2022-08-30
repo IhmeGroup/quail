@@ -855,41 +855,15 @@ class BubbleSource(SourceBase):
 		
 		Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
 		
-#		mdot = 1000.*physics.rho01*np.pi*(200e-6-1e-3*t)**2.
-		mdot = -physics.mdot
-#		rho1 = rho1phi1/(phi1+1e-16)
-#		rho2 = rho2phi2/(1.-phi1+1e-16)
-#		mdot = physics.rho01*np.pi*(200e-6-1e-3*t)**2.
-#
-#		gamma1=physics.gamma1
-#		gamma2=physics.gamma2
-#		pinf1=physics.pinf1
-#		pinf2=physics.pinf2
-#		# Get velocity in each dimension
-#		u2 = u**2
-#		v2 = v**2
-#		rhoe = (rhoE - 0.5 * rho * (u2 + v2)) # [n, nq]
-#		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-#		p = (rhoe + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-#
-#		c1sq = gamma1*(p+pinf1)/rho1
-#		c2sq = gamma2*(p+pinf2)/rho2
+		mdot = physics.mdot
+		rhoI = (physics.rho01*physics.rho02)/rho
 
-#		rhoI = (rho1*c1sq/phi1 + rho2*c2sq/(1.0-phi1))/(c2sq/phi1 + c1sq/(1.0-phi1))
-#		rhoI = (rho1*c1sq + rho2*c2sq)/(c1sq + c2sq)
-#		rhoI = physics.rho01
-#		rhoI = (1.0/physics.rho02 + 1.0/physics.rho01)
-#		rhoI = (phi1*physics.rho02*c2sq + (1.-phi1)*physics.rho01*c1sq)/((1.0-phi1)*c1sq+phi1*c2sq)
-#		rhoI = physics.rho02
-		rhoI = 1.0/(1.0/physics.rho02 + 1.0/physics.rho01) # should be more or less like rhoI = rho2
-#		rhoI = (rho1*c1sq/phi1 + rho2*c2sq/(1.0-phi1))/(c1sq/phi1 + c2sq/(1.0-phi1))
-
-		# transport equations
-		Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] + mdot*magPF/rhoI)*switch
-		Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS] + mdot*magLS/rhoI)*switch
+		# Transport equations + phase change
+		Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] - mdot*magPF/rhoI)*switch
+		Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS] - mdot*magLS/rhoI)*switch
 		
-		Sq[:,:,irho1phi1] = mdot*magPF*switch
-		Sq[:,:,irho2phi2] = -mdot*magPF*switch
+		Sq[:,:,irho1phi1] = -mdot*magPF*switch
+		Sq[:,:,irho2phi2] = mdot*magPF*switch
 
 #		hlg = 2.3e6
 #
@@ -959,6 +933,20 @@ class NoSlipWall(BCWeakRiemann):
 	This class corresponds to a slip wall. See documentation for more
 	details.
 	'''
+	def __init__(self, Twall):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+			p: pressure
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.Twall = Twall
+		
 	def get_boundary_state(self, physics, UqI, normals, x, t):
 		#UqB = self.function.get_state(physics, x, t)
 		UqB = UqI.copy()
@@ -974,32 +962,40 @@ class NoSlipWall(BCWeakRiemann):
 		LS        = UqB[:, :, iLS]       # [n, nq]
 		
 		# Classic (adiabatic?)
-		rho = rho1phi1 + rho2phi2
-		UqB[:,:,irhoE] = rhoE - 0.5*(rhou**2 + rhov**2)/rho
-		# Isothermal
-#		Twall = 290.0
-#		cp1   = physics.cp1
-#		cp2   = physics.cp2
-#		pinf1 = physics.pinf1
-#		pinf2 = physics.pinf2
-#		gamma1= physics.gamma1
-#		gamma2= physics.gamma2
-#		rho = rho1phi1 + rho2phi2
-#		rhoe = rhoE - 0.5 * (rhou**2+rhov**2)/rho # [n, nq]
-#		one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
-#		rhoq = rho1phi1*physics.q1 + rho2phi2*physics.q2
-#		pI = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-#		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
-#		pinf = (phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))/one_over_gamma_m1/gamma
-#
-#		rhoI1 = (pI + pinf1)/(cp1*Twall*(gamma1-1.))
-#		rhoI2 = (pI + pinf2)/(cp2*Twall*(gamma2-1.))
-#		UqB[:,:,irho1phi1] = rhoI1*phi1
-#		UqB[:,:,irho2phi2] = rhoI2*(1.0-phi1)
-#
-#		rhocp  = rho1phi1*cp1 + rho2phi2*cp2
-#
-#		UqB[:,:,irhoE] = rhocp*Twall + pinf + rhoq
+		Twall = self.Twall
+		if self.Twall<0.:
+			rho = rho1phi1 + rho2phi2
+			UqB[:,:,irhoE] = rhoE - 0.5*(rhou**2 + rhov**2)/rho
+		else:
+			# Isothermal
+			cv1   = physics.cv1
+			cv2   = physics.cv2
+			pinf1 = physics.pinf1
+			pinf2 = physics.pinf2
+			gamma1= physics.gamma1
+			gamma2= physics.gamma2
+			rho = rho1phi1 + rho2phi2
+			rhoe = rhoE - 0.5 * (rhou**2+rhov**2)/rho # [n, nq]
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			rhoq = rho1phi1*physics.q1 + rho2phi2*physics.q2
+			pI = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+#			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+#			pinf = (phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))/one_over_gamma_m1/gamma
+
+			rhoI1 = (pI + pinf1)/(cv1*Twall*(gamma1-1.))
+			rhoI2 = (pI + pinf2)/(cv2*Twall*(gamma2-1.))
+			UqB[:,:,irho1phi1] = rhoI1*phi1
+			UqB[:,:,irho2phi2] = rhoI2*(1.0-phi1)
+
+			rhoq   = UqB[:,:,irho1phi1]*physics.q1 + UqB[:,:,irho2phi2]*physics.q2
+		
+			rhoe1 = (pI + gamma1*pinf1)/(gamma1-1.0)
+			rhoe2 = (pI + gamma2*pinf2)/(gamma2-1.0)
+		
+			rhoe = rhoe1*phi1 + rhoe2*(1.0-phi1) + rhoq
+		
+#			UqB[:,:,irhoE] = rhocp*Twall + pinf + rhoq
+			UqB[:,:,irhoE] = rhoe
 
 		UqB[:,:,irhou] = 0.
 		UqB[:,:,irhov] = 0.
