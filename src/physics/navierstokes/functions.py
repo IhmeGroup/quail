@@ -44,6 +44,7 @@ class FcnType(Enum):
 	RayleighTaylor = auto()
 	Channel = auto()
 	Rising_bubble = auto()
+	Rider_Korthe = auto()
 
 class BCType(Enum):
 	'''
@@ -225,13 +226,14 @@ class Bubble(FcnBase):
 		
 		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
 		
-		Uq[:,:,irhou] = self.u*rho
-		Uq[:,:,irhov] = self.v*rho
-		
-		Uq[:,:,irhou] = physics.mdot*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
-		Uq[:,:,irhov] = physics.mdot*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
-		
-		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.radius)*(1.0-Uq[:,:,iPF])
+		if physics.mdot == 0:
+			Uq[:,:,irhou] = self.u*rho
+			Uq[:,:,irhov] = self.v*rho
+			p = self.pressure
+		else:
+			Uq[:,:,irhou] = physics.mdot*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
+			Uq[:,:,irhov] = physics.mdot*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
+			p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.radius)*(1.0-Uq[:,:,iPF])
 		
 		gamma1 = physics.gamma1
 		gamma2 = physics.gamma2
@@ -337,7 +339,7 @@ class RayleighTaylor(FcnBase):
 
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 		
-		tol = 1e-8
+		tol = 1e-6
 		
 		d = self.d
 		h = 2.*d + 0.1*d*np.cos(2.*np.pi*x[:,:,0]/d)
@@ -514,7 +516,74 @@ class Rising_bubble(FcnBase):
 		Uq[:,:,irhoE] = rhoe
 		
 		return Uq
+
+class Rider_Korthe(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, d=0., thick=0., uavg=0., pressure=1., \
+			rho1_in=1., rho2_in=1., x0=0., y0=0., r0=0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.d = d
+		self.thick = thick
+		self.uavg = uavg
+		self.pressure = pressure
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		self.x0 = x0
+		self.y0 = y0
+		self.r0 = r0
 		
+	def get_state(self, physics, x, t):
+	
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-6
+
+		r = np.sqrt((x[:,:,0]-self.x0)**2+(x[:,:,1]-self.y0)**2)
+
+		Hr = 1.0 - 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
+		Hr = 1.0 - 0.5*(1.0+np.tanh(0.25*self.thick*(r-self.r0))) - 0.5
+		Uq[:,:,iLS] = (tol + (1.0-2.0*tol)*Hr)
+		
+		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
+		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
+		
+		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
+		
+		Uq[:,:,irhou] = 0.
+		Uq[:,:,irhov] = 0.
+		
+		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.r0)*(1.0-Uq[:,:,iPF])
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma+1.0)/one_over_gamma
+		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoe = (p + gamma*pinf)*one_over_gamma
+		
+		Uq[:,:,irhoE] = rhoe
+		
+		return Uq
 
 '''
 -------------------
@@ -834,40 +903,51 @@ class BubbleSource(SourceBase):
 		# Separate x and y gradients
 		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
 		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
-		
-		# Get velocity in each dimension
-		rho   = rho1phi1 + rho2phi2
-		u = rhou / rho
-		v = rhov / rho
-		
+
 		switch = physics.switch
-		sigma = physics.sigma
-		gLS = gUq[:,:,iLS,:]
-		n = np.zeros(gLS.shape)
-		mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
-		n[:,:,0] = gLS[:,:,0]/(mag+1e-32)
-		n[:,:,1] = gLS[:,:,1]/(mag+1e-32)
-		magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
-		magLS = np.sqrt(gUq[:,:,iLS,0]**2+gUq[:,:,iLS,1]**2)
-		
-		Sq[:,:,irhou] =                        + sigma*kk*n[:,:,0]*magPF*switch
-		Sq[:,:,irhov] = -rho*physics.g*switch  + sigma*kk*n[:,:,1]*magPF*switch
-		
-		Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
-		
-		mdot = physics.mdot
-		rhoI = (physics.rho01*physics.rho02)/rho
 
-		# Transport equations + phase change
-		Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] - mdot*magPF/rhoI)*switch
-		Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS] - mdot*magLS/rhoI)*switch
-		
-		Sq[:,:,irho1phi1] = -mdot*magPF*switch
-		Sq[:,:,irho2phi2] = mdot*magPF*switch
+		if physics.kinetics == 1:
+			Sq = np.zeros(Uq.shape)
+			T = 4.0
+			Uq[:,:,irhou] = -np.sin(np.pi*(x[:,:,0]+0.5))**2.0* \
+					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
+			Uq[:,:,irhov] = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
+					np.sin(np.pi*(x[:,:,1]+0.5))**2.0*np.cos(np.pi*t/T)
+			
+			u = Uq[:,:,irhou]
+			v = Uq[:,:,irhov]
+			
+			Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF])*switch
+			Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS])*switch
+		else:
+			# Get velocity in each dimension
+			rho   = rho1phi1 + rho2phi2
+			u = rhou / rho
+			v = rhov / rho
+			
+			sigma = physics.sigma
+			gLS = gUq[:,:,iLS,:]
+			n = np.zeros(gLS.shape)
+			mag = np.sqrt(gLS[:,:,0]**2+gLS[:,:,1]**2)
+			n[:,:,0] = gLS[:,:,0]/(mag+1e-32)
+			n[:,:,1] = gLS[:,:,1]/(mag+1e-32)
+			magPF = np.sqrt(gUq[:,:,iPF,0]**2+gUq[:,:,iPF,1]**2)
+			magLS = np.sqrt(gUq[:,:,iLS,0]**2+gUq[:,:,iLS,1]**2)
+			
+			Sq[:,:,irhou] =                        + sigma*kk*n[:,:,0]*magPF*switch
+			Sq[:,:,irhov] = -rho*physics.g*switch  + sigma*kk*n[:,:,1]*magPF*switch
+			
+			Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
+			
+			mdot = physics.mdot
+			rhoI = (physics.rho01*physics.rho02)/rho
 
-#		hlg = 2.3e6
-#
-#		Sq[:,:,irhoE] = -hlg*magPF*mdot*switch
+			# Transport equations + phase change
+			Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] - mdot*magPF/rhoI)*switch
+			Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS] - mdot*magLS/rhoI)*switch
+			
+			Sq[:,:,irho1phi1] = -mdot*magPF*switch
+			Sq[:,:,irho2phi2] = mdot*magPF*switch
 
 		if switch == 0:
 			eps = physics.scl_eps*physics.eps
@@ -881,41 +961,7 @@ class BubbleSource(SourceBase):
 			Sq[:,:,iLS] = (1.0-mag)*sgn*l
 		
 		return Sq
-		
-#class BubbleSource2(SourceBase):
-#	'''
-#	Source for bubble case
-#	'''
-#
-#	def get_source(self, physics, Uq, gUq, x, t):
-#
-#		irhou, irhov, ip, iPF, iLS = physics.get_state_indices()
-#
-#		rhou      = Uq[:, :, irhou]     # [n, nq]
-#		rhov      = Uq[:, :, irhov]     # [n, nq]
-#		p         = Uq[:, :, ip]     # [n, nq]
-#		phi1      = Uq[:, :, iPF]       # [n, nq]
-#		LS        = Uq[:, :, iLS]       # [n, nq]
-#
-#		Sq = np.zeros(Uq.shape)
-#
-#		# Separate x and y gradients
-#		gUx = gUq[:, :, :, 0] # [ne, nq, ns]
-#		gUy = gUq[:, :, :, 1] # [ne, nq, ns]
-#
-#		# Get velocity in each dimension
-#		rho1  = physics.rho1
-#		rho2  = physics.rho2
-#		cs = physics.cs
-#		c2 = cs**2
-#
-#		rho   = rho1*phi1 + rho2*(1.0-phi1)
-#		u = rhou / rho
-#		v = rhov / rho
-#
-#		Sq[:,:,ip] = c2*(rho1-rho2)*(u*gUx[:,:,iPF]+v*gUy[:,:,iPF])
-#
-#		return Sq
+	
 
 '''
 -------------------

@@ -262,7 +262,7 @@ class ConvNumFluxBase(ABC):
 		self.__init__(Uq)
 
 	@abstractmethod
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x, t):
 		'''
 		This method computes the numerical flux.
 
@@ -329,7 +329,7 @@ class DiffNumFluxBase(ABC):
 		self.__init__(Uq)
 
 	@abstractmethod
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x, t):
 		'''
 		This method computes the numerical flux.
 

@@ -930,16 +930,16 @@ class LaxFriedrichs1D(ConvNumFluxBase):
 	Euler1D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, normals, x, t):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
-		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat, x=None, t=None)
+		FqL, (u2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, n_hat, x, t)
 
 		# Right flux
-		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat, x=None, t=None)
+		FqR, (u2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, n_hat, x, t)
 
 		# Jump
 		dUq = UqR - UqL
@@ -965,18 +965,18 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 	Euler2D class. This replaces the generalized, less efficient version of
 	the Lax-Friedrichs flux found in base.
 	'''
-	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL, UqR, gUqL, gUqR, normals, x, t):
 		# Normalize the normal vectors
 		n_mag = np.linalg.norm(normals, axis=2, keepdims=True)
 		n_hat = normals/n_mag
 
 		# Left flux
 		FqL0, (u2L, v2L, rhoL, pL) = physics.get_conv_flux_projected(UqL, gUqL,
-				n_hat, x=None, t=None)
+				n_hat, x, t)
 
 		# Right flux
 		FqR0, (u2R, v2R, rhoR, pR) = physics.get_conv_flux_projected(UqR, gUqR,
-				n_hat, x=None, t=None)
+				n_hat, x, t)
 
 		# Jump
 		dUq = UqR - UqL
@@ -1015,6 +1015,15 @@ class LaxFriedrichs2D(ConvNumFluxBase):
 		rhoR       = rho1phi1R + rho2phi2R
 		uR = rhouR / rhoR
 		vR = rhovR / rhoR
+		
+		if physics.kinetics == 1:
+			T=4.0
+			uL = -np.sin(np.pi*(x[:,:,0]+0.5))**2.0* \
+					np.sin(2.0*np.pi*(x[:,:,1]+0.5))*np.cos(np.pi*t/T)
+			vL = np.sin(2.0*np.pi*(x[:,:,0]+0.5))* \
+					np.sin(np.pi*(x[:,:,1]+0.5))**2.0*np.cos(np.pi*t/T)
+			uR = uL
+			vR = vL
 		
 		FqL = np.empty(UqL.shape + (physics.NDIMS,)) # [n, nq, ns, ndims]
 		FqR = np.empty(UqR.shape + (physics.NDIMS,)) # [n, nq, ns, ndims]
@@ -1288,7 +1297,7 @@ class Roe1D(ConvNumFluxBase):
 
 		return R
 
-	def compute_flux(self, physics, UqL_std, UqR_std, normals, x=None, t=None):
+	def compute_flux(self, physics, UqL_std, UqR_std, normals, x, t):
 		# Reshape arrays
 		n = UqL_std.shape[0]
 		nq = UqL_std.shape[1]
@@ -1363,10 +1372,10 @@ class Roe1D(ConvNumFluxBase):
 		FRoe = self.undo_rotate_coord_sys(smom, FRoe, n_hat)
 
 		# Left flux
-		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat, x=None, t=None)
+		FL, _ = physics.get_conv_flux_projected(UqL_std, n_hat, x, t)
 
 		# Right flux
-		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat, x=None, t=None)
+		FR, _ = physics.get_conv_flux_projected(UqR_std, n_hat, x, t)
 
 		return .5*n_mag*(FL + FR - FRoe) # [nf, nq, ns]
 
