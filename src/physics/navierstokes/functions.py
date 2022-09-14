@@ -948,6 +948,24 @@ class BubbleSource(SourceBase):
 			
 			Sq[:,:,irho1phi1] = -mdot*magPF*switch
 			Sq[:,:,irho2phi2] = mdot*magPF*switch
+			
+			gamma1 = physics.gamma1
+			gamma2 = physics.gamma2
+			pinf1  = physics.pinf1
+			pinf2  = physics.pinf2
+			q1     = physics.q1
+			q2     = physics.q2
+			rho01  = physics.rho01
+			rho02  = physics.rho02
+			# Stiffened gas EOS
+			rhoe = (rhoE - 0.5 * rho * (u**2 + v**2)) # [n, nq]
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			rhoq = rho1phi1*physics.q1 + rho2phi2*physics.q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+			h1     = (p + pinf1)*gamma1/(gamma1-1.0)/rho01 + q1
+			h2     = (p + pinf2)*gamma2/(gamma2-1.0)/rho02 + q2
+
+			Sq[:,:,irhoE] = (h1-h2)*magPF*mdot*switch
 
 		if switch == 0:
 			eps = physics.scl_eps*physics.eps
