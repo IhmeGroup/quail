@@ -792,14 +792,7 @@ class SolverBase(ABC):
 			mmin = np.min(UU[:,:,iPF])
 			mmax = np.max(UU[:,:,iPF])
 			if mmin<0.0 or mmax>1.0:
-#				print("BOUNDS VIOLATED")
-				#f.write(str(t) + " " + str(1e10) + "\n")
-				for ii in range(0,len(UU[:,0,0])):
-					for jj in range(0,len(UU[0,:,0])):
-						if UU[ii,jj,iPF]<0.0:
-							UU[ii,jj,iPF] = 1e-10
-						elif UU[ii,jj,iPF]>1.0:
-							UU[ii,jj,iPF] = 1.0-1e-10
+				UU[:,:,iPF] = np.clip(UU[:,:,iPF],1e-10,1.0-1e-10)
 
 			self.state_coeffs = UU
 			mmin = np.min(UU[:,:,iPF])

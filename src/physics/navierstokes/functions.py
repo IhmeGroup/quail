@@ -43,6 +43,7 @@ class FcnType(Enum):
 	Bubble2 = auto()
 	RayleighTaylor = auto()
 	Channel = auto()
+	Couette = auto()
 	Rising_bubble = auto()
 	Rider_Korthe = auto()
 
@@ -52,6 +53,7 @@ class BCType(Enum):
 	boundary conditions are specific to the available Euler equation sets.
 	'''
 	NoSlipWall = auto()
+	SlipWall = auto()
 	Subsonic_Outlet = auto()
 	Subsonic_Inlet = auto()
 #	PressureOutletNS = auto()
@@ -226,25 +228,26 @@ class Bubble(FcnBase):
 		
 		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
 		
-		if physics.mdot == 0:
-			Uq[:,:,irhou] = self.u*rho
-			Uq[:,:,irhov] = self.v*rho
+		Uq[:,:,irhou] = self.u*rho
+		Uq[:,:,irhov] = self.v*rho
+		if physics.sigma == 0:
 			p = self.pressure
 		else:
-			Uq[:,:,irhou] = physics.mdot*rho*x[:,:,0]/r*(1.0-Uq[:,:,iPF])
-			Uq[:,:,irhov] = physics.mdot*rho*x[:,:,1]/r*(1.0-Uq[:,:,iPF])
 			p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.radius)*(1.0-Uq[:,:,iPF])
 		
 		gamma1 = physics.gamma1
 		gamma2 = physics.gamma2
 		pinf1  = physics.pinf1
 		pinf2  = physics.pinf2
+		q1     = physics.q1
+		q2     = physics.q2
 		
-		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
-		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		rhoe1 = (p + gamma1*pinf1)/(gamma1-1.0)
+		rhoe2 = (p + gamma2*pinf2)/(gamma2-1.0)
 		
-		rhoe = (p + gamma*pinf)*one_over_gamma
+		rhoq = Uq[:,:,irho1phi1]*q1 +Uq[:,:,irho2phi2]*q2
+		
+		rhoe = rhoe1*Uq[:,:,iPF] + rhoe2*(1.-Uq[:,:,iPF]) + rhoq
 		
 		Uq[:,:,irhoE] = rhoe + 0.5*(Uq[:,:,irhou]**2 + Uq[:,:,irhov]**2)/rho
 		
@@ -407,7 +410,7 @@ class Channel(FcnBase):
 
 		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
 		
-		tol = 1e-10
+		tol = 1e-6
 		
 		r = np.sqrt((x[:,:,0]-self.x0)**2+(x[:,:,1]-self.y0)**2)
 		
@@ -429,6 +432,75 @@ class Channel(FcnBase):
 		A = self.uavg*6.0/self.d**2
 		
 		Uq[:,:,irhou] = -A*(x[:,:,1]**2-0.25*self.d**2)*rho
+		Uq[:,:,irhov] = 0.
+		
+		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.r0)*(1.0-Uq[:,:,iPF])
+		
+		gamma1 = physics.gamma1
+		gamma2 = physics.gamma2
+		pinf1  = physics.pinf1
+		pinf2  = physics.pinf2
+		
+		one_over_gamma_m1 = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
+		gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		
+		rhoq = Uq[:,:,irho1phi1]*physics.q1 + Uq[:,:,irho2phi2]*physics.q2
+		rhoe = (p + gamma*pinf)*one_over_gamma_m1 + rhoq
+		
+		Uq[:,:,irhoE] = rhoe + 0.5*(Uq[:,:,irhou]**2+Uq[:,:,irhov]**2)/rho
+		
+		return Uq
+
+class Couette(FcnBase):
+	'''
+	2D advection of air bubble
+	'''
+	def __init__(self, d=0., thick=0., uavg=0., pressure=1., \
+			rho1_in=1., rho2_in=1., x0=0., y0=0., r0=0., shear = 0.):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+		    sig: standard deviation
+		    x0: center
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.d = d
+		self.thick = thick
+		self.shear = shear
+		self.pressure = pressure
+		self.rho1_in = rho1_in
+		self.rho2_in = rho2_in
+		self.x0 = x0
+		self.y0 = y0
+		self.r0 = r0
+		
+	def get_state(self, physics, x, t):
+	
+		Uq = np.zeros([x.shape[0], x.shape[1], physics.NUM_STATE_VARS])
+
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+		
+		tol = 1e-6
+		
+		r = np.sqrt((x[:,:,0]-self.x0)**2+(x[:,:,1]-self.y0)**2)
+		
+		Hr = 1.0 - 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
+		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
+		Hr = 1.0 - (0.5*(1.0+np.tanh(0.75*self.thick*(r-self.r0)))) - 0.5
+		Uq[:,:,iLS] = (tol + (1.0-2.0*tol)*Hr)
+		
+		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
+		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
+		
+		rho = Uq[:,:,irho1phi1] + Uq[:,:,irho2phi2]
+		
+		Uq[:,:,irhou] = self.shear*rho*x[:,:,1]
 		Uq[:,:,irhov] = 0.
 		
 		p = self.pressure*Uq[:,:,iPF] + (self.pressure + physics.sigma/self.r0)*(1.0-Uq[:,:,iPF])
@@ -489,8 +561,10 @@ class Rising_bubble(FcnBase):
 		
 		Hr = 0.5*(1.0+np.tanh(self.thick*(r-self.r0)))
 		Uq[:,:,iPF] = tol + (1.0-2.0*tol)*Hr
-		Hr = 0.5*(1.0+np.tanh(0.25*self.thick*(r-self.r0))) - 0.5
+#		Uq[:,:,iPF] = 1. - Uq[:,:,iPF]
+		Hr = 0.5*(1.0+np.tanh(0.75*self.thick*(r-self.r0))) - 0.5
 		Uq[:,:,iLS] = (tol + (1.0-2.0*tol)*Hr)
+#		Uq[:,:,iLS] = - Uq[:,:,iLS]
 		
 		Uq[:,:,irho1phi1] = self.rho1_in*Uq[:,:,iPF]
 		Uq[:,:,irho2phi2] = self.rho2_in*(1.0-Uq[:,:,iPF])
@@ -506,12 +580,15 @@ class Rising_bubble(FcnBase):
 		gamma2 = physics.gamma2
 		pinf1  = physics.pinf1
 		pinf2  = physics.pinf2
+		q1     = physics.q1
+		q2     = physics.q2
 		
-		one_over_gamma = Uq[:,:,iPF]/(gamma1-1.0) + (1.0-Uq[:,:,iPF])/(gamma2-1.0)
-		gamma = (one_over_gamma+1.0)/one_over_gamma
-		pinf = (gamma-1.0)/gamma*(Uq[:,:,iPF]*gamma1*pinf1/(gamma1-1.0) + (1.0-Uq[:,:,iPF])*gamma2*pinf2/(gamma2-1.0))
+		rhoe1 = (p + gamma1*pinf1)/(gamma1-1.0)
+		rhoe2 = (p + gamma2*pinf2)/(gamma2-1.0)
 		
-		rhoe = (p + gamma*pinf)*one_over_gamma
+		rhoq = Uq[:,:,irho1phi1]*q1 +Uq[:,:,irho2phi2]*q2
+		
+		rhoe = rhoe1*Uq[:,:,iPF] + rhoe2*(1.-Uq[:,:,iPF]) + rhoq
 		
 		Uq[:,:,irhoE] = rhoe
 		
@@ -938,32 +1015,39 @@ class BubbleSource(SourceBase):
 			Sq[:,:,irhov] = -rho*physics.g*switch  + sigma*kk*n[:,:,1]*magPF*switch
 			
 			Sq[:,:,irhoE] = Sq[:,:,irhou]*u + Sq[:,:,irhov]*v
-			
-			mdot = physics.mdot
-			rhoI = (physics.rho01*physics.rho02)/rho
 
-			# Transport equations + phase change
-			Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] - mdot*magPF/rhoI)*switch
-			Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS] - mdot*magLS/rhoI)*switch
-			
-			Sq[:,:,irho1phi1] = -mdot*magPF*switch
-			Sq[:,:,irho2phi2] = mdot*magPF*switch
-			
+			# phase change + transport
 			gamma1 = physics.gamma1
 			gamma2 = physics.gamma2
 			pinf1  = physics.pinf1
 			pinf2  = physics.pinf2
 			q1     = physics.q1
 			q2     = physics.q2
+			cv1    = physics.cv1
+			cv2    = physics.cv2
 			rho01  = physics.rho01
 			rho02  = physics.rho02
 			# Stiffened gas EOS
 			rhoe = (rhoE - 0.5 * rho * (u**2 + v**2)) # [n, nq]
-			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			one_over_gamma_m1 = phi1/(gamma1-1.) + (1.-phi1)/(gamma2-1.)
 			rhoq = rho1phi1*physics.q1 + rho2phi2*physics.q2
-			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
-			h1     = (p + pinf1)*gamma1/(gamma1-1.0)/rho01 + q1
-			h2     = (p + pinf2)*gamma2/(gamma2-1.0)/rho02 + q2
+			p = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+			h1     = (p + pinf1)*gamma1/(gamma1-1.)/rho01 + q1
+			h2     = (p + pinf2)*gamma2/(gamma2-1.)/rho02 + q2
+
+			mdot = physics.mdot
+#			Tsat = 374.0
+#			ri = 0.01
+#			T1 = (p + pinf1)/(rho01*cv1*(gamma1-1.))
+#			mdot = ri*rho1phi1*(Tsat-T1)/Tsat
+			rhoI = (physics.rho01*physics.rho02)/rho
+
+			# Transport equations + phase change
+			Sq[:,:,iPF] = (-u*gUx[:,:,iPF] - v*gUy[:,:,iPF] + mdot*magPF/rhoI)*switch
+			Sq[:,:,iLS] = (-u*gUx[:,:,iLS] - v*gUy[:,:,iLS])*switch
+			
+			Sq[:,:,irho1phi1] = mdot*magPF*switch
+			Sq[:,:,irho2phi2] = -mdot*magPF*switch
 
 			Sq[:,:,irhoE] = (h1-h2)*magPF*mdot*switch
 
@@ -975,8 +1059,12 @@ class BubbleSource(SourceBase):
 			mag3 = np.sqrt(Uqx**2 + Uqy**2 + 1e-16)
 			sgn = np.tanh(0.5*(psi0)/eps/mag3)
 			mag = np.sqrt(gUq[:, :, iLS, 0]**2 + gUq[:, :, iLS, 1]**2)
-			l = 1.0
-			Sq[:,:,iLS] = (1.0-mag)*sgn*l
+		
+			rho   = rho1phi1 + rho2phi2
+			u = rhou / rho
+			v = rhov / rho
+			magu = np.sqrt(u**2+v**2)
+			Sq[:,:,iLS] = (1.0-mag)*sgn#*magu/(magu + np.max(magu))
 		
 		return Sq
 	
@@ -993,6 +1081,80 @@ above.
 '''
 
 class NoSlipWall(BCWeakRiemann):
+	'''
+	This class corresponds to a slip wall. See documentation for more
+	details.
+	'''
+	def __init__(self, Twall):
+		'''
+		This method initializes the attributes.
+
+		Inputs:
+		-------
+			p: pressure
+
+		Outputs:
+		--------
+		    self: attributes initialized
+		'''
+		self.Twall = Twall
+		
+	def get_boundary_state(self, physics, UqI, normals, x, t):
+		#UqB = self.function.get_state(physics, x, t)
+		UqB = UqI.copy()
+		
+		irho1phi1, irho2phi2, irhou, irhov, irhoE, iPF, iLS = physics.get_state_indices()
+
+		rho1phi1  = UqB[:, :, irho1phi1] # [n, nq]
+		rho2phi2  = UqB[:, :, irho2phi2] # [n, nq]
+		rhou      = UqB[:, :, irhou]     # [n, nq]
+		rhov      = UqB[:, :, irhov]     # [n, nq]
+		rhoE      = UqB[:, :, irhoE]     # [n, nq]
+		phi1      = UqB[:, :, iPF]       # [n, nq]
+		LS        = UqB[:, :, iLS]       # [n, nq]
+		
+		# Classic (adiabatic?)
+		Twall = self.Twall
+		if self.Twall<0.:
+			rho = rho1phi1 + rho2phi2
+			UqB[:,:,irhoE] = rhoE - 0.5*(rhou**2 + rhov**2)/rho
+		else:
+			# Isothermal
+			cv1   = physics.cv1
+			cv2   = physics.cv2
+			pinf1 = physics.pinf1
+			pinf2 = physics.pinf2
+			gamma1= physics.gamma1
+			gamma2= physics.gamma2
+			rho = rho1phi1 + rho2phi2
+			rhoe = rhoE - 0.5 * (rhou**2+rhov**2)/rho # [n, nq]
+			one_over_gamma_m1 = phi1/(gamma1-1.0) + (1.0-phi1)/(gamma2-1.0)
+			rhoq = rho1phi1*physics.q1 + rho2phi2*physics.q2
+			pI = (rhoe - rhoq + (-phi1*gamma1*pinf1/(gamma1-1.)-(1.0-phi1)*gamma2*pinf2/(gamma2-1.)))/one_over_gamma_m1
+#			gamma = (one_over_gamma_m1+1.0)/one_over_gamma_m1
+#			pinf = (phi1*gamma1*pinf1/(gamma1-1.0) + (1.0-phi1)*gamma2*pinf2/(gamma2-1.0))/one_over_gamma_m1/gamma
+
+			rhoI1 = (pI + pinf1)/(cv1*Twall*(gamma1-1.))
+			rhoI2 = (pI + pinf2)/(cv2*Twall*(gamma2-1.))
+			UqB[:,:,irho1phi1] = rhoI1*phi1
+			UqB[:,:,irho2phi2] = rhoI2*(1.0-phi1)
+
+			rhoq   = UqB[:,:,irho1phi1]*physics.q1 + UqB[:,:,irho2phi2]*physics.q2
+		
+			rhoe1 = (pI + gamma1*pinf1)/(gamma1-1.0)
+			rhoe2 = (pI + gamma2*pinf2)/(gamma2-1.0)
+		
+			rhoe = rhoe1*phi1 + rhoe2*(1.0-phi1) + rhoq
+		
+#			UqB[:,:,irhoE] = rhocp*Twall + pinf + rhoq
+			UqB[:,:,irhoE] = rhoe
+
+		UqB[:,:,irhou] = 0.
+		UqB[:,:,irhov] = 0.
+		
+		return UqB
+
+class SlipWall(BCWeakRiemann):
 	'''
 	This class corresponds to a slip wall. See documentation for more
 	details.
@@ -1123,7 +1285,7 @@ class Subsonic_Inlet(BCWeakRiemann):
 	details.
 	'''
 	def __init__(self, d=0., thick=0., uavg=0., \
-			rho1_in=1., rho2_in=1.):
+			rho1_in=1., rho2_in=1., phi0 = 1.0):
 		'''
 		This method initializes the attributes.
 

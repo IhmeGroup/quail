@@ -1252,7 +1252,8 @@ class LagrangeTri(BasisBase, TriShape):
 			basis_tools.get_lagrange_grad_tri(quad_pts, p, xnodes,
 					basis_ref_grad)
 
-		return basis_ref_grad # [nq, nb, ndims]
+		basis_ref_hessian = np.zeros([nq, nb, ndims**2])
+		return basis_ref_grad, basis_ref_hessian # [nq, nb, ndims]
 
 	def get_local_face_node_nums(self, p, face_ID):
 		'''
