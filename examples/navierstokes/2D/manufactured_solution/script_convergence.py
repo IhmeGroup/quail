@@ -41,15 +41,15 @@ def write_file(fname, solution):
 # ------------------ USER INPUTS -------------------------------------- #
 # Change the following inputs for the given problem
 filename = 'manufactured_solution.py'
-outfile = 'inputaderdg.py'
+outfile = 'inputdg.py'
 tfinal = 1.e-2 # final solution time
 dtinit = np.array([0.01]) # initial dt for each p
-timestepper = 'ADER'
+timestepper = 'SSPRK3'
 inputdeck = importlib.import_module(filename.replace('.py',''))
 
-order = np.array([1, 2, 3, 4])
-meshx = np.array([2, 4, 8, 16, 32, 64])
-meshy = np.array([2, 4, 8, 16, 32, 64])
+order = np.array([1, 2, 3])
+meshx = np.array([2, 4, 8, 16, 32])
+meshy = np.array([2, 4, 8, 16, 32])
 # -------------- END USER INPUTS -------------------------------------- #
 inputdeck.TimeStepping['FinalTime'] = tfinal
 inputdeck.TimeStepping['TimeStepper'] = timestepper
@@ -103,7 +103,7 @@ while (j < order.shape[0]):
 		i+=1
 
 	print(f'Output file P{(order[0] + j)}: Solution Order is {solver.order}')
-	file_out = f'convergence_testing/{timestepper}/P{str(order[j])}.pkl'
+	file_out = f'convergence_testing/P{str(order[j])}.pkl'
 	write_file(file_out, l2err[j, :])	
 	if solver.order != order[0] + j:
 		inputdeck.TimeStepping['TimeStepSize'] = inputdeck.TimeStepping['TimeStepSize'] / 3.

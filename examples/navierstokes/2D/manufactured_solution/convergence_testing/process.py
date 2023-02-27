@@ -55,7 +55,7 @@ def read_data_file(fname):
 
 # ------------------------------------------- #
 # Set meshes and orders
-meshx = np.array([2, 4, 8, 16, 32, 64])
+meshx = np.array([2, 4, 8, 16, 32])
 order = np.array([1, 2, 3])
 # ------------------------------------------- #
 
@@ -68,7 +68,7 @@ fac = Nelem2[0]/Nelem2[1]
 
 # Read in solution files
 for idt in range(len(order)):  
-    err[idt] =  read_data_file(f'ADER/P{order[idt]}.pkl')
+    err[idt] =  read_data_file(f'P{order[idt]}.pkl')
     ref[idt] = np.array([err[idt, 0]*3, err[idt, 0]*3*fac**(order[idt]+1)])
 
 

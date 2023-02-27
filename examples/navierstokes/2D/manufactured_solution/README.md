@@ -1,5 +1,5 @@
 This case involves a 2D manufactured solution for the Navier-Stokes equations
-  - Case is run using ADERDG
+  - Case is run using DG
   - Order set to P3
   - Post-processing
     - Density, Pressure, x/y-velocity contours 

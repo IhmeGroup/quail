@@ -1,15 +1,13 @@
 TimeStepping = {
 	"FinalTime" : 1e-2,
 	"TimeStepSize" : 0.0001,
-	"TimeStepper" : "ADER",
+	"TimeStepper" : "SSPRK3",
 }
 
 Numerics = {
-	"Solver" : "ADERDG",
+	"Solver" : "DG",
 	"SolutionOrder" : 3,
 	"SolutionBasis" : "LagrangeQuad",
-	"InterpolateFluxADER" : True,
-	"PredictorThreshold" : 1e-13,
 }
 
 nelem = 4 
