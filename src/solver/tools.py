@@ -24,6 +24,7 @@ import numpy as np
 import sys
 
 import general
+import errors
 import numerics.basis.tools as basis_tools
 import numerics.helpers.helpers as helpers
 import solver.tools as solver_tools
@@ -166,47 +167,59 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 	-------
 		physics: physics object
 		elem_helpers: helpers defined in ElemHelpers
-		Uc: state coefficients of each element
-		av_param: artificial viscosity parameter
+		Uc: state coefficients of each element:  [ne,nb,ns]
+		av_param: artificial viscosity parameter: float
 		p: solution basis order
 
 	Outputs:
 	--------
 		res_elem: artificial viscosity residual array for all elements
 		[ne, nb, ns]
+
+	Notes:
+	--------
+		ne: number of elements
+		nb: number of basis functions
+		nq: number of quadrature points
+		ns: number of solution unknowns
+		dim: number of dimensions
 	'''
-	# Unpack
-	quad_wts = elem_helpers.quad_wts # [nq, 1]
+	# Use these arrays to help you reconstruct and integrate
+	# quadrature weights [nq, 1]
+	quad_wts = elem_helpers.quad_wts
+	# dphi/dx for each element at quad points [ne, nq, nb, dim]
 	basis_phys_grad_elems = elem_helpers.basis_phys_grad_elems
-			# [ne, nq, nb, dim]
+	# phi at quad points
 	basis_val = elem_helpers.basis_val # [nq, nb]
+	# Jacobian determinant at quad points
 	djac_elems = elem_helpers.djac_elems # [ne, nq, 1]
+	# element volume
 	vol_elems = elem_helpers.vol_elems # [ne]
+	# number of dimensions
 	ndims = basis_phys_grad_elems.shape[3]
 
-	# Evaluate solution at quadrature points
-	Uq = helpers.evaluate_state(Uc, basis_val)
-	# Evaluate solution gradient at quadrature points
-	grad_Uq = np.einsum('ijnl, ink -> ijkl', basis_phys_grad_elems, Uc)
-	# Compute pressure
-	pressure = physics.compute_additional_variable("Pressure", Uq,
-			flag_non_physical=False)[:, :, 0]
-	# For Euler equations, use pressure as the smoothness variable
-	if physics.PHYSICS_TYPE == general.PhysicsType.Euler:
-		# Compute pressure gradient
-		grad_p = physics.compute_pressure_gradient(Uq, grad_Uq)
-		# Compute its magnitude
-		norm_grad_p = np.linalg.norm(grad_p, axis = 2)
-		# Calculate smoothness switch
-		f = norm_grad_p / (pressure + 1e-12)
-	# For everything else, use the first solution variable
-	else:
-		U0 = Uq[:, :, 0]
-		grad_U0 = grad_Uq[:, :, 0]
-		norm_grad_U0 = np.linalg.norm(grad_U0, axis = 2)
-		# Calculate smoothness switch
-		f =  norm_grad_U0 / (U0 + 1e-12)
+	## Delete this line when you are done with your implementation
+	return None
 
+	### Step 1: Evaluate solution and gradient at quadrature points
+	# Example: the solution at the quad points
+	Uq = np.einsum('qb, ebs -> eqs', basis_val, Uc)  # [ne, nq, ns]
+	# Now, do the same for grad_Uq = dU/dx at the quad points
+	grad_Uq = None  # Your code here [ne, nq, ns, dim]
+
+	### Step 2: Compute the sensor f
+	if physics.PHYSICS_TYPE != general.PhysicsType.Euler:
+		raise errors.IncompatibleError
+	# Compute pressure
+	pressure = physics.compute_additional_variable("Pressure", Uq, flag_non_physical=False)[:, :, 0]  # [ne, nq]
+	# Compute pressure gradient at quad points
+	grad_p = physics.compute_pressure_gradient(Uq, grad_Uq)  # [ne, nq, dim]
+	# Compute pressure gradient magnitude
+	norm_grad_p = None  # Your code here [ne, nq]
+	# Calculate smoothness switch
+	f = None  # Your code here [ne, nq]
+
+	### Interlude: Computation of the grid anisotropic resolution (This code is provided)
 	# Compute s_k
 	s = np.zeros((Uc.shape[0], ndims))
 	# Loop over dimensions
@@ -223,18 +236,18 @@ def calculate_artificial_viscosity_integral(physics, elem_helpers, Uc, av_param,
 	for k in range(ndims):
 		h[:, k] = s[:, k] * (vol_elems / np.prod(s, axis=1))**(1/3)
 	# Scale with polynomial order
-	h_tilde = h / (p + 1)
-	# Compute dissipation scaling
-	epsilon = av_param *  np.einsum('ij, il -> ijl', f, h_tilde**3)
-	# Calculate integral, with state coeffs factored out
-	integral = np.einsum('ijm, ijpm, ijnm, jx, ijx -> ipn', epsilon,
-				basis_phys_grad_elems, basis_phys_grad_elems, quad_wts,
-				djac_elems)
-	# Calculate residual
-	res_elem = np.einsum('ipn, ipk -> ink', integral, Uc)
+	# The grid anisotropic resolution
+	h_tilde = h / (p + 1)  # [ne, dim]
 
-	return res_elem # [ne, nb, ns]
+	### Step 3: Calculate the anisotropic AV dissipation rate
+	epsilon = None  # Your code here [ne, nq, nd]
 
+	### Step 4: Integrate to obtain the AV residual
+	quad_wtsh = quad_wts[:,0]  # [nq]
+	djac_elemsh = djac_elems[:,:,0]  # [ne, nq]
+	res = None  # Your code here [ne, nb, ns]
+
+	return res
 
 def calculate_dRdU(elem_helpers, Sjac):
 	'''

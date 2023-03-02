@@ -7,7 +7,7 @@ NumTimeSteps = 1500
 TimeStepping = {
     "InitialTime" : 0.,
     "FinalTime" : FinalTime,
-    "CFL" : 0.2,
+    "CFL" : 0.5,
     "TimeStepper" : "SSPRK3",
 }
 
@@ -16,9 +16,9 @@ Numerics = {
     "SolutionOrder" : 1,
     "SolutionBasis" : "LagrangeSeg",
     "Solver" : "DG",
-    "ApplyLimiters" : "PositivityPreserving",
+#    "ApplyLimiters" : "PositivityPreserving",
     "ArtificialViscosity" : False,
-    "AVParameter" : 50.,
+    "AVParameter" : 30.,
     "NodeType" : "Equidistant",
     "ElementQuadrature" : "GaussLegendre",
     "FaceQuadrature" : "GaussLegendre",

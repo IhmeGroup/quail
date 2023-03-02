@@ -177,6 +177,8 @@ class PhysicsType(Enum):
 		# Model for 2nd order pendulum ODE (0D model)
 	MultispeciesPSR = auto()
 		# Model for PSR (with H2/Air chemistry)
+	BinaryNavierStokes = auto()
+		# Binary Navier Stokes
 		
 		
 class TransportType(Enum):
